@@ -71,15 +71,14 @@ appear before they are referenced.
 
 <CoordinateSystem> { string }
 
-  This is a new kind of node introduced for the new player.  The old
-  player used a Y-up coordinate system, so all modeling was done with
-  Y-up and egg files used Y-up implicitly.  Since we have adopted a
-  Z-up coordinate system with the new player, it becomes necessary to
-  make a distinction.  The contents of this entry are either the
-  string "Y-up" or "Z-up" to indicate the coordinate system used in
-  the egg file; the egg loader will automatically make a conversion if
-  necessary.  By convention, this entry should only appear at the
-  beginning of the file.  If it is omitted, Y-up is assumed.
+  This entry indicates the coordinate system used in the egg file; the
+  egg loader will automatically make a conversion if necessary.  The
+  following strings are valid: Y-up, Z-up, Y-up-right, Z-up-right,
+  Y-up-left, or Z-up-left.  (Y-up is the same as Y-up-right, and Z-up
+  is the same as Z-up-right.)
+
+  By convention, this entry should only appear at the beginning of the
+  file.  If it is omitted, Y-up is assumed.
 
 
 <Texture> name { filename [scalars] }
@@ -339,11 +338,16 @@ appear before they are referenced.
     (1 1 1 1).  The morph-list is an optional list of <DRGBA> entries.
 
 
-    <UV> { u v [morph-list] }
+    <UV> name { u v [morph-list] }
 
     This gives the texture coordinates of the vertex.  This must be
     specified if a texture is to be mapped onto this geometry.  As
     before, morph-list is an optional list of <DUV> entries.
+
+    Unlike the other kinds of attributes, there may be multiple sets
+    of UV's on each vertex, each with a unique name; this provides
+    support for multitexturing.  The name may be omitted to specify
+    the default UV's.
 
 
     In addition to the above, when the vertex serves as a control

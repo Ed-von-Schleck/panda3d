@@ -37,6 +37,7 @@
 #include "materialAttrib.h"
 #include "texMatrixAttrib.h"
 #include "colorAttrib.h"
+#include "textureStageManager.h"
 #include "materialPool.h"
 #include "geomNode.h"
 #include "sequenceNode.h"
@@ -302,14 +303,26 @@ make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
           // vertex colors.
           has_vert_color = false;
         }
-        if (egg_vert->has_uv()) {
-          TexCoordd uv = egg_vert->get_uv();
+
+        EggVertex::const_uv_iterator ui;
+        TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+        for (ui = egg_vert->uv_begin(); ui != egg_vert->uv_end(); ++ui) {
+          EggVertexUV *uv_obj = (*ui);
+          TexCoordd uv = uv_obj->get_uv();
+          PT(TexCoordName) uv_name;
+          if (uv_obj->has_name()) {
+            uv_name = tex_mgr->make_texcoord(uv_obj->get_name());
+          } else {
+            uv_name = tex_mgr->get_default_texcoord();
+          }
+
           if (egg_prim->has_texture() &&
               egg_prim->get_texture()->has_transform()) {
             // If we have a texture matrix, apply it.
             uv = uv * egg_prim->get_texture()->get_transform();
           }
-          bvert.set_texcoord(LCAST(float, uv));
+
+          bvert.set_texcoord(uv_name, LCAST(float, uv));
         }
         
         bprim.add_vertex(bvert);
@@ -344,8 +357,13 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
 
   bucket.set_coords(_comp_verts_maker._coords);
   bucket.set_normals(_comp_verts_maker._norms);
-  bucket.set_texcoords(_comp_verts_maker._texcoords);
   bucket.set_colors(_comp_verts_maker._colors);
+
+  // Temporary; we need to add multitex support to the
+  // ComputedVerticesMaker too.
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  bucket.set_texcoords(tex_mgr->get_default_texcoord(),
+                       _comp_verts_maker._texcoords);
 
   LMatrix4d mat;
 
@@ -429,8 +447,18 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
         has_vert_color = false;
       }
 
-      if (egg_vert->has_uv()) {
-        TexCoordd uv = egg_vert->get_uv();
+      EggVertex::const_uv_iterator ui;
+      TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+      for (ui = egg_vert->uv_begin(); ui != egg_vert->uv_end(); ++ui) {
+        EggVertexUV *uv_obj = (*ui);
+        TexCoordd uv = uv_obj->get_uv();
+        PT(TexCoordName) uv_name;
+        if (uv_obj->has_name()) {
+          uv_name = tex_mgr->make_texcoord(uv_obj->get_name());
+        } else {
+          uv_name = tex_mgr->get_default_texcoord();
+        }
+
         LMatrix3d mat;
         
         if (egg_prim->has_texture() &&
@@ -442,8 +470,8 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
         }
         
         int tindex =
-          _comp_verts_maker.add_texcoord(uv, egg_vert->_duvs, mat);
-        bvert.set_texcoord(tindex);
+          _comp_verts_maker.add_texcoord(uv, uv_obj->_duvs, mat);
+        bvert.set_texcoord(uv_name, tindex);
       }
       
       bprim.add_vertex(bvert);

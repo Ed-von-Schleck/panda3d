@@ -13,6 +13,7 @@
 #include "eggGroup.h"
 #include "eggVertex.h"
 #include "eggVertexPool.h"
+#include "eggVertexUV.h"
 #include "eggPolygon.h"
 #include "eggPoint.h"
 #include "eggLine.h"
@@ -725,7 +726,21 @@ vertex_body:
 {
   DCAST(EggVertex, egg_stack.back())->set_pos(LPoint4d($1, $2, $3, $4));
 }
-        | vertex_body UV '{' vertex_uv_body '}'
+        | vertex_body UV optional_name '{'
+{
+  EggVertex *vertex = DCAST(EggVertex, egg_stack.back());
+  EggVertexUV *uv = new EggVertexUV($3, TexCoordd::zero());
+  egg_stack.push_back(uv);
+  if (vertex->has_uv($3)) {
+    eggyywarning("Ignoring repeated UV name " + $3);
+  } else {
+    vertex->set_uv(uv);
+  }
+}
+	 vertex_uv_body '}'
+{
+  egg_stack.pop_back();
+}
         | vertex_body NORMAL '{' vertex_normal_body '}'
         | vertex_body RGBA '{' vertex_color_body '}'
         | vertex_body DXYZ string '{' real real real '}'
@@ -757,19 +772,19 @@ vertex_body:
 vertex_uv_body:
         real real
 {
-  DCAST(EggVertex, egg_stack.back())->set_uv(TexCoordd($1, $2));
+  DCAST(EggVertexUV, egg_stack.back())->set_uv(TexCoordd($1, $2));
 }
         | vertex_uv_body DUV string '{' real real '}'
 {
-  bool inserted = DCAST(EggVertex, egg_stack.back())->_duvs.
+  bool inserted = DCAST(EggVertexUV, egg_stack.back())->_duvs.
     insert(EggMorphTexCoord($3, LVector2d($5, $6))).second;
   if (!inserted) {
     eggyywarning("Ignoring repeated morph name " + $3);
   }
 }
-        | vertex_uv_body DUV '{' string real real '}'
+       | vertex_uv_body DUV '{' string real real '}'
 {
-  bool inserted = DCAST(EggVertex, egg_stack.back())->_duvs.
+  bool inserted = DCAST(EggVertexUV, egg_stack.back())->_duvs.
     insert(EggMorphTexCoord($4, LVector2d($5, $6))).second;
   if (!inserted) {
     eggyywarning("Ignoring repeated morph name " + $4);
