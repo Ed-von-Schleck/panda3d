@@ -108,3 +108,16 @@ set_cursor_out_of_window() {
     update_cursor_window(NULL);
   }
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: WinGraphicsWindow::get_ime_hwnd
+//       Access: Private
+//  Description: Return the IME_window handle if open
+////////////////////////////////////////////////////////////////////
+INLINE HWND WinGraphicsWindow::
+get_ime_hwnd() {
+  if (_ime_active)
+    return _ime_hWnd;
+  else
+    return NULL;
+}

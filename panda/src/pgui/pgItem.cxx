@@ -443,6 +443,17 @@ keystroke(const MouseWatcherParameter &param, bool background) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PGItem::keystroke
+//       Access: Public, Virtual
+//  Description: This is a callback hook function, called whenever
+//               the user highlights an option in the IME window.
+////////////////////////////////////////////////////////////////////
+void PGItem::
+candidate(const MouseWatcherParameter &param, bool background) {
+  // We don't throw sound events for candidate selections for now.
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PGItem::background_press
 //       Access: Public, Static
 //  Description: Calls press() on all the PGItems with background
@@ -489,6 +500,23 @@ background_keystroke(const MouseWatcherParameter &param) {
     PGItem *item = *fi;
     if (!item->get_focus()) {
       item->keystroke(param, true);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PGItem::background_candidate
+//       Access: Public, Static
+//  Description: Calls candidate() on all the PGItems with background
+//               focus.
+////////////////////////////////////////////////////////////////////
+void PGItem::
+background_candidate(const MouseWatcherParameter &param) {
+  BackgroundFocus::const_iterator fi;
+  for (fi = _background_focus.begin(); fi != _background_focus.end(); ++fi) {
+    PGItem *item = *fi;
+    if (!item->get_focus()) {
+      item->candidate(param, true);
     }
   }
 }

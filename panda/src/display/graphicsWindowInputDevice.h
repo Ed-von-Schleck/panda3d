@@ -65,6 +65,9 @@ public:
   void button_resume_down(ButtonHandle button);
   void button_up(ButtonHandle button);
   void keystroke(int keycode);
+  void candidate(const wstring &candidate_string, size_t highlight_start, 
+                 size_t higlight_end, size_t cursor_pos);
+
   INLINE void set_pointer_in_window(int x, int y);
   INLINE void set_pointer_out_of_window();
 

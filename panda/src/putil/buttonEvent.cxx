@@ -17,6 +17,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "buttonEvent.h"
+#include "textEncoder.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ButtonEvent::output
@@ -40,6 +41,12 @@ output(ostream &out) const {
 
   case T_keystroke:
     out << "keystroke " << _keycode;
+    break;
+
+  case T_candidate:
+    out << "candidate "
+        << TextEncoder::encode_wtext(_candidate_string,
+                                     TextEncoder::get_default_encoding());
     break;
   }
 }

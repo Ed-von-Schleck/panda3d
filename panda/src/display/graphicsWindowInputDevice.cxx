@@ -191,3 +191,17 @@ void GraphicsWindowInputDevice::
 keystroke(int keycode) {
   _button_events.push_back(ButtonEvent(keycode));
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsWindowInputDevice::candidate
+//       Access: Public
+//  Description: Records that the indicated candidate string has been
+//               highlighted.
+////////////////////////////////////////////////////////////////////
+void GraphicsWindowInputDevice::
+candidate(const wstring &candidate_string, size_t highlight_start, 
+          size_t highlight_end, size_t cursor_pos) {
+  _button_events.push_back(ButtonEvent(candidate_string, 
+                                       highlight_start, highlight_end,
+                                       cursor_pos));
+}
