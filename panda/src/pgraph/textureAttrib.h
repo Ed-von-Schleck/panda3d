@@ -23,6 +23,8 @@
 
 #include "renderAttrib.h"
 #include "texture.h"
+#include "textureStage.h"
+#include "updateSeq.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TextureAttrib
@@ -35,11 +37,54 @@ private:
   INLINE TextureAttrib();
 
 PUBLISHED:
+  // These methods are deprecated, but they remain for now, for
+  // backward compatibility.  They treat the TextureAttrib as a
+  // single-texture application.
   static CPT(RenderAttrib) make(Texture *tex);
   static CPT(RenderAttrib) make_off();
 
   INLINE bool is_off() const;
   INLINE Texture *get_texture() const;
+
+  // The following methods define the new multitexture mode for
+  // TextureAttrib.  Each TextureAttrib can add or remove individual
+  // texture stages from the complete set of textures that are to be
+  // applied; this is similar to the mechanism of LightAttrib.
+  enum Operation {
+    O_set,
+    O_add,
+    O_remove
+  };
+
+  static CPT(RenderAttrib) make_all_off();
+  static CPT(RenderAttrib) make(Operation op, 
+                                TextureStage *stage, Texture *tex);
+  static CPT(RenderAttrib) make(Operation op, 
+                                TextureStage *stageA, Texture *texA,
+                                TextureStage *stageB, Texture *texB);
+  static CPT(RenderAttrib) make(Operation op, 
+                                TextureStage *stageA, Texture *texA,
+                                TextureStage *stageB, Texture *texB,
+                                TextureStage *stageC, Texture *texC);
+  static CPT(RenderAttrib) make(Operation op, 
+                                TextureStage *stageA, Texture *texA,
+                                TextureStage *stageB, Texture *texB,
+                                TextureStage *stageC, Texture *texC,
+                                TextureStage *stageD, Texture *texD);
+
+  INLINE Operation get_operation() const;
+
+  INLINE int get_num_stages() const;
+  INLINE TextureStage *get_stage(int n) const;
+
+  bool has_stage(TextureStage *stage) const;
+  Texture *get_texture(TextureStage *stage) const;
+
+  INLINE CPT(RenderAttrib) add_stage(TextureStage *stage, Texture *tex) const;
+  INLINE CPT(RenderAttrib) remove_stage(TextureStage *stage) const;
+
+  INLINE bool is_identity() const;
+  INLINE bool is_all_off() const;
 
 public:
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
@@ -47,10 +92,27 @@ public:
 
 protected:
   virtual int compare_to_impl(const RenderAttrib *other) const;
+  virtual CPT(RenderAttrib) compose_impl(const RenderAttrib *other) const;
+  virtual CPT(RenderAttrib) invert_compose_impl(const RenderAttrib *other) const;
   virtual RenderAttrib *make_default_impl() const;
 
 private:
-  PT(Texture) _texture;
+  CPT(RenderAttrib) do_add(const TextureAttrib *other, Operation op) const;
+  CPT(RenderAttrib) do_remove(const TextureAttrib *other, Operation op) const;
+
+  INLINE void check_sorted();
+  void sort_stages();
+
+private:
+  Operation _operation;
+
+  typedef pvector< PT(TextureStage) > Stages;
+  Stages _stages;
+
+  typedef pmap< TextureStage*, PT(Texture) > Textures;
+  Textures _textures;
+
+  UpdateSeq _sort_seq;
 
 public:
   static void register_with_read_factory();

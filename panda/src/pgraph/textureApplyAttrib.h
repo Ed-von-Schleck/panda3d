@@ -27,6 +27,10 @@
 //       Class : TextureApplyAttrib
 // Description : Specifies how textures are applied; specifically, how
 //               texture color modifies geometry color.
+//
+//               This class is now deprecated; it has been replaced
+//               with the TextureStage class to support
+//               multitexturing.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TextureApplyAttrib : public RenderAttrib {
 PUBLISHED:
