@@ -1,5 +1,0 @@
-#include "config_display.cxx"
-#include "graphicsPipeSelection.cxx"
-#include "hardwareChannel.cxx"
-#include "savedFrameBuffer.cxx"
-#include "windowProperties.cxx"
