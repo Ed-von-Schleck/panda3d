@@ -25,7 +25,8 @@
 #include "lensNode.h"
 #include "geomNode.h"
 #include "nodePath.h"
-#include "textureStageManager.h"
+#include "texCoordName.h"
+#include "pointerTo.h"
 
 class Geom;
 class WorkingNodePath;

@@ -35,7 +35,6 @@
 #include "pta_int.h"
 #include "texCoordName.h"
 #include "textureStage.h"
-#include "textureStageManager.h"
 
 class Datagram;
 class DatagramIterator;

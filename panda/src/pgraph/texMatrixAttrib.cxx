@@ -55,9 +55,8 @@ make() {
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TexMatrixAttrib::
 make(const LMatrix4f &mat) {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   CPT(TransformState) transform = TransformState::make_mat(mat);
-  return make(tex_mgr->get_default_stage(), transform);
+  return make(TextureStage::get_default(), transform);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -68,8 +67,7 @@ make(const LMatrix4f &mat) {
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TexMatrixAttrib::
 make(const TransformState *transform) {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return make(tex_mgr->get_default_stage(), transform);
+  return make(TextureStage::get_default(), transform);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -120,8 +118,7 @@ remove_stage(TextureStage *stage) const {
 ////////////////////////////////////////////////////////////////////
 const LMatrix4f &TexMatrixAttrib::
 get_mat() const {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return get_mat(tex_mgr->get_default_stage());
+  return get_mat(TextureStage::get_default());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -473,6 +470,5 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   LMatrix4f mat;
   mat.read_datagram(scan);
   CPT(TransformState) transform = TransformState::make_mat(mat);
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  _stages.insert(Stages::value_type(tex_mgr->get_default_stage(), transform));
+  _stages.insert(Stages::value_type(TextureStage::get_default(), transform));
 }

@@ -39,12 +39,20 @@ private:
 PUBLISHED:
   virtual ~TexCoordName();
 
+  static const TexCoordName *make(const string &name);
   INLINE const string &get_name() const;
 
   void output(ostream &out) const;
 
+  INLINE static const TexCoordName *get_default();
+
 private:
   string _name;
+
+  typedef pmap<string, TexCoordName *> TexCoordsByName;
+  static TexCoordsByName _texcoords_by_name;
+
+  static CPT(TexCoordName) _default_name;
   
 public:
   // Datagram stuff
@@ -72,9 +80,9 @@ public:
 
 private:
   static TypeHandle _type_handle;
-
-  friend class TextureStageManager;
 };
+
+INLINE ostream &operator << (ostream &out, const TexCoordName &tcn);
 
 #include "texCoordName.I"
 

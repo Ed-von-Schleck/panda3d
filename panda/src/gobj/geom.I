@@ -110,8 +110,7 @@ get_colors_array() const {
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_TexCoordf Geom::
 get_texcoords_array() const {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return get_texcoords_array(tex_mgr->get_default_texcoord());
+  return get_texcoords_array(TexCoordName::get_default());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -179,8 +178,7 @@ get_colors_index() const {
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_ushort Geom::
 get_texcoords_index() const {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return get_texcoords_index(tex_mgr->get_default_texcoord());
+  return get_texcoords_index(TexCoordName::get_default());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -373,9 +371,8 @@ make_texcoord_iterator() const {
   check_config();
   TexCoordIterator i;
 
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   TexCoordsByName::const_iterator tci = 
-    _texcoords_by_name.find(tex_mgr->get_default_texcoord());
+    _texcoords_by_name.find(TexCoordName::get_default());
   if (tci != _texcoords_by_name.end()) {
     i._array = (*tci).second._texcoords;
     i._index = (*tci).second._tindex;;

@@ -22,6 +22,7 @@
 #include "pandabase.h"
 
 #include "renderAttrib.h"
+#include "textureStage.h"
 #include "transformState.h"
 #include "pointerTo.h"
 

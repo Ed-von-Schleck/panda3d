@@ -23,28 +23,53 @@
 #include "bamReader.h"
 #include "preparedGraphicsObjects.h"
 
+TexCoordName::TexCoordsByName TexCoordName::_texcoords_by_name;
+CPT(TexCoordName) TexCoordName::_default_name;
+
 TypeHandle TexCoordName::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexCoordName::Constructor
 //       Access: Private
-//  Description: Constructor to build the TexCoordName
-
+//  Description: Use make() to make a new TexCoordName instance.
 ////////////////////////////////////////////////////////////////////
 TexCoordName::
-TexCoordName (const string &name) {
+TexCoordName(const string &name) {
   _name = name;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexCoordName::Destructor
-//       Access: Published
-//  Description: make sure to remove self from Texture Stage Manager
-
+//       Access: Published, Virtual
+//  Description:
 ////////////////////////////////////////////////////////////////////
 TexCoordName::
-~TexCoordName () {
-  TextureStageManager::get_global_ptr()->remove_texcoord(this);
+~TexCoordName() {
+  TexCoordsByName::iterator ni = _texcoords_by_name.find(_name);
+  nassertv(ni != _texcoords_by_name.end());
+  _texcoords_by_name.erase(ni);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexCoordName::make
+//       Access: Published
+//  Description: The public interface for constructing a TexCoordName
+//               pointer.  This will return a new TexCoordName
+//               associated with the indicated name, if this is the
+//               first time the particular name has been requested; if
+//               the name is already in use, it will return the
+//               existing pointer.
+////////////////////////////////////////////////////////////////////
+const TexCoordName *TexCoordName::
+make(const string &name) {
+  TexCoordsByName::iterator ni = _texcoords_by_name.find(name);
+  if (ni != _texcoords_by_name.end()) {
+    return (*ni).second;
+  }
+
+  TexCoordName *texcoord = new TexCoordName(name);
+  _texcoords_by_name[name] = texcoord;
+  return texcoord;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -53,8 +78,8 @@ TexCoordName::
 //  Description: output the TexCoordName and its member data
 ////////////////////////////////////////////////////////////////////
 void TexCoordName::
-output (ostream &out) const {
-  out << get_type() << " (" << _name << ")";
+output(ostream &out) const {
+  out << get_name();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -72,14 +97,12 @@ register_with_read_factory() {
 //       Access: Protected
 //  Description: Factory method to generate a TexCoordName object
 ////////////////////////////////////////////////////////////////////
-TypedWritable* TexCoordName::
+TypedWritable *TexCoordName::
 make_TexCoordName(const FactoryParams &params) {
-  //The process of making a TexCoordName is slightly
-  //different than making other Writable objects.
-  //That is because all creation of TexCoordNames should
-  //be done through calls to TextureStageManager, which ensures
-  //that any loads of the same TexCoordName, refer to the
-  //same memory
+  // The process of making a TexCoordName is slightly
+  // different than making other Writable objects.
+  // That is because all creation of TexCoordNames should
+  // be done through the make() constructor.
   DatagramIterator scan;
   BamReader *manager;
 
@@ -88,8 +111,10 @@ make_TexCoordName(const FactoryParams &params) {
   // Get the properties written by ImageBuffer::write_datagram().
   string name = scan.get_string();
 
-  TexCoordName *me = TextureStageManager::get_global_ptr()->make_texcoord(name);
+  PT(TexCoordName) me = (TexCoordName *)make(name);
 
+  // Oops, the reference count will be lost here and the object
+  // deleted!  Must fix.
   return me;
 }
 

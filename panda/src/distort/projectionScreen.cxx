@@ -34,8 +34,7 @@ TypeHandle ProjectionScreen::_type_handle;
 ProjectionScreen::
 ProjectionScreen(const string &name) : PandaNode(name)
 {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  _texcoord_name = tex_mgr->get_default_texcoord();
+  _texcoord_name = TexCoordName::get_default();
 
   _invert_uvs = project_invert_uvs;
   _vignette_on = false;

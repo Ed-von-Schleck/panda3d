@@ -32,10 +32,12 @@
 #include "typedObject.h"
 
 class NodePathCollection;
-class TextureCollection;
 class FindApproxPath;
 class FindApproxLevelEntry;
 class Texture;
+class TextureStage;
+class TextureCollection;
+class TextureStageCollection;
 class Material;
 class Fog;
 class GlobPattern;
@@ -490,46 +492,52 @@ PUBLISHED:
 
   void set_texture(Texture *tex, int priority = 0);
   void set_texture_off(int priority = 0);
-  void add_texture(const string &stage_name, Texture *tex);
-  void remove_texture(const string &stage_name);
+  void add_texture(TextureStage *stage, Texture *tex);
+  void remove_texture(TextureStage *stage);
   void clear_texture();
   bool has_texture() const;
-  bool has_texture(const string &stage_name) const;
+  bool has_texture(TextureStage *stage) const;
   bool has_texture_off() const;
-  bool has_texture_off(const string &stage_name) const;
+  bool has_texture_off(TextureStage *stage) const;
   Texture *get_texture() const;
-  Texture *get_texture(const string &stage_name) const;
+  Texture *get_texture(TextureStage *stage) const;
 
-  void set_tex_transform(const string &stage_name, const TransformState *transform);
-  void remove_tex_transform(const string &stage_name);
+  void set_tex_transform(TextureStage *stage, const TransformState *transform);
+  void remove_tex_transform(TextureStage *stage);
   void clear_tex_transform();
-  bool has_tex_transform(const string &stage_name) const;
-  CPT(TransformState) get_tex_transform(const string &stage_name) const;
+  bool has_tex_transform(TextureStage *stage) const;
+  CPT(TransformState) get_tex_transform(TextureStage *stage) const;
 
-  INLINE void set_tex_offset(const string &stage_name, const LVecBase2f &uv);
-  INLINE void set_tex_offset(const string &stage_name, float u, float v);
-  INLINE void set_tex_rotate(const string &stage_name, float r);
-  INLINE void set_tex_scale(const string &stage_name, const LVecBase2f &scale);
-  INLINE void set_tex_scale(const string &stage_name, float su, float sv);
-  INLINE LVecBase2f get_tex_offset(const string &stage_name) const;
-  INLINE float get_tex_rotate(const string &stage_name) const;
-  INLINE LVecBase2f get_tex_scale(const string &stage_name) const;
+  INLINE void set_tex_offset(TextureStage *stage, const LVecBase2f &uv);
+  INLINE void set_tex_offset(TextureStage *stage, float u, float v);
+  INLINE void set_tex_rotate(TextureStage *stage, float r);
+  INLINE void set_tex_scale(TextureStage *stage, const LVecBase2f &scale);
+  INLINE void set_tex_scale(TextureStage *stage, float su, float sv);
+  INLINE LVecBase2f get_tex_offset(TextureStage *stage) const;
+  INLINE float get_tex_rotate(TextureStage *stage) const;
+  INLINE LVecBase2f get_tex_scale(TextureStage *stage) const;
 
-  void set_tex_transform(const NodePath &other, const string &stage_name, const TransformState *transform);
-  CPT(TransformState) get_tex_transform(const NodePath &other, const string &stage_name) const;
+  void set_tex_transform(const NodePath &other, TextureStage *stage, const TransformState *transform);
+  CPT(TransformState) get_tex_transform(const NodePath &other, TextureStage *stage) const;
 
-  INLINE void set_tex_offset(const NodePath &other, const string &stage_name, const LVecBase2f &uv);
-  INLINE void set_tex_offset(const NodePath &other, const string &stage_name, float u, float v);
-  INLINE void set_tex_rotate(const NodePath &other, const string &stage_name, float r);
-  INLINE void set_tex_scale(const NodePath &other, const string &stage_name, const LVecBase2f &scale);
-  INLINE void set_tex_scale(const NodePath &other, const string &stage_name, float su, float sv);
-  INLINE LVecBase2f get_tex_offset(const NodePath &other, const string &stage_name) const;
-  INLINE float get_tex_rotate(const NodePath &other, const string &stage_name) const;
-  INLINE LVecBase2f get_tex_scale(const NodePath &other, const string &stage_name) const;
+  INLINE void set_tex_offset(const NodePath &other, TextureStage *stage, const LVecBase2f &uv);
+  INLINE void set_tex_offset(const NodePath &other, TextureStage *stage, float u, float v);
+  INLINE void set_tex_rotate(const NodePath &other, TextureStage *stage, float r);
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, const LVecBase2f &scale);
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float su, float sv);
+  INLINE LVecBase2f get_tex_offset(const NodePath &other, TextureStage *stage) const;
+  INLINE float get_tex_rotate(const NodePath &other, TextureStage *stage) const;
+  INLINE LVecBase2f get_tex_scale(const NodePath &other, TextureStage *stage) const;
 
   Texture *find_texture(const string &name) const;
   TextureCollection find_all_textures() const;
   TextureCollection find_all_textures(const string &name) const;
+
+  TextureStage *find_texture_stage(const string &name) const;
+  TextureStageCollection find_all_texture_stages() const;
+  TextureStageCollection find_all_texture_stages(const string &name) const;
+
+  void unify_texture_stages(TextureStage *stage);
 
   void set_material(Material *tex, int priority = 0);
   void set_material_off(int priority = 0);
@@ -672,6 +680,15 @@ private:
                           const GlobPattern &glob) const;
   void r_find_all_textures(PandaNode *node, const RenderState *state,
                            Textures &textures) const;
+
+  typedef pset<TextureStage *> TextureStages;
+  TextureStage *r_find_texture_stage(PandaNode *node, const RenderState *state,
+                                     const GlobPattern &glob) const;
+  void r_find_all_texture_stages(PandaNode *node, const RenderState *state,
+                                 TextureStages &texture_stages) const;
+
+  void r_unify_texture_stages(PandaNode *node, TextureStage *stage);
+
   void r_prepare_scene(PandaNode *node, const RenderState *state,
                        PreparedGraphicsObjects *prepared_objects);
 

@@ -30,8 +30,7 @@
     textureContext.I textureContext.h \
     texturePool.I texturePool.h \
     texCoordName.I texCoordName.h \
-    textureStage.I textureStage.h \
-    textureStageManager.I textureStageManager.h
+    textureStage.I textureStage.h
     
   #define INCLUDED_SOURCES \
     LOD.cxx \
@@ -46,7 +45,7 @@
     preparedGraphicsObjects.cxx \
     lens.cxx  \
     savedContext.cxx texture.cxx textureContext.cxx texturePool.cxx \
-    texCoordName.cxx textureStage.cxx textureStageManager.cxx
+    texCoordName.cxx textureStage.cxx
 
   #define INSTALL_HEADERS \
     LOD.I LOD.h \
@@ -68,8 +67,7 @@
     textureContext.I textureContext.h \
     texturePool.I texturePool.h \
     texCoordName.I texCoordName.h \
-    textureStage.I textureStage.h \
-    textureStageManager.I textureStageManager.h
+    textureStage.I textureStage.h
 
   #define IGATESCAN all
 

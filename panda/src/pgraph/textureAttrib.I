@@ -209,8 +209,7 @@ get_on_stages() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureAttrib::
 check_sorted() const {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  if (_sort_seq != tex_mgr->get_sort_seq()) {
+  if (_sort_seq != TextureStage::get_sort_seq()) {
     ((TextureAttrib *)this)->sort_on_stages();
   }
 }

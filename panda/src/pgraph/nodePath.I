@@ -1114,8 +1114,8 @@ get_sa() const {
 //               the indicated offset to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_offset(const string &stage_name, const LVecBase2f &uv) {
-  set_tex_offset(stage_name, uv[0], uv[1]);
+set_tex_offset(TextureStage *stage, const LVecBase2f &uv) {
+  set_tex_offset(stage, uv[0], uv[1]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1125,10 +1125,10 @@ set_tex_offset(const string &stage_name, const LVecBase2f &uv) {
 //               the indicated offset to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_offset(const string &stage_name, float u, float v) {
+set_tex_offset(TextureStage *stage, float u, float v) {
   nassertv_always(!is_empty());
-  set_tex_transform(stage_name, 
-                    get_tex_transform(stage_name)->set_pos(LVecBase3f(u, v, 0.0f)));
+  set_tex_transform(stage, 
+                    get_tex_transform(stage)->set_pos(LVecBase3f(u, v, 0.0f)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1139,10 +1139,10 @@ set_tex_offset(const string &stage_name, float u, float v) {
 //               for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_rotate(const string &stage_name, float r) {
+set_tex_rotate(TextureStage *stage, float r) {
   nassertv_always(!is_empty());
-  set_tex_transform(stage_name, 
-                    get_tex_transform(stage_name)->set_hpr(LVecBase3f(r, 0.0f, 0.0f)));
+  set_tex_transform(stage, 
+                    get_tex_transform(stage)->set_hpr(LVecBase3f(r, 0.0f, 0.0f)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1152,8 +1152,8 @@ set_tex_rotate(const string &stage_name, float r) {
 //               the indicated scale to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_scale(const string &stage_name, const LVecBase2f &scale) {
-  set_tex_scale(stage_name, scale[0], scale[1]);
+set_tex_scale(TextureStage *stage, const LVecBase2f &scale) {
+  set_tex_scale(stage, scale[0], scale[1]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1163,10 +1163,10 @@ set_tex_scale(const string &stage_name, const LVecBase2f &scale) {
 //               the indicated offset to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_scale(const string &stage_name, float su, float sv) {
+set_tex_scale(TextureStage *stage, float su, float sv) {
   nassertv_always(!is_empty());
-  set_tex_transform(stage_name, 
-                    get_tex_transform(stage_name)->set_scale(LVecBase3f(su, sv, 1.0f)));
+  set_tex_transform(stage, 
+                    get_tex_transform(stage)->set_scale(LVecBase3f(su, sv, 1.0f)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1176,9 +1176,9 @@ set_tex_scale(const string &stage_name, float su, float sv) {
 //               stage on the current node.
 ////////////////////////////////////////////////////////////////////
 INLINE LVecBase2f NodePath::
-get_tex_offset(const string &stage_name) const {
+get_tex_offset(TextureStage *stage) const {
   nassertr_always(!is_empty(), LVecBase2f::zero());
-  const LVecBase3f &pos = get_tex_transform(stage_name)->get_pos();
+  const LVecBase3f &pos = get_tex_transform(stage)->get_pos();
   return LVecBase2f(pos[0], pos[1]);
 }
 
@@ -1189,9 +1189,9 @@ get_tex_offset(const string &stage_name) const {
 //               stage on the current node.
 ////////////////////////////////////////////////////////////////////
 INLINE float NodePath::
-get_tex_rotate(const string &stage_name) const {
+get_tex_rotate(TextureStage *stage) const {
   nassertr_always(!is_empty(), 0.0f);
-  return get_tex_transform(stage_name)->get_hpr()[0];
+  return get_tex_transform(stage)->get_hpr()[0];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1201,9 +1201,9 @@ get_tex_rotate(const string &stage_name) const {
 //               stage on the current node.
 ////////////////////////////////////////////////////////////////////
 INLINE LVecBase2f NodePath::
-get_tex_scale(const string &stage_name) const {
+get_tex_scale(TextureStage *stage) const {
   nassertr_always(!is_empty(), LVecBase2f(1.0f, 1.0f));
-  const LVecBase3f &scale = get_tex_transform(stage_name)->get_scale();
+  const LVecBase3f &scale = get_tex_transform(stage)->get_scale();
   return LVecBase2f(scale[0], scale[1]);
 }
 
@@ -1214,8 +1214,8 @@ get_tex_scale(const string &stage_name) const {
 //               the indicated offset to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_offset(const NodePath &other, const string &stage_name, const LVecBase2f &uv) {
-  set_tex_offset(other, stage_name, uv[0], uv[1]);
+set_tex_offset(const NodePath &other, TextureStage *stage, const LVecBase2f &uv) {
+  set_tex_offset(other, stage, uv[0], uv[1]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1225,10 +1225,10 @@ set_tex_offset(const NodePath &other, const string &stage_name, const LVecBase2f
 //               the indicated offset to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_offset(const NodePath &other, const string &stage_name, float u, float v) {
+set_tex_offset(const NodePath &other, TextureStage *stage, float u, float v) {
   nassertv_always(!is_empty());
-  set_tex_transform(other, stage_name, 
-                    get_tex_transform(other, stage_name)->set_pos(LVecBase3f(u, v, 0.0f)));
+  set_tex_transform(other, stage, 
+                    get_tex_transform(other, stage)->set_pos(LVecBase3f(u, v, 0.0f)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1239,10 +1239,10 @@ set_tex_offset(const NodePath &other, const string &stage_name, float u, float v
 //               for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_rotate(const NodePath &other, const string &stage_name, float r) {
+set_tex_rotate(const NodePath &other, TextureStage *stage, float r) {
   nassertv_always(!is_empty());
-  set_tex_transform(other, stage_name, 
-                    get_tex_transform(other, stage_name)->set_hpr(LVecBase3f(r, 0.0f, 0.0f)));
+  set_tex_transform(other, stage, 
+                    get_tex_transform(other, stage)->set_hpr(LVecBase3f(r, 0.0f, 0.0f)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1252,8 +1252,8 @@ set_tex_rotate(const NodePath &other, const string &stage_name, float r) {
 //               the indicated scale to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_scale(const NodePath &other, const string &stage_name, const LVecBase2f &scale) {
-  set_tex_scale(other, stage_name, scale[0], scale[1]);
+set_tex_scale(const NodePath &other, TextureStage *stage, const LVecBase2f &scale) {
+  set_tex_scale(other, stage, scale[0], scale[1]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1263,10 +1263,10 @@ set_tex_scale(const NodePath &other, const string &stage_name, const LVecBase2f 
 //               the indicated offset to UV's for the given stage.
 ////////////////////////////////////////////////////////////////////
 INLINE void NodePath::
-set_tex_scale(const NodePath &other, const string &stage_name, float su, float sv) {
+set_tex_scale(const NodePath &other, TextureStage *stage, float su, float sv) {
   nassertv_always(!is_empty());
-  set_tex_transform(other, stage_name, 
-                    get_tex_transform(stage_name)->set_scale(LVecBase3f(su, sv, 1.0f)));
+  set_tex_transform(other, stage, 
+                    get_tex_transform(stage)->set_scale(LVecBase3f(su, sv, 1.0f)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1276,9 +1276,9 @@ set_tex_scale(const NodePath &other, const string &stage_name, float su, float s
 //               stage on the current node.
 ////////////////////////////////////////////////////////////////////
 INLINE LVecBase2f NodePath::
-get_tex_offset(const NodePath &other, const string &stage_name) const {
+get_tex_offset(const NodePath &other, TextureStage *stage) const {
   nassertr_always(!is_empty(), LVecBase2f::zero());
-  const LVecBase3f &pos = get_tex_transform(other, stage_name)->get_pos();
+  const LVecBase3f &pos = get_tex_transform(other, stage)->get_pos();
   return LVecBase2f(pos[0], pos[1]);
 }
 
@@ -1289,9 +1289,9 @@ get_tex_offset(const NodePath &other, const string &stage_name) const {
 //               stage on the current node.
 ////////////////////////////////////////////////////////////////////
 INLINE float NodePath::
-get_tex_rotate(const NodePath &other, const string &stage_name) const {
+get_tex_rotate(const NodePath &other, TextureStage *stage) const {
   nassertr_always(!is_empty(), 0.0f);
-  return get_tex_transform(other, stage_name)->get_hpr()[0];
+  return get_tex_transform(other, stage)->get_hpr()[0];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1301,9 +1301,9 @@ get_tex_rotate(const NodePath &other, const string &stage_name) const {
 //               stage on the current node.
 ////////////////////////////////////////////////////////////////////
 INLINE LVecBase2f NodePath::
-get_tex_scale(const NodePath &other, const string &stage_name) const {
+get_tex_scale(const NodePath &other, TextureStage *stage) const {
   nassertr_always(!is_empty(), LVecBase2f(1.0f, 1.0f));
-  const LVecBase3f &scale = get_tex_transform(other, stage_name)->get_scale();
+  const LVecBase3f &scale = get_tex_transform(other, stage)->get_scale();
   return LVecBase2f(scale[0], scale[1]);
 }
 

@@ -25,6 +25,7 @@
 #include "eggNode.h"
 #include "eggGroup.h"
 #include "eggVertex.h"
+#include "texCoordName.h"
 
 #include <algorithm>
 
@@ -379,8 +380,7 @@ make_computed_vertices(Character *character, CharacterMaker &char_maker) {
 
   // Temporary: the ComputedVertices object currently doesn't support
   // multitexture.
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  character->_cv._texcoords = _texcoords[tex_mgr->get_default_texcoord()];
+  character->_cv._texcoords = _texcoords[TexCoordName::get_default()];
 
   // Finally, add in all the morph definitions.
   Morphs::const_iterator mi;
@@ -442,7 +442,7 @@ make_computed_vertices(Character *character, CharacterMaker &char_maker) {
 
       // Temporary check: the ComputedVertices object currently
       // doesn't support multitexture.
-      if (name == tex_mgr->get_default_texcoord()) {
+      if (name == TexCoordName::get_default()) {
         comp_verts->_texcoord_morphs.push_back(ComputedVerticesMorphTexCoord());
         ComputedVerticesMorphTexCoord &mv = comp_verts->_texcoord_morphs.back();
         mv._slider_index = slider_index;

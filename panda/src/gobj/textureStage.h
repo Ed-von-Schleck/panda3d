@@ -24,6 +24,7 @@
 #include "texCoordName.h"
 #include "pointerTo.h"
 #include "typedWritableReferenceCount.h"
+#include "updateSeq.h"
 #include "luse.h"
 
 class FactoryParams;
@@ -37,21 +38,10 @@ class FactoryParams;
 //               all of the currently active TextureStages in order
 //               and then issuing the appropriate rendering calls to
 //               activate them.
-//
-//               Use the TextureStageManager to create these objects;
-//               they are then reference-counted and deleted
-//               implicitly when the last pointer goes away.
-//
-//               This is similar in mechanism to a CullBin, except
-//               that the TextureStage object is global and shared
-//               across all active GSG's, rather than specific to one
-//               particular GSG, as a CullBin is.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TextureStage : public TypedWritableReferenceCount {
-private:
-  TextureStage(const string &name, TexCoordName *texcoord_name);
-
 PUBLISHED:
+  TextureStage(const string &name);
   virtual ~TextureStage();
 
   enum Mode {
@@ -94,17 +84,19 @@ PUBLISHED:
     CO_one_minus_src_alpha,
   };
 
+  INLINE void set_name(const string &name);
   INLINE const string &get_name() const;
 
-  void set_sort(int sort);
+  INLINE void set_sort(int sort);
   INLINE int get_sort() const;
 
-  void set_priority(int priority);
+  INLINE void set_priority(int priority);
   INLINE int get_priority() const;
 
   INLINE bool operator < (const TextureStage &other) const;
 
   INLINE void set_texcoord_name(const TexCoordName *name);
+  INLINE void set_texcoord_name(const string &texcoord_name);
   INLINE const TexCoordName *get_texcoord_name() const;
 
   INLINE void set_mode(Mode mode);
@@ -150,6 +142,9 @@ PUBLISHED:
   void write(ostream &out) const;
   void output(ostream &out) const;
 
+  INLINE static TextureStage *get_default();
+  INLINE static UpdateSeq get_sort_seq();
+
 private:
   string _name;
   int _sort;
@@ -173,6 +168,9 @@ private:
   CombineOperand _combine_alpha_operand1;
   CombineSource _combine_alpha_source2;
   CombineOperand _combine_alpha_operand2;
+
+  static PT(TextureStage) _default_stage;
+  static UpdateSeq _sort_seq;
   
 public:
   // Datagram stuff
@@ -200,9 +198,9 @@ public:
 
 private:
   static TypeHandle _type_handle;
-
-  friend class TextureStageManager;
 };
+
+INLINE ostream &operator << (ostream &out, const TextureStage &ts);
 
 #include "textureStage.I"
 

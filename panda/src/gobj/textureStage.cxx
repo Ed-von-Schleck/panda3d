@@ -16,19 +16,25 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+#include "textureStage.h"
+#include "texCoordName.h"
+
+PT(TextureStage) TextureStage::_default_stage;
+UpdateSeq TextureStage::_sort_seq;
+
 TypeHandle TextureStage::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Constructor
-//       Access: Private
+//       Access: Published
 //  Description: Initialize the texture stage at construction
 ////////////////////////////////////////////////////////////////////
 TextureStage::
-TextureStage(const string &name, TexCoordName *texcoord_name) {
+TextureStage(const string &name) {
   _name = name;
   _sort = 0;
   _priority = 0;
-  _texcoord_name = texcoord_name;
+  _texcoord_name = TexCoordName::get_default();
   _mode = M_modulate;
   _color.set(0.0f, 0.0f, 0.0f, 1.0f);
   _combine_rgb_mode = CM_undefined;
@@ -49,36 +55,11 @@ TextureStage(const string &name, TexCoordName *texcoord_name) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Destructor
-//       Access: Published
-//  Description: Just remove this stage from texture stage manager
+//       Access: Published, Virtual
+//  Description:
 ////////////////////////////////////////////////////////////////////
 TextureStage::
 ~TextureStage() {
-  TextureStageManager::get_global_ptr()->remove_stage(this);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureStage::set_sort
-//       Access: Published
-//  Description: Assign the sort order. Also makes sure to update
-//               sort seq in Texture Stage Manager
-////////////////////////////////////////////////////////////////////
-void TextureStage::
-set_sort(int sort){
-  _sort = sort;
-  TextureStageManager::get_global_ptr()->inc_sort_seq();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureStage::set_priority
-//       Access: Published
-//  Description: Assign the priority. Also makes sure to update
-//               sort seq in Texture Stage Manager
-////////////////////////////////////////////////////////////////////
-void TextureStage::
-set_priority(int priority){
-  _priority = priority;
-  TextureStageManager::get_global_ptr()->inc_sort_seq();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -142,21 +123,12 @@ register_with_read_factory() {
 ////////////////////////////////////////////////////////////////////
 TypedWritable* TextureStage::
 make_TextureStage(const FactoryParams &params) {
-  //The process of making a TextureStage is slightly
-  //different than making other Writable objects.
-  //That is because all creation of TextureStages should
-  //be done through calls to TextureStageManager, which ensures
-  //that any loads of the same TextureStage, refer to the
-  //same memory
   DatagramIterator scan;
   BamReader *manager;
 
   parse_params(params, scan, manager);
-  
-  // Get the name
-  string name = scan.get_string();
 
-  TextureStage *me = TextureStageManager::get_global_ptr()->make_stage(name);
+  TextureStage *me = new TextureStage("");
   me->fillin(scan, manager);
 
   return me;

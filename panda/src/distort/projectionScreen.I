@@ -41,8 +41,7 @@ get_projector() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void ProjectionScreen::
 set_texcoord_name(const string &texcoord_name) {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  _texcoord_name = tex_mgr->make_texcoord(texcoord_name);
+  _texcoord_name = TexCoordName::make(texcoord_name);
   _stale = true;
 }
 

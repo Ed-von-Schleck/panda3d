@@ -27,3 +27,23 @@ get_name() const {
   return _name;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: TexCoordName::get_default
+//       Access: Published, Static
+//  Description: Returns the default TexCoordName that will be used
+//               for all geometry that does not give a particular name
+//               for its UV's
+////////////////////////////////////////////////////////////////////
+INLINE const TexCoordName *TexCoordName::
+get_default() {
+  if (_default_name == (TexCoordName *)NULL) {
+    _default_name = TexCoordName::make("default");
+  }
+  return _default_name;
+}
+
+INLINE ostream &
+operator << (ostream &out, const TexCoordName &tcn) {
+  tcn.output(out);
+  return out;
+}

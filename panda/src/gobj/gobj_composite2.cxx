@@ -18,4 +18,3 @@
 #include "texturePool.cxx"
 #include "texCoordName.cxx"
 #include "textureStage.cxx"
-#include "textureStageManager.cxx"

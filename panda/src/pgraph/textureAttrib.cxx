@@ -52,8 +52,7 @@ public:
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
 make(Texture *texture) {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return make_on(tex_mgr->get_default_stage(), texture);
+  return make_on(TextureStage::get_default(), texture);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -228,6 +227,50 @@ CPT(RenderAttrib) TextureAttrib::
 remove_off_stage(TextureStage *stage) const {
   TextureAttrib *attrib = new TextureAttrib(*this);
   attrib->_off_stages.erase(stage);
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::unify_texture_stages
+//       Access: Published
+//  Description: Returns a new TextureAttrib, just like this one, but
+//               with any included TextureAttribs that happen to have
+//               the same name as the given object replaced with the
+//               object.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TextureAttrib::
+unify_texture_stages(TextureStage *stage) const {
+  PT(TextureAttrib) attrib = new TextureAttrib;
+
+  attrib->_off_all_stages = _off_all_stages;
+  bool any_changed = false;
+
+  OnTextures::const_iterator nti;
+  for (nti = _on_textures.begin(); nti != _on_textures.end(); ++nti) {
+    if ((*nti).first != stage && 
+        (*nti).first->get_name() == stage->get_name()) {
+      attrib->_on_textures[stage] = (*nti).second;
+      any_changed = true;
+    } else {
+      attrib->_on_textures.insert(*nti);
+    }
+  }
+
+  OffStages::const_iterator fsi;
+  for (fsi = _off_stages.begin(); fsi != _off_stages.end(); ++fsi) {
+    if ((*fsi) != stage && 
+        (*fsi)->get_name() == stage->get_name()) {
+      attrib->_off_stages.insert(stage);
+      any_changed = true;
+    } else {
+      attrib->_off_stages.insert(*fsi);
+    }
+  }
+
+  if (!any_changed) {
+    return this;
+  }
+
   return return_new(attrib);
 }
 
@@ -653,12 +696,11 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
 
   TypedWritable *texture = p_list[pi++];
   if (texture != (TypedWritable *)NULL) {
-    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-    _on_stages.push_back(tex_mgr->get_default_stage());
-    _on_textures[tex_mgr->get_default_stage()] = DCAST(Texture, texture);
+    _on_stages.push_back(TextureStage::get_default());
+    _on_textures[TextureStage::get_default()] = DCAST(Texture, texture);
 
     // We know the one-element array is already sorted.
-    _sort_seq = tex_mgr->get_sort_seq();
+    _sort_seq = TextureStage::get_sort_seq();
 
   } else {
     // Pre-bam 4.11, a null pointer meant to turn off texturing.
@@ -713,8 +755,7 @@ void TextureAttrib::
 sort_on_stages() {
   sort(_on_stages.begin(), _on_stages.end(), IndirectLess<TextureStage>());
 
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  _sort_seq = tex_mgr->get_sort_seq();
+  _sort_seq = TextureStage::get_sort_seq();
 
   // Also clear the _filtered map, so we'll have to recompute those
   // (in case the priority orders have changed as well).

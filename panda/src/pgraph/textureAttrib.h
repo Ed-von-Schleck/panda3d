@@ -25,7 +25,6 @@
 #include "texture.h"
 #include "textureStage.h"
 #include "updateSeq.h"
-#include "textureStageManager.h"
 #include "indirectLess.h"
 #include "geom.h"
 #include "ordered_vector.h"
@@ -73,6 +72,7 @@ PUBLISHED:
   CPT(RenderAttrib) remove_on_stage(TextureStage *stage) const;
   CPT(RenderAttrib) add_off_stage(TextureStage *stage) const;
   CPT(RenderAttrib) remove_off_stage(TextureStage *stage) const;
+  CPT(RenderAttrib) unify_texture_stages(TextureStage *stage) const;
 
   INLINE bool is_identity() const;
   INLINE bool is_all_off() const;

@@ -401,11 +401,10 @@ set_texcoords(const PTA_TexCoordf &texcoords, GeomBindType bind,
               const PTA_ushort &tindex) {
   nassertv(bind == G_PER_VERTEX || bind == G_OFF);
 
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   if (bind == G_OFF) {
-    remove_texcoords(tex_mgr->get_default_texcoord());
+    remove_texcoords(TexCoordName::get_default());
   } else {
-    set_texcoords(tex_mgr->get_default_texcoord(), texcoords, tindex);
+    set_texcoords(TexCoordName::get_default(), texcoords, tindex);
   }
 }
 
@@ -439,8 +438,7 @@ set_texcoords(const TexCoordName *name, const PTA_TexCoordf &texcoords,
   def._texcoords = texcoords;
   def._tindex = tindex;
 
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  if (name == tex_mgr->get_default_texcoord()) {
+  if (name == TexCoordName::get_default()) {
     _bind[G_TEXCOORD] = G_PER_VERTEX;
   }
 
@@ -459,8 +457,7 @@ void Geom::
 remove_texcoords(const TexCoordName *name) {
   _texcoords_by_name.erase(name);
 
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  if (name == tex_mgr->get_default_texcoord()) {
+  if (name == TexCoordName::get_default()) {
     _bind[G_TEXCOORD] = G_OFF;
   }
 
@@ -531,9 +528,8 @@ get_colors(PTA_Colorf &colors, GeomBindType &bind,
 void Geom::
 get_texcoords(PTA_TexCoordf &texcoords, GeomBindType &bind,
               PTA_ushort &tindex) const { 
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   TexCoordsByName::const_iterator tci = 
-    _texcoords_by_name.find(tex_mgr->get_default_texcoord());
+    _texcoords_by_name.find(TexCoordName::get_default());
   if (tci != _texcoords_by_name.end()) {
     const TexCoordDef &def = (*tci).second;
     texcoords = def._texcoords;

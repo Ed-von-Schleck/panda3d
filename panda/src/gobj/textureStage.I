@@ -28,9 +28,42 @@ get_name() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_name
+//       Access: Published
+//  Description: Changes the name of this texture stage
+////////////////////////////////////////////////////////////////////
+INLINE void TextureStage::
+set_name(const string &name) {
+  _name = name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_sort
+//       Access: Published
+//  Description: Changes the order in which the texture associated
+//               with this stage is rendered relative to the other
+//               texture stages.  When geometry is rendered with
+//               multiple textures, the textures are rendered in order
+//               from the lowest sort number to the highest sort
+//               number.
+//
+//               Also see set_priority(), which is used to select the
+//               most important textures for rendering when some must
+//               be omitted because of hardware limitations.
+////////////////////////////////////////////////////////////////////
+INLINE void TextureStage::
+set_sort(int sort) {
+  _sort = sort;
+
+  // Update the global flag to indicate that all TextureAttribs in the
+  // world must now re-sort their lists.
+  _sort_seq++;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_sort
 //       Access: Published
-//  Description: Returns the sort order of this texture stage
+//  Description: Returns the sort order of this texture stage.
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureStage::
 get_sort() const {
@@ -38,11 +71,37 @@ get_sort() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_priority
+//       Access: Published
+//  Description: Changes the relative importance of the texture
+//               associated with this stage relative to the other
+//               texture stages that are applied simultaneously.
+//
+//               This is unrelated to set_sort(), which controls the
+//               order in which multiple textures are applied.  The
+//               priority number is used to decide which of the
+//               requested textures are to be selected for rendering
+//               when more textures are requested than the hardware
+//               will support.  The highest-priority n textures are
+//               selected for rendering, and then rendered in order by
+//               their sort factor.
+////////////////////////////////////////////////////////////////////
+INLINE void TextureStage::
+set_priority(int priority) {
+  _priority = priority;
+
+  // Update the global flag to indicate that all TextureAttribs in the
+  // world must now re-sort their lists.
+  _sort_seq++;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_priority
 //       Access: Published
 //  Description: Returns the priority associated with this stage.
+//
 //               This is specially helpful for cards that do not
-//               support more than n stages of multi-texturing
+//               support more than n stages of multi-texturing.
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureStage::
 get_priority() const {
@@ -62,11 +121,25 @@ operator < (const TextureStage &other) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_texcoord_name
 //       Access: Published
-//  Description: Set the TexCoordName
+//  Description: Indicate which set of UV's this texture stage will
+//               use.  Geometry may have any number of associated UV
+//               sets, each of which must have a unique name.
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_texcoord_name(const TexCoordName *name) {
   _texcoord_name = name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_texcoord_name
+//       Access: Published
+//  Description: Indicate which set of UV's this texture stage will
+//               use.  Geometry may have any number of associated UV
+//               sets, each of which must have a unique name.
+////////////////////////////////////////////////////////////////////
+INLINE void TextureStage::
+set_texcoord_name(const string &name) {
+  _texcoord_name = TexCoordName::make(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -355,3 +428,38 @@ get_combine_alpha_operand2() const {
   return _combine_alpha_operand2;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::get_default
+//       Access: Published, Static
+//  Description: Returns the default TextureStage that will be used
+//               for all texturing that does not name a particular
+//               stage.  This generally handles the normal
+//               single-texture case.
+////////////////////////////////////////////////////////////////////
+INLINE TextureStage *TextureStage::
+get_default() {
+  if (_default_stage == (TextureStage *)NULL) {
+    _default_stage = new TextureStage("default");
+  }
+  return _default_stage;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::get_sort_seq
+//       Access: Published, Static
+//  Description: Returns a global sequence number that is incremented
+//               any time any TextureStage in the world changes sort
+//               or priority.  This is used by TextureAttrib to
+//               determine when it is necessary to re-sort its
+//               internal array of stages.
+////////////////////////////////////////////////////////////////////
+INLINE UpdateSeq TextureStage::
+get_sort_seq() {
+  return _sort_seq;
+}
+
+INLINE ostream &
+operator << (ostream &out, const TextureStage &ts) {
+  ts.output(out);
+  return out;
+}

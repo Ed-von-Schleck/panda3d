@@ -37,7 +37,6 @@
 #include "materialAttrib.h"
 #include "texMatrixAttrib.h"
 #include "colorAttrib.h"
-#include "textureStageManager.h"
 #include "materialPool.h"
 #include "geomNode.h"
 #include "sequenceNode.h"
@@ -305,15 +304,14 @@ make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
         }
 
         EggVertex::const_uv_iterator ui;
-        TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
         for (ui = egg_vert->uv_begin(); ui != egg_vert->uv_end(); ++ui) {
           EggVertexUV *uv_obj = (*ui);
           TexCoordd uv = uv_obj->get_uv();
-          PT(TexCoordName) uv_name;
+          CPT(TexCoordName) uv_name;
           if (uv_obj->has_name()) {
-            uv_name = tex_mgr->make_texcoord(uv_obj->get_name());
+            uv_name = TexCoordName::make(uv_obj->get_name());
           } else {
-            uv_name = tex_mgr->get_default_texcoord();
+            uv_name = TexCoordName::get_default();
           }
 
           int num_textures = egg_prim->get_num_textures();
@@ -454,15 +452,14 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
       }
 
       EggVertex::const_uv_iterator ui;
-      TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
       for (ui = egg_vert->uv_begin(); ui != egg_vert->uv_end(); ++ui) {
         EggVertexUV *uv_obj = (*ui);
         TexCoordd uv = uv_obj->get_uv();
-        PT(TexCoordName) uv_name;
+        CPT(TexCoordName) uv_name;
         if (uv_obj->has_name()) {
-          uv_name = tex_mgr->make_texcoord(uv_obj->get_name());
+          uv_name = TexCoordName::make(uv_obj->get_name());
         } else {
-          uv_name = tex_mgr->get_default_texcoord();
+          uv_name = TexCoordName::get_default();
         }
 
         LMatrix3d mat = LMatrix3d::ident_mat();
@@ -1176,18 +1173,16 @@ apply_texture_attributes(Texture *tex, const EggTexture *egg_tex) {
 ////////////////////////////////////////////////////////////////////
 PT(TextureStage) EggLoader::
 make_texture_stage(const EggTexture *egg_tex) {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-      
   // If the egg texture specifies any relevant properties, it gets its
   // own texture stage; otherwise, it gets the default texture stage.
   if (egg_tex->get_env_type() == EggTexture::ET_unspecified &&
       !egg_tex->has_stage_name() &&
       !egg_tex->has_sort() &&
       !egg_tex->has_uv_name()) {
-    return tex_mgr->get_default_stage();
+    return TextureStage::get_default();
   }
 
-  PT(TextureStage) stage = tex_mgr->make_stage(egg_tex->get_stage_name());
+  PT(TextureStage) stage = new TextureStage(egg_tex->get_stage_name());
 
   switch (egg_tex->get_env_type()) {
   case EggTexture::ET_modulate:
@@ -1220,7 +1215,7 @@ make_texture_stage(const EggTexture *egg_tex) {
 
   if (egg_tex->has_uv_name() && !egg_tex->get_uv_name().empty()) {
     CPT(TexCoordName) name = 
-      tex_mgr->make_texcoord(egg_tex->get_uv_name());
+      TexCoordName::make(egg_tex->get_uv_name());
     stage->set_texcoord_name(name);
   }
 
