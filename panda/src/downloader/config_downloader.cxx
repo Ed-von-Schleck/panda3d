@@ -96,15 +96,14 @@ const bool http_proxy_tunnel =
 config_downloader.GetBool("http-proxy-tunnel", false);
 
 // This is the default amount of time to wait for a TCP/IP connection
-// to be established, in seconds.  It is presently only used for
-// nonblocking sockets.
-const double connect_timeout =
-config_downloader.GetDouble("connect-timeout", 10.0);
+// to be established, in seconds.
+const double http_connect_timeout =
+config_downloader.GetDouble("http-connect-timeout", 10.0);
 
 // This is the default amount of time to wait for the HTTP server to
 // finish sending its response to our request, in seconds.  It starts
 // counting after the TCP connection has been established
-// (connect_timeout, above) and the request has been sent.
+// (http_connect_timeout, above) and the request has been sent.
 const double http_timeout =
 config_downloader.GetDouble("http-timeout", 20.0);
 
@@ -114,6 +113,17 @@ config_downloader.GetDouble("http-timeout", 20.0);
 // should never be reached in practice.
 const int http_max_connect_count =
 config_downloader.GetInt("http-max-connect-count", 10);
+
+// These provide a default client certificate to offer up should an
+// SSL server demand one.  The files references a PEM-formatted file
+// that includes a public and private key specification.  A
+// connection-specific certificate may also be specified at runtime on
+// the HTTPClient object, but this will require having a different
+// HTTPClient object for each differently-certificated connection.
+const string http_client_certificate_filename =
+config_downloader.GetString("http-client-certificate-filename", "");
+const string http_client_certificate_passphrase =
+config_downloader.GetString("http-client-certificate-passphrase", "");
 
 ConfigureFn(config_downloader) {
 #ifdef HAVE_SSL
