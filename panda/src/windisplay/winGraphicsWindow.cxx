@@ -93,6 +93,11 @@ close_ime() {
   if (!_ime_open)
     return;
 
+  // First, indicate that the IME is no longer active, so that it won't
+  // send the string through WM_IME_COMPOSITION.  But we still leave
+  // _ime_open true, so that it also won't send the string through WM_CHAR.
+  _ime_active = false;
+
   HIMC hIMC = ImmGetContext(_hWnd);
   if (hIMC != 0) {
     if (!ImmSetOpenStatus(hIMC, false)) {
@@ -100,8 +105,9 @@ close_ime() {
     }
     ImmReleaseContext(_hWnd, hIMC);
   }
+
   _ime_open = false;
-  _ime_active = false;
+
   windisplay_cat.debug() << "success: closed ime window\n";
   return;
 }
@@ -119,11 +125,6 @@ close_ime() {
 //               We have the two separate functions, begin_flip() and
 //               end_flip(), to make it easier to flip all of the
 //               windows at the same time.
-  // First, indicate that the IME is no longer active, so that it won't
-  // send the string through WM_IME_COMPOSITION.  But we still leave
-  // _ime_open true, so that it also won't send the string through WM_CHAR.
-  _ime_active = false;
-
 ////////////////////////////////////////////////////////////////////
 void WinGraphicsWindow::
 begin_flip() {
@@ -131,7 +132,6 @@ begin_flip() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: WinGraphicsWindow::process_events
-
 //       Access: Public, Virtual
 //  Description: Do whatever processing is necessary to ensure that
 //               the window responds to user events.  Also, honor any
@@ -169,6 +169,7 @@ process_events() {
     process_1_event();
   }
 }
+
 ////////////////////////////////////////////////////////////////////
 //     Function: WinGraphicsWindow::set_properties_now
 //       Access: Public, Virtual
@@ -265,7 +266,7 @@ open_window() {
 
   // Determine the initial open status of the IME.
   _ime_open = false;
-
+  _ime_active = false;
   HIMC hIMC = ImmGetContext(_hWnd);
   if (hIMC != 0) {
     _ime_open = (ImmGetOpenStatus(hIMC) != 0);
