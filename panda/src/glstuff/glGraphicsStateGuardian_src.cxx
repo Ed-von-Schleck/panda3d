@@ -2451,13 +2451,10 @@ issue_render_mode(const RenderModeAttrib *attrib) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
-issue_texture_apply(const TextureApplyAttrib *attrib) {
-  // This attrib is no longer used.
+issue_texture_apply(const TextureApplyAttrib *) {
+  // This attrib is no longer used; it is replaced by the parameters
+  // within TextureStage.
   return;
-
-  GLint glmode = get_texture_apply_mode_type(attrib->get_mode());
-  GLP(TexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, glmode);
-  report_my_gl_errors();
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -2169,13 +2169,14 @@ set_texture_off(int priority) {
 //               specification set up in the TextureStage object.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-add_texture(TextureStage *stage, Texture *tex) {
+add_texture(TextureStage *stage, Texture *tex, int priority) {
   nassertv_always(!is_empty());
 
   const RenderAttrib *attrib =
     node()->get_attrib(TextureAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
-    int priority = node()->get_state()->get_override(TextureAttrib::get_class_type());
+    priority = max(priority,
+                   node()->get_state()->get_override(TextureAttrib::get_class_type()));
     const TextureAttrib *tsa = DCAST(TextureAttrib, attrib);
 
     // Modify the existing TextureAttrib to add the indicated
@@ -2184,7 +2185,7 @@ add_texture(TextureStage *stage, Texture *tex) {
 
   } else {
     // Create a new TextureAttrib for this node.
-    node()->set_attrib(TextureAttrib::make_on(stage, tex));
+    node()->set_attrib(TextureAttrib::make_on(stage, tex), priority);
   }
 }
 
@@ -2205,13 +2206,14 @@ add_texture(TextureStage *stage, Texture *tex) {
 //               overriding an "on" operation from above.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-remove_texture(TextureStage *stage) {
+remove_texture(TextureStage *stage, int priority) {
   nassertv_always(!is_empty());
 
   const RenderAttrib *attrib =
     node()->get_attrib(TextureAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
-    int priority = node()->get_state()->get_override(TextureAttrib::get_class_type());
+    priority = max(priority,
+                   node()->get_state()->get_override(TextureAttrib::get_class_type()));
     const TextureAttrib *tsa = DCAST(TextureAttrib, attrib);
 
     if (tsa->has_on_stage(stage)) {
@@ -2227,7 +2229,7 @@ remove_texture(TextureStage *stage) {
   } else {
     // Create a new TextureAttrib for this node that turns off the
     // indicated stage.
-    node()->set_attrib(TextureAttrib::make_off(stage));
+    node()->set_attrib(TextureAttrib::make_off(stage), priority);
   }
 }
 

@@ -1033,20 +1033,17 @@ do_compose(const RenderState *other) const {
       ++bi;
       ++result;
     } else {
-      // Here is an attribute we have in both.  Does one override the
-      // other?
+      // Here is an attribute we have in both.  Does A override B?
       const Attribute &a = (*ai);
       const Attribute &b = (*bi);
-      if (a._override < b._override) {
-        // B overrides.
-        *result = *bi;
-
-      } else if (b._override < a._override) {
+      if (b._override < a._override) {
         // A overrides.
         *result = *ai;
 
       } else {
-        // No, they're equivalent, so compose them.
+        // Either they have the same override value, or B is higher.
+        // In either case, the result is the composition of the two,
+        // with B's override value.
         *result = Attribute(a._attrib->compose(b._attrib), b._override);
       }
       ++ai;

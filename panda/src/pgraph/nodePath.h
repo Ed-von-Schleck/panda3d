@@ -492,8 +492,8 @@ PUBLISHED:
 
   void set_texture(Texture *tex, int priority = 0);
   void set_texture_off(int priority = 0);
-  void add_texture(TextureStage *stage, Texture *tex);
-  void remove_texture(TextureStage *stage);
+  void add_texture(TextureStage *stage, Texture *tex, int priority = 0);
+  void remove_texture(TextureStage *stage, int priority = 0);
   void clear_texture();
   bool has_texture() const;
   bool has_texture(TextureStage *stage) const;
