@@ -31,6 +31,7 @@ typedef int Display;
 typedef int Window;
 typedef int XErrorEvent;
 typedef int XVisualInfo;
+typedef int Atom;
 #else
 #include <X11/Xlib.h>
 #include <GL/glx.h>
