@@ -18,16 +18,6 @@
 
 #include "osMesaGraphicsStateGuardian.h"
 
-#ifndef WIN32_VC
-// Define this symbol if we should use dlopen() to look for osmesa
-// extensions.
-#define USE_DLOPEN
-#endif
-
-#ifdef USE_DLOPEN
-#include <dlfcn.h>
-#endif
-
 TypeHandle OSMesaGraphicsStateGuardian::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
@@ -56,8 +46,6 @@ OSMesaGraphicsStateGuardian(const FrameBufferProperties &properties,
   mode = (mode & ~FrameBufferProperties::FM_buffer) | FrameBufferProperties::FM_single_buffer;
   props.set_frame_buffer_mode(mode);
   set_properties(props);
-
-  _dl_handle = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -71,12 +59,6 @@ OSMesaGraphicsStateGuardian::
     OSMesaDestroyContext(_context);
     _context = (OSMesaContext)NULL;
   }
-
-#ifdef USE_DLOPEN
-  if (_dl_handle != (void *)NULL) {
-    dlclose(_dl_handle);
-  }
-#endif  // USE_DLOPEN
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,15 +72,24 @@ OSMesaGraphicsStateGuardian::
 //               not defined.
 ////////////////////////////////////////////////////////////////////
 void *OSMesaGraphicsStateGuardian::
-get_extension_func(const char *name) {
-#ifdef USE_DLOPEN
-  if (_dl_handle == (void *)NULL) {
-    _dl_handle = dlopen(NULL, RTLD_LAZY);
-    nassertr(_dl_handle != (void *)NULL, NULL);
-  }
+get_extension_func(const char *, const char *name) {
+#if (OSMESA_MAJOR_VERSION == 4 && OSMESA_MINOR_VERSION >= 1) || OSMESA_MAJOR_VERSION > 4
+  // If we've got at least OSMesa version 4.1, then we can use
+  // OSMesaGetProcAddress.
 
-  return dlsym(_dl_handle, name);
-#else  // USE_DLOPEN
+  // We ignore the prefix and always use "gl", since that's what Mesa
+  // does (even if we compile with name mangling enabled to rename the
+  // Mesa functions to "mgl", they're still stored as "gl" in the
+  // OSMesaGetProcAddress() lookup table.
+  string fullname = string("gl") + string(name);
+  return OSMesaGetProcAddress(fullname.c_str());
+
+#else
+  // Otherwise, too bad.  No extension functions for you.  We could
+  // try to write code that would dig around in the system interface
+  // (using dlopen(), for instance) to find the extension functions,
+  // but why should we have to do that?  Just go get the latest Mesa,
+  // for goodness sakes!
   return NULL;
-#endif  // USE_DLOPEN
+#endif
 }

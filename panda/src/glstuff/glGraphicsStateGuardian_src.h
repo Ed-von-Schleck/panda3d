@@ -140,7 +140,7 @@ protected:
   void report_extensions() const;
   bool has_extension(const string &extension) const;
   bool is_at_least_version(int major_version, int minor_version, int release_version = 0) const;
-  virtual void *get_extension_func(const char *name);
+  virtual void *get_extension_func(const char *prefix, const char *name);
 
   virtual bool slot_new_light(int light_id);
   virtual void enable_lighting(bool enable);

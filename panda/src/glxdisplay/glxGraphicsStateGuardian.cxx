@@ -134,7 +134,7 @@ get_extra_extensions() {
 //               not defined.
 ////////////////////////////////////////////////////////////////////
 void *glxGraphicsStateGuardian::
-get_extension_func(const char *name) {
+get_extension_func(const char *prefix, const char *name) {
   if (!_checked_get_proc_address) {
     // First, check if we have glxGetProcAddress available.  This will
     // be superior if we can get it.
@@ -159,13 +159,15 @@ get_extension_func(const char *name) {
     _checked_get_proc_address = true;
   }
 
+  string fullname = string(prefix) + string(name);
+
   // Use glxGetProcAddress() if we've got it; it should be more robust.
   if (_glxGetProcAddress != NULL) {
-    return (void *)_glxGetProcAddress((const GLubyte *)name);
+    return (void *)_glxGetProcAddress((const GLubyte *)fullname.c_str());
   }
 
   // Otherwise, fall back to the OS-provided calls.
-  return get_system_func(name);
+  return get_system_func(fullname.c_str());
 }
 
 ////////////////////////////////////////////////////////////////////

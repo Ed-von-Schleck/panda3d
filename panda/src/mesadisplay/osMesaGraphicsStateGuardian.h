@@ -36,10 +36,7 @@ public:
   OSMesaContext _context;
 
 protected:
-  virtual void *get_extension_func(const char *name);
-
-private:
-  void *_dl_handle;
+  virtual void *get_extension_func(const char *prefix, const char *name);
 
 public:
   static TypeHandle get_class_type() {

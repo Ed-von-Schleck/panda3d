@@ -153,8 +153,9 @@ get_extra_extensions() {
 //               not defined.
 ////////////////////////////////////////////////////////////////////
 void *wglGraphicsStateGuardian::
-get_extension_func(const char *name) {
-  return wglGetProcAddress(name);
+get_extension_func(const char *prefix, const char *name) {
+  string fullname = string(prefix) + string(name);
+  return wglGetProcAddress(fullname.c_str());
 }
 
 

@@ -304,17 +304,17 @@ reset() {
     _supports_multitexture = true;
 
     _glActiveTexture = (PFNGLACTIVETEXTUREPROC)
-      get_extension_func(GLPREFIX_QUOTED "ActiveTexture");
+      get_extension_func(GLPREFIX_QUOTED, "ActiveTexture");
     _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)
-      get_extension_func(GLPREFIX_QUOTED "MultiTexCoord2fv");
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord2fv");
 
   } else if (has_extension("GL_ARB_multitexture")) {
     _supports_multitexture = true;
 
     _glActiveTexture = (PFNGLACTIVETEXTUREPROC)
-      get_extension_func(GLPREFIX_QUOTED "ActiveTextureARB");
+      get_extension_func(GLPREFIX_QUOTED, "ActiveTextureARB");
     _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)
-      get_extension_func(GLPREFIX_QUOTED "MultiTexCoord2fvARB");
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord2fvARB");
   }
 
   if (_supports_multitexture) {
@@ -2957,7 +2957,7 @@ is_at_least_version(int major_version, int minor_version,
 //               not defined.
 ////////////////////////////////////////////////////////////////////
 void *CLP(GraphicsStateGuardian)::
-get_extension_func(const char *name) {
+get_extension_func(const char *, const char *) {
   return NULL;
 }
 
