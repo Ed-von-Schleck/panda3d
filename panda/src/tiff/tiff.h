@@ -1,4 +1,4 @@
-/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tiff.h,v 1.4 2001/06/14 19:12:32 cxgeorge Exp $ */
+/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tiff.h,v 1.5 2001/07/03 19:27:02 drose Exp $ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler
@@ -53,7 +53,7 @@
  * strings      unsigned char*
  */
 #ifndef PROTYPES_H 
-// panda comment:  int8 already defined in with nspr\include\obsolete\protypes.h
+/* panda comment:  int8 already defined in with nspr\include\obsolete\protypes.h */
 #ifdef __STDC__
 typedef signed char int8;   /* NB: non-ANSI compilers may not grok */
 #else
