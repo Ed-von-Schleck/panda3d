@@ -37,7 +37,17 @@ public:
   static PT(GraphicsPipe) pipe_constructor();
 
 protected:
-  virtual PT(GraphicsWindow) make_window();
+  virtual PT(GraphicsStateGuardian) make_gsg(const FrameBufferProperties &properties);
+  virtual PT(GraphicsWindow) make_window(GraphicsStateGuardian *gsg);
+
+private:
+  int choose_pfnum(FrameBufferProperties &properties, HDC hdc) const;
+  int find_pixfmtnum(FrameBufferProperties &properties, HDC hdc,
+                     bool bLookforHW) const;
+
+#ifdef _DEBUG
+  static void print_pfd(PIXELFORMATDESCRIPTOR *pfd, char *msg);
+#endif
 
 public:
   static TypeHandle get_class_type() {

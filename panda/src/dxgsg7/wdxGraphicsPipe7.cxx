@@ -79,8 +79,8 @@ pipe_constructor() {
 //  Description: Creates a new window on the pipe, if possible.
 ////////////////////////////////////////////////////////////////////
 PT(GraphicsWindow) wdxGraphicsPipe7::
-make_window() {
-  return new wdxGraphicsWindow7(this);
+make_window(GraphicsStateGuardian *gsg) {
+  return new wdxGraphicsWindow7(this, gsg);
 }
 
 ////////////////////////////////////////////////////////////////////

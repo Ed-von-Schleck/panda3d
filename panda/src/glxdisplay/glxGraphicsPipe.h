@@ -22,16 +22,19 @@
 #include "pandabase.h"
 #include "graphicsPipe.h"
 
-#include <X11/Xlib.h>
-
 class glxGraphicsWindow;
+class FrameBufferProperties;
 
 #ifdef CPPPARSER
 // A simple hack so interrogate can parse this file.
 typedef int Display;
 typedef int Window;
 typedef int XErrorEvent;
-#endif
+typedef int XVisualInfo;
+#else
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+#endif  // CPPPARSER
 
 ////////////////////////////////////////////////////////////////////
 //       Class : glxGraphicsPipe
@@ -54,9 +57,14 @@ public:
   INLINE Atom get_wm_delete_window() const;
 
 protected:
-  virtual PT(GraphicsWindow) make_window();
+  virtual PT(GraphicsStateGuardian) make_gsg(const FrameBufferProperties &properties);
+  virtual PT(GraphicsWindow) make_window(GraphicsStateGuardian *gsg);
 
 private:
+  XVisualInfo *choose_visual(FrameBufferProperties &properties) const;
+  XVisualInfo *try_for_visual(int framebuffer_mode,
+                              int want_depth_bits, int want_color_bits) const;
+
   static void install_error_handlers();
   static int error_handler(Display *display, XErrorEvent *error);
   static int io_error_handler(Display *display);

@@ -228,7 +228,9 @@ set_color_clear_value(const Colorf& value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DXGraphicsStateGuardian7::
-DXGraphicsStateGuardian7(GraphicsWindow *win) : GraphicsStateGuardian(win) {
+DXGraphicsStateGuardian7(const FrameBufferProperties &properties) :
+  GraphicsStateGuardian(properties) 
+{
     // allocate local buffers used during rendering
 
     GraphicsStateGuardian::reset();
@@ -288,10 +290,13 @@ DXGraphicsStateGuardian7::
 //     Function: DXGraphicsStateGuardian7::reset
 //       Access: Public, Virtual
 //  Description: Resets all internal state as if the gsg were newly
-//               created.
+//               created.  The GraphicsWindow pointer represents a
+//               typical window that might be used for this context;
+//               it may be required to set up the frame buffer
+//               properly the first time.
 ////////////////////////////////////////////////////////////////////
 void DXGraphicsStateGuardian7::
-reset(void) {
+reset() {
     GraphicsStateGuardian::reset();
     dxgsg7_cat.error() << "DXGSG reset() not implemented properly yet!\n";
     // delete all the objs too, right?

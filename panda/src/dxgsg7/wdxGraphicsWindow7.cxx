@@ -116,10 +116,10 @@ TypeHandle wdxGraphicsWindow7::_type_handle;
 //  Description:
 ////////////////////////////////////////////////////////////////////
 wdxGraphicsWindow7::
-wdxGraphicsWindow7(GraphicsPipe *pipe) :
-  WinGraphicsWindow(pipe) 
+wdxGraphicsWindow7(GraphicsPipe *pipe, GraphicsStateGuardian *gsg) :
+  WinGraphicsWindow(pipe, gsg) 
 {
-  _dxgsg = (DXGraphicsStateGuardian7 *)NULL;
+  _dxgsg = DCAST(DXGraphicsStateGuardian7, gsg);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -131,6 +131,7 @@ wdxGraphicsWindow7::
 ~wdxGraphicsWindow7() {
 }
 
+/*
 ////////////////////////////////////////////////////////////////////
 //     Function: wdxGraphicsWindow7::make_gsg
 //       Access: Public, Virtual
@@ -156,20 +157,7 @@ make_gsg() {
   set_coop_levels_and_display_modes();
   create_screen_buffers_and_device(_dxgsg->scrn, dx_force_16bpp_zbuffer);
 }
-
-////////////////////////////////////////////////////////////////////
-//     Function: wdxGraphicsWindow7::release_gsg
-//       Access: Public, Virtual
-//  Description: Releases the current GSG pointer, if it is currently
-//               held, and resets the GSG to NULL.  This should only
-//               be called from within the draw thread.
-////////////////////////////////////////////////////////////////////
-void wdxGraphicsWindow7::
-release_gsg() {
-  if (_gsg != (GraphicsStateGuardian *)NULL) {
-    GraphicsWindow::release_gsg();
-  }
-}
+*/
 
 ////////////////////////////////////////////////////////////////////
 //     Function: wdxGraphicsWindow7::end_flip
@@ -694,10 +682,10 @@ create_screen_buffers_and_device(DXScreenData &Display, bool force_16bpp_zbuffer
 
   //  resized(dwRenderWidth, dwRenderHeight);  // update panda channel/display rgn info
 
-  int framebuffer_mode = get_properties().get_framebuffer_mode();
+  int frame_buffer_mode = _gsg->get_properties().get_frame_buffer_mode();
 
 #ifndef NDEBUG
-  if ((framebuffer_mode & WindowProperties::FM_depth) == 0) {
+  if ((frame_buffer_mode & FrameBufferProperties::FM_depth) == 0) {
     wdxdisplay7_cat.info()
       << "no zbuffer requested, skipping zbuffer creation\n";
   }
@@ -706,7 +694,7 @@ create_screen_buffers_and_device(DXScreenData &Display, bool force_16bpp_zbuffer
   // Check if the device supports z-bufferless hidden surface
   // removal. If so, we don't really need a z-buffer
   if ((!(pD3DDevDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ZBUFFERLESSHSR )) &&
-      ((framebuffer_mode & WindowProperties::FM_depth) != 0)) {
+      ((frame_buffer_mode & FrameBufferProperties::FM_depth) != 0)) {
 
     // Get z-buffer dimensions from the render target
     DX_DECLARE_CLEAN(DDSURFACEDESC2,ddsd);
@@ -746,7 +734,7 @@ create_screen_buffers_and_device(DXScreenData &Display, bool force_16bpp_zbuffer
     // should we pay attn to these at some point?  
     //int want_depth_bits = _props._want_depth_bits; 
     //int want_color_bits = _props._want_color_bits;
-    bool bWantStencil = ((framebuffer_mode & WindowProperties::FM_stencil) != 0);
+    bool bWantStencil = ((frame_buffer_mode & FrameBufferProperties::FM_stencil) != 0);
 
     LPDDPIXELFORMAT pCurPixFmt, pz16 = NULL, pz24 = NULL, pz32 = NULL;
     for (i = 0, pCurPixFmt = ZBufPixFmts; 

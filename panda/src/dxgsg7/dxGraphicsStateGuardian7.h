@@ -65,7 +65,7 @@ class EXPCL_PANDADX DXGraphicsStateGuardian7 : public GraphicsStateGuardian {
   friend class DXTextureContext7;
 
 public:
-  DXGraphicsStateGuardian7(GraphicsWindow *win);
+  DXGraphicsStateGuardian7(const FrameBufferProperties &properties);
   ~DXGraphicsStateGuardian7();
 
   virtual void reset();
@@ -320,6 +320,14 @@ protected:
   INLINE void transform_color(Colorf &InColor,D3DCOLOR &OutColor);
 
   bool _overlay_windows_supported;
+
+  // This is here just as a temporary hack so this file will still
+  // compile.  However, it is never initialized and will certainly
+  // cause the code to crash when it is referenced.  (This used to be
+  // inherited from the base class, but the new design requires that a
+  // GSG may be used for multiple windows, so it doesn't make sense to
+  // store a window pointer any more.)
+  GraphicsWindow *_win;
 
 public:
   static GraphicsStateGuardian*

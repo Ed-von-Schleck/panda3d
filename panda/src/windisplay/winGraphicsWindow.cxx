@@ -50,19 +50,21 @@ BOOL WinGraphicsWindow::_saved_mouse_vanish;
 
 static const char * const errorbox_title = "Panda3D Error";
 
+#define ERRORBOX_TITLE "Panda3D Error"
+
 ////////////////////////////////////////////////////////////////////
 //     Function: WinGraphicsWindow::Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
 WinGraphicsWindow::
-WinGraphicsWindow(GraphicsPipe *pipe) :
-  GraphicsWindow(pipe) 
+WinGraphicsWindow(GraphicsPipe *pipe, GraphicsStateGuardian *gsg) :
+  GraphicsWindow(pipe, gsg) 
 {
   GraphicsWindowInputDevice device =
     GraphicsWindowInputDevice::pointer_and_keyboard("keyboard/mouse");
   _input_devices.push_back(device);
-  _mwindow = (HWND)0;
+  _hWnd = (HWND)0;
   _ime_open = false;
   _ime_active = false;
   _ime_composition_w = false;
@@ -174,11 +176,11 @@ set_properties_now(WindowProperties &properties) {
 void WinGraphicsWindow::
 close_window() {
   set_cursor_out_of_window();
-  DestroyWindow(_mwindow);
+  DestroyWindow(_hWnd);
 
   // Remove the window handle from our global map.
-  _window_handles.erase(_mwindow);
-  _mwindow = (HWND)0;
+  _window_handles.erase(_hWnd);
+  _hWnd = (HWND)0;
 
   if (is_fullscreen()) {
     // revert to default display mode.
@@ -214,17 +216,17 @@ open_window() {
 
   // Now that we have a window handle, store it in our global map, so
   // future messages for this window can be routed properly.
-  _window_handles.insert(WindowHandles::value_type(_mwindow, this));
+  _window_handles.insert(WindowHandles::value_type(_hWnd, this));
   
   // move window to top of zorder.
-  SetWindowPos(_mwindow, HWND_TOP, 0,0,0,0, 
+  SetWindowPos(_hWnd, HWND_TOP, 0,0,0,0, 
                SWP_NOMOVE | SWP_NOSENDCHANGING | SWP_NOSIZE);
   
   // need to do twice to override any minimized flags in StartProcessInfo
-  ShowWindow(_mwindow, SW_SHOWNORMAL);
-  ShowWindow(_mwindow, SW_SHOWNORMAL);
+  ShowWindow(_hWnd, SW_SHOWNORMAL);
+  ShowWindow(_hWnd, SW_SHOWNORMAL);
   
-  if (!SetForegroundWindow(_mwindow)) {
+  if (!SetForegroundWindow(_hWnd)) {
     windisplay_cat.warning()
       << "SetForegroundWindow() failed!\n";
   }
@@ -232,10 +234,10 @@ open_window() {
   // Determine the initial open status of the IME.
   _ime_open = false;
   _ime_active = false;
-  HIMC hIMC = ImmGetContext(_mwindow);
+  HIMC hIMC = ImmGetContext(_hWnd);
   if (hIMC != 0) {
     _ime_open = (ImmGetOpenStatus(hIMC) != 0);
-    ImmReleaseContext(_mwindow, hIMC);
+    ImmReleaseContext(_hWnd, hIMC);
   }
 
   // Check the version of the OS we are running.  If we are running
@@ -320,10 +322,10 @@ do_reshape_request(int x_origin, int y_origin, int x_size, int y_size) {
     SetRect(&view_rect, x_origin, y_origin,
             x_origin + x_size, y_origin + y_size);
     WINDOWINFO wi;
-    GetWindowInfo(_mwindow, &wi);
+    GetWindowInfo(_hWnd, &wi);
     AdjustWindowRectEx(&view_rect, wi.dwStyle, false, wi.dwExStyle);
 
-    SetWindowPos(_mwindow, NULL, view_rect.left, view_rect.top,
+    SetWindowPos(_hWnd, NULL, view_rect.left, view_rect.top,
                  view_rect.right - view_rect.left,
                  view_rect.bottom - view_rect.top,
                  SWP_NOZORDER | SWP_NOMOVE | SWP_NOSENDCHANGING);
@@ -350,9 +352,9 @@ do_reshape_request(int x_origin, int y_origin, int x_size, int y_size) {
 void WinGraphicsWindow::
 handle_reshape() {
   RECT view_rect;
-  GetClientRect(_mwindow, &view_rect);
-  ClientToScreen(_mwindow, (POINT*)&view_rect.left);   // translates top,left pnt
-  ClientToScreen(_mwindow, (POINT*)&view_rect.right);  // translates right,bottom pnt
+  GetClientRect(_hWnd, &view_rect);
+  ClientToScreen(_hWnd, (POINT*)&view_rect.left);   // translates top,left pnt
+  ClientToScreen(_hWnd, (POINT*)&view_rect.right);  // translates right,bottom pnt
   
   WindowProperties properties;
   properties.set_size((view_rect.right - view_rect.left), 
@@ -400,7 +402,7 @@ do_fullscreen_resize(int x_size, int y_size) {
   }
 
   // this causes WM_SIZE msg to be produced
-  SetWindowPos(_mwindow, NULL, 0,0, x_size, y_size, 
+  SetWindowPos(_hWnd, NULL, 0,0, x_size, y_size, 
                SWP_NOZORDER | SWP_NOMOVE | SWP_NOSENDCHANGING);
   int chg_result = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
 
@@ -497,10 +499,10 @@ open_fullscreen_window() {
   // up the desktop during the mode change
   register_window_class();
   HINSTANCE hinstance = GetModuleHandle(NULL);
-  _mwindow = CreateWindow(_window_class_name, title.c_str(), window_style,
+  _hWnd = CreateWindow(_window_class_name, title.c_str(), window_style,
                           0, 0, dwWidth, dwHeight, 
                           hDesktopWindow, NULL, hinstance, 0);
-  if (!_mwindow) {
+  if (!_hWnd) {
     windisplay_cat.error()
       << "CreateWindow() failed!" << endl;
     show_error_message();
@@ -582,13 +584,13 @@ open_regular_window() {
 
   register_window_class();
   HINSTANCE hinstance = GetModuleHandle(NULL);
-  _mwindow = CreateWindow(_window_class_name, title.c_str(), window_style, 
+  _hWnd = CreateWindow(_window_class_name, title.c_str(), window_style, 
                           win_rect.left, win_rect.top,
                           win_rect.right - win_rect.left,
                           win_rect.bottom - win_rect.top,
                           NULL, NULL, hinstance, 0);
 
-  if (!_mwindow) {
+  if (!_hWnd) {
     windisplay_cat.error()
       << "CreateWindow() failed!" << endl;
     show_error_message();
@@ -693,7 +695,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         // un-minimized.
         ChangeDisplaySettings(&_fullscreen_display_mode, CDS_FULLSCREEN);
         GdiFlush();
-        SetWindowPos(_mwindow, HWND_TOP, 0,0,0,0, 
+        SetWindowPos(_hWnd, HWND_TOP, 0,0,0,0, 
                      SWP_NOMOVE | SWP_NOSENDCHANGING | SWP_NOSIZE | SWP_NOOWNERZORDER);
         fullscreen_restored(properties);
       }
@@ -707,7 +709,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         // It seems order is important here.  We must minimize the
         // window before restoring the display settings, or risk
         // losing the graphics context.
-        ShowWindow(_mwindow, SW_MINIMIZE);
+        ShowWindow(_hWnd, SW_MINIMIZE);
         GdiFlush();
         ChangeDisplaySettings(NULL, 0x0);
         fullscreen_minimized(properties);
@@ -946,7 +948,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       // the last known state (stored above, when focus was lost) to
       // regenerate the lost keyboard events.
 
-      if (GetForegroundWindow() != _mwindow) {
+      if (GetForegroundWindow() != _hWnd) {
         // Sometimes, particularly on window create, it appears we get
         // a WM_SETFOCUS event even though the window hasn't really
         // received focus yet.  That's bad and confuses the
@@ -972,6 +974,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
             // This key has changed state.
             if ((new_keyboard_state[i] & 0x80) != 0) {
               // The key is now held down.
+              // cerr << "key is down: " << lookup_key(i) << "\n";
               handle_keyresume(lookup_key(i));
             } else {
               // The key is now released.
@@ -980,7 +983,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
           }
         }
       }
-
+      
       // Save the new keyboard state, just for good measure.  This
       // really shouldn't be necessary, but it protects against
       // inadvertently getting WM_SETFOCUS twice in a row, for
@@ -1351,3 +1354,34 @@ lookup_key(WPARAM wparam) const {
   }
   return ButtonHandle::none();
 }
+
+// pops up MsgBox w/system error msg
+void PrintErrorMessage(DWORD msgID) {
+  LPTSTR pMessageBuffer;
+
+  if (msgID==PRINT_LAST_ERROR)
+    msgID=GetLastError();
+
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                NULL,msgID,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), //The user default language
+                (LPTSTR) &pMessageBuffer,  // the weird ptrptr->ptr cast is intentional, see FORMAT_MESSAGE_ALLOCATE_BUFFER
+                1024, NULL);
+  MessageBox(GetDesktopWindow(),pMessageBuffer,_T(ERRORBOX_TITLE),MB_OK);
+  windisplay_cat.fatal() << "System error msg: " << pMessageBuffer << endl;
+  LocalFree( pMessageBuffer );
+}
+
+void ClearToBlack(HWND hWnd, const WindowProperties &props) {
+  // clear to black
+  HDC hDC=GetDC(hWnd);  // GetDC is not particularly fast.  if this needs to be super-quick, we should cache GetDC's hDC
+  RECT clrRect = {
+    props.get_x_origin(), props.get_y_origin(),
+    props.get_x_origin() + props.get_x_size(),
+    props.get_y_origin() + props.get_y_size()
+  };
+  FillRect(hDC,&clrRect,(HBRUSH)GetStockObject(BLACK_BRUSH));
+  ReleaseDC(hWnd,hDC);
+  GdiFlush();
+}
+

@@ -36,7 +36,7 @@ public:
   static PT(GraphicsPipe) pipe_constructor();
 
 protected:
-  virtual PT(GraphicsWindow) make_window();
+  virtual PT(GraphicsWindow) make_window(GraphicsStateGuardian *gsg);
 
 private:
   bool init();

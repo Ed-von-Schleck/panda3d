@@ -128,8 +128,9 @@ issue_transformed_color_gl(const Geom *geom, Geom::ColorIterator &citerator,
 //  Description:
 ////////////////////////////////////////////////////////////////////
 GLGraphicsStateGuardian::
-GLGraphicsStateGuardian(GraphicsWindow *win) : GraphicsStateGuardian(win) {
-  reset();
+GLGraphicsStateGuardian(const FrameBufferProperties &properties) :
+  GraphicsStateGuardian(properties) 
+{
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -139,9 +140,7 @@ GLGraphicsStateGuardian(GraphicsWindow *win) : GraphicsStateGuardian(win) {
 ////////////////////////////////////////////////////////////////////
 GLGraphicsStateGuardian::
 ~GLGraphicsStateGuardian() {
-  free_pointers();
-  release_all_textures();
-  release_all_geoms();
+  close_gsg();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1594,7 +1593,9 @@ release_texture(TextureContext *tc) {
   GLTextureContext *gtc = DCAST(GLTextureContext, tc);
   Texture *tex = tc->_texture;
 
-  if (!is_closed()) {
+  if (!_closing_gsg) {
+    // Don't bother to delete the GL texture if we're about to destroy
+    // the context anyway.
     glDeleteTextures(1, &gtc->_index);
   }
   gtc->_index = 0;
@@ -1608,7 +1609,9 @@ release_texture(TextureContext *tc) {
   tex->clear_gsg(this);
 
   delete gtc;
-  report_gl_errors();
+  if (!_closing_gsg) {
+    report_gl_errors();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1855,6 +1858,9 @@ copy_texture(TextureContext *tc, const DisplayRegion *dr, const RenderBuffer &rb
 ////////////////////////////////////////////////////////////////////
 void GLGraphicsStateGuardian::
 texture_to_pixel_buffer(TextureContext *tc, PixelBuffer *pb) {
+  // This code is now invalidated by the new design; perhaps the
+  // interface is not needed anyway.
+#if 0
   nassertv(tc != NULL && pb != NULL);
   Texture *tex = tc->_texture;
 
@@ -1871,6 +1877,7 @@ texture_to_pixel_buffer(TextureContext *tc, PixelBuffer *pb) {
 
   pop_frame_buffer(old_fb);
   report_gl_errors();
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2977,6 +2984,9 @@ draw_texture(TextureContext *tc, const DisplayRegion *dr,
 ////////////////////////////////////////////////////////////////////
 void GLGraphicsStateGuardian::
 draw_pixel_buffer(PixelBuffer *pb, const DisplayRegion *dr) {
+  // This code is now invalidated by the new design; perhaps the
+  // interface is not needed anyway.
+#if 0
   nassertv(pb != NULL && dr != NULL);
   nassertv(!pb->_image.empty());
   DisplayRegionStack old_dr = push_display_region(dr);
@@ -3086,6 +3096,7 @@ draw_pixel_buffer(PixelBuffer *pb, const DisplayRegion *dr) {
 
   pop_display_region(old_dr);
   report_gl_errors();
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////

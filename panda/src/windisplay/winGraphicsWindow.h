@@ -48,7 +48,7 @@ class WinGraphicsPipe;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAWIN WinGraphicsWindow : public GraphicsWindow {
 public:
-  WinGraphicsWindow(GraphicsPipe *pipe);
+  WinGraphicsWindow(GraphicsPipe *pipe, GraphicsStateGuardian *gsg);
   virtual ~WinGraphicsWindow();
 
   virtual void begin_flip();
@@ -97,7 +97,7 @@ private:
   static void show_error_message(DWORD message_id = 0);
 
 protected:
-  HWND _mwindow;
+  HWND _hWnd;
 
 private:
   bool _ime_open;
@@ -160,6 +160,11 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+
+#define PRINT_LAST_ERROR 0
+extern EXPCL_PANDAWIN void PrintErrorMessage(DWORD msgID);
+extern EXPCL_PANDAWIN void ClearToBlack(HWND hWnd, const WindowProperties &props);
 
 #include "winGraphicsWindow.I"
 
