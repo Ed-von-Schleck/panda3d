@@ -6,19 +6,6 @@
 //
 //
 ////////////////////////////////////////////////////////////////////
-// Copyright (C) 1992,93,94,95        Walt Disney Imagineering, Inc.
-//
-// These  coded  instructions,  statements,  data   structures   and
-// computer  programs contain unpublished proprietary information of
-// Walt Disney Imagineering and are protected by  Federal  copyright
-// law.  They may  not be  disclosed to third  parties  or copied or
-// duplicated in any form, in whole or in part,  without  the  prior
-// written consent of Walt Disney Imagineering Inc.
-////////////////////////////////////////////////////////////////////
-//
-// RCSID:
-// $Header: /home/rndbit/src/panda3d-cvs/panda/src/pnmimage/Attic/pnmminmax.h,v 1.1 2000/10/04 01:14:42 drose Exp $
-//
 
 #ifndef _PNMMINMAX_H_
 #define _PNMMINMAX_H_
