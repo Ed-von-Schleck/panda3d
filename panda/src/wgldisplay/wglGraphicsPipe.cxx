@@ -85,9 +85,9 @@ make_gsg(const FrameBufferProperties &properties) {
   
   FrameBufferProperties new_properties = properties;
 
-  // Get a handle to the screen's DC so we can choose a set of frame
-  // buffer properties suitable for rendering to windows on this
-  // screen.
+  // Get a handle to the screen's DC so we can choose a pixel format
+  // (and a corresponding set of frame buffer properties) suitable for
+  // rendering to windows on this screen.
   HDC hdc = GetDC(NULL);
   int pfnum = choose_pfnum(new_properties, hdc);
 
