@@ -93,7 +93,8 @@ set_texture(EggTexture *texture) {
 //
 //               This method is deprecated and is used in support of
 //               single-texturing only.  New code should be written to
-//               use the multitexture variants instead.q////////////////////////////////////////////////////////////////////
+//               use the multitexture variants instead.
+////////////////////////////////////////////////////////////////////
 INLINE bool EggPrimitive::
 has_texture() const {
   return get_num_textures() > 0;
