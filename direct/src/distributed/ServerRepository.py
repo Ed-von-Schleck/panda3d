@@ -271,7 +271,7 @@ class ServerRepository:
           else:
             self.sendToZoneExcept(self.DOIDtoZones[doid], datagram, connection)
         elif (dcfield.isP2p()):
-          doidbase = (doid / self.DOIDrange) * self.DOIDrange
+          doidbase = (((doid-1) / self.DOIDrange) * self.DOIDrange) + 1
           self.cw.send(datagram, self.DOIDtoClient[doidbase])
         else:
           self.notify.warning(
