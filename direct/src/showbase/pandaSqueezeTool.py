@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # SQUEEZE
-# $Id: pandaSqueezeTool.py,v 1.1 2003/06/20 00:13:10 mrmine Exp $
+# $Id: pandaSqueezeTool.py,v 1.2 2003/06/20 01:30:54 mrmine Exp $
 #
 # squeeze a python program 
 #
@@ -340,7 +340,7 @@ try:
 except KeyError:
   print "Warning: environment variable DIRECT is not set."
   directroot = ""
-archivePath = directroot + "\src\showbase\\%(archive)s"
+archivePath = directroot + "\\lib\\py\\%(archive)s"
 f=open(archivePath,"rb")
 exec marshal.loads(%(zbegin)sf.read(%(loaderlen)d)%(zend)s)
 boot("%(app)s",f,%(size)d)
