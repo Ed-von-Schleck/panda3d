@@ -242,30 +242,32 @@ fill_geom(Geom *geom, const PTA_ushort &v_array,
     PTA_ushort t_array = (*tci).second;
 
     PTA_TexCoordf t_data = bucket.get_texcoords(name);
-    int t_len = num_verts;
+    if (t_data != (TexCoordf *)NULL) {
+      int t_len = num_verts;
 
-    // Can we share the index list with some other property?
-    if (memcmp(v_array, t_array, sizeof(ushort) * t_len)==0) {
-      t_array = v_array;
-    } else if (t_len <= n_len &&
-               memcmp(n_array, t_array, sizeof(ushort) * t_len)==0) {
-      t_array = n_array;
-    } else if (t_len <= c_len &&
-               memcmp(c_array, t_array, sizeof(ushort) * t_len)==0) {
-      t_array = c_array;
-
-    } else {
-      TexCoordFill::const_iterator tci2;
-      for (tci2 = texcoords.begin(); tci2 != tci; ++tci2) {
-        PTA_ushort t_array2 = (*tci).second;
-        if (memcmp(t_array2, t_array, sizeof(ushort) * t_len)==0) {
-          t_array = t_array2;
-          break;
+      // Can we share the index list with some other property?
+      if (memcmp(v_array, t_array, sizeof(ushort) * t_len)==0) {
+        t_array = v_array;
+      } else if (t_len <= n_len &&
+                 memcmp(n_array, t_array, sizeof(ushort) * t_len)==0) {
+        t_array = n_array;
+      } else if (t_len <= c_len &&
+                 memcmp(c_array, t_array, sizeof(ushort) * t_len)==0) {
+        t_array = c_array;
+        
+      } else {
+        TexCoordFill::const_iterator tci2;
+        for (tci2 = texcoords.begin(); tci2 != tci; ++tci2) {
+          PTA_ushort t_array2 = (*tci).second;
+          if (memcmp(t_array2, t_array, sizeof(ushort) * t_len)==0) {
+            t_array = t_array2;
+            break;
+          }
         }
       }
-    }
 
-    geom->set_texcoords(name, t_data, t_array);
+      geom->set_texcoords(name, t_data, t_array);
+    }
   }
 }
 

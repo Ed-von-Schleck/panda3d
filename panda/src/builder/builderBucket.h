@@ -96,7 +96,7 @@ protected:
   PTA_Normalf _normals;
   PTA_Colorf _colors;
 
-  typedef pmap<const TexCoordName *, PTA_TexCoordf> TexCoords;
+  typedef pmap<CPT(TexCoordName), PTA_TexCoordf> TexCoords;
   TexCoords _texcoords;
 
   static BuilderBucket *_default_bucket;
