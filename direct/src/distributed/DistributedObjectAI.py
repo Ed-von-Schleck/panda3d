@@ -187,18 +187,22 @@ class DistributedObjectAI(DirectObject.DirectObject):
         return self.air.getCollTrav(self.zoneId)
 
     def sendUpdate(self, fieldName, args = []):
+        assert self.notify.debugStateCall(self)
         if self.air:
             self.air.sendUpdate(self, fieldName, args)
 
     def sendUpdateToAvatarId(self, avId, fieldName, args):
+        assert self.notify.debugStateCall(self)
         channelId = avId + 1
         self.sendUpdateToChannel(channelId, fieldName, args)
 
     def sendUpdateToChannel(self, channelId, fieldName, args):
+        assert self.notify.debugStateCall(self)
         if self.air:
             self.air.sendUpdateToChannel(self, channelId, fieldName, args)
 
     def generateWithRequired(self, zoneId, optionalFields=[]):
+        assert self.notify.debugStateCall(self)
         # have we already allocated a doId?
         if self.__preallocDoId:
             self.__preallocDoId = 0
@@ -207,12 +211,14 @@ class DistributedObjectAI(DirectObject.DirectObject):
             
         # The repository is the one that really does the work
         self.air.generateWithRequired(self, zoneId, optionalFields)
+        #self.parentId = parentId
         self.zoneId = zoneId
         self.generate()
 
     # this is a special generate used for estates, or anything else that
     # needs to have a hard coded doId as assigned by the server
     def generateWithRequiredAndId(self, doId, zoneId, optionalFields=[]):
+        assert self.notify.debugStateCall(self)
         # have we already allocated a doId?
         if self.__preallocDoId:
             self.__preallocDoId = 0
@@ -220,16 +226,32 @@ class DistributedObjectAI(DirectObject.DirectObject):
 
         # The repository is the one that really does the work
         self.air.generateWithRequiredAndId(self, doId, zoneId, optionalFields)
+        #self.parentId = parentId
+        self.zoneId = zoneId
+        self.generate()
+
+    def generateOtpObject(self, parentId, zoneId, optionalFields=[]):
+        assert self.notify.debugStateCall(self)
+        # have we already allocated a doId?
+        if self.__preallocDoId:
+            self.__preallocDoId = 0
+            return self.generateOtpObject(
+                zoneId, optionalFields, doId=self.doId)
+            
+        # The repository is the one that really does the work
+        self.air.generateOtpObject(
+                self, parentId, zoneId, optionalFields)
+        self.parentId = parentId
         self.zoneId = zoneId
         self.generate()
 
     def generate(self):
+        assert self.notify.debugStateCall(self)
         # Inheritors should put functions that require self.zoneId or
         # other networked info in this function.
-        assert(self.notify.debug('generate(): %s' % (self.doId)))
-        pass
 
     def sendGenerateWithRequired(self, repository, parentId, zoneId, optionalFields=[]):
+        assert self.notify.debugStateCall(self)
         # Make the dclass do the hard work
         dg = self.dclass.aiFormatGenerate(self, self.doId, parentId, zoneId,
                                           repository.districtId,
@@ -239,12 +261,12 @@ class DistributedObjectAI(DirectObject.DirectObject):
         self.zoneId = zoneId
             
     def initFromServerResponse(self, valDict):
+        assert self.notify.debugStateCall(self)
         # This is a special method used for estates, etc., which get
         # their fields set from the database indirectly by way of the
         # AI.  The input parameter is a dictionary of field names to
         # datagrams that describes the initial field values from the
         # database.
-        assert(self.notify.debug("initFromServerResponse(%s)" % (valDict.keys(),)))
 
         dclass = self.dclass
         for key, value in valDict.items():
@@ -252,6 +274,7 @@ class DistributedObjectAI(DirectObject.DirectObject):
             dclass.directUpdate(self, key, value)
 
     def requestDelete(self):
+        assert self.notify.debugStateCall(self)
         if not self.air:
             doId = "none"
             if hasattr(self, "doId"):
