@@ -2149,9 +2149,9 @@ apply_collision_flags(CollisionSolid *solid,
   if ((flags & EggGroup::CF_intangible) != 0) {
     solid->set_tangible(false);
   }
-  if ((flags & EggGroup::CF_level) != 0) {
+/*  if ((flags & EggGroup::CF_level) != 0) {
     solid->set_effective_normal(LVector3f::up());
-  }
+  }*/
 }
 
 ////////////////////////////////////////////////////////////////////
