@@ -54,6 +54,7 @@ get_num_stages() const {
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage *TextureStageManager::
 get_stage(int n) const {
+  nassertr(n >= 0 && n < (int)_stages.size(), NULL);
   // or we can use the at() to throw exception if n is out of bound
   return _stages.at(n);
 }
@@ -75,6 +76,7 @@ get_num_texcoords() const {
 ////////////////////////////////////////////////////////////////////
 INLINE TexCoordName *TextureStageManager::
 get_texcoord(int n) const {
+  nassertr(n >= 0 && n < (int)_texcoords.size(), NULL);
   // or we can use the at() to throw exception if n is out of bound
   return _texcoords.at(n);
 }

@@ -24,7 +24,27 @@ TypeHandle TextureStage::_type_handle;
 //  Description:
 ////////////////////////////////////////////////////////////////////
 TextureStage::
-TextureStage(const string &name) {
+TextureStage(const string &name, TexCoordName *texcoord_name) {
+  _name = name;
+  _sort = 0;
+  _priority = 0;
+  _texcoord_name = texcoord_name;
+  _mode = M_modulate;
+  _color.set(0.0f, 0.0f, 0.0f, 1.0f);
+  _combine_rgb_mode = CM_undefined;
+  _combine_rgb_source0 = CS_undefined;
+  _combine_rgb_operand0 = CO_undefined;
+  _combine_rgb_source1 = CS_undefined;
+  _combine_rgb_operand1 = CO_undefined;
+  _combine_rgb_source2 = CS_undefined;
+  _combine_rgb_operand2 = CO_undefined;
+  _combine_alpha_mode = CM_undefined;
+  _combine_alpha_source0 = CS_undefined;
+  _combine_alpha_operand0 = CO_undefined;
+  _combine_alpha_source1 = CS_undefined;
+  _combine_alpha_operand1 = CO_undefined;
+  _combine_alpha_source2 = CS_undefined;
+  _combine_alpha_operand2 = CO_undefined;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -34,6 +54,29 @@ TextureStage(const string &name) {
 ////////////////////////////////////////////////////////////////////
 TextureStage::
 ~TextureStage() {
+  TextureStageManager::get_global_ptr()->remove_stage(this);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_sort
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+void TextureStage::
+set_sort(int sort){
+  _sort = sort;
+  TextureStageManager::get_global_ptr()->inc_sort_seq();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_priority
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+void TextureStage::
+set_priority(int priority){
+  _priority = priority;
+  TextureStageManager::get_global_ptr()->inc_sort_seq();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -43,6 +86,31 @@ TextureStage::
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 write(ostream &out) const {
+  out << "TextureStage " << get_name() << ", sort = " << get_sort() << ", priority = " << get_priority() << "\n"
+      << "  texcoords = " << get_texcoord_name()->get_name() << ", mode = ";
+
+  switch (get_mode()) {
+  case M_modulate:
+    out << "modulate";
+    break;
+  case M_decal:
+    out << "decal";
+    break;
+  case M_blend:
+    out << "blend";
+    break;
+  case M_replace:
+    out << "replace";
+    break;
+  case M_add:
+    out << "add";
+    break;
+  case M_combine:
+    out << "combine";
+    break;
+  }
+
+  out << ", color = " << get_color() << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -52,6 +120,7 @@ write(ostream &out) const {
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 output(ostream &out) const {
+  out << "TextureStage " << get_name();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -71,86 +140,24 @@ register_with_read_factory() {
 ////////////////////////////////////////////////////////////////////
 TypedWritable* TextureStage::
 make_TextureStage(const FactoryParams &params) {
-  return NULL;
-#if 0
-  //The process of making a texture is slightly
+  //The process of making a TextureStage is slightly
   //different than making other Writable objects.
   //That is because all creation of TextureStages should
-  //be done through calls to TexturePool, which ensures
-  //that any loads of the same Texture, refer to the
+  //be done through calls to TextureStageManager, which ensures
+  //that any loads of the same TextureStage, refer to the
   //same memory
   DatagramIterator scan;
   BamReader *manager;
-  bool has_rawdata = false;
 
   parse_params(params, scan, manager);
-
-  // Get the properties written by ImageBuffer::write_datagram().
+  
+  // Get the name
   string name = scan.get_string();
-  Filename filename = scan.get_string();
-  Filename alpha_filename = scan.get_string();
 
-  int primary_file_num_channels = 0;  
-  int alpha_file_channel = 0;  
+  TextureStage *me = TextureStageManager::get_global_ptr()->make_stage(name);
+  me->fillin(scan, manager);
 
-  if (manager->get_file_minor_ver() == 2) {
-    // We temporarily had a version that stored the number of channels
-    // here.
-    primary_file_num_channels = scan.get_uint8();
-
-  } else if (manager->get_file_minor_ver() >= 3) {
-    primary_file_num_channels = scan.get_uint8();
-    alpha_file_channel = scan.get_uint8();
-  }
-
-  // from minor version 5, read the rawdata mode, else carry on
-  if (manager->get_file_minor_ver() >= 5)
-    has_rawdata = scan.get_bool();
-
-  Texture *me = NULL;
-  if (has_rawdata) {
-    // then create a Texture and don't load from the file
-    me = new Texture;
-
-  } else {
-    if (filename.empty()) {
-      // This texture has no filename; since we don't have an image to
-      // load, we can't actually create the texture.
-      gobj_cat.info()
-        << "Cannot create texture '" << name << "' with no filename.\n";
-
-    } else {
-      // This texture does have a filename, so try to load it from disk.
-      if (alpha_filename.empty()) {
-        me = TexturePool::load_texture(filename, primary_file_num_channels);
-      } else {
-        me = TexturePool::load_texture(filename, alpha_filename, 
-                                       primary_file_num_channels, alpha_file_channel);
-      }
-    }
-  }
-
-  if (me == (Texture *)NULL) {
-    // Oops, we couldn't load the texture; we'll just return NULL.
-    // But we do need a dummy texture to read in and ignore all of the
-    // attributes.
-    PT(Texture) dummy = new Texture;
-    dummy->fillin(scan, manager, has_rawdata);
-
-  } else {
-    me->set_name(name);
-    me->fillin(scan, manager, has_rawdata);
-
-    /*
-    cerr << "_xsize = " << me->_pbuffer->get_xsize() << "\n";
-    cerr << "_ysize = " << me->_pbuffer->get_ysize() << "\n";
-    cerr << "_xorg = " << me->_pbuffer->get_xorg() << "\n";
-    cerr << "_yorg = " << me->_pbuffer->get_xorg() << "\n";
-    cerr << "_components = " << me->_pbuffer->get_num_components() << "\n";
-    */
-  }
   return me;
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -163,7 +170,7 @@ make_TextureStage(const FactoryParams &params) {
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 fillin(DatagramIterator &scan, BamReader *manager, bool has_rawdata) {
-#if 0
+#if 0 // I am not sure what will come from bam file, lets wait on it.
   //We don't want to call ImageBuffer::fillin, like we
   //would normally, since due to needing to know the name
   //of the TextureStage before creating it, we have already read
@@ -228,7 +235,7 @@ fillin(DatagramIterator &scan, BamReader *manager, bool has_rawdata) {
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 write_datagram(BamWriter *manager, Datagram &me) {
-#if 0
+#if 0 // same comment as fillin
   // We also need to write out the pixel buffer's format, even though
   // that's not stored as part of the texture structure.
   bool has_pbuffer = (_pbuffer != (PixelBuffer *)NULL);

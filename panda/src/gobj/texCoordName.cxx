@@ -44,12 +44,13 @@ TexCoordName (const string &name) {
 ////////////////////////////////////////////////////////////////////
 TexCoordName::
 ~TexCoordName () {
+  TextureStageManager::get_global_ptr()->remove_texcoord(this);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexCoordName::output
 //       Access: Published
-//  Description: Function that reads out of the datagram (or asks
+//  Description: output the TexCoordName and its member data
 ////////////////////////////////////////////////////////////////////
 void TexCoordName::
 output (ostream &out) const {
@@ -73,86 +74,23 @@ register_with_read_factory() {
 ////////////////////////////////////////////////////////////////////
 TypedWritable* TexCoordName::
 make_TexCoordName(const FactoryParams &params) {
-  return NULL;
-#if 0
-  //The process of making a texture is slightly
+  //The process of making a TexCoordName is slightly
   //different than making other Writable objects.
   //That is because all creation of TexCoordNames should
-  //be done through calls to TexturePool, which ensures
-  //that any loads of the same Texture, refer to the
+  //be done through calls to TextureStageManager, which ensures
+  //that any loads of the same TexCoordName, refer to the
   //same memory
   DatagramIterator scan;
   BamReader *manager;
-  bool has_rawdata = false;
 
   parse_params(params, scan, manager);
 
   // Get the properties written by ImageBuffer::write_datagram().
   string name = scan.get_string();
-  Filename filename = scan.get_string();
-  Filename alpha_filename = scan.get_string();
 
-  int primary_file_num_channels = 0;  
-  int alpha_file_channel = 0;  
+  TexCoordName *me = TextureStageManager::get_global_ptr()->make_texcoord(name);
 
-  if (manager->get_file_minor_ver() == 2) {
-    // We temporarily had a version that stored the number of channels
-    // here.
-    primary_file_num_channels = scan.get_uint8();
-
-  } else if (manager->get_file_minor_ver() >= 3) {
-    primary_file_num_channels = scan.get_uint8();
-    alpha_file_channel = scan.get_uint8();
-  }
-
-  // from minor version 5, read the rawdata mode, else carry on
-  if (manager->get_file_minor_ver() >= 5)
-    has_rawdata = scan.get_bool();
-
-  Texture *me = NULL;
-  if (has_rawdata) {
-    // then create a Texture and don't load from the file
-    me = new Texture;
-
-  } else {
-    if (filename.empty()) {
-      // This texture has no filename; since we don't have an image to
-      // load, we can't actually create the texture.
-      gobj_cat.info()
-        << "Cannot create texture '" << name << "' with no filename.\n";
-
-    } else {
-      // This texture does have a filename, so try to load it from disk.
-      if (alpha_filename.empty()) {
-        me = TexturePool::load_texture(filename, primary_file_num_channels);
-      } else {
-        me = TexturePool::load_texture(filename, alpha_filename, 
-                                       primary_file_num_channels, alpha_file_channel);
-      }
-    }
-  }
-
-  if (me == (Texture *)NULL) {
-    // Oops, we couldn't load the texture; we'll just return NULL.
-    // But we do need a dummy texture to read in and ignore all of the
-    // attributes.
-    PT(Texture) dummy = new Texture;
-    dummy->fillin(scan, manager, has_rawdata);
-
-  } else {
-    me->set_name(name);
-    me->fillin(scan, manager, has_rawdata);
-
-    /*
-    cerr << "_xsize = " << me->_pbuffer->get_xsize() << "\n";
-    cerr << "_ysize = " << me->_pbuffer->get_ysize() << "\n";
-    cerr << "_xorg = " << me->_pbuffer->get_xorg() << "\n";
-    cerr << "_yorg = " << me->_pbuffer->get_xorg() << "\n";
-    cerr << "_components = " << me->_pbuffer->get_num_components() << "\n";
-    */
-  }
   return me;
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////

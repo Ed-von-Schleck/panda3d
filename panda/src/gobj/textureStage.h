@@ -49,7 +49,7 @@ class FactoryParams;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TextureStage : public TypedWritableReferenceCount {
 private:
-  TextureStage(const string &name);
+  TextureStage(const string &name, TexCoordName *texcoord_name);
 
 PUBLISHED:
   virtual ~TextureStage();
@@ -96,10 +96,10 @@ PUBLISHED:
 
   INLINE const string &get_name() const;
 
-  INLINE void set_sort(int sort);
+  void set_sort(int sort);
   INLINE int get_sort() const;
 
-  INLINE void set_priority(int priority);
+  void set_priority(int priority);
   INLINE int get_priority() const;
 
   INLINE bool operator < (const TextureStage &other) const;
