@@ -133,6 +133,110 @@ ostream &operator << (ostream &out, GeomAttrType t) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: describe_attr
+//  Description: A handy helper function for output_verbose,
+//               below.
+////////////////////////////////////////////////////////////////////
+template <class VecType>
+static void
+describe_attr(ostream &out, const Geom *geom,
+              GeomBindType bind, const PTA(VecType) &array,
+              bool newline, int indent_level) {
+  PTA_int lengths = geom->get_lengths();
+  int num_prims = geom->get_num_prims();
+  bool components = geom->uses_components();
+
+  int i, j, vi;
+  switch (bind) {
+  case G_PER_VERTEX:
+    indent(out, indent_level)
+      << "Per vertex:";
+    vi = 0;
+    int num_verts;
+    num_verts = geom->get_num_vertices_per_prim();
+    for (i = 0; i < num_prims; i++) {
+      if (components) {
+        num_verts = lengths[i];
+      }
+      out << "\n";
+      indent(out, indent_level) << "[ ";
+      if (num_verts > 0) {
+        out << array[vi++];
+        for (j = 1; j < num_verts; j++) {
+          if (newline) {
+            out << "\n";
+            indent(out, indent_level + 2);
+          } else {
+            out << " ";
+          }
+          out << array[vi++];
+        }
+      }
+      out << " ]";
+    }
+    break;
+
+  case G_PER_COMPONENT:
+    if (!components) {
+      indent(out, indent_level)
+        << "Invalid per-component attribute specified!";
+    } else {
+      indent(out, indent_level)
+        << "Per component:";
+      vi = 0;
+      for (i = 0; i < num_prims; i++) {
+        num_verts = lengths[i] - geom->get_num_more_vertices_than_components();
+        out << "\n";
+        indent(out, indent_level) << "[ ";
+        if (num_verts > 0) {
+          out << array[vi++];
+          for (j = 1; j < num_verts; j++) {
+            if (newline) {
+              out << "\n";
+              indent(out, indent_level + 2);
+            } else {
+              out << " ";
+            }
+            out << array[vi++];
+          }
+          out << " ]";
+        }
+      }
+    }
+    break;
+
+  case G_PER_PRIM:
+    indent(out, indent_level)
+      << "Per prim:";
+    for (i = 0; i < num_prims; i++) {
+      if (newline) {
+        out << "\n";
+        indent(out, indent_level + 2);
+      } else {
+        out << " ";
+      }
+      out << array[i];
+    }
+    break;
+
+  case G_OVERALL:
+    indent(out, indent_level)
+      << "Overall:";
+    if (newline) {
+      out << "\n";
+      indent(out, indent_level + 2);
+    } else {
+      out << " ";
+    }
+    out << array[0];
+
+  case G_OFF:
+    break;
+  }
+  out << "\n";
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Geom::Constructor
 //       Access: Public
 //  Description:
@@ -144,19 +248,19 @@ Geom() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Geom::Constructor
+//     Function: Geom::Copy Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
 Geom::
-Geom(const Geom& copy) : dDrawable() {
+Geom(const Geom &copy) : dDrawable() {
   _all_dirty_flags = 0;
   *this = copy;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Geom::Destructor
-//       Access: Public
+//       Access: Public, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
 Geom::
@@ -195,42 +299,6 @@ operator = (const Geom &copy) {
 
   mark_bound_stale();
   make_dirty();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Geom::calc_tight_bounds
-//       Access: Public
-//  Description: Expands min_point and max_point to include all of the
-//               vertices in the Geom, if any.  found_any is set true
-//               if any points are found.  It is the caller's
-//               responsibility to initialize min_point, max_point,
-//               and found_any before calling this function.
-////////////////////////////////////////////////////////////////////
-void Geom::
-calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point, 
-                  bool &found_any) const {
-  Geom::VertexIterator vi = make_vertex_iterator();
-  int num_prims = get_num_prims();
-    
-  for (int p = 0; p < num_prims; p++) {
-    int length = get_length(p);
-    for (int v = 0; v < length; v++) {
-      Vertexf vertex = get_next_vertex(vi);
-      
-      if (found_any) {
-        min_point.set(min(min_point[0], vertex[0]),
-                      min(min_point[1], vertex[1]),
-                      min(min_point[2], vertex[2]));
-        max_point.set(max(max_point[0], vertex[0]),
-                      max(max_point[1], vertex[1]),
-                      max(max_point[2], vertex[2]));
-      } else {
-        min_point = vertex;
-        max_point = vertex;
-        found_any = true;
-      }
-    }
-  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -352,6 +420,21 @@ set_texcoords(const PTA_TexCoordf &texcoords, GeomBindType bind,
 void Geom::
 set_texcoords(const TexCoordName *name, const PTA_TexCoordf &texcoords,
               const PTA_ushort &tindex) {
+  nassertv(name != (TexCoordName *)NULL);
+
+#ifndef NDEBUG
+  // All of the texture coordinates must be either nonindexed, or all
+  // must be indexed.  If there are already (different) texture
+  // coordinates set on the Geom, then ensure this is so.
+  remove_texcoords(name);
+  if (!_texcoords_by_name.empty()) {
+    TexCoordDef &def = (*_texcoords_by_name.begin()).second;
+    bool previous_is_indexed = (def._tindex != (ushort *)NULL);
+    bool this_is_indexed = (tindex != (ushort *)NULL);
+    nassertv(this_is_indexed == previous_is_indexed);
+  }
+#endif
+
   TexCoordDef &def = _texcoords_by_name[name];
   def._texcoords = texcoords;
   def._tindex = tindex;
@@ -390,8 +473,7 @@ remove_texcoords(const TexCoordName *name) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void Geom::
-get_coords(PTA_Vertexf &coords,
-           PTA_ushort &vindex) const {
+get_coords(PTA_Vertexf &coords, PTA_ushort &vindex) const {
   coords = _coords;
   vindex = _vindex;
 
@@ -533,82 +615,6 @@ get_tris() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Geom::draw
-//       Access: Public, Virtual
-//  Description: Actually draws the Geom with the indicated GSG.
-////////////////////////////////////////////////////////////////////
-void Geom::
-draw(GraphicsStateGuardianBase *gsg) {
-  PreparedGraphicsObjects *prepared_objects = gsg->get_prepared_objects();
-  if (is_dirty()) {
-    config(); 
-    release(prepared_objects);
-  }
-
-  if (retained_mode) {
-    GeomContext *gc = prepare_now(gsg->get_prepared_objects(), gsg);
-    draw_immediate(gsg, gc);
-  } else {
-    draw_immediate(gsg, NULL);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Geom::config
-//       Access: Public, Virtual
-//  Description: Configure rendering based on current settings
-////////////////////////////////////////////////////////////////////
-void Geom::
-config() {
-  WritableConfigurable::config();
-
-  // Only per vertex binding makes any sense
-  if (_coords != (Vertexf*)0L && _bind[G_COORD] != G_OFF) {
-    _get_vertex =
-      (_vindex == (ushort*)0L) ? get_vertex_nonindexed : get_vertex_indexed;
-  } else {
-    gobj_cat.error()
-      << "Geom::Config() - no vertex array!" << endl;
-  }
-
-  // Set up normal rendering configuration
-  if (_norms != (Normalf*)0L && _bind[G_NORMAL] != G_OFF) {
-    _get_normal =
-      (_nindex == (ushort*)0L) ? get_normal_nonindexed : get_normal_indexed;
-  } else {
-    _get_normal = get_normal_noop;
-  }
-
-  // Set up texture coordinate rendering configuration
-  if (_texcoords_by_name.empty()) {
-    _get_texcoord = get_texcoord_noop;
-
-  } else {
-    _get_texcoord = get_texcoord_indexed;
-
-    // If any of the texture coordinates are nonindexed, all of them
-    // must be.
-    TexCoordsByName::const_iterator tci;
-    for (tci = _texcoords_by_name.begin(); 
-         tci != _texcoords_by_name.end();
-         ++tci) {
-      if ((*tci).second._tindex == (ushort *)NULL) {
-        _get_texcoord = get_texcoord_nonindexed;
-        break;
-      }
-    }
-  }
-
-  // Set up color rendering configuration
-  if (_colors != (Colorf*)0L && _bind[G_COLOR] != G_OFF) {
-    _get_color =
-      (_cindex == (ushort*)0L) ? get_color_nonindexed : get_color_indexed;
-  } else {
-    _get_color = get_color_noop;
-  }
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: Geom::write
 //       Access: Public
 //  Description:
@@ -637,6 +643,139 @@ output(ostream &out) const {
       << " ci:" << _cindex.size()
       << " ti:" << _tindex.size();
   */
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::write_verbose
+//       Access: Public
+//  Description: Writes to the indicated ostream a formatted picture
+//               of the contents of the Geom, in detail--but hopefully
+//               not too much detail.
+////////////////////////////////////////////////////////////////////
+void Geom::
+write_verbose(ostream &out, int indent_level) const {
+  GeomBindType bind_normals;
+  GeomBindType bind_colors;
+
+  PTA_Vertexf g_coords;
+  PTA_Normalf g_normals;
+  PTA_Colorf g_colors;
+
+  PTA_ushort i_coords;
+  PTA_ushort i_normals;
+  PTA_ushort i_colors;
+
+  get_coords(g_coords, i_coords);
+  get_normals(g_normals, bind_normals, i_normals);
+  get_colors(g_colors, bind_colors, i_colors);
+
+  out << "\n";
+  indent(out, indent_level)
+    << get_type() << " contains "
+    << get_num_prims() << " primitives:\n";
+
+  if ((i_coords == (ushort *)NULL) && (g_coords == (Vertexf *)NULL)) {
+    indent(out, indent_level)
+      << "No coords\n";
+  } else if (i_coords!=(ushort*)0L) {
+    indent(out, indent_level)
+      << "Indexed coords = " << (void *)g_coords << ", length = "
+      << g_coords.size() << ":\n";
+    describe_attr(out, this, G_PER_VERTEX, i_coords, false, indent_level + 2);
+  } else {
+    indent(out, indent_level)
+      << "Nonindexed coords:\n";
+    describe_attr(out, this, G_PER_VERTEX, g_coords, true, indent_level + 2);
+  }
+
+  if (bind_colors == G_OFF) {
+    indent(out, indent_level)
+      << "No colors\n";
+  } else if (i_colors!=(ushort*)0L) {
+    indent(out, indent_level)
+      << "Indexed colors = " << (void *)g_colors << ", length = "
+      << g_colors.size() << "\n";
+    describe_attr(out, this, bind_colors, i_colors, false, indent_level + 2);
+  } else {
+    indent(out, indent_level)
+      << "Nonindexed colors:\n";
+    describe_attr(out, this, bind_colors, g_colors, true, indent_level + 2);
+  }
+
+  if (bind_normals == G_OFF) {
+    indent(out, indent_level)
+      << "No normals\n";
+  } else if (i_normals!=(ushort*)0L) {
+    indent(out, indent_level)
+      << "Indexed normals = " << (void *)g_normals << ", length = "
+      << g_normals.size() << "\n";
+    describe_attr(out, this, bind_normals, i_normals, false, indent_level + 2);
+  } else {
+    indent(out, indent_level)
+      << "Nonindexed normals:\n";
+    describe_attr(out, this, bind_normals, g_normals, true, indent_level + 2);
+  }
+
+  if (_texcoords_by_name.empty()) {
+    indent(out, indent_level)
+      << "No texcoords\n";
+
+  } else {
+    TexCoordsByName::const_iterator tci;
+    for (tci = _texcoords_by_name.begin(); 
+         tci != _texcoords_by_name.end();
+         ++tci) {
+      const TexCoordName *name = (*tci).first;
+      const TexCoordDef &def = (*tci).second;
+      if (def._tindex != (ushort *)NULL) {
+        indent(out, indent_level)
+          << "Indexed texcoords stage \"" << name->get_name() << "\" = "
+          << def._texcoords << ", length = " << def._texcoords.size() << "\n";
+        describe_attr(out, this, G_PER_VERTEX, def._tindex, false, 
+                      indent_level + 2);
+
+      } else {
+        indent(out, indent_level)
+          << "Nonindex texcoords stage \"" << name->get_name() << ":\n";
+        describe_attr(out, this, G_PER_VERTEX, def._texcoords, true, 
+                      indent_level + 2);
+      }
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::setup_multitexcoord_iterator
+//       Access: Public
+//  Description: Fills in the values on the indicated
+//               MultiTexCoordIterator to prepare it to walk through
+//               the texture coordinates on this Geom, to issue the
+//               appropriate texture coordinates for the currently
+//               active stages.
+////////////////////////////////////////////////////////////////////
+void Geom::
+setup_multitexcoord_iterator(MultiTexCoordIterator &iterator,
+                             const ActiveTextureStages &active_stages) const {
+  check_config();
+  iterator._num_stages = 0;
+  int i = 0;
+  for (int stage_index = 0; stage_index < (int)active_stages.size(); stage_index++) {
+    TextureStage *stage = active_stages[stage_index];
+    const TexCoordName *name = stage->get_texcoord_name();
+    TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
+    if (tci != _texcoords_by_name.end()) {
+      // This Geom does have texcoords for this stage.
+      const TexCoordDef &def = (*tci).second;
+
+      nassertv(i < max_geom_texture_stages);
+      iterator._stages[i]._array = def._texcoords;
+      iterator._stages[i]._index = def._tindex;
+      iterator._stage_index[i] = stage_index;
+      i++;
+    }
+  }
+
+  iterator._num_stages = i;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -726,6 +865,118 @@ release_all() {
   nassertr(_contexts.empty(), num_freed);
 
   return num_freed;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::draw
+//       Access: Public, Virtual
+//  Description: Actually draws the Geom with the indicated GSG.
+////////////////////////////////////////////////////////////////////
+void Geom::
+draw(GraphicsStateGuardianBase *gsg) {
+  PreparedGraphicsObjects *prepared_objects = gsg->get_prepared_objects();
+  if (is_dirty()) {
+    config(); 
+    release(prepared_objects);
+  }
+
+  if (retained_mode) {
+    GeomContext *gc = prepare_now(gsg->get_prepared_objects(), gsg);
+    draw_immediate(gsg, gc);
+  } else {
+    draw_immediate(gsg, NULL);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::config
+//       Access: Public, Virtual
+//  Description: Configure rendering based on current settings
+////////////////////////////////////////////////////////////////////
+void Geom::
+config() {
+  WritableConfigurable::config();
+
+  // Only per vertex binding makes any sense
+  if (_coords != (Vertexf*)0L && _bind[G_COORD] != G_OFF) {
+    _get_vertex =
+      (_vindex == (ushort*)0L) ? get_vertex_nonindexed : get_vertex_indexed;
+  } else {
+    gobj_cat.error()
+      << "Geom::Config() - no vertex array!" << endl;
+  }
+
+  // Set up normal rendering configuration
+  if (_norms != (Normalf*)0L && _bind[G_NORMAL] != G_OFF) {
+    _get_normal =
+      (_nindex == (ushort*)0L) ? get_normal_nonindexed : get_normal_indexed;
+  } else {
+    _get_normal = get_normal_noop;
+  }
+
+  // Set up texture coordinate rendering configuration
+  if (_texcoords_by_name.empty()) {
+    _get_texcoord = get_texcoord_noop;
+
+  } else {
+    _get_texcoord = get_texcoord_indexed;
+
+    // If any of the texture coordinates are nonindexed, all of them
+    // must be.
+    TexCoordsByName::const_iterator tci;
+    for (tci = _texcoords_by_name.begin(); 
+         tci != _texcoords_by_name.end();
+         ++tci) {
+      if ((*tci).second._tindex == (ushort *)NULL) {
+        _get_texcoord = get_texcoord_nonindexed;
+        break;
+      }
+    }
+  }
+
+  // Set up color rendering configuration
+  if (_colors != (Colorf*)0L && _bind[G_COLOR] != G_OFF) {
+    _get_color =
+      (_cindex == (ushort*)0L) ? get_color_nonindexed : get_color_indexed;
+  } else {
+    _get_color = get_color_noop;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::calc_tight_bounds
+//       Access: Public
+//  Description: Expands min_point and max_point to include all of the
+//               vertices in the Geom, if any.  found_any is set true
+//               if any points are found.  It is the caller's
+//               responsibility to initialize min_point, max_point,
+//               and found_any before calling this function.
+////////////////////////////////////////////////////////////////////
+void Geom::
+calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point, 
+                  bool &found_any) const {
+  Geom::VertexIterator vi = make_vertex_iterator();
+  int num_prims = get_num_prims();
+    
+  for (int p = 0; p < num_prims; p++) {
+    int length = get_length(p);
+    for (int v = 0; v < length; v++) {
+      Vertexf vertex = get_next_vertex(vi);
+      
+      if (found_any) {
+        min_point.set(min(min_point[0], vertex[0]),
+                      min(min_point[1], vertex[1]),
+                      min(min_point[2], vertex[2]));
+        max_point.set(max(max_point[0], vertex[0]),
+                      max(max_point[1], vertex[1]),
+                      max(max_point[2], vertex[2]));
+      } else {
+        min_point = vertex;
+        max_point = vertex;
+        found_any = true;
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -841,16 +1092,16 @@ void Geom::
 write_datagram(BamWriter *manager, Datagram &me) {
   int i;
 
-  //Coordinates
+  // Coordinates
   WRITE_PTA(manager, me, IPD_Vertexf::write_datagram, _coords);
-  //Normals
+  // Normals
   WRITE_PTA(manager, me, IPD_Normalf::write_datagram, _norms);
-  //Colors
+  // Colors
   WRITE_PTA(manager, me, IPD_Colorf::write_datagram, _colors);
-  //Texture Coordinates
+  // Texture Coordinates
   WRITE_PTA(manager, me, IPD_TexCoordf::write_datagram, get_texcoords_array());
 
-  //Now write out the indices for each array
+  // Now write out the indices for each array
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, _vindex);
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, _nindex);
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, _cindex);
@@ -859,8 +1110,8 @@ write_datagram(BamWriter *manager, Datagram &me) {
   me.add_uint16(_numprims);
   WRITE_PTA(manager, me, IPD_int::write_datagram, _primlengths);
 
-  //Write out the bindings for vertices, normals,
-  //colors and texture coordinates
+  // Write out the bindings for vertices, normals, colors and texture
+  // coordinates
   for(i = 0; i < num_GeomAttrTypes; i++) {
     me.add_uint8(_bind[i]);
   }
@@ -879,17 +1130,17 @@ void Geom::
 fillin(DatagramIterator& scan, BamReader* manager) {
   int i;
 
-  //Coordinates
+  // Coordinates
   READ_PTA(manager, scan, IPD_Vertexf::read_datagram, _coords);
-  //Normals
+  // Normals
   READ_PTA(manager, scan, IPD_Normalf::read_datagram, _norms);
-  //Colors
+  // Colors
   READ_PTA(manager, scan, IPD_Colorf::read_datagram, _colors);
-  //Texture Coordinates
+  // Texture Coordinates
   PTA_TexCoordf texcoords;
   READ_PTA(manager, scan, IPD_TexCoordf::read_datagram, texcoords);
 
-  //Now read in the indices for each array
+  // Now read in the indices for each array
   READ_PTA(manager, scan, IPD_ushort::read_datagram, _vindex);
   READ_PTA(manager, scan, IPD_ushort::read_datagram, _nindex);
   READ_PTA(manager, scan, IPD_ushort::read_datagram, _cindex);
@@ -910,207 +1161,13 @@ fillin(DatagramIterator& scan, BamReader* manager) {
     _num_vertices = _numprims * get_num_vertices_per_prim();
   }
 
-  //Write out the bindings for vertices, normals,
-  //colors and texture coordinates
+  // Read in the bindings for vertices, normals, colors and texture
+  // coordinates
   for(i = 0; i < num_GeomAttrTypes; i++) {
     _bind[i] = (enum GeomBindType) scan.get_uint8();
   }
 
   if (_bind[G_TEXCOORD] == G_PER_VERTEX) {
     set_texcoords(texcoords, G_PER_VERTEX, tindex);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: describe_attr
-//  Description: A handy helper function for output_verbose,
-//               below.
-////////////////////////////////////////////////////////////////////
-template <class VecType>
-static void
-describe_attr(ostream &out, const Geom *geom,
-              GeomBindType bind, const PTA(VecType) &array,
-              bool newline, int indent_level) {
-  PTA_int lengths = geom->get_lengths();
-  int num_prims = geom->get_num_prims();
-  bool components = geom->uses_components();
-
-  int i, j, vi;
-  switch (bind) {
-  case G_PER_VERTEX:
-    indent(out, indent_level)
-      << "Per vertex:";
-    vi = 0;
-    int num_verts;
-    num_verts = geom->get_num_vertices_per_prim();
-    for (i = 0; i < num_prims; i++) {
-      if (components) {
-        num_verts = lengths[i];
-      }
-      out << "\n";
-      indent(out, indent_level) << "[ ";
-      if (num_verts > 0) {
-        out << array[vi++];
-        for (j = 1; j < num_verts; j++) {
-          if (newline) {
-            out << "\n";
-            indent(out, indent_level + 2);
-          } else {
-            out << " ";
-          }
-          out << array[vi++];
-        }
-      }
-      out << " ]";
-    }
-    break;
-
-  case G_PER_COMPONENT:
-    if (!components) {
-      indent(out, indent_level)
-        << "Invalid per-component attribute specified!";
-    } else {
-      indent(out, indent_level)
-        << "Per component:";
-      vi = 0;
-      for (i = 0; i < num_prims; i++) {
-        num_verts = lengths[i] - geom->get_num_more_vertices_than_components();
-        out << "\n";
-        indent(out, indent_level) << "[ ";
-        if (num_verts > 0) {
-          out << array[vi++];
-          for (j = 1; j < num_verts; j++) {
-            if (newline) {
-              out << "\n";
-              indent(out, indent_level + 2);
-            } else {
-              out << " ";
-            }
-            out << array[vi++];
-          }
-          out << " ]";
-        }
-      }
-    }
-    break;
-
-  case G_PER_PRIM:
-    indent(out, indent_level)
-      << "Per prim:";
-    for (i = 0; i < num_prims; i++) {
-      if (newline) {
-        out << "\n";
-        indent(out, indent_level + 2);
-      } else {
-        out << " ";
-      }
-      out << array[i];
-    }
-    break;
-
-  case G_OVERALL:
-    indent(out, indent_level)
-      << "Overall:";
-    if (newline) {
-      out << "\n";
-      indent(out, indent_level + 2);
-    } else {
-      out << " ";
-    }
-    out << array[0];
-
-  case G_OFF:
-    break;
-  }
-  out << "\n";
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Geom::write_verbose
-//       Access: Public
-//  Description: Writes to the indicated ostream a formatted picture
-//               of the contents of the Geom, in detail--but hopefully
-//               not too much detail.
-////////////////////////////////////////////////////////////////////
-void Geom::
-write_verbose(ostream &out, int indent_level) const {
-  GeomBindType bind_normals;
-  GeomBindType bind_tcoords;
-  GeomBindType bind_colors;
-
-  PTA_Vertexf g_coords;
-  PTA_Normalf g_normals;
-  PTA_TexCoordf g_tcoords;
-  PTA_Colorf g_colors;
-
-  PTA_ushort i_coords;
-  PTA_ushort i_normals;
-  PTA_ushort i_tcoords;
-  PTA_ushort i_colors;
-
-  get_coords(g_coords, i_coords);
-  get_normals(g_normals, bind_normals, i_normals);
-  get_texcoords(g_tcoords, bind_tcoords, i_tcoords);
-  get_colors(g_colors, bind_colors, i_colors);
-
-  out << "\n";
-  indent(out, indent_level)
-    << get_type() << " contains "
-    << get_num_prims() << " primitives:\n";
-
-  if ((i_coords == (ushort *)NULL) && (g_coords == (Vertexf *)NULL)) {
-    indent(out, indent_level)
-      << "No coords\n";
-  } else if (i_coords!=(ushort*)0L) {
-    indent(out, indent_level)
-      << "Indexed coords = " << (void *)g_coords << ", length = "
-      << g_coords.size() << ":\n";
-    describe_attr(out, this, G_PER_VERTEX, i_coords, false, indent_level + 2);
-  } else {
-    indent(out, indent_level)
-      << "Nonindexed coords:\n";
-    describe_attr(out, this, G_PER_VERTEX, g_coords, true, indent_level + 2);
-  }
-
-  if (bind_colors == G_OFF) {
-    indent(out, indent_level)
-      << "No colors\n";
-  } else if (i_colors!=(ushort*)0L) {
-    indent(out, indent_level)
-      << "Indexed colors = " << (void *)g_colors << ", length = "
-      << g_colors.size() << "\n";
-    describe_attr(out, this, bind_colors, i_colors, false, indent_level + 2);
-  } else {
-    indent(out, indent_level)
-      << "Nonindexed colors:\n";
-    describe_attr(out, this, bind_colors, g_colors, true, indent_level + 2);
-  }
-
-  if (bind_tcoords == G_OFF) {
-    indent(out, indent_level)
-      << "No tcoords\n";
-  } else if (i_tcoords!=(ushort*)0L) {
-    indent(out, indent_level)
-      << "Indexed tcoords = " << (void *)g_tcoords << ", length = "
-      << g_tcoords.size() << "\n";
-    describe_attr(out, this, bind_tcoords, i_tcoords, false, indent_level + 2);
-  } else {
-    indent(out, indent_level)
-      << "Nonindexed tcoords:\n";
-    describe_attr(out, this, bind_tcoords, g_tcoords, true, indent_level + 2);
-  }
-
-  if (bind_normals == G_OFF) {
-    indent(out, indent_level)
-      << "No normals\n";
-  } else if (i_normals!=(ushort*)0L) {
-    indent(out, indent_level)
-      << "Indexed normals = " << (void *)g_normals << ", length = "
-      << g_normals.size() << "\n";
-    describe_attr(out, this, bind_normals, i_normals, false, indent_level + 2);
-  } else {
-    indent(out, indent_level)
-      << "Nonindexed normals:\n";
-    describe_attr(out, this, bind_normals, g_normals, true, indent_level + 2);
   }
 }

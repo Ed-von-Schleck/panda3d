@@ -30,6 +30,30 @@ get_binding(int attr) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Geom::has_any_texcoords
+//       Access: Published
+//  Description: Returns true if the Geom defines any texture
+//               coordinates at all, false otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool Geom::
+has_any_texcoords() const {
+  return !_texcoords_by_name.empty();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::has_texcoords
+//       Access: Published
+//  Description: Returns true if the Geom defines a set of texture
+//               coordinates for the indicated multitexture stage
+//               name, or false otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool Geom::
+has_texcoords(const TexCoordName *name) const {
+  TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
+  return (tci != _texcoords_by_name.end());
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Geom::get_coords_array
 //       Access: Published
 //  Description: Returns the array of vertex coordinates associated
@@ -202,19 +226,8 @@ set_num_prims(int num) {
 //  Description: Returns the number of primitives in the Geom.
 ////////////////////////////////////////////////////////////////////
 INLINE int Geom::
-get_num_prims(void) const {
+get_num_prims() const {
   return _numprims;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Geom::get_num_vertices
-//       Access: Published
-//  Description: Returns the number of vertices required by all all
-//               the prims in the Geom.
-////////////////////////////////////////////////////////////////////
-INLINE int Geom::
-get_num_vertices() const {
-  return _num_vertices;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -245,6 +258,17 @@ set_lengths(const PTA_int &lengths) {
 INLINE PTA_int Geom::
 get_lengths() const {
   return _primlengths;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::get_num_vertices
+//       Access: Published
+//  Description: Returns the number of vertices required by all all
+//               the prims in the Geom.
+////////////////////////////////////////////////////////////////////
+INLINE int Geom::
+get_num_vertices() const {
+  return _num_vertices;
 }
 
 
@@ -354,6 +378,16 @@ make_texcoord_iterator() const {
 INLINE const TexCoordf &Geom::
 get_next_texcoord(TexCoordIterator &tciterator) const {
   return _get_texcoord(tciterator);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::get_next_texcoord
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE const TexCoordf &Geom::
+get_next_multitexcoord(MultiTexCoordIterator &tciterator, int n) const {
+  return _get_texcoord(tciterator._stages[n]);
 }
 
 ////////////////////////////////////////////////////////////////////

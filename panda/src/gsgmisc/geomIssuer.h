@@ -52,9 +52,9 @@ public:
   // backend, and increment the iterator.
   typedef void IssueVertex(const Geom *, Geom::VertexIterator &, GraphicsStateGuardianBase *gsg);
   typedef void IssueNormal(const Geom *, Geom::NormalIterator &, GraphicsStateGuardianBase *gsg);
+  typedef void IssueColor(const Geom *, Geom::ColorIterator &, GraphicsStateGuardianBase *gsg);
   typedef void IssueTexCoord(const Geom *, Geom::TexCoordIterator &, GraphicsStateGuardianBase *gsg);
   typedef void IssueMultiTexCoord(const Geom *, Geom::MultiTexCoordIterator &, GraphicsStateGuardianBase *gsg);
-  typedef void IssueColor(const Geom *, Geom::ColorIterator &, GraphicsStateGuardianBase *gsg);
 
   GeomIssuer();
   GeomIssuer(const Geom *geom,
@@ -67,8 +67,12 @@ public:
              GraphicsStateGuardianBase *gsg,
              IssueVertex *vertex,
              IssueNormal *normal,
-             IssueMultiTexCoord *texcoord,
-             IssueColor *color);
+             IssueColor *color,
+             IssueMultiTexCoord *single_texcoord,
+             IssueMultiTexCoord *multi_texcoord,
+             const Geom::MultiTexCoordIterator &ti);
+             
+
 
   INLINE void issue_vertex(GeomBindType bind,
                            Geom::VertexIterator &i);

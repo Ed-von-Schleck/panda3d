@@ -26,6 +26,7 @@
 #include "textureStage.h"
 #include "updateSeq.h"
 #include "textureStageManager.h"
+#include "indirectLess.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TextureAttrib
@@ -78,8 +79,8 @@ PUBLISHED:
   INLINE int get_num_stages() const;
   INLINE TextureStage *get_stage(int n) const;
 
-  bool has_stage(TextureStage *stage) const;
-  Texture *get_texture(TextureStage *stage) const;
+  INLINE bool has_stage(TextureStage *stage) const;
+  INLINE Texture *get_texture(TextureStage *stage) const;
 
   INLINE CPT(RenderAttrib) add_stage(TextureStage *stage, Texture *tex) const;
   INLINE CPT(RenderAttrib) remove_stage(TextureStage *stage) const;
@@ -110,7 +111,7 @@ private:
   typedef pvector< PT(TextureStage) > Stages;
   Stages _stages;
 
-  typedef pmap< TextureStage*, PT(Texture) > Textures;
+  typedef pmap< TextureStage *, PT(Texture) > Textures;
   Textures _textures;
 
   UpdateSeq _sort_seq;

@@ -104,8 +104,8 @@ public:
   class MultiTexCoordIterator {
   public:
     int _num_stages;
-    const TexCoordf *_array[max_geom_texture_stages];
-    const ushort *_index[max_geom_texture_stages];
+    TexCoordIterator _stages[max_geom_texture_stages];
+    int _stage_index[max_geom_texture_stages];
   };
   class ColorIterator {
   public:
@@ -122,35 +122,16 @@ public:
   typedef const Vertexf &GetNextVertex(VertexIterator &);
   typedef const Normalf &GetNextNormal(NormalIterator &);
   typedef const TexCoordf &GetNextTexCoord(TexCoordIterator &);
-  typedef const TexCoordf &GetNextMultiTexCoord(MultiTexCoordIterator &, int stage_index);
   typedef const Colorf &GetNextColor(ColorIterator &);
 
 
   Geom();
   Geom(const Geom &copy);
-  ~Geom();
+  virtual ~Geom();
 
   void operator = (const Geom &copy);
   virtual Geom *make_copy() const=0;
 
-PUBLISHED:
-  void write(ostream &out, int indent_level = 0) const;
-  virtual void output(ostream &out) const;
-  void write_verbose(ostream &out, int indent_level) const;
-
-public:
-  // From parent dDrawable
-  virtual void draw(GraphicsStateGuardianBase *gsg);
-
-  // From parent Configurable
-  virtual void config();
-
-  // Immediate mode drawing functions - issue graphics commands
-  virtual void draw_immediate(GraphicsStateGuardianBase *gsg, GeomContext *gc) = 0;
-  virtual void print_draw_immediate() const = 0;
-
-  void calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
-                         bool &found_any) const;
 PUBLISHED:
   void transform_vertices(const LMatrix4f &mat);
 
@@ -188,6 +169,7 @@ PUBLISHED:
   virtual bool is_dynamic() const;
 
   INLINE GeomBindType get_binding(int attr) const;
+  INLINE bool has_any_texcoords() const;
   INLINE bool has_texcoords(const TexCoordName *name) const;
 
   INLINE PTA_Vertexf get_coords_array() const;
@@ -224,6 +206,10 @@ PUBLISHED:
   virtual Geom *explode() const;
   virtual PTA_ushort get_tris() const;
 
+  void write(ostream &out, int indent_level = 0) const;
+  virtual void output(ostream &out) const;
+  void write_verbose(ostream &out, int indent_level) const;
+
 public:
   typedef pvector< PT(TextureStage) > ActiveTextureStages;
 
@@ -237,7 +223,7 @@ public:
   INLINE const TexCoordf &get_next_texcoord(TexCoordIterator &tciterator) const;
   void setup_multitexcoord_iterator(MultiTexCoordIterator &iterator,
                                     const ActiveTextureStages &active_stages) const;
-  INLINE const TexCoordf &get_next_multitexcoord(MultiTexCoordIterator &tciterator, int stage_index) const;
+  INLINE const TexCoordf &get_next_multitexcoord(MultiTexCoordIterator &tciterator, int n) const;
 
   INLINE ColorIterator make_color_iterator() const;
   INLINE const Colorf &get_next_color(ColorIterator &citerator) const;
@@ -246,6 +232,19 @@ public:
                            GraphicsStateGuardianBase *gsg);
   bool release(PreparedGraphicsObjects *prepared_objects);
   int release_all();
+
+  // From parent dDrawable
+  virtual void draw(GraphicsStateGuardianBase *gsg);
+
+  // From parent Configurable
+  virtual void config();
+
+  // Immediate mode drawing functions - issue graphics commands
+  virtual void draw_immediate(GraphicsStateGuardianBase *gsg, GeomContext *gc) = 0;
+  virtual void print_draw_immediate() const = 0;
+
+  void calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
+                         bool &found_any) const;
 
 protected:
   void init();
@@ -270,7 +269,6 @@ protected:
   GetNextNormal *_get_normal;
   GetNextColor *_get_color;
   GetNextTexCoord *_get_texcoord;
-  GetNextMultiTexCoord *_get_multitexcoord;
 
   class TexCoordDef {
   public:
