@@ -419,7 +419,42 @@ void TexGenAttrib::
 write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
 
-  // TODO: write the multitexture data.
+  dg.add_uint16(_stages.size());
+
+  Stages::const_iterator si;
+  for (si = _stages.begin(); si != _stages.end(); ++si) {
+    TextureStage *stage = (*si).first;
+    Mode mode = (*si).second;
+
+    manager->write_pointer(dg, stage);
+    dg.add_uint8((unsigned int)mode);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexGenAttrib::complete_pointers
+//       Access: Public, Virtual
+//  Description: Receives an array of pointers, one for each time
+//               manager->read_pointer() was called in fillin().
+//               Returns the number of pointers processed.
+////////////////////////////////////////////////////////////////////
+int TexGenAttrib::
+complete_pointers(TypedWritable **p_list, BamReader *manager) {
+  int pi = RenderAttrib::complete_pointers(p_list, manager);
+
+  pvector<Mode>::const_iterator mi;
+  for (mi = _read_modes.begin(); mi != _read_modes.end(); ++mi) {
+    Mode mode = (*mi);
+
+    TextureStage *stage = DCAST(TextureStage, p_list[pi++]);
+    _stages[stage] = mode;
+
+    if (mode != M_off) {
+      _no_texcoords.insert(stage);
+    }
+  }
+
+  return pi;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -452,4 +487,18 @@ make_from_bam(const FactoryParams &params) {
 void TexGenAttrib::
 fillin(DatagramIterator &scan, BamReader *manager) {
   RenderAttrib::fillin(scan, manager);
+
+  size_t num_stages = scan.get_uint16();
+
+  // For now, read in a linear list of the modes we will assign to
+  // each associated TextureStage pointer.  Later, in
+  // complete_pointers, we'll fill up the map the with appropriate
+  // TextureStage/Mode pairing.
+  _read_modes.clear();
+  _read_modes.reserve(num_stages);
+  for (size_t i = 0; i < num_stages; i++) {
+    manager->read_pointer(scan);
+    Mode mode = (Mode)scan.get_uint8();
+    _read_modes.push_back(mode);
+  }
 }
