@@ -24,6 +24,8 @@
 #include "datagramIterator.h"
 #include "dcast.h"
 
+CPT(RenderAttrib) TextureAttrib::_empty_attrib;
+CPT(RenderAttrib) TextureAttrib::_all_off_attrib;
 TypeHandle TextureAttrib::_type_handle;
 
 // This STL Function object is used in filter_to_max(), below, to sort
@@ -53,7 +55,7 @@ public:
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
 make(Texture *texture) {
-  return make_on(TextureStage::get_default(), texture);
+  return DCAST(TextureAttrib, make())->add_on_stage(TextureStage::get_default(), texture);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -72,53 +74,20 @@ make_off() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make_set
+//     Function: TextureAttrib::make
 //       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that replaces
-//               any previous texture stages with the indicated stage
-//               only.
+//  Description: Constructs a new TextureAttrib object that does
+//               nothing.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
-make_set(TextureStage *stage, Texture *tex) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_off_all_stages = true;
-  attrib->_on_stages.push_back(stage);
-  attrib->_on_textures[stage] = tex;
+make() {
+  // We make it a special case and store a pointer to the empty attrib
+  // forever once we find it the first time, as an optimization.
+  if (_empty_attrib == (RenderAttrib *)NULL) {
+    _empty_attrib = return_new(new TextureAttrib);
+  }
 
-  attrib->_sort_seq = UpdateSeq::old();
-  return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make_on
-//       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that turns on
-//               the indicated stage, but does not affect any other
-//               stages.
-////////////////////////////////////////////////////////////////////
-CPT(RenderAttrib) TextureAttrib::
-make_on(TextureStage *stage, Texture *tex) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_on_stages.push_back(stage);
-  attrib->_on_textures[stage] = tex;
-
-  attrib->_sort_seq = UpdateSeq::old();
-  return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make_off
-//       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that turns off
-//               the indicated stage, but does not affect any other
-//               stages.
-////////////////////////////////////////////////////////////////////
-CPT(RenderAttrib) TextureAttrib::
-make_off(TextureStage *stage) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_off_stages.insert(stage);
-
-  return return_new(attrib);
+  return _empty_attrib;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -129,9 +98,15 @@ make_off(TextureStage *stage) {
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
 make_all_off() {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_off_all_stages = true;
-  return return_new(attrib);
+  // We make it a special case and store a pointer to the off attrib
+  // forever once we find it the first time, as an optimization.
+  if (_all_off_attrib == (RenderAttrib *)NULL) {
+    TextureAttrib *attrib = new TextureAttrib;
+    attrib->_off_all_stages = true;
+    _all_off_attrib = return_new(attrib);
+  }
+
+  return _all_off_attrib;
 }
 
 ////////////////////////////////////////////////////////////////////

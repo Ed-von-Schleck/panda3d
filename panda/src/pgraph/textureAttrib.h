@@ -54,9 +54,7 @@ PUBLISHED:
   // TextureAttrib.  Each TextureAttrib can add or remove individual
   // texture stages from the complete set of textures that are to be
   // applied; this is similar to the mechanism of LightAttrib.
-  static CPT(RenderAttrib) make_set(TextureStage *stage, Texture *tex);
-  static CPT(RenderAttrib) make_on(TextureStage *stage, Texture *tex);
-  static CPT(RenderAttrib) make_off(TextureStage *stage);
+  static CPT(RenderAttrib) make();
   static CPT(RenderAttrib) make_all_off();
 
   INLINE int get_num_on_stages() const;
@@ -67,15 +65,15 @@ PUBLISHED:
   INLINE int get_num_off_stages() const;
   INLINE TextureStage *get_off_stage(int n) const;
   INLINE bool has_off_stage(TextureStage *stage) const;
+  INLINE bool has_all_off() const;
+
+  INLINE bool is_identity() const;
 
   CPT(RenderAttrib) add_on_stage(TextureStage *stage, Texture *tex) const;
   CPT(RenderAttrib) remove_on_stage(TextureStage *stage) const;
   CPT(RenderAttrib) add_off_stage(TextureStage *stage) const;
   CPT(RenderAttrib) remove_off_stage(TextureStage *stage) const;
   CPT(RenderAttrib) unify_texture_stages(TextureStage *stage) const;
-
-  INLINE bool is_identity() const;
-  INLINE bool is_all_off() const;
 
 public:
   INLINE const Geom::ActiveTextureStages &get_on_stages() const;
@@ -111,6 +109,9 @@ private:
   UpdateSeq _sort_seq;
 
   int _num_on_textures;  //temporary count to complete_pointers from fill_in
+
+  static CPT(RenderAttrib) _empty_attrib;
+  static CPT(RenderAttrib) _all_off_attrib;
 
 public:
   static void register_with_read_factory();

@@ -2165,7 +2165,8 @@ set_texture(TextureStage *stage, Texture *tex, int priority) {
 
   } else {
     // Create a new TextureAttrib for this node.
-    node()->set_attrib(TextureAttrib::make_on(stage, tex), priority);
+    CPT(TextureAttrib) tsa = DCAST(TextureAttrib, TextureAttrib::make());
+    node()->set_attrib(tsa->add_on_stage(stage, tex), priority);
   }
 }
 
@@ -2214,7 +2215,8 @@ set_texture_off(TextureStage *stage, int priority) {
   } else {
     // Create a new TextureAttrib for this node that turns off the
     // indicated stage.
-    node()->set_attrib(TextureAttrib::make_off(stage), priority);
+    CPT(TextureAttrib) tsa = DCAST(TextureAttrib, TextureAttrib::make());
+    node()->set_attrib(tsa->add_off_stage(stage), priority);
   }
 }
 
@@ -2316,7 +2318,7 @@ has_texture_off() const {
     node()->get_attrib(TextureAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
     const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
-    return ta->is_all_off();
+    return ta->has_all_off();
   }
 
   return false;
@@ -2824,6 +2826,19 @@ find_texture(const string &name) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: NodePath::find_texture
+//       Access: Published
+//  Description: Returns the first texture found applied to geometry
+//               at this node or below that is assigned to the
+//               indicated texture stage.  Returns the texture if it
+//               is found, or NULL if it is not.
+////////////////////////////////////////////////////////////////////
+Texture *NodePath::
+find_texture(TextureStage *stage) const {
+  return r_find_texture(node(), stage);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: NodePath::find_all_textures
 //       Access: Published
 //  Description: Returns a list of a textures applied to geometry at
@@ -2863,6 +2878,27 @@ find_all_textures(const string &name) const {
     if (glob.matches(texture->get_name())) {
       tc.add_texture(texture);
     }
+  }
+  return tc;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::find_all_textures
+//       Access: Published
+//  Description: Returns a list of a textures on geometry at
+//               this node and below that are assigned to the
+//               indicated texture stage.
+////////////////////////////////////////////////////////////////////
+TextureCollection NodePath::
+find_all_textures(TextureStage *stage) const {
+  Textures textures;
+  r_find_all_textures(node(), stage, textures);
+
+  TextureCollection tc;
+  Textures::iterator ti;
+  for (ti = textures.begin(); ti != textures.end(); ++ti) {
+    Texture *texture = (*ti);
+    tc.add_texture(texture);
   }
   return tc;
 }
@@ -4655,6 +4691,105 @@ r_find_all_textures(PandaNode *node, const RenderState *state,
     PandaNode *child = cr.get_child(i);
     CPT(RenderState) next_state = state->compose(child->get_state());
     r_find_all_textures(child, next_state, textures);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::r_find_texture
+//       Access: Private
+//  Description: 
+////////////////////////////////////////////////////////////////////
+Texture * NodePath::
+r_find_texture(PandaNode *node, TextureStage *stage) const {
+  // Look for a TextureAttrib on the node.
+  const RenderAttrib *attrib =
+    node->get_attrib(TextureAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
+    if (ta->has_on_stage(stage)) {
+      return ta->get_on_texture(stage);
+    }
+  }
+
+  if (node->is_geom_node()) {
+    GeomNode *gnode;
+    DCAST_INTO_R(gnode, node, NULL);
+
+    int num_geoms = gnode->get_num_geoms();
+    for (int i = 0; i < num_geoms; i++) {
+      CPT(RenderState) geom_state = gnode->get_geom_state(i);
+
+      // Look for a TextureAttrib on the state.
+      const RenderAttrib *attrib =
+        geom_state->get_attrib(TextureAttrib::get_class_type());
+      if (attrib != (const RenderAttrib *)NULL) {
+        const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
+        if (ta->has_on_stage(stage)) {
+          return ta->get_on_texture(stage);
+        }
+      }
+    }
+  }
+
+  // Now consider children.
+  PandaNode::Children cr = node->get_children();
+  int num_children = cr.get_num_children();
+  for (int i = 0; i < num_children; i++) {
+    PandaNode *child = cr.get_child(i);
+
+    Texture *result = r_find_texture(child, stage);
+    if (result != (Texture *)NULL) {
+      return result;
+    }
+  }
+
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::r_find_all_textures
+//       Access: Private
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void NodePath::
+r_find_all_textures(PandaNode *node, TextureStage *stage,
+                    NodePath::Textures &textures) const {
+  // Look for a TextureAttrib on the node.
+  const RenderAttrib *attrib =
+    node->get_attrib(TextureAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
+    if (ta->has_on_stage(stage)) {
+      textures.insert(ta->get_on_texture(stage));
+    }
+  }
+
+  if (node->is_geom_node()) {
+    GeomNode *gnode;
+    DCAST_INTO_V(gnode, node);
+
+    int num_geoms = gnode->get_num_geoms();
+    for (int i = 0; i < num_geoms; i++) {
+      CPT(RenderState) geom_state = gnode->get_geom_state(i);
+
+      // Look for a TextureAttrib on the state.
+      const RenderAttrib *attrib =
+        geom_state->get_attrib(TextureAttrib::get_class_type());
+      if (attrib != (const RenderAttrib *)NULL) {
+        const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
+        if (ta->has_on_stage(stage)) {
+          textures.insert(ta->get_on_texture(stage));
+        }
+      }
+    }
+  }
+
+  // Now consider children.
+  PandaNode::Children cr = node->get_children();
+  int num_children = cr.get_num_children();
+  for (int i = 0; i < num_children; i++) {
+    PandaNode *child = cr.get_child(i);
+    r_find_all_textures(child, stage, textures);
   }
 }
 

@@ -548,8 +548,10 @@ PUBLISHED:
   INLINE void clear_project_texture(TextureStage *stage);
 
   Texture *find_texture(const string &name) const;
+  Texture *find_texture(TextureStage *stage) const;
   TextureCollection find_all_textures() const;
   TextureCollection find_all_textures(const string &name) const;
+  TextureCollection find_all_textures(TextureStage *stage) const;
 
   TextureStage *find_texture_stage(const string &name) const;
   TextureStageCollection find_all_texture_stages() const;
@@ -697,6 +699,9 @@ private:
   Texture *r_find_texture(PandaNode *node, const RenderState *state,
                           const GlobPattern &glob) const;
   void r_find_all_textures(PandaNode *node, const RenderState *state,
+                           Textures &textures) const;
+  Texture *r_find_texture(PandaNode *node, TextureStage *stage) const;
+  void r_find_all_textures(PandaNode *node, TextureStage *stage,
                            Textures &textures) const;
 
   typedef pset<TextureStage *> TextureStages;

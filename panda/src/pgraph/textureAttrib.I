@@ -164,6 +164,17 @@ has_off_stage(TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::has_all_off
+//       Access: Published
+//  Description: Returns true if this attrib turns off all stages
+//               (although it may also turn some on).
+////////////////////////////////////////////////////////////////////
+INLINE bool TextureAttrib::
+has_all_off() const {
+  return _off_all_stages;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::is_identity
 //       Access: Published
 //  Description: Returns true if this is an identity attrib: it does
@@ -175,19 +186,8 @@ is_identity() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::is_all_off
-//       Access: Published
-//  Description: Returns true if this attrib turns off all stages and
-//               turns none on.
-////////////////////////////////////////////////////////////////////
-INLINE bool TextureAttrib::
-is_all_off() const {
-  return _on_stages.empty() && _off_all_stages;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::get_on_stages
-//       Access: Published
+//       Access: Public
 //  Description: Returns the complete list of stages defined within
 //               this TextureAttrib, suitable for passing to
 //               Geom::setup_multitexcoord_iterator().

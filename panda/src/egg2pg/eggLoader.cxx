@@ -826,7 +826,7 @@ load_texture(TextureDef &def, const EggTexture *egg_tex) {
 
   // Make a texture stage for the texture.
   PT(TextureStage) stage = make_texture_stage(egg_tex);
-  def._texture = TextureAttrib::make_on(stage, tex);
+  def._texture = DCAST(TextureAttrib, TextureAttrib::make())->add_on_stage(stage, tex);
   def._stage = stage;
   def._egg_tex = egg_tex;
 
