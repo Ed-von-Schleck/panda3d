@@ -204,17 +204,21 @@ class Notifier:
         """
         if (self.__debug):
             state = ''
+            doId = ''
             if obj is not None:
                 if hasattr(obj, fsmMemberName) and obj.fsm.getCurrentState() is not None:
                     #state = "%s=%s"%(obj.fsm.getName(), obj.fsm.getCurrentState().getName())
                     state = obj.fsm.getCurrentState().getName()
+                if hasattr(obj, 'doId'):
+                    doId = " doId:%s"%(obj.doId,)
             if 1 or type(obj) == types.ClassType:
                 name = "%s."%(obj.__class__.__name__,)
             else:
                 name = "%s "%(self.__name,)
-            string = ":%s [%-7s] %s %s%s"%(
+            string = ":%s [%-7s]%s %s %s%s"%(
                 self.getOnlyTime(),
                 state,
+                doId,
                 id(obj),
                 name,
                 PythonUtil.traceParentCall())
