@@ -1,22 +1,24 @@
-// Filename: lwoHeader.h
+// Filename: lwoStillImage.h
 // Created by:  drose (24Apr01)
 // 
 ////////////////////////////////////////////////////////////////////
 
-#ifndef LWOHEADER_H
-#define LWOHEADER_H
+#ifndef LWOSTILLIMAGE_H
+#define LWOSTILLIMAGE_H
 
 #include <pandatoolbase.h>
 
-#include "lwoGroupChunk.h"
+#include "lwoChunk.h"
+
+#include <filename.h>
 
 ////////////////////////////////////////////////////////////////////
-// 	 Class : LwoHeader
-// Description : The first chunk in a Lightwave Object file.
+// 	 Class : LwoStillImage
+// Description : A single still image associated with a LwoClip chunk.
 ////////////////////////////////////////////////////////////////////
-class LwoHeader : public LwoGroupChunk {
+class LwoStillImage : public LwoChunk {
 public:
-  IffId _lwid;
+  Filename _filename;
 
 public:
   virtual bool read_iff(IffInputFile *in, size_t stop_at);
@@ -31,16 +33,16 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    LwoGroupChunk::init_type();
-    register_type(_type_handle, "LwoHeader",
-		  LwoGroupChunk::get_class_type());
+    LwoChunk::init_type();
+    register_type(_type_handle, "LwoStillImage",
+		  LwoChunk::get_class_type());
   }
 
 private:
   static TypeHandle _type_handle;
 };
 
-#include "lwoHeader.I"
+#include "lwoStillImage.I"
 
 #endif
 

@@ -1,22 +1,25 @@
-// Filename: lwoHeader.h
+// Filename: lwoSurfaceParameter.h
 // Created by:  drose (24Apr01)
 // 
 ////////////////////////////////////////////////////////////////////
 
-#ifndef LWOHEADER_H
-#define LWOHEADER_H
+#ifndef LWOSURFACEPARAMETER_H
+#define LWOSURFACEPARAMETER_H
 
 #include <pandatoolbase.h>
 
-#include "lwoGroupChunk.h"
+#include "lwoChunk.h"
 
 ////////////////////////////////////////////////////////////////////
-// 	 Class : LwoHeader
-// Description : The first chunk in a Lightwave Object file.
+// 	 Class : LwoSurfaceParameter
+// Description : Records some parameter value of a surface material,
+//               as an entry within a LwoSurface chunk.  The meaning
+//               of the value is determined by the id of this chunk.
 ////////////////////////////////////////////////////////////////////
-class LwoHeader : public LwoGroupChunk {
+class LwoSurfaceParameter : public LwoChunk {
 public:
-  IffId _lwid;
+  float _value;
+  int _envelope;
 
 public:
   virtual bool read_iff(IffInputFile *in, size_t stop_at);
@@ -31,16 +34,16 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    LwoGroupChunk::init_type();
-    register_type(_type_handle, "LwoHeader",
-		  LwoGroupChunk::get_class_type());
+    LwoChunk::init_type();
+    register_type(_type_handle, "LwoSurfaceParameter",
+		  LwoChunk::get_class_type());
   }
 
 private:
   static TypeHandle _type_handle;
 };
 
-#include "lwoHeader.I"
+#include "lwoSurfaceParameter.I"
 
 #endif
 

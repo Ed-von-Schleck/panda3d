@@ -1,22 +1,26 @@
-// Filename: lwoHeader.h
+// Filename: lwoBoundingBox.h
 // Created by:  drose (24Apr01)
 // 
 ////////////////////////////////////////////////////////////////////
 
-#ifndef LWOHEADER_H
-#define LWOHEADER_H
+#ifndef LWOBOUNDINGBOX_H
+#define LWOBOUNDINGBOX_H
 
 #include <pandatoolbase.h>
 
-#include "lwoGroupChunk.h"
+#include "lwoChunk.h"
+
+#include <luse.h>
 
 ////////////////////////////////////////////////////////////////////
-// 	 Class : LwoHeader
-// Description : The first chunk in a Lightwave Object file.
+// 	 Class : LwoBoundingBox
+// Description : Stores the bounding box for the vertex data in a
+//               layer.  Optional.
 ////////////////////////////////////////////////////////////////////
-class LwoHeader : public LwoGroupChunk {
+class LwoBoundingBox : public LwoChunk {
 public:
-  IffId _lwid;
+  LVecBase3f _min;
+  LVecBase3f _max;
 
 public:
   virtual bool read_iff(IffInputFile *in, size_t stop_at);
@@ -31,16 +35,16 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    LwoGroupChunk::init_type();
-    register_type(_type_handle, "LwoHeader",
-		  LwoGroupChunk::get_class_type());
+    LwoChunk::init_type();
+    register_type(_type_handle, "LwoBoundingBox",
+		  LwoChunk::get_class_type());
   }
 
 private:
   static TypeHandle _type_handle;
 };
 
-#include "lwoHeader.I"
+#include "lwoBoundingBox.I"
 
 #endif
 

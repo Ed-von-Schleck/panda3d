@@ -1,22 +1,26 @@
-// Filename: lwoHeader.h
+// Filename: lwoSurfaceColor.h
 // Created by:  drose (24Apr01)
 // 
 ////////////////////////////////////////////////////////////////////
 
-#ifndef LWOHEADER_H
-#define LWOHEADER_H
+#ifndef LWOSURFACECOLOR_H
+#define LWOSURFACECOLOR_H
 
 #include <pandatoolbase.h>
 
-#include "lwoGroupChunk.h"
+#include "lwoChunk.h"
+
+#include <luse.h>
 
 ////////////////////////////////////////////////////////////////////
-// 	 Class : LwoHeader
-// Description : The first chunk in a Lightwave Object file.
+// 	 Class : LwoSurfaceColor
+// Description : Records the base color of a surface, as an entry
+//               within a LwoSurface chunk.
 ////////////////////////////////////////////////////////////////////
-class LwoHeader : public LwoGroupChunk {
+class LwoSurfaceColor : public LwoChunk {
 public:
-  IffId _lwid;
+  RGBColorf _color;
+  int _envelope;
 
 public:
   virtual bool read_iff(IffInputFile *in, size_t stop_at);
@@ -31,16 +35,16 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    LwoGroupChunk::init_type();
-    register_type(_type_handle, "LwoHeader",
-		  LwoGroupChunk::get_class_type());
+    LwoChunk::init_type();
+    register_type(_type_handle, "LwoSurfaceColor",
+		  LwoChunk::get_class_type());
   }
 
 private:
   static TypeHandle _type_handle;
 };
 
-#include "lwoHeader.I"
+#include "lwoSurfaceColor.I"
 
 #endif
 
