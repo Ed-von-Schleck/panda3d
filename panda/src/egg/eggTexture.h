@@ -24,6 +24,7 @@
 #include "eggRenderMode.h"
 #include "eggFilenameNode.h"
 
+#include "pset.h"
 #include "luse.h"
 
 
