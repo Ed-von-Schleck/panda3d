@@ -23,7 +23,7 @@ const int ChanFileEOF = -1;
 
 static bool file_done;
 
-INLINE std::string ChanReadLine(istream& is) {
+std::string ChanReadLine(istream& is) {
   if (is.eof() || is.fail())
 #ifdef BROKEN_EXCEPTIONS
     {
@@ -35,7 +35,7 @@ INLINE std::string ChanReadLine(istream& is) {
 #endif /* BROKEN_EXCEPTIONS */
   std::string S;
   std::getline(is, S);
-  size_t i = S.find_first_not_of(" /t/f/r/n");
+  size_t i = S.find_first_not_of(" \t\f\r\n");
   if ((i == std::string::npos) || (S[i] == ';'))
     return ChanReadLine(is);  // all white space or comment
   if (i != 0)
@@ -43,6 +43,9 @@ INLINE std::string ChanReadLine(istream& is) {
   i = S.find_first_of(";");
   if (i != std::string::npos)
     S.erase(i, std::string::npos);  // remove trailing comment
+  i = S.find_last_not_of(" \t\f\r\n");
+  if (i != std::string::npos)
+    S.erase(i + 1, std::string::npos);  // remove trailing whitespace
   return S;
 }
 
