@@ -108,7 +108,8 @@ has_texture() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool EggPrimitive::
 has_texture(EggTexture *texture) const {
-  return (find(_textures.begin(), _textures.end(), texture) != _textures.end());
+  PT_EggTexture t = texture;
+  return (find(_textures.begin(), _textures.end(), t) != _textures.end());
 }
 
 ////////////////////////////////////////////////////////////////////
