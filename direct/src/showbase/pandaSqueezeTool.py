@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # SQUEEZE
-# $Id: pandaSqueezeTool.py,v 1.3 2003/06/21 15:08:11 drwr Exp $
+# $Id: pandaSqueezeTool.py,v 1.4 2004/06/01 19:31:52 drwr Exp $
 #
 # squeeze a python program 
 #
@@ -159,8 +159,9 @@ class Loader(ihooks.ModuleLoader):
         if type != PYZ_MODULE:
             return ihooks.ModuleLoader.load_module(self, name, stuff)
         #print "PYZ:", "import", name
-        code = self.__modules[name]
-        del self.__modules[name] # no need to keep this one around
+        basename = name.split('.')[-1]
+        code = self.__modules[basename]
+        del self.__modules[basename] # no need to keep this one around
         m = self.hooks.add_module(name)
         m.__file__ = filename
         exec code in m.__dict__
@@ -330,27 +331,28 @@ exec "import %(start)s"
 		# create bootstrap code
 
 		fp = open(bootstrap, "w")
-		# Note: David Rose adjusted the following to be more general.
+		# Note: David Rose adjusted the following to be panda-specific.
 		fp.write("""\
 #%(localMagic)s %(archiveid)s
 import ihooks,zlib,marshal,os,sys
 
+import pandac
+
 def searchPath(filename):
-  # Look along the python load path for the indicated filename.
-  # Returns the located pathname, or None if the filename is not
-  # found.
-  for dir in sys.path:
+  # Look along pandac.__path__ for the indicated filename.  Returns
+  # the located pathname, or None if the filename is not found.
+  for dir in pandac.__path__:
     pathname = os.path.join(dir, filename)
     if os.path.exists(pathname):
       return pathname
 
   return None
 
-# Look for %(archive)s along the sys.path.
+# Look for %(archive)s along pandac.__path__.
 archiveName = "%(archive)s"
 archivePath = searchPath(archiveName)
 if archivePath == None:
-  raise ImportError, "Could not locate %%s on PYTHONPATH." %% (archiveName)
+  raise ImportError, "Could not locate pandac.%%s." %% (archiveName)
 
 f=open(archivePath,"rb")
 exec marshal.loads(%(zbegin)sf.read(%(loaderlen)d)%(zend)s)
