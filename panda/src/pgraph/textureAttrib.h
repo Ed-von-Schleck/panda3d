@@ -25,6 +25,7 @@
 #include "texture.h"
 #include "textureStage.h"
 #include "updateSeq.h"
+#include "textureStageManager.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TextureAttrib

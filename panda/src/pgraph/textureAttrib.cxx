@@ -30,12 +30,15 @@ TypeHandle TextureAttrib::_type_handle;
 //       Access: Published, Static
 //  Description: Constructs a new TextureAttrib object suitable for
 //               rendering the indicated texture onto geometry.
+//
+//               This method is deprecated, and is provided for
+//               backward compatibility; you should use the
+//               multitexture form of this instead.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
 make(Texture *texture) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_texture = texture;
-  return return_new(attrib);
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  return make(O_set, tex_mgr->get_default_stage(), texture);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -43,11 +46,14 @@ make(Texture *texture) {
 //       Access: Published, Static
 //  Description: Constructs a new TextureAttrib object suitable for
 //               rendering untextured geometry.
+//
+//               This method is deprecated, and is provided for
+//               backward compatibility; you should use the
+//               multitexture form of this instead.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
 make_off() {
-  TextureAttrib *attrib = new TextureAttrib;
-  return return_new(attrib);
+  return make_all_off();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -75,7 +81,7 @@ output(ostream &out) const {
   if (is_off()) {
     out << "(off)";
   } else {
-    out << _texture->get_name();
+    out << get_texture()->get_name();
   }
 }
 
@@ -102,8 +108,8 @@ compare_to_impl(const RenderAttrib *other) const {
   // Comparing pointers by subtraction is problematic.  Instead of
   // doing this, we'll just depend on the built-in != and < operators
   // for comparing pointers.
-  if (_texture != ta->_texture) {
-    return _texture < ta->_texture ? -1 : 1;
+  if (get_texture() != ta->get_texture()) {
+    return get_texture() < ta->get_texture() ? -1 : 1;
   }
   return 0;
 }
@@ -145,7 +151,7 @@ void TextureAttrib::
 write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
 
-  manager->write_pointer(dg, _texture);
+  manager->write_pointer(dg, get_texture());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -161,7 +167,11 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
 
   TypedWritable *texture = p_list[pi++];
   if (texture != (TypedWritable *)NULL) {
-    _texture = DCAST(Texture, texture);
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    _operation = O_set;
+    _stages.push_back(tex_mgr->get_default_stage());
+    _textures[tex_mgr->get_default_stage()] = DCAST(Texture, texture);
+    _sort_seq = tex_mgr->get_sort_seq();
   }
 
   return pi;

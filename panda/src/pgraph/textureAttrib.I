@@ -25,6 +25,7 @@
 ////////////////////////////////////////////////////////////////////
 INLINE TextureAttrib::
 TextureAttrib() {
+  _operation = O_set;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -33,10 +34,14 @@ TextureAttrib() {
 //  Description: Returns true if the TextureAttrib is an 'off'
 //               TextureAttrib, indicating that it should disable
 //               texturing.
+//
+//               This method is deprecated, and is provided for
+//               backward compatibility; you should use the
+//               multitexture form of this instead.
 ////////////////////////////////////////////////////////////////////
 INLINE bool TextureAttrib::
 is_off() const {
-  return _texture == (Texture *)NULL;
+  return is_all_off();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -45,8 +50,13 @@ is_off() const {
 //  Description: If the TextureAttrib is not an 'off' TextureAttrib,
 //               returns the texture that is associated.  Otherwise,
 //               return NULL.
+//
+//               This method is deprecated, and is provided for
+//               backward compatibility; you should use the
+//               multitexture form of this instead.
 ////////////////////////////////////////////////////////////////////
 INLINE Texture *TextureAttrib::
 get_texture() const {
-  return _texture;
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  return get_texture(tex_mgr->get_default_stage());
 }
