@@ -2351,6 +2351,65 @@ issue_texture(const TextureAttrib *attrib) {
       GLP(TexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, glmode);
       GLP(TexEnvfv)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, stage->get_color().get_data());
 
+      if (stage->get_mode() == TextureStage::M_combine) {
+        GLP(TexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB, 
+                     get_texture_combine_type(stage->get_combine_rgb_mode()));
+
+        switch (stage->get_num_combine_rgb_operands()) {
+        case 3:
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_SRC2_RGB, 
+                       get_texture_src_type(stage->get_combine_rgb_source2()));
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_OPERAND2_RGB, 
+                       get_texture_operand_type(stage->get_combine_rgb_operand2()));
+          // fall through
+
+        case 2:
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_SRC1_RGB, 
+                       get_texture_src_type(stage->get_combine_rgb_source1()));
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_OPERAND1_RGB, 
+                       get_texture_operand_type(stage->get_combine_rgb_operand1()));
+          // fall through
+
+        case 1:
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_SRC0_RGB, 
+                       get_texture_src_type(stage->get_combine_rgb_source0()));
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_OPERAND0_RGB, 
+                       get_texture_operand_type(stage->get_combine_rgb_operand0()));
+          // fall through
+
+        default:
+          break;
+        }
+        GLP(TexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, 
+                     get_texture_combine_type(stage->get_combine_alpha_mode()));
+
+        switch (stage->get_num_combine_alpha_operands()) {
+        case 3:
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_SRC2_ALPHA, 
+                       get_texture_src_type(stage->get_combine_alpha_source2()));
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_OPERAND2_ALPHA, 
+                       get_texture_operand_type(stage->get_combine_alpha_operand2()));
+          // fall through
+
+        case 2:
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_SRC1_ALPHA, 
+                       get_texture_src_type(stage->get_combine_alpha_source1()));
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, 
+                       get_texture_operand_type(stage->get_combine_alpha_operand1()));
+          // fall through
+
+        case 1:
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_SRC0_ALPHA, 
+                       get_texture_src_type(stage->get_combine_alpha_source0()));
+          GLP(TexEnvi)(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, 
+                       get_texture_operand_type(stage->get_combine_alpha_operand0()));
+          // fall through
+
+        default:
+          break;
+        }
+      }
+
       GLP(MatrixMode)(GL_TEXTURE);
       if (_current_tex_mat->has_stage(stage)) {
         GLP(LoadMatrixf)(_current_tex_mat->get_mat(stage).get_data());
@@ -3680,37 +3739,11 @@ get_internal_image_format(PixelBuffer::Format format) {
 ////////////////////////////////////////////////////////////////////
 //     Function: CLP(GraphicsStateGuardian)::get_texture_apply_mode_type
 //       Access: Protected
-//  Description: Maps from the texture environment's mode types
-//       to the corresponding OpenGL ids
-////////////////////////////////////////////////////////////////////
-GLint CLP(GraphicsStateGuardian)::
-get_texture_apply_mode_type(TextureApplyAttrib::Mode am) const {
-  if (CLP(always_decal_textures)) {
-    return GL_DECAL;
-  }
-  switch (am) {
-  case TextureApplyAttrib::M_modulate: return GL_MODULATE;
-  case TextureApplyAttrib::M_decal: return GL_DECAL;
-  case TextureApplyAttrib::M_blend: return GL_BLEND;
-  case TextureApplyAttrib::M_replace: return GL_REPLACE;
-  case TextureApplyAttrib::M_add: return GL_ADD;
-  }
-  GLCAT.error()
-    << "Invalid TextureApplyAttrib::Mode value" << endl;
-  return GL_MODULATE;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CLP(GraphicsStateGuardian)::get_texture_apply_mode_type
-//       Access: Protected
 //  Description: Maps from the texture stage's mode types
 //               to the corresponding OpenGL ids
 ////////////////////////////////////////////////////////////////////
 GLint CLP(GraphicsStateGuardian)::
 get_texture_apply_mode_type(TextureStage::Mode am) const {
-  if (CLP(always_decal_textures)) {
-    return GL_DECAL;
-  }
   switch (am) {
   case TextureStage::M_modulate: return GL_MODULATE;
   case TextureStage::M_decal: return GL_DECAL;
@@ -3719,9 +3752,76 @@ get_texture_apply_mode_type(TextureStage::Mode am) const {
   case TextureStage::M_add: return GL_ADD;
   case TextureStage::M_combine: return GL_COMBINE;
   }
+
   GLCAT.error()
     << "Invalid TextureStage::Mode value" << endl;
   return GL_MODULATE;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CLP(GraphicsStateGuardian)::get_texture_combine_type
+//       Access: Protected
+//  Description: Maps from the texture stage's CombineMode types
+//               to the corresponding OpenGL ids
+////////////////////////////////////////////////////////////////////
+GLint CLP(GraphicsStateGuardian)::
+get_texture_combine_type(TextureStage::CombineMode cm) const {
+  switch (cm) {
+  case TextureStage::CM_undefined: // fall through
+  case TextureStage::CM_replace: return GL_REPLACE;
+  case TextureStage::CM_modulate: return GL_MODULATE;
+  case TextureStage::CM_add: return GL_ADD;
+  case TextureStage::CM_add_signed: return GL_ADD_SIGNED;
+  case TextureStage::CM_interpolate: return GL_INTERPOLATE;
+  case TextureStage::CM_subtract: return GL_SUBTRACT;
+  case TextureStage::CM_dot3_rgb: return GL_DOT3_RGB;
+  case TextureStage::CM_dot3_rgba: return GL_DOT3_RGBA;
+  }
+  GLCAT.error()
+    << "Invalid TextureStage::CombineMode value" << endl;
+  return GL_REPLACE;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CLP(GraphicsStateGuardian)::get_texture_src_type
+//       Access: Protected
+//  Description: Maps from the texture stage's CombineSource types
+//               to the corresponding OpenGL ids
+////////////////////////////////////////////////////////////////////
+GLint CLP(GraphicsStateGuardian)::
+get_texture_src_type(TextureStage::CombineSource cs) const {
+  switch (cs) {
+  case TextureStage::CS_undefined: // fall through
+  case TextureStage::CS_texture: return GL_TEXTURE;
+  case TextureStage::CS_constant: return GL_CONSTANT;
+  case TextureStage::CS_primary_color: return GL_PRIMARY_COLOR;
+  case TextureStage::CS_previous: return GL_PREVIOUS;
+  }
+
+  GLCAT.error()
+    << "Invalid TextureStage::CombineSource value" << endl;
+  return GL_TEXTURE;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CLP(GraphicsStateGuardian)::get_texture_operand_type
+//       Access: Protected
+//  Description: Maps from the texture stage's CombineOperand types
+//               to the corresponding OpenGL ids
+////////////////////////////////////////////////////////////////////
+GLint CLP(GraphicsStateGuardian)::
+get_texture_operand_type(TextureStage::CombineOperand co) const {
+  switch (co) {
+  case TextureStage::CO_undefined: // fall through
+  case TextureStage::CO_src_color: return GL_SRC_COLOR;
+  case TextureStage::CO_one_minus_src_color: return GL_ONE_MINUS_SRC_COLOR;
+  case TextureStage::CO_src_alpha: return GL_SRC_ALPHA;
+  case TextureStage::CO_one_minus_src_alpha: return GL_ONE_MINUS_SRC_ALPHA;
+  }
+
+  GLCAT.error()
+    << "Invalid TextureStage::CombineOperand value" << endl;
+  return GL_SRC_COLOR;
 }
 
 ////////////////////////////////////////////////////////////////////

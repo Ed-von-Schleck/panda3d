@@ -115,6 +115,7 @@ PUBLISHED:
                               CombineSource source1, CombineOperand operand1,
                               CombineSource source2, CombineOperand operand2);
   INLINE CombineMode get_combine_rgb_mode() const;
+  INLINE int get_num_combine_rgb_operands() const;
   INLINE CombineSource get_combine_rgb_source0() const;
   INLINE CombineOperand get_combine_rgb_operand0() const;
   INLINE CombineSource get_combine_rgb_source1() const;
@@ -132,6 +133,7 @@ PUBLISHED:
                                 CombineSource source1, CombineOperand operand1,
                                 CombineSource source2, CombineOperand operand2);
   INLINE CombineMode get_combine_alpha_mode() const;
+  INLINE int get_num_combine_alpha_operands() const;
   INLINE CombineSource get_combine_alpha_source0() const;
   INLINE CombineOperand get_combine_alpha_operand0() const;
   INLINE CombineSource get_combine_alpha_source1() const;
@@ -146,6 +148,8 @@ PUBLISHED:
   INLINE static UpdateSeq get_sort_seq();
 
 private:
+  static int get_expected_num_combine_operands(CombineMode cm);
+
   string _name;
   int _sort;
   int _priority;
@@ -154,6 +158,7 @@ private:
   Colorf _color;
 
   CombineMode _combine_rgb_mode;
+  int _num_combine_rgb_operands;
   CombineSource _combine_rgb_source0;
   CombineOperand _combine_rgb_operand0;
   CombineSource _combine_rgb_source1;
@@ -162,6 +167,7 @@ private:
   CombineOperand _combine_rgb_operand2;
 
   CombineMode _combine_alpha_mode;
+  int _num_combine_alpha_operands;
   CombineSource _combine_alpha_source0;
   CombineOperand _combine_alpha_operand0;
   CombineSource _combine_alpha_source1;
@@ -201,6 +207,12 @@ private:
 };
 
 INLINE ostream &operator << (ostream &out, const TextureStage &ts);
+
+ostream &operator << (ostream &out, TextureStage::Mode mode);
+ostream &operator << (ostream &out, TextureStage::CombineMode cm);
+ostream &operator << (ostream &out, TextureStage::CombineSource cs);
+ostream &operator << (ostream &out, TextureStage::CombineOperand co);
+
 
 #include "textureStage.I"
 

@@ -234,8 +234,10 @@ protected:
   GLenum get_image_type(PixelBuffer::Type type);
   GLenum get_external_image_format(PixelBuffer::Format format);
   GLenum get_internal_image_format(PixelBuffer::Format format);
-  GLint get_texture_apply_mode_type(TextureApplyAttrib::Mode am) const;
   GLint get_texture_apply_mode_type(TextureStage::Mode am) const;
+  GLint get_texture_combine_type(TextureStage::CombineMode cm) const;
+  GLint get_texture_src_type(TextureStage::CombineSource cs) const;
+  GLint get_texture_operand_type(TextureStage::CombineOperand co) const;
   GLenum get_fog_mode_type(Fog::Mode m) const;
 
   static CPT(RenderState) get_untextured_state();

@@ -160,6 +160,11 @@ get_texcoord_name() const {
 INLINE void TextureStage::
 set_mode(TextureStage::Mode mode) {
   _mode = mode;
+
+  if (_mode != M_combine) {
+    _num_combine_rgb_operands = 0;
+    _num_combine_alpha_operands = 0;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -200,9 +205,15 @@ get_color() const {
 INLINE void TextureStage::
 set_combine_rgb(CombineMode mode, 
                 CombineSource source0, CombineOperand operand0) {
+  nassertv(get_expected_num_combine_operands(mode) == 1);
+  _num_combine_rgb_operands = 1;
   _combine_rgb_mode = mode;
   _combine_rgb_source0 = source0;
   _combine_rgb_operand0 = operand0;
+  _combine_rgb_source1 = CS_undefined;
+  _combine_rgb_operand1 = CO_undefined;
+  _combine_rgb_source2 = CS_undefined;
+  _combine_rgb_operand2 = CO_undefined;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -214,11 +225,15 @@ INLINE void TextureStage::
 set_combine_rgb(CombineMode mode, 
                 CombineSource source0, CombineOperand operand0,
                 CombineSource source1, CombineOperand operand1) {
+  nassertv(get_expected_num_combine_operands(mode) == 2);
+  _num_combine_rgb_operands = 2;
   _combine_rgb_mode = mode;
   _combine_rgb_source0 = source0;
   _combine_rgb_operand0 = operand0;
   _combine_rgb_source1 = source1;
   _combine_rgb_operand1 = operand1;
+  _combine_rgb_source2 = CS_undefined;
+  _combine_rgb_operand2 = CO_undefined;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -231,6 +246,8 @@ set_combine_rgb(CombineMode mode,
                 CombineSource source0, CombineOperand operand0,
                 CombineSource source1, CombineOperand operand1,
                 CombineSource source2, CombineOperand operand2) {
+  nassertv(get_expected_num_combine_operands(mode) == 3);
+  _num_combine_rgb_operands = 3;
   _combine_rgb_mode = mode;
   _combine_rgb_source0 = source0;
   _combine_rgb_operand0 = operand0;
@@ -248,6 +265,18 @@ set_combine_rgb(CombineMode mode,
 INLINE TextureStage::CombineMode TextureStage::
 get_combine_rgb_mode() const {
   return _combine_rgb_mode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::get_num_combine_rgb_operands
+//       Access: Published
+//  Description: Returns the number of meaningful operands that may be
+//               retrieved via get_combine_rgb_sourceN() and
+//               get_combine_rgb_operandN().
+////////////////////////////////////////////////////////////////////
+INLINE int TextureStage::
+get_num_combine_rgb_operands() const {
+  return _num_combine_rgb_operands;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -318,9 +347,15 @@ get_combine_rgb_operand2() const {
 INLINE void TextureStage::
 set_combine_alpha(CombineMode mode, 
                   CombineSource source0, CombineOperand operand0) {
+  nassertv(get_expected_num_combine_operands(mode) == 1);
+  _num_combine_alpha_operands = 1;
   _combine_alpha_mode = mode;
   _combine_alpha_source0 = source0;
   _combine_alpha_operand0 = operand0;
+  _combine_alpha_source1 = CS_undefined;
+  _combine_alpha_operand1 = CO_undefined;
+  _combine_alpha_source2 = CS_undefined;
+  _combine_alpha_operand2 = CO_undefined;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -332,11 +367,15 @@ INLINE void TextureStage::
 set_combine_alpha(CombineMode mode, 
                   CombineSource source0, CombineOperand operand0,
                   CombineSource source1, CombineOperand operand1) {
+  nassertv(get_expected_num_combine_operands(mode) == 2);
+  _num_combine_alpha_operands = 2;
   _combine_alpha_mode = mode;
   _combine_alpha_source0 = source0;
   _combine_alpha_operand0 = operand0;
   _combine_alpha_source1 = source1;
   _combine_alpha_operand1 = operand1;
+  _combine_alpha_source2 = CS_undefined;
+  _combine_alpha_operand2 = CO_undefined;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -349,6 +388,8 @@ set_combine_alpha(CombineMode mode,
                   CombineSource source0, CombineOperand operand0,
                   CombineSource source1, CombineOperand operand1,
                   CombineSource source2, CombineOperand operand2) {
+  nassertv(get_expected_num_combine_operands(mode) == 3);
+  _num_combine_alpha_operands = 3;
   _combine_alpha_mode = mode;
   _combine_alpha_source0 = source0;
   _combine_alpha_operand0 = operand0;
@@ -366,6 +407,18 @@ set_combine_alpha(CombineMode mode,
 INLINE TextureStage::CombineMode TextureStage::
 get_combine_alpha_mode() const {
   return _combine_alpha_mode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::get_num_combine_alpha_operands
+//       Access: Published
+//  Description: Returns the number of meaningful operands that may be
+//               retrieved via get_combine_alpha_sourceN() and
+//               get_combine_alpha_operandN().
+////////////////////////////////////////////////////////////////////
+INLINE int TextureStage::
+get_num_combine_alpha_operands() const {
+  return _num_combine_alpha_operands;
 }
 
 ////////////////////////////////////////////////////////////////////
