@@ -79,11 +79,13 @@ if (sys.platform == "win32"):
     return k1;
 
   def backslashify(exp):
-    if (type(exp) == str):
-      return(string.replace(exp,"/","\\"))
-    result = []
-    for x in exp: result.append(backslashify(x))
-    return(result)
+    return exp
+    if 0:
+        if (type(exp) == str):
+          return(string.replace(exp,"/","\\"))
+        result = []
+        for x in exp: result.append(backslashify(x))
+        return(result)
 
 else:
 
@@ -99,12 +101,13 @@ if 1:
 
   # This version gives us more control of how the executable is called:
   def oscmd(cmd):
-    print cmd;
+    global VERBOSE
+    if VERBOSE >= 1:
+      print cmd;
     sys.stdout.flush();
     cmdLine = cmd.split()
     cmd = getExecutablePath(cmdLine[0])
-    args = cmdLine[1:]
-    exitCode = os.spawnv(os.P_WAIT, cmd, args)
+    exitCode = os.spawnv(os.P_WAIT, cmd, cmdLine)
     if exitCode:
       sys.exit("Failed: \"%s\" returned exit code (%s)"%(cmd, exitCode))
 else:
@@ -114,16 +117,22 @@ else:
   def oscmd(cmd):
     # pring the cmd ourselves rather than using verbose=1
     # on the spawn so that we can flush stdout:
-    print cmd;
+    global VERBOSE
+    if VERBOSE >= 1:
+      print cmd;
     sys.stdout.flush();
     cmdLine = cmd.split()
     spawn(cmdLine)
 
 def oscdcmd(cd, cmd):
-  print "cd", cd;
+  global VERBOSE
+  if VERBOSE >= 1:
+    print "cd", cd;
   base=os.getcwd()
   os.chdir(cd)
   oscmd(cmd)
+  if VERBOSE >= 1:
+    print "cd", base;
   os.chdir(base)
 
 def osmove(src,dst):
@@ -131,9 +140,25 @@ def osmove(src,dst):
   Move src file or directory to dst.  dst will be removed if it
   exists (i.e. overwritten).
   """
+  global VERBOSE
+  if VERBOSE >= 1:
+    print "Moving \"%s\" to \"%s\""%(src, dst)
   try: os.remove(dst)
   except OSError: pass
   os.rename(src, dst)
+
+def replaceInFile(srcPath, dstPath, replaceA, withB):
+  global VERBOSE
+  if VERBOSE >= 1:
+    print "Replacing '%s' in \"%s\" with '%s' and writing it to \"%s\""%(
+      replaceA, srcPath, withB, dstPath)
+  f=file(srcPath, "rb")
+  data=f.read()
+  f.close()
+  data=data.replace(replaceA, withB)
+  f=file(dstPath, "wb")
+  f.write(data)
+  f.close()
 
 def buildingwhat(opts):
   building = 0
@@ -142,9 +167,9 @@ def buildingwhat(opts):
   return(building)
 
 def ConditionalWriteFile(dest,desiredcontents):
-  wdest = backslashify(dest)
+  #wdest = backslashify(dest)
   try:
-    rfile = open(wdest, 'rb');
+    rfile = open(dest, 'rb');
     contents = rfile.read(-1);
     rfile.close();
   except: contents=0;
@@ -152,10 +177,10 @@ def ConditionalWriteFile(dest,desiredcontents):
     print "Regenerating file: "+dest
     sys.stdout.flush()
     try:
-      wfile = open(wdest, 'wb');
+      wfile = open(dest, 'wb');
       wfile.write(desiredcontents);
       wfile.close();
-    except: sys.exit("Cannot write to "+wdest);
+    except: sys.exit("Cannot write to "+dest);
 
 ########################################################################
 ##
@@ -184,6 +209,9 @@ PACKAGES=["ZLIB","PNG","JPEG","TIFF","VRPN","FMOD","NVIDIACG","HELIX","NSPR",
           "OPENSSL","FREETYPE","FFTW","MILES","MAYA5","MAYA6","MAX5","MAX6","MAX7"]
 WARNINGS=[]
 
+DirectXSDK=None
+VERBOSE=0
+
 if (sys.platform != "win32"):
   OMIT.append("HELIX")
 
@@ -196,44 +224,61 @@ if (sys.platform != "win32"):
 ##
 ########################################################################
 
-PACKAGE_INFO="""
+def packageInfo():
+  print """
   3D modeling an painting packages:
-    MAX5     3D Studio Max version 5
-    MAX6     3D Studio Max version 6
-    MAX7     3D Studio Max version 7
-    MAYA5    Maya version 5
-    MAYA6    Maya version 6
+    MAX5      3D Studio Max version 5
+    MAX6      3D Studio Max version 6
+    MAX7      3D Studio Max version 7
+
+    MAYA5     Maya version 5
+    MAYA6     Maya version 6
 
   Audio playback:
-    FMOD     f mod (.wav, .mp3 files)
-    MILES    Miles Sound System from RAD Game Tools is
-             a proprietary (non-opensource) audio library
-             (.wav, .mp3 files)
+    FMOD      f mod (.wav, .mp3 files)
+
+    MILES     Miles Sound System from RAD Game Tools
+              "http://www.radgametools.com/default.htm"
+              A proprietary (non-opensource) audio library
+              (for .wav, .mp3, and other files).
 
   Compression/decompression:
-    ZLIB     z lib (e.g. .zip files)
+    ZLIB      z lib (e.g. .zip files)
 
   Font manipulation:
-    FREETYPE free type
+    FREETYPE  free type
+              "http://www.freetype.org/"
+
 
   Image support libraries:
-    JPEG     .jpg and .jpeg files
-    PNG      .png files
-    TIFF     .tiff files
+    JPEG      .jpg and .jpeg files
+
+    PNG       .png files
+
+    TIFF      .tiff files
 
   Misc libraries:
     HELIX
+
     FFTW
+
     NVIDIACG
 
   Network communication:
-    OPENSSL  Open Secure Socket Layer network encryption library
-    NSPR     Netscape Portable Runtime is used for network
-             sockets and threading
+    OPENSSL   Open Secure Socket Layer
+              "http://www.openssl.org/"
+              A network encryption library.
+
+    NSPR      Netscape Portable Runtime
+              "http://www.mozilla.org/projects/nspr/"
+              Used for network sockets and threading.
 
   User input:
-    VRPN     vrpn is a controller input library
-"""
+    VRPN      Virtual Reality Peripheral Network
+              "http://www.cs.unc.edu/Research/vrpn/"
+              A controller/peripheral input library.
+  """
+  sys.exit(1)
 
 ########################################################################
 ##
@@ -263,11 +308,15 @@ def usage(problem):
   print "  --v3 X            (set the sequence version number)"
   print "  --lzma            (use lzma compression when building installer)"
   print ""
-  for pkg in PACKAGES: print "  --"+pkg.lower()+" or --no-"+pkg.lower()+"             "[len(pkg.lower()):]+"(enable or disable the use of "+pkg+")"
+  for pkg in PACKAGES:
+    print "  --"+pkg.lower()+" or --no-"+pkg.lower()+"             "[len(pkg.lower()):]+"(enable or disable the use of "+pkg+")"
   print ""
   print "  --no-nothing      (don't use any of the third-party packages)"
   print "  --default         (use default options for everything not specified)"
   print "  --vrdefault       (use default options for the vr studio)"
+  print ""
+  print "  --quiet           (print less output)"
+  print "  --verbose         (print more output and debugging info)"
   print ""
   print "The simplest way to compile panda is to just type:"
   print ""
@@ -277,16 +326,25 @@ def usage(problem):
 
 def parseopts(args):
   global COMPILER,OPTIMIZE,OMIT,THIRDPARTY,INSTALLER,COPYEXTRAS,VERSION1,VERSION2,VERSION3,COMPRESSOR
-  longopts = ["compiler=","thirdparty=","optimize=","no-nothing","no-installer","complete","default","v1=","v2=","v3=","lzma"]
+  global DirectXSDK,VERBOSE
+  longopts = [
+    "help","package-info","compiler=","directx-sdk=","thirdparty=",
+    "optimize=","no-nothing","no-installer","quiet","verbose",
+    "complete","default","v1=","v2=","v3=","lzma"]
   anything = 0
   for pkg in PACKAGES: longopts.append("no-"+pkg.lower())
   for pkg in PACKAGES: longopts.append(pkg.lower())
   try:
     opts, extras = getopt.getopt(args, "", longopts)
     for option,value in opts:
+      if (option=="--help"): raise "usage"
+      if (option=="--package-info"): raise "package-info"
       if (option=="--compiler"): COMPILER=value
+      if (option=="--directx-sdk"): DirectXSDK=value
       if (option=="--thirdparty"): THIRDPARTY=value
       if (option=="--optimize"): OPTIMIZE=value
+      if (option=="--quiet"): VERBOSE-=1
+      if (option=="--verbose"): VERBOSE+=1
       if (option=="--no-installer"): INSTALLER=0
       if (option=="--complete"): COMPLETE=1
       if (option=="--no-nothing"): OMIT=PACKAGES[:]
@@ -299,6 +357,7 @@ def parseopts(args):
       for pkg in PACKAGES:
         if option=="--"+pkg.lower() and OMIT.count(pkg): OMIT.remove(pkg)
       anything = 1
+  except "package-info": packageInfo()
   except: usage(0)
   if (anything==0): usage(0)
   if   (OPTIMIZE=="1"): OPTIMIZE=1
@@ -344,7 +403,7 @@ STDTHIRDPARTY = THIRDPARTY.replace("\\","/")
 ##
 ########################################################################
 
-if (sys.platform == "win32"):
+if sys.platform == "win32" and DirectXSDK is None:
   dxdir = GetRegistryKey("SOFTWARE\\Microsoft\\DirectX SDK", "DX9SDK Samples Path")
   if (dxdir != 0): DirectXSDK = os.path.dirname(dxdir)
   else:
@@ -352,9 +411,14 @@ if (sys.platform == "win32"):
     if (dxdir != 0): DirectXSDK=dxdir
     else:
       dxdir = GetRegistryKey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment","DXSDKROOT")
-      if (dxdir != 0): DirectXSDK=dxdir
+      if dxdir != 0:
+        if dxdir[-2:]=="/.":
+          DirectXSDK=dxdir[:-1]
+        else:
+          DirectXSDK=dxdir
       else:
         sys.exit("The registry does not appear to contain a pointer to the DirectX 9.0 SDK.");
+  DirectXSDK=DirectXSDK.replace("\\", "/")
 
 ########################################################################
 ##
@@ -362,7 +426,14 @@ if (sys.platform == "win32"):
 ##
 ########################################################################
 
-if (sys.platform != "win32"):
+if sys.platform == "win32":
+  if 0: # Needs testing:
+    if   (os.path.isdir("C:/Python22")): PythonSDK = "C:/Python22"
+    elif (os.path.isdir("C:/Python23")): PythonSDK = "C:/Python23"
+    elif (os.path.isdir("C:/Python24")): PythonSDK = "C:/Python24"
+    elif (os.path.isdir("C:/Python25")): PythonSDK = "C:/Python25"
+    else: sys.exit("Cannot find the python SDK")
+else:
   if   (os.path.isdir("/usr/include/python2.2")): PythonSDK = "/usr/include/python2.2"
   elif (os.path.isdir("/usr/include/python2.3")): PythonSDK = "/usr/include/python2.3"
   elif (os.path.isdir("/usr/include/python2.4")): PythonSDK = "/usr/include/python2.4"
@@ -497,25 +568,29 @@ if (sys.platform != "win32"):
 ########################################################################
 
 def printStatus(header,warnings):
-  print ""
-  print "-------------------------------------------------------------------"
-  print header
-  tkeep = ""
-  tomit = ""
-  for x in PACKAGES:
-    if (OMIT.count(x)==0): tkeep = tkeep + x + " "
-    else                 : tomit = tomit + x + " "
-  print "Makepanda: Compiler:",COMPILER
-  print "Makepanda: Optimize:",OPTIMIZE
-  print "Makepanda: Keep Pkg:",tkeep
-  print "Makepanda: Omit Pkg:",tomit
-  print "Makepanda: Thirdparty dir:",STDTHIRDPARTY
-  print "Makepanda: Build installer:",INSTALLER,COMPRESSOR
-  print "Makepanda: Version ID: "+str(VERSION1)+"."+str(VERSION2)+"."+str(VERSION3)
-  for x in warnings: print "Makepanda: "+x
-  print "-------------------------------------------------------------------"
-  print ""
-  sys.stdout.flush()
+  global VERBOSE
+  if VERBOSE >= -2:
+    print ""
+    print "-------------------------------------------------------------------"
+    print header
+    tkeep = ""
+    tomit = ""
+    for x in PACKAGES:
+      if (OMIT.count(x)==0): tkeep = tkeep + x + " "
+      else                 : tomit = tomit + x + " "
+    print "Makepanda: Compiler:",COMPILER
+    print "Makepanda: Optimize:",OPTIMIZE
+    print "Makepanda: Keep Pkg:",tkeep
+    print "Makepanda: Omit Pkg:",tomit
+    print "Makepanda: Thirdparty dir:",STDTHIRDPARTY
+    print "Makepanda: DirectX SDK dir:",DirectXSDK
+    print "Makepanda: Verbose vs. Quiet Level:",VERBOSE
+    print "Makepanda: Build installer:",INSTALLER,COMPRESSOR
+    print "Makepanda: Version ID: "+str(VERSION1)+"."+str(VERSION2)+"."+str(VERSION3)
+    for x in warnings: print "Makepanda: "+x
+    print "-------------------------------------------------------------------"
+    print ""
+    sys.stdout.flush()
 
 printStatus("Makepanda Initial Status Report", WARNINGS)
 
@@ -696,9 +771,8 @@ def CxxCalcDependenciesAll(srcfiles, ipath):
 ########################################################################
 
 def MakeDirectory(path):
-  wpath = backslashify(path)
-  if (os.path.isdir(wpath)): return(0);
-  os.mkdir(wpath)
+  if os.path.isdir(path): return 0
+  os.mkdir(path)
 
 ########################################################################
 ##
@@ -715,21 +789,23 @@ def CopyFile(dstfile,srcfile):
     if (fnl < 0): fn = srcfile
     else: fn = srcfile[fnl+1:]
     dstfile = dstdir + fn;
-  wdstfile = backslashify(dstfile)
-  wsrcfile = backslashify(srcfile)
-  if (older(wdstfile,wsrcfile)):
-    print "Copying "+srcfile+" -> "+dstfile+"..."
+  #wdstfile = backslashify(dstfile)
+  #wsrcfile = backslashify(srcfile)
+  if (older(dstfile,srcfile)):
+    global VERBOSE
+    if VERBOSE >= 1:
+      print "Copying "+srcfile+" -> "+dstfile+"..."
     try:
-      srchandle = open(wsrcfile, "rb")
-      dsthandle = open(wdstfile, "wb")
+      srchandle = open(srcfile, "rb")
+      dsthandle = open(dstfile, "wb")
       data = " "
       while (len(data) > 0):
         data = srchandle.read(100000);
         dsthandle.write(data)
       srchandle.close()
       dsthandle.close()
-      updatefiledate(wdstfile);
-    except: sys.exit("Cannot copy data from "+wsrcfile+" to "+wdstfile)
+      updatefiledate(dstfile);
+    except: sys.exit("Cannot copy data from \""+srcfile+"\" to \""+dstfile+"\"")
   ALLTARGETS.append(dstfile)
 
 ########################################################################
@@ -741,9 +817,9 @@ def CopyFile(dstfile,srcfile):
 ########################################################################
 
 def CopyAllFiles(dstdir,srcdir):
-  wdstdir = backslashify(dstdir)
-  wsrcdir = backslashify(srcdir)
-  files = os.listdir(wsrcdir)
+  #wdstdir = backslashify(dstdir)
+  #wsrcdir = backslashify(srcdir)
+  files = os.listdir(srcdir)
   for x in files:
     if (os.path.isfile(srcdir+x)):
       CopyFile(dstdir+x, srcdir+x)
@@ -757,13 +833,15 @@ def CopyAllFiles(dstdir,srcdir):
 ########################################################################
 
 def CopyTree(dstdir,srcdir):
-  wdstdir = backslashify(dstdir)
-  wsrcdir = backslashify(srcdir)
-  if (os.path.isdir(wdstdir)): return(0);
-  if (COMPILER=="MSVC7"): cmd = "xcopy /I/Y/E/Q "+wsrcdir+" "+wdstdir
-  if (COMPILER=="LINUXA"): cmd = "cp --recursive --force "+wsrcdir+" "+wdstdir
+  #wdstdir = dstdir
+  #wsrcdir = srcdir
+  #wdstdir = backslashify(dstdir)
+  #wsrcdir = backslashify(srcdir)
+  if (os.path.isdir(dstdir)): return(0);
+  if (COMPILER=="MSVC7"): cmd = "xcopy.exe /I/Y/E/Q \""+srcdir+"\" \""+dstdir+"\""
+  if (COMPILER=="LINUXA"): cmd = "cp --recursive --force "+srcdir+" "+dstdir
   oscmd(cmd)
-  updatefiledate(wdstdir)
+  updatefiledate(dstdir)
 
 ########################################################################
 ##
@@ -774,30 +852,29 @@ def CopyTree(dstdir,srcdir):
 ########################################################################
 
 def CompileBison(pre,dstc,dsth,src):
-  last = src.rfind("/")
-  fn = src[last+1:]
-  wdstc = backslashify("built/tmp/"    +dstc)
-  wdsth = backslashify("built/include/"+dsth)
-  wsrc = backslashify(src)
-  if (older(wdstc,wsrc) or older(wdsth,wsrc)):
+  (base, fn) = os.path.split(src)
+  #wdstc = backslashify("built/tmp/"    +dstc)
+  #wdsth = backslashify("built/include/"+dsth)
+  #wsrc = backslashify(src)
+  if (older(dstc,src) or older(dsth,src)):
     CopyFile("built/tmp/", src)
     if (COMPILER=="MSVC7"):
       CopyFile("built/tmp/", STDTHIRDPARTY+"win-util/bison.simple")
-      bisonFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\bison.exe")
-      #oscdcmd("built/tmp", bisonFullPath+" -y -d -p " + pre + " " + fn)
-      oscmd(bisonFullPath+" -y -d -p " + pre + " " + fn)
-      osmove("built\\tmp\\y_tab.c", wdstc)
-      osmove("built\\tmp\\y_tab.h", wdsth)
+      bisonFullPath=os.path.abspath(STDTHIRDPARTY+"win-util/bison.exe")
+      oscdcmd("built/tmp", bisonFullPath+" -y -d -p " + pre + " " + fn)
+      #oscmd(bisonFullPath+" -y -d -p " + pre + " " + fn)
+      osmove("built/tmp/y_tab.c", base+"/"+dstc) # not os.path.join() because we want "/"
+      osmove("built/tmp/y_tab.h", base+"/"+dsth) # not os.path.join() because we want "/"
       #oscmd("move /y built\\tmp\\y_tab.c " + wdstc)
       #oscmd("move /y built\\tmp\\y_tab.h " + wdsth)
     if (COMPILER=="LINUXA"):
       oscdcmd("built/tmp", "bison -y -d -p "+pre+" "+fn)
-      osmove("built/tmp/y.tab.c", wdstc)
-      osmove("built/tmp/y.tab.h", wdsth)
+      osmove("built/tmp/y.tab.c", dstc)
+      osmove("built/tmp/y.tab.h", dsth)
       #oscmd("mv built/tmp/y.tab.c "+wdstc)
       #oscmd("mv built/tmp/y.tab.h "+wdsth)
-    updatefiledate(wdstc);
-    updatefiledate(wdsth);
+    updatefiledate(dstc);
+    updatefiledate(dsth);
 
 ########################################################################
 ##
@@ -817,10 +894,11 @@ def CompileFlex(pre,dst,src,dashi):
     CopyFile("built/tmp/", src)
     if (COMPILER=="MSVC7"):
       flexFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\flex.exe")
-      sedFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\sed.exe")
+      #sedFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\sed.exe")
       if (dashi): oscdcmd("built/tmp", flexFullPath+" -i -P" + pre + " -olex.yy.c " + wfn)
       else      : oscdcmd("built/tmp", flexFullPath+"    -P" + pre + " -olex.yy.c " + wfn)
-      oscdcmd('built/tmp', sedFullPath+' -e "s/#include <unistd.h>//" < lex.yy.c > ..\\..\\'+wdst)
+      replaceInFile('built/tmp/lex.yy.c', wdst, '#include <unistd.h>', '')
+      #oscdcmd('built/tmp', sedFullPath+' -e "s/#include <unistd.h>//" < lex.yy.c > ..\\..\\'+wdst)
     if (COMPILER=="LINUXA"):
       if (dashi): oscdcmd("built/tmp", "flex -i -P" + pre + " -olex.yy.c " + wfn)
       else      : oscdcmd("built/tmp", "flex    -P" + pre + " -olex.yy.c " + wfn)
@@ -835,6 +913,13 @@ def CompileFlex(pre,dst,src,dashi):
 ##
 ########################################################################
 
+priorIPath=None
+def checkIfNewDir(path):
+  global priorIPath
+  if priorIPath != path:
+    print "\nStaring compile in \"%s\":\n"%(path,)
+  priorIPath=path
+
 def CompileC(obj=0,src=0,ipath=[],opts=[]):
   if ((obj==0)|(src==0)): sys.exit("syntax error in CompileC directive");
   ipath = ["built/tmp"] + ipath + ["built/include"]
@@ -843,11 +928,15 @@ def CompileC(obj=0,src=0,ipath=[],opts=[]):
   dep = CxxCalcDependencies(fullsrc, ipath, [])
 
   if (COMPILER=="MSVC7"):
-    wobj = backslashify("built/tmp/"+obj);
-    if (older(wobj, backslashify(dep))):
-      cmd = 'cl.exe /Fo' + wobj + ' /nologo /c';
-      cmd = cmd + ' /I"built\\python\\include"'
-      if (opts.count("DXSDK")): cmd = cmd + ' /I"' + DirectXSDK + '\\include"'
+    #wobj = backslashify("built/tmp/"+obj);
+    wobj = "built/tmp/"+obj
+    if (older(wobj, dep)):
+      global VERBOSE
+      if VERBOSE >= 0:
+        checkIfNewDir(ipath[1])
+      cmd = 'cl.exe /Fo"' + wobj + '" /nologo /c';
+      cmd = cmd + " /I\"built/python/include\""
+      if (opts.count("DXSDK")): cmd = cmd + ' /I"' + DirectXSDK + '/include"'
       if (opts.count("MAYA5")): cmd = cmd + ' /I"' + Maya5SDK + 'include"'
       if (opts.count("MAYA6")): cmd = cmd + ' /I"' + Maya6SDK + 'include"'
       for max in ["MAX5","MAX6","MAX7"]:
@@ -855,32 +944,35 @@ def CompileC(obj=0,src=0,ipath=[],opts=[]):
           cmd = cmd + ' /I"' + MAXSDK[max] + 'include" /I"' + MAXSDKCS[max] + '" /D' + max
       for pkg in PACKAGES:
         if (pkg != "MAYA5") and (pkg != "MAYA6") and PkgSelected(opts,pkg):
-          cmd = cmd + ' /I"' + THIRDPARTY + pkg.lower() + "\\include" + '"'
-      for x in backslashify(ipath): cmd = cmd + " /I " + x;
+          cmd = cmd + ' /I"' + THIRDPARTY + pkg.lower() + "/include" + '"'
+      for x in ipath: cmd = cmd + " /I \"" + x + "\"";
       if (opts.count('NOFLOATWARN')): cmd = cmd + ' /wd4244 /wd4305'
       if (opts.count("WITHINPANDA")): cmd = cmd + ' /DWITHIN_PANDA'
       if (OPTIMIZE==1): cmd = cmd + " /D_DEBUG /Zc:forScope /MDd /Zi /RTCs /GS "
       if (OPTIMIZE==2): cmd = cmd + " /D_DEBUG /Zc:forScope /MDd /Zi /RTCs /GS "
       if (OPTIMIZE==3): cmd = cmd + " /Zc:forScope /MD /O2 /Ob2 /G6 /Zi /DFORCE_INLINING "
       if (OPTIMIZE==4): cmd = cmd + " /Zc:forScope /MD /O2 /Ob2 /G6 /GL /Zi /DFORCE_INLINING /DNDEBUG "
-      cmd = cmd + " /Fd" + wobj[:-4] + ".pdb";
+      cmd = cmd + " /Fd\"" + wobj[:-4] + ".pdb\"";
       building = buildingwhat(opts)
       if (building): cmd = cmd + " /DBUILDING_"+building
-      cmd = cmd + " /EHsc /Zm300 /DWIN32_VC /DWIN32 /W3 " + backslashify(fullsrc)
+      cmd = cmd + " /EHsc /Zm300 /DWIN32_VC /DWIN32 /W3 \"" + fullsrc + "\""
       oscmd(cmd)
       updatefiledate(wobj)
 
   if (COMPILER=="LINUXA"):
     wobj = "built/tmp/" + obj[:-4] + ".o"
     if (older(wobj, dep)):
+      global VERBOSE
+      if VERBOSE >= 0:
+        checkIfNewDir(ipath[1])
       if (src[-2:]==".c"): cmd = "gcc -c -o "+wobj
       else:                cmd = "g++ -ftemplate-depth-30 -c -o "+wobj
       cmd = cmd + ' -I"' + PythonSDK + '"'
-      if (PkgSelected(opts,"VRPN")):     cmd = cmd + ' -I"' + THIRDPARTY + 'vrpn/include"'
-      if (PkgSelected(opts,"FFTW")):     cmd = cmd + ' -I"' + THIRDPARTY + 'fftw/include"'
-      if (PkgSelected(opts,"FMOD")):     cmd = cmd + ' -I"' + THIRDPARTY + 'fmod/include"'
-      if (PkgSelected(opts,"NVIDIACG")): cmd = cmd + ' -I"' + THIRDPARTY + 'nvidiacg/include"'
-      if (PkgSelected(opts,"NSPR")):     cmd = cmd + ' -I"' + THIRDPARTY + 'nspr/include"'
+      if (PkgSelected(opts,"VRPN")):     cmd = cmd + ' -I\'' + THIRDPARTY + 'vrpn/include\''
+      if (PkgSelected(opts,"FFTW")):     cmd = cmd + ' -I\'' + THIRDPARTY + 'fftw/include\''
+      if (PkgSelected(opts,"FMOD")):     cmd = cmd + ' -I\'' + THIRDPARTY + 'fmod/include\''
+      if (PkgSelected(opts,"NVIDIACG")): cmd = cmd + ' -I\'' + THIRDPARTY + 'nvidiacg/include\''
+      if (PkgSelected(opts,"NSPR")):     cmd = cmd + ' -I\'' + THIRDPARTY + 'nspr/include\''
       if (PkgSelected(opts,"FREETYPE")): cmd = cmd + ' -I/usr/include/freetype2'
       for x in ipath: cmd = cmd + ' -I"' + x + '"'
       if (opts.count("WITHINPANDA")): cmd = cmd + ' -DWITHIN_PANDA'
@@ -952,15 +1044,15 @@ def Interrogate(ipath=0, opts=0, outd=0, outc=0, src=0, module=0, library=0, fil
     if (x[:9]=="BUILDING_"): building = x[9:]
   if (older(woutc, wdep) or older(woutd, wdep)):
     if (COMPILER=="MSVC7"):
-      cmd = wdotdots + "built\\bin\\interrogate.exe"
+      cmd = wdotdots + "built/bin/interrogate.exe"
       cmd = cmd + ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -longlong __int64 -D_X86_ -DWIN32_VC -D_WIN32'
       cmd = cmd + ' -D"_declspec(param)=" -D_near -D_far -D__near -D__far -D__stdcall'
       if (OPTIMIZE==1): cmd = cmd + ' '
       if (OPTIMIZE==2): cmd = cmd + ' '
       if (OPTIMIZE==3): cmd = cmd + ' -DFORCE_INLINING'
       if (OPTIMIZE==4): cmd = cmd + ' -DFORCE_INLINING'
-      cmd = cmd + ' -S"' + wdotdots + 'built\\include\\parser-inc"'
-      cmd = cmd + ' -I"' + wdotdots + 'built\\python\\include"'
+      cmd = cmd + ' -S"' + wdotdots + 'built/include/parser-inc"'
+      cmd = cmd + ' -I"' + wdotdots + 'built/python/include"'
     if (COMPILER=="LINUXA"):
       cmd = wdotdots + "built/bin/interrogate"
       cmd = cmd + ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -D__i386__ -D__const=const'
@@ -979,7 +1071,7 @@ def Interrogate(ipath=0, opts=0, outd=0, outc=0, src=0, module=0, library=0, fil
       if (PkgSelected(opts,pkg)):
         cmd = cmd + ' -I"' + wdotdots + backslashify(STDTHIRDPARTY + pkg.lower() + "/include") + '"'
     cmd = cmd + ' -module "' + module + '" -library "' + library + '"'
-    if ((COMPILER=="MSVC7") and opts.count("DXSDK")): cmd = cmd + ' -I"' + DirectXSDK + '\\include"'
+    if ((COMPILER=="MSVC7") and opts.count("DXSDK")): cmd = cmd + ' -I"' + DirectXSDK + '/include"'
     if ((COMPILER=="MSVC7") and opts.count("MAYA5")): cmd = cmd + ' -I"' + Maya5SDK + 'include"'
     if ((COMPILER=="MSVC7") and opts.count("MAYA6")): cmd = cmd + ' -I"' + Maya6SDK + 'include"'
     for x in wfiles: cmd = cmd + ' ' + x
@@ -1079,7 +1171,7 @@ def CompileLink(dll=0, obj=[], opts=[], xdep=[]):
       cmd = cmd + " /LIBPATH:built\\python\\libs "
       for x in wobj: cmd = cmd + " " + x
       if (opts.count("D3D8") or opts.count("D3D9") or opts.count("DXDRAW") or opts.count("DXSOUND") or opts.count("DXGUID")):
-        cmd = cmd + ' /LIBPATH:"' + DirectXSDK + 'lib\\x86"'
+        cmd = cmd + ' /LIBPATH:"' + DirectXSDK + 'lib/x86"'
         cmd = cmd + ' /LIBPATH:"' + DirectXSDK + 'lib"'
       if (opts.count("D3D8")):        cmd = cmd + ' d3d8.lib d3dx8.lib dxerr8.lib'
       if (opts.count("D3D9")):        cmd = cmd + ' d3d9.lib d3dx9.lib dxerr9.lib'
@@ -1097,35 +1189,35 @@ def CompileLink(dll=0, obj=[], opts=[], xdep=[]):
       if (opts.count("WINGDI")):      cmd = cmd + " gdi32.lib"
       if (opts.count("ADVAPI")):      cmd = cmd + " advapi32.lib"
       if (opts.count("GLUT")):        cmd = cmd + " opengl32.lib glu32.lib"
-      if (PkgSelected(opts,"ZLIB")):     cmd = cmd + " " + THIRDPARTY + 'zlib\\lib\\libz.lib'
-      if (PkgSelected(opts,"PNG")):      cmd = cmd + " " + THIRDPARTY + 'png\\lib\\libpng.lib'
-      if (PkgSelected(opts,"JPEG")):     cmd = cmd + " " + THIRDPARTY + 'jpeg\\lib\\libjpeg.lib'
-      if (PkgSelected(opts,"TIFF")):     cmd = cmd + " " + THIRDPARTY + 'tiff\\lib\\libtiff.lib'
-      if (PkgSelected(opts,"VRPN")):     cmd = cmd + " " + THIRDPARTY + 'vrpn\\lib\\vrpn.lib'
-      if (PkgSelected(opts,"VRPN")):     cmd = cmd + " " + THIRDPARTY + 'vrpn\\lib\\quat.lib'
-      if (PkgSelected(opts,"FMOD")):     cmd = cmd + " " + THIRDPARTY + 'fmod\\lib\\fmod.lib'
-      if (PkgSelected(opts,"MILES")):    cmd = cmd + " " + THIRDPARTY + 'miles\\lib\\mss32.lib'
+      if (PkgSelected(opts,"ZLIB")):     cmd = cmd + " " + THIRDPARTY + 'zlib/lib/libz.lib'
+      if (PkgSelected(opts,"PNG")):      cmd = cmd + " " + THIRDPARTY + 'png/lib/libpng.lib'
+      if (PkgSelected(opts,"JPEG")):     cmd = cmd + " " + THIRDPARTY + 'jpeg/lib/libjpeg.lib'
+      if (PkgSelected(opts,"TIFF")):     cmd = cmd + " " + THIRDPARTY + 'tiff/lib/libtiff.lib'
+      if (PkgSelected(opts,"VRPN")):     cmd = cmd + " " + THIRDPARTY + 'vrpn/lib/vrpn.lib'
+      if (PkgSelected(opts,"VRPN")):     cmd = cmd + " " + THIRDPARTY + 'vrpn/lib/quat.lib'
+      if (PkgSelected(opts,"FMOD")):     cmd = cmd + " " + THIRDPARTY + 'fmod/lib/fmod.lib'
+      if (PkgSelected(opts,"MILES")):    cmd = cmd + " " + THIRDPARTY + 'miles/lib/mss32.lib'
       if (PkgSelected(opts,"NVIDIACG")):
-        if (opts.count("CGGL")): cmd = cmd + " " + THIRDPARTY + 'nvidiacg\\lib\\cgGL.lib'
-        cmd = cmd + " " + THIRDPARTY + 'nvidiacg\\lib\\cg.lib'
-      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix\\lib\\runtlib.lib'
-      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix\\lib\\syslib.lib'
-      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix\\lib\\contlib.lib'
-      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix\\lib\\debuglib.lib'
-      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix\\lib\\utillib.lib'
-      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix\\lib\\stlport_vc7.lib'
-      if (PkgSelected(opts,"NSPR")):     cmd = cmd + " " + THIRDPARTY + 'nspr\\lib\\libnspr4.lib'
-      if (PkgSelected(opts,"OPENSSL")):  cmd = cmd + " " + THIRDPARTY + 'openssl\\lib\\ssleay32.lib'
-      if (PkgSelected(opts,"OPENSSL")):  cmd = cmd + " " + THIRDPARTY + 'openssl\\lib\\libeay32.lib'
-      if (PkgSelected(opts,"FREETYPE")): cmd = cmd + " " + THIRDPARTY + 'freetype\\lib\\libfreetype.lib'
-      if (PkgSelected(opts,"FFTW")):     cmd = cmd + " " + THIRDPARTY + 'fftw\\lib\\rfftw.lib'
-      if (PkgSelected(opts,"FFTW")):     cmd = cmd + " " + THIRDPARTY + 'fftw\\lib\\fftw.lib'
-      if (PkgSelected(opts,"MAYA5")):    cmd = cmd + ' "' + Maya5SDK +  'lib\\Foundation.lib"'
-      if (PkgSelected(opts,"MAYA5")):    cmd = cmd + ' "' + Maya5SDK +  'lib\\OpenMaya.lib"'
-      if (PkgSelected(opts,"MAYA5")):    cmd = cmd + ' "' + Maya5SDK +  'lib\\OpenMayaAnim.lib"'
-      if (PkgSelected(opts,"MAYA6")):    cmd = cmd + ' "' + Maya6SDK +  'lib\\Foundation.lib"'
-      if (PkgSelected(opts,"MAYA6")):    cmd = cmd + ' "' + Maya6SDK +  'lib\\OpenMaya.lib"'
-      if (PkgSelected(opts,"MAYA6")):    cmd = cmd + ' "' + Maya6SDK +  'lib\\OpenMayaAnim.lib"'
+        if (opts.count("CGGL")): cmd = cmd + " " + THIRDPARTY + 'nvidiacg/lib/cgGL.lib'
+        cmd = cmd + " " + THIRDPARTY + 'nvidiacg/lib/cg.lib'
+      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix/lib/runtlib.lib'
+      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix/lib/syslib.lib'
+      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix/lib/contlib.lib'
+      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix/lib/debuglib.lib'
+      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix/lib/utillib.lib'
+      if (PkgSelected(opts,"HELIX")):    cmd = cmd + " " + THIRDPARTY + 'helix/lib/stlport_vc7.lib'
+      if (PkgSelected(opts,"NSPR")):     cmd = cmd + " " + THIRDPARTY + 'nspr/lib/libnspr4.lib'
+      if (PkgSelected(opts,"OPENSSL")):  cmd = cmd + " " + THIRDPARTY + 'openssl/lib/ssleay32.lib'
+      if (PkgSelected(opts,"OPENSSL")):  cmd = cmd + " " + THIRDPARTY + 'openssl/lib/libeay32.lib'
+      if (PkgSelected(opts,"FREETYPE")): cmd = cmd + " " + THIRDPARTY + 'freetype/lib/libfreetype.lib'
+      if (PkgSelected(opts,"FFTW")):     cmd = cmd + " " + THIRDPARTY + 'fftw/lib/rfftw.lib'
+      if (PkgSelected(opts,"FFTW")):     cmd = cmd + " " + THIRDPARTY + 'fftw/lib/fftw.lib'
+      if (PkgSelected(opts,"MAYA5")):    cmd = cmd + ' "' + Maya5SDK +  'lib/Foundation.lib"'
+      if (PkgSelected(opts,"MAYA5")):    cmd = cmd + ' "' + Maya5SDK +  'lib/OpenMaya.lib"'
+      if (PkgSelected(opts,"MAYA5")):    cmd = cmd + ' "' + Maya5SDK +  'lib/OpenMayaAnim.lib"'
+      if (PkgSelected(opts,"MAYA6")):    cmd = cmd + ' "' + Maya6SDK +  'lib/Foundation.lib"'
+      if (PkgSelected(opts,"MAYA6")):    cmd = cmd + ' "' + Maya6SDK +  'lib/OpenMaya.lib"'
+      if (PkgSelected(opts,"MAYA6")):    cmd = cmd + ' "' + Maya6SDK +  'lib/OpenMayaAnim.lib"'
       for max in ["MAX5","MAX6","MAX7"]:
         if PkgSelected(opts,max):
           cmd = cmd + ' "' + MAXSDK[max] +  'lib\\core.lib"'
@@ -2645,8 +2737,9 @@ CopyFile('built/include/','panda/src/grutil/multitexReducer.I')
 CopyFile('built/include/','panda/src/grutil/multitexReducer.h')
 CopyFile('built/include/','panda/src/gsgmisc/geomIssuer.I')
 CopyFile('built/include/','panda/src/gsgmisc/geomIssuer.h')
-CopyFile('built/include/','panda/src/helix/config_helix.h')
-CopyFile('built/include/','panda/src/helix/HelixClient.h')
+if OMIT.count("HELIX")==0:
+  CopyFile('built/include/','panda/src/helix/config_helix.h')
+  CopyFile('built/include/','panda/src/helix/HelixClient.h')
 CopyFile('built/include/','panda/src/parametrics/classicNurbsCurve.I')
 CopyFile('built/include/','panda/src/parametrics/classicNurbsCurve.h')
 CopyFile('built/include/','panda/src/parametrics/config_parametrics.h')
@@ -3906,7 +3999,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='libpvrpn_igate.cxx', obj='libpvrpn_igate.o
 #
 
 IPATH=['panda/metalibs/panda']
-OPTS=['BUILDING_PANDA', 'ZLIB', 'NSPR', 'HELIX', 'VRPN', 'JPEG', 'TIFF', 'FREETYPE']
+OPTS=['BUILDING_PANDA', 'ZLIB', 'NSPR', 'VRPN', 'JPEG', 'TIFF', 'FREETYPE']
 INFILES=['librecorder.in', 'libpgraph.in', 'libpvrpn.in', 'libgrutil.in', 'libchan.in', 'libpstatclient.in',
          'libchar.in', 'libcollide.in', 'libdevice.in', 'libdgraph.in', 'libdisplay.in', 'libevent.in',
          'libgobj.in', 'libgsgbase.in', 'liblinmath.in', 'libmathutil.in', 'libnet.in', 'libparametrics.in',
@@ -3932,16 +4025,18 @@ OBJFILES=['panda_panda.obj', 'libpanda_module.obj', 'recorder_composite1.obj', '
           'libtform_igate.obj', 'lerp_composite1.obj', 'liblerp_igate.obj', 'putil_composite1.obj', 'putil_composite2.obj',
           'libputil_igate.obj', 'audio_composite1.obj', 'libaudio_igate.obj', 'pgui_composite1.obj', 'pgui_composite2.obj',
           'libpgui_igate.obj', 'pandabase_pandabase.obj', 'libpandaexpress.dll', 'libdtoolconfig.dll', 'libdtool.dll']
-if (OMIT.count("HELIX")==0):
+LINKOPTS=['ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'VRPN', 'NSPR', 'ZLIB', 'JPEG', 'PNG', 'TIFF', 'FFTW', 'FREETYPE']
+LINKXDEP=[]
+if OMIT.count("HELIX")==0:
+  OPTS.append('HELIX')
   OBJFILES.append("libhelix.lib")
   INFILES.append("libhelix.in")
+  LINKOPTS.append('HELIX')
+  LINKXDEP.append('built/tmp/dtool_have_helix.dat')
 InterrogateModule(outc='libpanda_module.cxx', module='panda', library='libpanda', files=INFILES)
 CompileC(ipath=IPATH, opts=OPTS, src='panda.cxx', obj='panda_panda.obj')
 CompileC(ipath=IPATH, opts=OPTS, src='libpanda_module.cxx', obj='libpanda_module.obj')
-CompileLink(opts=['ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'HELIX', 'VRPN', 'NSPR',
-                  'ZLIB', 'JPEG', 'PNG', 'TIFF', 'FFTW', 'FREETYPE'],
-            xdep=['built/tmp/dtool_have_helix.dat'],
-            dll='libpanda.dll', obj=OBJFILES)
+CompileLink(opts=LINKOPTS, xdep=LINKXDEP, dll='libpanda.dll', obj=OBJFILES)
 
 #
 # DIRECTORY: panda/src/audiotraits/
