@@ -1,6 +1,0 @@
-#! /bin/sh
-
-/bin/find $1 -name \*$2 -print
-
-
-
