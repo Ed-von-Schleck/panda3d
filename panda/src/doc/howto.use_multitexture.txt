@@ -113,22 +113,78 @@ position a decal on the surface).
   nodepath.set_tex_offset(texture_stage, u_offset, v_offset);
   nodepath.set_tex_scale(texture_stage, u_scale, v_scale);
   nodepath.set_tex_rotate(texture_stage, degrees);
+  nodepath.set_tex_transform(texture_stage, general_transform);
 
 These operations accumulate through nested nodes just like standard
 scene graph transforms.  In fact, you can get and set relative texture
 transforms:
 
-  nodepath.get_tex_offset(other, texture_stage);
+  rel_offset = nodepath.get_tex_offset(other, texture_stage);
   nodepath.set_tex_scale(other, texture_stage, u_scale, v_scale);
   (etc.)
+
+You may create LerpIntervals to lerp texture matrices.  There are no
+interval types that operate directly on a texture matrix, but you can
+set up a TexProjectorEffect to bind a node's position in space to the
+texture matrix:
+
+  nodepath.add_tex_projector(texture_stage, from, to)
+
+Where "from" and "to" are arbitrary NodePaths.  The TexProjectorEffect
+will measure the relative transform between "from" and "to" each frame
+and apply it to the nodepath's texture matrix.  Once this is in place,
+you may create a LerpPosInterval to adjust either the "from" or the
+"to" NodePath, which will thus indirectly adjust the texture matrix by
+the same amount.  For that matter, any operation that would adjust a
+node's transform will thus affect the texture matrix.
+
 
 Sometimes, a texture stage may need to use a completely different set
 of texture coordinates, for instance as provided by the artist who
 generated the model.  Panda allows a model to store any number of
 different sets of texture coordinates on its vertices, each with a
-unique name.  The default texture coordinate name is "default", but
-you can associate your texture stage with any other set of texture
-coordinates you have available:
+unique name.  You can associate any texture stage with any set of
+texture coordinates you happen to have available on your model:
 
-  texture_stage.set_texcoord_name(new_name)
+  texture_stage.set_texcoord_name(name)
 
+
+Finally, you may need to generate texture coordinates for a particular
+texture stage on the fly.  This is particularly useful, for instance,
+to generate reflection maps, e.g. sphere maps or cube maps.  To enable
+this effect, use:
+
+  nodepath.add_tex_gen(texture_stage, mode)
+
+Where mode is one of the enumerated types named by TexGenAttrib::Mode;
+at the present, this may be any of M_world_position,
+M_object_position, M_eye_position, or M_sphere_map.  The *_position
+modes simply apply the X, Y, Z coordinates of the vertex to its U, V
+texture coordinates (a texture matrix may then be applied to transform
+the generated texture coordinates into the particular U, V coordinate
+space that you require).  The *_map modes generate texture coordinates
+appropriate to a reflection map of the corresponding type, based on
+the position and normal of each vertex, relative to the camera.
+
+
+The texture generation mode and the tex projector mode may be combined
+to provide hardware-assisted projective texturing, where a texture is
+applied to geometry as if it were projected from a particular in
+space, like a slide projector.  This is particularly useful for
+applying shadow maps or flashlight effects, for instance.  There is a
+convenience function on NodePath that automatically makes the three
+separate calls needed to enable projective texturing:
+
+  nodepath.project_texture(texture_stage, texture, projector);
+
+Where projector is a NodePath that references a LensNode.  The
+indicated texture is applied to the geometry at nodepath and below, as
+if it were projected from the indicated projector.
+
+(Note that Panda also provides a ProjectionScreen object, which
+performs an effect very similar to the project_texture() call, except
+that it is performed entirely in the CPU, whereas project_texture()
+will offload the work onto the graphics card if the card supports
+this.  This may or may not result in a performance improvement over
+ProjectionScreen, depending on the nature of your scene and your CPU
+load versus your graphics card load.)
