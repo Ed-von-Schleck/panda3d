@@ -159,8 +159,9 @@ find_used_textures(EggNode *node) {
 
   if (node->is_of_type(EggPrimitive::get_class_type())) {
     EggPrimitive *primitive = DCAST(EggPrimitive, node);
-    if (primitive->has_texture()) {
-      EggTexture *tex = primitive->get_texture();
+    int num_textures = primitive->get_num_textures();
+    for (int i = 0; i < num_textures; i++) {
+      EggTexture *tex = primitive->get_texture(i);
       Textures::iterator ti = _textures.find(tex);
       if (ti == _textures.end()) {
         // Here's a new texture!
@@ -303,15 +304,22 @@ replace_textures(EggGroupNode *node,
     EggNode *child = *ci;
     if (child->is_of_type(EggPrimitive::get_class_type())) {
       EggPrimitive *primitive = DCAST(EggPrimitive, child);
-      if (primitive->has_texture()) {
-        PT(EggTexture) tex = primitive->get_texture();
+      EggPrimitive::Textures new_textures;
+      EggPrimitive::Textures::const_iterator ti;
+      for (ti = primitive->_textures.begin(); 
+           ti != primitive->_textures.end();
+           ++ti) {
+        PT_EggTexture tex = (*ti);
         TextureReplacement::const_iterator ri;
         ri = replace.find(tex);
         if (ri != replace.end()) {
           // Here's a texture we want to replace.
-          primitive->set_texture((*ri).second);
+          new_textures.push_back((*ri).second);
+        } else {
+          new_textures.push_back(tex);
         }
       }
+      primitive->_textures.swap(new_textures);
 
     } else if (child->is_of_type(EggGroupNode::get_class_type())) {
       EggGroupNode *group_child = DCAST(EggGroupNode, child);

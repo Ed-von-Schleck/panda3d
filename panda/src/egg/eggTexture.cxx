@@ -28,7 +28,7 @@ TypeHandle EggTexture::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 EggTexture::
@@ -50,7 +50,7 @@ EggTexture(const string &tref_name, const string &filename)
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::Copy constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 EggTexture::
@@ -60,7 +60,7 @@ EggTexture(const EggTexture &copy) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::Copy assignment operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 EggTexture &EggTexture::
@@ -149,6 +149,21 @@ write(ostream &out, int indent_level) const {
       << "<Scalar> envtype { " << get_env_type() << " }\n";
   }
 
+  if (has_stage_name()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> stage-name { " << get_stage_name() << " }\n";
+  }
+
+  if (has_sort()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> sort { " << get_sort() << " }\n";
+  }
+
+  if (has_uv_name()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> uv-name { " << get_uv_name() << " }\n";
+  }
+
   EggRenderMode::write(out, indent_level + 2);
 
   if (has_transform()) {
@@ -160,7 +175,7 @@ write(ostream &out, int indent_level) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::is_equivalent_to
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if the two textures are equivalent in
 //               all relevant properties (according to eq), false
 //               otherwise.
@@ -258,7 +273,7 @@ is_equivalent_to(const EggTexture &other, int eq) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::sorts_less_than
-//       Access: Public
+//       Access: Published
 //  Description: An ordering operator to compare two textures for
 //               sorting order.  This imposes an arbitrary ordering
 //               useful to identify unique textures, according to the
@@ -348,7 +363,7 @@ sorts_less_than(const EggTexture &other, int eq) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::has_alpha_channel
-//       Access: Public
+//       Access: Published
 //  Description: Given the number of color components (channels) in
 //               the image file as actually read from the disk, return
 //               true if this texture seems to have an alpha channel
@@ -393,7 +408,7 @@ has_alpha_channel(int num_components) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_format
-//       Access: Public
+//       Access: Published
 //  Description: Returns the Format value associated with the given
 //               string representation, or F_unspecified if the string
 //               does not match any known Format value.
@@ -444,7 +459,7 @@ string_format(const string &string) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_wrap_mode
-//       Access: Public
+//       Access: Published
 //  Description: Returns the WrapMode value associated with the given
 //               string representation, or WM_unspecified if the string
 //               does not match any known WrapMode value.
@@ -462,7 +477,7 @@ string_wrap_mode(const string &string) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_filter_type
-//       Access: Public
+//       Access: Published
 //  Description: Returns the FilterType value associated with the given
 //               string representation, or FT_unspecified if the string
 //               does not match any known FilterType value.
@@ -508,7 +523,7 @@ string_filter_type(const string &string) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_env_type
-//       Access: Public
+//       Access: Published
 //  Description: Returns the EnvType value associated with the given
 //               string representation, or ET_unspecified if the string
 //               does not match any known EnvType value.
@@ -517,8 +532,22 @@ EggTexture::EnvType EggTexture::
 string_env_type(const string &string) {
   if (cmp_nocase_uh(string, "modulate") == 0) {
     return ET_modulate;
+
   } else if (cmp_nocase_uh(string, "decal") == 0) {
     return ET_decal;
+
+  } else if (cmp_nocase_uh(string, "blend") == 0) {
+    return ET_blend;
+
+  } else if (cmp_nocase_uh(string, "replace") == 0) {
+    return ET_replace;
+
+  } else if (cmp_nocase_uh(string, "add") == 0) {
+    return ET_add;
+
+  } else if (cmp_nocase_uh(string, "combine") == 0) {
+    return ET_combine;
+
   } else {
     return ET_unspecified;
   }
@@ -646,10 +675,24 @@ ostream &operator << (ostream &out, EggTexture::EnvType type) {
   switch (type) {
   case EggTexture::ET_unspecified:
     return out << "unspecified";
+
   case EggTexture::ET_modulate:
     return out << "modulate";
+
   case EggTexture::ET_decal:
     return out << "decal";
+
+  case EggTexture::ET_blend:
+    return out << "blend";
+
+  case EggTexture::ET_replace:
+    return out << "replace";
+
+  case EggTexture::ET_add:
+    return out << "add";
+
+  case EggTexture::ET_combine:
+    return out << "combine";
   }
 
   nassertr(false, out);

@@ -83,7 +83,13 @@ PUBLISHED:
     FT_linear_mipmap_linear,     // "mipmap trilinear"
   };
   enum EnvType {
-    ET_unspecified, ET_modulate, ET_decal
+    ET_unspecified, 
+    ET_modulate, 
+    ET_decal,
+    ET_blend,
+    ET_replace,
+    ET_add,
+    ET_combine,
   };
 
   INLINE void set_format(Format format);
@@ -113,6 +119,21 @@ PUBLISHED:
 
   INLINE void set_env_type(EnvType type);
   INLINE EnvType get_env_type() const;
+
+  INLINE void set_stage_name(const string &stage_name);
+  INLINE void clear_stage_name();
+  INLINE bool has_stage_name() const;
+  INLINE const string &get_stage_name() const;
+
+  INLINE void set_sort(int sort);
+  INLINE void clear_sort();
+  INLINE bool has_sort() const;
+  INLINE int get_sort() const;
+
+  INLINE void set_uv_name(const string &uv_name);
+  INLINE void clear_uv_name();
+  INLINE bool has_uv_name() const;
+  INLINE const string &get_uv_name() const;
 
   INLINE void set_transform(const LMatrix3d &transform);
   INLINE void clear_transform();
@@ -147,6 +168,9 @@ private:
     F_has_alpha_filename     = 0x0002,
     F_has_anisotropic_degree = 0x0004,
     F_has_alpha_file_channel = 0x0008,
+    F_has_stage_name         = 0x0010,
+    F_has_sort               = 0x0020,
+    F_has_uv_name            = 0x0040,
   };
 
   Format _format;
@@ -154,6 +178,9 @@ private:
   FilterType _minfilter, _magfilter;
   int _anisotropic_degree;
   EnvType _env_type;
+  string _stage_name;
+  int _sort;
+  string _uv_name;
   int _flags;
   LMatrix3d _transform;
   Filename _alpha_filename;

@@ -382,6 +382,7 @@ texture_body:
     } else {
       texture->set_magfilter(f);
     }
+
   } else if (cmp_nocase_uh(name, "anisotropic_degree") == 0) {
     texture->set_anisotropic_degree((int)value);
 
@@ -392,6 +393,15 @@ texture_body:
     } else {
       texture->set_env_type(e);
     }
+
+  } else if (cmp_nocase_uh(name, "stage_name") == 0) {
+    texture->set_stage_name(strval);
+
+  } else if (cmp_nocase_uh(name, "sort") == 0) {
+    texture->set_sort((int)value);
+
+  } else if (cmp_nocase_uh(name, "uv_name") == 0) {
+    texture->set_uv_name(strval);
 
   } else if (cmp_nocase_uh(name, "alpha") == 0) {
     EggRenderMode::AlphaMode a = EggRenderMode::string_alpha_mode(strval);
@@ -1739,7 +1749,7 @@ primitive_tref_body:
 {
   if ($1 != (EggTexture *)NULL) {
     EggTexture *texture = DCAST(EggTexture, $1);
-    DCAST(EggPrimitive, egg_stack.back())->set_texture(texture);
+    DCAST(EggPrimitive, egg_stack.back())->add_texture(texture);
   }
 }
         ;
@@ -1780,7 +1790,7 @@ primitive_texture_body:
   }
 
   nassertr(texture != NULL, 0);
-  DCAST(EggPrimitive, egg_stack.back())->set_texture(texture);
+  DCAST(EggPrimitive, egg_stack.back())->add_texture(texture);
 }
         ;
 

@@ -81,7 +81,6 @@ private:
   class TextureDef {
   public:
     CPT(RenderAttrib) _texture;
-    CPT(RenderAttrib) _apply;
   };
 
   void make_nurbs_curve(EggNurbsCurve *egg_curve, PandaNode *parent,
@@ -94,7 +93,7 @@ private:
   void load_textures();
   bool load_texture(TextureDef &def, const EggTexture *egg_tex);
   void apply_texture_attributes(Texture *tex, const EggTexture *egg_tex);
-  CPT(RenderAttrib) get_texture_apply_attributes(const EggTexture *egg_tex);
+  PT(TextureStage) make_texture_stage(const EggTexture *egg_tex);
 
   CPT(RenderAttrib) get_material_attrib(const EggMaterial *egg_mat,
                                         bool bface);

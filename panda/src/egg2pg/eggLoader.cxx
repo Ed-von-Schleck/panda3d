@@ -316,10 +316,14 @@ make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
             uv_name = tex_mgr->get_default_texcoord();
           }
 
-          if (egg_prim->has_texture() &&
-              egg_prim->get_texture()->has_transform()) {
-            // If we have a texture matrix, apply it.
-            uv = uv * egg_prim->get_texture()->get_transform();
+          int num_textures = egg_prim->get_num_textures();
+          for (int i = 0; i < num_textures; i++) {
+            EggTexture *texture = egg_prim->get_texture(i);
+            if (texture->has_transform() && 
+                texture->get_uv_name() == uv_obj->get_name()) {
+              // If we have a texture matrix, apply it.
+              uv = uv * egg_prim->get_texture(i)->get_transform();
+            }
           }
 
           bvert.set_texcoord(uv_name, LCAST(float, uv));
@@ -359,11 +363,13 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
   bucket.set_normals(_comp_verts_maker._norms);
   bucket.set_colors(_comp_verts_maker._colors);
 
-  // Temporary; we need to add multitex support to the
-  // ComputedVerticesMaker too.
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  bucket.set_texcoords(tex_mgr->get_default_texcoord(),
-                       _comp_verts_maker._texcoords);
+  ComputedVerticesMaker::TexCoords::const_iterator tci;
+  for (tci = _comp_verts_maker._texcoords.begin();
+       tci != _comp_verts_maker._texcoords.end();
+       ++tci) {
+    const TexCoordName *name = (*tci).first;
+    bucket.set_texcoords(name, (*tci).second);
+  }
 
   LMatrix4d mat;
 
@@ -459,18 +465,20 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
           uv_name = tex_mgr->get_default_texcoord();
         }
 
-        LMatrix3d mat;
-        
-        if (egg_prim->has_texture() &&
-            egg_prim->get_texture()->has_transform()) {
-          // If we have a texture matrix, apply it.
-          mat = egg_prim->get_texture()->get_transform();
-        } else {
-          mat = LMatrix3d::ident_mat();
+        LMatrix3d mat = LMatrix3d::ident_mat();
+
+        int num_textures = egg_prim->get_num_textures();
+        for (int i = 0; i < num_textures; i++) {
+          EggTexture *texture = egg_prim->get_texture(i);
+          if (texture->has_transform() && 
+              texture->get_uv_name() == uv_obj->get_name()) {
+            // If we have a texture matrix, apply it.
+            mat *= texture->get_transform();
+          }
         }
         
         int tindex =
-          _comp_verts_maker.add_texcoord(uv, uv_obj->_duvs, mat);
+          _comp_verts_maker.add_texcoord(uv_name, uv, uv_obj->_duvs, mat);
         bvert.set_texcoord(uv_name, tindex);
       }
       
@@ -558,20 +566,25 @@ make_nurbs_curve(EggNurbsCurve *egg_curve, PandaNode *parent,
   // If we have a texture matrix, we have to apply that explicitly
   // (the UV's are computed on the fly, so we can't precompute the
   // texture matrix into them).
-  if (egg_curve->has_texture()) {
-    rope->set_uv_mode(RopeNode::UV_parametric);
-
-    PT(EggTexture) egg_tex = egg_curve->get_texture();
-    if (egg_tex->has_transform()) {
-      // Expand the 2-d matrix to a 3-d matrix.
-      const LMatrix3d &mat3 = egg_tex->get_transform();
-      LMatrix4f mat4(mat3(0, 0), mat3(0, 1), 0.0f, mat3(0, 2),
-                     mat3(1, 0), mat3(1, 1), 0.0f, mat3(1, 2),
-                     0.0f, 0.0f, 1.0f, 0.0f,
-                     mat3(2, 0), mat3(2, 1), 0.0f, mat3(2, 2));
-      rope->set_attrib(TexMatrixAttrib::make(mat4));
+  bool has_tex_mat = false;
+  LMatrix3d tex_mat = LMatrix3d::ident_mat();
+  int num_textures = egg_curve->get_num_textures();
+  for (int i = 0; i < num_textures; i++) {
+    EggTexture *texture = egg_curve->get_texture(i);
+    if (texture->has_transform() && !texture->has_uv_name()) {
+      tex_mat *= texture->get_transform();
+      has_tex_mat = true;
     }
   }
+  if (has_tex_mat) {
+    rope->set_uv_mode(RopeNode::UV_parametric);
+    LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
+                   tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
+                   0.0f, 0.0f, 1.0f, 0.0f,
+                   tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
+    rope->set_attrib(TexMatrixAttrib::make(mat4));
+  }
+
   if (egg_curve->has_vertex_color()) {
     // If the curve had individual vertex color, enable it.
     rope->set_use_vertex_color(true);
@@ -713,17 +726,22 @@ make_nurbs_surface(EggNurbsSurface *egg_surface, PandaNode *parent,
   // If we have a texture matrix, we have to apply that explicitly
   // (the UV's are computed on the fly, so we can't precompute the
   // texture matrix into them).
-  if (egg_surface->has_texture()) {
-    PT(EggTexture) egg_tex = egg_surface->get_texture();
-    if (egg_tex->has_transform()) {
-      // Expand the 2-d matrix to a 3-d matrix.
-      const LMatrix3d &mat3 = egg_tex->get_transform();
-      LMatrix4f mat4(mat3(0, 0), mat3(0, 1), 0.0f, mat3(0, 2),
-                     mat3(1, 0), mat3(1, 1), 0.0f, mat3(1, 2),
-                     0.0f, 0.0f, 1.0f, 0.0f,
-                     mat3(2, 0), mat3(2, 1), 0.0f, mat3(2, 2));
-      sheet->set_attrib(TexMatrixAttrib::make(mat4));
+  bool has_tex_mat = false;
+  LMatrix3d tex_mat = LMatrix3d::ident_mat();
+  int num_textures = egg_surface->get_num_textures();
+  for (int i = 0; i < num_textures; i++) {
+    EggTexture *texture = egg_surface->get_texture(i);
+    if (texture->has_transform() && !texture->has_uv_name()) {
+      tex_mat *= texture->get_transform();
+      has_tex_mat = true;
     }
+  }
+  if (has_tex_mat) {
+    LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
+                   tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
+                   0.0f, 0.0f, 1.0f, 0.0f,
+                   tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
+    sheet->set_attrib(TexMatrixAttrib::make(mat4));
   }
 
   if (egg_surface->has_vertex_color()) {
@@ -851,10 +869,10 @@ load_texture(TextureDef &def, const EggTexture *egg_tex) {
   }
 
   apply_texture_attributes(tex, egg_tex);
-  CPT(RenderAttrib) apply = get_texture_apply_attributes(egg_tex);
 
-  def._texture = TextureAttrib::make(tex);
-  def._apply = apply;
+  // Make a texture stage for the texture.
+  PT(TextureStage) stage = make_texture_stage(egg_tex);
+  def._texture = TextureAttrib::make_on(stage, tex);
 
   return true;
 }
@@ -1151,37 +1169,66 @@ apply_texture_attributes(Texture *tex, const EggTexture *egg_tex) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: EggLoader::apply_texture_apply_attributes
+//     Function: EggLoader::make_texture_stage
 //       Access: Private
-//  Description:
+//  Description: Creates a TextureStage object suitable for rendering
+//               the indicated texture.
 ////////////////////////////////////////////////////////////////////
-CPT(RenderAttrib) EggLoader::
-get_texture_apply_attributes(const EggTexture *egg_tex) {
-  CPT(RenderAttrib) result = TextureApplyAttrib::make(TextureApplyAttrib::M_modulate);
-  if (egg_always_decal_textures) {
-    result = TextureApplyAttrib::make(TextureApplyAttrib::M_decal);
-
-  } else {
-    switch (egg_tex->get_env_type()) {
-    case EggTexture::ET_modulate:
-      result = TextureApplyAttrib::make(TextureApplyAttrib::M_modulate);
-      break;
-
-    case EggTexture::ET_decal:
-      result = TextureApplyAttrib::make(TextureApplyAttrib::M_decal);
-      break;
-
-    case EggTexture::ET_unspecified:
-      break;
-
-    default:
-      egg2pg_cat.warning()
-        << "Invalid texture environment "
-        << (int)egg_tex->get_env_type() << "\n";
-    }
+PT(TextureStage) EggLoader::
+make_texture_stage(const EggTexture *egg_tex) {
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+      
+  // If the egg texture specifies any relevant properties, it gets its
+  // own texture stage; otherwise, it gets the default texture stage.
+  if (egg_tex->get_env_type() == EggTexture::ET_unspecified &&
+      !egg_tex->has_stage_name() &&
+      !egg_tex->has_sort() &&
+      !egg_tex->has_uv_name()) {
+    return tex_mgr->get_default_stage();
   }
 
-  return result;
+  PT(TextureStage) stage = tex_mgr->make_stage(egg_tex->get_stage_name());
+
+  switch (egg_tex->get_env_type()) {
+  case EggTexture::ET_modulate:
+    stage->set_mode(TextureStage::M_modulate);
+    break;
+    
+  case EggTexture::ET_decal:
+    stage->set_mode(TextureStage::M_decal);
+    break;
+    
+  case EggTexture::ET_blend:
+    stage->set_mode(TextureStage::M_blend);
+    break;
+    
+  case EggTexture::ET_replace:
+    stage->set_mode(TextureStage::M_replace);
+    break;
+    
+  case EggTexture::ET_add:
+    stage->set_mode(TextureStage::M_add);
+    break;
+    
+  case EggTexture::ET_combine:
+    stage->set_mode(TextureStage::M_combine);
+    break;
+
+  case EggTexture::ET_unspecified:
+    break;
+  }
+
+  if (egg_tex->has_uv_name() && !egg_tex->get_uv_name().empty()) {
+    CPT(TexCoordName) name = 
+      tex_mgr->make_texcoord(egg_tex->get_uv_name());
+    stage->set_texcoord_name(name);
+  }
+
+  if (egg_tex->has_sort()) {
+    stage->set_sort(egg_tex->get_sort());
+  }
+
+  return stage;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1317,13 +1364,19 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
   }
 
   bucket.add_attrib(TextureAttrib::make_off());
-  if (egg_prim->has_texture()) {
-    PT(EggTexture) egg_tex = egg_prim->get_texture();
+  int num_textures = egg_prim->get_num_textures();
+  CPT(RenderAttrib) texture_attrib = NULL;
+
+  for (int i = 0; i < num_textures; i++) {
+    PT(EggTexture) egg_tex = egg_prim->get_texture(i);
 
     const TextureDef &def = _textures[egg_tex];
     if (def._texture != (const RenderAttrib *)NULL) {
-      bucket.add_attrib(def._texture);
-      bucket.add_attrib(def._apply);
+      if (texture_attrib == NULL) {
+        texture_attrib = def._texture;
+      } else {
+        texture_attrib = texture_attrib->compose(def._texture);
+      }
 
       // If neither the primitive nor the texture specified an alpha
       // mode, assume it should be alpha'ed if the texture has an
@@ -1338,6 +1391,10 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
         }
       }
     }
+  }
+
+  if (texture_attrib != (RenderAttrib *)NULL) {
+    bucket.add_attrib(texture_attrib);
   }
 
   if (egg_prim->has_material()) {

@@ -78,9 +78,13 @@ PUBLISHED:
   virtual EggRenderMode *determine_bin();
 
   INLINE void set_texture(EggTexture *texture);
-  INLINE void clear_texture();
-  INLINE EggTexture *get_texture() const;
   INLINE bool has_texture() const;
+  INLINE EggTexture *get_texture() const;
+
+  INLINE void add_texture(EggTexture *texture);
+  INLINE void clear_texture();
+  INLINE int get_num_textures() const;
+  INLINE EggTexture *get_texture(int n) const;
 
   INLINE void set_material(EggMaterial *material);
   INLINE void clear_material();
@@ -181,7 +185,8 @@ protected:
 
 
 private:
-  PT_EggTexture _texture;
+  typedef pvector<PT_EggTexture> Textures;
+  Textures _textures;
   PT_EggMaterial _material;
   bool _bface;
 
@@ -206,6 +211,8 @@ public:
 
 private:
   static TypeHandle _type_handle;
+
+  friend class EggTextureCollection;
 };
 
 #include "eggPrimitive.I"
