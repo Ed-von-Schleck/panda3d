@@ -81,6 +81,11 @@ GraphicsStateGuardian(const FrameBufferProperties &properties) {
   _closing_gsg = false;
   _active = true;
   _prepared_objects = new PreparedGraphicsObjects;
+
+  // Initially, we set this to 1 (the default--no multitexturing
+  // supported).  A derived GSG may set this differently if it
+  // supports multitexturing.
+  _max_texture_stages = 1;
 }
 
 ////////////////////////////////////////////////////////////////////

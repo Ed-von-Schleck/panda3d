@@ -17,6 +17,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "glxGraphicsStateGuardian.h"
+#include "config_glxdisplay.h"
 
 #include <dlfcn.h>
 
@@ -91,9 +92,24 @@ get_extra_extensions() {
 void *glxGraphicsStateGuardian::
 get_extension_func(const char *name) {
   if (_libgl_handle == (void *)NULL) {
-    _libgl_handle = dlopen("libGL.so", RTLD_LAZY);
+    // We open the current executable, rather than naming a particular
+    // library.  Presumably libGL.so (or whatever the library should
+    // be called) is already available in the current executable
+    // address space, so this is more portable than insisting on a
+    // particular shared library name.
+    _libgl_handle = dlopen(NULL, RTLD_LAZY);
     nassertr(_libgl_handle != (void *)NULL, NULL);
+
+    // If that doesn't locate the symbol we expected, then fall back
+    // to loading the GL library by its usual name.
+    if (dlsym(_libgl_handle, name) == NULL) {
+      dlclose(_libgl_handle);
+      glxdisplay_cat.warning()
+        << name << " not found in executable; looking in libGL.so instead.\n";
+      _libgl_handle = dlopen("libGL.so", RTLD_LAZY);
+      nassertr(_libgl_handle != (void *)NULL, NULL);
+    }
   }
-  
+
   return dlsym(_libgl_handle, name);
 }

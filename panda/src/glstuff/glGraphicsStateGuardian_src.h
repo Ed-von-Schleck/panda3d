@@ -298,7 +298,6 @@ protected:
   LMatrix4f _current_projection_mat;
   int _projection_mat_stack_count;
 
-  int _max_texture_stages;
   CPT(TextureAttrib) _current_texture;
   CPT(DisplayRegion) _actual_display_region;
 

@@ -81,6 +81,8 @@ PUBLISHED:
   INLINE GraphicsEngine *get_engine() const;
   INLINE const GraphicsThreadingModel &get_threading_model() const;
 
+  INLINE int get_max_texture_stages() const;
+
 public:
   INLINE void set_scene(SceneSetup *scene_setup);
   INLINE SceneSetup *get_scene() const;
@@ -268,6 +270,7 @@ protected:
   bool _active;
 
   PT(PreparedGraphicsObjects) _prepared_objects;
+  int _max_texture_stages;
 
 public:
   // Statistics

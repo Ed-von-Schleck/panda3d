@@ -305,14 +305,18 @@ reset() {
   if (is_at_least_version(1, 3)) {
     _supports_multitexture = true;
 
-    _glActiveTexture = (PFNGLACTIVETEXTUREPROC)get_extension_func("glActiveTexture");
-    _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)get_extension_func("glMultiTexCoord2fv");
+    _glActiveTexture = (PFNGLACTIVETEXTUREPROC)
+      get_extension_func(GLPREFIX_QUOTED "ActiveTexture");
+    _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)
+      get_extension_func(GLPREFIX_QUOTED "MultiTexCoord2fv");
 
   } else if (has_extension("GL_ARB_multitexture")) {
     _supports_multitexture = true;
 
-    _glActiveTexture = (PFNGLACTIVETEXTUREPROC)get_extension_func("glActiveTextureARB");
-    _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)get_extension_func("glMultiTexCoord2fvARB");
+    _glActiveTexture = (PFNGLACTIVETEXTUREPROC)
+      get_extension_func(GLPREFIX_QUOTED "ActiveTextureARB");
+    _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)
+      get_extension_func(GLPREFIX_QUOTED "MultiTexCoord2fvARB");
   }
 
   if (_supports_multitexture) {
@@ -451,8 +455,6 @@ reset() {
     GLint max_texture_stages;
     GLP(GetIntegerv)(GL_MAX_TEXTURE_UNITS, &max_texture_stages);
     _max_texture_stages = max_texture_stages;
-  } else {
-    _max_texture_stages = 1;
   }
   _current_texture = DCAST(TextureAttrib, TextureAttrib::make_all_off());
 
