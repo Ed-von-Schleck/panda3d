@@ -19,18 +19,16 @@
 #ifndef SOFTCVS_H
 #define SOFTCVS_H
 
-#include "pandatoolbase.h"
+#include <pandatoolbase.h>
 
 #include "softFilename.h"
 
-#include "programBase.h"
-#include "vector_string.h"
-#include "filename.h"
+#include <programBase.h>
+#include <vector_string.h>
+#include <filename.h>
 
 #include "pvector.h"
 #include "pset.h"
-
-class Multifile;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : SoftCVS
@@ -52,12 +50,13 @@ private:
   void traverse_subdir(const Filename &directory);
 
   void collapse_scene_files();
-  bool get_scenes();
+  void count_references();
   void remove_unused_elements();
 
   bool rename_file(SceneFiles::iterator begin, SceneFiles::iterator end);
   bool scan_cvs(const string &dirname, pset<string> &cvs_elements);
-  bool scan_scene_file(istream &in, Multifile &multifile);
+
+  void scan_scene_file(istream &in);
 
   bool cvs_add(const string &path);
   bool cvs_add_or_remove(const string &cvs_command,
@@ -65,11 +64,11 @@ private:
 
   SceneFiles _scene_files;
   ElementFiles _element_files;
-  vector_string _global_files;
 
   vector_string _cvs_add;
   vector_string _cvs_remove;
 
+protected:
   bool _no_cvs;
   string _cvs_binary;
 };

@@ -35,16 +35,6 @@ add_frame(const LMatrix4d &) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: EggJointPointer::move_vertices_to
-//       Access: Public, Virtual
-//  Description: Moves the vertices assigned to this joint into the
-//               other joint (which should be of the same type).
-////////////////////////////////////////////////////////////////////
-void EggJointPointer::
-move_vertices_to(EggJointPointer *) {
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: EggJointPointer::begin_rebuild
 //       Access: Public
 //  Description: Resets the set of rebuild frames in preparation for
@@ -104,24 +94,4 @@ do_rebuild() {
 ////////////////////////////////////////////////////////////////////
 void EggJointPointer::
 optimize() {
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggJointPointer::expose
-//       Access: Public, Virtual
-//  Description: Flags the joint with the indicated DCS flag so that
-//               it will be loaded as a separate node in the player.
-////////////////////////////////////////////////////////////////////
-void EggJointPointer::
-expose(EggGroup::DCSType) {
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggJointPointer::zero_channels
-//       Access: Public, Virtual
-//  Description: Zeroes out the named components of the transform in
-//               the animation frames.
-////////////////////////////////////////////////////////////////////
-void EggJointPointer::
-zero_channels(const string &) {
 }

@@ -21,8 +21,6 @@
 
 #include "indent.h"
 
-TypeHandle EggComponentData::_type_handle;
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggComponentData::Constructor
@@ -64,16 +62,9 @@ EggComponentData::
 //               that will be accepted by matched_name().
 ////////////////////////////////////////////////////////////////////
 void EggComponentData::
-add_name(const string &name, NameUniquifier &uniquifier) {
-  if (_names.insert(name).second) {
-    // This is a new name for this component.
-    if (!has_name()) {
-      set_name(uniquifier.add_name(name));
-      if (get_name() != name) {
-        nout << "Warning: renamed " << name << " to " << get_name()
-             << " to avoid naming conflict.\n";
-      }
-    }
+add_name(const string &name) {
+  if (!has_name()) {
+    set_name(name);
   }
 }
 
@@ -86,39 +77,7 @@ add_name(const string &name, NameUniquifier &uniquifier) {
 ////////////////////////////////////////////////////////////////////
 bool EggComponentData::
 matches_name(const string &name) const {
-  if (name == get_name()) {
-    return true;
-  }
-  return (_names.find(name) != _names.end());
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggComponentData::get_num_frames
-//       Access: Public, Virtual
-//  Description: Returns the number of frames of animation for this
-//               particular component in the indicated model.
-////////////////////////////////////////////////////////////////////
-int EggComponentData::
-get_num_frames(int model_index) const {
-  EggBackPointer *back = get_model(model_index);
-  if (back == (EggBackPointer *)NULL) {
-    return 0;
-  }
-  return back->get_num_frames();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggComponentData::extend_to
-//       Access: Public, Virtual
-//  Description: Extends the number of frames in the indicated model
-//               (presumably an animation table model) to the given
-//               number.
-////////////////////////////////////////////////////////////////////
-void EggComponentData::
-extend_to(int model_index, int num_frames) const {
-  EggBackPointer *back = get_model(model_index);
-  nassertv(back != (EggBackPointer *)NULL);
-  back->extend_to(num_frames);
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////

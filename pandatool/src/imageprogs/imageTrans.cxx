@@ -27,10 +27,8 @@
 ImageTrans::
 ImageTrans() : ImageFilter(true) {
   set_program_description
-    ("This program reads an image file and writes a similar "
-     "image file to the output.  It can implicitly convert from one image "
-     "file format to another; it uses the extension of the output filename "
-     "to specify the destination file format.");
+    ("This program reads an image file and writes an essentially equivalent "
+     "image file to the file specified with -o.");
 
   add_option
     ("chan", "channels", 50,

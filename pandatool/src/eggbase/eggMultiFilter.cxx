@@ -56,12 +56,6 @@ EggMultiFilter(bool allow_empty) : _allow_empty(allow_empty) {
      "for an output directory; however, it's risky because the original "
      "input egg files are lost.",
      &EggMultiFilter::dispatch_none, &_inplace);
-
-  // Derived programs will set this true when they discover some
-  // command-line option that will prevent the program from generating
-  // output.  This removes some checks for an output specification in
-  // handle_args.
-  _read_only = false;
 }
 
 
@@ -82,6 +76,7 @@ handle_args(ProgramBase::Args &args) {
     }
   } else {
     // These only apply if we have specified any egg files.
+
     if (_got_output_filename && args.size() == 1) {
       if (_got_output_dirname) {
         nout << "Cannot specify both -o and -d.\n";
@@ -102,10 +97,8 @@ handle_args(ProgramBase::Args &args) {
         return false;
 
       } else if (!_got_output_dirname && !_inplace) {
-        if (!_read_only) {
-          nout << "You must specify either -inplace or -d.\n";
-          return false;
-        }
+        nout << "You must specify either -inplace or -d.\n";
+        return false;
       }
     }
   }
@@ -188,8 +181,6 @@ get_output_filename(const Filename &source_filename) const {
 ////////////////////////////////////////////////////////////////////
 void EggMultiFilter::
 write_eggs() {
-  nassertv(!_read_only);
-  post_process_egg_files();
   Eggs::iterator ei;
   for (ei = _eggs.begin(); ei != _eggs.end(); ++ei) {
     EggData *data = (*ei);

@@ -29,27 +29,3 @@ TypeHandle EggBackPointer::_type_handle;
 EggBackPointer::
 EggBackPointer() {
 }
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggBackPointer::extend_to
-//       Access: Public, Virtual
-//  Description: Extends the table to the indicated number of frames.
-////////////////////////////////////////////////////////////////////
-void EggBackPointer::
-extend_to(int num_frames) {
-  // Whoops, can't extend this kind of table!
-  nassertv(false);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggBackPointer::has_vertices
-//       Access: Public, Virtual
-//  Description: Returns true if there are any vertices referenced by
-//               the node this points to, false otherwise.  For
-//               certain kinds of back pointers (e.g. table animation
-//               entries), this is always false.
-////////////////////////////////////////////////////////////////////
-bool EggBackPointer::
-has_vertices() const {
-  return false;
-}

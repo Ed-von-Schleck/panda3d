@@ -35,7 +35,7 @@ EggJointNodePointer::
 EggJointNodePointer(EggObject *object) {
   _joint = DCAST(EggGroup, object);
 
-  if (_joint != (EggGroup *)NULL && _joint->is_joint()) {
+  if (_joint != (EggGroup *)NULL) {
     // Quietly insist that the joint has a transform, for neatness.  If
     // it does not, give it the identity transform.
     if (!_joint->has_transform()) {
@@ -95,46 +95,6 @@ set_frame(int n, const LMatrix4d &mat) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: EggJointNodePointer::do_finish_reparent
-//       Access: Protected
-//  Description: Performs the actual reparenting operation
-//               by removing the node from its old parent and
-//               associating it with its new parent, if any.
-////////////////////////////////////////////////////////////////////
-void EggJointNodePointer::
-do_finish_reparent(EggJointPointer *new_parent) {
-  if (new_parent == (EggJointPointer *)NULL) {
-    // No new parent; unparent the joint.
-    EggGroupNode *egg_parent = _joint->get_parent();
-    if (egg_parent != (EggGroupNode *)NULL) {
-      egg_parent->remove_child(_joint.p());
-    }
-
-  } else {
-    // Reparent the joint to its new parent (implicitly unparenting it
-    // from its previous parent).
-    EggJointNodePointer *new_node = DCAST(EggJointNodePointer, new_parent);
-    if (new_node->_joint != _joint->get_parent()) {
-      new_node->_joint->add_child(_joint.p());
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggJointNodePointer::move_vertices_to
-//       Access: Public, Virtual
-//  Description: Moves the vertices assigned to this joint into the
-//               other joint (which should be of the same type).
-////////////////////////////////////////////////////////////////////
-void EggJointNodePointer::
-move_vertices_to(EggJointPointer *new_joint) {
-  EggJointNodePointer *new_node;
-  DCAST_INTO_V(new_node, new_joint);
-
-  new_node->_joint->steal_vrefs(_joint);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: EggJointNodePointer::add_rebuild_frame
 //       Access: Public, Virtual
 //  Description: Adds a new frame to the set of rebuild frames.  See
@@ -177,34 +137,4 @@ do_rebuild() {
   _joint->set_transform(_rebuild_frames[0]);
   _rebuild_frames.clear();
   return true;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggJointNodePointer::expose
-//       Access: Public, Virtual
-//  Description: Flags the joint with the indicated DCS flag so that
-//               it will be loaded as a separate node in the player.
-////////////////////////////////////////////////////////////////////
-void EggJointNodePointer::
-expose(EggGroup::DCSType dcs_type) {
-  if (_joint != (EggGroup *)NULL) {
-    _joint->set_dcs_type(dcs_type);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggJointNodePointer::has_vertices
-//       Access: Public, Virtual
-//  Description: Returns true if there are any vertices referenced by
-//               the node this points to, false otherwise.  For
-//               certain kinds of back pointers (e.g. table animation
-//               entries), this is always false.
-////////////////////////////////////////////////////////////////////
-bool EggJointNodePointer::
-has_vertices() const {
-  if (_joint != (EggGroup *)NULL) {
-    return (_joint->vref_size() != 0);
-  }
-
-  return false;
 }

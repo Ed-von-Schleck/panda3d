@@ -12,10 +12,8 @@
      eggCharacterCollection.h eggCharacterCollection.I \
      eggCharacterData.h eggCharacterData.I eggCharacterFilter.h \
      eggComponentData.h eggComponentData.I eggJointData.h \
-     eggJointData.I eggJointPointer.h eggJointPointer.I \
-     eggJointNodePointer.h \
-     eggMatrixTablePointer.h eggScalarTablePointer.h \
-     eggSliderData.h eggSliderData.I \
+     eggJointData.I eggJointPointer.h eggJointNodePointer.h \
+     eggMatrixTablePointer.h eggSliderData.h eggSliderData.I \
      eggVertexPointer.h
     
   #define INCLUDED_SOURCES \
@@ -23,8 +21,7 @@
      eggCharacterCollection.cxx eggCharacterData.cxx \
      eggCharacterFilter.cxx eggComponentData.cxx eggJointData.cxx \
      eggJointPointer.cxx eggJointNodePointer.cxx \
-     eggMatrixTablePointer.cxx eggScalarTablePointer.cxx \
-     eggSliderData.cxx \
+     eggMatrixTablePointer.cxx eggSliderData.cxx \
      eggVertexPointer.cxx 
 
   #define INSTALL_HEADERS \
@@ -33,10 +30,9 @@
     eggCharacterData.I eggCharacterData.h eggCharacterFilter.h \
     eggComponentData.I eggComponentData.h \
     eggJointData.h eggJointData.I \
-    eggJointPointer.h eggJointPointer.I \
+    eggJointPointer.h \
     eggJointNodePointer.h \
     eggMatrixTablePointer.h \
-    eggScalarTablePointer.h \
     eggSliderData.I eggSliderData.h \
     eggVertexPointer.h
 

@@ -21,7 +21,7 @@
 
 #include "pandatoolbase.h"
 
-#include "eggSliderPointer.h"
+#include "eggBackPointer.h"
 
 #include "eggGroup.h"
 #include "pointerTo.h"
@@ -32,23 +32,18 @@
 //               particular pritimive like a <Polygon>, representing a
 //               morph offset.
 ////////////////////////////////////////////////////////////////////
-class EggVertexPointer : public EggSliderPointer {
+class EggVertexPointer : public EggBackPointer {
 public:
-  EggVertexPointer(EggObject *egg_object);
-
-  virtual int get_num_frames() const;
-  virtual double get_frame(int n) const;
-
-  virtual bool has_vertices() const;
+  EggVertexPointer();
 
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
-    EggSliderPointer::init_type();
+    EggBackPointer::init_type();
     register_type(_type_handle, "EggVertexPointer",
-                  EggSliderPointer::get_class_type());
+                  EggBackPointer::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

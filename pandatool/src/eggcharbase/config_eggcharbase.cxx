@@ -18,17 +18,12 @@
 
 #include "config_eggcharbase.h"
 #include "eggBackPointer.h"
-#include "eggComponentData.h"
-#include "eggJointData.h"
 #include "eggJointNodePointer.h"
 #include "eggJointPointer.h"
 #include "eggMatrixTablePointer.h"
-#include "eggScalarTablePointer.h"
-#include "eggSliderData.h"
-#include "eggSliderPointer.h"
 #include "eggVertexPointer.h"
 
-#include "dconfig.h"
+#include <dconfig.h>
 
 
 Configure(config_eggcharbase);
@@ -56,13 +51,8 @@ init_libeggcharbase() {
   initialized = true;
 
   EggBackPointer::init_type();
-  EggComponentData::init_type();
-  EggJointData::init_type();
   EggJointNodePointer::init_type();
   EggJointPointer::init_type();
   EggMatrixTablePointer::init_type();
-  EggScalarTablePointer::init_type();
-  EggSliderData::init_type();
-  EggSliderPointer::init_type();
   EggVertexPointer::init_type();
 }

@@ -98,7 +98,7 @@ add_egg(EggData *egg) {
     TopEggNodes::iterator ti;
     for (ti = top_nodes.begin(); ti != top_nodes.end(); ++ti) {
       EggNode *model_root = (*ti).first;
-      ModelDescription &desc = (*ti).second;
+      EggNodeList &egg_nodes = (*ti).second;
 
       int model_index = _next_model_index++;
       if (egg_info._models.empty()) {
@@ -106,12 +106,11 @@ add_egg(EggData *egg) {
       }
       egg_info._models.push_back(model_root);
 
-      char_data->add_model(model_index, model_root, egg);
+      char_data->add_model(model_index, model_root);
       nassertr(model_index == (int)_characters_by_model_index.size(), -1);
       _characters_by_model_index.push_back(char_data);
-      root_joint->add_back_pointer(model_index, desc._root_node);
 
-      match_egg_nodes(char_data, root_joint, desc._top_nodes,
+      match_egg_nodes(char_data, root_joint, egg_nodes,
                       egg_index, model_index);
 
       scan_for_morphs(model_root, model_index, char_data);
@@ -269,16 +268,12 @@ scan_for_top_joints(EggNode *egg_node, EggNode *model_root,
     EggGroup *group = DCAST(EggGroup, egg_node);
 
     if (group->has_lod()) {
-      // This group has an LOD specification; that indicates multiple
-      // skeleton hierarchies for this character, one for each LOD.
-      // We call each of these a separate model.
+      // This flag has an LOD specification.
       model_root = group;
     }
     if (group->get_group_type() == EggGroup::GT_joint) {
       // A <Joint> node begins a model hierarchy.
-      ModelDescription &desc = _top_egg_nodes[character_name][model_root];
-      desc._root_node = model_root;
-      desc._top_nodes.push_back(group);
+      _top_egg_nodes[character_name][model_root].push_back(group);
       return;
     }
   }
@@ -312,14 +307,12 @@ scan_for_top_tables(EggTable *bundle, EggNode *model_root,
       if (table->get_name() == "<skeleton>") {
         // Here it is!  Now the immediate children of this node are
         // the top tables.
-        ModelDescription &desc = _top_egg_nodes[character_name][model_root];
-        desc._root_node = table;
 
         EggGroupNode::iterator cgi;
         for (cgi = table->begin(); cgi != table->end(); ++cgi) {
           EggNode *grandchild = (*cgi);
           if (grandchild->is_of_type(EggTable::get_class_type())) {
-            desc._top_nodes.push_back(grandchild);
+            _top_egg_nodes[character_name][model_root].push_back(grandchild);
           }
         }
       }
@@ -466,10 +459,7 @@ match_egg_nodes(EggCharacterData *char_data, EggJointData *joint_data,
       EggNode *egg_node = (*ei);
       EggJointData *data = make_joint_data(char_data);
       joint_data->_children.push_back(data);
-      char_data->_joints.push_back(data);
-      char_data->_components.push_back(data);
       data->_parent = joint_data;
-      data->_new_parent = joint_data;
       found_egg_match(char_data, data, egg_node, egg_index, model_index);
     }
 
@@ -574,10 +564,7 @@ match_egg_nodes(EggCharacterData *char_data, EggJointData *joint_data,
           EggNode *egg_node = (*ei);
           EggJointData *data = make_joint_data(char_data);
           joint_data->_children.push_back(data);
-          char_data->_joints.push_back(data);
-          char_data->_components.push_back(data);
           data->_parent = joint_data;
-          data->_new_parent = joint_data;
           found_egg_match(char_data, data, egg_node, egg_index, model_index);
         }
       }
@@ -601,9 +588,8 @@ void EggCharacterCollection::
 found_egg_match(EggCharacterData *char_data, EggJointData *joint_data,
                 EggNode *egg_node, int egg_index, int model_index) {
   if (egg_node->has_name()) {
-    joint_data->add_name(egg_node->get_name(), char_data->_component_names);
+    joint_data->add_name(egg_node->get_name());
   }
-  egg_node->set_name(joint_data->get_name());
   joint_data->add_back_pointer(model_index, egg_node);
 
   if (egg_node->is_of_type(EggGroupNode::get_class_type())) {
@@ -662,51 +648,5 @@ write(ostream &out, int indent_level) const {
   for (ci = _characters.begin(); ci != _characters.end(); ++ci) {
     EggCharacterData *char_data = (*ci);
     char_data->write(out, indent_level);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggCharacterCollection::check_errors
-//       Access: Public
-//  Description: Can be called after the collection has been
-//               completely filled up with egg files to output any
-//               messages from warning conditions that have been
-//               detected, such as inconsistent animation tables.
-//
-//               In addition to reporting this errors, calling this
-//               function will also ensure that they are all repaired.
-//               Pass force_initial_rest_frame as true to also force
-//               rest frames from different models to be the same if
-//               they are initially different.
-////////////////////////////////////////////////////////////////////
-void EggCharacterCollection::
-check_errors(ostream &out, bool force_initial_rest_frame) {
-  Characters::const_iterator ci;
-  for (ci = _characters.begin(); ci != _characters.end(); ++ci) {
-    EggCharacterData *char_data = (*ci);
-    int num_joints = char_data->get_num_joints();
-    for (int j = 0; j < num_joints; j++) {
-      EggJointData *joint_data = char_data->get_joint(j);
-      if (joint_data->rest_frames_differ()) {
-        if (force_initial_rest_frame) {
-          joint_data->force_initial_rest_frame();
-          out << "Forced rest frames the same for " << joint_data->get_name() 
-              << ".\n";
-        } else {
-          out << "Warning: rest frames for " << joint_data->get_name() 
-              << " differ.\n";
-        }
-      }
-    }
-
-    int num_models = char_data->get_num_models();
-    for (int mi = 0; mi < num_models; mi++) {
-      int model_index = char_data->get_model_index(mi);
-      if (!char_data->check_num_frames(model_index)) {
-        out << "Warning: animation from " 
-            << char_data->get_egg_data(model_index)->get_egg_filename().get_basename()
-            << " had an inconsistent number of frames.\n";
-      }
-    }
   }
 }

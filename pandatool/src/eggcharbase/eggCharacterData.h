@@ -24,10 +24,8 @@
 #include "eggJointData.h"
 
 #include "eggNode.h"
-#include "eggData.h"
 #include "pointerTo.h"
 #include "namable.h"
-#include "nameUniquifier.h"
 
 #include "pmap.h"
 
@@ -66,27 +64,15 @@ public:
   EggCharacterData(EggCharacterCollection *collection);
   virtual ~EggCharacterData();
 
-  void add_model(int model_index, EggNode *model_root, EggData *egg_data);
+  void add_model(int model_index, EggNode *model_root);
   INLINE int get_num_models() const;
   INLINE int get_model_index(int n) const;
   INLINE EggNode *get_model_root(int n) const;
-  INLINE EggData *get_egg_data(int n) const;
-  int get_num_frames(int model_index) const;
-  bool check_num_frames(int model_index);
 
   INLINE EggJointData *get_root_joint() const;
   INLINE EggJointData *find_joint(const string &name) const;
-  INLINE int get_num_joints() const;
-  INLINE EggJointData *get_joint(int n) const;
-  bool do_reparent();
 
-  INLINE int get_num_sliders() const;
-  INLINE EggSliderData *get_slider(int n) const;
-  EggSliderData *find_slider(const string &name) const;
   EggSliderData *make_slider(const string &name);
-
-  INLINE int get_num_components() const;
-  INLINE EggComponentData *get_component(int n) const;
 
   virtual void write(ostream &out, int indent_level = 0) const;
 
@@ -95,7 +81,6 @@ protected:
   public:
     int _model_index;
     PT(EggNode) _model_root;
-    PT(EggData) _egg_data;
   };
   typedef pvector<Model> Models;
   Models _models;
@@ -103,21 +88,8 @@ protected:
   EggCharacterCollection *_collection;
   EggJointData *_root_joint;
 
-  typedef pmap<string, EggSliderData *> SlidersByName;
-  SlidersByName _sliders_by_name;
-
-  typedef pvector<EggSliderData *> Sliders;
+  typedef pmap<string, EggSliderData *> Sliders;
   Sliders _sliders;
-
-  typedef pvector<EggJointData *> Joints;
-  Joints _joints;
-
-  typedef pvector<EggComponentData *> Components;
-  Components _components;
-
-  NameUniquifier _component_names;
-
-  friend class EggCharacterCollection;
 };
 
 #include "eggCharacterData.I"

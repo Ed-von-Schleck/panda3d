@@ -19,8 +19,8 @@
 #ifndef CONFIG_EGG_PALETTIZE_H
 #define CONFIG_EGG_PALETTIZE_H
 
-#include "pandatoolbase.h"
+#include <pandatoolbase.h>
 
-void init_egg_palettize();
+// No variables to declare here.
 
 #endif /* __CONFIG_UTIL_H__ */

@@ -21,7 +21,6 @@
 
 #include "pandatoolbase.h"
 #include "somethingToEggConverter.h"
-#include "mayaNodeTree.h"
 
 #include "mayaApi.h"
 #include "mayaShaders.h"
@@ -80,37 +79,48 @@ public:
 private:
   bool convert_flip(double start_frame, double end_frame, 
                     double frame_inc, double output_frame_rate);
-
   bool convert_char_model();
   bool convert_char_chan(double start_frame, double end_frame, 
                          double frame_inc, double output_frame_rate);
   bool convert_hierarchy(EggGroupNode *egg_root);
-  bool process_model_node(MayaNodeDesc *node_desc);
-
+  bool process_model_node(const MDagPath &dag_path, EggGroupNode *egg_root);
+  bool process_chan_node(const MDagPath &dag_path, EggGroupNode *egg_root);
   void get_transform(const MDagPath &dag_path, EggGroup *egg_group);
-  void get_joint_transform(const MDagPath &dag_path, EggGroup *egg_group);
 
   // I ran into core dumps trying to pass around a MFnMesh object by
   // value.  From now on, all MFn* objects will be passed around by
   // reference.
   void make_nurbs_surface(const MDagPath &dag_path, 
                           MFnNurbsSurface &surface,
-                          EggGroup *group);
+                          EggGroup *group, EggGroupNode *egg_root);
   EggNurbsCurve *make_trim_curve(const MFnNurbsCurve &curve,
                                  const string &nurbs_name,
                                  EggGroupNode *egg_group,
                                  int trim_curve_index);
   void make_nurbs_curve(const MDagPath &dag_path, 
                         const MFnNurbsCurve &curve,
-                        EggGroup *group);
+                        EggGroup *group, EggGroupNode *egg_root);
   void make_polyset(const MDagPath &dag_path,
                     const MFnMesh &mesh,
-                    EggGroup *egg_group,
+                    EggGroup *egg_group, EggGroupNode *egg_root,
                     MayaShader *default_shader = NULL);
   void make_locator(const MDagPath &dag_path, const MFnDagNode &dag_node,
-                    EggGroup *egg_group);
+                    EggGroup *egg_group, EggGroupNode *egg_root);
   bool get_vertex_weights(const MDagPath &dag_path, const MFnMesh &mesh,
+                          EggGroupNode *egg_root,
                           pvector<EggGroup *> &joints, MFloatArray &weights);
+  class JointAnim {
+  public:
+    MDagPath _dag_path;
+    EggTable *_table;
+    EggXfmSAnim *_anim;
+  };
+
+  EggGroup *get_egg_group(const MDagPath &dag_path, EggGroupNode *egg_root);
+  EggGroup *r_get_egg_group(const string &name, const MDagPath &dag_path,
+                            EggGroupNode *egg_root);
+  JointAnim *get_egg_table(const MDagPath &dag_path, EggGroupNode *egg_root);
+  JointAnim *get_egg_table(const string &name, EggGroupNode *egg_root);
   void set_shader_attributes(EggPrimitive &primitive,
                              const MayaShader &shader);
   void apply_texture_properties(EggTexture &tex, 
@@ -120,10 +130,14 @@ private:
 
   bool reparent_decals(EggGroupNode *egg_parent);
 
+  typedef pmap<string, EggGroup *> Groups;
+  Groups _groups;
+
+  typedef pmap<string, JointAnim *> Tables;
+  Tables _tables;
+
   string _program_name;
   bool _from_selection;
-
-  MayaNodeTree _tree;
 
 public:
   MayaShaders _shaders;
@@ -132,7 +146,6 @@ public:
 
   bool _polygon_output;
   double _polygon_tolerance;
-  bool _respect_maya_double_sided;
 
   enum TransformType {
     TT_invalid,

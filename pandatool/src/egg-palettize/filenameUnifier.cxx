@@ -128,12 +128,15 @@ make_user_filename(Filename filename) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: FilenameUnifier::make_canonical
-//       Access: Public, Static
+//       Access: Private, Static
 //  Description: Does the same thing as Filename::make_canonical()--it
 //               converts the filename to its canonical form--but
 //               caches the operation so that repeated calls to
 //               filenames in the same directory will tend to be
 //               faster.
+//
+//               Also guarantees that the directory containing the
+//               filename exists by making it if it does not.
 ////////////////////////////////////////////////////////////////////
 void FilenameUnifier::
 make_canonical(Filename &filename) {
@@ -141,18 +144,16 @@ make_canonical(Filename &filename) {
     return;
   }
 
-  Filename orig_dirname = filename.get_dirname();
+  string dirname = filename.get_dirname();
 
   CanonicalFilenames::iterator fi;
-  fi = _canonical_filenames.find(orig_dirname);
+  fi = _canonical_filenames.find(dirname);
   if (fi != _canonical_filenames.end()) {
     filename.set_dirname((*fi).second);
     return;
   }
 
-  Filename new_dirname = orig_dirname;
-  new_dirname.make_canonical();
-  filename.set_dirname(new_dirname);
-
-  _canonical_filenames.insert(CanonicalFilenames::value_type(orig_dirname, new_dirname));
+  filename.make_dir();
+  filename.make_canonical();
+  _canonical_filenames.insert(CanonicalFilenames::value_type(dirname, filename.get_dirname()));
 }

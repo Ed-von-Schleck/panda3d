@@ -19,12 +19,12 @@
 #ifndef EGGMULTIBASE_H
 #define EGGMULTIBASE_H
 
-#include "pandatoolbase.h"
+#include <pandatoolbase.h>
 
-#include "eggBase.h"
-#include "coordinateSystem.h"
-#include "eggData.h"
-#include "pointerTo.h"
+#include <programBase.h>
+#include <coordinateSystem.h>
+#include <eggData.h>
+#include <pointerTo.h>
 
 class Filename;
 
@@ -37,17 +37,21 @@ class Filename;
 //               how to read a bunch of egg files in and write them
 //               out again.
 ////////////////////////////////////////////////////////////////////
-class EggMultiBase : public EggBase {
+class EggMultiBase : public ProgramBase {
 public:
   EggMultiBase();
 
-  void post_process_egg_files();
-
 protected:
+  void append_command_comment(EggData &_data);
+  static void append_command_comment(EggData &_data, const string &comment);
+
   virtual PT(EggData) read_egg(const Filename &filename);
 
 protected:
-  typedef pvector< PT(EggData) > Eggs;
+  bool _got_coordinate_system;
+  CoordinateSystem _coordinate_system;
+
+  typedef pvector<PT(EggData)> Eggs;
   Eggs _eggs;
 
   bool _force_complete;

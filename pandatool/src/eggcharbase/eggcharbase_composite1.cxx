@@ -9,8 +9,6 @@
 #include "eggJointPointer.cxx"
 #include "eggJointNodePointer.cxx"
 #include "eggMatrixTablePointer.cxx"
-#include "eggScalarTablePointer.cxx"
 #include "eggSliderData.cxx"
-#include "eggSliderPointer.cxx"
 #include "eggVertexPointer.cxx"
 

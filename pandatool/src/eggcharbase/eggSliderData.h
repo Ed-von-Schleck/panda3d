@@ -19,7 +19,7 @@
 #ifndef EGGSLIDERDATA_H
 #define EGGSLIDERDATA_H
 
-#include "pandatoolbase.h"
+#include <pandatoolbase.h>
 
 #include "eggComponentData.h"
 
@@ -37,28 +37,8 @@ public:
   EggSliderData(EggCharacterCollection *collection,
                 EggCharacterData *char_data);
 
-  double get_frame(int model_index, int n) const;
-
   virtual void add_back_pointer(int model_index, EggObject *egg_object);
   virtual void write(ostream &out, int indent_level = 0) const;
-
-
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    EggComponentData::init_type();
-    register_type(_type_handle, "EggSliderData",
-                  EggComponentData::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "eggSliderData.I"

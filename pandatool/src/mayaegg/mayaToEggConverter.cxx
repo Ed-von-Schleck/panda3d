@@ -20,7 +20,6 @@
 #include "mayaShader.h"
 #include "maya_funcs.h"
 #include "config_mayaegg.h"
-#include "mayaEggGroupUserData.h"
 
 #include "eggData.h"
 #include "eggGroup.h"
@@ -87,7 +86,6 @@ MayaToEggConverter(const string &program_name) :
   _from_selection = false;
   _polygon_output = false;
   _polygon_tolerance = 0.01;
-  _respect_maya_double_sided = true;
   _transform_type = TT_model;
 }
 
@@ -189,6 +187,8 @@ convert_maya(bool from_selection) {
   _from_selection = from_selection;
   _textures.clear();
   _shaders.clear();
+  _groups.clear();
+  _tables.clear();
 
   if (!open_api()) {
     mayaegg_cat.error()
@@ -234,62 +234,53 @@ convert_maya(bool from_selection) {
 
   bool all_ok = true;
 
-  if (_from_selection) {
-    all_ok = _tree.build_selected_hierarchy();
-  } else {
-    all_ok = _tree.build_complete_hierarchy();
-  }
+  switch (get_animation_convert()) {
+  case AC_pose:
+    // pose: set to a specific frame, then get out the static geometry.
+    mayaegg_cat.info(false)
+      << "frame " << start_frame << "\n";
+    MGlobal::viewFrame(MTime(start_frame, MTime::uiUnit()));
+    // fall through
 
-  if (all_ok) {
-    switch (get_animation_convert()) {
-    case AC_pose:
-      // pose: set to a specific frame, then get out the static geometry.
-      mayaegg_cat.info(false)
-        << "frame " << start_frame << "\n";
-      MGlobal::viewFrame(MTime(start_frame, MTime::uiUnit()));
-      // fall through
-      
-    case AC_none:
-      // none: just get out a static model, no animation.
-      all_ok = convert_hierarchy(&get_egg_data());
-      break;
-      
-    case AC_flip:
-    case AC_strobe:
-      // flip or strobe: get out a series of static models, one per
-      // frame, under a sequence node for AC_flip.
-      all_ok = convert_flip(start_frame, end_frame, frame_inc,
-                            output_frame_rate);
-      break;
+  case AC_none:
+    // none: just get out a static model, no animation.
+    all_ok = convert_hierarchy(&get_egg_data());
+    break;
 
-    case AC_model:
-      // model: get out an animatable model with joints and vertex
-      // membership.
-      all_ok = convert_char_model();
-      break;
+  case AC_flip:
+    // flip: get out a series of static models, one per frame, under a
+    // sequence node.
+    all_ok = convert_flip(start_frame, end_frame, frame_inc,
+                          output_frame_rate);
+    break;
 
-    case AC_chan:
-      // chan: get out a series of animation tables.
-      all_ok = convert_char_chan(start_frame, end_frame, frame_inc,
-                                 output_frame_rate);
-      break;
-      
-    case AC_both:
-      // both: Put a model and its animation into the same egg file.
-      _animation_convert = AC_model;
-      if (!convert_char_model()) {
-        all_ok = false;
-      }
-      _animation_convert = AC_chan;
-      if (!convert_char_chan(start_frame, end_frame, frame_inc,
-                             output_frame_rate)) {
-        all_ok = false;
-      }
-      break;
-    };
+  case AC_model:
+    // model: get out an animatable model with joints and vertex
+    // membership.
+    all_ok = convert_char_model();
+    break;
 
-    reparent_decals(&get_egg_data());
-  }
+  case AC_chan:
+    // chan: get out a series of animation tables.
+    all_ok = convert_char_chan(start_frame, end_frame, frame_inc,
+                               output_frame_rate);
+    break;
+
+  case AC_both:
+    // both: Put a model and its animation into the same egg file.
+    _animation_convert = AC_model;
+    if (!convert_char_model()) {
+      all_ok = false;
+    }
+    _animation_convert = AC_chan;
+    if (!convert_char_chan(start_frame, end_frame, frame_inc,
+                           output_frame_rate)) {
+      all_ok = false;
+    }
+    break;
+  };
+
+  reparent_decals(&get_egg_data());
 
   if (all_ok) {
     mayaegg_cat.info()
@@ -349,10 +340,8 @@ convert_flip(double start_frame, double end_frame, double frame_inc,
 
   EggGroup *sequence_node = new EggGroup(_character_name);
   get_egg_data().add_child(sequence_node);
-  if (_animation_convert == AC_flip) { 
-    sequence_node->set_switch_flag(true);
-    sequence_node->set_switch_fps(output_frame_rate / frame_inc);
-  }
+  sequence_node->set_switch_flag(true);
+  sequence_node->set_switch_fps(output_frame_rate / frame_inc);
 
   MTime frame(start_frame, MTime::uiUnit());
   MTime frame_stop(end_frame, MTime::uiUnit());
@@ -368,6 +357,7 @@ convert_flip(double start_frame, double end_frame, double frame_inc,
     if (!convert_hierarchy(frame_root)) {
       all_ok = false;
     }
+    _groups.clear();
 
     frame += frame_inc;
   }
@@ -417,10 +407,38 @@ convert_char_chan(double start_frame, double end_frame, double frame_inc,
   EggTable *skeleton_node = new EggTable("<skeleton>");
   bundle_node->add_child(skeleton_node);
 
-  // Set the frame rate before we start asking for anim tables to be
-  // created.
-  _tree._fps = output_frame_rate / frame_inc;
-  _tree.clear_egg(&get_egg_data(), NULL, skeleton_node);
+  // First, walk through the scene graph and build up the table of
+  // joints.
+  MItDag dag_iterator(MItDag::kDepthFirst, MFn::kTransform, &status);
+  if (!status) {
+    status.perror("MItDag constructor");
+    return false;
+  }
+  bool all_ok = true;
+  while (!dag_iterator.isDone()) {
+    MDagPath dag_path;
+    status = dag_iterator.getPath(dag_path);
+    if (!status) {
+      status.perror("MItDag::getPath");
+    } else {
+      if (!process_chan_node(dag_path, skeleton_node)) {
+        all_ok = false;
+      }
+    }
+
+    dag_iterator.next();
+  }
+
+  // Now walk through the joints in that table and make sure they're
+  // all set to use the correct frame frame.
+  double fps = output_frame_rate / frame_inc;
+  Tables::iterator ti;
+  for (ti = _tables.begin(); ti != _tables.end(); ++ti) {
+    JointAnim *joint_anim = (*ti).second;
+    nassertr(joint_anim != (JointAnim *)NULL && 
+             joint_anim->_anim != (EggXfmSAnim *)NULL, false);
+    joint_anim->_anim->set_fps(fps);
+  }
 
   // Now we can get the animation data by walking through all of the
   // frames, one at a time, and getting the joint angles at each
@@ -430,9 +448,6 @@ convert_char_chan(double start_frame, double end_frame, double frame_inc,
   // each joint each frame.
   PT(EggGroup) tgroup = new EggGroup;
 
-  int num_nodes = _tree.get_num_nodes();
-  int i;
-
   MTime frame(start_frame, MTime::uiUnit());
   MTime frame_stop(end_frame, MTime::uiUnit());
   while (frame <= frame_stop) {
@@ -440,66 +455,119 @@ convert_char_chan(double start_frame, double end_frame, double frame_inc,
       mayaegg_cat.debug(false)
         << "frame " << frame.value() << "\n";
     } else {
-      // We have to write to cerr instead of mayaegg_cat to allow
-      // flushing without writing a newline.
-      cerr << "." << flush;
+      mayaegg_cat.info(false)
+        << ".";
     }
     MGlobal::viewFrame(frame);
 
-    for (i = 0; i < num_nodes; i++) {
-      MayaNodeDesc *node_desc = _tree.get_node(i);
-      if (node_desc->is_joint()) {
-        if (mayaegg_cat.is_spam()) {
-          mayaegg_cat.spam()
-            << "joint " << node_desc->get_name() << "\n";
-        }
-        get_joint_transform(node_desc->get_dag_path(), tgroup);
-        EggXfmSAnim *anim = _tree.get_egg_anim(node_desc);
-        if (!anim->add_data(tgroup->get_transform())) {
-          mayaegg_cat.error()
-            << "Invalid transform on " << node_desc->get_name()
-            << " frame " << frame.value() << ".\n";
-        }
-      }
+    for (ti = _tables.begin(); ti != _tables.end(); ++ti) {
+      JointAnim *joint_anim = (*ti).second;
+      get_transform(joint_anim->_dag_path, tgroup);
+      joint_anim->_anim->add_data(tgroup->get_transform());
     }
 
     frame += frame_inc;
   }
-
-  // Now optimize all of the tables we just filled up, for no real
-  // good reason, except that it makes the resulting egg file a little
-  // easier to read.
-  for (i = 0; i < num_nodes; i++) {
-    MayaNodeDesc *node_desc = _tree.get_node(i);
-    if (node_desc->is_joint()) {
-      _tree.get_egg_anim(node_desc)->optimize();
-    }
-  }
-
   mayaegg_cat.info(false)
     << "\n";
 
-  return true;
+  // Finally, clean up by deleting all of the JointAnim structures we
+  // created.
+  for (ti = _tables.begin(); ti != _tables.end(); ++ti) {
+    JointAnim *joint_anim = (*ti).second;
+    delete joint_anim;
+  }
+  _tables.clear();
+
+  return all_ok;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaToEggConverter::convert_hierarchy
 //       Access: Private
-//  Description: Generates egg structures for each node in the Maya
-//               hierarchy.
+//  Description: Walks the entire Maya hierarchy, converting it to a
+//               corresponding egg hierarchy under the indicated root
+//               node.
 ////////////////////////////////////////////////////////////////////
 bool MayaToEggConverter::
 convert_hierarchy(EggGroupNode *egg_root) {
-  int num_nodes = _tree.get_num_nodes();
+  MStatus status;
 
-  _tree.clear_egg(&get_egg_data(), egg_root, NULL);
-  for (int i = 0; i < num_nodes; i++) {
-    if (!process_model_node(_tree.get_node(i))) {
+  MItDag dag_iterator(MItDag::kDepthFirst, MFn::kTransform, &status);
+  if (!status) {
+    status.perror("MItDag constructor");
+    return false;
+  }
+
+  if (_from_selection) {
+    // Get only the selected geometry.
+    MSelectionList selection;
+    status = MGlobal::getActiveSelectionList(selection);
+    if (!status) {
+      status.perror("MGlobal::getActiveSelectionList");
       return false;
+    }
+
+    // Get the selected geometry only if the selection is nonempty;
+    // otherwise, get the whole scene anyway.
+    if (!selection.isEmpty()) {
+      bool all_ok = true;
+      unsigned int length = selection.length();
+      for (unsigned int i = 0; i < length; i++) {
+        MDagPath root_path;
+        status = selection.getDagPath(i, root_path);
+        if (!status) {
+          status.perror("MSelectionList::getDagPath");
+        } else {
+          // Now traverse through the selected dag path and all nested
+          // dag paths.
+          dag_iterator.reset(root_path);
+          while (!dag_iterator.isDone()) {
+            MDagPath dag_path;
+            status = dag_iterator.getPath(dag_path);
+            if (!status) {
+              status.perror("MItDag::getPath");
+            } else {
+              if (!process_model_node(dag_path, egg_root)) {
+                all_ok = false;
+              }
+            }
+            
+            dag_iterator.next();
+          }
+        }
+      }
+      return all_ok;
+
+    } else {
+      mayaegg_cat.info()
+        << "Selection list is empty.\n";
+      // Fall through.
     }
   }
 
-  return true;
+  // Get the entire Maya scene.
+    
+  // This while loop walks through the entire Maya hierarchy, one
+  // node at a time.  Maya's MItDag object automatically performs a
+  // depth-first traversal of its scene graph.
+  
+  bool all_ok = true;
+  while (!dag_iterator.isDone()) {
+    MDagPath dag_path;
+    status = dag_iterator.getPath(dag_path);
+    if (!status) {
+      status.perror("MItDag::getPath");
+    } else {
+      if (!process_model_node(dag_path, egg_root)) {
+        all_ok = false;
+      }
+    }
+    
+    dag_iterator.next();
+  }
+  
+  return all_ok;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -511,14 +579,7 @@ convert_hierarchy(EggGroupNode *egg_root) {
 //               successful, false if an error was encountered.
 ////////////////////////////////////////////////////////////////////
 bool MayaToEggConverter::
-process_model_node(MayaNodeDesc *node_desc) {
-  if (!node_desc->has_dag_path()) {
-    // If the node has no Maya equivalent, never mind.
-    return true;
-  }
-
-  MDagPath dag_path = node_desc->get_dag_path();
-
+process_model_node(const MDagPath &dag_path, EggGroupNode *egg_root) {
   MStatus status;
   MFnDagNode dag_node(dag_path, &status);
   if (!status) {
@@ -526,92 +587,82 @@ process_model_node(MayaNodeDesc *node_desc) {
     return false;
   }
 
-  MObject node = dag_path.transform(&status);
-
-  bool visible;
-  if (!get_bool_attribute(node, "visibility", visible)) {
-    if (mayaegg_cat.is_debug()) {
-      mayaegg_cat.debug()
-        << "Couldn't get visibility attribute for " << dag_node.name()
-        << "\n";
-    }
-    visible = true;
-  }
-
-  string path = dag_path.fullPathName().asChar();
-
   if (mayaegg_cat.is_debug()) {
     mayaegg_cat.debug()
-      << path << ": " << dag_node.typeName();
+      << dag_path.fullPathName().asChar() << ": " << dag_node.typeName();
 
     if (MAnimUtil::isAnimated(dag_path)) {
       mayaegg_cat.debug(false)
         << " (animated)";
     }
 
-    if (!visible) {
-      mayaegg_cat.debug(false)
-        << " (invisible)";
-    }
-
     mayaegg_cat.debug(false) << "\n";
   }
 
-  if (node_desc->is_joint()) {
-    // Don't bother with joints unless we're getting an animatable
-    // model.
-    if (_animation_convert == AC_model) { 
-      EggGroup *egg_group = _tree.get_egg_group(node_desc);
-      get_joint_transform(dag_path, egg_group);
-    }
-
-  } else if (!visible) {
+  if (dag_node.inUnderWorld()) {
     if (mayaegg_cat.is_debug()) {
       mayaegg_cat.debug()
-        << "Ignoring invisible node " << path
-        << "\n";
-    }
-
-  } else if (dag_node.inUnderWorld()) {
-    if (mayaegg_cat.is_debug()) {
-      mayaegg_cat.debug()
-        << "Ignoring underworld node " << path
+        << "Ignoring underworld node " << dag_path.fullPathName().asChar()
         << "\n";
     }
 
   } else if (dag_node.isIntermediateObject()) {
     if (mayaegg_cat.is_debug()) {
       mayaegg_cat.debug()
-        << "Ignoring intermediate object " << path
+        << "Ignoring intermediate object " << dag_path.fullPathName().asChar()
         << "\n";
     }
 
   } else if (dag_path.hasFn(MFn::kCamera)) {
     if (mayaegg_cat.is_debug()) {
       mayaegg_cat.debug()
-        << "Ignoring camera node " << path
+        << "Ignoring camera node " << dag_path.fullPathName().asChar()
         << "\n";
     }
 
   } else if (dag_path.hasFn(MFn::kLight)) {
     if (mayaegg_cat.is_debug()) {
       mayaegg_cat.debug()
-        << "Ignoring light node " << path
+        << "Ignoring light node " << dag_path.fullPathName().asChar()
         << "\n";
     }
 
+  } else if (dag_path.hasFn(MFn::kJoint)) {
+    // A joint.
+
+    // Don't bother with joints unless we're getting an animatable
+    // model.
+    if (_animation_convert == AC_model) {
+      EggGroup *egg_group = get_egg_group(dag_path, egg_root);
+
+      if (egg_group != (EggGroup *)NULL) {
+        egg_group->set_group_type(EggGroup::GT_joint);
+        get_transform(dag_path, egg_group);
+      }
+    }
+
   } else if (dag_path.hasFn(MFn::kNurbsSurface)) {
-    EggGroup *egg_group = _tree.get_egg_group(node_desc);
-    get_transform(dag_path, egg_group);
-    
-    MFnNurbsSurface surface(dag_path, &status);
-    if (!status) {
-      mayaegg_cat.info()
-        << "Error in node " << path
-        << ":\n"
-        << "  it appears to have a NURBS surface, but does not.\n";
+    EggGroup *egg_group = get_egg_group(dag_path, egg_root);
+
+    if (egg_group == (EggGroup *)NULL) {
+      mayaegg_cat.error()
+        << "Cannot determine group node.\n";
+      return false;
+
     } else {
-      make_nurbs_surface(dag_path, surface, egg_group);
+      if (_animation_convert != AC_model) {
+        get_transform(dag_path, egg_group);
+      }
+
+      MFnNurbsSurface surface(dag_path, &status);
+      if (!status) {
+        mayaegg_cat.info()
+          << "Error in node " << dag_path.fullPathName().asChar()
+          << ":\n"
+          << "  it appears to have a NURBS surface, but does not.\n";
+      } else {
+        make_nurbs_surface(dag_path, surface, egg_group, egg_root);
+      }
     }
 
   } else if (dag_path.hasFn(MFn::kNurbsCurve)) {
@@ -619,57 +670,115 @@ process_model_node(MayaNodeDesc *node_desc) {
     // Animated models, as a general rule, don't want these sorts of
     // things in them.
     if (_animation_convert != AC_model) {
-      EggGroup *egg_group = _tree.get_egg_group(node_desc);
-      get_transform(dag_path, egg_group);
+      EggGroup *egg_group = get_egg_group(dag_path, egg_root);
       
-      MFnNurbsCurve curve(dag_path, &status);
-      if (!status) {
-        mayaegg_cat.info()
-          << "Error in node " << path << ":\n"
-          << "  it appears to have a NURBS curve, but does not.\n";
+      if (egg_group == (EggGroup *)NULL) {
+        mayaegg_cat.error()
+          << "Cannot determine group node.\n";
+        
       } else {
-        make_nurbs_curve(dag_path, curve, egg_group);
+        get_transform(dag_path, egg_group);
+        
+        MFnNurbsCurve curve(dag_path, &status);
+        if (!status) {
+          mayaegg_cat.info()
+            << "Error in node " << dag_path.fullPathName().asChar() << ":\n"
+            << "  it appears to have a NURBS curve, but does not.\n";
+        } else {
+          make_nurbs_curve(dag_path, curve, egg_group, egg_root);
+        }
       }
     }
       
   } else if (dag_path.hasFn(MFn::kMesh)) {
-    EggGroup *egg_group = _tree.get_egg_group(node_desc);
-    get_transform(dag_path, egg_group);
+    EggGroup *egg_group = get_egg_group(dag_path, egg_root);
 
-    MFnMesh mesh(dag_path, &status);
-    if (!status) {
-      mayaegg_cat.info()
-        << "Error in node " << path << ":\n"
-        << "  it appears to have a polygon mesh, but does not.\n";
+    if (egg_group == (EggGroup *)NULL) {
+      mayaegg_cat.error()
+        << "Cannot determine group node.\n";
+      return false;
+
     } else {
-      make_polyset(dag_path, mesh, egg_group);
+      if (_animation_convert != AC_model) {
+        get_transform(dag_path, egg_group);
+      }
+
+      MFnMesh mesh(dag_path, &status);
+      if (!status) {
+        mayaegg_cat.info()
+          << "Error in node " << dag_path.fullPathName().asChar() << ":\n"
+          << "  it appears to have a polygon mesh, but does not.\n";
+      } else {
+        make_polyset(dag_path, mesh, egg_group, egg_root);
+      }
     }
 
   } else if (dag_path.hasFn(MFn::kLocator)) {
-    EggGroup *egg_group = _tree.get_egg_group(node_desc);
+    EggGroup *egg_group = get_egg_group(dag_path, egg_root);
+
+    if (egg_group == (EggGroup *)NULL) {
+      mayaegg_cat.error()
+        << "Cannot determine group node.\n";
+      return false;
+
+    } else {
+      // Presumably, the locator's position has some meaning to the
+      // end-user, so we will implicitly tag it with the DCS flag so it
+      // won't get flattened out.
+      egg_group->set_dcs_type(EggGroup::DC_net);
+      if (_animation_convert != AC_model) {
+        get_transform(dag_path, egg_group);
+      }
+      make_locator(dag_path, dag_node, egg_group, egg_root);
+    }
+
+  } else {
+    // Get the translation/rotation/scale data
+    EggGroup *egg_group = get_egg_group(dag_path, egg_root);
+
+    if (egg_group != (EggGroup *)NULL) {
+      if (_animation_convert != AC_model) {
+        get_transform(dag_path, egg_group);
+      }
+    }
+  }
+
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::process_chan_node
+//       Access: Private
+//  Description: Similar to process_model_node(), but this code path
+//               is followed only when we are building a table of
+//               animation data (AC_chan).  It just builds up the
+//               EggTable hierarchy according to the joint table.
+////////////////////////////////////////////////////////////////////
+bool MayaToEggConverter::
+process_chan_node(const MDagPath &dag_path, EggGroupNode *egg_root) {
+  MStatus status;
+  MFnDagNode dag_node(dag_path, &status);
+  if (!status) {
+    status.perror("MFnDagNode constructor");
+    return false;
+  }
+
+  if (dag_path.hasFn(MFn::kJoint)) {
+    // A joint.
 
     if (mayaegg_cat.is_debug()) {
       mayaegg_cat.debug()
-        << "Locator at " << path << "\n";
+        << dag_path.fullPathName().asChar() << ": " << dag_node.typeName();
+      
+      if (MAnimUtil::isAnimated(dag_path)) {
+        mayaegg_cat.debug(false)
+          << " (animated)";
+      }
+      
+      mayaegg_cat.debug(false) << "\n";
     }
-    
-    // Presumably, the locator's position has some meaning to the
-    // end-user, so we will implicitly tag it with the DCS flag so it
-    // won't get flattened out.
-    if (_animation_convert != AC_model) {
-      // For now, don't set the DCS flag on locators within
-      // character models, since egg-optchar doesn't understand
-      // this.  Perhaps there's no reason to ever change this, since
-      // locators within character models may not be meaningful.
-      egg_group->set_dcs_type(EggGroup::DC_net);
-    }
-    get_transform(dag_path, egg_group);
-    make_locator(dag_path, dag_node, egg_group);
 
-  } else {
-    // Just a generic node.
-    EggGroup *egg_group = _tree.get_egg_group(node_desc);
-    get_transform(dag_path, egg_group);
+    get_egg_table(dag_path, egg_root);
   }
 
   return true;
@@ -683,12 +792,6 @@ process_model_node(MayaNodeDesc *node_desc) {
 ////////////////////////////////////////////////////////////////////
 void MayaToEggConverter::
 get_transform(const MDagPath &dag_path, EggGroup *egg_group) {
-  if (_animation_convert == AC_model) {
-    // When we're getting an animated model, we only get transforms
-    // for joints.
-    return;
-  }
-
   MStatus status;
   MObject transformNode = dag_path.transform(&status);
   if (!status && status.statusCode() == MStatus::kInvalidParameter) {
@@ -696,32 +799,71 @@ get_transform(const MDagPath &dag_path, EggGroup *egg_group) {
     return;
   }
 
-  // Billboards always get the transform set.
-  if (egg_group->get_billboard_type() == EggGroup::BT_none) {
-    switch (_transform_type) {
-    case TT_all:
-      break;
-      
-    case TT_model:
-      if (!egg_group->get_model_flag() &&
-          egg_group->get_dcs_type() == EggGroup::DC_none) {
-        return;
-      }
-      break;
-      
-    case TT_dcs: 
-      if (egg_group->get_dcs_type() == EggGroup::DC_none) {
-        return;
-      }
-      break;
-      
-    case TT_none:
-    case TT_invalid:
+  // A special case: if the group is a billboard, we center the
+  // transform on the rotate pivot and ignore whatever transform might
+  // be there.
+  if (egg_group->get_billboard_type() != EggGroup::BT_none) {
+    MFnTransform transform(transformNode, &status);
+    if (!status) {
+      status.perror("MFnTransform constructor");
       return;
     }
+
+    MPoint pivot = transform.rotatePivot(MSpace::kObject, &status);
+    if (!status) {
+      status.perror("Can't get rotate pivot");
+      return;
+    }
+
+    // We need to convert the pivot to world coordinates.
+    // Unfortunately, Maya can only tell it to us in local
+    // coordinates.
+    MMatrix mat = dag_path.inclusiveMatrix(&status);
+    if (!status) {
+      status.perror("Can't get coordinate space for pivot");
+      return;
+    }
+    LMatrix4d n2w(mat[0][0], mat[0][1], mat[0][2], mat[0][3],
+                  mat[1][0], mat[1][1], mat[1][2], mat[1][3],
+                  mat[2][0], mat[2][1], mat[2][2], mat[2][3],
+                  mat[3][0], mat[3][1], mat[3][2], mat[3][3]);
+    LPoint3d p3d(pivot[0], pivot[1], pivot[2]);
+    p3d = p3d * n2w;
+
+    if (egg_group->get_parent() != (EggGroupNode *)NULL) {
+      // Now convert the pivot point into the group's parent's space.
+      p3d = p3d * egg_group->get_parent()->get_vertex_frame_inv();
+    }
+
+    egg_group->clear_transform();
+    egg_group->add_translate(p3d);
+    return;
   }
 
-  // Extract the matrix from the dag path.
+  switch (_transform_type) {
+  case TT_all:
+    break;
+
+  case TT_model:
+    if (!egg_group->get_model_flag() &&
+        egg_group->get_dcs_type() == EggGroup::DC_none) {
+      return;
+    }
+    break;
+
+  case TT_dcs: 
+    if (egg_group->get_dcs_type() == EggGroup::DC_none) {
+      return;
+    }
+    break;
+
+  case TT_none:
+  case TT_invalid:
+    return;
+  }
+
+  // Extract the matrix from the dag path, and convert it to the local
+  // frame.
   MMatrix mat = dag_path.inclusiveMatrix(&status);
   if (!status) {
     status.perror("Can't get transform matrix");
@@ -731,102 +873,9 @@ get_transform(const MDagPath &dag_path, EggGroup *egg_group) {
                 mat[1][0], mat[1][1], mat[1][2], mat[1][3],
                 mat[2][0], mat[2][1], mat[2][2], mat[2][3],
                 mat[3][0], mat[3][1], mat[3][2], mat[3][3]);
-
-  // Maya has a rotate pivot, separate from its transform.  Usually we
-  // care more about the rotate pivot than we do about the transform,
-  // so get the rotate pivot too.
-  MFnTransform transform(transformNode, &status);
-  if (!status) {
-    status.perror("MFnTransform constructor");
-    return;
-  }
-  MPoint pivot = transform.rotatePivot(MSpace::kObject, &status);
-  if (!status) {
-    status.perror("Can't get rotate pivot");
-    return;
-  }
-  
-  // We need to convert the pivot to world coordinates.  (Maya can
-  // only tell it to us in local coordinates.)
-  LPoint3d p3d(pivot[0], pivot[1], pivot[2]);
-  p3d = p3d * m4d;
-
-  // Now recenter the matrix about the pivot point.
-  m4d.set_row(3, p3d);
-
-  // Convert the recentered matrix into the group's space and store
-  // it.
   m4d = m4d * egg_group->get_node_frame_inv();
   if (!m4d.almost_equal(LMatrix4d::ident_mat(), 0.0001)) {
     egg_group->add_matrix(m4d);
-  }
-  return;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MayaToEggConverter::get_joint_transform
-//       Access: Private
-//  Description: Extracts the transform on the indicated Maya node,
-//               as appropriate for a joint in an animated character,
-//               and applies it to the indicated node.  This is
-//               different from get_transform() in that it does not
-//               respect the _transform_type flag, and it does not
-//               consider the relative transforms within the egg file.
-////////////////////////////////////////////////////////////////////
-void MayaToEggConverter::
-get_joint_transform(const MDagPath &dag_path, EggGroup *egg_group) {
-  MStatus status;
-  MObject transformNode = dag_path.transform(&status);
-  // This node has no transform - i.e., it's the world node
-  if (!status && status.statusCode() == MStatus::kInvalidParameter) {
-    return;
-  }
-
-  MFnDagNode transform(transformNode, &status);
-  if (!status) {
-    status.perror("MFnDagNode constructor");
-    return;
-  }
-
-  MTransformationMatrix matrix(transform.transformationMatrix());
-
-  if (mayaegg_cat.is_spam()) {
-    mayaegg_cat.spam()
-      << "  translation: " << matrix.translation(MSpace::kWorld)
-      << "\n";
-    double d[3];
-    MTransformationMatrix::RotationOrder rOrder;
-
-    matrix.getRotation(d, rOrder, MSpace::kWorld);
-    mayaegg_cat.spam()
-      << "  rotation: ["
-      << d[0] << ", "
-      << d[1] << ", "
-      << d[2] << "]\n";
-    matrix.getScale(d, MSpace::kWorld);
-    mayaegg_cat.spam()
-      << "  scale: ["
-      << d[0] << ", "
-      << d[1] << ", "
-      << d[2] << "]\n";
-    matrix.getShear(d, MSpace::kWorld);
-    mayaegg_cat.spam()
-      << "  shear: ["
-      << d[0] << ", "
-      << d[1] << ", "
-      << d[2] << "]\n";
-  }
-
-  MMatrix mat = matrix.asMatrix();
-  MMatrix ident_mat;
-  ident_mat.setToIdentity();
-
-  if (!mat.isEquivalent(ident_mat, 0.0001)) {
-    egg_group->set_transform
-      (LMatrix4d(mat[0][0], mat[0][1], mat[0][2], mat[0][3],
-                 mat[1][0], mat[1][1], mat[1][2], mat[1][3],
-                 mat[2][0], mat[2][1], mat[2][2], mat[2][3],
-                 mat[3][0], mat[3][1], mat[3][2], mat[3][3]));
   }
 }
 
@@ -839,7 +888,7 @@ get_joint_transform(const MDagPath &dag_path, EggGroup *egg_group) {
 ////////////////////////////////////////////////////////////////////
 void MayaToEggConverter::
 make_nurbs_surface(const MDagPath &dag_path, MFnNurbsSurface &surface,
-                   EggGroup *egg_group) {
+                   EggGroup *egg_group, EggGroupNode *egg_root) {
   MStatus status;
   string name = surface.name().asChar();
 
@@ -895,7 +944,7 @@ make_nurbs_surface(const MDagPath &dag_path, MFnNurbsSurface &surface,
       status.perror("MFnMesh constructor");
       return;
     }
-    make_polyset(polyset_path, polyset_fn, egg_group, shader);
+    make_polyset(polyset_path, polyset_fn, egg_group, egg_root, shader);
 
     // Now remove the polyset we created.
     MFnDagNode parent_node(polyset_parent, &status);
@@ -1151,7 +1200,7 @@ make_trim_curve(const MFnNurbsCurve &curve, const string &nurbs_name,
 ////////////////////////////////////////////////////////////////////
 void MayaToEggConverter::
 make_nurbs_curve(const MDagPath &, const MFnNurbsCurve &curve,
-                 EggGroup *egg_group) {
+                 EggGroup *egg_group, EggGroupNode *) {
   MStatus status;
   string name = curve.name().asChar();
 
@@ -1240,13 +1289,14 @@ make_nurbs_curve(const MDagPath &, const MFnNurbsCurve &curve,
 ////////////////////////////////////////////////////////////////////
 void MayaToEggConverter::
 make_polyset(const MDagPath &dag_path, const MFnMesh &mesh,
-             EggGroup *egg_group, MayaShader *default_shader) {
+             EggGroup *egg_group, EggGroupNode *egg_root,
+             MayaShader *default_shader) {
   MStatus status;
   string name = mesh.name().asChar();
 
   MObject mesh_object = mesh.object();
-  bool maya_double_sided = false;
-  get_bool_attribute(mesh_object, "doubleSided", maya_double_sided);
+  bool double_sided = false;
+  get_bool_attribute(mesh_object, "doubleSided", double_sided);
 
   if (mayaegg_cat.is_spam()) {
     mayaegg_cat.spam()
@@ -1307,17 +1357,9 @@ make_polyset(const MDagPath &dag_path, const MFnMesh &mesh,
   // will be different from world space.
   LMatrix4d vertex_frame_inv = egg_group->get_vertex_frame_inv();
 
-  // Save these modeling flag for the a check below.
-  bool egg_vertex_color = false;
-  bool egg_double_sided = false;
-  if (egg_group->has_user_data(MayaEggGroupUserData::get_class_type())) {
-    MayaEggGroupUserData *user_data = 
-      DCAST(MayaEggGroupUserData, egg_group->get_user_data());
-    egg_vertex_color = user_data->_vertex_color;
-    egg_double_sided = user_data->_double_sided;
-  }
-
-  bool double_sided = _respect_maya_double_sided ? maya_double_sided : egg_double_sided;
+  // Save this modeling flag for the vertex color check later (see the
+  // comment below).
+  bool egg_vertex_color = egg_group->has_object_type("vertex-color");
 
   while (!pi.isDone()) {
     EggPolygon *egg_poly = new EggPolygon;
@@ -1439,10 +1481,10 @@ make_polyset(const MDagPath &dag_path, const MFnMesh &mesh,
   MFloatArray weights;
   if (_animation_convert == AC_model) {
     got_weights = 
-      get_vertex_weights(dag_path, mesh, joints, weights);
+      get_vertex_weights(dag_path, mesh, egg_root, joints, weights);
   }
 
-  if (got_weights && !joints.empty()) {
+  if (got_weights) {
     int num_joints = joints.size();
     int num_weights = (int)weights.length();
     int num_verts = num_weights / num_joints;
@@ -1481,7 +1523,7 @@ make_polyset(const MDagPath &dag_path, const MFnMesh &mesh,
 ////////////////////////////////////////////////////////////////////
 void MayaToEggConverter::
 make_locator(const MDagPath &dag_path, const MFnDagNode &dag_node,
-             EggGroup *egg_group) {
+             EggGroup *egg_group, EggGroupNode *egg_root) {
   MStatus status;
 
   unsigned int num_children = dag_node.childCount();
@@ -1533,6 +1575,7 @@ make_locator(const MDagPath &dag_path, const MFnDagNode &dag_node,
 ////////////////////////////////////////////////////////////////////
 bool MayaToEggConverter::
 get_vertex_weights(const MDagPath &dag_path, const MFnMesh &mesh,
+                   EggGroupNode *egg_root,
                    pvector<EggGroup *> &joints, MFloatArray &weights) {
   MStatus status;
   
@@ -1578,8 +1621,7 @@ get_vertex_weights(const MDagPath &dag_path, const MFnMesh &mesh,
         joints.clear();
         for (unsigned oi = 0; oi < influence_objects.length(); oi++) {
           MDagPath joint_dag_path = influence_objects[oi];
-          MayaNodeDesc *joint_node_desc = _tree.build_node(joint_dag_path);
-          EggGroup *joint = _tree.get_egg_group(joint_node_desc);
+          EggGroup *joint = get_egg_group(joint_dag_path, egg_root);
           joints.push_back(joint);
         }
 
@@ -1617,6 +1659,181 @@ get_vertex_weights(const MDagPath &dag_path, const MFnMesh &mesh,
   mayaegg_cat.error()
     << "Unable to find a cluster handle for the DG node.\n"; 
   return false;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::get_egg_group
+//       Access: Private
+//  Description: Returns the EggGroup corresponding to the indicated
+//               fully-qualified Maya path name.  If there is not
+//               already an EggGroup corresponding to this Maya path,
+//               creates one and returns it.
+//
+//               In this way we generate a unique EggGroup for each
+//               Maya node we care about about, and also preserve the
+//               Maya hierarchy sensibly.
+////////////////////////////////////////////////////////////////////
+EggGroup *MayaToEggConverter::
+get_egg_group(const MDagPath &dag_path, EggGroupNode *egg_root) {
+  return r_get_egg_group(dag_path.fullPathName().asChar(), dag_path, egg_root);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::r_get_egg_group
+//       Access: Private
+//  Description: The recursive implementation of get_egg_group().
+////////////////////////////////////////////////////////////////////
+EggGroup *MayaToEggConverter::
+r_get_egg_group(const string &name, const MDagPath &dag_path,
+                EggGroupNode *egg_root) {
+  // If we have already encountered this pathname, return the
+  // corresponding EggGroup immediately.
+  Groups::const_iterator gi = _groups.find(name);
+  if (gi != _groups.end()) {
+    return (*gi).second;
+  }
+
+  // Otherwise, we have to create it.  Do this recursively, so we
+  // create each node along the path.
+  EggGroup *egg_group;
+
+  if (name.empty()) {
+    // This is the top.
+    egg_group = (EggGroup *)NULL;
+
+  } else {
+    // Maya uses vertical bars to separate path components.  Remove
+    // everything from the rightmost bar on; this will give us the
+    // parent's path name.
+    size_t bar = name.rfind("|");
+    string parent_name, local_name;
+    if (bar != string::npos) {
+      parent_name = name.substr(0, bar);
+      local_name = name.substr(bar + 1);
+    } else {
+      local_name = name;
+    }
+
+    EggGroup *parent_egg_group = 
+      r_get_egg_group(parent_name, dag_path, egg_root);
+    egg_group = new EggGroup(local_name);
+
+    if (parent_egg_group != (EggGroup *)NULL) {
+      parent_egg_group->add_child(egg_group);
+    } else {
+      egg_root->add_child(egg_group);
+    }
+
+    // Check for an object type setting, from Oliver's plug-in.
+    MObject dag_object = dag_path.node();
+    string object_type;
+    if (get_enum_attribute(dag_object, "eggObjectTypes1", object_type)) {
+      egg_group->add_object_type(object_type);
+    }
+    if (get_enum_attribute(dag_object, "eggObjectTypes2", object_type)) {
+      egg_group->add_object_type(object_type);
+    }
+    if (get_enum_attribute(dag_object, "eggObjectTypes3", object_type)) {
+      egg_group->add_object_type(object_type);
+    }
+
+    // We treat the object type "billboard" as a special case: we
+    // apply this one right away and also flag the group as an
+    // instance.
+    if (egg_group->has_object_type("billboard")) {    
+      egg_group->remove_object_type("billboard");
+      egg_group->set_group_type(EggGroup::GT_instance);
+      egg_group->set_billboard_type(EggGroup::BT_axis);
+
+    } else if (egg_group->has_object_type("billboard-point")) {    
+      egg_group->remove_object_type("billboard-point");
+      egg_group->set_group_type(EggGroup::GT_instance);
+      egg_group->set_billboard_type(EggGroup::BT_point_camera_relative);
+    }
+
+    // We also treat the object type "dcs" and "model" as a special
+    // case, so we can test for these flags later.
+    if (egg_group->has_object_type("dcs")) {
+      egg_group->remove_object_type("dcs");
+      egg_group->set_dcs_type(EggGroup::DC_default);
+    }
+    if (egg_group->has_object_type("model")) {
+      egg_group->remove_object_type("model");
+      egg_group->set_model_flag(true);
+    }
+  }
+
+  _groups.insert(Groups::value_type(name, egg_group));
+  return egg_group;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::get_egg_table
+//       Access: Private
+//  Description: Returns the EggTable corresponding to the indicated
+//               fully-qualified Maya path name.  This is similar to
+//               get_egg_group(), but this variant is used only when
+//               we are building a channel file, which is just a
+//               hierarchical collection of animation tables.
+////////////////////////////////////////////////////////////////////
+MayaToEggConverter::JointAnim *MayaToEggConverter::
+get_egg_table(const MDagPath &dag_path, EggGroupNode *egg_root) {
+  string name = dag_path.fullPathName().asChar();
+
+  // If we have already encountered this pathname, return the
+  // corresponding EggTable immediately.
+  Tables::const_iterator ti = _tables.find(name);
+  if (ti != _tables.end()) {
+    return (*ti).second;
+  }
+
+  // Otherwise, we have to create it.
+  JointAnim *joint_anim;
+
+  if (name.empty()) {
+    // This is the top.
+    joint_anim = (JointAnim *)NULL;
+
+  } else {
+    // Maya uses vertical bars to separate path components.  Remove
+    // everything from the rightmost bar on; this will give us the
+    // parent's path name.
+    size_t bar = name.rfind("|");
+    string parent_name, local_name;
+    if (bar != string::npos) {
+      parent_name = name.substr(0, bar);
+      local_name = name.substr(bar + 1);
+    } else {
+      local_name = name;
+    }
+
+    // Look only one level up for the parent.  If it hasn't been
+    // defined yet, don't define it; instead, just start from the
+    // root.
+    JointAnim *parent_joint_anim = NULL;
+    if (!parent_name.empty()) {
+      ti = _tables.find(parent_name);
+      if (ti != _tables.end()) {
+        parent_joint_anim = (*ti).second;
+      }
+    }
+
+    joint_anim = new JointAnim;
+    joint_anim->_dag_path = dag_path;
+    joint_anim->_table = new EggTable(local_name);
+    joint_anim->_anim = new EggXfmSAnim("xform", _egg_data->get_coordinate_system());
+    joint_anim->_table->add_child(joint_anim->_anim);
+
+    if (parent_joint_anim != (JointAnim *)NULL) {
+      parent_joint_anim->_table->add_child(joint_anim->_table);
+    } else {
+      egg_root->add_child(joint_anim->_table);
+    }
+  }
+
+  _tables.insert(Tables::value_type(name, joint_anim));
+  return joint_anim;
 }
 
 ////////////////////////////////////////////////////////////////////

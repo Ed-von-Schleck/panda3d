@@ -20,7 +20,7 @@
 #define EGGWRITER_H
 
 #include "pandatoolbase.h"
-#include "eggSingleBase.h"
+#include "eggBase.h"
 #include "withOutputFile.h"
 
 #include "filename.h"
@@ -31,9 +31,12 @@
 // Description : This is the base class for a program that generates
 //               an egg file output, but doesn't read any for input.
 ////////////////////////////////////////////////////////////////////
-class EggWriter : virtual public EggSingleBase, public WithOutputFile {
+class EggWriter : virtual public EggBase, public WithOutputFile {
 public:
   EggWriter(bool allow_last_param = false, bool allow_stdout = true);
+
+  void add_normals_options();
+  void add_transform_options();
 
   virtual EggWriter *as_writer();
 
@@ -43,6 +46,29 @@ public:
 protected:
   virtual bool handle_args(Args &args);
   virtual bool post_command_line();
+
+  static bool dispatch_normals(ProgramBase *self, const string &opt, const string &arg, void *mode);
+  bool ns_dispatch_normals(const string &opt, const string &arg, void *mode);
+
+  static bool dispatch_scale(const string &opt, const string &arg, void *var);
+  static bool dispatch_rotate_xyz(ProgramBase *self, const string &opt, const string &arg, void *var);
+  bool ns_dispatch_rotate_xyz(const string &opt, const string &arg, void *var);
+  static bool dispatch_rotate_axis(ProgramBase *self, const string &opt, const string &arg, void *var);
+  bool ns_dispatch_rotate_axis(const string &opt, const string &arg, void *var);
+  static bool dispatch_translate(const string &opt, const string &arg, void *var);
+
+protected:
+  enum NormalsMode {
+    NM_strip,
+    NM_polygon,
+    NM_vertex,
+    NM_preserve
+  };
+  NormalsMode _normals_mode;
+  double _normals_threshold;
+
+  bool _got_transform;
+  LMatrix4d _transform;
 
 private:
   ofstream _output_stream;

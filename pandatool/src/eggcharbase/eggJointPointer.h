@@ -22,7 +22,7 @@
 #include "pandatoolbase.h"
 
 #include "eggBackPointer.h"
-#include "eggGroup.h"
+
 #include "luse.h"
 
 ////////////////////////////////////////////////////////////////////
@@ -41,18 +41,11 @@ public:
   virtual void set_frame(int n, const LMatrix4d &mat)=0;
   virtual bool add_frame(const LMatrix4d &mat);
 
-  virtual void do_finish_reparent(EggJointPointer *new_parent)=0;
-  virtual void move_vertices_to(EggJointPointer *new_joint);
-
   void begin_rebuild();
   virtual bool add_rebuild_frame(const LMatrix4d &mat);
-  INLINE int get_num_rebuild_frames() const;
-  INLINE const LMatrix4d &get_rebuild_frame(int n) const;
   virtual bool do_rebuild();
 
   virtual void optimize();
-  virtual void expose(EggGroup::DCSType dcs_type);
-  virtual void zero_channels(const string &components);
 
 protected:
   typedef pvector<LMatrix4d> RebuildFrames;
@@ -75,8 +68,6 @@ public:
 private:
   static TypeHandle _type_handle;
 };
-
-#include "eggJointPointer.I"
 
 #endif
 

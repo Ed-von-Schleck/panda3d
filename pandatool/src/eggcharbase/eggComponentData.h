@@ -21,14 +21,12 @@
 
 #include "pandatoolbase.h"
 
-#include "eggObject.h"
 #include "namable.h"
-#include "pset.h"
 
 class EggCharacterCollection;
 class EggCharacterData;
 class EggBackPointer;
-class NameUniquifier;
+class EggObject;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : EggComponentData
@@ -38,17 +36,14 @@ class NameUniquifier;
 //               back pointers to the references to this component in
 //               all model and animation egg files read.
 ////////////////////////////////////////////////////////////////////
-class EggComponentData : public EggObject, public Namable {
+class EggComponentData : public Namable {
 public:
   EggComponentData(EggCharacterCollection *collection,
                    EggCharacterData *char_data);
   virtual ~EggComponentData();
 
-  void add_name(const string &name, NameUniquifier &uniquifier);
+  void add_name(const string &name);
   bool matches_name(const string &name) const;
-
-  int get_num_frames(int model_index) const;
-  void extend_to(int model_index, int num_frames) const;
 
   virtual void add_back_pointer(int model_index, EggObject *egg_object)=0;
   virtual void write(ostream &out, int indent_level = 0) const=0;
@@ -65,29 +60,9 @@ protected:
   typedef pvector<EggBackPointer *> BackPointers;
   BackPointers _back_pointers;
 
-  typedef pset<string> Names;
-  Names _names;
 
   EggCharacterCollection *_collection;
   EggCharacterData *_char_data;
-
-
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    EggObject::init_type();
-    register_type(_type_handle, "EggComponentData",
-                  EggObject::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "eggComponentData.I"

@@ -18,8 +18,7 @@
 
 #include "softCVS.h"
 
-#include "notify.h"
-#include "multifile.h"
+#include <notify.h>
 
 #include <algorithm>
 
@@ -33,18 +32,14 @@ SoftCVS() {
   _cvs_binary = "cvs";
 
   set_program_description
-    ("softcvs is designed to prepare a directory hierarchy "
-     "representing a SoftImage database for adding to CVS.  "
-     "First, it eliminates SoftImage's silly filename-based "
-     "versioning system by renaming versioned filenames higher "
-     "than 1-0 back to version 1-0.  Then, it rolls up all the "
-     "files for each scene except the texture images into a Panda "
-     "multifile, which is added to CVS; the texture images are "
-     "directly added to CVS where they are.\n\n"
-
-     "The reduction of hundreds of SoftImage files per scene down to one "
-     "multifile and a handle of texture images should greatly improve "
-     "the update and commit times of CVS.\n\n"
+    ("softcvs scrubs over a SoftImage database that was recently copied "
+     "into a CVS-controlled directory and prepares it for cvs updating.  "
+     "It eliminates SoftImage's silly filename-based versioning system by "
+     "renaming versioned filenames higher than 1-0 back to version 1-0 "
+     "(thus overwriting the previous file version 1-0).  This allows CVS "
+     "to manage the versioning rather than having to change the filename "
+     "with each new version.  This program also automatically adds each "
+     "new file to the CVS repository.\n\n"
 
      "You must run this from within the root of a SoftImage database "
      "directory; e.g. the directory that contains SCENES, PICTURES, MODELS, "
@@ -100,9 +95,7 @@ run() {
 
   // Now determine which element files are actually referenced by at
   // least one of the scene files.
-  if (!get_scenes()) {
-    exit(1);
-  }
+  count_references();
 
   // Finally, remove all the element files that are no longer
   // referenced by any scenes.
@@ -166,7 +159,6 @@ traverse_subdir(const Filename &directory) {
 
   bool is_scenes = false;
   bool keep_all = false;
-  bool wants_cvs = false;
 
   // Now make some special-case behavior based on the particular
   // SoftImage subdirectory we're in.
@@ -178,18 +170,8 @@ traverse_subdir(const Filename &directory) {
     // In the pictures directory, we must keep everything, since the
     // scene files don't explicitly reference these but they're still
     // important.  Textures that are no longer used will pile up; we
-    // leave this as the user's problem.
-
-    // We not only keep the textures, but we also move them into CVS,
-    // since (again) they're not part of the scene files and thus
-    // won't get added to the multifiles.  Also, some textures are
-    // shared between different scenes, and it would be wasteful to
-    // add them to each scene multifile; furthermore, some scenes are
-    // used for animation only, and we don't want to modify these
-    // multifiles when the textures change.
-
+    // leave this is as the user's problem.
     keep_all = true;
-    wants_cvs = !_no_cvs;
   }
 
   vector_string::const_iterator fi;
@@ -200,13 +182,15 @@ traverse_subdir(const Filename &directory) {
 
     } else if (filename == "Chapter.rsrc") {
       // This special filename should not be considered, except to add
-      // it to the multifiles.
-      _global_files.push_back(Filename(directory, filename));
+      // it to CVS.
+      if (in_cvs && cvs_elements.count(filename) == 0) {
+        _cvs_add.push_back(Filename(directory, filename));
+      }
 
     } else {
       SoftFilename soft(directory, filename);
 
-      if (cvs_elements.count(filename) != 0) {
+      if (in_cvs && cvs_elements.count(filename) != 0) {
         // This file is known to be in CVS.
         soft.set_in_cvs(true);
       }
@@ -214,12 +198,6 @@ traverse_subdir(const Filename &directory) {
       if (keep_all) {
         soft.increment_use_count();
       }
-      if (wants_cvs && !in_cvs) {
-        // Try to CVSify the directory.
-        cvs_add(directory);
-        in_cvs = true;
-      }
-      soft.set_wants_cvs(wants_cvs);
 
       if (is_scenes && soft.has_version() && soft.get_extension() == ".dsc") {
         _scene_files.push_back(soft);
@@ -275,27 +253,21 @@ collapse_scene_files() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: SoftCVS::get_scenes
+//     Function: SoftCVS::count_references
 //       Access: Private
 //  Description: Walks through the list of scene files and looks for
-//               the set of element files referenced by each one,
-//               updating multifile accordingly.
+//               the set of element files referenced by the scene
+//               file.  Also add the scene files to CVS if warranted.
 ////////////////////////////////////////////////////////////////////
-bool SoftCVS::
-get_scenes() {
-  bool okflag = true;
-
-  // We will be added the multifiles to CVS if they're not already
-  // added, so we have to know which files are in CVS already.
-  pset<string> cvs_elements;
-  if (!_no_cvs) {
-    scan_cvs(".", cvs_elements);
-  }
-
+void SoftCVS::
+count_references() {
   SceneFiles::const_iterator vi;
   for (vi = _scene_files.begin(); vi != _scene_files.end(); ++vi) {
     const SoftFilename &sf = (*vi);
     Filename file(sf.get_dirname(), sf.get_filename());
+    if (!sf.get_in_cvs()) {
+      _cvs_add.push_back(file);
+    }
 
     file.set_text();
     ifstream in;
@@ -303,58 +275,9 @@ get_scenes() {
       nout << "Unable to read " << file << "\n";
     } else {
       nout << "Scanning " << file << "\n";
-
-      Multifile multifile;
-      Filename multifile_name = sf.get_base() + "mf";
-
-      if (!multifile.open_read_write(multifile_name)) {
-        nout << "Unable to open " << multifile_name << " for updating.\n";
-        okflag = false;
-
-      } else {
-        if (!scan_scene_file(in, multifile)) {
-          okflag = false;
-        }
-
-        // Add all the global files to the multifile too.  These
-        // probably can't take compression (since in SoftImage they're
-        // just the Chapter.rsrc files, each very tiny).
-        vector_string::const_iterator gi;
-        for (gi = _global_files.begin(); gi != _global_files.end(); ++gi) {
-          if (multifile.update_subfile((*gi), (*gi), 0).empty()) {
-            nout << "Unable to add " << (*gi) << "\n";
-            okflag = false;
-          }
-        }
-
-        // Also add the scene file itself.
-        if (multifile.update_subfile(file, file, 6).empty()) {
-          nout << "Unable to add " << file << "\n";
-          okflag = false;
-        }
-
-        bool flushed = false;
-        if (multifile.needs_repack()) {
-          flushed = multifile.repack();
-        } else {
-          flushed = multifile.flush();
-        }
-        if (!flushed) {
-          nout << "Failed to write " << multifile_name << ".\n";
-          okflag = false;
-        } else {
-          nout << "Wrote " << multifile_name << ".\n";
-
-          if (!_no_cvs && cvs_elements.count(multifile_name) == 0) {
-            // Add the multifile to CVS.
-            _cvs_add.push_back(multifile_name);
-          }
-        }
-      }
+      scan_scene_file(in);
     }
   }
-
-  return okflag;
 }
 
 
@@ -382,7 +305,7 @@ remove_unused_elements() {
         _cvs_remove.push_back(file);
       }
 
-    } else if (sf.get_wants_cvs() && !sf.get_in_cvs()) {
+    } else if (!sf.get_in_cvs()) {
       _cvs_add.push_back(file);
     }
   }
@@ -426,11 +349,22 @@ rename_file(SoftCVS::SceneFiles::iterator begin,
 
   // Now remove all of the "wrong" files.
 
+  bool cvs_has_1_0 = false;
+
   SceneFiles::const_iterator p;
   for (p = begin + 1; p != end; ++p) {
     Filename file((*p).get_dirname(), (*p).get_filename());
     if (!file.unlink()) {
       nout << "Unable to remove " << file << ".\n";
+    } else {
+      if ((*p).get_in_cvs()) {
+        if ((*p).is_1_0()) {
+          // We don't cvs remove the 1.0 version.
+          cvs_has_1_0 = true;
+        } else {
+          _cvs_remove.push_back(file);
+        }
+      }
     }
   }
 
@@ -442,6 +376,18 @@ rename_file(SoftCVS::SceneFiles::iterator begin,
     nout << "Unable to rename " << source << " to " << dest_filename << ".\n";
     exit(1);
   }
+
+  if (orig.get_in_cvs()) {
+    // We do have to cvs remove the old one.
+    _cvs_remove.push_back(source);
+  }
+
+  if (!cvs_has_1_0) {
+    // And we have to cvs add the new one.
+    _cvs_add.push_back(dest);
+  }
+
+  orig.set_in_cvs(true);
 
   return true;
 }
@@ -458,7 +404,10 @@ bool SoftCVS::
 scan_cvs(const string &dirname, pset<string> &cvs_elements) {
   Filename cvs_entries = dirname + "/CVS/Entries";
   if (!cvs_entries.exists()) {
-    return false;
+    // Try to CVSify the directory.
+    if (!cvs_add(dirname)) {
+      return false;
+    }
   }
 
   ifstream in;
@@ -495,14 +444,13 @@ scan_cvs(const string &dirname, pset<string> &cvs_elements) {
 ////////////////////////////////////////////////////////////////////
 //     Function: SoftCVS::scan_scene_file
 //       Access: Private
-//  Description: Reads a scene file, looking for references to element
+//  Description: Copies a scene file from the input stream to the
+//               output stream, looking for references to element
 //               files.  For each reference found, increments the
 //               appropriate element file's reference count.
 ////////////////////////////////////////////////////////////////////
-bool SoftCVS::
-scan_scene_file(istream &in, Multifile &multifile) {
-  bool okflag = true;
-  
+void SoftCVS::
+scan_scene_file(istream &in) {
   int c = in.get();
   while (!in.eof() && !in.fail()) {
     // Skip whitespace.
@@ -529,19 +477,11 @@ scan_scene_file(istream &in, Multifile &multifile) {
         // We cheat and get a non-const reference to the filename out
         // of the set.  We can safely do this because incrementing the
         // use count won't change its position in the set.
-        SoftFilename &sf = (SoftFilename &)(*ei);
-        sf.increment_use_count();
-
-        Filename file(sf.get_dirname(), sf.get_filename());
-        if (multifile.update_subfile(file, file, 6).empty()) {
-          nout << "Unable to add " << file << "\n";
-          okflag = false;
-        }
+        SoftFilename &file = (SoftFilename &)(*ei);
+        file.increment_use_count();
       }
     }
   }
-
-  return okflag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -610,7 +550,6 @@ cvs_add_or_remove(const string &cvs_command, const vector_string &paths) {
   }
   return true;
 }
-
 
 int main(int argc, char *argv[]) {
   SoftCVS prog;

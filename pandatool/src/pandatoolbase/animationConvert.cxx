@@ -40,9 +40,6 @@ format_animation_convert(AnimationConvert convert) {
   case AC_flip:
     return "flip";
 
-  case AC_strobe:
-    return "strobe";
-
   case AC_model:
     return "model";
 
@@ -81,9 +78,6 @@ string_animation_convert(const string &str) {
 
   } else if (cmp_nocase(str, "flip") == 0) {
     return AC_flip;
-
-  } else if (cmp_nocase(str, "strobe") == 0) {
-    return AC_strobe;
 
   } else if (cmp_nocase(str, "model") == 0) {
     return AC_model;
