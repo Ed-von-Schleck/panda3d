@@ -19,10 +19,17 @@
 // Includes 
 ////////////////////////////////////////////////////////////////////
 
+#include "pandabase.h"
+
 #include <typedef.h>
 #include <list>
 #include <vector>
 using namespace std;
+
+#include "typedWriteableReferenceCount.h"
+#include "namable.h"
+#include "luse.h"
+
 
 ////////////////////////////////////////////////////////////////////
 // Defines 

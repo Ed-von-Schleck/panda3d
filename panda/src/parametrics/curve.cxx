@@ -16,13 +16,12 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
+#include "curve.h"
 ////#include "StdAfx.h"
 ////#include "pandabase.h"
-#include "luse.h"
 #include "parametrics.h"
 #include "typedWriteableReferenceCount.h"
 #include "namable.h"
-#include "curve.h"
 #include "hermiteCurve.h"
 #include "nurbsCurve.h"
 #include "curveDrawer.h"

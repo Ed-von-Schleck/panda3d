@@ -16,13 +16,14 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
+#include "curveDrawer.h"
+
 #include <math.h>
 
 #include "luse.h"
 #include "parametrics.h"
 #include "typedWriteableReferenceCount.h"
 #include "namable.h"
-#include "curveDrawer.h"
 ////#include "patch.h"
 
 

@@ -13,8 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "luse.h"
-#include "typedWriteableReferenceCount.h"
-#include "namable.h"
 #include "nurbsCurve.h"
 #include "parametrics.h"
 ////#include <initReg.h>
@@ -28,7 +26,7 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////
 
 
-static const LVector3f zero(0.0, 0.0, 0.0);
+static const LVector3f zero = LVector3f(0.0, 0.0, 0.0);
 // This is returned occasionally from some of the functions, and is
 // used from time to time as an initializer.
 

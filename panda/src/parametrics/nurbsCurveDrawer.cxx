@@ -16,11 +16,11 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
+#include "nurbsCurveDrawer.h"
 #include "luse.h"
 #include "parametrics.h"
 #include "typedWriteableReferenceCount.h"
 #include "namable.h"
-#include "nurbsCurveDrawer.h"
 ////#include "patch.h"
 ////#include <linMathOutput.h>
 
