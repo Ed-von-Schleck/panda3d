@@ -164,7 +164,8 @@ remove_on_stage(TextureStage *stage) const {
   if (ti != attrib->_on_textures.end()) {
     attrib->_on_textures.erase(ti);
     OnStages::iterator si = 
-      find(attrib->_on_stages.begin(), attrib->_on_stages.end(), stage);
+      find(attrib->_on_stages.begin(), attrib->_on_stages.end(), 
+           PT(TextureStage)(stage));
     if (si != attrib->_on_stages.end()) {
       attrib->_on_stages.erase(si);
     }
@@ -191,7 +192,8 @@ add_off_stage(TextureStage *stage) const {
     if (ti != attrib->_on_textures.end()) {
       attrib->_on_textures.erase(ti);
       OnStages::iterator si = 
-        find(attrib->_on_stages.begin(), attrib->_on_stages.end(), stage);
+        find(attrib->_on_stages.begin(), attrib->_on_stages.end(), 
+             PT(TextureStage)(stage));
       if (si != attrib->_on_stages.end()) {
         attrib->_on_stages.erase(si);
       }
