@@ -729,14 +729,14 @@ write_verbose(ostream &out, int indent_level) const {
       const TexCoordDef &def = (*tci).second;
       if (def._tindex != (ushort *)NULL) {
         indent(out, indent_level)
-          << "Indexed texcoords stage \"" << name->get_name() << "\" = "
+          << "Indexed texcoords \"" << name->get_name() << "\" = "
           << def._texcoords << ", length = " << def._texcoords.size() << "\n";
         describe_attr(out, this, G_PER_VERTEX, def._tindex, false, 
                       indent_level + 2);
 
       } else {
         indent(out, indent_level)
-          << "Nonindex texcoords stage \"" << name->get_name() << ":\n";
+          << "Nonindex texcoords \"" << name->get_name() << ":\n";
         describe_attr(out, this, G_PER_VERTEX, def._texcoords, true, 
                       indent_level + 2);
       }
