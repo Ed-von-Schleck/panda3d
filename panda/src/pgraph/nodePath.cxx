@@ -2433,7 +2433,7 @@ remove_tex_transform(TextureStage *stage) {
 void NodePath::
 clear_tex_transform() {
   nassertv_always(!is_empty());
-  node()->clear_attrib(TextureAttrib::get_class_type());
+  node()->clear_attrib(TexMatrixAttrib::get_class_type());
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -24,6 +24,7 @@
 #include "datagram.h"
 #include "datagramIterator.h"
 
+CPT(RenderAttrib) TexMatrixAttrib::_empty_attrib;
 TypeHandle TexMatrixAttrib::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
@@ -43,8 +44,13 @@ TexMatrixAttrib::
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TexMatrixAttrib::
 make() {
-  TexMatrixAttrib *attrib = new TexMatrixAttrib;
-  return return_new(attrib);
+  // We make it a special case and store a pointer to the empty attrib
+  // forever once we find it the first time, as an optimization.
+  if (_empty_attrib == (RenderAttrib *)NULL) {
+    _empty_attrib = return_new(new TexMatrixAttrib);
+  }
+
+  return _empty_attrib;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -119,6 +125,17 @@ remove_stage(TextureStage *stage) const {
 const LMatrix4f &TexMatrixAttrib::
 get_mat() const {
   return get_mat(TextureStage::get_default());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::is_empty
+//       Access: Published
+//  Description: Returns true if no stages are defined in the
+//               TexMatrixAttrib, false if at least one is.
+////////////////////////////////////////////////////////////////////
+bool TexMatrixAttrib::
+is_empty() const {
+  return _stages.empty();
 }
 
 ////////////////////////////////////////////////////////////////////

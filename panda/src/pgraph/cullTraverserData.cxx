@@ -39,40 +39,12 @@ apply_transform_and_state(CullTraverser *trav,
                           CPT(TransformState) node_transform, 
                           CPT(RenderState) node_state,
                           CPT(RenderEffects) node_effects) {
-  // First, compute the _net_transform, because we need it for the
-  // compass and billboard effects.
-  _net_transform = _net_transform->compose(node_transform);
-
-  if (!node_effects->is_empty()) {
-    const CompassEffect *compass = node_effects->get_compass();
-    if (compass != (const CompassEffect *)NULL) {
-      CPT(TransformState) compass_transform = 
-        compass->do_compass(_net_transform, node_transform);
-	  _net_transform = _net_transform->compose(compass_transform);
-      node_transform = node_transform->compose(compass_transform);
-    }
-
-    const BillboardEffect *billboard = node_effects->get_billboard();
-    if (billboard != (const BillboardEffect *)NULL) {
-      CPT(TransformState) billboard_transform = 
-        billboard->do_billboard(_net_transform, trav->get_camera_transform());
-      _net_transform = _net_transform->compose(billboard_transform);
-      node_transform = node_transform->compose(billboard_transform);
-    }
-
-    
-    const PolylightEffect *poly_light = node_effects->get_polylight(); 
-	if(poly_light != (const PolylightEffect *) NULL) {
-	  if(poly_light->is_enabled()) {
-	    CPT(RenderAttrib) poly_light_attrib = poly_light->do_poly_light( this , node_transform); 
-	    CPT(RenderState) poly_light_state=RenderState::make(poly_light_attrib);
-	    node_state=node_state->compose(poly_light_state); 
-	  }
-	}
-    
+  if (node_effects->has_cull_callback()) {
+    node_effects->cull_callback(trav, *this, node_transform, node_state);
   }
 
   if (!node_transform->is_identity()) {
+    _net_transform = _net_transform->compose(node_transform);
     _render_transform = _render_transform->compose(node_transform);
 
     if ((_view_frustum != (GeometricBoundingVolume *)NULL) ||

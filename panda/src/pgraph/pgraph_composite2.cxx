@@ -37,6 +37,7 @@
 #include "switchNode.cxx"
 #include "test_pgraph.cxx"
 #include "texMatrixAttrib.cxx"
+#include "texProjectorEffect.cxx"
 #include "textureApplyAttrib.cxx"
 #include "textureAttrib.cxx"
 #include "texGenAttrib.cxx"

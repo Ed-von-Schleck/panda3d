@@ -50,6 +50,7 @@ PUBLISHED:
   CPT(RenderAttrib) add_stage(TextureStage *stage, const TransformState *transform) const;
   CPT(RenderAttrib) remove_stage(TextureStage *stage) const;
 
+  bool is_empty() const;
   bool has_stage(TextureStage *stage) const;
 
   const LMatrix4f &get_mat() const;
@@ -70,6 +71,8 @@ protected:
 private:
   typedef pmap< PT(TextureStage), CPT(TransformState) > Stages;
   Stages _stages;
+
+  static CPT(RenderAttrib) _empty_attrib;
 
 public:
   static void register_with_read_factory();

@@ -1,0 +1,134 @@
+MULTITEXTURE OVERVIEW
+
+Modern graphics cards are capable of applying more than one texture
+image at once to geometry as they render polygons.  This capability is
+referred to as multitexture.
+
+The textures are applied in a pipeline fashion, where the output of
+each texturing operation is used as the input to the next.  A
+particular graphics card will have a certain number of texture units
+dedicated to this function, which limits the number of textures that
+may be pipelined in this way.
+
+To apply a texture in Panda, you must have a Texture object (which you
+might have loaded from disk, or extracted from a model) and a
+TextureStage object (which you can create on-the-fly).  The primary
+call to add a texture to the pipeline is:
+
+  nodepath.add_texture(texture_stage, texture);
+
+This adds the indicated texture into the pipeline for all the geometry
+at nodepath level and below.
+
+The purpose of the TextureStage object is to represent a single stage
+in the texture pipeline.  Each time you call add_texture() with a
+different TextureStage object, the associated Texture is inserted into
+the pipeline (for geometry at that level and below); on the other
+hand, reusing a TextureStage object means to replace the new Texture
+for the one that was previously associated with this TextureStage.
+
+There is also a default TextureStage object that is used for all of
+the old single-texture Panda interfaces (like nodepath.set_texture()).
+It is also the TextureStage that will be used to apply Textures onto
+models (e.g. egg files and/or bam files) that do not specify the use
+of multitexturing.  This default TextureStage can be accessed by
+TextureStage.getDefault().
+
+There are a number of different blend modes that you may specify for
+each texture stage in the pipeline; these are specified with
+texture_stage.set_mode().  The mode may be one of:
+
+     TextureStage::M_modulate
+       Multiplies the incoming color by the texture color.  This
+       allows the texture to darken, but not brighten, the incoming
+       color.
+
+     TextureStage::M_add
+       Adds the incoming color and the texture color.  This allows the
+       texture to brighten, but not darken, the incoming color, and
+       tends to lead to bright, desaturated colors.
+
+     TextureStage::M_decal
+       Shows the texture color where the texture is alpha = 1, and the
+       incoming color where the texture is alpha = 0.  This can be
+       used to paint a texture on top of the existing texture.
+
+     TextureStage::M_blend
+       Defined for grayscale textures only.  You can specify an
+       arbitrary color as a separate parameter with
+       texture_stage.set_color(), and then the result of M_blend is to
+       produced the specified color where the texture is white, and
+       the incoming color where the texture is black.  This can be
+       used to paint arbitrary color stripes or a similar effect over
+       an existing texture.
+
+     TextureStage::M_replace
+       Completely replaces the incoming color with the texture color;
+       probably not terribly useful in a multitexture environment,
+       except for the first texture stage.
+
+     TextureStage::M_combine
+       This mode supercedes most of the above with a more powerful
+       collection of options, including signed add and/or subtract,
+       and linear interpolation between two different colors using a
+       third parameter.  You can specify the input(s) as one or more
+       combinations of a specified constant color, or the previous
+       texture in the pipeline, or the incoming color.  However, only
+       the more recent graphics drivers will support this mode.  A
+       complete description of this mode is not given here.
+
+Some of the above modes are very order-dependent.  For this reason,
+you may use texture_stage.set_sort() to specify the order in which
+textures should be applied, using an integer sort parameter.  When
+Panda collects the textures together for rendering a particular piece
+of geometry, it will sort them in order from lowest sort value to
+highest sort value.  The default sort value is 0.  Thus, you can
+specify a large positive number to apply a texture on top of existing
+textures, or a large negative number to apply it beneath existing
+textures.
+
+Since the number of texture units available on the hardware is
+limited, and is usually a small number (and some hardware doesn't
+support multitexturing at all, so effectively has only one texture
+unit), Panda needs some rule for selecting the subset of textures to
+render when you have requested more texture stages than are available.
+For this Panda relies on the texture_stage.set_priority() value, which
+is an integer value that represents the importance of this particular
+texture.  If the requested textures will not fit on the available
+number of texture units, Panda will select the n textures with the
+highest priority (and then sort them into order by the set_sort()
+parameter).  In the case of textures with the same priority, Panda
+will prefer those with the lower sort value.  The default priority is
+0.
+
+
+TEXTURE COORDINATES
+
+In many cases, all of the texture stages need to use the same set of
+texture coordinates, which is the default behavior.  You can also
+apply a different texture matrix on some texture stages to apply a
+linear transformation to the texture coordinates (for instance, to
+position a decal on the surface).
+
+  nodepath.set_tex_offset(texture_stage, u_offset, v_offset);
+  nodepath.set_tex_scale(texture_stage, u_scale, v_scale);
+  nodepath.set_tex_rotate(texture_stage, degrees);
+
+These operations accumulate through nested nodes just like standard
+scene graph transforms.  In fact, you can get and set relative texture
+transforms:
+
+  nodepath.get_tex_offset(other, texture_stage);
+  nodepath.set_tex_scale(other, texture_stage, u_scale, v_scale);
+  (etc.)
+
+Sometimes, a texture stage may need to use a completely different set
+of texture coordinates, for instance as provided by the artist who
+generated the model.  Panda allows a model to store any number of
+different sets of texture coordinates on its vertices, each with a
+unique name.  The default texture coordinate name is "default", but
+you can associate your texture stage with any other set of texture
+coordinates you have available:
+
+  texture_stage.set_texcoord_name(new_name)
+

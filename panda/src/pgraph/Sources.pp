@@ -89,6 +89,7 @@
     spotlight.I spotlight.h \
     switchNode.I switchNode.h \
     texMatrixAttrib.I texMatrixAttrib.h \
+    texProjectorEffect.I texProjectorEffect.h \
     textureApplyAttrib.I textureApplyAttrib.h \
     textureAttrib.I textureAttrib.h \
     texGenAttrib.I texGenAttrib.h \
@@ -179,6 +180,7 @@
     spotlight.cxx \
     switchNode.cxx \
     texMatrixAttrib.cxx \
+    texProjectorEffect.cxx \
     textureApplyAttrib.cxx \
     textureAttrib.cxx \
     texGenAttrib.cxx \
@@ -267,6 +269,7 @@
     spotlight.I spotlight.h \
     switchNode.I switchNode.h \
     texMatrixAttrib.I texMatrixAttrib.h \
+    texProjectorEffect.I texProjectorEffect.h \
     textureApplyAttrib.I textureApplyAttrib.h \
     textureAttrib.I textureAttrib.h \
     texGenAttrib.I texGenAttrib.h \

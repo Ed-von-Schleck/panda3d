@@ -130,6 +130,16 @@ PUBLISHED:
   INLINE bool has_sort() const;
   INLINE int get_sort() const;
 
+  INLINE void set_priority(int priority);
+  INLINE void clear_priority();
+  INLINE bool has_priority() const;
+  INLINE int get_priority() const;
+
+  INLINE void set_color(const Colorf &color);
+  INLINE void clear_color();
+  INLINE bool has_color() const;
+  INLINE const Colorf &get_color() const;
+
   INLINE void set_uv_name(const string &uv_name);
   INLINE void clear_uv_name();
   INLINE bool has_uv_name() const;
@@ -171,6 +181,8 @@ private:
     F_has_stage_name         = 0x0010,
     F_has_sort               = 0x0020,
     F_has_uv_name            = 0x0040,
+    F_has_priority           = 0x0080,
+    F_has_color              = 0x0100,
   };
 
   Format _format;
@@ -180,6 +192,8 @@ private:
   EnvType _env_type;
   string _stage_name;
   int _sort;
+  int _priority;
+  Colorf _color;
   string _uv_name;
   int _flags;
   LMatrix3d _transform;

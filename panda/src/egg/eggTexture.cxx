@@ -43,6 +43,9 @@ EggTexture(const string &tref_name, const string &filename)
   _magfilter = FT_unspecified;
   _anisotropic_degree = 0;
   _env_type = ET_unspecified;
+  _sort = 0;
+  _priority = 0;
+  _color.set(0.0f, 0.0f, 0.0f, 1.0f);
   _flags = 0;
   _transform = LMatrix3d::ident_mat();
   _alpha_file_channel = 0;
@@ -76,6 +79,11 @@ operator = (const EggTexture &copy) {
   _magfilter = copy._magfilter;
   _anisotropic_degree = copy._anisotropic_degree;
   _env_type = copy._env_type;
+  _stage_name = copy._stage_name;
+  _sort = copy._sort;
+  _priority = copy._priority;
+  _color = copy._color;
+  _uv_name = copy._uv_name;
   _flags = copy._flags;
   _transform = copy._transform;
   _alpha_filename = copy._alpha_filename;
@@ -157,6 +165,22 @@ write(ostream &out, int indent_level) const {
   if (has_sort()) {
     indent(out, indent_level + 2)
       << "<Scalar> sort { " << get_sort() << " }\n";
+  }
+
+  if (has_priority()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> priority { " << get_priority() << " }\n";
+  }
+
+  if (has_color()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> blendr { " << _color[0] << " }\n";
+    indent(out, indent_level + 2)
+      << "<Scalar> blendg { " << _color[1] << " }\n";
+    indent(out, indent_level + 2)
+      << "<Scalar> blendb { " << _color[2] << " }\n";
+    indent(out, indent_level + 2)
+      << "<Scalar> blenda { " << _color[3] << " }\n";
   }
 
   if (has_uv_name()) {

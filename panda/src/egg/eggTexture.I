@@ -341,6 +341,100 @@ get_sort() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::set_priority
+//       Access: Published
+//  Description: Sets the importance of this texture with respect to
+//               other textures also applied on the same geometry.
+//               This is only meaningful in the presence of
+//               multitexturing.
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+set_priority(int priority) {
+  _priority = priority;
+  _flags |= F_has_priority;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::clear_priority
+//       Access: Published
+//  Description: Removes the specification of multitexture priority
+//               from the texture.  The default priority value is 0.
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+clear_priority() {
+  _priority = 0;
+  _flags &= ~F_has_priority;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::has_priority
+//       Access: Published
+//  Description: Returns true if a priority value for multitexture
+//               importance has been specified for the texture, false
+//               otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool EggTexture::
+has_priority() const {
+  return (_flags & F_has_priority) != 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_priority
+//       Access: Published
+//  Description: Returns the multitexture importance value that has been
+//               specified for the texture, or 0 if no priority value has
+//               been specified.
+////////////////////////////////////////////////////////////////////
+INLINE int EggTexture::
+get_priority() const {
+  return _priority;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::set_color
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+set_color(const Colorf &color) {
+  _color = color;
+  _flags |= F_has_color;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::clear_color
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+clear_color() {
+  _color.set(0.0f, 0.0f, 0.0f, 1.0f);
+  _flags &= ~F_has_color;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::has_color
+//       Access: Published
+//  Description: Returns true if a blend color has been
+//               specified for the texture.
+////////////////////////////////////////////////////////////////////
+INLINE bool EggTexture::
+has_color() const {
+  return (_flags & F_has_color) != 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_color
+//       Access: Published
+//  Description: Returns the blend color if one has been
+//               specified, or (0, 0, 0, 1) otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE const Colorf &EggTexture::
+get_color() const {
+  return _color;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::set_uv_name
 //       Access: Published
 //  Description: Specifies the named set of texture coordinates that

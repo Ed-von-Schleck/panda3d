@@ -79,6 +79,7 @@
 #include "spotlight.h"
 #include "switchNode.h"
 #include "texMatrixAttrib.h"
+#include "texProjectorEffect.h"
 #include "textureApplyAttrib.h"
 #include "textureAttrib.h"
 #include "texGenAttrib.h"
@@ -232,6 +233,7 @@ init_libpgraph() {
   Spotlight::init_type();
   SwitchNode::init_type();
   TexMatrixAttrib::init_type();
+  TexProjectorEffect::init_type();
   TextureApplyAttrib::init_type();
   TextureAttrib::init_type();
   TexGenAttrib::init_type();
@@ -284,6 +286,7 @@ init_libpgraph() {
   Spotlight::register_with_read_factory();
   SwitchNode::register_with_read_factory();
   TexMatrixAttrib::register_with_read_factory();
+  TexProjectorEffect::register_with_read_factory();
   TextureApplyAttrib::register_with_read_factory();
   TextureAttrib::register_with_read_factory();
   TexGenAttrib::register_with_read_factory();

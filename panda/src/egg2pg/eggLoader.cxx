@@ -1223,6 +1223,14 @@ make_texture_stage(const EggTexture *egg_tex) {
     stage->set_sort(egg_tex->get_sort());
   }
 
+  if (egg_tex->has_priority()) {
+    stage->set_sort(egg_tex->get_priority());
+  }
+
+  if (egg_tex->has_color()) {
+    stage->set_color(egg_tex->get_color());
+  }
+
   return stage;
 }
 

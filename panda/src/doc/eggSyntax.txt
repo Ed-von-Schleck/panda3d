@@ -148,11 +148,51 @@ appear before they are referenced.
   <Scalar> envtype { environment-type }
 
     This specifies the type of texture environment to create; i.e. it
-    controls the way in which textures apply to models.
+    controls the way in which textures apply to models.  This is
+    particularly important in the presence of multitexturing.
     Environment-type may be one of:
 
       MODULATE
       DECAL
+      BLEND
+      REPLACE
+      ADD
+      COMBINE
+
+  <Scalar> stage-name { name }
+
+    Specifies the name of the TextureStage object that is created to
+    render this texture.  If this is omitted, a custom TextureStage is
+    created for this texture if it is required (e.g. because some
+    other multitexturing parameter has been specified), or the system
+    default TextureStage is used if multitexturing is not required.
+
+  <Scalar> sort { sort-value }
+
+    Specifies an integer sort value to rank this texture in order
+    among other textures that are applied to the same geometry.
+
+  <Scalar> priority { priority-value }
+
+    Specifies an integer sort value to rank this texture in priority
+    among other textures that are applied to the same geometry.  This
+    is only used to eliminate low-priority textures in case more
+    textures are requested for a particular piece of geometry than the
+    graphics hardware can render.
+
+  <Scalar> blendr { red-value }
+  <Scalar> blendg { green-value }
+  <Scalar> blendb { blue-value }
+  <Scalar> blenda { alpha-value }
+
+    Specifies a four-component color that is applied with the color in
+    case the envtype, above, is "blend".
+
+  <Scalar> uv-name { name }
+
+    Specifies the name of the texture coordinates that are to be
+    associated with this texture.  If this is omitted, the default
+    texture coordinates are used.
 
   <Scalar> alpha { alpha-type }
 
