@@ -182,6 +182,18 @@ is_all_off() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::get_stages
+//       Access: Published
+//  Description: Returns the complete list of stages defined within
+//               this TextureAttrib, suitable for passing to
+//               Geom::setup_multitexcoord_iterator().
+////////////////////////////////////////////////////////////////////
+INLINE const Geom::ActiveTextureStages &TextureAttrib::
+get_stages() const {
+  return _stages;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::check_sorted
 //       Access: Private
 //  Description: Confirms whether the _stages list is still sorted.

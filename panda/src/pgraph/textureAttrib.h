@@ -27,6 +27,7 @@
 #include "updateSeq.h"
 #include "textureStageManager.h"
 #include "indirectLess.h"
+#include "geom.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TextureAttrib
@@ -89,6 +90,8 @@ PUBLISHED:
   INLINE bool is_all_off() const;
 
 public:
+  INLINE const Geom::ActiveTextureStages &get_stages() const;
+
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
   virtual void output(ostream &out) const;
 
@@ -108,7 +111,7 @@ private:
 private:
   Operation _operation;
 
-  typedef pvector< PT(TextureStage) > Stages;
+  typedef Geom::ActiveTextureStages Stages;
   Stages _stages;
 
   typedef pmap< TextureStage *, PT(Texture) > Textures;
