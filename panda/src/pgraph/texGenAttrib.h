@@ -28,9 +28,12 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TexGenAttrib
-// Description : Calculates new texture coordinates for reflection 
-//               and refraction maps. This attrib is used to get a
-//               water like surface.
+// Description : Computes texture coordinates for geometry
+//               automatically based on vertex position and/or normal.
+//               This can be used to implement reflection and/or
+//               refraction maps, for instance to make shiny surfaces,
+//               as well as other special effects such as projective
+//               texturing.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TexGenAttrib : public RenderAttrib {
 PUBLISHED:

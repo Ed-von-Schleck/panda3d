@@ -1308,6 +1308,18 @@ get_tex_scale(const NodePath &other, TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_project_texture
+//       Access: Published
+//  Description: Undoes the effect of project_texture().
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+clear_project_texture(TextureStage *stage) {
+  clear_texture(stage);
+  clear_tex_gen(stage);
+  clear_tex_projector(stage);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: NodePath::set_billboard_axis
 //       Access: Published
 //  Description: Puts a billboard transition on the node such that it

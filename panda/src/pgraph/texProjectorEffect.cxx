@@ -63,6 +63,14 @@ make() {
 //               with the indicated projection for the given stage.
 //               If this stage already exists, its projection
 //               definition is replaced.
+//
+//               The relative transform between the "from" and the
+//               "to" nodes is automatically applied to the texture
+//               transform each frame.
+//
+//               Furthermore, if the "to" node is a LensNode, its
+//               projection matrix is also applied to the texture
+//               transform.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderEffect) TexProjectorEffect::
 add_stage(TextureStage *stage, const NodePath &from, const NodePath &to) const {
@@ -87,6 +95,17 @@ remove_stage(TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TexProjectorEffect::is_empty
+//       Access: Published
+//  Description: Returns true if no stages are defined in the
+//               TexProjectorEffect, false if at least one is.
+////////////////////////////////////////////////////////////////////
+bool TexProjectorEffect::
+is_empty() const {
+  return _stages.empty();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TexProjectorEffect::has_stage
 //       Access: Published
 //  Description: Returns true if there is a transform associated with
@@ -103,8 +122,11 @@ has_stage(TextureStage *stage) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TexProjectorEffect::get_from
 //       Access: Published
-//  Description: Returns the NodePath that the indicated stage is
-//               transformed from.
+//  Description: Returns the "from" node associated with the
+//               TexProjectorEffect on the indicated stage.  The
+//               relative transform between the "from" and the "to"
+//               nodes is automatically applied to the texture
+//               transform each frame.
 ////////////////////////////////////////////////////////////////////
 NodePath TexProjectorEffect::
 get_from(TextureStage *stage) const {
@@ -116,8 +138,15 @@ get_from(TextureStage *stage) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TexProjectorEffect::get_to
 //       Access: Published
-//  Description: Returns the NodePath that the indicated stage is
-//               transformed into.
+//  Description: Returns the "to" node associated with the
+//               TexProjectorEffect on the indicated stage.  The
+//               relative transform between the "from" and the "to"
+//               nodes is automatically applied to the texture
+//               transform each frame.
+//
+//               Furthermore, if the "to" node is a LensNode, its
+//               projection matrix is also applied to the texture
+//               transform.
 ////////////////////////////////////////////////////////////////////
 NodePath TexProjectorEffect::
 get_to(TextureStage *stage) const {

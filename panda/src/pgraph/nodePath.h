@@ -24,6 +24,7 @@
 #include "pandaNode.h"
 #include "renderState.h"
 #include "transformState.h"
+#include "texGenAttrib.h"
 #include "nodePathComponent.h"
 
 #include "pointerTo.h"
@@ -494,6 +495,7 @@ PUBLISHED:
   void set_texture_off(int priority = 0);
   void add_texture(TextureStage *stage, Texture *tex, int priority = 0);
   void remove_texture(TextureStage *stage, int priority = 0);
+  void clear_texture(TextureStage *stage);
   void clear_texture();
   bool has_texture() const;
   bool has_texture(TextureStage *stage) const;
@@ -503,7 +505,7 @@ PUBLISHED:
   Texture *get_texture(TextureStage *stage) const;
 
   void set_tex_transform(TextureStage *stage, const TransformState *transform);
-  void remove_tex_transform(TextureStage *stage);
+  void clear_tex_transform(TextureStage *stage);
   void clear_tex_transform();
   bool has_tex_transform(TextureStage *stage) const;
   CPT(TransformState) get_tex_transform(TextureStage *stage) const;
@@ -528,6 +530,22 @@ PUBLISHED:
   INLINE LVecBase2f get_tex_offset(const NodePath &other, TextureStage *stage) const;
   INLINE float get_tex_rotate(const NodePath &other, TextureStage *stage) const;
   INLINE LVecBase2f get_tex_scale(const NodePath &other, TextureStage *stage) const;
+
+  void add_tex_gen(TextureStage *stage, TexGenAttrib::Mode mode, int priority = 0);
+  void clear_tex_gen(TextureStage *stage);
+  void clear_tex_gen();
+  bool has_tex_gen(TextureStage *stage) const;
+  TexGenAttrib::Mode get_tex_gen(TextureStage *stage) const;
+
+  void add_tex_projector(TextureStage *stage, const NodePath &from, const NodePath &to);
+  void clear_tex_projector(TextureStage *stage);
+  void clear_tex_projector();
+  bool has_tex_projector(TextureStage *stage) const;
+  NodePath get_tex_projector_from(TextureStage *stage) const;
+  NodePath get_tex_projector_to(TextureStage *stage) const;
+
+  void project_texture(TextureStage *stage, Texture *tex, const NodePath &projector);
+  INLINE void clear_project_texture(TextureStage *stage);
 
   Texture *find_texture(const string &name) const;
   TextureCollection find_all_textures() const;

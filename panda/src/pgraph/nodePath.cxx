@@ -37,6 +37,8 @@
 #include "compassEffect.h"
 #include "showBoundsEffect.h"
 #include "transparencyAttrib.h"
+#include "texProjectorEffect.h"
+#include "lensNode.h"
 #include "materialPool.h"
 #include "look_at.h"
 #include "plist.h"
@@ -2236,6 +2238,33 @@ remove_texture(TextureStage *stage, int priority) {
 ////////////////////////////////////////////////////////////////////
 //     Function: NodePath::clear_texture
 //       Access: Published
+//  Description: Removes any reference to the indicated texture stage
+//               from the NodePath.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_texture(TextureStage *stage) {
+  nassertv_always(!is_empty());
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TextureAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    CPT(TextureAttrib) tsa = DCAST(TextureAttrib, attrib);
+    tsa = DCAST(TextureAttrib, tsa->remove_on_stage(stage));
+    tsa = DCAST(TextureAttrib, tsa->remove_off_stage(stage));
+
+    if (tsa->is_identity()) {
+      node()->clear_attrib(TextureAttrib::get_class_type());
+
+    } else {
+      int priority = node()->get_state()->get_override(TextureAttrib::get_class_type());
+      node()->set_attrib(tsa, priority);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_texture
+//       Access: Published
 //  Description: Completely removes any texture adjustment that may
 //               have been set via set_texture() or set_texture_off()
 //               from this particular node.  This allows whatever
@@ -2405,23 +2434,27 @@ set_tex_transform(TextureStage *stage, const TransformState *transform) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NodePath::remove_tex_transform
+//     Function: NodePath::clear_tex_transform
 //       Access: Published
 //  Description: Removes the texture matrix on the current node for
 //               the given stage.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-remove_tex_transform(TextureStage *stage) {
+clear_tex_transform(TextureStage *stage) {
   nassertv_always(!is_empty());
 
   const RenderAttrib *attrib =
     node()->get_attrib(TexMatrixAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
-    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
-    
-    // Modify the existing TexMatrixAttrib to remove the indicated
-    // stage.
-    node()->set_attrib(tma->remove_stage(stage));
+    CPT(TexMatrixAttrib) tma = DCAST(TexMatrixAttrib, attrib);
+    tma = DCAST(TexMatrixAttrib, tma->remove_stage(stage));
+
+    if (tma->is_empty()) {
+      node()->clear_attrib(TexMatrixAttrib::get_class_type());
+
+    } else {
+      node()->set_attrib(tma);
+    }
   }
 }
 
@@ -2536,6 +2569,261 @@ get_tex_transform(const NodePath &other, TextureStage *stage) const {
   }
 
   return TransformState::make_identity();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::add_tex_gen
+//       Access: Published
+//  Description: Enables automatic texture coordinate generation for
+//               the indicated texture stage.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+add_tex_gen(TextureStage *stage, TexGenAttrib::Mode mode, int priority) {
+  nassertv_always(!is_empty());
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexGenAttrib::get_class_type());
+
+  CPT(TexGenAttrib) tga;
+
+  if (attrib != (const RenderAttrib *)NULL) {
+    priority = max(priority,
+                   node()->get_state()->get_override(TextureAttrib::get_class_type()));
+    tga = DCAST(TexGenAttrib, attrib);
+
+  } else {
+    tga = DCAST(TexGenAttrib, TexGenAttrib::make());
+  }
+
+  node()->set_attrib(tga->add_stage(stage, mode), priority);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_gen
+//       Access: Published
+//  Description: Disables automatic texture coordinate generation for
+//               the indicated texture stage.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_gen(TextureStage *stage) {
+  nassertv_always(!is_empty());
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexGenAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    CPT(TexGenAttrib) tga = DCAST(TexGenAttrib, attrib);
+    tga = DCAST(TexGenAttrib, tga->remove_stage(stage));
+
+    if (tga->is_empty()) {
+      node()->clear_attrib(TexGenAttrib::get_class_type());
+
+    } else {
+      node()->set_attrib(tga);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_gen
+//       Access: Published
+//  Description: Removes the texture coordinate generation mode from
+//               all texture stages on this node.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_gen() {
+  nassertv_always(!is_empty());
+  node()->clear_attrib(TexGenAttrib::get_class_type());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_tex_gen
+//       Access: Published
+//  Description: Returns true if there is a mode for automatic texture
+//               coordinate generation on the current node for the
+//               given stage.
+////////////////////////////////////////////////////////////////////
+bool NodePath::
+has_tex_gen(TextureStage *stage) const {
+  nassertr_always(!is_empty(), false);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexGenAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TexGenAttrib *tga = DCAST(TexGenAttrib, attrib);
+    return tga->has_stage(stage);
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_gen
+//       Access: Published
+//  Description: Returns the texture coordinate generation mode for
+//               the given stage, or M_off if there is no explicit
+//               mode set for the given stage.
+////////////////////////////////////////////////////////////////////
+TexGenAttrib::Mode NodePath::
+get_tex_gen(TextureStage *stage) const {
+  nassertr_always(!is_empty(), TexGenAttrib::M_off);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexGenAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TexGenAttrib *tga = DCAST(TexGenAttrib, attrib);
+    return tga->get_mode(stage);
+  }
+
+  return TexGenAttrib::M_off;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::add_tex_projector
+//       Access: Published
+//  Description: Establishes a TexProjectorEffect on this node, which
+//               can be used to establish projective texturing (but
+//               see also the NodePath::project_texture() convenience
+//               function), or it can be used to bind this node's
+//               texture transform to particular node's position in
+//               space, allowing a LerpInterval (for instance) to
+//               adjust this node's texture coordinates.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+add_tex_projector(TextureStage *stage, const NodePath &from, const NodePath &to) {
+  nassertv_always(!is_empty());
+
+  const RenderEffect *effect =
+    node()->get_effect(TexProjectorEffect::get_class_type());
+
+  CPT(TexProjectorEffect) tpe;
+
+  if (effect != (const RenderEffect *)NULL) {
+    tpe = DCAST(TexProjectorEffect, effect);
+
+  } else {
+    tpe = DCAST(TexProjectorEffect, TexProjectorEffect::make());
+  }
+
+  node()->set_effect(tpe->add_stage(stage, from, to));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_projector
+//       Access: Published
+//  Description: Removes the TexProjectorEffect for the indicated
+//               stage from this node.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_projector(TextureStage *stage) {
+  nassertv_always(!is_empty());
+
+  const RenderEffect *effect =
+    node()->get_effect(TexProjectorEffect::get_class_type());
+  if (effect != (const RenderEffect *)NULL) {
+    CPT(TexProjectorEffect) tpe = DCAST(TexProjectorEffect, effect);
+    tpe = DCAST(TexProjectorEffect, tpe->remove_stage(stage));
+
+    if (tpe->is_empty()) {
+      node()->clear_effect(TexProjectorEffect::get_class_type());
+
+    } else {
+      node()->set_effect(tpe);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_projector
+//       Access: Published
+//  Description: Removes the TexProjectorEffect for all stages from
+//               this node.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_projector() {
+  nassertv_always(!is_empty());
+  node()->clear_effect(TexProjectorEffect::get_class_type());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_tex_projector
+//       Access: Published
+//  Description: Returns true if this node has a TexProjectorEffect
+//               for the indicated stage, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool NodePath::
+has_tex_projector(TextureStage *stage) const {
+  nassertr_always(!is_empty(), false);
+
+  const RenderEffect *effect =
+    node()->get_effect(TexProjectorEffect::get_class_type());
+  if (effect != (const RenderEffect *)NULL) {
+    const TexProjectorEffect *tpe = DCAST(TexProjectorEffect, effect);
+    return tpe->has_stage(stage);
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_projector_from
+//       Access: Published
+//  Description: Returns the "from" node associated with the
+//               TexProjectorEffect on the indicated stage.  The
+//               relative transform between the "from" and the "to"
+//               nodes is automatically applied to the texture
+//               transform each frame.
+////////////////////////////////////////////////////////////////////
+NodePath NodePath::
+get_tex_projector_from(TextureStage *stage) const {
+  nassertr_always(!is_empty(), NodePath::fail());
+
+  const RenderEffect *effect =
+    node()->get_effect(TexProjectorEffect::get_class_type());
+  if (effect != (const RenderEffect *)NULL) {
+    const TexProjectorEffect *tpe = DCAST(TexProjectorEffect, effect);
+    return tpe->get_from(stage);
+  }
+
+  return NodePath::not_found();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_projector_to
+//       Access: Published
+//  Description: Returns the "to" node associated with the
+//               TexProjectorEffect on the indicated stage.  The
+//               relative transform between the "from" and the "to"
+//               nodes is automatically applied to the texture
+//               transform each frame.
+////////////////////////////////////////////////////////////////////
+NodePath NodePath::
+get_tex_projector_to(TextureStage *stage) const {
+  nassertr_always(!is_empty(), NodePath::fail());
+
+  const RenderEffect *effect =
+    node()->get_effect(TexProjectorEffect::get_class_type());
+  if (effect != (const RenderEffect *)NULL) {
+    const TexProjectorEffect *tpe = DCAST(TexProjectorEffect, effect);
+    return tpe->get_to(stage);
+  }
+
+  return NodePath::not_found();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::project_texture
+//       Access: Published
+//  Description: A convenience function to enable projective texturing
+//               at this node level and below, using the indicated
+//               NodePath (which should contain a LensNode) as the
+//               projector.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+project_texture(TextureStage *stage, Texture *tex, const NodePath &projector) {
+  nassertv(!projector.is_empty() && projector.node()->is_of_type(LensNode::get_class_type()));
+  add_texture(stage, tex);
+  add_tex_gen(stage, TexGenAttrib::M_world_position);
+  add_tex_projector(stage, NodePath(), projector);
 }
 
 ////////////////////////////////////////////////////////////////////

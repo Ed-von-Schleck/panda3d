@@ -31,13 +31,13 @@ class LensNode;
 //       Class : TexProjectorEffect
 // Description : This effect automatically applies a computed texture
 //               matrix to the specified texture stage, according to
-//               the relative position of the current node (or another
-//               indicated node) from a specified node.
+//               the relative position of two specified nodes.
 //
-//               The relative transform of the specified node is
-//               applied directly to the texture matrix.  If the from
-//               node happens to be a LensNode, its lens projection
-//               matrix is applied as well.
+//               The relative transform from the "from" node to the
+//               "to" node is applied directly to the texture matrix
+//               each frame.  If the "to" node happens to be a
+//               LensNode, its lens projection matrix is applied as
+//               well.
 //
 //               This can be used to apply a number of special
 //               effects.  Fundamentally, it may simply be used to
@@ -74,6 +74,7 @@ PUBLISHED:
   CPT(RenderEffect) add_stage(TextureStage *stage, const NodePath &from, const NodePath &to) const;
   CPT(RenderEffect) remove_stage(TextureStage *stage) const;
 
+  bool is_empty() const;
   bool has_stage(TextureStage *stage) const;
 
   NodePath get_from(TextureStage *stage) const;
