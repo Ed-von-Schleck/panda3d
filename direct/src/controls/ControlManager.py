@@ -132,6 +132,8 @@ class ControlManager:
     def delete(self):
         assert self.notify.debugCall(id(self))
         self.disable()
+        del self.controls
+        del self.currentControls
         #self.monitorTask.remove()
     
     def getSpeeds(self):
