@@ -30,6 +30,8 @@
 #include "pixelBuffer.h"
 #include "lens.h"
 #include "texture.h"
+#include "textureStage.h"
+#include "texCoordName.h"
 
 #include "dconfig.h"
 #include "string_utils.h"
@@ -197,6 +199,8 @@ ConfigureFn(config_gobj) {
   Lens::init_type();
   Texture::init_type();
   dDrawable::init_type();
+  TextureStage::init_type();
+  TexCoordName::init_type();
 
   //Registration of writeable object's creation
   //functions with BamReader's factory
