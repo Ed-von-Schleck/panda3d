@@ -8,8 +8,13 @@ def ROUND_TO(value, divisor):
 def ROUND_INT(val):
     return int(round(val))
 
-def CLAMP(val, minVal, maxVal):
-    return min(max(val, minVal), maxVal)
+def CLAMP(val, min, max):
+    if val < min:
+        return min
+    elif val > max:
+        return max
+    else:
+        return val
 
 # Create a tk compatible color string
 def getTkColorString(color):

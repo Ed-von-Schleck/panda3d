@@ -15,12 +15,8 @@ class ClusterClient(DirectObject.DirectObject):
     def __init__(self, configList, clusterSyncFlag):
         # First start up servers using direct daemon
         # What is the name of the client machine?
-        clusterDaemonClient = base.config.GetString(
-            'cluster-daemon-client', 'None')
-        if clusterDaemonClient == 'None':
-            clusterDaemonClient = os.popen('uname -n').read()
-            clusterDaemonClient = clusterDaemonClient.replace('\n', '')
-        print 'CLIENT', clusterDaemonClient
+        clusterDaemonClient = os.popen('uname -n').read()
+        clusterDaemonClient = clusterDaemonClient.replace('\n', '')
         # What daemon port are we using to communicate between client/servers
         clusterDaemonPort = base.config.GetInt(
             'cluster-daemon-port', CLUSTER_DAEMON_PORT)
