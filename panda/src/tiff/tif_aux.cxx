@@ -1,4 +1,4 @@
-/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_aux.c,v 1.4 2002/01/30 04:35:07 cxgeorge Exp $ */
+/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_aux.cxx,v 1.1 2002/01/30 04:35:32 cxgeorge Exp $ */
 
 /*
  * Copyright (c) 1991-1997 Sam Leffler
