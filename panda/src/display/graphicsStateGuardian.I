@@ -126,8 +126,14 @@ get_threading_model() const {
 //  Description: Returns the maximum number of simultaneous textures
 //               that may be applied to geometry with multitexturing,
 //               as supported by this particular GSG.  If you exceed
-//               this number, the highest-sort texture stages will not
-//               be applied.
+//               this number, the lowest-priority texture stages will
+//               not be applied.  Use TextureStage::set_priority() to
+//               adjust the relative importance of the different
+//               texture stages.
+//
+//               The value returned may not be meaningful until after
+//               the graphics context has been fully created (e.g. the
+//               window has been opened).
 ////////////////////////////////////////////////////////////////////
 INLINE int GraphicsStateGuardian::
 get_max_texture_stages() const {

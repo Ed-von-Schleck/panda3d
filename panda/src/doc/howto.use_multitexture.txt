@@ -142,6 +142,11 @@ highest priority (and then sort them into order by the set_sort()
 parameter).  Between two textures with the same priority, Panda will
 prefer the one with the lower sort value.  The default priority is 0.
 
+If you need to know the actual limit, you can query your available
+number of texture stages from the GraphicsStateGuardian, with the call
+gsg->get_max_texture_stages() (e.g. from Python, call
+base.win.getGsg().getMaxTextureStages()).
+
 
 TEXTURE COORDINATES
 
