@@ -1,4 +1,4 @@
-/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_aux.cxx,v 1.1 2002/01/30 04:35:32 cxgeorge Exp $ */
+/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_aux.cxx,v 1.2 2002/02/01 02:03:13 cxgeorge Exp $ */
 
 /*
  * Copyright (c) 1991-1997 Sam Leffler
@@ -29,8 +29,8 @@
  *
  * Auxiliary Support Routines.
  */
-#include "tiffiop.h"
 #include "cmath.h"
+#include "tiffiop.h"
 
 #ifdef COLORIMETRY_SUPPORT
 #include <math.h>

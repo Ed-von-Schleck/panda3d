@@ -1,4 +1,4 @@
-/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tiffcomp.h,v 1.4 2001/08/21 18:05:22 drose Exp $ */
+/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tiffcomp.h,v 1.5 2002/02/01 02:03:13 cxgeorge Exp $ */
 
 /*
  * Copyright (c) 1990-1997 Sam Leffler
@@ -149,7 +149,9 @@ typedef double dblparam_t;
 #define INLINE  inline
 #endif
 #else /* !__GNUC__ */
-#define INLINE
+#ifndef INLINE
+#define INLINE 
+#endif
 #endif
 
 /*
