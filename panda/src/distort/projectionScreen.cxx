@@ -547,8 +547,22 @@ recompute_geom(Geom *geom, const LMatrix4f &rel_mat) {
     }
   }
 
-  // Now set the UV's.
-  geom->set_texcoords(_texcoord_name, uvs);
+  // Now set the UV's.  If the geom already has indexed UV's, we need
+  // to make a new index for the geom.
+  if (geom->get_texcoords_index() == (ushort *)NULL) {
+    // Simple case: no indexing needed.
+    geom->set_texcoords(_texcoord_name, uvs);
+
+  } else {
+    // Harder case: we need to make up an index.  But this isn't
+    // terribly hard.
+    PTA_ushort index = PTA_ushort::empty_array(num_vertices);
+    for (int i = 0; i < num_vertices; i++) {
+      index[i] = i;
+    }
+    geom->set_texcoords(_texcoord_name, uvs, index);
+  }
+
 
   if (_vignette_on) {
     geom->set_colors(_colors, G_PER_VERTEX, color_index);
