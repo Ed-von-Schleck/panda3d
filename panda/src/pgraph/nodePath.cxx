@@ -25,6 +25,7 @@
 #include "colorScaleAttrib.h"
 #include "cullBinAttrib.h"
 #include "textureAttrib.h"
+#include "texMatrixAttrib.h"
 #include "materialAttrib.h"
 #include "fogAttrib.h"
 #include "renderModeAttrib.h"
@@ -558,18 +559,18 @@ output(ostream &out) const {
 //     Function: NodePath::get_state
 //       Access: Published
 //  Description: Returns the state changes that must be made to
-//               transition from the render state of this node to the
+//               transition to the render state of this node from the
 //               render state of the other node.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderState) NodePath::
 get_state(const NodePath &other) const {
   nassertr(_error_type == ET_ok && other._error_type == ET_ok, RenderState::make_empty());
 
-  if (is_empty()) {
-    return other.get_net_state();
-  }
   if (other.is_empty()) {
-    return get_net_state()->invert_compose(RenderState::make_empty());
+    return get_net_state();
+  }
+  if (is_empty()) {
+    return other.get_net_state()->invert_compose(RenderState::make_empty());
   }
     
   nassertr(verify_complete(), RenderState::make_empty());
@@ -589,7 +590,7 @@ get_state(const NodePath &other) const {
 
   CPT(RenderState) a_state = r_get_partial_state(_head, a_count);
   CPT(RenderState) b_state = r_get_partial_state(other._head, b_count);
-  return a_state->invert_compose(b_state);
+  return b_state->invert_compose(a_state);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -597,8 +598,8 @@ get_state(const NodePath &other) const {
 //       Access: Published
 //  Description: Sets the state object on this node, relative to
 //               the other node.  This computes a new state object
-//               that has the indicated value when seen relative to
-//               the other node.
+//               that will have the indicated value when seen from the
+//               other node.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
 set_state(const NodePath &other, const RenderState *state) {
@@ -606,8 +607,12 @@ set_state(const NodePath &other, const RenderState *state) {
   nassertv_always(!is_empty());
 
   // First, we perform a wrt to the parent, to get the conversion.
-  NodePath parent = get_parent();
-  CPT(RenderState) rel_state = parent.get_state(other);
+  CPT(RenderState) rel_state;
+  if (has_parent()) {
+    rel_state = other.get_state(get_parent());
+  } else {
+    rel_state = other.get_state(NodePath());
+  }
 
   CPT(RenderState) new_state = rel_state->compose(state);
   set_state(new_state);
@@ -2276,7 +2281,7 @@ has_texture(const string &stage_name) const {
   nassertr_always(!is_empty(), false);
 
   const RenderAttrib *attrib =
-    node()->get_attrib(ColorAttrib::get_class_type());
+    node()->get_attrib(TextureAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
     TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
     PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
@@ -2301,7 +2306,7 @@ bool NodePath::
 has_texture_off() const {
   nassertr_always(!is_empty(), false);
   const RenderAttrib *attrib =
-    node()->get_attrib(ColorAttrib::get_class_type());
+    node()->get_attrib(TextureAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
     const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
     return ta->is_all_off();
@@ -2325,7 +2330,7 @@ has_texture_off(const string &stage_name) const {
   nassertr_always(!is_empty(), false);
 
   const RenderAttrib *attrib =
-    node()->get_attrib(ColorAttrib::get_class_type());
+    node()->get_attrib(TextureAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
     TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
     PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
@@ -2381,6 +2386,178 @@ get_texture(const string &stage_name) const {
   }
 
   return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_transform
+//       Access: Published
+//  Description: Sets the texture matrix on the current node to the
+//               indicated transform for the given stage.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+set_tex_transform(const string &stage_name, const TransformState *transform) {
+  nassertv_always(!is_empty());
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexMatrixAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
+
+    // Modify the existing TexMatrixAttrib to add the indicated
+    // stage.
+    node()->set_attrib(tma->add_stage(stage, transform));
+
+  } else {
+    // Create a new TexMatrixAttrib for this node.
+    node()->set_attrib(TexMatrixAttrib::make(stage, transform));
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::remove_tex_transform
+//       Access: Published
+//  Description: Removes the texture matrix on the current node for
+//               the given stage.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+remove_tex_transform(const string &stage_name) {
+  nassertv_always(!is_empty());
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexMatrixAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
+    
+    // Modify the existing TexMatrixAttrib to remove the indicated
+    // stage.
+    node()->set_attrib(tma->remove_stage(stage));
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_transform
+//       Access: Published
+//  Description: Removes all texture matrices from the current node.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_transform() {
+  nassertv_always(!is_empty());
+  node()->clear_attrib(TextureAttrib::get_class_type());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_tex_transform
+//       Access: Published
+//  Description: Returns true if there is an explicit texture matrix
+//               on the current node for the given stage.
+////////////////////////////////////////////////////////////////////
+bool NodePath::
+has_tex_transform(const string &stage_name) const {
+  nassertr_always(!is_empty(), false);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexMatrixAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
+    return tma->has_stage(stage);
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_transform
+//       Access: Published
+//  Description: Returns the texture matrix on the current node for the
+//               given stage, or identity transform if there is no
+//               explicit transform set for the given stage.
+////////////////////////////////////////////////////////////////////
+CPT(TransformState) NodePath::
+get_tex_transform(const string &stage_name) const {
+  nassertr_always(!is_empty(), false);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TexMatrixAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
+    return tma->get_transform(stage);
+  }
+
+  return TransformState::make_identity();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_transform
+//       Access: Published
+//  Description: Sets the texture matrix on the current node to the
+//               indicated transform for the given stage.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+set_tex_transform(const NodePath &other, const string &stage_name, const TransformState *transform) {
+  nassertv(_error_type == ET_ok && other._error_type == ET_ok);
+  nassertv_always(!is_empty());
+
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+
+  CPT(RenderState) state = get_state(other);
+  const RenderAttrib *attrib =
+    state->get_attrib(TexMatrixAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
+
+    // Modify the existing TexMatrixAttrib to add the indicated
+    // stage.
+    state = state->add_attrib(tma->add_stage(stage, transform));
+
+  } else {
+    // Create a new TexMatrixAttrib for this node.
+    state = state->add_attrib(TexMatrixAttrib::make(stage, transform));
+  }
+
+  // Now compose that with our parent's state.
+  CPT(RenderState) rel_state;
+  if (has_parent()) {
+    rel_state = other.get_state(get_parent());
+  } else {
+    rel_state = other.get_state(NodePath());
+  }
+  CPT(RenderState) new_state = rel_state->compose(state);
+
+  // And apply only the TexMatrixAttrib to the current node, leaving
+  // the others unchanged.
+  node()->set_attrib(new_state->get_attrib(TexMatrixAttrib::get_class_type()));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_transform
+//       Access: Published
+//  Description: Returns the texture matrix on the current node for the
+//               given stage, relative to the other node.
+////////////////////////////////////////////////////////////////////
+CPT(TransformState) NodePath::
+get_tex_transform(const NodePath &other, const string &stage_name) const {
+  nassertr(_error_type == ET_ok && other._error_type == ET_ok, TransformState::make_identity());
+
+  CPT(RenderState) state = get_state(other);
+  const RenderAttrib *attrib =
+    state->get_attrib(TexMatrixAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, attrib);
+    return tma->get_transform(stage);
+  }
+
+  return TransformState::make_identity();
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -27,15 +27,147 @@
 TypeHandle TexMatrixAttrib::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::Destructor
+//       Access: Public, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+TexMatrixAttrib::
+~TexMatrixAttrib() {
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TexMatrixAttrib::make
 //       Access: Published, Static
-//  Description: Constructs a new TexMatrixAttrib object that indicates
-//               geometry should be scaled by the indicated factor.
+//  Description: Constructs a TexMatrixAttrib that applies
+//               no stages at all.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+make() {
+  TexMatrixAttrib *attrib = new TexMatrixAttrib;
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::make
+//       Access: Published, Static
+//  Description: Constructs a TexMatrixAttrib that applies the
+//               indicated matrix to the default texture stage.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TexMatrixAttrib::
 make(const LMatrix4f &mat) {
-  TexMatrixAttrib *attrib = new TexMatrixAttrib(mat);
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  CPT(TransformState) transform = TransformState::make_mat(mat);
+  return make(tex_mgr->get_default_stage(), transform);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::make
+//       Access: Published, Static
+//  Description: Constructs a TexMatrixAttrib that applies the
+//               indicated transform to the default texture stage.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+make(const TransformState *transform) {
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  return make(tex_mgr->get_default_stage(), transform);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::make
+//       Access: Published, Static
+//  Description: Constructs a TexMatrixAttrib that applies the
+//               indicated transform to the named texture stage.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+make(TextureStage *stage, const TransformState *transform) {
+  TexMatrixAttrib *attrib = new TexMatrixAttrib;
+  attrib->_stages.insert(Stages::value_type(stage, transform));
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::add_stage
+//       Access: Published, Static
+//  Description: Returns a new TexMatrixAttrib just like this one,
+//               with the indicated transform for the given stage.  If
+//               this stage already exists, its transform is replaced.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+add_stage(TextureStage *stage, const TransformState *transform) const {
+  TexMatrixAttrib *attrib = new TexMatrixAttrib(*this);
+  attrib->_stages[stage] = transform;
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::remove_stage
+//       Access: Published, Static
+//  Description: Returns a new TexMatrixAttrib just like this one,
+//               with the indicated stage removed.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+remove_stage(TextureStage *stage) const {
+  TexMatrixAttrib *attrib = new TexMatrixAttrib(*this);
+  attrib->_stages.erase(stage);
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::get_mat
+//       Access: Published
+//  Description: Returns the transformation matrix associated with
+//               the default texture stage.
+////////////////////////////////////////////////////////////////////
+const LMatrix4f &TexMatrixAttrib::
+get_mat() const {
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  return get_mat(tex_mgr->get_default_stage());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::has_stage
+//       Access: Published
+//  Description: Returns true if there is a transform associated with
+//               the indicated stage, or false otherwise (in which
+//               case get_transform(stage) will return the identity
+//               transform).
+////////////////////////////////////////////////////////////////////
+bool TexMatrixAttrib::
+has_stage(TextureStage *stage) const {
+  Stages::const_iterator mi = _stages.find(stage);
+  return (mi != _stages.end());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::get_mat
+//       Access: Published
+//  Description: Returns the transformation matrix associated with
+//               the named texture stage, or identity matrix if
+//               nothing is associated with the indicated stage.
+////////////////////////////////////////////////////////////////////
+const LMatrix4f &TexMatrixAttrib::
+get_mat(TextureStage *stage) const {
+  Stages::const_iterator mi = _stages.find(stage);
+  if (mi != _stages.end()) {
+    return (*mi).second->get_mat();
+  }
+  return LMatrix4f::ident_mat();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::get_transform
+//       Access: Published
+//  Description: Returns the transformation associated with
+//               the named texture stage, or identity matrix if
+//               nothing is associated with the indicated stage.
+////////////////////////////////////////////////////////////////////
+CPT(TransformState) TexMatrixAttrib::
+get_transform(TextureStage *stage) const {
+  Stages::const_iterator mi = _stages.find(stage);
+  if (mi != _stages.end()) {
+    return (*mi).second;
+  }
+  return TransformState::make_identity();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -59,7 +191,14 @@ issue(GraphicsStateGuardianBase *gsg) const {
 ////////////////////////////////////////////////////////////////////
 void TexMatrixAttrib::
 output(ostream &out) const {
-  out << get_type() << ":(" << get_mat() << ")";
+  out << get_type() << ":";
+
+  Stages::const_iterator mi;
+  for (mi = _stages.begin(); mi != _stages.end(); ++mi) {
+    TextureStage *stage = (*mi).first;
+    const TransformState *transform = (*mi).second;
+    out << " " << stage->get_name() << "(" << *transform << ")";
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -81,7 +220,40 @@ int TexMatrixAttrib::
 compare_to_impl(const RenderAttrib *other) const {
   const TexMatrixAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
-  return _mat.compare_to(ta->_mat);
+  
+  Stages::const_iterator ai, bi;
+  ai = _stages.begin();
+  bi = ta->_stages.begin();
+  while (ai != _stages.end() && bi != ta->_stages.end()) {
+    if ((*ai).first < (*bi).first) {
+      // This stage is in a but not in b.
+      return -1;
+
+    } else if ((*bi).first < (*ai).first) {
+      // This stage is in b but not in a.
+      return 1;
+
+    } else {
+      // This stage is in both; compare the stages.
+      if ((*ai).second != (*bi).second) {
+        return (*ai).second < (*bi).second ? -1 : 1;
+      }
+      ++ai;
+      ++bi;
+    }
+  }
+
+  if (bi != _stages.end()) {
+    // a ran out first; b was longer.
+    return -1;
+  }
+
+  if (ai != _stages.end()) {
+    // b ran out first; a was longer.
+    return 1;
+  }
+
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -105,9 +277,54 @@ CPT(RenderAttrib) TexMatrixAttrib::
 compose_impl(const RenderAttrib *other) const {
   const TexMatrixAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
-  LMatrix4f new_mat = ta->_mat * _mat;
 
-  TexMatrixAttrib *attrib = new TexMatrixAttrib(new_mat);
+  // The composition is the union of the two attribs.  In the case
+  // when a stage is in both attribs, we compose the stages.
+
+  TexMatrixAttrib *attrib = new TexMatrixAttrib;
+  insert_iterator<Stages> result = 
+    inserter(attrib->_stages, attrib->_stages.end());
+
+  Stages::const_iterator ai, bi;
+  ai = _stages.begin();
+  bi = ta->_stages.begin();
+  while (ai != _stages.end() && bi != ta->_stages.end()) {
+    if ((*ai).first < (*bi).first) {
+      // This stage is in a but not in b.
+      *result = *ai;
+      ++ai;
+      ++result;
+
+    } else if ((*bi).first < (*ai).first) {
+      // This stage is in b but not in a.
+      *result = *bi;
+      ++bi;
+      ++result;
+
+    } else {
+      // This stage is in both; compose the stages.
+      CPT(TransformState) new_transform = (*ai).second->compose((*bi).second);
+      *result = Stages::value_type((*ai).first, new_transform);
+      ++ai;
+      ++bi;
+      ++result;
+    }
+  }
+
+  while (ai != _stages.end()) {
+    // This stage is in a but not in b.
+    *result = *ai;
+    ++ai;
+    ++result;
+  }
+
+  while (bi != ta->_stages.end()) {
+    // This stage is in b but not in a.
+    *result = *bi;
+    ++bi;
+    ++result;
+  }
+
   return return_new(attrib);
 }
 
@@ -124,11 +341,59 @@ CPT(RenderAttrib) TexMatrixAttrib::
 invert_compose_impl(const RenderAttrib *other) const {
   const TexMatrixAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
-  LMatrix4f new_mat;
-  new_mat.invert_from(_mat);
-  new_mat = ta->_mat * new_mat;
 
-  TexMatrixAttrib *attrib = new TexMatrixAttrib(new_mat);
+  // The inverse composition works a lot like the composition, except
+  // we invert the ai stages.
+
+  TexMatrixAttrib *attrib = new TexMatrixAttrib;
+  insert_iterator<Stages> result = 
+    inserter(attrib->_stages, attrib->_stages.end());
+
+  Stages::const_iterator ai, bi;
+  ai = _stages.begin();
+  bi = ta->_stages.begin();
+  while (ai != _stages.end() && bi != ta->_stages.end()) {
+    if ((*ai).first < (*bi).first) {
+      // This stage is in a but not in b.
+      CPT(TransformState) inv_a = 
+        (*ai).second->invert_compose(TransformState::make_identity());
+      *result = Stages::value_type((*ai).first, inv_a);
+      ++ai;
+      ++result;
+
+    } else if ((*bi).first < (*ai).first) {
+      // This stage is in b but not in a.
+      *result = *bi;
+      ++bi;
+      ++result;
+
+    } else {
+      // This stage is in both; compose the stages.
+      CPT(TransformState) new_transform = 
+        (*ai).second->invert_compose((*bi).second);
+      *result = Stages::value_type((*ai).first, new_transform);
+      ++ai;
+      ++bi;
+      ++result;
+    }
+  }
+
+  while (ai != _stages.end()) {
+    // This stage is in a but not in b.
+    CPT(TransformState) inv_a = 
+      (*ai).second->invert_compose(TransformState::make_identity());
+    *result = Stages::value_type((*ai).first, inv_a);
+    ++ai;
+    ++result;
+  }
+
+  while (bi != ta->_stages.end()) {
+    // This stage is in b but not in a.
+    *result = *bi;
+    ++bi;
+    ++result;
+  }
+
   return return_new(attrib);
 }
 
@@ -145,7 +410,7 @@ invert_compose_impl(const RenderAttrib *other) const {
 ////////////////////////////////////////////////////////////////////
 RenderAttrib *TexMatrixAttrib::
 make_default_impl() const {
-  return new TexMatrixAttrib(LMatrix4f::ident_mat());
+  return new TexMatrixAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -169,7 +434,9 @@ void TexMatrixAttrib::
 write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
 
-  _mat.write_datagram(dg);
+  // TODO: write the multitexture data.
+
+  get_mat().write_datagram(dg);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -182,7 +449,7 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 ////////////////////////////////////////////////////////////////////
 TypedWritable *TexMatrixAttrib::
 make_from_bam(const FactoryParams &params) {
-  TexMatrixAttrib *attrib = new TexMatrixAttrib(LMatrix4f::ident_mat());
+  TexMatrixAttrib *attrib = new TexMatrixAttrib;
   DatagramIterator scan;
   BamReader *manager;
 
@@ -203,5 +470,9 @@ void TexMatrixAttrib::
 fillin(DatagramIterator &scan, BamReader *manager) {
   RenderAttrib::fillin(scan, manager);
 
-  _mat.read_datagram(scan);
+  LMatrix4f mat;
+  mat.read_datagram(scan);
+  CPT(TransformState) transform = TransformState::make_mat(mat);
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  _stages.insert(Stages::value_type(tex_mgr->get_default_stage(), transform));
 }

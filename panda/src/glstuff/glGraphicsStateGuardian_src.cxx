@@ -127,6 +127,16 @@ issue_transformed_color_gl(const Geom *geom, Geom::ColorIterator &citerator,
   glgsg->issue_transformed_color(color);
 }
 
+// This noop function is assigned to _glActiveTexture in case we don't
+// have multitexturing support, so it will always be safe to call
+// _glActiveTexture().
+static void
+null_glActiveTexture(GLenum gl_texture_stage) {
+  // If we don't support multitexture, we'd better not try to request
+  // a texture beyond the first texture stage.
+  nassertv(gl_texture_stage == GL_TEXTURE0);
+}
+
 ////////////////////////////////////////////////////////////////////
 //     Function: uchar_bgr_to_rgb
 //  Description: Recopies the given array of pixels, converting from
@@ -324,6 +334,9 @@ reset() {
       _supports_multitexture = false;
     }
   }
+  if (!_supports_multitexture) {
+    _glActiveTexture = null_glActiveTexture;
+  }
 
   _edge_clamp = GL_CLAMP;
   if (has_extension("GL_SGIS_texture_edge_clamp") ||
@@ -455,6 +468,7 @@ reset() {
     _max_texture_stages = max_texture_stages;
   }
   _current_texture = DCAST(TextureAttrib, TextureAttrib::make_all_off());
+  _current_tex_mat = DCAST(TexMatrixAttrib, TexMatrixAttrib::make());
 
   report_my_gl_errors();
 
@@ -2268,8 +2282,22 @@ issue_transform(const TransformState *transform) {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 issue_tex_matrix(const TexMatrixAttrib *attrib) {
-  GLP(MatrixMode)(GL_TEXTURE);
-  GLP(LoadMatrixf)(attrib->get_mat().get_data());
+  int num_stages = _current_texture->get_num_on_stages();
+  nassertv(num_stages <= _max_texture_stages);
+
+  for (int i = 0; i < num_stages; i++) {
+    TextureStage *stage = _current_texture->get_on_stage(i);
+    _glActiveTexture(GL_TEXTURE0 + i);
+
+    GLP(MatrixMode)(GL_TEXTURE);
+    if (attrib->has_stage(stage)) {
+      GLP(LoadMatrixf)(_current_tex_mat->get_mat(stage).get_data());
+    } else {
+      GLP(LoadIdentity)();
+    }
+  }
+
+  _current_tex_mat = attrib;
   report_my_gl_errors();
 }
 
@@ -2342,13 +2370,7 @@ issue_texture(const TextureAttrib *attrib) {
         stage != _current_texture->get_on_stage(i) ||
         texture != _current_texture->get_on_texture(stage)) {
       // Stage i has changed.  Issue the texture on this stage.
-      if (_supports_multitexture) {
-        _glActiveTexture(GL_TEXTURE0 + i);
-      } else {
-        // If we don't support multitexture, i had better not move
-        // beyond the first texture stage.
-        nassertv(i == 0);
-      }
+      _glActiveTexture(GL_TEXTURE0 + i);
 
       GLP(Enable)(GL_TEXTURE_2D);
       
@@ -2358,19 +2380,19 @@ issue_texture(const TextureAttrib *attrib) {
       GLint glmode = get_texture_apply_mode_type(stage->get_mode());
       GLP(TexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, glmode);
       GLP(TexEnvfv)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, stage->get_color().get_data());
+
+      GLP(MatrixMode)(GL_TEXTURE);
+      if (_current_tex_mat->has_stage(stage)) {
+        GLP(LoadMatrixf)(_current_tex_mat->get_mat(stage).get_data());
+      } else {
+        GLP(LoadIdentity)();
+      }
     }
   }
     
   // Disable the texture stages that are no longer used.
   for (i = num_stages; i < num_old_stages; i++) {
-    if (_supports_multitexture) {
-      _glActiveTexture(GL_TEXTURE0 + i);
-    } else {
-      // If we don't support multitexture, i had better not move
-      // beyond the first texture stage.
-      nassertv(i == 0);
-    }
-
+    _glActiveTexture(GL_TEXTURE0 + i);
     GLP(Disable)(GL_TEXTURE_2D);
   }
 

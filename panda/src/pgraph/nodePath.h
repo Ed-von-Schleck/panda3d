@@ -451,6 +451,7 @@ PUBLISHED:
 
   INLINE float get_distance(const NodePath &other) const;
 
+
   // Methods that affect appearance of geometry: color, texture, etc.
   // These affect the state at the bottom level only.
 
@@ -498,6 +499,33 @@ PUBLISHED:
   bool has_texture_off(const string &stage_name) const;
   Texture *get_texture() const;
   Texture *get_texture(const string &stage_name) const;
+
+  void set_tex_transform(const string &stage_name, const TransformState *transform);
+  void remove_tex_transform(const string &stage_name);
+  void clear_tex_transform();
+  bool has_tex_transform(const string &stage_name) const;
+  CPT(TransformState) get_tex_transform(const string &stage_name) const;
+
+  INLINE void set_tex_offset(const string &stage_name, const LVecBase2f &uv);
+  INLINE void set_tex_offset(const string &stage_name, float u, float v);
+  INLINE void set_tex_rotate(const string &stage_name, float r);
+  INLINE void set_tex_scale(const string &stage_name, const LVecBase2f &scale);
+  INLINE void set_tex_scale(const string &stage_name, float su, float sv);
+  INLINE LVecBase2f get_tex_offset(const string &stage_name) const;
+  INLINE float get_tex_rotate(const string &stage_name) const;
+  INLINE LVecBase2f get_tex_scale(const string &stage_name) const;
+
+  void set_tex_transform(const NodePath &other, const string &stage_name, const TransformState *transform);
+  CPT(TransformState) get_tex_transform(const NodePath &other, const string &stage_name) const;
+
+  INLINE void set_tex_offset(const NodePath &other, const string &stage_name, const LVecBase2f &uv);
+  INLINE void set_tex_offset(const NodePath &other, const string &stage_name, float u, float v);
+  INLINE void set_tex_rotate(const NodePath &other, const string &stage_name, float r);
+  INLINE void set_tex_scale(const NodePath &other, const string &stage_name, const LVecBase2f &scale);
+  INLINE void set_tex_scale(const NodePath &other, const string &stage_name, float su, float sv);
+  INLINE LVecBase2f get_tex_offset(const NodePath &other, const string &stage_name) const;
+  INLINE float get_tex_rotate(const NodePath &other, const string &stage_name) const;
+  INLINE LVecBase2f get_tex_scale(const NodePath &other, const string &stage_name) const;
 
   Texture *find_texture(const string &name) const;
   TextureCollection find_all_textures() const;

@@ -1108,6 +1108,206 @@ get_sa() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_offset
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated offset to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_offset(const string &stage_name, const LVecBase2f &uv) {
+  set_tex_offset(stage_name, uv[0], uv[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_offset
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated offset to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_offset(const string &stage_name, float u, float v) {
+  nassertv_always(!is_empty());
+  set_tex_transform(stage_name, 
+                    get_tex_transform(stage_name)->set_pos(LVecBase3f(u, v, 0.0f)));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_rotate
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated rotation, clockwise in degrees, to UV's
+//               for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_rotate(const string &stage_name, float r) {
+  nassertv_always(!is_empty());
+  set_tex_transform(stage_name, 
+                    get_tex_transform(stage_name)->set_hpr(LVecBase3f(r, 0.0f, 0.0f)));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_scale
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated scale to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_scale(const string &stage_name, const LVecBase2f &scale) {
+  set_tex_scale(stage_name, scale[0], scale[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_scale
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated offset to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_scale(const string &stage_name, float su, float sv) {
+  nassertv_always(!is_empty());
+  set_tex_transform(stage_name, 
+                    get_tex_transform(stage_name)->set_scale(LVecBase3f(su, sv, 1.0f)));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_offset
+//       Access: Published
+//  Description: Returns the offset set for the UV's for the given
+//               stage on the current node.
+////////////////////////////////////////////////////////////////////
+INLINE LVecBase2f NodePath::
+get_tex_offset(const string &stage_name) const {
+  nassertr_always(!is_empty(), LVecBase2f::zero());
+  const LVecBase3f &pos = get_tex_transform(stage_name)->get_pos();
+  return LVecBase2f(pos[0], pos[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_rotate
+//       Access: Published
+//  Description: Returns the rotation set for the UV's for the given
+//               stage on the current node.
+////////////////////////////////////////////////////////////////////
+INLINE float NodePath::
+get_tex_rotate(const string &stage_name) const {
+  nassertr_always(!is_empty(), 0.0f);
+  return get_tex_transform(stage_name)->get_hpr()[0];
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_scale
+//       Access: Published
+//  Description: Returns the scale set for the UV's for the given
+//               stage on the current node.
+////////////////////////////////////////////////////////////////////
+INLINE LVecBase2f NodePath::
+get_tex_scale(const string &stage_name) const {
+  nassertr_always(!is_empty(), LVecBase2f(1.0f, 1.0f));
+  const LVecBase3f &scale = get_tex_transform(stage_name)->get_scale();
+  return LVecBase2f(scale[0], scale[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_offset
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated offset to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_offset(const NodePath &other, const string &stage_name, const LVecBase2f &uv) {
+  set_tex_offset(other, stage_name, uv[0], uv[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_offset
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated offset to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_offset(const NodePath &other, const string &stage_name, float u, float v) {
+  nassertv_always(!is_empty());
+  set_tex_transform(other, stage_name, 
+                    get_tex_transform(other, stage_name)->set_pos(LVecBase3f(u, v, 0.0f)));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_rotate
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated rotation, clockwise in degrees, to UV's
+//               for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_rotate(const NodePath &other, const string &stage_name, float r) {
+  nassertv_always(!is_empty());
+  set_tex_transform(other, stage_name, 
+                    get_tex_transform(other, stage_name)->set_hpr(LVecBase3f(r, 0.0f, 0.0f)));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_scale
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated scale to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_scale(const NodePath &other, const string &stage_name, const LVecBase2f &scale) {
+  set_tex_scale(other, stage_name, scale[0], scale[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tex_scale
+//       Access: Published
+//  Description: Sets a texture matrix on the current node to apply
+//               the indicated offset to UV's for the given stage.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tex_scale(const NodePath &other, const string &stage_name, float su, float sv) {
+  nassertv_always(!is_empty());
+  set_tex_transform(other, stage_name, 
+                    get_tex_transform(stage_name)->set_scale(LVecBase3f(su, sv, 1.0f)));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_offset
+//       Access: Published
+//  Description: Returns the offset set for the UV's for the given
+//               stage on the current node.
+////////////////////////////////////////////////////////////////////
+INLINE LVecBase2f NodePath::
+get_tex_offset(const NodePath &other, const string &stage_name) const {
+  nassertr_always(!is_empty(), LVecBase2f::zero());
+  const LVecBase3f &pos = get_tex_transform(other, stage_name)->get_pos();
+  return LVecBase2f(pos[0], pos[1]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_rotate
+//       Access: Published
+//  Description: Returns the rotation set for the UV's for the given
+//               stage on the current node.
+////////////////////////////////////////////////////////////////////
+INLINE float NodePath::
+get_tex_rotate(const NodePath &other, const string &stage_name) const {
+  nassertr_always(!is_empty(), 0.0f);
+  return get_tex_transform(other, stage_name)->get_hpr()[0];
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tex_scale
+//       Access: Published
+//  Description: Returns the scale set for the UV's for the given
+//               stage on the current node.
+////////////////////////////////////////////////////////////////////
+INLINE LVecBase2f NodePath::
+get_tex_scale(const NodePath &other, const string &stage_name) const {
+  nassertr_always(!is_empty(), LVecBase2f(1.0f, 1.0f));
+  const LVecBase3f &scale = get_tex_transform(other, stage_name)->get_scale();
+  return LVecBase2f(scale[0], scale[1]);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: NodePath::set_billboard_axis
 //       Access: Published
 //  Description: Puts a billboard transition on the node such that it

@@ -22,7 +22,8 @@
 #include "pandabase.h"
 
 #include "renderAttrib.h"
-#include "luse.h"
+#include "transformState.h"
+#include "pointerTo.h"
 
 class FactoryParams;
 
@@ -32,13 +33,28 @@ class FactoryParams;
 //               rendered.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TexMatrixAttrib : public RenderAttrib {
-private:
-  INLINE TexMatrixAttrib(const LMatrix4f &mat);
+protected:
+  INLINE TexMatrixAttrib();
+  INLINE TexMatrixAttrib(const TexMatrixAttrib &copy);
+
+public:
+  virtual ~TexMatrixAttrib();
 
 PUBLISHED:
+  static CPT(RenderAttrib) make();
   static CPT(RenderAttrib) make(const LMatrix4f &mat);
+  static CPT(RenderAttrib) make(const TransformState *transform);
+  static CPT(RenderAttrib) make(TextureStage *stage, const TransformState *transform);
 
-  INLINE const LMatrix4f &get_mat() const;
+  CPT(RenderAttrib) add_stage(TextureStage *stage, const TransformState *transform) const;
+  CPT(RenderAttrib) remove_stage(TextureStage *stage) const;
+
+  bool has_stage(TextureStage *stage) const;
+
+  const LMatrix4f &get_mat() const;
+  const LMatrix4f &get_mat(TextureStage *stage) const;
+
+  CPT(TransformState) get_transform(TextureStage *stage) const;
 
 public:
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
@@ -51,7 +67,8 @@ protected:
   virtual RenderAttrib *make_default_impl() const;
 
 private:
-  LMatrix4f _mat;
+  typedef pmap< PT(TextureStage), CPT(TransformState) > Stages;
+  Stages _stages;
 
 public:
   static void register_with_read_factory();

@@ -270,7 +270,6 @@ filter_to_max(int max_texture_stages) const {
   // Now lop off all of the stages after the first max_texture_stages.
   priority_stages.erase(priority_stages.begin() + max_texture_stages,
                         priority_stages.end());
-  nassertr(priority_stages.size() == max_texture_stages, this);
 
   // And create a new attrib reflecting these stages.
   PT(TextureAttrib) attrib = new TextureAttrib;
@@ -282,7 +281,6 @@ filter_to_max(int max_texture_stages) const {
   }
 
   attrib->_on_stages.swap(priority_stages);
-  nassertr(attrib->_on_stages.size() == max_texture_stages, this);
 
   CPT(RenderAttrib) new_attrib = return_new(attrib);
 
@@ -636,6 +634,8 @@ register_with_read_factory() {
 void TextureAttrib::
 write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
+
+  // TODO: write the multitexture data.
 
   manager->write_pointer(dg, get_texture());
 }

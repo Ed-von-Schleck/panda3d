@@ -26,6 +26,7 @@
 #include "material.h"
 #include "depthTestAttrib.h"
 #include "textureAttrib.h"
+#include "texMatrixAttrib.h"
 #include "textureStage.h"
 #include "textureApplyAttrib.h"
 #include "pointerToArray.h"
@@ -299,6 +300,7 @@ protected:
   int _projection_mat_stack_count;
 
   CPT(TextureAttrib) _current_texture;
+  CPT(TexMatrixAttrib) _current_tex_mat;
   CPT(DisplayRegion) _actual_display_region;
 
   int _pass_number;
