@@ -21,11 +21,11 @@
 #include "parametrics.h"
 #include "typedWriteableReferenceCount.h"
 #include "namable.h"
-////#include "patch.h"
-////#include <linMathOutput.h>
 
 #include <math.h>
-////#include <Performer/pf/pfGeode.h>
+
+
+TypeHandle NurbsCurveDrawer::_type_handle;
 
 
 ////////////////////////////////////////////////////////////////////
