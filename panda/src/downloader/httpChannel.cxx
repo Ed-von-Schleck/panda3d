@@ -43,6 +43,7 @@ HTTPChannel(HTTPClient *client) :
 {
   _proxy_next_index = 0;
   _persistent_connection = false;
+  _allow_proxy = true;
   _connect_timeout = connect_timeout;
   _http_timeout = http_timeout;
   _blocking_connect = false;
@@ -735,8 +736,8 @@ run_connecting_wait() {
     return false;
   }
 
-  if (downloader_cat.is_debug()) {
-    downloader_cat.debug()
+  if (downloader_cat.is_spam()) {
+    downloader_cat.spam()
       << "waiting to connect to " << _request.get_url().get_server_and_port() << ".\n";
   }
   fd_set wset;
@@ -799,6 +800,7 @@ run_http_proxy_ready() {
     
   // All done sending request.
   _state = S_http_proxy_request_sent;
+  _sent_request_time = ClockObject::get_global_clock()->get_real_time();
   return false;
 }
 
@@ -1037,6 +1039,20 @@ run_socks_proxy_connect_reply() {
   if (reply[1] != 0x00) {
     downloader_cat.info()
       << "Connection refused, SOCKS code " << (int)reply[1] << "\n";
+    /*
+      Socks error codes (from RFC1928):
+             o  X'00' succeeded
+             o  X'01' general SOCKS server failure
+             o  X'02' connection not allowed by ruleset
+             o  X'03' Network unreachable
+             o  X'04' Host unreachable
+             o  X'05' Connection refused
+             o  X'06' TTL expired
+             o  X'07' Command not supported
+             o  X'08' Address type not supported
+             o  X'09' to X'FF' unassigned
+    */
+
     close_connection();  // connection is now bad.
     _state = S_try_next_proxy;
     return false;
@@ -1119,6 +1135,39 @@ run_setup_ssl() {
   _sbio = BIO_new_ssl(_client->get_ssl_ctx(), true);
   BIO_push(_sbio, *_bio);
 
+  SSL *ssl;
+  BIO_get_ssl(_sbio, &ssl);
+  nassertr(ssl != (SSL *)NULL, false);
+  string cipher_list = _client->get_cipher_list();
+  if (downloader_cat.is_debug()) {
+    downloader_cat.debug()
+      << "Setting ssl-cipher-list '" << cipher_list << "'\n";
+  }
+  int result = SSL_set_cipher_list(ssl, cipher_list.c_str());
+  if (result == 0) {
+    downloader_cat.error()
+      << "Invalid cipher list: '" << cipher_list << "'\n";
+#ifdef REPORT_OPENSSL_ERRORS
+    ERR_print_errors_fp(stderr);
+#endif
+    _state = S_failure;
+    return false;
+  }
+
+  if (downloader_cat.is_spam()) {
+    downloader_cat.spam()
+      << "SSL Ciphers available:\n";
+    const char *name;
+    int pri = 0;
+    name = SSL_get_cipher_list(ssl, pri);
+    while (name != NULL) {
+      downloader_cat.spam()
+        << "  " << pri + 1 << ". " << name << "\n";
+      pri++;
+      name = SSL_get_cipher_list(ssl, pri);
+    }
+  }
+
   if (downloader_cat.is_debug()) {
     downloader_cat.debug()
       << "performing SSL handshake\n";
@@ -1158,6 +1207,17 @@ run_ssl_handshake() {
 
   if (!_nonblocking) {
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+  }
+
+  SSL_CIPHER *cipher = SSL_get_current_cipher(ssl);
+  if (cipher == (SSL_CIPHER *)NULL) {
+    downloader_cat.warning()
+      << "No current cipher on SSL connection.\n";
+  } else {
+    if (downloader_cat.debug()) {
+      downloader_cat.debug()
+        << "Using cipher " << SSL_CIPHER_get_name(cipher) << "\n";
+    }
   }
 
   // Now that we've made an SSL handshake, we can use the SSL bio to
@@ -1318,12 +1378,19 @@ run_reading_header() {
         _response_type = RT_http_hangup;
       }
 
-    } else if (ClockObject::get_global_clock()->get_real_time() -
-               _sent_request_time > get_http_timeout()) {
-      // Time to give up.
-      downloader_cat.info()
-        << "Timeout waiting for " << _request.get_url().get_server_and_port() << ".\n";
-      _state = S_try_next_proxy;
+    } else {
+      double elapsed =
+        ClockObject::get_global_clock()->get_real_time() -
+        _sent_request_time;
+      if (elapsed > get_http_timeout()) {
+        // Time to give up.
+        downloader_cat.info()
+          << "Timeout waiting for "
+          << _request.get_url().get_server_and_port() 
+          << " in run_reading_header (" << elapsed 
+          << " seconds elapsed).\n";
+        _state = S_try_next_proxy;
+      }
     }
     return true;
   }
@@ -1772,7 +1839,9 @@ begin_request(HTTPEnum::Method method, const DocumentSpec &url,
   // Get the set of proxies that are appropriate for this URL.
   _proxies.clear();
   _proxy_next_index = 0;
-  _client->get_proxies_for_url(url.get_url(), _proxies);
+  if (get_allow_proxy()) {
+    _client->get_proxies_for_url(url.get_url(), _proxies);
+  }
 
   // If we still have a live connection to a proxy that is on the
   // list, that proxy should be moved immediately to the front of the
@@ -2040,13 +2109,20 @@ server_getline_failsafe(string &str) {
         // Try again, once.
         _response_type = RT_hangup;
       }
-      
-    } else if (ClockObject::get_global_clock()->get_real_time() -
-               _sent_request_time > get_http_timeout()) {
-      // Time to give up.
-      downloader_cat.info()
-        << "Timeout waiting for " << _request.get_url().get_server_and_port() << ".\n";
-      _state = S_try_next_proxy;
+
+    } else {
+      double elapsed =
+        ClockObject::get_global_clock()->get_real_time() -
+        _sent_request_time;
+      if (elapsed > get_http_timeout()) {
+        // Time to give up.
+        downloader_cat.info()
+          << "Timeout waiting for "
+          << _request.get_url().get_server_and_port() 
+          << " in server_getline_failsafe (" << elapsed 
+          << " seconds elapsed).\n";
+        _state = S_try_next_proxy;
+      }
     }
     
     return false;
@@ -2105,12 +2181,19 @@ server_get_failsafe(string &str, size_t num_bytes) {
         _response_type = RT_hangup;
       }
       
-    } else if (ClockObject::get_global_clock()->get_real_time() -
-               _sent_request_time > get_http_timeout()) {
-      // Time to give up.
-      downloader_cat.info()
-        << "Timeout waiting for " << _request.get_url().get_server_and_port() << ".\n";
-      _state = S_try_next_proxy;
+    } else {
+      double elapsed =
+        ClockObject::get_global_clock()->get_real_time() -
+        _sent_request_time;
+      if (elapsed > get_http_timeout()) {
+        // Time to give up.
+        downloader_cat.info()
+          << "Timeout waiting for "
+          << _request.get_url().get_server_and_port() 
+          << " in server_get_failsafe (" << elapsed 
+          << " seconds elapsed).\n";
+        _state = S_try_next_proxy;
+      }
     }
     
     return false;
