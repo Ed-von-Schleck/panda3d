@@ -130,7 +130,7 @@ issue_transformed_color_gl(const Geom *geom, Geom::ColorIterator &citerator,
 // This noop function is assigned to _glActiveTexture in case we don't
 // have multitexturing support, so it will always be safe to call
 // _glActiveTexture().
-static void
+static void APIENTRY
 null_glActiveTexture(GLenum gl_texture_stage) {
   // If we don't support multitexture, we'd better not try to request
   // a texture beyond the first texture stage.
