@@ -736,7 +736,7 @@ write_verbose(ostream &out, int indent_level) const {
 
       } else {
         indent(out, indent_level)
-          << "Nonindex texcoords \"" << name->get_name() << ":\n";
+          << "Nonindexed texcoords \"" << name->get_name() << "\":\n";
         describe_attr(out, this, G_PER_VERTEX, def._texcoords, true, 
                       indent_level + 2);
       }
