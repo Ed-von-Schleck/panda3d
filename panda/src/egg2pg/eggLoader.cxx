@@ -1372,7 +1372,7 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
 
     const TextureDef &def = _textures[egg_tex];
     if (def._texture != (const RenderAttrib *)NULL) {
-      if (texture_attrib == NULL) {
+      if (texture_attrib == (RenderAttrib *)NULL) {
         texture_attrib = def._texture;
       } else {
         texture_attrib = texture_attrib->compose(def._texture);
