@@ -142,6 +142,21 @@ get_extra_extensions() {
   }
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: wglGraphicsStateGuardian::get_extension_func
+//       Access: Public, Virtual
+//  Description: Returns the pointer to the GL extension function with
+//               the indicated name.  It is the responsibility of the
+//               caller to ensure that the required extension is
+//               defined in the OpenGL runtime prior to calling this;
+//               it is an error to call this for a function that is
+//               not defined.
+////////////////////////////////////////////////////////////////////
+void *wglGraphicsStateGuardian::
+get_extension_func(const char *name) {
+  return wglGetProcAddress(name);
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: wglGraphicsStateGuardian::make_context
