@@ -24,8 +24,9 @@
 #include "parametrics.h"
 #include "typedWriteableReferenceCount.h"
 #include "namable.h"
-////#include "patch.h"
 
+
+TypeHandle ParametricCurveDrawer::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ParametricCurveDrawer::Constructor
