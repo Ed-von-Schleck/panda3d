@@ -16,7 +16,7 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
-#include "StdAfx.h"
+////#include "StdAfx.h"
 ////#include "pandabase.h"
 #include "luse.h"
 #include "parametrics.h"
@@ -119,7 +119,7 @@ set_curve_type(int type) {
     break;
     
   default:
-    assert(FALSE);
+    assert(0);
   }
 }
 
@@ -925,7 +925,7 @@ make_nurbs(int order, int num_cvs,
 bool PiecewiseCurve::
 GetBezierSegs(BezierSegs &bz_segs) const {
   bz_segs.erase(bz_segs.begin(), bz_segs.end());
-  int i, n;
+  int i;
   BezierSeg seg;
   for (i = 0; i < _segs.size(); i++) {
     if (!_segs[i]._curve->GetBezierSeg(seg)) {
