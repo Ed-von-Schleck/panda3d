@@ -200,7 +200,7 @@ MilesAudioManager::
       #endif //]
     }
     audio_debug("  AIL_quick_shutdown()");
-    AIL_quick_shutdown();
+//    AIL_quick_shutdown();
     bMilesShutdownCalled = true;
   }
 }
