@@ -256,6 +256,15 @@ unify_texture_stages(TextureStage *stage) const {
     }
   }
 
+  // Now copy from _on_textures to the _on_stages list.  We can't do
+  // this as we walk through the list the first pass, since we might
+  // have collapsed together multiple different stages.
+  for (nti = attrib->_on_textures.begin(); 
+       nti != attrib->_on_textures.end(); 
+       ++nti) {
+    attrib->_on_stages.push_back((*nti).first);
+  }
+
   OffStages::const_iterator fsi;
   for (fsi = _off_stages.begin(); fsi != _off_stages.end(); ++fsi) {
     if ((*fsi) != stage && 
