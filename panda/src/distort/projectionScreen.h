@@ -48,10 +48,12 @@ class WorkingNodePath;
 //
 //               This does not take advantage of any hardware-assisted
 //               projective texturing; all of the UV's are computed in
-//               the CPU.  However, it does support any kind of lens,
-//               linear or nonlinear, that might be defined using the
-//               Lens interface, including fisheye and cylindrical
-//               lenses.
+//               the CPU.  (Use NodePath::project_texture() to enable
+//               hardware-assisted projective texturing.)  However,
+//               the ProjectionScreen interface does support any kind
+//               of lens, linear or nonlinear, that might be defined
+//               using the Lens interface, including fisheye and
+//               cylindrical lenses.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAFX ProjectionScreen : public PandaNode {
 PUBLISHED:
