@@ -99,7 +99,7 @@ config_downloader.GetBool("http-proxy-tunnel", false);
 // to be established, in seconds.  It is presently only used for
 // nonblocking sockets.
 const double connect_timeout =
-config_downloader.GetDouble("connect-timeout", 5.0);
+config_downloader.GetDouble("connect-timeout", 10.0);
 
 // This is the default amount of time to wait for the HTTP server to
 // finish sending its response to our request, in seconds.  It starts
