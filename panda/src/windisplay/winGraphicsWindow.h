@@ -45,6 +45,8 @@ public:
                     const string &name);
   virtual ~WinGraphicsWindow();
 
+  virtual void close_ime();
+
   virtual void begin_flip();
 
   virtual void process_events();
@@ -53,6 +55,8 @@ public:
   static LONG WINAPI static_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
   virtual bool handle_mouse_motion(int x, int y);
   virtual void handle_mouse_exit(void);
+
+  INLINE HWND get_ime_hwnd();
 
 
 protected:
@@ -101,6 +105,7 @@ protected:
   HWND _hWnd;
 
 private:
+  HWND _ime_hWnd;
   bool _ime_open;
   bool _ime_active;
   bool _ime_composition_w;

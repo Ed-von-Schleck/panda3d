@@ -40,6 +40,8 @@ INLINE ButtonEvent::
 ButtonEvent(ButtonHandle button, ButtonEvent::Type type, double time) :
   _button(button),
   _keycode(0),
+  _highlight_start(0),
+  _highlight_end(0),
   _type(type),
   _time(time)
 {
@@ -54,8 +56,29 @@ INLINE ButtonEvent::
 ButtonEvent(short keycode, double time) :
   _button(ButtonHandle::none()),
   _keycode(keycode),
+  _highlight_start(0),
+  _highlight_end(0),
   _type(T_keystroke),
   _time(time)
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ButtonEvent::Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE ButtonEvent::
+ButtonEvent(const wstring &candidate_string, size_t highlight_start, 
+            size_t highlight_end, size_t cursor_pos) :
+  _button(ButtonHandle::none()),
+  _keycode(0),
+  _candidate_string(candidate_string),
+  _highlight_start(highlight_start),
+  _highlight_end(highlight_end),
+  _cursor_pos(cursor_pos),
+  _type(T_candidate),
+  _time(ClockObject::get_global_clock()->get_frame_time())
 {
 }
 
@@ -68,6 +91,10 @@ INLINE ButtonEvent::
 ButtonEvent(const ButtonEvent &copy) :
   _button(copy._button),
   _keycode(copy._keycode),
+  _candidate_string(copy._candidate_string),
+  _highlight_start(copy._highlight_start),
+  _highlight_end(copy._highlight_end),
+  _cursor_pos(copy._cursor_pos),
   _type(copy._type),
   _time(copy._time)
 {
@@ -82,6 +109,10 @@ INLINE void ButtonEvent::
 operator = (const ButtonEvent &copy) {
   _button = copy._button;
   _keycode = copy._keycode;
+  _candidate_string = copy._candidate_string;
+  _highlight_start = copy._highlight_start;
+  _highlight_end = copy._highlight_end;
+  _cursor_pos = copy._cursor_pos;
   _type = copy._type;
   _time = copy._time;
 }

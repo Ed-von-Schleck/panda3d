@@ -78,10 +78,12 @@ public:
   virtual void press(const MouseWatcherParameter &param, bool background);
   virtual void release(const MouseWatcherParameter &param, bool background);
   virtual void keystroke(const MouseWatcherParameter &param, bool background);
+  virtual void candidate(const MouseWatcherParameter &param, bool background);
 
   static void background_press(const MouseWatcherParameter &param);
   static void background_release(const MouseWatcherParameter &param);
   static void background_keystroke(const MouseWatcherParameter &param);
+  static void background_candidate(const MouseWatcherParameter &param);
 
 PUBLISHED:
   INLINE void set_frame(float left, float right, float bottom, float top);

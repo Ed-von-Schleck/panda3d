@@ -27,6 +27,7 @@
 #include "glgsg.h"
 #include "clockObject.h"
 #include "pStatTimer.h"
+#include "textEncoder.h"
 
 #include <errno.h>
 #include <sys/time.h>
