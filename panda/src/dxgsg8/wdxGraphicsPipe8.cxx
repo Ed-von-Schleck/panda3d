@@ -396,7 +396,7 @@ find_best_depth_format(DXScreenData &Display, D3DDISPLAYMODE &TestDisplayMode,
   *pBestFmt = D3DFMT_UNKNOWN;
   HRESULT hr;
 
-    // nvidia likes zbuf depth to match rendertarget depth
+  // nvidia likes zbuf depth to match rendertarget depth
   bool bOnlySelect16bpp = (bForce16bpp ||
                            (IS_NVIDIA(Display.DXDeviceID) && IS_16BPP_DISPLAY_FORMAT(TestDisplayMode.Format)));
 
@@ -563,11 +563,16 @@ search_for_valid_displaymode(DXScreenData &scrn,
       wdxdisplay8_cat.error()
         << "EnumAdapterDisplayMode failed for device #"
         << scrn.CardIDNum << D3DERRORSTRING(hr);
-      exit(1);
+      continue;
     }
 
     if ((dispmode.Width!=RequestedX_Size) ||
         (dispmode.Height!=RequestedY_Size)) {
+      if (bVerboseMode) {
+        wdxdisplay8_cat.info()
+          << "Mode dimension found " << dispmode.Width << "x" << dispmode.Height
+          << ": continuing onto next mode\n";
+      }
       continue;
     }
 
@@ -602,7 +607,7 @@ search_for_valid_displaymode(DXScreenData &scrn,
         wdxdisplay8_cat.error()
           << "CheckDeviceFormat failed for device #" 
           << scrn.CardIDNum << D3DERRORSTRING(hr);
-        exit(1);
+        continue;
       }
     }
 
