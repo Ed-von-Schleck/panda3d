@@ -22,12 +22,8 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         self.setClientDatagram(1)
 
         self.recorder = base.recorder
-
-        # Dict of {DistributedObject ids : DistributedObjects}
-        self.doId2do = {}
-        if wantOtpServer:
-            # Dict of {parent DistributedObject id : {zoneIds : [child DistributedObject ids]}}
-            self.__doHierarchy = {}
+        
+        self.doId2do={}
         self.readDCFile()
         self.cache=CRCache.CRCache()
         self.serverDelta = 0
@@ -57,7 +53,7 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             ## Top level Interest Manager
             ##
             self.__interest_id_assign = 1
-            self.__interests = {}
+            self.__interesthash = {}
         
     
     def abruptCleanup(self):
@@ -143,131 +139,34 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         """
         return time.time() + self.serverDelta
 
-    if wantOtpServer:
-        def handleObjectLocation(self, di):
-            # CLIENT_OBJECT_LOCATION        
-            doId = di.getUint32()
-            parentId = di.getUint32()
-            zoneId = di.getUint32()
-            obj = self.doId2do.get(doId)
-            if (obj != None):
-                self.notify.info("handleObjectLocation: doId: %s parentId: %s zoneId: %s" %
-                                 (doId, parentId, zoneId))
-                # Let the object finish the job
-                obj.setLocation(parentId, zoneId)
-            else:
-                ClientRepository.notify.warning(
-                    "handleObjectLocation: Asked to update non-existent obj: %s" % (doId))
-
-        def storeObjectLocation(self, objId, parentId, zoneId):
-            # Do not store null values
-            if ((parentId is None) or (zoneId is None)):
-                return
-
-            # TODO: check current location
-            obj = self.doId2do.get(objId)
-            oldParentId, oldZoneId = obj.getLocation()
-
-            # Case 1: Same parent, new zone
-            if (oldParentId == parentId):
-                parentZoneDict = self.__doHierarchy.get(parentId)
-                # Remove this objId from the old zone list
-                oldObjList = parentZoneDict.get(oldZoneId)
-                oldObjList.remove(objId)
-                # Add it to the new zone list
-                objList = parentZoneDict.get(zoneId)
-                if objList is None:
-                    # No existing objList for this zone, let's make a new one
-                    parentZoneDict[zoneId] = [objId]
-                    return
-                else:
-                    # Just add this objId to the existing list
-                    assert(objId not in objList)
-                    objList.append(objId)
-                    return 
-
-            # Case 2: New parent, valid old parent
-            # First delete the old location
-            if ((oldParentId is not None) and (oldZoneId is not None)):
-                self.deleteObjectLocation(objId, oldParentId, oldZoneId)
-                # Do not return because we still need to add to the new location
-
-            # Case 2: continued, already deleted from old location
-            # Case 3: New parent - no old parent
-            parentZoneDict = self.__doHierarchy.get(parentId)
-            if parentZoneDict is None:
-                # This parent is not here, just fill the whole entry in
-                self.__doHierarchy[parentId] = {zoneId : [objId]}
-            else:
-                objList = parentZoneDict.get(zoneId)
-                if objList is None:
-                    # This parent has no objects in this zone before
-                    # create a new entry for this zone and list this objId
-                    parentZoneDict[zoneId] = [objId]
-                else:
-                    # Just add this objId to the existing list
-                    objList.append(objId)
-
-        def deleteObjectLocation(self, objId, parentId, zoneId):
-            # Do not worry about null values
-            if ((parentId is None) or (zoneId is None)):
-                return
-            parentZoneDict = self.__doHierarchy.get(parentId)
-            assert(parentZoneDict is not None, "deleteObjectLocation: parentId: %s not found" % (parentId))
-            objList = parentZoneDict.get(zoneId)
-            assert(objList is not None, "deleteObjectLocation: zoneId: %s not found" % (zoneId))
-            assert(objId in objList, "deleteObjectLocation: objId: %s not found" % (objId))
-            if len(objList) == 1:
-                # If this is the last obj in this zone, delete the entire entry
-                del parentZoneDict[zoneId]
-            else:
-                # Just remove the object
-                objList.remove(objId)
-            
-
     def handleGenerateWithRequired(self, di):
-        if wantOtpServer:        
-            parentId = di.getUint32()
-            zoneId = di.getUint32()
         # Get the class Id
-        classId = di.getUint16()
-        # Get the DO Id
-        doId = di.getUint32()
-        # Look up the dclass                       
-        dclass = self.dclassesByNumber[classId]
-        dclass.startGenerate()
-        # Create a new distributed object, and put it in the dictionary
-        if wantOtpServer:
-            distObj = self.generateWithRequiredFields(dclass, doId, di, parentId, zoneId)
-        else:
-            distObj = self.generateWithRequiredFields(dclass, doId, di)
-        dclass.stopGenerate()
-
-    def handleGenerateWithRequiredOther(self, di):
-        if wantOtpServer:        
-            parentId = di.getUint32()
-            zoneId = di.getUint32()            
-        # Get the class Id
-        classId = di.getUint16()
+        classId = di.getUint16();
         # Get the DO Id
         doId = di.getUint32()
         # Look up the dclass
         dclass = self.dclassesByNumber[classId]
         dclass.startGenerate()
         # Create a new distributed object, and put it in the dictionary
-        if wantOtpServer:
-            distObj = self.generateWithRequiredOtherFields(dclass, doId, di, parentId, zoneId)
-        else:
-            distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
+        distObj = self.generateWithRequiredFields(dclass, doId, di)
+        dclass.stopGenerate()
+
+    def handleGenerateWithRequiredOther(self, di):
+        # Get the class Id
+        classId = di.getUint16();
+        # Get the DO Id
+        doId = di.getUint32()
+        # Look up the dclass
+        dclass = self.dclassesByNumber[classId]
+        dclass.startGenerate()
+        # Create a new distributed object, and put it in the dictionary
+        distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         dclass.stopGenerate()
 
     def handleQuietZoneGenerateWithRequired(self, di):
         # Special handler for quiet zone generates -- we need to filter
-        if wantOtpServer:        
-            parentId = di.getUint32()
-            zoneId = di.getUint32()                    
         # Get the class Id
-        classId = di.getUint16()
+        classId = di.getUint16();
         # Get the DO Id
         doId = di.getUint32()
         # Look up the dclass
@@ -280,16 +179,13 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
                 # Create a new distributed object, and put it in the dictionary
                 distObj = self.generateWithRequiredFields(dclass, doId, di)
         else:
-            distObj = self.generateWithRequiredFields(dclass, doId, di, parentId, zoneId)
+            distObj = self.generateWithRequiredFields(dclass, doId, di)
         dclass.stopGenerate()
 
     def handleQuietZoneGenerateWithRequiredOther(self, di):
         # Special handler for quiet zone generates -- we need to filter
-        if wantOtpServer:        
-            parentId = di.getUint32()
-            zoneId = di.getUint32()                    
         # Get the class Id
-        classId = di.getUint16()
+        classId = di.getUint16();
         # Get the DO Id
         doId = di.getUint32()
         # Look up the dclass
@@ -302,18 +198,15 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
                 # Create a new distributed object, and put it in the dictionary
                 distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         else:
-            distObj = self.generateWithRequiredOtherFields(dclass, doId, di, parentId, zoneId)
+            distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         dclass.stopGenerate()
 
-    # wantOtpServer: remove the None defaults when we remove this config variable
-    def generateWithRequiredFields(self, dclass, doId, di, parentId = None, zoneId = None):
+    def generateWithRequiredFields(self, dclass, doId, di):
         if self.doId2do.has_key(doId):
             # ...it is in our dictionary.
             # Just update it.
             distObj = self.doId2do[doId]
             assert(distObj.dclass == dclass)
-            if wantOtpServer:
-                distObj.setLocation(parentId, zoneId)
             distObj.generate()
             distObj.updateRequiredFields(dclass, di)
             # updateRequiredFields calls announceGenerate
@@ -325,8 +218,6 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             # put it in the dictionary:
             self.doId2do[doId] = distObj
             # and update it.
-            if wantOtpServer:
-                distObj.setLocation(parentId, zoneId)
             distObj.generate()
             distObj.updateRequiredFields(dclass, di)
             # updateRequiredFields calls announceGenerate
@@ -343,8 +234,6 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             # Put the new do in the dictionary
             self.doId2do[doId] = distObj
             # Update the required fields
-            if wantOtpServer:
-                distObj.setLocation(parentId, zoneId)
             distObj.generateInit()  # Only called when constructed
             distObj.generate()
             distObj.updateRequiredFields(dclass, di)
@@ -370,24 +259,17 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         # Put the new do in the dictionary
         self.doId2do[doId] = distObj
         # Update the required fields
-        if wantOtpServer:
-            # TODO: ROGER: where should we get parentId and zoneId?
-            parentId = None
-            zoneId = None
-            distObj.setLocation(parentId, zoneId)
         distObj.generateInit()  # Only called when constructed
         distObj.generate()
         # updateRequiredFields calls announceGenerate
         return  distObj
 
-    def generateWithRequiredOtherFields(self, dclass, doId, di, parentId = None, zoneId = None):
+    def generateWithRequiredOtherFields(self, dclass, doId, di):
         if self.doId2do.has_key(doId):
             # ...it is in our dictionary.
             # Just update it.
             distObj = self.doId2do[doId]
             assert(distObj.dclass == dclass)
-            if wantOtpServer:
-                distObj.setLocation(parentId, zoneId)
             distObj.generate()
             distObj.updateRequiredOtherFields(dclass, di)
             # updateRequiredOtherFields calls announceGenerate
@@ -399,8 +281,6 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             # put it in the dictionary:
             self.doId2do[doId] = distObj
             # and update it.
-            if wantOtpServer:
-                distObj.setLocation(parentId, zoneId)
             distObj.generate()
             distObj.updateRequiredOtherFields(dclass, di)
             # updateRequiredOtherFields calls announceGenerate
@@ -417,8 +297,6 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             # Put the new do in the dictionary
             self.doId2do[doId] = distObj
             # Update the required fields
-            if wantOtpServer:
-                distObj.setLocation(parentId, zoneId)
             distObj.generateInit()  # Only called when constructed
             distObj.generate()
             distObj.updateRequiredOtherFields(dclass, di)
@@ -546,7 +424,7 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         self.notify.info('Message from server: %s' % (message))
         return message
 
-    def handleUnexpectedMsgType(self, msgType, di):        
+    def handleUnexpectedMsgType(self, msgType, di):
         if msgType == CLIENT_CREATE_OBJECT_REQUIRED:
             self.handleGenerateWithRequired(di)
         elif msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
@@ -565,12 +443,10 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             self.handleSystemMessage(di)
         elif wantOtpServer and msgType == CLIENT_CREATE_OBJECT_REQUIRED:
             self.handleGenerateWithRequired(di)
-        elif wantOtpServer and msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
+        elif wantOtpServer and dmsgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
             self.handleGenerateWithRequiredOther(di)
         elif wantOtpServer and msgType == CLIENT_DONE_SET_ZONE_RESP:
-            self.handleSetZoneDone()                    
-        elif  wantOtpServer and msgType == CLIENT_OBJECT_LOCATION:        
-            self.handleObjectLocation(di)
+            self.handleSetZoneDone()
         else:
             currentLoginState = self.loginFSM.getCurrentState()
             if currentLoginState:
@@ -636,57 +512,61 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         # If we're processing a lot of datagrams within one frame, we
         # may forget to send heartbeats.  Keep them coming!
         self.considerHeartbeat()
-    
+      
     if wantOtpServer:
         ##
         ##
         ## interest managment 
         ##
         ##
-        def addInterest(self, parentId, zoneId, description):
+        def InterestAdd(self,  parentId, zoneId, Description):        
             """
             Part of the new otp-server code.
             """
             self.__interest_id_assign += 1
-            self.__interests[self.__interest_id_assign] = description
-            contextId = self.__interest_id_assign
+            self.__interesthash[self.__interest_id_assign] = Description
+            contextId = self.__interest_id_assign;
             self.__sendAddInterest(contextId, parentId, zoneId)
-            self.printInterests()
-            return contextId
+            self.DumpInterests()
+            return contextId;
             
-        def removeInterest(self,  contextId):        
+        def InterestRemove(self,  contextId):        
             """
             Part of the new otp-server code.
             """
-            answer = 0
-            if  self.__interests.has_key(contextId):
+            answer = 0;
+            if  self.__interesthash.has_key(contextId):
                 self.__sendRemoveInterest(contextId)
-                del self.__interests[contextId]
-                answer = 1                                
-            self.printInterests()            
+                del self.__interesthash[contextId]
+                answer = 1        
+                        
+            self.DumpInterests()            
             return answer
 
-        def alterInterest(self, contextId, parentId, zoneId, description):        
+
+        def InterestAlter(self, contextId, parentId, zoneId, Description):        
             """
             Part of the new otp-server code.        
                 Removes old and adds new.. 
             """
             answer = 0
-            if  self.__interests.has_key(contextId):
-                self.__interests[contextId] = description
+            if  self.__interesthash.has_key(contextId):
+                self.__interesthash[contextId] = Description
                 self.__sendAlterInterest(contextId, parentId, zoneId)
                 answer = 1
-            self.printInterests()            
+                
+            self.DumpInterests()            
             return answer
             
-        def printInterests(self):
+        def DumpInterests(self):
             """
             Part of the new otp-server code.        
             """
             print "*********************** Interest Sets **************"
-            for i in self.__interests.keys():
-                 print "Interest ID:%s, Description=%s"%(i,self.__interests[i])
+            for i in self.__interesthash.keys():
+                 print "Interest ID:%s, Description=%s"%(i,self.__interesthash[i])
             print "****************************************************"
+
         
         def __sendAddInterest(self, contextId, parentId, zoneId):
             """

@@ -53,11 +53,18 @@ def createRBounce(nodeObj, numBounces, startValues, totalTime, amplitude):
     return createBounce(nodeObj, numBounces, startValues, totalTime,
                         amplitude, R_BOUNCE)
 
+    
+# createBounce: create and return a list of intervals to make a
+# given nodePath bounce a given number of times over a give total time.
+#
 def createBounce(nodeObj, numBounces, startValues, totalTime, amplitude,
                  bounceType=SZ_BOUNCE):
     """
-    createBounce: create and return a list of intervals to make a
-    given nodePath bounce a given number of times over a give total time.
+    ////////////////////////////////////////////////////////////////////
+    // Function: createBounce
+    // Parameters: 
+    // Changes:
+    ////////////////////////////////////////////////////////////////////
     """
     if not nodeObj or numBounces < 1 or totalTime == 0:
         self.notify.warning(

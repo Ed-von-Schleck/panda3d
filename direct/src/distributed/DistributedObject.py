@@ -31,9 +31,6 @@ class DistributedObject(PandaObject):
         except:
             self.DistributedObject_initialized = 1
             self.cr = cr
-            if wantOtpServer:
-                # Location stores the parentId, zoneId of this object
-                self.__location = (None, None)
 
             # Most DistributedObjects are simple and require no real
             # effort to load.  Some, particularly actors, may take
@@ -143,22 +140,16 @@ class DistributedObject(PandaObject):
         generated and all of its required fields filled in.
         """
         assert(self.notify.debug('announceGenerate(): %s' % (self.doId)))
-        if self.activeState != ESGenerated:
-            self.activeState = ESGenerated
-            messenger.send(self.uniqueName("generate"), [self])
+        self.activeState = ESGenerated
+        messenger.send(self.uniqueName("generate"), [self])
 
     def disable(self):
         """
         Inheritors should redefine this to take appropriate action on disable
         """
         assert(self.notify.debug('disable(): %s' % (self.doId)))
-        if self.activeState != ESDisabled:
-            self.activeState = ESDisabled
-            self.__callbacks = {}
-            if wantOtpServer:
-                self.cr.deleteObjectLocation(self.doId, self.__location[0], self.__location[1])
-                self.__location = (None, None)
-                # TODO: disable my children
+        self.activeState = ESDisabled
+        self.__callbacks = {}
 
     def isDisabled(self):
         """
@@ -184,7 +175,7 @@ class DistributedObject(PandaObject):
             self.DistributedObject_deleted
         except:
             self.DistributedObject_deleted = 1
-            self.cr = None
+            del self.cr
 
     def generate(self):
         """
@@ -225,8 +216,7 @@ class DistributedObject(PandaObject):
         dclass.receiveUpdateOther(self, di)
 
     def sendUpdate(self, fieldName, args = [], sendToId = None):
-        if self.cr:
-            self.cr.sendUpdate(self, fieldName, args, sendToId)
+        self.cr.sendUpdate(self, fieldName, args, sendToId)
 
     def taskName(self, taskString):
         return (taskString + "-" + str(self.getDoId()))
@@ -334,13 +324,5 @@ class DistributedObject(PandaObject):
         if self.__barrierContext != None:
             self.sendUpdate("setBarrierReady", [self.__barrierContext])
             self.__barrierContext = None
-
-    if wantOtpServer:
-        def setLocation(self, parentId, zoneId):
-            # The store must run first so we know the old location
-            self.cr.storeObjectLocation(self.doId, parentId, zoneId)
-            self.__location = (parentId, zoneId)
-
-        def getLocation(self):
-            return self.__location
-
+        
+        

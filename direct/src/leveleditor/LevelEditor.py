@@ -4020,7 +4020,7 @@ class LevelStyleManager:
                 (dnaType == 'toon_landmark')):
                 dnaList = self.getCatalogCodes(dnaType)
                 if dnaType == 'prop':
-                    dnaList = dnaList + self.getCatalogCodes('holiday_prop')
+                    dnaList.append(self.getCatalogCodes('holiday_prop'))
             elif (dnaType == 'sign'):
                 dnaList = [''] + self.getCatalogCodes(dnaType)
             elif (dnaType == 'wall'):
@@ -5037,8 +5037,7 @@ class LevelEditorPanel(Pmw.MegaToplevel):
             text = 'ADD PROP',
             command = self.addProp)
         self.addPropsButton.pack(fill = X, padx = 20, pady = 10)
-        codes = (self.styleManager.getCatalogCodes('prop') +
-                 self.styleManager.getCatalogCodes('holiday_prop'))
+        codes = self.styleManager.getCatalogCodes('prop')
         codes.sort()
         self.propSelector = Pmw.ComboBox(
             propsPage,

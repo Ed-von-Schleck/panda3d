@@ -42,11 +42,10 @@ class FSM(DirectObject.DirectObject):
     def exitGreen(self):
         ... cleanup stuff ...
 
-    Both functions can access the previous state name as
-    self.oldState, and the new state name we are transitioning to as
-    self.newState.  (Of course, in enterRed(), self.newState will
-    always be "Red", and the in exitRed(), self.oldState will always
-    be "Red".)
+    Both functions are supplied the previous state name and the new
+    state name we are transitioning to.  (Of course, the newState
+    passed to enterRed, and the oldState passed to exitRed, will
+    always be "Red".)
 
     Both functions are optional.  If either function is omitted, the
     state is still defined, but nothing is done when transitioning
@@ -62,37 +61,29 @@ class FSM(DirectObject.DirectObject):
 
     def filterRed(self, request, args):
         if request in ['Green']:
-            return (request,) + args
+            return request
         return None
 
     def filterYellow(self, request, args):
         if request in ['Red']:
-            return (request,) + args
+            return request
         return None
 
     def filterGreen(self, request, args):
         if request in ['Yellow']:
-            return (request,) + args
+            return request
         return None
 
     As above, the filterState() functions are optional.  If any is
-    omitted, the defaultFilter() method is called instead.  A standard
-    implementation of defaultFilter() is provided, which may be
-    overridden in a derived class to change the behavior on an
-    unexpected transition.
+    omitted, the defaultFilter() method is called instead.  The
+    default definition of defaultFilter() always returns None, thus
+    disallowing all unexpected transitions.  This default behavior may
+    be overridden in a derived class.
 
-    If self.defaultTransitions is left unassigned, then the standard
-    implementation of defaultFilter() will return None for any
-    lowercase transition name and allow any uppercase transition name
-    (this assumes that an uppercase name is a request to go directly
-    to a particular state by name).
-
-    self.state may be queried at any time other than during the
+    FSM.state may be queried at any time other than during the
     handling of the enter() and exit() functions.  During these
-    functions, self.state contains the value None (you are not really
-    in any state during the transition).  However, during a transition
-    you *can* query the outgoing and incoming states, respectively,
-    via self.oldState and self.newState.  At other times, self.state
+    functions, FSM.state contains the value None (you are not really
+    in any state during the transition).  At other times, FSM.state
     contains the name of the current state.
 
     Initially, the FSM is in state 'Off'.  It does not call enterOff()
@@ -139,14 +130,6 @@ class FSM(DirectObject.DirectObject):
         assert(self.state)
         if self.state != 'Off':
             self.__setState('Off')
-
-    def getCurrentOrNextState(self):
-        # Returns the current state if we are in a state now, or the
-        # state we are transitioning into if we are currently within
-        # the enter or exit function for a state.
-        if self.state:
-            return self.state
-        return self.newState
 
     def forceTransition(self, newState):
         """Changes unconditionally to the indicated state.  This
@@ -199,24 +182,11 @@ class FSM(DirectObject.DirectObject):
 
     def defaultFilter(self, request, args):
         """This is the function that is called if there is no
-        filterState() method for a particular state name.
-
-        This default filter function behaves in one of two modes:
-
-        (1) if self.defaultTransitions is None, allow any request
-        whose name begins with a capital letter, which is assumed to
-        be a direct request to a particular state.  This is similar to
-        the old ClassicFSM onUndefTransition=ALLOW, with no explicit
-        state transitions listed.
-
-        (2) if self.defaultTransitions is not None, allow only those
-        requests explicitly identified in this map.  This is similar
-        to the old ClassicFSM onUndefTransition=DISALLOW, with an
-        explicit list of allowed state transitions.
-
-        Specialized FSM's may wish to redefine this default filter
-        (for instance, to always return the request itself, thus
-        allowing any transition.)."""
+        filterState() method for a particular state name.  By default,
+        the filter defined here in the base class always returns
+        None, disallowing any transition.  Specialized FSM's may wish
+        to redefine this default filter (for instance, to always
+        return the request itself, thus allowing any transition.)."""
 
         if request == 'Off':
             # We can always go to the "Off" state.
