@@ -145,7 +145,7 @@ make_gsg() {
   _dxgsg = new DXGraphicsStateGuardian7(this);
   _gsg = _dxgsg;
   // Tell the associated dxGSG about the window handle.
-  _dxgsg->scrn.hWnd = _mwindow;
+  _dxgsg->scrn.hWnd = _hWnd;
 
   if (!search_for_device(0, NULL)) {
     wdxdisplay7_cat.error()
@@ -1206,7 +1206,7 @@ set_coop_levels_and_display_modes() {
   DXScreenData *pScrn = &_dxgsg->scrn;
   
   if (!is_fullscreen()) {
-    hr = pScrn->pDD->SetCooperativeLevel(_mwindow, 
+    hr = pScrn->pDD->SetCooperativeLevel(_hWnd, 
                                          SCL_FPUFlag | DDSCL_NORMAL);
     if (FAILED(hr)) {
       wdxdisplay7_cat.fatal()

@@ -122,7 +122,7 @@ open_window() {
   DCAST_INTO_R(wglgsg, _gsg, false);
 
   // Set up the pixel format of the window appropriately for GL.
-  _hdc = GetDC(_mwindow);
+  _hdc = GetDC(_hWnd);
 
   if (!SetPixelFormat(_hdc, wglgsg->_pfnum, &wglgsg->_pixelformat)) {
     wgldisplay_cat.error()
@@ -145,7 +145,7 @@ open_window() {
 ////////////////////////////////////////////////////////////////////
 void wglGraphicsWindow::
 close_window() {
-  ReleaseDC(_mwindow, _hdc);
+  ReleaseDC(_hWnd, _hdc);
   _hdc = (HDC)0;
   WinGraphicsWindow::close_window();
 }
