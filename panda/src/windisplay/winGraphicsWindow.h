@@ -53,6 +53,8 @@ public:
   WinGraphicsWindow(GraphicsPipe *pipe, GraphicsStateGuardian *gsg);
   virtual ~WinGraphicsWindow();
 
+  virtual void close_ime();
+
   virtual void begin_flip();
 
   virtual void process_events();
