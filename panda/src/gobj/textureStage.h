@@ -99,6 +99,9 @@ PUBLISHED:
   INLINE void set_sort(int sort);
   INLINE int get_sort() const;
 
+  INLINE void set_priority(int priority);
+  INLINE int get_priority() const;
+
   INLINE bool operator < (const TextureStage &other) const;
 
   INLINE void set_texcoord_name(const TexCoordName *name);
@@ -150,6 +153,7 @@ PUBLISHED:
 private:
   string _name;
   int _sort;
+  int _priority;
   CPT(TexCoordName) _texcoord_name;
   Mode _mode;
   Colorf _color;

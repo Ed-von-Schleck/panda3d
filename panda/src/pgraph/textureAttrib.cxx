@@ -25,6 +25,21 @@
 
 TypeHandle TextureAttrib::_type_handle;
 
+// This STL Function object is used in filter_to_max(), below, to sort
+// a list of TextureStages in reverse order by priority and, within
+// prioirty, in order by sort.
+class CompareTextureStagePriorities {
+public:
+  bool operator ()(const TextureStage *a, const TextureStage *b) const {
+    if (a->get_priority() != b->get_priority()) {
+      return a->get_priority() > b->get_priority();
+    }
+    return a->get_sort() < b->get_sort();
+  }
+};
+
+
+
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::make
 //       Access: Published, Static
@@ -217,6 +232,68 @@ remove_off_stage(TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::filter_to_max
+//       Access: Public
+//  Description: Returns a new TextureAttrib, very much like this one,
+//               but with the number of on_stages reduced to be no
+//               more than max_texture_stages.  The number of
+//               off_stages in the new TextureAttrib is undefined.
+////////////////////////////////////////////////////////////////////
+CPT(TextureAttrib) TextureAttrib::
+filter_to_max(int max_texture_stages) const {
+  if ((int)_on_stages.size() <= max_texture_stages) {
+    // Trivial case: this TextureAttrib qualifies.
+    return this;
+  }
+
+  // Since check_sorted() will clear the _filtered list if we are out
+  // of date, we should call it first.
+  check_sorted();
+
+  Filtered::const_iterator fi;
+  fi = _filtered.find(max_texture_stages);
+  if (fi != _filtered.end()) {
+    // Easy case: we have already computed this for this particular
+    // TextureAttrib.
+    return (*fi).second;
+  }
+
+  // Harder case: we have to compute it now.  We must choose the n
+  // stages with the highest priority in our list of stages.  In the
+  // case of equal priority, we prefer the stage with the lower sort.
+  OnStages priority_stages = _on_stages;
+
+  // This sort function uses the STL function object defined above.
+  sort(priority_stages.begin(), priority_stages.end(), 
+       CompareTextureStagePriorities());
+
+  // Now lop off all of the stages after the first max_texture_stages.
+  priority_stages.erase(priority_stages.begin() + max_texture_stages,
+                        priority_stages.end());
+  nassertr(priority_stages.size() == max_texture_stages, this);
+
+  // And create a new attrib reflecting these stages.
+  PT(TextureAttrib) attrib = new TextureAttrib;
+
+  OnStages::const_iterator si;
+  for (si = priority_stages.begin(); si != priority_stages.end(); ++si) {
+    TextureStage *stage = (*si);
+    attrib->_on_textures[stage] = get_on_texture(stage);
+  }
+
+  attrib->_on_stages.swap(priority_stages);
+  nassertr(attrib->_on_stages.size() == max_texture_stages, this);
+
+  CPT(RenderAttrib) new_attrib = return_new(attrib);
+
+  // Finally, record this newly-created attrib in the map for next
+  // time.
+  CPT(TextureAttrib) tex_attrib = (const TextureAttrib *)new_attrib.p();
+  ((TextureAttrib *)this)->_filtered[max_texture_stages] = tex_attrib;
+  return tex_attrib;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::issue
 //       Access: Public, Virtual
 //  Description: Calls the appropriate method on the indicated GSG
@@ -224,7 +301,7 @@ remove_off_stage(TextureStage *stage) const {
 //               given attribute.  This is normally called
 //               (indirectly) only from
 //               GraphicsStateGuardian::set_state() or modify_state().
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////a////////////////////
 void TextureAttrib::
 issue(GraphicsStateGuardianBase *gsg) const {
   gsg->issue_texture(this);
@@ -632,4 +709,8 @@ sort_on_stages() {
 
   TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   _sort_seq = tex_mgr->get_sort_seq();
+
+  // Also clear the _filtered map, so we'll have to recompute those
+  // (in case the priority orders have changed as well).
+  _filtered.clear();
 }

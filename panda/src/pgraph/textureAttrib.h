@@ -79,6 +79,7 @@ PUBLISHED:
 
 public:
   INLINE const Geom::ActiveTextureStages &get_on_stages() const;
+  CPT(TextureAttrib) filter_to_max(int max_texture_stages) const;
 
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
   virtual void output(ostream &out) const;
@@ -103,6 +104,9 @@ private:
 
   typedef pmap< TextureStage *, PT(Texture) > OnTextures;
   OnTextures _on_textures;
+
+  typedef pmap< int, CPT(TextureAttrib) > Filtered;
+  Filtered _filtered;
 
   UpdateSeq _sort_seq;
 

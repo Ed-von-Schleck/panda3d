@@ -25,6 +25,7 @@
 #include "lensNode.h"
 #include "geomNode.h"
 #include "nodePath.h"
+#include "textureStageManager.h"
 
 class Geom;
 class WorkingNodePath;
@@ -35,17 +36,21 @@ class WorkingNodePath;
 //               projective texturing.  The ProjectionScreen node is
 //               the parent of a hierarchy of geometry that is
 //               considered a "screen"; the ProjectionScreen will
-//               automatically recompute all the UV's on its
-//               subordinate geometry according to the relative
-//               position and lens parameters of the indicated
-//               LensNode.
+//               automatically recompute all the UV's (for a
+//               particular texture stage) on its subordinate geometry
+//               according to the relative position and lens
+//               parameters of the indicated LensNode.
+//
+//               All this does is recompute UV's; the caller is
+//               responsible for applying the appropriate texture(s)
+//               to the geometry.
 //
 //               This does not take advantage of any hardware-assisted
-//               projective texturing; nor does it presently support
-//               multitexturing.  However, it does support any kind of
-//               lens, linear or nonlinear, that might be defined
-//               using the Lens interface, including fisheye and
-//               cylindrical lenses.
+//               projective texturing; all of the UV's are computed in
+//               the CPU.  However, it does support any kind of lens,
+//               linear or nonlinear, that might be defined using the
+//               Lens interface, including fisheye and cylindrical
+//               lenses.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAFX ProjectionScreen : public PandaNode {
 PUBLISHED:
@@ -72,6 +77,9 @@ PUBLISHED:
                          int num_x_verts, int num_y_verts, float distance,
                          float fill_ratio);
   PT(PandaNode) make_flat_mesh(const NodePath &this_np, const NodePath &camera);
+
+  INLINE void set_texcoord_name(const string &texcoord_name);
+  INLINE const string &get_texcoord_name() const;
 
   INLINE void set_invert_uvs(bool invert_uvs);
   INLINE bool get_invert_uvs() const;
@@ -113,6 +121,7 @@ private:
 
   NodePath _projector;
   PT(LensNode) _projector_node;
+  CPT(TexCoordName) _texcoord_name;
   bool _invert_uvs;
   bool _vignette_on;
   Colorf _vignette_color;

@@ -75,7 +75,7 @@ get_texture() const {
     return NULL;
   }
   check_sorted();
-  return get_on_texture(_on_stages[0]);
+  return get_on_texture(filter_to_max(1)->get_on_stage(0));
 }
 
 ////////////////////////////////////////////////////////////////////

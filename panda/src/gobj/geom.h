@@ -222,8 +222,7 @@ public:
   INLINE TexCoordIterator make_texcoord_iterator() const;
   INLINE const TexCoordf &get_next_texcoord(TexCoordIterator &tciterator) const;
   void setup_multitexcoord_iterator(MultiTexCoordIterator &iterator,
-                                    const ActiveTextureStages &active_stages,
-                                    int max_stages) const;
+                                    const ActiveTextureStages &active_stages) const;
   INLINE const TexCoordf &get_next_multitexcoord(MultiTexCoordIterator &tciterator, int n) const;
 
   INLINE ColorIterator make_color_iterator() const;

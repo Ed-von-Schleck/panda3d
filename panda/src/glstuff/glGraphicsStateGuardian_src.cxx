@@ -728,7 +728,7 @@ draw_point(GeomPoint *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -796,7 +796,7 @@ draw_line(GeomLine *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -878,7 +878,7 @@ draw_linestrip(GeomLinestrip *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1255,7 +1255,7 @@ draw_polygon(GeomPolygon *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1340,7 +1340,7 @@ draw_tri(GeomTri *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1423,7 +1423,7 @@ draw_quad(GeomQuad *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1505,7 +1505,7 @@ draw_tristrip(GeomTristrip *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1609,7 +1609,7 @@ draw_trifan(GeomTrifan *geom, GeomContext *gc) {
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1711,7 +1711,7 @@ draw_sphere(GeomSphere *geom, GeomContext *gc) {
   int nprims = geom->get_num_prims();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::MultiTexCoordIterator ti;
-  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages());
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -2324,13 +2324,18 @@ void CLP(GraphicsStateGuardian)::
 issue_texture(const TextureAttrib *attrib) {
   DO_PSTATS_STUFF(_texture_state_pcollector.add_level(1));
 
-  int num_stages = min(attrib->get_num_on_stages(), _max_texture_stages);
-  int num_old_stages = min(_current_texture->get_num_on_stages(), _max_texture_stages);
+  CPT(TextureAttrib) new_texture = attrib->filter_to_max(_max_texture_stages);
+  
+  int num_stages = new_texture->get_num_on_stages();
+  int num_old_stages = _current_texture->get_num_on_stages();
+
+  nassertv(num_stages <= _max_texture_stages && 
+           num_old_stages <= _max_texture_stages);
 
   int i;
   for (i = 0; i < num_stages; i++) {
-    TextureStage *stage = attrib->get_on_stage(i);
-    Texture *texture = attrib->get_on_texture(stage);
+    TextureStage *stage = new_texture->get_on_stage(i);
+    Texture *texture = new_texture->get_on_texture(stage);
     nassertv(texture != (Texture *)NULL);
     
     if (i >= num_old_stages ||
@@ -2352,6 +2357,7 @@ issue_texture(const TextureAttrib *attrib) {
       
       GLint glmode = get_texture_apply_mode_type(stage->get_mode());
       GLP(TexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, glmode);
+      GLP(TexEnvfv)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, stage->get_color().get_data());
     }
   }
     
@@ -2368,7 +2374,7 @@ issue_texture(const TextureAttrib *attrib) {
     GLP(Disable)(GL_TEXTURE_2D);
   }
 
-  _current_texture = attrib;
+  _current_texture = new_texture;
 
   report_my_gl_errors();
 }

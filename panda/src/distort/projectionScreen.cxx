@@ -34,6 +34,9 @@ TypeHandle ProjectionScreen::_type_handle;
 ProjectionScreen::
 ProjectionScreen(const string &name) : PandaNode(name)
 {
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  _texcoord_name = tex_mgr->get_default_texcoord();
+
   _invert_uvs = project_invert_uvs;
   _vignette_on = false;
   _vignette_color.set(0.0f, 0.0f, 0.0f, 1.0f);
@@ -61,6 +64,7 @@ ProjectionScreen(const ProjectionScreen &copy) :
   PandaNode(copy),
   _projector(copy._projector),
   _projector_node(copy._projector_node),
+  _texcoord_name(copy._texcoord_name),
   _vignette_on(copy._vignette_on),
   _vignette_color(copy._vignette_color),
   _frame_color(copy._frame_color)
@@ -544,7 +548,7 @@ recompute_geom(Geom *geom, const LMatrix4f &rel_mat) {
   }
 
   // Now set the UV's.
-  geom->set_texcoords(uvs, G_PER_VERTEX);
+  geom->set_texcoords(_texcoord_name, uvs);
 
   if (_vignette_on) {
     geom->set_colors(_colors, G_PER_VERTEX, color_index);
