@@ -240,7 +240,8 @@ void EggLoader::
 make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
                           const LMatrix4d *transform) {
   BuilderBucket bucket;
-  setup_bucket(bucket, parent, egg_prim);
+  BakeInUVs bake_in_uvs;
+  setup_bucket(bucket, bake_in_uvs, parent, egg_prim);
   if (bucket._hidden && egg_suppress_hidden) {
     // Eat this primitive.
     return;
@@ -315,15 +316,10 @@ make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
             uv_name = TexCoordName::get_default();
           }
 
-          int num_textures = egg_prim->get_num_textures();
-          for (int i = 0; i < num_textures; i++) {
-            EggTexture *texture = egg_prim->get_texture(i);
-            if (texture->has_transform() && 
-                texture->get_tex_gen() == EggTexture::TG_unspecified &&
-                texture->get_uv_name() == uv_obj->get_name()) {
-              // If we have a texture matrix, apply it.
-              uv = uv * egg_prim->get_texture(i)->get_transform();
-            }
+          BakeInUVs::const_iterator buv = bake_in_uvs.find(uv_name);
+          if (buv != bake_in_uvs.end()) {
+            // If we are to bake in a texture matrix, do so now.
+            uv = uv * (*buv).second->get_transform();
           }
 
           bvert.set_texcoord(uv_name, LCAST(float, uv));
@@ -353,7 +349,8 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
                        const LMatrix4d *transform,
                        ComputedVerticesMaker &_comp_verts_maker) {
   BuilderBucket bucket;
-  setup_bucket(bucket, parent, egg_prim);
+  BakeInUVs bake_in_uvs;
+  setup_bucket(bucket, bake_in_uvs, parent, egg_prim);
   if (bucket._hidden && egg_suppress_hidden) {
     // Eat this primitive.
     return;
@@ -466,15 +463,10 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
 
         LMatrix3d mat = LMatrix3d::ident_mat();
 
-        int num_textures = egg_prim->get_num_textures();
-        for (int i = 0; i < num_textures; i++) {
-          EggTexture *texture = egg_prim->get_texture(i);
-          if (texture->has_transform() && 
-              texture->get_tex_gen() == EggTexture::TG_unspecified &&
-              texture->get_uv_name() == uv_obj->get_name()) {
-            // If we have a texture matrix, apply it.
-            mat *= texture->get_transform();
-          }
+        BakeInUVs::const_iterator buv = bake_in_uvs.find(uv_name);
+        if (buv != bake_in_uvs.end()) {
+          // If we are to bake in a texture matrix, do so now.
+          mat = (*buv).second->get_transform();
         }
         
         int tindex =
@@ -555,11 +547,13 @@ make_nurbs_curve(EggNurbsCurve *egg_curve, PandaNode *parent,
   // but all we do with this bucket is immediately extract the state
   // from it.
   BuilderBucket bucket;
-  setup_bucket(bucket, parent, egg_curve);
+  BakeInUVs bake_in_uvs;
+  setup_bucket(bucket, bake_in_uvs, parent, egg_curve);
   if (bucket._hidden && egg_suppress_hidden) {
     // Eat this primitive.
     return;
   }
+  nassertv(bake_in_uvs.empty());
 
   rope->set_state(bucket._state);
   rope->set_uv_mode(RopeNode::UV_parametric);
@@ -694,11 +688,13 @@ make_nurbs_surface(EggNurbsSurface *egg_surface, PandaNode *parent,
   // but all we do with this bucket is immediately extract the state
   // from it.
   BuilderBucket bucket;
-  setup_bucket(bucket, parent, egg_surface);
+  BakeInUVs bake_in_uvs;
+  setup_bucket(bucket, bake_in_uvs, parent, egg_surface);
   if (bucket._hidden && egg_suppress_hidden) {
     // Eat this primitive.
     return;
   }
+  nassertv(bake_in_uvs.empty());
 
   sheet->set_state(bucket._state);
 
@@ -832,6 +828,7 @@ load_texture(TextureDef &def, const EggTexture *egg_tex) {
   PT(TextureStage) stage = make_texture_stage(egg_tex);
   def._texture = TextureAttrib::make_on(stage, tex);
   def._stage = stage;
+  def._egg_tex = egg_tex;
 
   return true;
 }
@@ -1321,8 +1318,8 @@ get_material_attrib(const EggMaterial *egg_mat, bool bface) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void EggLoader::
-setup_bucket(BuilderBucket &bucket, PandaNode *parent,
-             EggPrimitive *egg_prim) {
+setup_bucket(BuilderBucket &bucket, EggLoader::BakeInUVs &bake_in_uvs,
+             PandaNode *parent, EggPrimitive *egg_prim) {
   bucket._node = parent;
   bucket._mesh = egg_mesh;
   bucket._retesselate_coplanar = egg_retesselate_coplanar;
@@ -1391,17 +1388,12 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
     bin = render_mode->get_bin();
   }
 
-  // These parametric primitive types can't have their UV's baked in,
-  // so if we have one of these we always need to apply the texture
-  // matrix as a separate attribute.
-  bool needs_tex_mat = (egg_prim->is_of_type(EggCurve::get_class_type()) ||
-                        egg_prim->is_of_type(EggSurface::get_class_type()));
-
   bucket.add_attrib(TextureAttrib::make_off());
   int num_textures = egg_prim->get_num_textures();
   CPT(RenderAttrib) texture_attrib = NULL;
   CPT(RenderAttrib) tex_gen_attrib = NULL;
   CPT(RenderAttrib) tex_mat_attrib = NULL;
+  TexMats tex_mats;
 
   for (int i = 0; i < num_textures; i++) {
     PT_EggTexture egg_tex = egg_prim->get_texture(i);
@@ -1446,20 +1438,85 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
           add_stage(def._stage, get_tex_gen(egg_tex));
       }
 
-      if (has_tex_gen || needs_tex_mat) {
-        // If we need to apply the texture matrix to this stage,
-        // rather than baking it in, do so.
-        if (egg_tex->has_transform()) {
-          if (tex_mat_attrib == (const RenderAttrib *)NULL) {
-            tex_mat_attrib = TexMatrixAttrib::make();
-          }
-          const LMatrix3d &tex_mat = egg_tex->get_transform();
-          LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
-                         tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
-                         0.0f, 0.0f, 1.0f, 0.0f,
-                         tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
-          tex_mat_attrib = DCAST(TexMatrixAttrib, tex_mat_attrib)->
-            add_stage(def._stage, TransformState::make_mat(mat4));
+      // Record the texture's associated texture matrix, so we can see
+      // if we can safely bake it into the UV's.  (We need to get the
+      // complete list of textures that share this same set of UV's
+      // per each unique texture matrix.  Whew!)
+      CPT(TexCoordName) uv_name;
+      if (egg_tex->has_uv_name()) {
+        uv_name = TexCoordName::make(egg_tex->get_uv_name());
+      } else {
+        uv_name = TexCoordName::get_default();
+      }
+
+      if (has_tex_gen) {
+        // If the texture has a texgen mode, we will always apply its
+        // texture transform, never bake it in.  In fact, we don't
+        // even care about its UV's in this case, since we won't be
+        // using them.
+        tex_mat_attrib = apply_tex_mat(tex_mat_attrib, def._stage, egg_tex);
+
+      } else {
+        // Otherwise, we need to record that there is at least one
+        // texture on this particular UV name and with this particular
+        // texture matrix.  If there are no other textures, or if all
+        // of the other textures use the same texture matrix, then
+        // tex_mats[uv_name].size() will remain 1 (which tells us we
+        // can bake in the texture matrix to the UV's).  On the other
+        // hand, if there is another texture on the same uv name but
+        // with a different transform, it will increase
+        // tex_mats[uv_name].size() to at least 2, indicating we can't
+        // bake in the texture matrix.
+        tex_mats[uv_name][egg_tex->get_transform()].push_back(&def);
+      }
+    }
+  }
+
+  // These parametric primitive types can't have their UV's baked in,
+  // so if we have one of these we always need to apply the texture
+  // matrix as a separate attribute, regardless of how many textures
+  // share the particular UV set.
+  bool needs_tex_mat = (egg_prim->is_of_type(EggCurve::get_class_type()) ||
+                        egg_prim->is_of_type(EggSurface::get_class_type()));
+
+  // Now that we've visited all of the textures in the above loop, we
+  // can go back and see how many of them share the same UV name and
+  // texture matrix.
+  TexMats::const_iterator tmi;
+  for (tmi = tex_mats.begin(); tmi != tex_mats.end(); ++tmi) {
+    const TexCoordName *uv_name = (*tmi).first;
+    const TexMatTransforms &tmt = (*tmi).second;
+
+    if (tmt.size() == 1 && !needs_tex_mat) {
+      // Only one unique transform sharing this set of UV's.  We can
+      // bake in the transform!
+      const TexMatTextures &tmtex = (*tmt.begin()).second;
+
+      // The first EggTexture on the list is sufficient, since we know
+      // they all have the same transform.
+      nassertv(!tmtex.empty());
+      TexMatTextures::const_iterator tmtexi = tmtex.begin();
+      const EggTexture *egg_tex = (*tmtexi)->_egg_tex;
+      if (egg_tex->has_transform()) {
+        // If there's no transform, it's an identity matrix; don't
+        // bother recording it.  Of course, it would do no harm to
+        // record it if we felt like it.
+        bake_in_uvs[uv_name] = egg_tex;
+      }
+
+    } else {
+      // Multiple transforms on this UV set, or a geometry type that
+      // doesn't support baking in UV's.  We have to apply the
+      // texture matrix to each stage.
+      TexMatTransforms::const_iterator tmti;
+      for (tmti = tmt.begin(); tmti != tmt.end(); ++tmti) {
+        const TexMatTextures &tmtex = (*tmti).second;
+        TexMatTextures::const_iterator tmtexi;
+        for (tmtexi = tmtex.begin(); tmtexi != tmtex.end(); ++tmtexi) {
+          const EggTexture *egg_tex = (*tmtexi)->_egg_tex;
+          TextureStage *stage = (*tmtexi)->_stage;
+          
+          tex_mat_attrib = apply_tex_mat(tex_mat_attrib, stage, egg_tex);
         }
       }
     }
@@ -2868,7 +2925,8 @@ make_transform(const EggTransform3d *egg_transform) {
 //               and returns its corresponding TextureStage value.
 ////////////////////////////////////////////////////////////////////
 TextureStage::CombineMode EggLoader::
-get_combine_mode(const EggTexture *egg_tex, EggTexture::CombineChannel channel) {
+get_combine_mode(const EggTexture *egg_tex, 
+                 EggTexture::CombineChannel channel) {
   switch (egg_tex->get_combine_mode(channel)) {
   case EggTexture::CM_unspecified:
     // fall through
@@ -2989,3 +3047,33 @@ get_tex_gen(const EggTexture *egg_tex) {
 
   return TexGenAttrib::M_off;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggLoader::apply_tex_mat
+//       Access: Private, Static
+//  Description: Applies the texture matrix from the indicated egg
+//               texture to the given TexMatrixAttrib, and returns the
+//               new attrib.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) EggLoader::
+apply_tex_mat(CPT(RenderAttrib) tex_mat_attrib, 
+              TextureStage *stage, const EggTexture *egg_tex) {
+  if (egg_tex->has_transform()) {
+    const LMatrix3d &tex_mat = egg_tex->get_transform();
+    LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
+                   tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
+                   0.0f, 0.0f, 1.0f, 0.0f,
+                   tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
+    CPT(TransformState) transform = TransformState::make_mat(mat4);
+  
+    if (tex_mat_attrib == (const RenderAttrib *)NULL) {
+      tex_mat_attrib = TexMatrixAttrib::make();
+    }
+    tex_mat_attrib = DCAST(TexMatrixAttrib, tex_mat_attrib)->
+      add_stage(stage, transform);
+  }
+    
+  return tex_mat_attrib;
+}
+
+  
