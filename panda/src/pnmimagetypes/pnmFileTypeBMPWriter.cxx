@@ -17,7 +17,7 @@ extern "C" {
 
 // Much code in this file is borrowed from Netpbm, specifically ppmtobmp.c.
 /*\
- * $Id: pnmFileTypeBMPWriter.cxx,v 1.1 2000/10/04 01:14:42 drose Exp $
+ * $Id: pnmFileTypeBMPWriter.cxx,v 1.2 2000/11/09 21:14:02 drose Exp $
  *
  * ppmtobmp.c - Converts from a PPM file to a Microsoft Windows or OS/2
  * .BMP file.
@@ -35,8 +35,11 @@ extern "C" {
  * without express or implied warranty.
  *
  * $Log: pnmFileTypeBMPWriter.cxx,v $
- * Revision 1.1  2000/10/04 01:14:42  drose
- * Initial revision
+ * Revision 1.2  2000/11/09 21:14:02  drose
+ * *** empty log message ***
+ *
+ * Revision 1.1.1.1  2000/10/04 01:14:42  drose
+ *
  *
  * Revision 1.9  1992/11/24  19:39:33  dws
  * Added copyright.
@@ -85,10 +88,6 @@ static int BMPwriteinfoheader ARGS((FILE *fp, int classv, unsigned long bitcount
 static int BMPwritergb ARGS((FILE *fp, int classv, pixval R, pixval G, pixval B));
 static int BMPwritergbtable ARGS((FILE *fp, int classv, int bpp, int colors,
     pixval *R, pixval *G, pixval *B));
-static int BMPwriterow ARGS((FILE *fp, pixel *row, unsigned long cx,
-    unsigned short bpp, colorhash_table cht));
-static int BMPwritebits ARGS((FILE *fp, unsigned long cx, unsigned long cy,
-    unsigned short cBitCount, pixel **pixels, colorhash_table cht));
 static int colorstobpp ARGS((int colors));
 static void BMPEncode ARGS((FILE *fp, int classv, int x, int y, pixel **pixels,
     int colors, colorhash_table cht, pixval *R, pixval *G, pixval *B));
