@@ -86,7 +86,7 @@ PUBLISHED:
   bool set_knot(int n, double t);
   double get_knot(int n) const;
 
-  void Print() const;
+  void print() const;
   void print_cv(int n) const;
 
   bool recompute();

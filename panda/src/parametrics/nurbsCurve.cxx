@@ -352,12 +352,12 @@ get_knot(int n) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NurbsCurve::Print
+//     Function: NurbsCurve::print
 //       Access: Public, Scheme
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 void NurbsCurve::
-Print() const {
+print() const {
   switch (get_curve_type()) {
   case PCT_T:
     cout << "Time-warping ";
