@@ -6,7 +6,7 @@
 
 // Much code in this file is borrowed from Netpbm, specifically bmptoppm.c.
 /*\
- * $Id: pnm-image-readbmp.cxx,v 1.1 2000/10/04 01:14:42 drose Exp $
+ * $Id: pnm-image-readbmp.cxx,v 1.2 2000/10/17 21:49:09 drose Exp $
  * 
  * bmptoppm.c - Converts from a Microsoft Windows or OS/2 .BMP file to a
  * PPM file.
@@ -24,8 +24,11 @@
  * without express or implied warranty.
  * 
  * $Log: pnm-image-readbmp.cxx,v $
- * Revision 1.1  2000/10/04 01:14:42  drose
- * Initial revision
+ * Revision 1.2  2000/10/17 21:49:09  drose
+ * *** empty log message ***
+ *
+ * Revision 1.1.1.1  2000/10/04 01:14:42  drose
+ *
  *
  * Revision 1.10  1992/11/24  19:38:17  dws
  * Added code to verify that reading occurred at the correct offsets.
@@ -60,12 +63,6 @@
  * Revision 1.1  1992/10/27  05:31:41  dws
  * Initial revision
 \*/
-
-#ifndef WIN32VC
-#ifndef PENV_WIN32
-#include <alloca.h>
-#endif
-#endif
 
 #include "pnmImage.h"
 #include "pnmReader.h"

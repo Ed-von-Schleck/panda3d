@@ -6,7 +6,7 @@
 
 // Much code in this file is borrowed from Netpbm, specifically ppmtobmp.c.
 /*\
- * $Id: pnm-image-writebmp.cxx,v 1.1 2000/10/04 01:14:42 drose Exp $
+ * $Id: pnm-image-writebmp.cxx,v 1.2 2000/10/17 21:49:09 drose Exp $
  *
  * ppmtobmp.c - Converts from a PPM file to a Microsoft Windows or OS/2
  * .BMP file.
@@ -24,8 +24,11 @@
  * without express or implied warranty.
  *
  * $Log: pnm-image-writebmp.cxx,v $
- * Revision 1.1  2000/10/04 01:14:42  drose
- * Initial revision
+ * Revision 1.2  2000/10/17 21:49:09  drose
+ * *** empty log message ***
+ *
+ * Revision 1.1.1.1  2000/10/04 01:14:42  drose
+ *
  *
  * Revision 1.9  1992/11/24  19:39:33  dws
  * Added copyright.
@@ -54,12 +57,6 @@
  * Revision 1.1  1992/11/08  00:46:07  dws
  * Initial revision
 \*/
-
-#ifndef WIN32VC
-#ifndef PENV_WIN32
-#include <alloca.h>
-#endif
-#endif
 
 #include "pnmImage.h"
 #include "pnmWriter.h"
