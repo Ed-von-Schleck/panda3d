@@ -17,8 +17,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "curve.h"
-////#include "StdAfx.h"
-////#include "pandabase.h"
 #include "parametrics.h"
 #include "typedWriteableReferenceCount.h"
 #include "namable.h"
@@ -26,25 +24,19 @@
 #include "nurbsCurve.h"
 #include "curveDrawer.h"
 
-////#include <initReg.h>
-////#include <linMathOutput.h>
 #include <DConfig.h>
-////#include <perfalloc.h>
-////#include <pfb_util.h>
-////#include <set.h>
-////#include <multimap.h>
 
 #include <math.h>
 #include <fstream>
-////#include <alloca.h>
 
 
 ////////////////////////////////////////////////////////////////////
 // Statics
 ////////////////////////////////////////////////////////////////////
 
-
-
+TypeHandle ParametricCurve::_type_handle;
+TypeHandle PiecewiseCurve::_type_handle;
+TypeHandle CubicCurveseg::_type_handle;
 
 
 ////////////////////////////////////////////////////////////////////
