@@ -80,12 +80,35 @@ issue_normal_gl(const Geom *geom, Geom::NormalIterator &niterator,
   GLP(Normal3fv)(normal.get_data());
 }
 
+/*
 static void
 issue_texcoord_gl(const Geom *geom, Geom::TexCoordIterator &tciterator, 
                 GraphicsStateGuardianBase *) {
   const TexCoordf &texcoord = geom->get_next_texcoord(tciterator);
   //  GLCAT.spam() << "Issuing texcoord " << texcoord << "\n";
   GLP(TexCoord2fv)(texcoord.get_data());
+}
+*/
+
+static void
+issue_texcoord_single_gl(const Geom *geom, 
+                         Geom::MultiTexCoordIterator &tciterator, 
+                         GraphicsStateGuardianBase *) {
+  const TexCoordf &texcoord = geom->get_next_multitexcoord(tciterator, 0);
+  GLP(TexCoord2fv)(texcoord.get_data());
+}
+
+static void
+issue_texcoord_multi_gl(const Geom *geom, 
+                        Geom::MultiTexCoordIterator &tciterator, 
+                        GraphicsStateGuardianBase *gsgbase) {
+  CLP(GraphicsStateGuardian) *gsg;
+  DCAST_INTO_V(gsg, gsgbase);
+  for (int i = 0; i < tciterator._num_stages; i++) {
+    const TexCoordf &texcoord = geom->get_next_multitexcoord(tciterator, i);
+    int stage_index = tciterator._stage_index[i];
+    gsg->_glMultiTexCoord2fv(GL_TEXTURE0 + stage_index, texcoord.get_data());
+  }
 }
 
 static void
@@ -270,12 +293,35 @@ reset() {
   get_gl_version();
 
   // Save the extensions tokens.
-  save_extensions((const char *)glGetString(GL_EXTENSIONS));
+  save_extensions((const char *)GLP(GetString)(GL_EXTENSIONS));
   get_extra_extensions();
   report_extensions();
 
   _supports_bgr = has_extension("GL_EXT_bgra");
   _supports_multisample = has_extension("GL_ARB_multisample");
+
+  _supports_multitexture = false;
+    
+  if (is_at_least_version(1, 3)) {
+    _supports_multitexture = true;
+
+    _glActiveTexture = (PFNGLACTIVETEXTUREPROC)get_extension_func("glActiveTexture");
+    _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)get_extension_func("glMultiTexCoord2fv");
+
+  } else if (has_extension("GL_ARB_multitexture")) {
+    _supports_multitexture = true;
+
+    _glActiveTexture = (PFNGLACTIVETEXTUREPROC)get_extension_func("glActiveTextureARB");
+    _glMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FVPROC)get_extension_func("glMultiTexCoord2fvARB");
+  }
+
+  if (_supports_multitexture) {
+    if (_glActiveTexture == NULL || _glMultiTexCoord2fv == NULL) {
+      GLCAT.warning()
+        << "Multitexture advertised as supported by OpenGL runtime, but could not get pointers to extension functions.\n";
+      _supports_multitexture = false;
+    }
+  }
 
   _edge_clamp = GL_CLAMP;
   if (has_extension("GL_SGIS_texture_edge_clamp") ||
@@ -365,7 +411,6 @@ reset() {
   _line_smooth_enabled = false;
   _point_smooth_enabled = false;
   _scissor_enabled = false;
-  _texturing_enabled = false;
   _stencil_test_enabled = false;
   _multisample_alpha_one_enabled = false;
   _multisample_alpha_mask_enabled = false;
@@ -401,6 +446,15 @@ reset() {
 
   _current_projection_mat = LMatrix4f::ident_mat();
   _projection_mat_stack_count = 0;
+
+  if (_supports_multitexture) {
+    GLint max_texture_stages;
+    GLP(GetIntegerv)(GL_MAX_TEXTURE_UNITS, &max_texture_stages);
+    _max_texture_stages = max_texture_stages;
+  } else {
+    _max_texture_stages = 1;
+  }
+  _current_texture = DCAST(TextureAttrib, TextureAttrib::make_all_off());
 
   report_my_gl_errors();
 
@@ -673,7 +727,8 @@ draw_point(GeomPoint *geom, GeomContext *gc) {
   int nprims = geom->get_num_prims();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -687,8 +742,10 @@ draw_point(GeomPoint *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // Draw overall
   issuer.issue_color(G_OVERALL, ci);
@@ -738,7 +795,8 @@ draw_line(GeomLine *geom, GeomContext *gc) {
   int nprims = geom->get_num_prims();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -752,8 +810,10 @@ draw_line(GeomLine *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -817,7 +877,8 @@ draw_linestrip(GeomLinestrip *geom, GeomContext *gc) {
   const int *plen = geom->get_lengths();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -831,8 +892,10 @@ draw_linestrip(GeomLinestrip *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -1191,7 +1254,8 @@ draw_polygon(GeomPolygon *geom, GeomContext *gc) {
   const int *plen = geom->get_lengths();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1205,8 +1269,10 @@ draw_polygon(GeomPolygon *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -1273,7 +1339,8 @@ draw_tri(GeomTri *geom, GeomContext *gc) {
   int nprims = geom->get_num_prims();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1287,8 +1354,10 @@ draw_tri(GeomTri *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -1353,7 +1422,8 @@ draw_quad(GeomQuad *geom, GeomContext *gc) {
   int nprims = geom->get_num_prims();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1367,8 +1437,10 @@ draw_quad(GeomQuad *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -1432,7 +1504,8 @@ draw_tristrip(GeomTristrip *geom, GeomContext *gc) {
   const int *plen = geom->get_lengths();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1446,8 +1519,10 @@ draw_tristrip(GeomTristrip *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -1533,7 +1608,8 @@ draw_trifan(GeomTrifan *geom, GeomContext *gc) {
   const int *plen = geom->get_lengths();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
   Geom::NormalIterator ni = geom->make_normal_iterator();
-  Geom::TexCoordIterator ti = geom->make_texcoord_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1547,8 +1623,10 @@ draw_trifan(GeomTrifan *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   // If we have per-vertex colors or normals, we need smooth shading.
   // Otherwise we want flat shading for performance reasons.
@@ -1632,6 +1710,8 @@ draw_sphere(GeomSphere *geom, GeomContext *gc) {
 
   int nprims = geom->get_num_prims();
   Geom::VertexIterator vi = geom->make_vertex_iterator();
+  Geom::MultiTexCoordIterator ti;
+  geom->setup_multitexcoord_iterator(ti, _current_texture->get_on_stages(), _max_texture_stages);
   Geom::ColorIterator ci = geom->make_color_iterator();
 
   GeomIssuer::IssueColor *issue_color;
@@ -1645,8 +1725,10 @@ draw_sphere(GeomSphere *geom, GeomContext *gc) {
   GeomIssuer issuer(geom, this,
                     issue_vertex_gl,
                     issue_normal_gl,
-                    issue_texcoord_gl,
-                    issue_color);
+                    issue_color,
+                    issue_texcoord_single_gl,
+                    issue_texcoord_multi_gl,
+                    ti);
 
   if (wants_normals()) {
     call_glShadeModel(GL_SMOOTH);
@@ -1812,9 +1894,8 @@ prepare_geom(Geom *geom) {
 
   // We need to temporarily force normals and UV's on, so the display
   // list will have them built in.
-  bool old_texturing_enabled = _texturing_enabled;
+  //force_texcoords(); 
   force_normals();
-  _texturing_enabled = true;
 
 #ifdef DO_PSTATS
   // Count up the number of vertices we're about to render, by
@@ -1843,7 +1924,7 @@ prepare_geom(Geom *geom) {
 #endif
 
   undo_force_normals();
-  _texturing_enabled = old_texturing_enabled;
+  //undo_force_texcoords();
 
   report_my_gl_errors();
   return ggc;
@@ -2242,16 +2323,53 @@ issue_tex_gen(const TexGenAttrib *attrib) {
 void CLP(GraphicsStateGuardian)::
 issue_texture(const TextureAttrib *attrib) {
   DO_PSTATS_STUFF(_texture_state_pcollector.add_level(1));
-  if (attrib->is_off()) {
-    enable_texturing(false);
-  } else {
-    enable_texturing(true);
-    Texture *tex = attrib->get_texture();
-    nassertv(tex != (Texture *)NULL);
 
-    TextureContext *tc = tex->prepare_now(_prepared_objects, this);
-    apply_texture(tc);
+  int num_stages = min(attrib->get_num_on_stages(), _max_texture_stages);
+  int num_old_stages = min(_current_texture->get_num_on_stages(), _max_texture_stages);
+
+  int i;
+  for (i = 0; i < num_stages; i++) {
+    TextureStage *stage = attrib->get_on_stage(i);
+    Texture *texture = attrib->get_on_texture(stage);
+    nassertv(texture != (Texture *)NULL);
+    
+    if (i >= num_old_stages ||
+        stage != _current_texture->get_on_stage(i) ||
+        texture != _current_texture->get_on_texture(stage)) {
+      // Stage i has changed.  Issue the texture on this stage.
+      if (_supports_multitexture) {
+        _glActiveTexture(GL_TEXTURE0 + i);
+      } else {
+        // If we don't support multitexture, i had better not move
+        // beyond the first texture stage.
+        nassertv(i == 0);
+      }
+
+      GLP(Enable)(GL_TEXTURE_2D);
+      
+      TextureContext *tc = texture->prepare_now(_prepared_objects, this);
+      apply_texture(tc);
+      
+      GLint glmode = get_texture_apply_mode_type(stage->get_mode());
+      GLP(TexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, glmode);
+    }
   }
+    
+  // Disable the texture stages that are no longer used.
+  for (i = num_stages; i < num_old_stages; i++) {
+    if (_supports_multitexture) {
+      _glActiveTexture(GL_TEXTURE0 + i);
+    } else {
+      // If we don't support multitexture, i had better not move
+      // beyond the first texture stage.
+      nassertv(i == 0);
+    }
+
+    GLP(Disable)(GL_TEXTURE_2D);
+  }
+
+  _current_texture = attrib;
+
   report_my_gl_errors();
 }
 
@@ -2306,6 +2424,9 @@ issue_render_mode(const RenderModeAttrib *attrib) {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 issue_texture_apply(const TextureApplyAttrib *attrib) {
+  // This attrib is no longer used.
+  return;
+
   GLint glmode = get_texture_apply_mode_type(attrib->get_mode());
   GLP(TexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, glmode);
   report_my_gl_errors();
@@ -2592,7 +2713,7 @@ bind_light(Spotlight *light, int light_id) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 wants_texcoords() const {
-  return _texturing_enabled;
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2820,6 +2941,21 @@ is_at_least_version(int major_version, int minor_version,
     return false;
   }
   return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CLP(GraphicsStateGuardian)::get_extension_func
+//       Access: Public, Virtual
+//  Description: Returns the pointer to the GL extension function with
+//               the indicated name.  It is the responsibility of the
+//               caller to ensure that the required extension is
+//               defined in the OpenGL runtime prior to calling this;
+//               it is an error to call this for a function that is
+//               not defined.
+////////////////////////////////////////////////////////////////////
+void *CLP(GraphicsStateGuardian)::
+get_extension_func(const char *name) {
+  return NULL;
 }
 
 
@@ -3562,6 +3698,30 @@ get_texture_apply_mode_type(TextureApplyAttrib::Mode am) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: CLP(GraphicsStateGuardian)::get_texture_apply_mode_type
+//       Access: Protected
+//  Description: Maps from the texture stage's mode types
+//               to the corresponding OpenGL ids
+////////////////////////////////////////////////////////////////////
+GLint CLP(GraphicsStateGuardian)::
+get_texture_apply_mode_type(TextureStage::Mode am) const {
+  if (CLP(always_decal_textures)) {
+    return GL_DECAL;
+  }
+  switch (am) {
+  case TextureStage::M_modulate: return GL_MODULATE;
+  case TextureStage::M_decal: return GL_DECAL;
+  case TextureStage::M_blend: return GL_BLEND;
+  case TextureStage::M_replace: return GL_REPLACE;
+  case TextureStage::M_add: return GL_ADD;
+  case TextureStage::M_combine: return GL_COMBINE;
+  }
+  GLCAT.error()
+    << "Invalid TextureStage::Mode value" << endl;
+  return GL_MODULATE;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: CLP(GraphicsStateGuardian)::get_fog_mode_type
 //       Access: Protected
 //  Description: Maps from the fog types to gl version
@@ -4231,7 +4391,6 @@ dump_state(void)
       dump << "\t\t" << "GL_POINT_SMOOTH " << _point_smooth_enabled << " " << (bool)GLP(IsEnabled)(GL_POINT_SMOOTH) << "\n";
       dump << "\t\t" << "GL_LIGHTING " << _lighting_enabled << " " << (bool)GLP(IsEnabled)(GL_LIGHTING) << "\n";
       dump << "\t\t" << "GL_SCISSOR_TEST " << _scissor_enabled << " " << (bool)GLP(IsEnabled)(GL_SCISSOR_TEST) << "\n";
-      dump << "\t\t" << "GL_TEXTURE_2D " << _texturing_enabled << " " << (bool)GLP(IsEnabled)(GL_TEXTURE_2D) << "\n";
       dump << "\t\t" << "GL_STENCIL_TEST " << " " << (bool)GLP(IsEnabled)(GL_STENCIL_TEST) << "\n";
       dump << "\t\t" << "GL_BLEND " << _blend_enabled << " " << (bool)GLP(IsEnabled)(GL_BLEND) << "\n";
       dump << "\t\t" << "GL_DEPTH_TEST " << _depth_test_enabled << " " << (bool)GLP(IsEnabled)(GL_DEPTH_TEST) << "\n";

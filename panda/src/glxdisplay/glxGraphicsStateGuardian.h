@@ -45,6 +45,9 @@ public:
 
 protected:
   virtual void get_extra_extensions();
+  virtual void *get_extension_func(const char *name);
+
+  void *_libgl_handle;
 
 public:
   static TypeHandle get_class_type() {

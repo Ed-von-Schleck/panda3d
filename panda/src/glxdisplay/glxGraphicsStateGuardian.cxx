@@ -18,6 +18,8 @@
 
 #include "glxGraphicsStateGuardian.h"
 
+#include <dlfcn.h>
+
 
 TypeHandle glxGraphicsStateGuardian::_type_handle;
 
@@ -41,6 +43,7 @@ glxGraphicsStateGuardian(const FrameBufferProperties &properties,
   if (share_with != (glxGraphicsStateGuardian *)NULL) {
     _prepared_objects = share_with->get_prepared_objects();
   }
+  _libgl_handle = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -57,6 +60,9 @@ glxGraphicsStateGuardian::
     glXDestroyContext(_display, _context);
     _context = (GLXContext)NULL;
   }
+  if (_libgl_handle != (void *)NULL) {
+    dlclose(_libgl_handle);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -70,4 +76,24 @@ glxGraphicsStateGuardian::
 void glxGraphicsStateGuardian::
 get_extra_extensions() {
   save_extensions(glXQueryExtensionsString(_display, _screen));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: glxGraphicsStateGuardian::get_extension_func
+//       Access: Public, Virtual
+//  Description: Returns the pointer to the GL extension function with
+//               the indicated name.  It is the responsibility of the
+//               caller to ensure that the required extension is
+//               defined in the OpenGL runtime prior to calling this;
+//               it is an error to call this for a function that is
+//               not defined.
+////////////////////////////////////////////////////////////////////
+void *glxGraphicsStateGuardian::
+get_extension_func(const char *name) {
+  if (_libgl_handle == (void *)NULL) {
+    _libgl_handle = dlopen("libGL.so", RTLD_LAZY);
+    nassertr(_libgl_handle != (void *)NULL, NULL);
+  }
+  
+  return dlsym(_libgl_handle, name);
 }

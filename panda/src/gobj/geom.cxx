@@ -755,11 +755,13 @@ write_verbose(ostream &out, int indent_level) const {
 ////////////////////////////////////////////////////////////////////
 void Geom::
 setup_multitexcoord_iterator(MultiTexCoordIterator &iterator,
-                             const ActiveTextureStages &active_stages) const {
+                             const ActiveTextureStages &active_stages,
+                             int max_stages) const {
   check_config();
   iterator._num_stages = 0;
+  int max_stage_index = min(max_stages, (int)active_stages.size());
   int i = 0;
-  for (int stage_index = 0; stage_index < (int)active_stages.size(); stage_index++) {
+  for (int stage_index = 0; stage_index < max_stage_index; stage_index++) {
     TextureStage *stage = active_stages[stage_index];
     const TexCoordName *name = stage->get_texcoord_name();
     TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
