@@ -884,7 +884,7 @@ vertex_body:
   if (vertex->has_uv($3)) {
     eggyywarning("Ignoring repeated UV name " + $3);
   } else {
-    vertex->set_uv(uv);
+    vertex->set_uv_obj(uv);
   }
 }
 	 vertex_uv_body '}'

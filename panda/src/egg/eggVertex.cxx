@@ -62,7 +62,8 @@ EggVertex(const EggVertex &copy)
     _dxyzs(copy._dxyzs),
     _external_index(copy._external_index),
     _pos(copy._pos),
-    _num_dimensions(copy._num_dimensions)
+    _num_dimensions(copy._num_dimensions),
+    _uv_map(copy._uv_map)
 {
   _pool = NULL;
   _forward_reference = false;
@@ -82,10 +83,11 @@ EggVertex &EggVertex::
 operator = (const EggVertex &copy) {
   EggObject::operator = (copy);
   EggAttributes::operator = (copy);
+  _dxyzs = copy._dxyzs;
   _external_index = copy._external_index;
   _pos = copy._pos;
   _num_dimensions = copy._num_dimensions;
-  _dxyzs = copy._dxyzs;
+  _uv_map = copy._uv_map;
 
   test_pref_integrity();
   test_gref_integrity();
@@ -126,12 +128,46 @@ has_uv(const string &name) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: EggVertex::get_uv
 //       Access: Published
-//  Description: Returns the named UV coordinate pair on the vertex,
-//               or NULL if the coordinate pair does not exist on the
-//               vertex.
+//  Description: Returns the named UV coordinate pair on the vertex.
+//               vertex.  It is an error to call this if has_uv(name)
+//               returned false.
+////////////////////////////////////////////////////////////////////
+const TexCoordd &EggVertex::
+get_uv(const string &name) const {
+  UVMap::const_iterator ui = _uv_map.find(name);
+  nassertr(ui != _uv_map.end(), TexCoordd::zero());
+  return (*ui).second->get_uv();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::set_uv
+//       Access: Published
+//  Description: Sets the indicated UV coordinate pair on the vertex.
+//               This replaces any UV coordinate pair with the same
+//               name already on the vertex, but preserves UV morphs.
+////////////////////////////////////////////////////////////////////
+void EggVertex::
+set_uv(const string &name, const TexCoordd &uv) {
+  PT(EggVertexUV) &uv_obj = _uv_map[name];
+
+  if (uv_obj.is_null()) {
+    uv_obj = new EggVertexUV(name, uv);
+
+  } else {
+    uv_obj = new EggVertexUV(*uv_obj);
+    uv_obj->set_uv(uv);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::get_uv_obj
+//       Access: Published
+//  Description: Returns the named EggVertexUV object, which defines
+//               both the UV coordinate pair for this name and the UV
+//               morphs.
 ////////////////////////////////////////////////////////////////////
 EggVertexUV *EggVertex::
-get_uv(const string &name) const {
+get_uv_obj(const string &name) const {
   UVMap::const_iterator ui = _uv_map.find(name);
   if (ui != _uv_map.end()) {
     return (*ui).second;
@@ -140,21 +176,22 @@ get_uv(const string &name) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: EggVertex::set_uv
+//     Function: EggVertex::set_uv_obj
 //       Access: Published
-//  Description: Sets the indicated UV coordinate pair on the vertex.
+//  Description: Sets the indicated EggVertexUV on the vertex.
 //               This replaces any UV coordinate pair with the same
-//               name already on the vertex.
+//               name already on the vertex, including UV morphs.
 ////////////////////////////////////////////////////////////////////
 void EggVertex::
-set_uv(EggVertexUV *uv) {
+set_uv_obj(EggVertexUV *uv) {
   _uv_map[uv->get_name()] = uv;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggVertex::clear_uv
 //       Access: Published
-//  Description: Removes the named UV coordinate pair from the vertex.
+//  Description: Removes the named UV coordinate pair from the vertex,
+//               along with any UV morphs.
 ///////////////////////////////////////////////////////////////////
 void EggVertex::
 clear_uv(const string &name) {

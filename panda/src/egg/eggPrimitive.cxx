@@ -768,20 +768,18 @@ r_apply_texmats(EggTextureCollection &textures) {
       for (size_t i = 0; i < num_vertices; i++) {
         EggVertex *vertex = get_vertex(i);
 
-        if (vertex->has_uv()) {
-          EggVertexUV *uv_obj = vertex->get_uv(uv_name);
-          if (uv_obj != (EggVertexUV *)NULL) {
-            EggVertex new_vertex(*vertex);
-            PT(EggVertexUV) new_uv_obj = new EggVertexUV(*uv_obj);
-            new_uv_obj->set_uv(uv_obj->get_uv() * mat);
-            new_vertex.set_uv(new_uv_obj);
-
-            EggVertexPool *pool = vertex->get_pool();
-            EggVertex *unique = pool->create_unique_vertex(new_vertex);
-            unique->copy_grefs_from(*vertex);
-
-            set_vertex(i, unique);
-          }
+        EggVertexUV *uv_obj = vertex->get_uv_obj(uv_name);
+        if (uv_obj != (EggVertexUV *)NULL) {
+          EggVertex new_vertex(*vertex);
+          PT(EggVertexUV) new_uv_obj = new EggVertexUV(*uv_obj);
+          new_uv_obj->set_uv(uv_obj->get_uv() * mat);
+          new_vertex.set_uv_obj(new_uv_obj);
+          
+          EggVertexPool *pool = vertex->get_pool();
+          EggVertex *unique = pool->create_unique_vertex(new_vertex);
+          unique->copy_grefs_from(*vertex);
+          
+          set_vertex(i, unique);
         }
       }
     }

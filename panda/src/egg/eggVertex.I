@@ -214,26 +214,23 @@ has_uv() const {
 INLINE const TexCoordd &EggVertex::
 get_uv() const {
   nassertr(has_uv(), TexCoordd::zero());
-  EggVertexUV *uv_obj = get_uv("");
-  return uv_obj->get_uv();
+  return get_uv("");
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggVertex::set_uv
 //       Access: Published
-//  Description: Removes all UV coordinate pairs from the
-//               vertex and sets the indicated unnamed coordinate pair.
+//  Description: Replaces the unnamed UV coordinate pair on the vertex
+//               with the indicated value.
 //
 //               This is the more restrictive interface, and is
 //               generally useful only in the absence of
-//               multitexturing; see set_uv(EggVertexUV *) for the
+//               multitexturing; see set_uv(name, uv) for the
 //               interface that supports multitexturing.
 ////////////////////////////////////////////////////////////////////
 INLINE void EggVertex::
 set_uv(const TexCoordd &uv) {
-  clear_uv();
-  PT(EggVertexUV) uv_obj = new EggVertexUV("", uv);
-  set_uv(uv_obj);
+  set_uv("", uv);
 }
 
 ////////////////////////////////////////////////////////////////////

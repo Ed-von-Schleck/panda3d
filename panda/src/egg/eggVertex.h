@@ -85,6 +85,12 @@ PUBLISHED:
   INLINE const TexCoordd &get_uv() const;
   INLINE void set_uv(const TexCoordd &texCoord);
   INLINE void clear_uv();
+  bool has_uv(const string &name) const;
+  const TexCoordd &get_uv(const string &name) const;
+  void set_uv(const string &name, const TexCoordd &texCoord);
+  EggVertexUV *get_uv_obj(const string &name) const;
+  void set_uv_obj(EggVertexUV *vertex_uv);
+  void clear_uv(const string &name);
 
 public:
   INLINE const_uv_iterator uv_begin() const;
@@ -92,11 +98,6 @@ public:
   INLINE uv_size_type uv_size() const;
 
 PUBLISHED:
-  bool has_uv(const string &name) const;
-  EggVertexUV *get_uv(const string &name) const;
-  void set_uv(EggVertexUV *vertex_uv);
-  void clear_uv(const string &name);
-
   INLINE int get_index() const;
 
   INLINE void set_external_index(int external_index);
