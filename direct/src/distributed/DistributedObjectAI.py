@@ -229,9 +229,9 @@ class DistributedObjectAI(DirectObject.DirectObject):
         assert(self.notify.debug('generate(): %s' % (self.doId)))
         pass
 
-    def sendGenerateWithRequired(self, repository, zoneId, optionalFields=[]):
+    def sendGenerateWithRequired(self, repository, parentId, zoneId, optionalFields=[]):
         # Make the dclass do the hard work
-        dg = self.dclass.aiFormatGenerate(self, self.doId, zoneId,
+        dg = self.dclass.aiFormatGenerate(self, self.doId, parentId, zoneId,
                                           repository.districtId,
                                           repository.ourChannel,
                                           optionalFields)

@@ -353,7 +353,7 @@ receive_update_broadcast_required(PyObject *distobj, DatagramIterator &di) const
   packer.set_unpack_data(di.get_remaining_bytes());
 
   int num_fields = get_num_inherited_fields();
-  for (int i = 0; i < num_fields && !PyErr_Occurred(); i++) {
+  for (int i = 0; i < num_fields && !PyErr_Occurred(); ++i) {
     DCField *field = get_inherited_field(i);
     DCAtomicField *atom = field->as_atomic_field();
     if (atom != (DCAtomicField *)NULL &&
@@ -388,7 +388,7 @@ receive_update_all_required(PyObject *distobj, DatagramIterator &di) const {
   packer.set_unpack_data(di.get_remaining_bytes());
 
   int num_fields = get_num_inherited_fields();
-  for (int i = 0; i < num_fields && !PyErr_Occurred(); i++) {
+  for (int i = 0; i < num_fields && !PyErr_Occurred(); ++i) {
     DCField *field = get_inherited_field(i);
     DCAtomicField *atom = field->as_atomic_field();
     if (atom != (DCAtomicField *)NULL && atom->is_required()) {
@@ -417,7 +417,7 @@ receive_update_other(PyObject *distobj, DatagramIterator &di) const {
   PStatTimer timer(((DCClass *)this)->_class_update_pcollector);
 #endif
   int num_fields = di.get_uint16();
-  for (int i = 0; i < num_fields && !PyErr_Occurred(); i++) {
+  for (int i = 0; i < num_fields && !PyErr_Occurred(); ++i) {
     receive_update(distobj, di);
   }
 }
@@ -692,7 +692,7 @@ ai_format_update(const string &field_name, int do_id,
 ////////////////////////////////////////////////////////////////////
 Datagram DCClass::
 ai_format_generate(PyObject *distobj, int do_id, 
-                   int zone_id, CHANNEL_TYPE district_channel_id, CHANNEL_TYPE from_channel_id,
+                   int parent_id, int zone_id, CHANNEL_TYPE district_channel_id, CHANNEL_TYPE from_channel_id,
                    PyObject *optional_fields) const {
 
   DCPacker packer;
@@ -710,13 +710,17 @@ ai_format_generate(PyObject *distobj, int do_id,
     packer.raw_pack_uint16(STATESERVER_OBJECT_GENERATE_WITH_REQUIRED);
   }
   
+  // Parent is a bit overloaded; this parent is not about inheritance,
+  // this one is about the visibility container parent, i.e. the zone
+  // parent:
+  packer.raw_pack_uint32(parent_id);
   packer.raw_pack_uint32(zone_id);
   packer.raw_pack_uint16(_number);
   packer.raw_pack_uint32(do_id);
 
   // Specify all of the required fields.
   int num_fields = get_num_inherited_fields();
-  for (int i = 0; i < num_fields; i++) {
+  for (int i = 0; i < num_fields; ++i) {
     DCField *field = get_inherited_field(i);
     if (field->is_required() && field->as_molecular_field() == NULL) {
       packer.begin_pack(field);
@@ -732,7 +736,7 @@ ai_format_generate(PyObject *distobj, int do_id,
     int num_optional_fields = PySequence_Size(optional_fields);
     packer.raw_pack_uint16(num_optional_fields);
 
-    for (int i = 0; i < num_optional_fields; i++) {
+    for (int i = 0; i < num_optional_fields; ++i) {
       PyObject *py_field_name = PySequence_GetItem(optional_fields, i);
       string field_name = PyString_AsString(py_field_name);
       Py_XDECREF(py_field_name);
