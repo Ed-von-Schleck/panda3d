@@ -10,6 +10,9 @@
 #include "config_downloader.h"
 
 #include <filename.h>
+#include <error_utils.h>
+
+#include <errno.h>
 
 ////////////////////////////////////////////////////////////////////
 // Defines
@@ -72,7 +75,7 @@ initiate(Filename &source_file, const Filename &rel_path) {
     downloader_cat.error()
       << "Extractor::initiate() - Extraction has already been initiated" 
       << endl;
-    return ES_error;
+    return EU_error_abort;
   }
 
   // Open source file
@@ -81,8 +84,8 @@ initiate(Filename &source_file, const Filename &rel_path) {
   if (!_source_file.open_read(_read_stream)) {
     downloader_cat.error()
       << "Extractor::extract() - Error opening source file: " 
-      << _source_file << endl;
-    return ES_error_write;
+      << _source_file << " : " << strerror(errno) << endl;
+    return get_write_error();
   } 
 
   _rel_path = rel_path;
@@ -97,7 +100,7 @@ initiate(Filename &source_file, const Filename &rel_path) {
   _handled_all_input = false;
   _mfile = new Multifile();
   _initiated = true;
-  return ES_success;
+  return EU_success;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -132,7 +135,7 @@ run(void) {
     downloader_cat.error()
       << "Extractor::run() - Extraction has not been initiated" 
       << endl;
-    return ES_error;
+    return EU_error_abort;
   }
 
   // See if there is anything left in the source file
@@ -150,11 +153,17 @@ run(void) {
   int buffer_size = _source_buffer_length;
 
   // Write to the out file
-  if (_mfile->write(buffer_start, buffer_size, _rel_path) == true) {
+  int write_ret = _mfile->write(buffer_start, buffer_size, _rel_path);
+  if (write_ret == EU_success) {
     cleanup();
-    return ES_success;
+    return EU_success;
+  } else if (write_ret < 0) {
+    downloader_cat.error()
+      << "Extractor::run() - got error from Multifile: " << write_ret
+      << endl;
+    return write_ret;
   }
-  return ES_ok;
+  return EU_ok;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -169,7 +178,7 @@ extract(Filename &source_file, const Filename &rel_path) {
     return false;
   for (;;) {
     ret = run();
-    if (ret == ES_success)
+    if (ret == EU_success)
       return true;
     if (ret < 0)
       return false;

@@ -1,10 +1,12 @@
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolutil:c dtoolbase:c dtool:m pystub
+#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
+                   dtoolutil:c dtoolbase:c dtool:m pystub
 #define LOCAL_LIBS downloader express event ipc
 #define USE_IPC yes
 #define DIRECTORY_IF_IPC yes
 
 #begin bin_target
   #define TARGET apply_patch
+  #define TARGET_IF_CRYPTO yes
 
   #define SOURCES \
     apply_patch.cxx
@@ -15,6 +17,7 @@
 
 #begin bin_target
   #define TARGET build_patch
+  #define TARGET_IF_CRYPTO yes
 
   #define SOURCES \
     build_patch.cxx
@@ -81,6 +84,8 @@
 
 #begin bin_target
   #define TARGET test_downloader
+  #define TARGET_IF_ZLIB yes
+  #define USE_ZLIB yes
 
   #define SOURCES \
     test_downloader.cxx

@@ -102,11 +102,14 @@ PUBLISHED:
 
   INLINE int compare_transitions_to(const NodeRelation *arc) const;
 
+  INLINE UpdateSeq get_last_update() const;
+
 public:
   bool sub_render_trans(const AllAttributesWrapper &attrib,
 			AllTransitionsWrapper &trans,
-			GraphicsStateGuardianBase *gsgbase);
+			RenderTraverser *trav);
   bool has_sub_render_trans() const;
+  int get_num_sub_render_trans() const;
 
 public:
   // Factory stuff: to create a new NodeRelation based on its
@@ -153,6 +156,17 @@ private:
   // to support caching in wrt().
   PT(NodeTransitionCache) _net_transitions;
   Node *_top_subtree;
+
+  // This is updated with the current update sequence whenever we
+  // verify that *all* the transitions to this arc are accurately
+  // reflected in the above set.
+  UpdateSeq _all_verified;
+
+  // This is updated with the current update sequence each time the
+  // arc is changed (for instance, to change its state or to reparent
+  // it or something).  It exists to support caching in the cull
+  // traversal.
+  UpdateSeq _last_update;
 
 public:
   static void register_with_read_factory(void);

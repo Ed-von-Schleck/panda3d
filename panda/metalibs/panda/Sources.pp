@@ -12,13 +12,14 @@
     pstatclient grutil chan chancfg \
     char chat collide cull device \
     dgraph display gobj graph gsgbase \
-    gsgmisc light linmath mathutil net pnm \
+    gsgmisc light linmath mathutil net \
+    parametrics pnm \
     pnmimagetypes pnmimage sgattrib sgmanip sgraph sgraphutil \
     switchnode text tform tiff lerp loader putil effects \
     audio gui pandabase 
 
 #define LOCAL_LIBS downloader event ipc express pandabase
-#define OTHER_LIBS dtool
+#define OTHER_LIBS dtoolconfig dtool
 
 #begin metalib_target
   #define TARGET panda

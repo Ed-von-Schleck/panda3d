@@ -41,10 +41,9 @@ class EXPCL_PANDA GraphicsStateGuardian : public GraphicsStateGuardianBase {
 public:
   GraphicsStateGuardian(GraphicsWindow *win);
 
+PUBLISHED:
   INLINE void set_render_traverser(RenderTraverser *rt);
   INLINE RenderTraverser *get_render_traverser() const;
-
-  void release_all_textures();
 
   virtual void set_color_clear_value(const Colorf& value);
   virtual void set_depth_clear_value(const float value);
@@ -62,16 +61,20 @@ public:
   INLINE Colorf get_accum_clear_value(void) const {
     return _accum_clear_value;
   }
+
+public:
+  void release_all_textures();
+
   virtual void clear(const RenderBuffer &buffer)=0;
   virtual void clear(const RenderBuffer &buffer, const DisplayRegion* region)=0;
 
   virtual void prepare_display_region()=0;
 
   virtual void render_frame(const AllAttributesWrapper &initial_state)=0;
-  virtual void render_scene(Node *root, const ProjectionNode *projnode,
+  virtual void render_scene(Node *root, ProjectionNode *projnode,
 			    const AllAttributesWrapper &initial_state)=0;
   virtual void render_subgraph(RenderTraverser *traverser, 
-			       Node *subgraph, const ProjectionNode *projnode,
+			       Node *subgraph, ProjectionNode *projnode,
 			       const AllAttributesWrapper &initial_state,
 			       const AllTransitionsWrapper &net_trans)=0;
   virtual void render_subgraph(RenderTraverser *traverser,
@@ -99,7 +102,7 @@ public:
 
   RenderBuffer get_render_buffer(int buffer_type);
 
-  INLINE const ProjectionNode* get_current_projection_node(void) const ;
+  INLINE ProjectionNode *get_current_projection_node(void) const ;
   INLINE const Node* get_current_root_node(void) const;
 
   INLINE CPT(DisplayRegion) get_current_display_region(void) const;
@@ -144,7 +147,7 @@ protected:
 
   // These must be set by render_scene().
   Node *_current_root_node;
-  const ProjectionNode *_current_projection_node;
+  ProjectionNode *_current_projection_node;
   CPT(DisplayRegion) _current_display_region;
 
   // This is used by wants_normals()
@@ -187,8 +190,7 @@ private:
 public:
   INLINE GraphicsWindow* get_window(void) const { return _win; }
 
-
-PUBLISHED:
+public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }

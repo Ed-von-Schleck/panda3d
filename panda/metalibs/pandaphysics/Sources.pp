@@ -10,7 +10,7 @@
 #define COMPONENT_LIBS \
     physics particlesystem
 #define LOCAL_LIBS linmath putil express
-#define OTHER_LIBS dtool
+#define OTHER_LIBS dtoolconfig dtool
 
 #begin metalib_target
   #define TARGET pandaphysics

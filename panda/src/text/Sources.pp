@@ -1,4 +1,5 @@
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolutil:c dtoolbase:c dtool:m
+#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
+                   dtoolutil:c dtoolbase:c dtool:m
 
 #begin lib_target
   #define TARGET text
@@ -10,7 +11,7 @@
     config_text.cxx config_text.h textNode.I textNode.cxx textNode.h
 
   #define INSTALL_HEADERS \
-    textNode.I textNode.h
+    config_text.h textNode.I textNode.h
 
   #define IGATESCAN all
 

@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "cullState.h"
+#include "config_cull.h"
 
 #include <indent.h>
 #include <graphicsStateGuardian.h>
@@ -19,14 +20,24 @@
 ////////////////////////////////////////////////////////////////////
 bool CullState::
 check_currency(Node *node, const AllTransitionsWrapper &,
-	       UpdateSeq now) {
+	       UpdateSeq as_of) {
   // First, check the verified time stamp.
   Verified::iterator vi;
   vi = _verified.find(node);
-  nassertr(vi != _verified.end(), false);
+  if (vi == _verified.end()) {
+    // We have never seen this node before.
+    return false;
+  }
 
   UpdateSeq verified_stamp = (*vi).second;
-  if (verified_stamp == now) {
+
+  if (cull_cat.is_spam()) {
+    cull_cat.spam()
+      << "Checking currency for " << *node << ", verified_stamp = "
+      << verified_stamp << " as_of = " << as_of << "\n";
+  }
+
+  if (as_of <= verified_stamp && !verified_stamp.is_fresh()) {
     return true;
   }
 
@@ -63,10 +74,10 @@ write(ostream &out, int indent_level) const {
   if (!_current_geom_nodes.empty()) {
     CurrentGeomNodes::const_iterator ci;
     ci = _current_geom_nodes.begin();
-    out << " (" << *(*ci);
+    out << " (" << (*ci);
     ++ci;
     while (ci != _current_geom_nodes.end()) {
-      out << ", " << *(*ci);
+      out << ", " << (*ci);
       ++ci;
     }
     out << ")";
@@ -77,10 +88,10 @@ write(ostream &out, int indent_level) const {
   if (!_current_direct_nodes.empty()) {
     CurrentDirectNodes::const_iterator ci;
     ci = _current_direct_nodes.begin();
-    out << " (" << *(*ci);
+    out << " (" << (*ci);
     ++ci;
     while (ci != _current_direct_nodes.end()) {
-      out << ", " << *(*ci);
+      out << ", " << (*ci);
       ++ci;
     }
     out << ")";

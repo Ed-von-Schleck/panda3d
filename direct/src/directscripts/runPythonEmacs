@@ -1,0 +1,50 @@
+#! /bin/sh
+
+# Under Windows/Cygwin, we have to de-cygwinify the semicolon 
+# separated PYTHONPATH
+
+# First, initialize the new path
+NEWPYTHONPATH=
+
+# To iterate, temporarily change the semicolons into spaces
+for path in `echo $PYTHONPATH | sed 'y/;/ /'`; do
+    # Then for each entry run it through the cygwin filter
+    NEWPYTHONPATH=$NEWPYTHONPATH\;`cygpath -w $path`
+done
+
+# Export the new PYTHONPATH
+PYTHONPATH=$NEWPYTHONPATH
+export PYTHONPATH
+
+# Lets also de-cygwinify the Project variables (so you can use file name 
+# completion)  This is hardcoded for the most popular trees
+if [ "$DTOOL" ]; then
+    DTOOL=`cygpath -w $DTOOL`
+    export DTOOL
+fi
+if [ "$PANDA" ]; then
+    PANDA=`cygpath -w $PANDA`
+    export PANDA
+fi
+if [ "$DIRECT" ]; then
+    DIRECT=`cygpath -w $DIRECT`
+    export DIRECT
+fi
+if [ "$TOONTOWN" ]; then
+    TOONTOWN=`cygpath -w $TOONTOWN`
+    export TOONTOWN
+fi
+
+# Export the proper home environment variable
+HOME=`cygpath -w $HOME`
+export HOME
+
+# Now start up emacs
+if [ "$1" != "" ]; then
+    exec runemacs $1
+else
+    exec runemacs
+fi
+
+
+

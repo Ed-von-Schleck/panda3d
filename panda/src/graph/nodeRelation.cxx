@@ -382,11 +382,11 @@ compose_transitions_from(const NodeTransitions &trans) {
 bool NodeRelation::
 sub_render_trans(const AllAttributesWrapper &attrib,
 		 AllTransitionsWrapper &trans,
-		 GraphicsStateGuardianBase *gsgbase) {
+		 RenderTraverser *trav) {
   bool all_true = true;
   NodeTransitions::const_iterator ti;
   for (ti = _transitions.begin(); ti != _transitions.end(); ++ti) {
-    if (!(*ti).second->sub_render(this, attrib, trans, gsgbase)) {
+    if (!(*ti).second->sub_render(this, attrib, trans, trav)) {
       all_true = false;
     }
   }
@@ -410,6 +410,26 @@ has_sub_render_trans() const {
   }
 
   return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodeRelation::get_num_sub_render_trans
+//       Access: Public
+//  Description: Returns the number of transitions on the arc that
+//               have a sub_render() function.
+////////////////////////////////////////////////////////////////////
+int NodeRelation::
+get_num_sub_render_trans() const {
+  int count = 0;
+
+  NodeTransitions::const_iterator ti;
+  for (ti = _transitions.begin(); ti != _transitions.end(); ++ti) {
+    if ((*ti).second->has_sub_render()) {
+      count++;
+    }
+  }
+
+  return count;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -442,14 +462,32 @@ attach() {
   nassertv(!_attached);
 
   _attached = true;
+
+  DownRelationPointers &parent_list = _parent->_children[_type];
+  UpRelationPointers &child_list = _child->_parents[_type];
   
-  bool inserted_one = internal_insert_arc(_parent->_children[_type], this);
-  bool inserted_two = internal_insert_arc(_child->_parents[_type], this);
+  bool inserted_one = internal_insert_arc(parent_list, this);
+  bool inserted_two = internal_insert_arc(child_list, this);
   nassertv(inserted_one && inserted_two);
 
   // Blow out the cache and increment the current update sequence.
   _net_transitions.clear();
-  ++last_graph_update[_type];
+  _last_update = ++last_graph_update[_type];
+
+  /*
+  // If we have just added a new parent arc to a node that previously
+  // had exactly one parent, we also need to increment the update
+  // counter for all the children of that node.
+  if (child_list.size() == 2) {
+    cerr << "Attaching " << *this << " at " << _last_update << "\n";
+    DownRelationPointers &child_children = _child->_children[_type];
+    DownRelationPointers::iterator drpi;
+    for (drpi = child_children.begin(); drpi != child_children.end(); ++drpi) {
+      cerr << "Forcing update for " << *(*drpi) << "\n";
+      (*drpi)->_last_update = _last_update;
+    }
+  }
+  */
 
   _parent->force_bound_stale();
   mark_bound_stale();
@@ -481,8 +519,11 @@ detach() {
 
   force_bound_stale();
 
-  bool removed_one = internal_remove_arc(_parent->_children[_type], this);
-  bool removed_two = internal_remove_arc(_child->_parents[_type], this);
+  DownRelationPointers &parent_list = _parent->_children[_type];
+  UpRelationPointers &child_list = _child->_parents[_type];
+
+  bool removed_one = internal_remove_arc(parent_list, this);
+  bool removed_two = internal_remove_arc(child_list, this);
 
   nassertr(removed_one, result);
   nassertr(removed_two, result);
@@ -491,7 +532,20 @@ detach() {
 
   // Blow out the cache and increment the current update sequence.
   _net_transitions.clear();
-  ++last_graph_update[_type];
+  _last_update = ++last_graph_update[_type];
+
+  /*
+  // If we have just removed a parent arc from a node, leaving exactly
+  // one parent, we also need to increment the update counter for all
+  // the children of that node.
+  if (child_list.size() == 1) {
+    DownRelationPointers &child_children = _child->_children[_type];
+    DownRelationPointers::iterator drpi;
+    for (drpi = child_children.begin(); drpi != child_children.end(); ++drpi) {
+      (*drpi)->_last_update = _last_update;
+    }
+  }
+  */
 
   return result;
 }
@@ -522,7 +576,7 @@ detach_below() {
 
   // Blow out the cache and increment the current update sequence.
   _net_transitions.clear();
-  ++last_graph_update[_type];
+  _last_update = ++last_graph_update[_type];
 
   return result;
 }
@@ -544,7 +598,7 @@ changed_transition(TypeHandle trans_type) {
   if (_net_transitions != (NodeTransitionCache *)NULL) {
     _net_transitions->clear_transition(trans_type);
   }
-  last_graph_update[get_type()]++;
+  _last_update = ++last_graph_update[get_type()];
 }
 
 ////////////////////////////////////////////////////////////////////
