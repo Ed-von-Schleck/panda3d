@@ -1,5 +1,5 @@
 #ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_unix.c,v 1.1 2000/10/04 01:14:42 drose Exp $";
+static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_unix.c,v 1.2 2000/10/24 01:22:03 drose Exp $";
 #endif
 
 /*
@@ -30,9 +30,6 @@ static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Atti
  * TIFF Library UNIX-specific Routines.
  */
 #include "tiffiop.h"
-#ifndef PENV_WIN32
-#include <unistd.h>
-#endif
 #include <stdlib.h>
 
 static tsize_t
