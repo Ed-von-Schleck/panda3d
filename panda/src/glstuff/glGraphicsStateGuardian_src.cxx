@@ -38,9 +38,6 @@
 #include "colorWriteAttrib.h"
 #include "texMatrixAttrib.h"
 #include "texGenAttrib.h"
-#ifdef HAVE_CGGL
-#include "cgShaderAttrib.h"
-#endif
 #include "materialAttrib.h"
 #include "renderModeAttrib.h"
 #include "rescaleNormalAttrib.h"
@@ -56,6 +53,9 @@
 #include "string_utils.h"
 #ifdef DO_PSTATS
 #include "pStatTimer.h"
+#endif
+#ifdef HAVE_CGGL
+#include "cgShaderAttrib.h"
 #endif
 
 #include <algorithm>
