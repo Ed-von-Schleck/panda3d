@@ -1,10 +1,8 @@
-#ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_warning.c,v 1.2 2001/05/25 16:13:02 drose Exp $";
-#endif
+/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_warning.c,v 1.3 2001/06/14 06:13:42 cxgeorge Exp $ */
 
 /*
- * Copyright (c) 1988, 1989, 1990, 1991, 1992 Sam Leffler
- * Copyright (c) 1991, 1992 Silicon Graphics, Inc.
+ * Copyright (c) 1988-1997 Sam Leffler
+ * Copyright (c) 1991-1997 Silicon Graphics, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software and 
  * its documentation for any purpose is hereby granted without fee, provided
@@ -30,35 +28,22 @@ static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Atti
  * TIFF Library.
  */
 #include "tiffiop.h"
-#include <stdio.h>
-
-static void
-defaultHandler(const char* module, const char* fmt, va_list ap)
-{
-        if (module != NULL)
-                fprintf(stderr, "%s: ", module);
-        fprintf(stderr, "Warning, ");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, ".\n");
-}
-
-static TIFFErrorHandler _warningHandler = defaultHandler;
 
 TIFFErrorHandler
 TIFFSetWarningHandler(TIFFErrorHandler handler)
 {
-        TIFFErrorHandler prev = _warningHandler;
-        _warningHandler = handler;
-        return (prev);
+	TIFFErrorHandler prev = _TIFFwarningHandler;
+	_TIFFwarningHandler = handler;
+	return (prev);
 }
 
 void
 TIFFWarning(const char* module, const char* fmt, ...)
 {
-        if (_warningHandler) {
-                va_list ap;
-                va_start(ap, fmt);
-                (*_warningHandler)(module, fmt, ap);
-                va_end(ap);
-        }
+	if (_TIFFwarningHandler) {
+		va_list ap;
+		va_start(ap, fmt);
+		(*_TIFFwarningHandler)(module, fmt, ap);
+		va_end(ap);
+	}
 }
