@@ -18,6 +18,8 @@ class DistributedObjectAI(DirectObject.DirectObject):
             self.DistributedObjectAI_initialized
         except:
             self.DistributedObjectAI_initialized = 1
+
+            self.accountName=''
             # Record the repository
             self.air = air
             # Record our distributed class
@@ -96,6 +98,7 @@ class DistributedObjectAI(DirectObject.DirectObject):
                 if self.air:
                     self.air.deallocateChannel(self.doId)
             self.air = None
+            del self.parentId
             del self.zoneId
 
     def isDeleted(self):
@@ -155,8 +158,10 @@ class DistributedObjectAI(DirectObject.DirectObject):
         # does not include the quiet zone.
         return 'DOLogicalChangeZone-%s' % self.doId
     
-    def handleZoneChange(self, newZoneId, oldZoneId):
-        assert oldZoneId == self.zoneId
+    def handleZoneChange(self, newParentId, newZoneId, oldZoneId, oldParentId):
+        #assert oldParentId == self.parentId
+        #assert oldZoneId == self.zoneId
+        self.parentId = newParentId
         self.zoneId = newZoneId
         self.air.changeDOZoneInTables(self, newZoneId, oldZoneId)
         messenger.send(self.getZoneChangeEvent(), [newZoneId, oldZoneId])
@@ -221,8 +226,8 @@ class DistributedObjectAI(DirectObject.DirectObject):
         assert self.notify.debugStateCall(self)
         # have we already allocated a doId?
         if self.__preallocDoId:
+            assert doId == self.__preallocDoId
             self.__preallocDoId = 0
-            assert doId == self.doId
 
         # The repository is the one that really does the work
         self.air.generateWithRequiredAndId(self, doId, zoneId, optionalFields)
@@ -230,17 +235,17 @@ class DistributedObjectAI(DirectObject.DirectObject):
         self.zoneId = zoneId
         self.generate()
 
-    def generateOtpObject(self, parentId, zoneId, optionalFields=[]):
+    def generateOtpObject(self, parentId, zoneId, optionalFields=[], doId=None):
         assert self.notify.debugStateCall(self)
         # have we already allocated a doId?
         if self.__preallocDoId:
+            assert doId is None or doId == self.__preallocDoId
+            doId=self.__preallocDoId
             self.__preallocDoId = 0
-            return self.generateOtpObject(
-                zoneId, optionalFields, doId=self.doId)
             
         # The repository is the one that really does the work
-        self.air.generateOtpObject(
-                self, parentId, zoneId, optionalFields)
+        self.air.sendGenerateOtpObject(
+                self, parentId, zoneId, optionalFields, doId=doId)
         self.parentId = parentId
         self.zoneId = zoneId
         self.generate()
@@ -250,14 +255,25 @@ class DistributedObjectAI(DirectObject.DirectObject):
         # Inheritors should put functions that require self.zoneId or
         # other networked info in this function.
 
+    def generateInit(self):
+        """
+        First generate (not from cache).
+        """
+        assert self.notify.debugStateCall(self)
+
     def sendGenerateWithRequired(self, repository, parentId, zoneId, optionalFields=[]):
         assert self.notify.debugStateCall(self)
+        print "\n\n  repository.districtId: %s, repository.ourChannel: %s\n"%(
+                repository.districtId, repository.ourChannel)
         # Make the dclass do the hard work
-        dg = self.dclass.aiFormatGenerate(self, self.doId, parentId, zoneId,
-                                          repository.districtId,
-                                          repository.ourChannel,
-                                          optionalFields)
+        dg = self.dclass.aiFormatGenerate(
+                self, self.doId, parentId, zoneId,
+                #repository.districtId,
+                repository.serverId,
+                repository.ourChannel,
+                optionalFields)
         repository.send(dg)
+        self.parentId = parentId
         self.zoneId = zoneId
             
     def initFromServerResponse(self, valDict):

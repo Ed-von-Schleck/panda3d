@@ -186,6 +186,7 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         if dclass.getClassDef().neverDisable:
             # Create a new distributed object, and put it in the dictionary
             distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
+        distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         dclass.stopGenerate()
 
     def generateWithRequiredFields(self, dclass, doId, di):
@@ -225,6 +226,7 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             distObj.generate()
             distObj.updateRequiredFields(dclass, di)
             # updateRequiredFields calls announceGenerate
+            print "New DO:%s, dclass:%s"%(doId, dclass.getName())
         return distObj
 
     def generateGlobalObject(self , doId, dcname):
@@ -336,19 +338,19 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         This is not a distributed message and does not delete the
         object on the server or on any other client.
         """
-        # If it is in the dictionary, remove it.
         if self.doId2do.has_key(doId):
+            # If it is in the dictionary, remove it.
             obj = self.doId2do[doId]
             # Remove it from the dictionary
             del(self.doId2do[doId])
             # Disable, announce, and delete the object itself...
             # unless delayDelete is on...
             obj.deleteOrDelay()
-        # If it is in the cache, remove it.
         elif self.cache.contains(doId):
+            # If it is in the cache, remove it.
             self.cache.delete(doId)
-        # Otherwise, ignore it
         else:
+            # Otherwise, ignore it
             ClientRepository.notify.warning(
                 "Asked to delete non-existent DistObj " + str(doId))
 
@@ -399,6 +401,12 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             self.handleServerHeartbeat(di)
         elif msgType == CLIENT_SYSTEM_MESSAGE:
             self.handleSystemMessage(di)
+        elif msgType == CLIENT_CREATE_OBJECT_REQUIRED:
+            self.handleGenerateWithRequired(di)
+        elif msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
+            self.handleGenerateWithRequiredOther(di)
+        elif msgType == CLIENT_DONE_SET_ZONE_RESP:
+            self.handleSetZoneDone()
         else:
             currentLoginState = self.loginFSM.getCurrentState()
             if currentLoginState:
@@ -465,7 +473,7 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         # may forget to send heartbeats.  Keep them coming!
         self.considerHeartbeat()
  
-    def addInterest(contextId, parentId, zoneId):
+    def sendAddInterest(self, contextId, parentId, zoneId):
         """
         Part of the new otp-server code.
 
@@ -475,27 +483,14 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
                 on another client.
         """
         datagram = PyDatagram()
-        datagram.addUint16(contextId)
-        datagram.addUint32(parent)
-        datagram.addUint32(zone)
-        self.send(datagram)
-
-    def alterInterest(contextId, parentId, zoneId):
-        """
-        Part of the new otp-server code.
-
-        contextId is a client-side created number that refers to
-                a set of interests.  The same contextId number doesn't
-                necessarily have any relationship to the same contextId
-                on another client.
-        """
-        datagram = PyDatagram()
+        # Add message type
+        datagram.addUint16(CLIENT_ADD_INTEREST)
         datagram.addUint16(contextId)
         datagram.addUint32(parentId)
         datagram.addUint32(zoneId)
         self.send(datagram)
 
-    def deleteInterest(contextId):
+    def sendAlterInterest(self, contextId, parentId, zoneId):
         """
         Part of the new otp-server code.
 
@@ -505,6 +500,25 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
                 on another client.
         """
         datagram = PyDatagram()
+        # Add message type
+        datagram.addUint16(CLIENT_ALTER_INTEREST)
+        datagram.addUint16(contextId)
+        datagram.addUint32(parentId)
+        datagram.addUint32(zoneId)
+        self.send(datagram)
+
+    def sendRemoveInterest(self, contextId):
+        """
+        Part of the new otp-server code.
+
+        contextId is a client-side created number that refers to
+                a set of interests.  The same contextId number doesn't
+                necessarily have any relationship to the same contextId
+                on another client.
+        """
+        datagram = PyDatagram()
+        # Add message type
+        datagram.addUint16(CLIENT_REMOVE_INTEREST)
         datagram.addUint16(contextId)
         self.send(datagram)
 
