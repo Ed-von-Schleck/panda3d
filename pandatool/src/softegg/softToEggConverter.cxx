@@ -605,6 +605,12 @@ convert_soft(bool from_selection) {
     _character_name = root_name;
   
   if (make_poly || make_nurbs) {
+    // Specify that the texture names should be relative to the output
+    // file.
+    Filename output_filename(eggFileName);
+    _path_replace->_path_store = PS_relative;
+    _path_replace->_path_directory = output_filename.get_dirname();
+
     if (!convert_char_model()) {
       all_ok = false;
     }
@@ -620,11 +626,11 @@ convert_soft(bool from_selection) {
     }
 
     //  reparent_decals(&get_egg_data());
-    softegg_cat.info() << softegg_cat.info() << "Converted Softimage file\n";
+    softegg_cat.info() << "Converted Softimage file\n";
 
     // write out the egg model file
-    _egg_data->write_egg(Filename(eggFileName));
-    softegg_cat.info() << softegg_cat.info() << "Wrote Egg file " << eggFileName << endl;
+    _egg_data->write_egg(output_filename);
+    softegg_cat.info() << "Wrote Egg file " << output_filename << endl;
   }
   if (make_anim) {
     if (!convert_char_chan()) {
@@ -632,11 +638,11 @@ convert_soft(bool from_selection) {
     }
 
     //  reparent_decals(&get_egg_data());
-    softegg_cat.info() << softegg_cat.info() << "Converted Softimage file\n";
+    softegg_cat.info() << "Converted Softimage file\n";
     
     // write out the egg model file
     _egg_data->write_egg(Filename(animFileName));
-    softegg_cat.info() << softegg_cat.info() << "Wrote Anim file " << animFileName << endl;
+    softegg_cat.info() << "Wrote Anim file " << animFileName << endl;
   }
   return all_ok;
 }
@@ -1162,21 +1168,6 @@ make_polyset(SoftNodeDesc *node_desc, EggGroup *egg_group, SAA_ModelType type) {
           n3d = n3d * vertex_frame_inv;
           vert.set_normal(n3d);
           
-          // check to see if material is present
-          float r,g,b,a;
-          SAA_elementIsValid( &scene, &node_desc->materials[idx/3], &valid );
-          // material present - get the color 
-          if ( valid ) {
-            SAA_materialGetDiffuse( &scene, &node_desc->materials[idx/3], &r, &g, &b );
-            SAA_materialGetTransparency( &scene, &node_desc->materials[idx/3], &a );
-            vert.set_color(Colorf(r, g, b, 1.0f - a));
-            softegg_cat.spam() << "color r = " << r << " g = " << g << " b = " << b << " a = " << 1.0f - a << "\n";
-          }
-          else {     // no material - default to white
-            vert.set_color(Colorf(1.0, 1.0, 1.0, 1.0));
-            softegg_cat.spam() << "default color\n";
-          }
-          
           // if texture present set the texture coordinates
           if (node_desc->textures) {
             float u, v;
@@ -1194,6 +1185,21 @@ make_polyset(SoftNodeDesc *node_desc, EggGroup *egg_group, SAA_ModelType type) {
           vert.set_external_index(indices[i]);
           egg_poly->add_vertex(vpool->create_unique_vertex(vert));
 
+          // check to see if material is present
+          float r,g,b,a;
+          SAA_elementIsValid( &scene, &node_desc->materials[idx], &valid );
+          // material present - get the color 
+          if ( valid ) {
+            SAA_materialGetDiffuse( &scene, &node_desc->materials[idx], &r, &g, &b );
+            SAA_materialGetTransparency( &scene, &node_desc->materials[idx], &a );
+            egg_poly->set_color(Colorf(r, g, b, 1.0f - a));
+            softegg_cat.spam() << "color r = " << r << " g = " << g << " b = " << b << " a = " << 1.0f - a << "\n";
+          }
+          else {     // no material - default to white
+            egg_poly->set_color(Colorf(1.0, 1.0, 1.0, 1.0));
+            softegg_cat.spam() << "default color\n";
+          }
+          
           /*
           // keep a one to one copy in this node's vpool
           EggVertex *t_vert = new EggVertex(vert);
@@ -1211,13 +1217,13 @@ make_polyset(SoftNodeDesc *node_desc, EggGroup *egg_group, SAA_ModelType type) {
         if (node_desc->textures != NULL) {
           if (node_desc->numTexLoc && node_desc->numTexTri[idx]) {
             if (!strstr(node_desc->texNameArray[idx], "noIcon"))
-              set_shader_attributes(node_desc, *egg_poly, node_desc->texNameArray[idx]);
+              set_shader_attributes(node_desc, *egg_poly, idx);
             else
               softegg_cat.spam() << "texname :" << node_desc->texNameArray[idx] << endl;
           }
           else {
             if (!strstr(node_desc->texNameArray[0], "noIcon"))
-              set_shader_attributes(node_desc, *egg_poly, node_desc->texNameArray[0]);
+              set_shader_attributes(node_desc, *egg_poly, 0);
             else 
               softegg_cat.spam() << "texname :" << node_desc->texNameArray[0] << endl;
         }
@@ -1493,7 +1499,7 @@ make_nurb_surface(SoftNodeDesc *node_desc, EggGroup *egg_group, SAA_ModelType ty
       // Now apply the shader.
       if (node_desc->textures != NULL) {
         if (!strstr(node_desc->texNameArray[0], "noIcon"))
-          set_shader_attributes(node_desc, *eggNurbs, node_desc->texNameArray[0]);
+          set_shader_attributes(node_desc, *eggNurbs, 0);
         else 
           softegg_cat.spam() << "texname :" << node_desc->texNameArray[0] << endl;
       }
@@ -1962,36 +1968,41 @@ cleanup_soft_skin()
     int numVerts = (int)vpool->size();
     softegg_cat.spam() << "found vpool " << vpool_name << " w/ " << numVerts << " verts\n";
 
-    // find the closest _parentJoint
-    SoftNodeDesc *parentJ = node_desc;
-    while( parentJ && !parentJ->_parentJoint) {
-      if ( parentJ->_parent) {
-        SAA_Boolean isSkeleton;
-        //softegg_cat.spam() << " checking parent " << parentJ->_parent->get_name() << endl;
-        if (parentJ->_parent->has_model())
-          SAA_modelIsSkeleton( &scene, parentJ->_parent->get_model(), &isSkeleton );
-        
-        if (isSkeleton) {
-          joint = parentJ->_parent->get_egg_group();
-          softegg_cat.spam() << "parent to " << parentJ->_parent->get_name() << endl;
-          break;
+    // if this node is a joint, then these vertices belong
+    // to this joint
+    if (node_desc->is_joint())
+      joint = node_desc->get_egg_group();
+    else {
+      // find the closest _parentJoint
+      SoftNodeDesc *parentJ = node_desc;
+      while( parentJ && !parentJ->_parentJoint) {
+        if ( parentJ->_parent) {
+          SAA_Boolean isSkeleton;
+          //softegg_cat.spam() << " checking parent " << parentJ->_parent->get_name() << endl;
+          if (parentJ->_parent->has_model())
+            SAA_modelIsSkeleton( &scene, parentJ->_parent->get_model(), &isSkeleton );
+          
+          if (isSkeleton) {
+            joint = parentJ->_parent->get_egg_group();
+            softegg_cat.spam() << "parent to " << parentJ->_parent->get_name() << endl;
+            break;
+          }
+          
+          parentJ = parentJ->_parent;
         }
-        
-        parentJ = parentJ->_parent;
+        else
+          break;
       }
-      else
-        break;
+      if (!joint && (!parentJ || !parentJ->_parentJoint)) {
+        softegg_cat.spam() << node_desc->get_name() << " has no _parentJoint?!" << endl;
+        continue;
+      }
+      
+      if (!joint) {
+        softegg_cat.spam() << "parent joint to " << parentJ->_parentJoint->get_name() << endl;
+        joint = parentJ->_parentJoint->get_egg_group();
+      }
     }
-    if (!joint && (!parentJ || !parentJ->_parentJoint)) {
-      softegg_cat.spam() << node_desc->get_name() << " has no _parentJoint?!" << endl;
-      continue;
-    }
-    
-    if (!joint) {
-      softegg_cat.spam() << "parent joint to " << parentJ->_parentJoint->get_name() << endl;
-      joint = parentJ->_parentJoint->get_egg_group();
-    }
-    
     EggVertexPool::iterator vi;
     double membership = 1.0f;
     for ( vi = vpool->begin(); vi != vpool->end(); ++vi) {
@@ -2017,7 +2028,8 @@ cleanup_soft_skin()
 //               egg primitive.
 ////////////////////////////////////////////////////////////////////
 void SoftToEggConverter::
-set_shader_attributes(SoftNodeDesc *node_desc, EggPrimitive &primitive, char *texName) {
+set_shader_attributes(SoftNodeDesc *node_desc, EggPrimitive &primitive, int idx) {
+  char *texName = node_desc->texNameArray[idx];
   EggTexture tex(texName, "");
 
   Filename filename = Filename::from_os_specific(texName);
@@ -2025,7 +2037,7 @@ set_shader_attributes(SoftNodeDesc *node_desc, EggPrimitive &primitive, char *te
   tex.set_filename(_path_replace->store_path(fullpath));
   tex.set_fullpath(fullpath);
   //  tex.set_format(EggTexture::F_rgb);
-  apply_texture_properties(tex, node_desc->uRepeat, node_desc->vRepeat);
+  apply_texture_properties(tex, node_desc->uRepeat[idx], node_desc->vRepeat[idx]);
 
   EggTexture *new_tex = _textures.create_unique_texture(tex, ~EggTexture::E_tref_name);
   primitive.set_texture(new_tex);
@@ -2045,7 +2057,7 @@ apply_texture_properties(EggTexture &tex, int uRepeat, int vRepeat) {
   tex.set_magfilter(EggTexture::FT_linear);
 
   EggTexture::WrapMode wrap_u = uRepeat > 0 ? EggTexture::WM_repeat : EggTexture::WM_clamp;
-  EggTexture::WrapMode wrap_v = vRepeat > 1 ? EggTexture::WM_repeat : EggTexture::WM_clamp;
+  EggTexture::WrapMode wrap_v = vRepeat > 0 ? EggTexture::WM_repeat : EggTexture::WM_clamp;
 
   tex.set_wrap_u(wrap_u);
   tex.set_wrap_v(wrap_v);
