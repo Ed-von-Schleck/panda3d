@@ -1238,6 +1238,8 @@ make_texture_stage(const EggTexture *egg_tex) {
     break;
 
   case EggTexture::CM_unspecified:
+  case EggTexture::CM_dot3_rgb:
+  case EggTexture::CM_dot3_rgba:
     break;
   }
 
