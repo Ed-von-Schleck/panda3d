@@ -55,6 +55,11 @@ public:
 
   virtual void process_events();
   virtual void set_properties_now(WindowProperties &properties);
+  virtual LONG window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  static LONG WINAPI static_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  virtual bool handle_mouse_motion(int x, int y);
+  virtual void handle_mouse_exit(void);
+
 
 protected:
   virtual void close_window();
@@ -68,20 +73,13 @@ protected:
   virtual void handle_reshape();
   virtual bool do_fullscreen_resize(int x_size, int y_size);
 
-  void get_client_rect_screen(HWND hwnd, RECT *view_rect);
-
 private:
   bool open_fullscreen_window();
   bool open_regular_window();
   void track_mouse_leaving(HWND hwnd);
 
-  LONG window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
-  static LONG WINAPI 
-  static_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
   static void process_1_event();
 
-  INLINE void handle_mouse_motion(int x, int y);
-  INLINE void handle_mouse_exit(void);
   INLINE void handle_keypress(ButtonHandle key, int x, int y);
   INLINE void handle_keyresume(ButtonHandle key);
   INLINE void handle_keyrelease(ButtonHandle key);
@@ -105,6 +103,7 @@ private:
   bool _ime_composition_w;
   bool _tracking_mouse_leaving;
   bool _maximized;
+  bool _bCursor_in_WindowClientArea;
   DEVMODE _fullscreen_display_mode;
 
   // This is used to remember the state of the keyboard when keyboard
@@ -165,6 +164,7 @@ private:
 #define PRINT_LAST_ERROR 0
 extern EXPCL_PANDAWIN void PrintErrorMessage(DWORD msgID);
 extern EXPCL_PANDAWIN void ClearToBlack(HWND hWnd, const WindowProperties &props);
+extern EXPCL_PANDAWIN void get_client_rect_screen(HWND hwnd, RECT *view_rect);
 
 #include "winGraphicsWindow.I"
 

@@ -57,13 +57,14 @@ wdxGraphicsWindow8* global_wdxwinptr = NULL;  // need this for temporary windpro
 
 LONG WINAPI static_window_proc(HWND hwnd, UINT msg, WPARAM wparam,LPARAM lparam);
 
+/*
 // because we dont have access to ModifierButtons, as a hack just synchronize state of these
 // keys on get/lose keybd focus
 #define NUM_MODIFIER_KEYS 16
 unsigned int hardcoded_modifier_buttons[NUM_MODIFIER_KEYS]={VK_SHIFT,VK_MENU,VK_CONTROL,VK_SPACE,VK_TAB,
                                                             VK_UP,VK_DOWN,VK_LEFT,VK_RIGHT,VK_PRIOR,VK_NEXT,VK_HOME,VK_END,
                                                             VK_INSERT,VK_DELETE,VK_ESCAPE};
-
+*/
 //#define UNKNOWN_VIDMEM_SIZE 0xFFFFFFFF
 
 ////////////////////////////////////////////////////////////////////
@@ -109,7 +110,7 @@ make_current(void) {
 
 /* BUGBUG:  need to reinstate these methods ASAP.  they were incorrectly moved from the GraphicsWindow to the GSG
             apps need to know the framebuffer format so they can create texture/rendertgt with same fmt
-int wdxGraphicsWindow::
+int wdxGraphicsWindow8::
 get_depth_bitwidth(void) {
     assert(_dxgsg!=NULL);
     if(_dxgsg->scrn.PresParams.EnableAutoDepthStencil)
@@ -124,7 +125,7 @@ get_depth_bitwidth(void) {
 //  return ddsd.ddpfPixelFormat.dwRGBBitCount;
 }
 
-void wdxGraphicsWindow::
+void wdxGraphicsWindow8::
 get_framebuffer_format(PixelBuffer::Type &fb_type, PixelBuffer::Format &fb_format) {
     assert(_dxgsg!=NULL);
 
@@ -388,6 +389,7 @@ do_fullscreen_resize(int x_size, int y_size) {
   return bResizeSucceeded;
 }
 
+#if 1
 //////////////////////////////////////////////////////////////////
 //     Function: WinGraphicsWindow::window_proc
 //       Access: Private
@@ -399,6 +401,225 @@ LONG wdxGraphicsWindow8::
 window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   return WinGraphicsWindow::window_proc(hwnd,msg,wparam,lparam);
 }
+
+#else
+
+////////////////////////////////////////////////////////////////////
+//     Function: window_proc
+//       Access:
+//  Description:
+////////////////////////////////////////////////////////////////////
+LONG wdxGraphicsWindow8::
+window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+    int button = -1;
+    int x, y, width, height;
+
+    switch(msg) {
+        case WM_SETCURSOR: {
+            // Turn off any GDI window cursor
+            //  dx8 cursor not working yet
+
+            if(dx_use_dx_cursor && is_fullscreen()) {
+                //            SetCursor( NULL );
+            //                _dxgsg->scrn.pD3DDevice->ShowCursor(true);
+
+                set_cursor_visibility(true);
+                return TRUE; // prevent Windows from setting cursor to window class cursor (see docs on WM_SETCURSOR)
+            }
+            break;
+        }
+
+        case WM_PAINT: {
+           // primarily seen when app window is 'uncovered'
+           if((_WindowAdjustingType != NotAdjusting) || (!DX_IS_READY)) {
+             // let DefWndProc do WM_ERASEBKGND & just draw black,
+             // rather than forcing Present to stretchblt the old window contents
+             // into the new size
+             break;
+           }
+
+           PAINTSTRUCT ps;
+           BeginPaint(hwnd, &ps);
+           if(DX_IS_READY) {
+              _dxgsg->show_frame(true);  // 'true' since just want to show the last rendered backbuf, if any
+           }
+           EndPaint(hwnd, &ps);
+           return 0;
+        }
+
+        case WM_IME_STARTCOMPOSITION:
+          // In case we're running fullscreen mode, we have to turn on
+          // explicit DX support for overlay windows now, so we'll be able
+          // to see the IME window.
+          _dxgsg->support_overlay_window(true);
+          break;
+
+        case WM_IME_ENDCOMPOSITION:
+          // Turn off the support for overlay windows, since we're done
+          // with the IME window for now and it just slows things down.
+          _dxgsg->support_overlay_window(false);
+          break;
+
+        case WM_ENTERSIZEMOVE:
+             if(_dxgsg!=NULL) 
+                _dxgsg->SetDXReady(false);   // dont see pic during resize
+             _WindowAdjustingType = MovingOrResizing;
+          break;
+
+        case WM_EXITSIZEMOVE: {
+            #ifdef _DEBUG
+              wdxdisplay_cat.spam()  << "WM_EXITSIZEMOVE received"  << endl;
+            #endif
+
+            if(_WindowAdjustingType==Resizing) {
+                bool bSucceeded=handle_windowed_resize(hwnd,true);
+
+                if(!bSucceeded) {
+                    #if 0
+                                bugbug need to fix this stuff
+                                SetWindowPos(hwnd,NULL,0,0,lastxsize,lastysize,SWP_NOMOVE |
+                    #endif
+                }
+            }
+
+            _WindowAdjustingType = NotAdjusting;
+            _dxgsg->SetDXReady(true);
+            return 0;
+        }
+
+        case WM_SIZE: {
+
+            #ifdef _DEBUG
+                {
+                    width = LOWORD(lparam);  height = HIWORD(lparam);
+                    wdxdisplay_cat.spam() << "WM_SIZE received with width:" << width << "  height: " << height << " flags: " <<
+                    ((wparam == SIZE_MAXHIDE)? "SIZE_MAXHIDE " : "") << ((wparam == SIZE_MAXSHOW)? "SIZE_MAXSHOW " : "") <<
+                    ((wparam == SIZE_MINIMIZED)? "SIZE_MINIMIZED " : "") << ((wparam == SIZE_RESTORED)? "SIZE_RESTORED " : "") <<
+                    ((wparam == SIZE_MAXIMIZED)? "SIZE_MAXIMIZED " : "") << endl;
+                }
+            #endif
+                // old comment -- added SIZE_RESTORED to handle 3dfx case
+                if(_props._fullscreen || ((_dxgsg==NULL) || (_dxgsg->scrn.hWnd==NULL)) || ((wparam != SIZE_RESTORED) && (wparam != SIZE_MAXIMIZED)))
+                    break;
+
+                width = LOWORD(lparam);  height = HIWORD(lparam);
+
+                if((_props._xsize != width) || (_props._ysize != height)) {
+                    _WindowAdjustingType = Resizing;
+
+                 // for maximized,unmaximize, need to call resize code artificially
+                 // since no WM_EXITSIZEMOVE is generated.
+                 if(wparam==SIZE_MAXIMIZED) {
+                       _bSizeIsMaximized=TRUE;
+                       window_proc(hwnd, WM_EXITSIZEMOVE, 0x0,0x0);
+                 } else if((wparam==SIZE_RESTORED) && _bSizeIsMaximized) {
+                       _bSizeIsMaximized=FALSE;  // only want to reinit dx if restoring from maximized state
+                       window_proc(hwnd, WM_EXITSIZEMOVE, 0x0,0x0);
+                 }
+                }
+
+                break;
+            }
+    
+        case WM_ERASEBKGND: {
+            // WM_ERASEBKGND will be ignored during resizing, because
+            // we dont want WM_PAINT's generated as user is manually resizing window.
+            
+            // for the intermediate resizing images that WM_PAINT would show to be useful, 
+            // the panda window parameters need to be reset on every
+            // WM_SIZE event and that isnt happening yet
+
+            if(_WindowAdjustingType)
+                break;
+            return 0;  // dont let GDI waste time redrawing the deflt background
+        }
+
+        case WM_TIMER:
+            // 2 cases of app deactivation:
+            //
+            // 1) user has switched out of fullscreen mode
+            //    this is first signalled when ACTIVATEAPP returns false
+            //    for this case, we dont wake up until WM_SIZE returns restore or maximize
+            //    and WM_TIMER just periodically reawakens app for idle processing
+
+            //    unfortunately this doesnt seem to work because RestoreAllSurfaces doesn't
+            //    seem to think we're back in the original displaymode even after I've received
+            //    the WM_DISPLAYCHANGE msg, and returns WRONGMODE error.  So the only way I can
+            //    think of to make this work is to have the timer periodically check for restored
+            //    coop level, as it does in case 2)
+
+            //
+            // 2) windowed app has lost access to dx because another app has taken dx exclusive mode
+            //    here we rely on WM_TIMER to periodically check if it is ok to reawaken app.
+            //    windowed apps currently run regardless of if its window is in the foreground
+            //    so we cannot rely on window messages to reawaken app
+
+            if((wparam==_PandaPausedTimer) && ((!_window_active)||_active_minimized_fullscreen)) {
+                assert(_dxgsg!=NULL);
+                _dxgsg->CheckCooperativeLevel(DO_REACTIVATE_WINDOW);
+
+                // wdxdisplay_cat.spam() << "periodic return of control to app\n";
+                _return_control_to_app = true;
+                // throw_event("PandaPaused");
+                // do we still need to do this since I return control to app periodically using timer msgs?
+                // does app need to know to avoid major computation?
+            }
+
+         #ifdef DINPUT_DEBUG_POLL
+            // probably want to get rid of this in favor of event-based input
+            if(dx_use_joystick && (wparam==_pParentWindowGroup->_pDInputInfo->_JoystickPollTimer)) {
+                DIJOYSTATE2 js;
+                ZeroMemory(&js,sizeof(js));
+                if(_pParentWindowGroup->_pDInputInfo->ReadJoystick(0,js)) {
+                    // for now just print stuff out to make sure it works
+                    wdxdisplay_cat.debug() << "joyPos (X: " << js.lX << ",Y: " << js.lY << ",Z: " << js.lZ << ")\n";
+                    for(int i=0;i<128;i++) {
+                        if(js.rgbButtons[i]!=0)
+                            wdxdisplay_cat.debug() << "joyButton "<< i << " pressed\n";
+                    }
+                } else {
+                    wdxdisplay_cat.error() << "read of Joystick failed!\n";
+                    exit(1);
+                }
+            }
+          #endif
+            return 0;
+
+        case WM_CLOSE:
+            #ifdef _DEBUG
+              wdxdisplay_cat.spam()  << "WM_CLOSE received\n";
+            #endif
+         // close_window();
+          delete _pParentWindowGroup;
+
+          // BUGBUG:  right now there is no way to tell the panda app the graphics window is invalid or
+          //          has been closed by the user, to prevent further methods from being called on the window.
+          //          this needs to be added to panda for multiple windows to work.  in the meantime, just
+          //          trigger an exit here if # windows==0, since that is the expected behavior when all
+          //          windows are closed (should be done by the app though, and it assumes you only make this
+          //          type of panda gfx window)
+
+          if(hwnd_pandawin_map.size()==0) {
+              exit(0);
+          }
+          return 0;
+
+        case WM_ACTIVATEAPP: {
+            #ifdef _DEBUG
+              wdxdisplay_cat.spam()  << "WM_ACTIVATEAPP(" << (bool)(wparam!=0) <<") received\n";
+            #endif
+
+           if((!wparam) && _props._fullscreen) {
+               deactivate_window();
+               return 0;
+           }         // dont want to reactivate until window is actually un-minimized (see WM_SIZE)
+           break;
+        }
+    }
+
+  return WinGraphicsWindow::window_proc(hwnd,msg,wparam,lparam);
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////
 //     Function: wdxGraphicsWindow8::create_screen_buffers_and_device
@@ -637,7 +858,7 @@ create_screen_buffers_and_device(DXScreenData &Display, bool force_16bpp_zbuffer
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: wdxGraphicsWindow8::choose_adapter
+//     Function: wdxGraphicsWindow8::choose_device
 //       Access: Private
 //  Description: Looks at the list of available graphics adapters and
 //               chooses a suitable one for the window.
@@ -645,7 +866,7 @@ create_screen_buffers_and_device(DXScreenData &Display, bool force_16bpp_zbuffer
 //               Returns true if successful, false on failure.
 ////////////////////////////////////////////////////////////////////
 bool wdxGraphicsWindow8::
-choose_adapter(void) {
+choose_device(void) {
   HRESULT hr;
 
   wdxGraphicsPipe8 *dxpipe;
@@ -742,7 +963,7 @@ choose_adapter(void) {
 
 /*
 primary init sequence of old method, still need to integrate multi-window functionality
-void wdxGraphicsWindowGroup::initWindowGroup(void) {
+void wdxGraphicsWindow8Group::initWindowGroup(void) {
     HRESULT hr;
 
     assert(_windows.size()>0);
@@ -1385,7 +1606,7 @@ init_resized_window() {
   // Note: dx_init will fill in additional fields in _wcontext, like supportedtexfmts
   _dxgsg->dx_init();
 
-  if(is_fullscreen() && dx_use_dx_cursor) {
+  if(dx_use_dx_cursor && is_fullscreen()) {
       hr = CreateDX8Cursor(_wcontext.pD3DDevice,_mouse_cursor,dx_show_cursor_watermark);
       if(FAILED(hr))
           wdxdisplay8_cat.error() << "CreateDX8Cursor failed!" <<  D3DERRORSTRING(hr);
@@ -1440,7 +1661,7 @@ is_badvidmem_card(D3DADAPTER_IDENTIFIER8 *pDevID) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: wdxGraphicsWindow::open_window
+//     Function: wdxGraphicsWindow8::open_window
 //       Access: Protected, Virtual
 //  Description: Opens the window right now.  Called from the window
 //               thread.  Returns true if the window is successfully
@@ -1448,7 +1669,7 @@ is_badvidmem_card(D3DADAPTER_IDENTIFIER8 *pDevID) {
 ////////////////////////////////////////////////////////////////////
 bool wdxGraphicsWindow8::
 open_window(void) {
-  if(!choose_adapter()) {
+  if(!choose_device()) {
       return false;
   }
 
@@ -1462,3 +1683,33 @@ open_window(void) {
   return true;
 }
 
+bool wdxGraphicsWindow8::
+handle_mouse_motion(int x, int y) {
+  (void) WinGraphicsWindow::handle_mouse_motion(x,y);
+  if(dx_use_dx_cursor && is_fullscreen() && (_wcontext.pD3DDevice!=NULL)) {
+      _wcontext.pD3DDevice->SetCursorPosition(x,y,D3DCURSOR_IMMEDIATE_UPDATE);
+      // return true to indicate wind_proc should return 0 instead of going to DefaultWindowProc
+      return true;
+  }
+  return false;
+}
+
+#if 0
+// does NOT override _props._bCursorIsVisible
+INLINE void wdxGraphicsWindow::
+set_cursor_visibility(bool bVisible) {
+  if(_props._bCursorIsVisible) {
+      if(dx_use_dx_cursor) {
+          ShowCursor(false);
+          if(IS_VALID_PTR(_wcontext.pD3DDevice))
+              _dxgsg->scrn.pD3DDevice->ShowCursor(bVisible);
+      } else {
+         ShowCursor(bVisible);
+      }
+  } else {
+      ShowCursor(false);
+      if(dx_use_dx_cursor && IS_VALID_PTR(_wcontext.pD3DDevice))
+          _dxgsg->scrn.pD3DDevice->ShowCursor(false);
+  }
+}
+#endif

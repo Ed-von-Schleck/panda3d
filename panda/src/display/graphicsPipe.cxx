@@ -110,6 +110,8 @@ get_hw_channel(GraphicsWindow *, int) {
 ////////////////////////////////////////////////////////////////////
 PT(GraphicsStateGuardian) GraphicsPipe::
 make_gsg(const FrameBufferProperties &properties) {
+  // shouldnt this method really be pure virtual?  it's an error for a pipe to not implement it
+  display_cat.error() << "Error: make_gsg() unimplemented by graphicsPipe!\n";
   return NULL;
 }
 

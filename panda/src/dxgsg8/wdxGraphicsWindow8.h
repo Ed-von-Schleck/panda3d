@@ -16,8 +16,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef WDXGRAPHICSWINDOW8_H
-#define WDXGRAPHICSWINDOW8_H
+#ifndef wdxGraphicsWindow8_H
+#define wdxGraphicsWindow8_H
 
 #include "pandabase.h"
 #include "winGraphicsWindow.h"
@@ -48,6 +48,7 @@ public:
   virtual bool begin_frame();
   virtual void end_flip();
   virtual LONG window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  virtual bool handle_mouse_motion(int x, int y);
 
 protected:
   virtual void fullscreen_restored(WindowProperties &properties);
@@ -59,7 +60,7 @@ private:
   void create_screen_buffers_and_device(DXScreenData &Display,
                                         bool force_16bpp_zbuffer);
 
-  bool choose_adapter(void);
+  bool choose_device(void);
   bool search_for_device(wdxGraphicsPipe8 *dxpipe, DXDeviceInfo *device_info);
 
   //  void set_coop_levels_and_display_modes();

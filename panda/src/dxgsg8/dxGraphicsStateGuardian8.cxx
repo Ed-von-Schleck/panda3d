@@ -435,9 +435,11 @@ DXGraphicsStateGuardian8(const FrameBufferProperties &properties) :
 ////////////////////////////////////////////////////////////////////
 DXGraphicsStateGuardian8::
 ~DXGraphicsStateGuardian8() {
-    if (_pD3DDevice != NULL)
+    if (IS_VALID_PTR(_pD3DDevice)) 
         _pD3DDevice->SetTexture(0, NULL);  // this frees reference to the old texture
     _pCurTexContext = NULL;
+
+    //free_d3d_device();   ???
 
     free_nondx_resources();
 }
@@ -4700,39 +4702,43 @@ CheckCooperativeLevel(bool bDoReactivateWindow) {
   }
 
   switch(hr) {
-  case D3DERR_DEVICENOTRESET:
-    _bDXisReady = false;
-    hr=reset_d3d_device(&_pScrn->PresParams);
-    if (FAILED(hr)) {
-      // I think this shouldnt fail unless I've screwed up the PresParams from the original working ones somehow
-      dxgsg8_cat.error()
-        << "CheckCooperativeLevel Reset() failed, hr = " << D3DERRORSTRING(hr);
-      exit(1);
-    }
-
-    if(bDoReactivateWindow) {
-      //                 _win->reactivate_window();  //must reactivate window before you can restore surfaces (otherwise you are in WRONGVIDEOMODE, and DDraw RestoreAllSurfaces fails)
-    }
-    hr = _pD3DDevice->TestCooperativeLevel();
-    if(FAILED(hr)) {
-      // internal chk, shouldnt fail
-      dxgsg8_cat.error()
-        << "TestCooperativeLevel following Reset() failed, hr = " << D3DERRORSTRING(hr);
-      exit(1);
-    }
-
-    _bDXisReady = TRUE;
-    break;
-
-  case D3DERR_DEVICELOST:
-    if(SUCCEEDED(_last_testcooplevel_result)) {
-      if(_bDXisReady) {
-        //                   _win->deactivate_window();
+      case D3DERR_DEVICENOTRESET:
         _bDXisReady = false;
-        if(dxgsg8_cat.is_debug())
-          dxgsg8_cat.debug() << "D3D Device was Lost, waiting...\n";
-      }
-    }
+        hr=reset_d3d_device(&_pScrn->PresParams);
+        if (FAILED(hr)) {
+          // I think this shouldnt fail unless I've screwed up the PresParams from the original working ones somehow
+          dxgsg8_cat.error()
+            << "CheckCooperativeLevel Reset() failed, hr = " << D3DERRORSTRING(hr);
+          exit(1);
+        }
+    
+        // BUGBUG: is taking this out wrong??
+        /*
+        if(bDoReactivateWindow) {
+           _win->reactivate_window();  //must reactivate window before you can restore surfaces (otherwise you are in WRONGVIDEOMODE, and DDraw RestoreAllSurfaces fails)
+        }
+        */
+
+        hr = _pD3DDevice->TestCooperativeLevel();
+        if(FAILED(hr)) {
+          // internal chk, shouldnt fail
+          dxgsg8_cat.error()
+            << "TestCooperativeLevel following Reset() failed, hr = " << D3DERRORSTRING(hr);
+          exit(1);
+        }
+    
+        _bDXisReady = TRUE;
+        break;
+    
+      case D3DERR_DEVICELOST:
+        if(SUCCEEDED(_last_testcooplevel_result)) {
+          if(_bDXisReady) {
+            //                   _win->deactivate_window();
+            _bDXisReady = false;
+            if(dxgsg8_cat.is_debug())
+              dxgsg8_cat.debug() << "D3D Device was Lost, waiting...\n";
+          }
+        }
   }
 
   _last_testcooplevel_result = hr;
