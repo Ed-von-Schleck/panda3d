@@ -117,7 +117,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode):
         position it.
         
         """
-        if not self.wantsSmoothing():
+        if not self.wantsSmoothing() or self.isDisabled():
             return
         
         if self.isLocal():
