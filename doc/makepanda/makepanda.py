@@ -90,10 +90,50 @@ else:
   def backslashify(exp):
     return(exp)
 
-def oscmd(cmd):
-  print cmd;
-  sys.stdout.flush();
-  if (os.system(cmd)): sys.exit("Failed");
+if 1:
+  def getExecutablePath(cmd):
+    for i in os.getenv("PATH").split(os.pathsep):
+      if os.path.isfile(os.path.join(i, cmd)):
+        return os.path.join(i, cmd)
+    return cmd
+
+  # This version gives us more control of how the executable is called:
+  def oscmd(cmd):
+    print cmd;
+    sys.stdout.flush();
+    cmdLine = cmd.split()
+    cmd = getExecutablePath(cmdLine[0])
+    args = cmdLine[1:]
+    exitCode = os.spawnv(os.P_WAIT, cmd, args)
+    if exitCode:
+      sys.exit("Failed: \"%s\" returned exit code (%s)"%(cmd, exitCode))
+else:
+  from distutils.spawn import spawn
+  # This version seems more "standard" and may be updated
+  # without us needing to do it:
+  def oscmd(cmd):
+    # pring the cmd ourselves rather than using verbose=1
+    # on the spawn so that we can flush stdout:
+    print cmd;
+    sys.stdout.flush();
+    cmdLine = cmd.split()
+    spawn(cmdLine)
+
+def oscdcmd(cd, cmd):
+  print "cd", cd;
+  base=os.getcwd()
+  os.chdir(cd)
+  oscmd(cmd)
+  os.chdir(base)
+
+def osmove(src,dst):
+  """
+  Move src file or directory to dst.  dst will be removed if it
+  exists (i.e. overwritten).
+  """
+  try: os.remove(dst)
+  except OSError: pass
+  os.rename(src, dst)
 
 def buildingwhat(opts):
   building = 0
@@ -124,7 +164,7 @@ def ConditionalWriteFile(dest,desiredcontents):
 ## You might be tempted to change the defaults by editing them
 ## here.  Don't do it.  Instead, create a script that compiles
 ## panda with your preferred options.
-## 
+##
 ########################################################################
 
 if (sys.platform == "win32"): COMPILERS=["MSVC7"]
@@ -149,6 +189,54 @@ if (sys.platform != "win32"):
 
 ########################################################################
 ##
+## Help with packages.
+##
+## Output some brief information to help someone understand what the
+## package options are.
+##
+########################################################################
+
+PACKAGE_INFO="""
+  3D modeling an painting packages:
+    MAX5     3D Studio Max version 5
+    MAX6     3D Studio Max version 6
+    MAX7     3D Studio Max version 7
+    MAYA5    Maya version 5
+    MAYA6    Maya version 6
+
+  Audio playback:
+    FMOD     f mod (.wav, .mp3 files)
+    MILES    Miles Sound System from RAD Game Tools is
+             a proprietary (non-opensource) audio library
+             (.wav, .mp3 files)
+
+  Compression/decompression:
+    ZLIB     z lib (e.g. .zip files)
+
+  Font manipulation:
+    FREETYPE free type
+
+  Image support libraries:
+    JPEG     .jpg and .jpeg files
+    PNG      .png files
+    TIFF     .tiff files
+
+  Misc libraries:
+    HELIX
+    FFTW
+    NVIDIACG
+
+  Network communication:
+    OPENSSL  Open Secure Socket Layer network encryption library
+    NSPR     Netscape Portable Runtime is used for network
+             sockets and threading
+
+  User input:
+    VRPN     vrpn is a controller input library
+"""
+
+########################################################################
+##
 ## Command-line parser.
 ##
 ## You can type "makepanda --help" to see all the options.
@@ -163,6 +251,8 @@ def usage(problem):
   print "By default, makepanda generates a 'built' subdirectory and"
   print "an executable panda installer.  Command-line arguments are:"
   print ""
+  print "  --help            (print the help message you're reading now)"
+  print "  --package-info    (help info about the optional packages)"
   print "  --compiler X      (currently, compiler can only be MSVC7,LINUXA)"
   print "  --optimize X      (optimization level can be 1,2,3,4)"
   print "  --thirdparty X    (directory containing third-party software)"
@@ -173,10 +263,11 @@ def usage(problem):
   print "  --v3 X            (set the sequence version number)"
   print "  --lzma            (use lzma compression when building installer)"
   print ""
-  for pkg in PACKAGES: print "  --no-"+pkg.lower()+"             "[len(pkg.lower()):]+"(disable the use of "+pkg+")"
+  for pkg in PACKAGES: print "  --"+pkg.lower()+" or --no-"+pkg.lower()+"             "[len(pkg.lower()):]+"(enable or disable the use of "+pkg+")"
   print ""
   print "  --no-nothing      (don't use any of the third-party packages)"
   print "  --default         (use default options for everything not specified)"
+  print "  --vrdefault       (use default options for the vr studio)"
   print ""
   print "The simplest way to compile panda is to just type:"
   print ""
@@ -189,6 +280,7 @@ def parseopts(args):
   longopts = ["compiler=","thirdparty=","optimize=","no-nothing","no-installer","complete","default","v1=","v2=","v3=","lzma"]
   anything = 0
   for pkg in PACKAGES: longopts.append("no-"+pkg.lower())
+  for pkg in PACKAGES: longopts.append(pkg.lower())
   try:
     opts, extras = getopt.getopt(args, "", longopts)
     for option,value in opts:
@@ -204,6 +296,8 @@ def parseopts(args):
       if (option=="--lzma"): COMPRESSOR="lzma"
       for pkg in PACKAGES:
         if (option=="--no-"+pkg.lower()): OMIT.append(pkg)
+      for pkg in PACKAGES:
+        if option=="--"+pkg.lower() and OMIT.count(pkg): OMIT.remove(pkg)
       anything = 1
   except: usage(0)
   if (anything==0): usage(0)
@@ -222,10 +316,11 @@ parseopts(sys.argv[1:])
 #
 ########################################################################
 
-PANDASOURCE=os.path.dirname(os.path.abspath(sys.argv[0]))
+PANDASOURCE=os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))
+print "PANDASOURCE:", PANDASOURCE
 
-if ((os.path.exists(os.path.join(PANDASOURCE,"makepanda.py"))==0) or
-    (os.path.exists(os.path.join(PANDASOURCE,"makepanda.sln"))==0) or
+if ((os.path.exists(os.path.join(PANDASOURCE,"makepanda/makepanda.py"))==0) or
+    (os.path.exists(os.path.join(PANDASOURCE,"makepanda/makepanda.sln"))==0) or
     (os.path.exists(os.path.join(PANDASOURCE,"dtool","src","dtoolbase","dtoolbase.h"))==0) or
     (os.path.exists(os.path.join(PANDASOURCE,"panda","src","pandabase","pandabase.h"))==0)):
   sys.exit("I am unable to locate the root of the panda source tree.")
@@ -256,7 +351,10 @@ if (sys.platform == "win32"):
     dxdir = GetRegistryKey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment","DXSDK_DIR")
     if (dxdir != 0): DirectXSDK=dxdir
     else:
-      sys.exit("The registry does not appear to contain a pointer to the DirectX 9.0 SDK.");
+      dxdir = GetRegistryKey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment","DXSDKROOT")
+      if (dxdir != 0): DirectXSDK=dxdir
+      else:
+        sys.exit("The registry does not appear to contain a pointer to the DirectX 9.0 SDK.");
 
 ########################################################################
 ##
@@ -537,10 +635,10 @@ def CxxFindHeader(srcfile, incfile, ipath):
       if (incfile[:2]=="./"):
         incfile = incfile[2:]
       elif (incfile[:3]=="../"):
-	incfile = incfile[3:]
-	last = srcdir[:-1].rfind("/")
-	if (last < 0): sys.exit("CxxFindHeader cannot handle this case #2")
-	srcdir = srcdir[:last+1]
+        incfile = incfile[3:]
+        last = srcdir[:-1].rfind("/")
+        if (last < 0): sys.exit("CxxFindHeader cannot handle this case #2")
+        srcdir = srcdir[:last+1]
       else: sys.exit("CxxFindHeader cannot handle this case #3")
     full = srcdir + incfile;
     if (filedate(backslashify(full)) > 0): return(full);
@@ -573,7 +671,7 @@ def CxxCalcDependencies(srcfile, ipath, ignore):
     if (CxxIgnoreHeader.has_key(include)==0):
       header = CxxFindHeader(srcfile, include, ipath)
       if (header==0):
-	print "CAUTION: header file "+include+" cannot be found."
+        print "CAUTION: header file "+include+" cannot be found."
       else:
         if (ignore.count(header)==0):
           hdeps = CxxCalcDependencies(header, ipath, [srcfile]+ignore)
@@ -627,7 +725,7 @@ def CopyFile(dstfile,srcfile):
       data = " "
       while (len(data) > 0):
         data = srchandle.read(100000);
-  	dsthandle.write(data)
+        dsthandle.write(data)
       srchandle.close()
       dsthandle.close()
       updatefiledate(wdstfile);
@@ -681,16 +779,23 @@ def CompileBison(pre,dstc,dsth,src):
   wdstc = backslashify("built/tmp/"    +dstc)
   wdsth = backslashify("built/include/"+dsth)
   wsrc = backslashify(src)
-  if (older(wdstc,wsrc) | older(wdsth,wsrc)):
+  if (older(wdstc,wsrc) or older(wdsth,wsrc)):
     CopyFile("built/tmp/", src)
     if (COMPILER=="MSVC7"):
-      CopyFile("built/tmp/", "thirdparty/win-util/bison.simple")
-      oscmd("cd built\\tmp & ..\\..\\thirdparty\\win-util\\bison.exe -y -d -p " + pre + " " + fn)
-      oscmd("move /y built\\tmp\\y_tab.c " + wdstc + " & move /y built\\tmp\\y_tab.h " + wdsth)
+      CopyFile("built/tmp/", STDTHIRDPARTY+"win-util/bison.simple")
+      bisonFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\bison.exe")
+      #oscdcmd("built/tmp", bisonFullPath+" -y -d -p " + pre + " " + fn)
+      oscmd(bisonFullPath+" -y -d -p " + pre + " " + fn)
+      osmove("built\\tmp\\y_tab.c", wdstc)
+      osmove("built\\tmp\\y_tab.h", wdsth)
+      #oscmd("move /y built\\tmp\\y_tab.c " + wdstc)
+      #oscmd("move /y built\\tmp\\y_tab.h " + wdsth)
     if (COMPILER=="LINUXA"):
-      oscmd("cd built/tmp ; bison -y -d -p "+pre+" "+fn)
-      oscmd("mv built/tmp/y.tab.c "+wdstc)
-      oscmd("mv built/tmp/y.tab.h "+wdsth)
+      oscdcmd("built/tmp", "bison -y -d -p "+pre+" "+fn)
+      osmove("built/tmp/y.tab.c", wdstc)
+      osmove("built/tmp/y.tab.h", wdsth)
+      #oscmd("mv built/tmp/y.tab.c "+wdstc)
+      #oscmd("mv built/tmp/y.tab.h "+wdsth)
     updatefiledate(wdstc);
     updatefiledate(wdsth);
 
@@ -711,12 +816,14 @@ def CompileFlex(pre,dst,src,dashi):
   if (older(wdst,wsrc)):
     CopyFile("built/tmp/", src)
     if (COMPILER=="MSVC7"):
-      if (dashi): oscmd("cd built\\tmp & ..\\..\\thirdparty\\win-util\\flex.exe -i -P" + pre + " -olex.yy.c " + wfn)
-      else      : oscmd("cd built\\tmp & ..\\..\\thirdparty\\win-util\\flex.exe    -P" + pre + " -olex.yy.c " + wfn)
-      oscmd('cd built\\tmp & ..\\..\\thirdparty\\win-util\\sed -e "s/#include <unistd.h>//" < lex.yy.c > ..\\..\\'+wdst)
+      flexFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\flex.exe")
+      sedFullPath=os.path.abspath(backslashify(STDTHIRDPARTY)+"win-util\\sed.exe")
+      if (dashi): oscdcmd("built/tmp", flexFullPath+" -i -P" + pre + " -olex.yy.c " + wfn)
+      else      : oscdcmd("built/tmp", flexFullPath+"    -P" + pre + " -olex.yy.c " + wfn)
+      oscdcmd('built/tmp', sedFullPath+' -e "s/#include <unistd.h>//" < lex.yy.c > ..\\..\\'+wdst)
     if (COMPILER=="LINUXA"):
-      if (dashi): oscmd("cd built/tmp ; flex -i -P" + pre + " -olex.yy.c " + wfn)
-      else      : oscmd("cd built/tmp ; flex    -P" + pre + " -olex.yy.c " + wfn)
+      if (dashi): oscdcmd("built/tmp", "flex -i -P" + pre + " -olex.yy.c " + wfn)
+      else      : oscdcmd("built/tmp", "flex    -P" + pre + " -olex.yy.c " + wfn)
       oscmd('cp built/tmp/lex.yy.c '+wdst)
     updatefiledate(wdst)
 
@@ -734,7 +841,7 @@ def CompileC(obj=0,src=0,ipath=[],opts=[]):
   fullsrc = CxxFindSource(src, ipath)
   if (fullsrc == 0): sys.exit("Cannot find source file "+src)
   dep = CxxCalcDependencies(fullsrc, ipath, [])
-  
+
   if (COMPILER=="MSVC7"):
     wobj = backslashify("built/tmp/"+obj);
     if (older(wobj, backslashify(dep))):
@@ -746,9 +853,9 @@ def CompileC(obj=0,src=0,ipath=[],opts=[]):
       for max in ["MAX5","MAX6","MAX7"]:
         if (PkgSelected(opts,max)):
           cmd = cmd + ' /I"' + MAXSDK[max] + 'include" /I"' + MAXSDKCS[max] + '" /D' + max
-      for pkg in PACKAGES: 
-	if (pkg != "MAYA5") and (pkg != "MAYA6") and PkgSelected(opts,pkg):
-	  cmd = cmd + ' /I"' + THIRDPARTY + pkg.lower() + "\\include" + '"'
+      for pkg in PACKAGES:
+        if (pkg != "MAYA5") and (pkg != "MAYA6") and PkgSelected(opts,pkg):
+          cmd = cmd + ' /I"' + THIRDPARTY + pkg.lower() + "\\include" + '"'
       for x in backslashify(ipath): cmd = cmd + " /I " + x;
       if (opts.count('NOFLOATWARN')): cmd = cmd + ' /wd4244 /wd4305'
       if (opts.count("WITHINPANDA")): cmd = cmd + ' /DWITHIN_PANDA'
@@ -762,7 +869,7 @@ def CompileC(obj=0,src=0,ipath=[],opts=[]):
       cmd = cmd + " /EHsc /Zm300 /DWIN32_VC /DWIN32 /W3 " + backslashify(fullsrc)
       oscmd(cmd)
       updatefiledate(wobj)
-    
+
   if (COMPILER=="LINUXA"):
     wobj = "built/tmp/" + obj[:-4] + ".o"
     if (older(wobj, dep)):
@@ -803,7 +910,7 @@ def CompileRES(obj=0,src=0,ipath=[],opts=[]):
   wsrc = backslashify(fullsrc)
   wdep = backslashify(CxxCalcDependencies(fullsrc, ipath, []))
   wipath = backslashify(ipath)
-  
+
   if (COMPILER=="MSVC7"):
     if (older(wobj, wdep)):
       cmd = 'rc.exe /d "NDEBUG" /l 0x409'
@@ -812,7 +919,7 @@ def CompileRES(obj=0,src=0,ipath=[],opts=[]):
       cmd = cmd + ' "'+ wsrc + '"'
       oscmd(cmd)
       updatefiledate(wobj)
-      
+
   if (COMPILER=="LINUXA"):
     sys.exit("Can only compile RES files on Windows.")
 
@@ -843,9 +950,9 @@ def Interrogate(ipath=0, opts=0, outd=0, outc=0, src=0, module=0, library=0, fil
   building = 0;
   for x in opts:
     if (x[:9]=="BUILDING_"): building = x[9:]
-  if (older(woutc, wdep) | older(woutd, wdep)):
+  if (older(woutc, wdep) or older(woutd, wdep)):
     if (COMPILER=="MSVC7"):
-      cmd = "cd " + wsrc + " & " + wdotdots + "built\\bin\\interrogate.exe"
+      cmd = wdotdots + "built\\bin\\interrogate.exe"
       cmd = cmd + ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -longlong __int64 -D_X86_ -DWIN32_VC -D_WIN32'
       cmd = cmd + ' -D"_declspec(param)=" -D_near -D_far -D__near -D__far -D__stdcall'
       if (OPTIMIZE==1): cmd = cmd + ' '
@@ -855,7 +962,7 @@ def Interrogate(ipath=0, opts=0, outd=0, outc=0, src=0, module=0, library=0, fil
       cmd = cmd + ' -S"' + wdotdots + 'built\\include\\parser-inc"'
       cmd = cmd + ' -I"' + wdotdots + 'built\\python\\include"'
     if (COMPILER=="LINUXA"):
-      cmd = "cd " + wsrc + " ; " + wdotdots + "built/bin/interrogate"
+      cmd = wdotdots + "built/bin/interrogate"
       cmd = cmd + ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -D__i386__ -D__const=const'
       if (OPTIMIZE==1): cmd = cmd + ' '
       if (OPTIMIZE==2): cmd = cmd + ' '
@@ -868,7 +975,7 @@ def Interrogate(ipath=0, opts=0, outd=0, outc=0, src=0, module=0, library=0, fil
     for x in wipath: cmd = cmd + ' -I"' + wdotdots + x + '"'
     if (building): cmd = cmd + " -DBUILDING_"+building
     if (opts.count("WITHINPANDA")): cmd = cmd + " -DWITHIN_PANDA"
-    for pkg in PACKAGES: 
+    for pkg in PACKAGES:
       if (PkgSelected(opts,pkg)):
         cmd = cmd + ' -I"' + wdotdots + backslashify(STDTHIRDPARTY + pkg.lower() + "/include") + '"'
     cmd = cmd + ' -module "' + module + '" -library "' + library + '"'
@@ -876,7 +983,7 @@ def Interrogate(ipath=0, opts=0, outd=0, outc=0, src=0, module=0, library=0, fil
     if ((COMPILER=="MSVC7") and opts.count("MAYA5")): cmd = cmd + ' -I"' + Maya5SDK + 'include"'
     if ((COMPILER=="MSVC7") and opts.count("MAYA6")): cmd = cmd + ' -I"' + Maya6SDK + 'include"'
     for x in wfiles: cmd = cmd + ' ' + x
-    oscmd(cmd)
+    oscdcmd(wsrc, cmd)
     updatefiledate(woutd)
     updatefiledate(woutc)
 
@@ -900,7 +1007,7 @@ def InterrogateModule(outc=0, module=0, library=0, files=0):
     for x in wfiles: cmd = cmd + ' ' + x
     oscmd(cmd)
     updatefiledate(woutc);
- 
+
 ########################################################################
 ##
 ## CompileLIB
@@ -922,7 +1029,7 @@ def CompileLIB(lib=0, obj=[], opts=[]):
       for x in wobj: cmd=cmd+" "+x;
       oscmd(cmd)
       updatefiledate(wlib);
-      
+
   if (COMPILER=="LINUXA"):
     wlib = "built/lib/" + lib[:-4] + ".a"
     wobj = []
@@ -997,6 +1104,7 @@ def CompileLink(dll=0, obj=[], opts=[], xdep=[]):
       if (PkgSelected(opts,"VRPN")):     cmd = cmd + " " + THIRDPARTY + 'vrpn\\lib\\vrpn.lib'
       if (PkgSelected(opts,"VRPN")):     cmd = cmd + " " + THIRDPARTY + 'vrpn\\lib\\quat.lib'
       if (PkgSelected(opts,"FMOD")):     cmd = cmd + " " + THIRDPARTY + 'fmod\\lib\\fmod.lib'
+      if (PkgSelected(opts,"MILES")):    cmd = cmd + " " + THIRDPARTY + 'miles\\lib\\mss32.lib'
       if (PkgSelected(opts,"NVIDIACG")):
         if (opts.count("CGGL")): cmd = cmd + " " + THIRDPARTY + 'nvidiacg\\lib\\cgGL.lib'
         cmd = cmd + " " + THIRDPARTY + 'nvidiacg\\lib\\cg.lib'
@@ -1460,8 +1568,8 @@ for pkg in PACKAGES:
 if (os.path.exists(backslashify(STDTHIRDPARTY + "extras/bin"))):
   CopyAllFiles("built/bin/", STDTHIRDPARTY + "extras/bin/")
 if (sys.platform == "win32"):
-  CopyTree('built/python', 'thirdparty/win-python')
-  CopyFile('built/bin/', 'thirdparty/win-python/python22.dll')
+  CopyTree('built/python', STDTHIRDPARTY+'win-python')
+  CopyFile('built/bin/', STDTHIRDPARTY+'win-python/python22.dll')
 
 ########################################################################
 ##
@@ -3343,13 +3451,13 @@ CompileC(ipath=IPATH, opts=OPTS, src='downloader_composite1.cxx', obj='downloade
 CompileC(ipath=IPATH, opts=OPTS, src='downloader_composite2.cxx', obj='downloader_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libdownloader.in', outc='libdownloader_igate.cxx',
             src='panda/src/downloader',  module='pandaexpress', library='libdownloader', files=[
-	    'config_downloader.h', 'asyncUtility.h', 'bioPtr.h', 'bioStreamPtr.h', 'bioStream.h', 'bioStreamBuf.h',
+            'config_downloader.h', 'asyncUtility.h', 'bioPtr.h', 'bioStreamPtr.h', 'bioStream.h', 'bioStreamBuf.h',
             'chunkedStream.h', 'chunkedStreamBuf.h', 'decompressor.h', 'documentSpec.h', 'downloadDb.h',
-	    'download_utils.h', 'extractor.h', 'httpAuthorization.h', 'httpBasicAuthorization.h', 'httpChannel.h',
-	    'httpClient.h', 'httpCookie.h', 'httpDate.h', 'httpDigestAuthorization.h', 'httpEntityTag.h',
-	    'httpEnum.h', 'identityStream.h', 'identityStreamBuf.h', 'multiplexStream.h', 'multiplexStreamBuf.h',
-	    'patcher.h', 'socketStream.h', 'ssl_utils.h', 'urlSpec.h',
-	    'downloader_composite1.cxx', 'downloader_composite2.cxx'])
+            'download_utils.h', 'extractor.h', 'httpAuthorization.h', 'httpBasicAuthorization.h', 'httpChannel.h',
+            'httpClient.h', 'httpCookie.h', 'httpDate.h', 'httpDigestAuthorization.h', 'httpEntityTag.h',
+            'httpEnum.h', 'identityStream.h', 'identityStreamBuf.h', 'multiplexStream.h', 'multiplexStreamBuf.h',
+            'patcher.h', 'socketStream.h', 'ssl_utils.h', 'urlSpec.h',
+            'downloader_composite1.cxx', 'downloader_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libdownloader_igate.cxx', obj='libdownloader_igate.obj')
 
 #
@@ -3386,19 +3494,19 @@ CompileC(ipath=IPATH, opts=OPTS, src='putil_composite1.cxx', obj='putil_composit
 CompileC(ipath=IPATH, opts=OPTS, src='putil_composite2.cxx', obj='putil_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libputil.in', outc='libputil_igate.cxx',
             src='panda/src/putil',  module='panda', library='libputil', files=[
-	    'bam.h', 'bamReader.h', 'bamReaderParam.h', 'bamWriter.h', 'bitMask.h', 'buttonHandle.h',
-	    'buttonRegistry.h', 'cachedTypedWritableReferenceCount.h', 'collideMask.h', 'portalMask.h',
-	    'compareTo.h', 'config_util.h', 'configurable.h', 'cycleData.h', 'cycleDataReader.h',
+            'bam.h', 'bamReader.h', 'bamReaderParam.h', 'bamWriter.h', 'bitMask.h', 'buttonHandle.h',
+            'buttonRegistry.h', 'cachedTypedWritableReferenceCount.h', 'collideMask.h', 'portalMask.h',
+            'compareTo.h', 'config_util.h', 'configurable.h', 'cycleData.h', 'cycleDataReader.h',
             'cycleDataWriter.h', 'datagramInputFile.h', 'datagramOutputFile.h', 'drawMask.h', 'factoryBase.h',
             'factoryParam.h', 'factoryParams.h', 'firstOfPairCompare.h', 'firstOfPairLess.h',
-	    'globalPointerRegistry.h', 'indirectCompareNames.h', 'indirectCompareTo.h', 'ioPtaDatagramFloat.h',
-	    'ioPtaDatagramInt.h', 'ioPtaDatagramShort.h', 'keyboardButton.h', 'lineStream.h', 'lineStreamBuf.h',
-	    'load_prc_file.h', 'modifierButtons.h', 'mouseButton.h', 'mouseData.h', 'nameUniquifier.h',
-	    'pipeline.h', 'pipelineCycler.h', 'pipelineCyclerBase.h', 'pta_double.h', 'pta_float.h',
-	    'pta_int.h', 'string_utils.h', 'timedCycle.h', 'typedWritable.h', 'typedWritableReferenceCount.h',
-	    'updateSeq.h', 'uniqueIdAllocator.h', 'vector_double.h', 'vector_float.h', 'vector_typedWritable.h',
-	    'vector_ushort.h', 'vector_writable.h', 'writableConfigurable.h', 'writableParam.h',
-	    'putil_composite1.cxx', 'putil_composite2.cxx'])
+            'globalPointerRegistry.h', 'indirectCompareNames.h', 'indirectCompareTo.h', 'ioPtaDatagramFloat.h',
+            'ioPtaDatagramInt.h', 'ioPtaDatagramShort.h', 'keyboardButton.h', 'lineStream.h', 'lineStreamBuf.h',
+            'load_prc_file.h', 'modifierButtons.h', 'mouseButton.h', 'mouseData.h', 'nameUniquifier.h',
+            'pipeline.h', 'pipelineCycler.h', 'pipelineCyclerBase.h', 'pta_double.h', 'pta_float.h',
+            'pta_int.h', 'string_utils.h', 'timedCycle.h', 'typedWritable.h', 'typedWritableReferenceCount.h',
+            'updateSeq.h', 'uniqueIdAllocator.h', 'vector_double.h', 'vector_float.h', 'vector_typedWritable.h',
+            'vector_ushort.h', 'vector_writable.h', 'writableConfigurable.h', 'writableParam.h',
+            'putil_composite1.cxx', 'putil_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libputil_igate.cxx', obj='libputil_igate.obj')
 
 #
@@ -3422,8 +3530,8 @@ OPTS=['BUILDING_PANDA', 'NSPR']
 CompileC(ipath=IPATH, opts=OPTS, src='event_composite1.cxx', obj='event_composite1.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libevent.in', outc='libevent_igate.cxx',
             src='panda/src/event',  module='panda', library='libevent', files=[
-	    'config_event.h', 'buttonEvent.h', 'buttonEventList.h', 'event.h', 'eventHandler.h',
-	    'eventParameter.h', 'eventQueue.h', 'eventReceiver.h', 'pt_Event.h', 'throw_event.h', 'event_composite1.cxx'])
+            'config_event.h', 'buttonEvent.h', 'buttonEventList.h', 'event.h', 'eventHandler.h',
+            'eventParameter.h', 'eventQueue.h', 'eventReceiver.h', 'pt_Event.h', 'throw_event.h', 'event_composite1.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libevent_igate.cxx', obj='libevent_igate.obj')
 
 #
@@ -3436,7 +3544,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='linmath_composite1.cxx', obj='linmath_comp
 CompileC(ipath=IPATH, opts=OPTS, src='linmath_composite2.cxx', obj='linmath_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='liblinmath.in', outc='liblinmath_igate.cxx',
             src='panda/src/linmath',  module='panda', library='liblinmath', files=[
-	    'compose_matrix.h', 'compose_matrix_src.h', 'config_linmath.h', 'coordinateSystem.h', 'dbl2fltnames.h', 'dblnames.h', 'deg_2_rad.h', 'flt2dblnames.h', 'fltnames.h', 'ioPtaDatagramLinMath.h', 'lcast_to.h', 'lcast_to_src.h', 'lmatrix.h', 'lmatrix3.h', 'lmatrix3_src.h', 'lmatrix4.h', 'lmatrix4_src.h', 'lorientation.h', 'lorientation_src.h', 'lpoint2.h', 'lpoint2_src.h', 'lpoint3.h', 'lpoint3_src.h', 'lpoint4.h', 'lpoint4_src.h', 'lquaternion.h', 'lquaternion_src.h', 'lrotation.h', 'lrotation_src.h', 'luse.h', 'lvec2_ops.h', 'lvec2_ops_src.h', 'lvec3_ops.h', 'lvec3_ops_src.h', 'lvec4_ops.h', 'lvec4_ops_src.h', 'lvecBase2.h', 'lvecBase2_src.h', 'lvecBase3.h', 'lvecBase3_src.h', 'lvecBase4.h', 'lvecBase4_src.h', 'lvector2.h', 'lvector2_src.h', 'lvector3.h', 'lvector3_src.h', 'lvector4.h', 'lvector4_src.h', 'mathNumbers.h', 'pta_Colorf.h', 'pta_Normalf.h', 'pta_TexCoordf.h', 'pta_Vertexf.h', 'vector_Colorf.h', 'vector_LPoint2f.h', 'vector_LVecBase3f.h', 'vector_Normalf.h', 'vector_TexCoordf.h', 'vector_Vertexf.h', 'linmath_composite1.cxx', 'linmath_composite2.cxx'])
+            'compose_matrix.h', 'compose_matrix_src.h', 'config_linmath.h', 'coordinateSystem.h', 'dbl2fltnames.h', 'dblnames.h', 'deg_2_rad.h', 'flt2dblnames.h', 'fltnames.h', 'ioPtaDatagramLinMath.h', 'lcast_to.h', 'lcast_to_src.h', 'lmatrix.h', 'lmatrix3.h', 'lmatrix3_src.h', 'lmatrix4.h', 'lmatrix4_src.h', 'lorientation.h', 'lorientation_src.h', 'lpoint2.h', 'lpoint2_src.h', 'lpoint3.h', 'lpoint3_src.h', 'lpoint4.h', 'lpoint4_src.h', 'lquaternion.h', 'lquaternion_src.h', 'lrotation.h', 'lrotation_src.h', 'luse.h', 'lvec2_ops.h', 'lvec2_ops_src.h', 'lvec3_ops.h', 'lvec3_ops_src.h', 'lvec4_ops.h', 'lvec4_ops_src.h', 'lvecBase2.h', 'lvecBase2_src.h', 'lvecBase3.h', 'lvecBase3_src.h', 'lvecBase4.h', 'lvecBase4_src.h', 'lvector2.h', 'lvector2_src.h', 'lvector3.h', 'lvector3_src.h', 'lvector4.h', 'lvector4_src.h', 'mathNumbers.h', 'pta_Colorf.h', 'pta_Normalf.h', 'pta_TexCoordf.h', 'pta_Vertexf.h', 'vector_Colorf.h', 'vector_LPoint2f.h', 'vector_LVecBase3f.h', 'vector_Normalf.h', 'vector_TexCoordf.h', 'vector_Vertexf.h', 'linmath_composite1.cxx', 'linmath_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='liblinmath_igate.cxx', obj='liblinmath_igate.obj')
 
 #
@@ -3449,7 +3557,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='mathutil_composite1.cxx', obj='mathutil_co
 CompileC(ipath=IPATH, opts=OPTS, src='mathutil_composite2.cxx', obj='mathutil_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libmathutil.in', outc='libmathutil_igate.cxx',
             src='panda/src/mathutil',  module='panda', library='libmathutil', files=[
-	    'boundingHexahedron.h', 'boundingLine.h', 'boundingSphere.h', 'boundingVolume.h', 'config_mathutil.h', 'fftCompressor.h', 'finiteBoundingVolume.h', 'frustum.h', 'frustum_src.h', 'geometricBoundingVolume.h', 'linmath_events.h', 'look_at.h', 'look_at_src.h', 'omniBoundingVolume.h', 'plane.h', 'plane_src.h', 'rotate_to.h', 'mathutil_composite1.cxx', 'mathutil_composite2.cxx'])
+            'boundingHexahedron.h', 'boundingLine.h', 'boundingSphere.h', 'boundingVolume.h', 'config_mathutil.h', 'fftCompressor.h', 'finiteBoundingVolume.h', 'frustum.h', 'frustum_src.h', 'geometricBoundingVolume.h', 'linmath_events.h', 'look_at.h', 'look_at_src.h', 'omniBoundingVolume.h', 'plane.h', 'plane_src.h', 'rotate_to.h', 'mathutil_composite1.cxx', 'mathutil_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libmathutil_igate.cxx', obj='libmathutil_igate.obj')
 
 #
@@ -3461,7 +3569,7 @@ OPTS=['BUILDING_PANDA', 'NSPR']
 CompileC(ipath=IPATH, opts=OPTS, src='gsgbase_composite1.cxx', obj='gsgbase_composite1.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libgsgbase.in', outc='libgsgbase_igate.cxx',
             src='panda/src/gsgbase',  module='panda', library='libgsgbase', files=[
-	    'config_gsgbase.h', 'graphicsStateGuardianBase.h', 'gsgbase_composite1.cxx'])
+            'config_gsgbase.h', 'graphicsStateGuardianBase.h', 'gsgbase_composite1.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libgsgbase_igate.cxx', obj='libgsgbase_igate.obj')
 
 #
@@ -3474,7 +3582,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='pnmimage_composite1.cxx', obj='pnmimage_co
 CompileC(ipath=IPATH, opts=OPTS, src='pnmimage_composite2.cxx', obj='pnmimage_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libpnmimage.in', outc='libpnmimage_igate.cxx',
             src='panda/src/pnmimage',  module='panda', library='libpnmimage', files=[
-	    'config_pnmimage.h', 'pnmbitio.h', 'pnmFileType.h', 'pnmFileTypeRegistry.h', 'pnmImage.h', 'pnmImageHeader.h', 'pnmReader.h', 'pnmWriter.h', 'pnmimage_base.h', 'ppmcmap.h', 'pnmimage_composite1.cxx', 'pnmimage_composite2.cxx'])
+            'config_pnmimage.h', 'pnmbitio.h', 'pnmFileType.h', 'pnmFileTypeRegistry.h', 'pnmImage.h', 'pnmImageHeader.h', 'pnmReader.h', 'pnmWriter.h', 'pnmimage_base.h', 'ppmcmap.h', 'pnmimage_composite1.cxx', 'pnmimage_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libpnmimage_igate.cxx', obj='libpnmimage_igate.obj')
 
 #
@@ -3487,7 +3595,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='net_composite1.cxx', obj='net_composite1.o
 CompileC(ipath=IPATH, opts=OPTS, src='net_composite2.cxx', obj='net_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libnet.in', outc='libnet_igate.cxx',
             src='panda/src/net',  module='panda', library='libnet', files=[
-	    'config_net.h', 'connection.h', 'connectionListener.h', 'connectionManager.h', 'connectionReader.h', 'connectionWriter.h', 'datagramQueue.h', 'datagramTCPHeader.h', 'datagramUDPHeader.h', 'netAddress.h', 'netDatagram.h', 'pprerror.h', 'queuedConnectionListener.h', 'queuedConnectionManager.h', 'queuedConnectionReader.h', 'recentConnectionReader.h', 'queuedReturn.h', 'net_composite1.cxx', 'net_composite2.cxx'])
+            'config_net.h', 'connection.h', 'connectionListener.h', 'connectionManager.h', 'connectionReader.h', 'connectionWriter.h', 'datagramQueue.h', 'datagramTCPHeader.h', 'datagramUDPHeader.h', 'netAddress.h', 'netDatagram.h', 'pprerror.h', 'queuedConnectionListener.h', 'queuedConnectionManager.h', 'queuedConnectionReader.h', 'recentConnectionReader.h', 'queuedReturn.h', 'net_composite1.cxx', 'net_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libnet_igate.cxx', obj='libnet_igate.obj')
 
 #
@@ -3500,7 +3608,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='pstatclient_composite1.cxx', obj='pstatcli
 CompileC(ipath=IPATH, opts=OPTS, src='pstatclient_composite2.cxx', obj='pstatclient_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libpstatclient.in', outc='libpstatclient_igate.cxx',
             src='panda/src/pstatclient',  module='panda', library='libpstatclient', files=[
-	    'config_pstats.h', 'pStatClient.h', 'pStatClientImpl.h', 'pStatClientVersion.h', 'pStatClientControlMessage.h', 'pStatCollector.h', 'pStatCollectorDef.h', 'pStatFrameData.h', 'pStatProperties.h', 'pStatServerControlMessage.h', 'pStatThread.h', 'pStatTimer.h', 'pstatclient_composite1.cxx', 'pstatclient_composite2.cxx'])
+            'config_pstats.h', 'pStatClient.h', 'pStatClientImpl.h', 'pStatClientVersion.h', 'pStatClientControlMessage.h', 'pStatCollector.h', 'pStatCollectorDef.h', 'pStatFrameData.h', 'pStatProperties.h', 'pStatServerControlMessage.h', 'pStatThread.h', 'pStatTimer.h', 'pstatclient_composite1.cxx', 'pstatclient_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libpstatclient_igate.cxx', obj='libpstatclient_igate.obj')
 
 #
@@ -3513,7 +3621,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='gobj_composite1.cxx', obj='gobj_composite1
 CompileC(ipath=IPATH, opts=OPTS, src='gobj_composite2.cxx', obj='gobj_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libgobj.in', outc='libgobj_igate.cxx',
             src='panda/src/gobj',  module='panda', library='libgobj', files=[
-	    'boundedObject.h', 'config_gobj.h', 'drawable.h', 'geom.h', 'geomContext.h', 'geomLine.h', 'geomLinestrip.h', 'geomPoint.h', 'geomPolygon.h', 'geomQuad.h', 'geomSphere.h', 'geomSprite.h', 'geomTri.h', 'geomTrifan.h', 'geomTristrip.h', 'imageBuffer.h', 'material.h', 'materialPool.h', 'matrixLens.h', 'orthographicLens.h', 'perspectiveLens.h', 'pixelBuffer.h', 'preparedGraphicsObjects.h', 'lens.h', 'savedContext.h', 'texture.h', 'textureContext.h', 'texturePool.h', 'texCoordName.h', 'textureStage.h', 'gobj_composite1.cxx', 'gobj_composite2.cxx'])
+            'boundedObject.h', 'config_gobj.h', 'drawable.h', 'geom.h', 'geomContext.h', 'geomLine.h', 'geomLinestrip.h', 'geomPoint.h', 'geomPolygon.h', 'geomQuad.h', 'geomSphere.h', 'geomSprite.h', 'geomTri.h', 'geomTrifan.h', 'geomTristrip.h', 'imageBuffer.h', 'material.h', 'materialPool.h', 'matrixLens.h', 'orthographicLens.h', 'perspectiveLens.h', 'pixelBuffer.h', 'preparedGraphicsObjects.h', 'lens.h', 'savedContext.h', 'texture.h', 'textureContext.h', 'texturePool.h', 'texCoordName.h', 'textureStage.h', 'gobj_composite1.cxx', 'gobj_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libgobj_igate.cxx', obj='libgobj_igate.obj')
 
 #
@@ -3525,7 +3633,7 @@ OPTS=['BUILDING_PANDA', 'NSPR']
 CompileC(ipath=IPATH, opts=OPTS, src='lerp_composite1.cxx', obj='lerp_composite1.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='liblerp.in', outc='liblerp_igate.cxx',
             src='panda/src/lerp',  module='panda', library='liblerp', files=[
-	    'config_lerp.h', 'lerp.h', 'lerpblend.h', 'lerpfunctor.h', 'lerp_composite1.cxx'])
+            'config_lerp.h', 'lerp.h', 'lerpblend.h', 'lerpfunctor.h', 'lerp_composite1.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='liblerp_igate.cxx', obj='liblerp_igate.obj')
 
 #
@@ -3539,7 +3647,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='pgraph_composite1.cxx', obj='pgraph_compos
 CompileC(ipath=IPATH, opts=OPTS, src='pgraph_composite2.cxx', obj='pgraph_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libpgraph.in', outc='libpgraph_igate.cxx',
             src='panda/src/pgraph',  module='panda', library='libpgraph', files=[
-	    'accumulatedAttribs.h', 'alphaTestAttrib.h', 'ambientLight.h', 'auxSceneData.h', 'bamFile.h', 'billboardEffect.h', 'binCullHandler.h', 'camera.h', 'clipPlaneAttrib.h', 'colorAttrib.h', 'colorBlendAttrib.h', 'colorScaleAttrib.h', 'colorWriteAttrib.h', 'compassEffect.h', 'config_pgraph.h', 'cullBin.h', 'cullBinAttrib.h', 'cullBinBackToFront.h', 'cullBinFixed.h', 'cullBinFrontToBack.h', 'cullBinManager.h', 'cullBinUnsorted.h', 'cullFaceAttrib.h', 'cullHandler.h', 'cullResult.h', 'cullTraverser.h', 'cullTraverserData.h', 'cullableObject.h', 'decalEffect.h', 'depthOffsetAttrib.h', 'depthTestAttrib.h', 'depthWriteAttrib.h', 'directionalLight.h', 'drawCullHandler.h', 'fadeLodNode.h', 'fadeLodNodeData.h', 'findApproxLevelEntry.h', 'findApproxPath.h', 'fog.h', 'fogAttrib.h', 'geomNode.h', 'geomTransformer.h', 'lensNode.h', 'light.h', 'lightAttrib.h', 'lightLensNode.h', 'lightNode.h', 'loader.h', 'loaderFileType.h', 'loaderFileTypeBam.h', 'loaderFileTypeRegistry.h', 'lodNode.h', 'materialAttrib.h', 'modelNode.h', 'modelPool.h', 'modelRoot.h', 'nodePath.h', 'nodePath.cxx', 'nodePathCollection.h', 'nodePathComponent.h', 'nodePathLerps.h', 'pandaNode.h', 'planeNode.h', 'pointLight.h', 'polylightNode.h', 'polylightEffect.h', 'portalNode.h', 'portalClipper.h', 'renderAttrib.h', 'renderEffect.h', 'renderEffects.h', 'renderModeAttrib.h', 'renderState.h', 'rescaleNormalAttrib.h', 'sceneGraphAnalyzer.h', 'sceneGraphReducer.h', 'sceneSetup.h', 'selectiveChildNode.h', 'sequenceNode.h', 'showBoundsEffect.h', 'spotlight.h', 'switchNode.h', 'texMatrixAttrib.h', 'texProjectorEffect.h', 'textureApplyAttrib.h', 'textureAttrib.h', 'texGenAttrib.h', 'textureCollection.h', 'textureStageCollection.h', 'transformState.h', 'transparencyAttrib.h', 'weakNodePath.h', 'workingNodePath.h', 'pgraph_composite1.cxx', 'pgraph_composite2.cxx'])
+            'accumulatedAttribs.h', 'alphaTestAttrib.h', 'ambientLight.h', 'auxSceneData.h', 'bamFile.h', 'billboardEffect.h', 'binCullHandler.h', 'camera.h', 'clipPlaneAttrib.h', 'colorAttrib.h', 'colorBlendAttrib.h', 'colorScaleAttrib.h', 'colorWriteAttrib.h', 'compassEffect.h', 'config_pgraph.h', 'cullBin.h', 'cullBinAttrib.h', 'cullBinBackToFront.h', 'cullBinFixed.h', 'cullBinFrontToBack.h', 'cullBinManager.h', 'cullBinUnsorted.h', 'cullFaceAttrib.h', 'cullHandler.h', 'cullResult.h', 'cullTraverser.h', 'cullTraverserData.h', 'cullableObject.h', 'decalEffect.h', 'depthOffsetAttrib.h', 'depthTestAttrib.h', 'depthWriteAttrib.h', 'directionalLight.h', 'drawCullHandler.h', 'fadeLodNode.h', 'fadeLodNodeData.h', 'findApproxLevelEntry.h', 'findApproxPath.h', 'fog.h', 'fogAttrib.h', 'geomNode.h', 'geomTransformer.h', 'lensNode.h', 'light.h', 'lightAttrib.h', 'lightLensNode.h', 'lightNode.h', 'loader.h', 'loaderFileType.h', 'loaderFileTypeBam.h', 'loaderFileTypeRegistry.h', 'lodNode.h', 'materialAttrib.h', 'modelNode.h', 'modelPool.h', 'modelRoot.h', 'nodePath.h', 'nodePath.cxx', 'nodePathCollection.h', 'nodePathComponent.h', 'nodePathLerps.h', 'pandaNode.h', 'planeNode.h', 'pointLight.h', 'polylightNode.h', 'polylightEffect.h', 'portalNode.h', 'portalClipper.h', 'renderAttrib.h', 'renderEffect.h', 'renderEffects.h', 'renderModeAttrib.h', 'renderState.h', 'rescaleNormalAttrib.h', 'sceneGraphAnalyzer.h', 'sceneGraphReducer.h', 'sceneSetup.h', 'selectiveChildNode.h', 'sequenceNode.h', 'showBoundsEffect.h', 'spotlight.h', 'switchNode.h', 'texMatrixAttrib.h', 'texProjectorEffect.h', 'textureApplyAttrib.h', 'textureAttrib.h', 'texGenAttrib.h', 'textureCollection.h', 'textureStageCollection.h', 'transformState.h', 'transparencyAttrib.h', 'weakNodePath.h', 'workingNodePath.h', 'pgraph_composite1.cxx', 'pgraph_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libpgraph_igate.cxx', obj='libpgraph_igate.obj')
 
 #
@@ -3552,7 +3660,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='chan_composite1.cxx', obj='chan_composite1
 CompileC(ipath=IPATH, opts=OPTS, src='chan_composite2.cxx', obj='chan_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libchan.in', outc='libchan_igate.cxx',
             src='panda/src/chan',  module='panda', library='libchan', files=[
-	    'animBundle.h', 'animBundleNode.h', 'animChannel.h', 'animChannelBase.h', 'animChannelMatrixDynamic.h', 'animChannelMatrixXfmTable.h', 'animChannelScalarDynamic.h', 'animChannelScalarTable.h', 'animControl.h', 'animControlCollection.h', 'animGroup.h', 'auto_bind.h', 'config_chan.h', 'movingPartBase.h', 'movingPartMatrix.h', 'movingPartScalar.h', 'partBundle.h', 'partBundleNode.h', 'partGroup.h', 'vector_PartGroupStar.h', 'chan_composite1.cxx', 'chan_composite2.cxx'])
+            'animBundle.h', 'animBundleNode.h', 'animChannel.h', 'animChannelBase.h', 'animChannelMatrixDynamic.h', 'animChannelMatrixXfmTable.h', 'animChannelScalarDynamic.h', 'animChannelScalarTable.h', 'animControl.h', 'animControlCollection.h', 'animGroup.h', 'auto_bind.h', 'config_chan.h', 'movingPartBase.h', 'movingPartMatrix.h', 'movingPartScalar.h', 'partBundle.h', 'partBundleNode.h', 'partGroup.h', 'vector_PartGroupStar.h', 'chan_composite1.cxx', 'chan_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libchan_igate.cxx', obj='libchan_igate.obj')
 
 #
@@ -3565,7 +3673,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='char_composite1.cxx', obj='char_composite1
 CompileC(ipath=IPATH, opts=OPTS, src='char_composite2.cxx', obj='char_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libchar.in', outc='libchar_igate.cxx',
             src='panda/src/char',  module='panda', library='libchar', files=[
-	    'character.h', 'characterJoint.h', 'characterJointBundle.h', 'characterSlider.h', 'computedVertices.h', 'computedVerticesMorph.h', 'config_char.h', 'dynamicVertices.h', 'char_composite1.cxx', 'char_composite2.cxx'])
+            'character.h', 'characterJoint.h', 'characterJointBundle.h', 'characterSlider.h', 'computedVertices.h', 'computedVerticesMorph.h', 'config_char.h', 'dynamicVertices.h', 'char_composite1.cxx', 'char_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libchar_igate.cxx', obj='libchar_igate.obj')
 
 #
@@ -3578,7 +3686,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='dgraph_composite1.cxx', obj='dgraph_compos
 CompileC(ipath=IPATH, opts=OPTS, src='dgraph_composite2.cxx', obj='dgraph_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libdgraph.in', outc='libdgraph_igate.cxx',
             src='panda/src/dgraph',  module='panda', library='libdgraph', files=[
-	    'config_dgraph.h', 'dataGraphTraverser.h', 'dataNode.h', 'dataNodeTransmit.h', 'dgraph_composite1.cxx', 'dgraph_composite2.cxx'])
+            'config_dgraph.h', 'dataGraphTraverser.h', 'dataNode.h', 'dataNodeTransmit.h', 'dgraph_composite1.cxx', 'dgraph_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libdgraph_igate.cxx', obj='libdgraph_igate.obj')
 
 #
@@ -3591,7 +3699,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='display_composite1.cxx', obj='display_comp
 CompileC(ipath=IPATH, opts=OPTS, src='display_composite2.cxx', obj='display_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libdisplay.in', outc='libdisplay_igate.cxx',
             src='panda/src/display',  module='panda', library='libdisplay', files=[
-	    'config_display.h', 'drawableRegion.h', 'displayRegion.h', 'displayRegionStack.h', 'frameBufferProperties.h', 'frameBufferStack.h', 'graphicsEngine.h', 'graphicsOutput.h', 'graphicsBuffer.h', 'graphicsPipe.h', 'graphicsPipeSelection.h', 'graphicsStateGuardian.h', 'graphicsThreadingModel.h', 'graphicsWindow.h', 'graphicsWindowInputDevice.h', 'graphicsDevice.h', 'parasiteBuffer.h', 'windowProperties.h', 'lensStack.h', 'savedFrameBuffer.h', 'display_composite1.cxx', 'display_composite2.cxx'])
+            'config_display.h', 'drawableRegion.h', 'displayRegion.h', 'displayRegionStack.h', 'frameBufferProperties.h', 'frameBufferStack.h', 'graphicsEngine.h', 'graphicsOutput.h', 'graphicsBuffer.h', 'graphicsPipe.h', 'graphicsPipeSelection.h', 'graphicsStateGuardian.h', 'graphicsThreadingModel.h', 'graphicsWindow.h', 'graphicsWindowInputDevice.h', 'graphicsDevice.h', 'parasiteBuffer.h', 'windowProperties.h', 'lensStack.h', 'savedFrameBuffer.h', 'display_composite1.cxx', 'display_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libdisplay_igate.cxx', obj='libdisplay_igate.obj')
 
 #
@@ -3604,7 +3712,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='device_composite1.cxx', obj='device_compos
 CompileC(ipath=IPATH, opts=OPTS, src='device_composite2.cxx', obj='device_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libdevice.in', outc='libdevice_igate.cxx',
             src='panda/src/device',  module='panda', library='libdevice', files=[
-	    'analogNode.h', 'buttonNode.h', 'clientAnalogDevice.h', 'clientBase.h', 'clientButtonDevice.h', 'clientDevice.h', 'clientDialDevice.h', 'clientTrackerDevice.h', 'config_device.h', 'dialNode.h', 'mouseAndKeyboard.h', 'trackerData.h', 'trackerNode.h', 'virtualMouse.h', 'device_composite1.cxx', 'device_composite2.cxx'])
+            'analogNode.h', 'buttonNode.h', 'clientAnalogDevice.h', 'clientBase.h', 'clientButtonDevice.h', 'clientDevice.h', 'clientDialDevice.h', 'clientTrackerDevice.h', 'config_device.h', 'dialNode.h', 'mouseAndKeyboard.h', 'trackerData.h', 'trackerNode.h', 'virtualMouse.h', 'device_composite1.cxx', 'device_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libdevice_igate.cxx', obj='libdevice_igate.obj')
 
 #
@@ -3617,7 +3725,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='tform_composite1.cxx', obj='tform_composit
 CompileC(ipath=IPATH, opts=OPTS, src='tform_composite2.cxx', obj='tform_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libtform.in', outc='libtform_igate.cxx',
             src='panda/src/tform',  module='panda', library='libtform', files=[
-	    'buttonThrower.h', 'config_tform.h', 'driveInterface.h', 'mouseInterfaceNode.h', 'mouseWatcher.h', 'mouseWatcherGroup.h', 'mouseWatcherParameter.h', 'mouseWatcherRegion.h', 'trackball.h', 'transform2sg.h', 'tform_composite1.cxx', 'tform_composite2.cxx'])
+            'buttonThrower.h', 'config_tform.h', 'driveInterface.h', 'mouseInterfaceNode.h', 'mouseWatcher.h', 'mouseWatcherGroup.h', 'mouseWatcherParameter.h', 'mouseWatcherRegion.h', 'trackball.h', 'transform2sg.h', 'tform_composite1.cxx', 'tform_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libtform_igate.cxx', obj='libtform_igate.obj')
 
 #
@@ -3630,7 +3738,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='collide_composite1.cxx', obj='collide_comp
 CompileC(ipath=IPATH, opts=OPTS, src='collide_composite2.cxx', obj='collide_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libcollide.in', outc='libcollide_igate.cxx',
             src='panda/src/collide',  module='panda', library='libcollide', files=[
-	    'collisionEntry.h', 'collisionHandler.h', 'collisionHandlerEvent.h', 'collisionHandlerFloor.h', 'collisionHandlerGravity.h', 'collisionHandlerPhysical.h', 'collisionHandlerPusher.h', 'collisionHandlerQueue.h', 'collisionInvSphere.h', 'collisionLine.h', 'collisionLevelState.h', 'collisionNode.h', 'collisionPlane.h', 'collisionPolygon.h', 'collisionRay.h', 'collisionRecorder.h', 'collisionSegment.h', 'collisionSolid.h', 'collisionSphere.h', 'collisionTraverser.h', 'collisionTube.h', 'collisionVisualizer.h', 'config_collide.h', 'collide_composite1.cxx', 'collide_composite2.cxx'])
+            'collisionEntry.h', 'collisionHandler.h', 'collisionHandlerEvent.h', 'collisionHandlerFloor.h', 'collisionHandlerGravity.h', 'collisionHandlerPhysical.h', 'collisionHandlerPusher.h', 'collisionHandlerQueue.h', 'collisionInvSphere.h', 'collisionLine.h', 'collisionLevelState.h', 'collisionNode.h', 'collisionPlane.h', 'collisionPolygon.h', 'collisionRay.h', 'collisionRecorder.h', 'collisionSegment.h', 'collisionSolid.h', 'collisionSphere.h', 'collisionTraverser.h', 'collisionTube.h', 'collisionVisualizer.h', 'config_collide.h', 'collide_composite1.cxx', 'collide_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libcollide_igate.cxx', obj='libcollide_igate.obj')
 
 #
@@ -3654,7 +3762,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='text_composite1.cxx', obj='text_composite1
 CompileC(ipath=IPATH, opts=OPTS, src='text_composite2.cxx', obj='text_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libtext.in', outc='libtext_igate.cxx',
             src='panda/src/text',  module='panda', library='libtext', files=[
-	    'config_text.h', 'default_font.h', 'dynamicTextFont.h', 'dynamicTextGlyph.h', 'dynamicTextPage.h', 'fontPool.h', 'geomTextGlyph.h', 'staticTextFont.h', 'textAssembler.h', 'textFont.h', 'textGlyph.h', 'textNode.h', 'textProperties.h', 'textPropertiesManager.h', 'text_composite1.cxx', 'text_composite2.cxx'])
+            'config_text.h', 'default_font.h', 'dynamicTextFont.h', 'dynamicTextGlyph.h', 'dynamicTextPage.h', 'fontPool.h', 'geomTextGlyph.h', 'staticTextFont.h', 'textAssembler.h', 'textFont.h', 'textGlyph.h', 'textNode.h', 'textProperties.h', 'textPropertiesManager.h', 'text_composite1.cxx', 'text_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libtext_igate.cxx', obj='libtext_igate.obj')
 
 #
@@ -3667,7 +3775,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='multitexReducer.cxx', obj='grutil_multitex
 CompileC(ipath=IPATH, opts=OPTS, src='grutil_composite1.cxx', obj='grutil_composite1.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libgrutil.in', outc='libgrutil_igate.cxx',
             src='panda/src/grutil',  module='panda', library='libgrutil', files=[
-	    'cardMaker.h', 'config_grutil.h', 'frameRateMeter.h', 'lineSegs.h', 'multitexReducer.h', 'multitexReducer.cxx', 'grutil_composite1.cxx'])
+            'cardMaker.h', 'config_grutil.h', 'frameRateMeter.h', 'lineSegs.h', 'multitexReducer.h', 'multitexReducer.cxx', 'grutil_composite1.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='libgrutil_igate.cxx', obj='libgrutil_igate.obj')
 
 #
@@ -3710,18 +3818,18 @@ if (OMIT.count("HELIX")==0):
              'helix_iids.obj',
              'helix_print.obj',
              'libhelix_igate.obj'])
-  
+
 #
 # DIRECTORY: panda/src/parametrics/
 #
-  
+
 IPATH=['panda/src/parametrics']
 OPTS=['BUILDING_PANDA', 'NSPR']
 CompileC(ipath=IPATH, opts=OPTS, src='parametrics_composite1.cxx', obj='parametrics_composite1.obj')
 CompileC(ipath=IPATH, opts=OPTS, src='parametrics_composite2.cxx', obj='parametrics_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libparametrics.in', outc='libparametrics_igate.cxx',
             src='panda/src/parametrics',  module='panda', library='libparametrics', files=[
-	    'classicNurbsCurve.h', 'config_parametrics.h', 'cubicCurveseg.h', 'parametricCurveDrawer.h',
+            'classicNurbsCurve.h', 'config_parametrics.h', 'cubicCurveseg.h', 'parametricCurveDrawer.h',
             'curveFitter.h', 'hermiteCurve.h', 'nurbsCurve.h', 'nurbsCurveDrawer.h', 'nurbsCurveEvaluator.h',
             'nurbsCurveInterface.h', 'nurbsCurveResult.h', 'nurbsBasisVector.h', 'nurbsSurfaceEvaluator.h',
             'nurbsSurfaceResult.h', 'nurbsVertex.h', 'parametricCurve.h', 'parametricCurveCollection.h',
@@ -3738,7 +3846,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='pgui_composite1.cxx', obj='pgui_composite1
 CompileC(ipath=IPATH, opts=OPTS, src='pgui_composite2.cxx', obj='pgui_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libpgui.in', outc='libpgui_igate.cxx',
             src='panda/src/pgui',  module='panda', library='libpgui', files=[
-	    'config_pgui.h', 'pgButton.h', 'pgSliderButton.h', 'pgCullTraverser.h', 'pgEntry.h',
+            'config_pgui.h', 'pgButton.h', 'pgSliderButton.h', 'pgCullTraverser.h', 'pgEntry.h',
             'pgMouseWatcherGroup.h', 'pgMouseWatcherParameter.h', 'pgFrameStyle.h', 'pgItem.h',
             'pgMouseWatcherBackground.h', 'pgMouseWatcherRegion.h', 'pgTop.h', 'pgWaitBar.h', 'pgSliderBar.h',
             'pgui_composite1.cxx', 'pgui_composite2.cxx'])
@@ -3765,7 +3873,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='recorder_composite1.cxx', obj='recorder_co
 CompileC(ipath=IPATH, opts=OPTS, src='recorder_composite2.cxx', obj='recorder_composite2.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='librecorder.in', outc='librecorder_igate.cxx',
             src='panda/src/recorder',  module='panda', library='librecorder', files=[
-	    'config_recorder.h', 'mouseRecorder.h', 'recorderBase.h', 'recorderController.h', 'recorderFrame.h', 'recorderHeader.h', 'recorderTable.h', 'socketStreamRecorder.h', 'recorder_composite1.cxx', 'recorder_composite2.cxx'])
+            'config_recorder.h', 'mouseRecorder.h', 'recorderBase.h', 'recorderController.h', 'recorderFrame.h', 'recorderHeader.h', 'recorderTable.h', 'socketStreamRecorder.h', 'recorder_composite1.cxx', 'recorder_composite2.cxx'])
 CompileC(ipath=IPATH, opts=OPTS, src='librecorder_igate.cxx', obj='librecorder_igate.obj')
 
 #
@@ -3786,7 +3894,7 @@ CompileC(ipath=IPATH, opts=OPTS, src='vrpnTracker.cxx', obj='pvrpn_vrpnTracker.o
 CompileC(ipath=IPATH, opts=OPTS, src='vrpnTrackerDevice.cxx', obj='pvrpn_vrpnTrackerDevice.obj')
 Interrogate(ipath=IPATH, opts=OPTS, outd='libpvrpn.in', outc='libpvrpn_igate.cxx',
             src='panda/src/vrpn',  module='panda', library='libpvrpn', files=[
-	    'config_vrpn.cxx', 'config_vrpn.h', 'vrpnClient.cxx', 'vrpnAnalog.cxx', 'vrpnAnalog.h',
+            'config_vrpn.cxx', 'config_vrpn.h', 'vrpnClient.cxx', 'vrpnAnalog.cxx', 'vrpnAnalog.h',
             'vrpnAnalogDevice.cxx', 'vrpnAnalogDevice.h', 'vrpnButton.cxx', 'vrpnButton.h',
             'vrpnButtonDevice.cxx', 'vrpnButtonDevice.h', 'vrpnClient.h', 'vrpnDial.cxx', 'vrpnDial.h',
             'vrpnDialDevice.cxx', 'vrpnDialDevice.h', 'vrpnTracker.cxx', 'vrpnTracker.h', 'vrpnTrackerDevice.cxx',
@@ -3831,7 +3939,7 @@ InterrogateModule(outc='libpanda_module.cxx', module='panda', library='libpanda'
 CompileC(ipath=IPATH, opts=OPTS, src='panda.cxx', obj='panda_panda.obj')
 CompileC(ipath=IPATH, opts=OPTS, src='libpanda_module.cxx', obj='libpanda_module.obj')
 CompileLink(opts=['ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'HELIX', 'VRPN', 'NSPR',
-		  'ZLIB', 'JPEG', 'PNG', 'TIFF', 'FFTW', 'FREETYPE'],
+                  'ZLIB', 'JPEG', 'PNG', 'TIFF', 'FFTW', 'FREETYPE'],
             xdep=['built/tmp/dtool_have_helix.dat'],
             dll='libpanda.dll', obj=OBJFILES)
 
@@ -3839,27 +3947,29 @@ CompileLink(opts=['ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'HELIX', 'VRPN', 'NS
 # DIRECTORY: panda/src/audiotraits/
 #
 
-IPATH=['panda/src/audiotraits']
-OPTS=['BUILDING_FMOD_AUDIO', 'NSPR', 'FMOD']
-CompileC(ipath=IPATH, opts=OPTS, src='fmod_audio_composite1.cxx', obj='fmod_audio_fmod_audio_composite1.obj')
-CompileLink(opts=['ADVAPI', 'WINUSER', 'WINMM', 'FMOD', 'NSPR'], dll='libfmod_audio.dll', obj=[
-             'fmod_audio_fmod_audio_composite1.obj',
-             'libpanda.dll',
-             'libpandaexpress.dll',
-             'libdtoolconfig.dll',
-             'libdtool.dll',
-])
+if OMIT.count("FMOD") == 0:
+  IPATH=['panda/src/audiotraits']
+  OPTS=['BUILDING_FMOD_AUDIO', 'NSPR', 'FMOD']
+  CompileC(ipath=IPATH, opts=OPTS, src='fmod_audio_composite1.cxx', obj='fmod_audio_fmod_audio_composite1.obj')
+  CompileLink(opts=['ADVAPI', 'WINUSER', 'WINMM', 'FMOD', 'NSPR'], dll='libfmod_audio.dll', obj=[
+               'fmod_audio_fmod_audio_composite1.obj',
+               'libpanda.dll',
+               'libpandaexpress.dll',
+               'libdtoolconfig.dll',
+               'libdtool.dll',
+  ])
 
-IPATH=['panda/src/audiotraits']
-OPTS=['BUILDING_MILES_AUDIO', 'NSPR']
-CompileC(ipath=IPATH, opts=OPTS, src='miles_audio_composite1.cxx', obj='miles_audio_miles_audio_composite1.obj')
-CompileLink(opts=['ADVAPI', 'WINUSER', 'WINMM', 'NSPR'], dll='libmiles_audio.dll', obj=[
-             'miles_audio_miles_audio_composite1.obj',
-             'libpanda.dll',
-             'libpandaexpress.dll',
-             'libdtoolconfig.dll',
-             'libdtool.dll',
-])
+if OMIT.count("MILES") == 0:
+  IPATH=['panda/src/audiotraits']
+  OPTS=['BUILDING_MILES_AUDIO', 'NSPR', 'MILES']
+  CompileC(ipath=IPATH, opts=OPTS, src='miles_audio_composite1.cxx', obj='miles_audio_miles_audio_composite1.obj')
+  CompileLink(opts=['ADVAPI', 'WINUSER', 'WINMM', 'MILES', 'NSPR'], dll='libmiles_audio.dll', obj=[
+               'miles_audio_miles_audio_composite1.obj',
+               'libpanda.dll',
+               'libpandaexpress.dll',
+               'libdtoolconfig.dll',
+               'libdtool.dll',
+  ])
 
 #
 # DIRECTORY: panda/src/builder/
@@ -4121,7 +4231,7 @@ if (sys.platform != "win32"):
 #
 
 if (sys.platform == "win32"):
-  
+
   IPATH=['panda/src/wgldisplay', 'panda/src/glstuff', 'panda/src/gobj']
   OPTS=['BUILDING_PANDAGL', 'NSPR', 'NVIDIACG', 'CGGL']
   CompileC(ipath=IPATH, opts=OPTS, src='wgldisplay_composite1.cxx', obj='wgldisplay_composite1.obj')
@@ -4154,7 +4264,7 @@ if (sys.platform == "win32"):
   OPTS=['BUILDING_PANDADX', 'DXSDK', 'NSPR']
   CompileC(ipath=IPATH, opts=OPTS, src='dxGraphicsStateGuardian7.cxx', obj='dxgsg7_dxGraphicsStateGuardian7.obj')
   CompileC(ipath=IPATH, opts=OPTS, src='dxgsg7_composite1.cxx', obj='dxgsg7_composite1.obj')
-  
+
   IPATH=['panda/metalibs/pandadx7']
   OPTS=['BUILDING_PANDADX', 'DXSDK', 'NSPR']
   CompileC(ipath=IPATH, opts=OPTS, src='pandadx7.cxx', obj='pandadx7_pandadx7.obj')
@@ -4168,7 +4278,7 @@ if (sys.platform == "win32"):
     'libdtoolconfig.dll',
     'libdtool.dll',
     ])
-  
+
 #
 # DIRECTORY: panda/metalibs/pandadx8/
 #
@@ -4178,11 +4288,12 @@ if (sys.platform == "win32"):
   OPTS=['BUILDING_PANDADX', 'DXSDK', 'NSPR']
   CompileC(ipath=IPATH, opts=OPTS, src='dxGraphicsStateGuardian8.cxx', obj='dxgsg8_dxGraphicsStateGuardian8.obj')
   CompileC(ipath=IPATH, opts=OPTS, src='dxgsg8_composite1.cxx', obj='dxgsg8_composite1.obj')
-  
+
   IPATH=['panda/metalibs/pandadx8']
   OPTS=['BUILDING_PANDADX', 'DXSDK', 'NSPR']
   CompileC(ipath=IPATH, opts=OPTS, src='pandadx8.cxx', obj='pandadx8_pandadx8.obj')
-  CompileLink(dll='libpandadx8.dll', opts=['ADVAPI', 'WINGDI', 'WINKERNEL', 'WINUSER', 'WINMM', 'DXDRAW', 'DXGUID', 'D3D8', 'NSPR'], obj=[
+  CompileLink(dll='libpandadx8.dll',
+    opts=['ADVAPI', 'WINGDI', 'WINKERNEL', 'WINUSER', 'WINMM', 'DXDRAW', 'DXGUID', 'D3D8', 'NSPR'], obj=[
     'pandadx8_pandadx8.obj',
     'dxgsg8_dxGraphicsStateGuardian8.obj',
     'dxgsg8_composite1.obj',
@@ -4203,11 +4314,12 @@ if (sys.platform == "win32"):
   OPTS=['BUILDING_PANDADX', 'DXSDK', 'NSPR']
   CompileC(ipath=IPATH, opts=OPTS, src='dxGraphicsStateGuardian9.cxx', obj='dxgsg9_dxGraphicsStateGuardian9.obj')
   CompileC(ipath=IPATH, opts=OPTS, src='dxgsg9_composite1.cxx', obj='dxgsg9_composite1.obj')
-  
+
   IPATH=['panda/metalibs/pandadx9']
   OPTS=['BUILDING_PANDADX', 'DXSDK', 'NSPR']
   CompileC(ipath=IPATH, opts=OPTS, src='pandadx9.cxx', obj='pandadx9_pandadx9.obj')
-  CompileLink(dll='libpandadx9.dll', opts=['ADVAPI', 'WINGDI', 'WINKERNEL', 'WINUSER', 'WINMM', 'DXDRAW', 'DXGUID', 'D3D9', 'NSPR'], obj=[
+  CompileLink(dll='libpandadx9.dll',
+    opts=['ADVAPI', 'WINGDI', 'WINKERNEL', 'WINUSER', 'WINMM', 'DXDRAW', 'DXGUID', 'D3D9', 'NSPR'], obj=[
     'pandadx9_pandadx9.obj',
     'dxgsg9_dxGraphicsStateGuardian9.obj',
     'dxgsg9_composite1.obj',
@@ -5329,7 +5441,7 @@ CompileLink(dll='libptloader.dll', opts=['ADVAPI', 'NSPR'], obj=[
 #
 
 for VER in ["5","6"]:
-  if (OMIT.count('MAYA'+VER)==0):  
+  if (OMIT.count('MAYA'+VER)==0):
     IPATH=['pandatool/src/mayaprogs', 'pandatool/src/maya', 'pandatool/src/mayaegg',
            'pandatool/src/cvscopy']
     OPTS=['BUILDING_MISC', 'MAYA'+VER, 'NSPR']
@@ -5557,7 +5669,7 @@ if (sys.platform == "win32"):
   CompileC(ipath=IPATH, opts=OPTS, src='winStatsPianoRoll.cxx', obj='pstats_winStatsPianoRoll.obj')
   CompileC(ipath=IPATH, opts=OPTS, src='winStatsServer.cxx', obj='pstats_winStatsServer.obj')
   CompileC(ipath=IPATH, opts=OPTS, src='winStatsStripChart.cxx', obj='pstats_winStatsStripChart.obj')
-  CompileLink(opts=['WINSOCK', 'WINIMM', 'WINGDI', 'WINKERNEL', 'WINOLDNAMES', 'WINUSER', 'WINMM', 'NSPR'], 
+  CompileLink(opts=['WINSOCK', 'WINIMM', 'WINGDI', 'WINKERNEL', 'WINOLDNAMES', 'WINUSER', 'WINMM', 'NSPR'],
               dll='pstats.exe', obj=[
               'pstats_winStats.obj',
               'pstats_winStatsChartMenu.obj',
@@ -5829,7 +5941,7 @@ if (icache!=0):
 
 ##########################################################################################
 #
-# 'Complete' mode. 
+# 'Complete' mode.
 #
 # Copies the samples, models, and direct into the build. Note that
 # this isn't usually what you want.  It is usually better to let the
