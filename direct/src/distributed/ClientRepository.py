@@ -247,7 +247,7 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         distObj.generateInit()  # Only called when constructed
         distObj.generate()
         # updateRequiredFields calls announceGenerate
-        return  distObj       
+        return  distObj
 
     def generateWithRequiredOtherFields(self, dclass, doId, di):
         if self.doId2do.has_key(doId):
@@ -390,7 +390,6 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         # Got a system message from the server.
         message = di.getString()
         self.notify.info('Message from server: %s' % (message))
-
         return message
 
     def handleUnexpectedMsgType(self, msgType, di):
@@ -465,6 +464,49 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         # If we're processing a lot of datagrams within one frame, we
         # may forget to send heartbeats.  Keep them coming!
         self.considerHeartbeat()
+ 
+    def addInterest(contextId, parentId, zoneId):
+        """
+        Part of the new otp-server code.
+
+        contextId is a client-side created number that refers to
+                a set of interests.  The same contextId number doesn't
+                necessarily have any relationship to the same contextId
+                on another client.
+        """
+        datagram = PyDatagram()
+        datagram.addUint16(contextId)
+        datagram.addUint32(parent)
+        datagram.addUint32(zone)
+        self.send(datagram)
+
+    def alterInterest(contextId, parentId, zoneId):
+        """
+        Part of the new otp-server code.
+
+        contextId is a client-side created number that refers to
+                a set of interests.  The same contextId number doesn't
+                necessarily have any relationship to the same contextId
+                on another client.
+        """
+        datagram = PyDatagram()
+        datagram.addUint16(contextId)
+        datagram.addUint32(parentId)
+        datagram.addUint32(zoneId)
+        self.send(datagram)
+
+    def deleteInterest(contextId):
+        """
+        Part of the new otp-server code.
+
+        contextId is a client-side created number that refers to
+                a set of interests.  The same contextId number doesn't
+                necessarily have any relationship to the same contextId
+                on another client.
+        """
+        datagram = PyDatagram()
+        datagram.addUint16(contextId)
+        self.send(datagram)
 
     def sendHeartbeat(self):
         datagram = PyDatagram()
