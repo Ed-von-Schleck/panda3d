@@ -11,14 +11,18 @@
 // duplicated in any form, in whole or in part,  without  the  prior
 // written consent of Walt Disney Imagineering Inc.
 ////////////////////////////////////////////////////////////////////
+#include "pointerTo.h"
+////#include "pandabase.h"
 
 #include "curveFitter.h"
-#include <curve.h>
-#include <hermiteCurve.h>
-#include <nurbsCurve.h>
-#include <lookAt.h>
+#include "config_parametrics.h"
+#include "curve.h"
+#include "nurbsCurve.h"
+#include "hermiteCurve.h"
+#include <algorithm>
+using namespace std;
 
-#include <assert.h>
+TypeHandle CurveFitter::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: CurveFitter::reset
@@ -123,13 +127,13 @@ wrap_hpr() {
       (*di)._point[i] += net[i];
   
       while (((*di)._point[i] - last[i]) > 180.0) {
-	(*di)._point[i] -= 360.0;
-	net[i] -= 360.0;
+        (*di)._point[i] -= 360.0;
+        net[i] -= 360.0;
       }
       
       while (((*di)._point[i] - last[i]) < -180.0) {
-	(*di)._point[i] += 360.0;
-	net[i] += 360.0;
+        (*di)._point[i] += 360.0;
+        net[i] += 360.0;
       }
       
       last[i] = (*di)._point[i];
@@ -157,8 +161,8 @@ compute_timewarp(const ParametricCurve *xyz) {
   for (di = _data.begin(); di != _data.end(); ++di) {
     double d = (*di)._point[0];
     double t = xyz->compute_t(last_t, d - last_d, 
-			      last_t + last_ratio * (d - last_d),
-			      0.001);
+                              last_t + last_ratio * (d - last_d),
+                              0.001);
     (*di)._point.set(t, 0.0, 0.0);
 
     /*
@@ -179,13 +183,13 @@ compute_timewarp(const ParametricCurve *xyz) {
 
       // Check the wrap on the heading
       if ((c.hpr[0] - last_h) > 180.0) {
-	c.hpr[0] -= 360.0;
-	h_net -= 360.0;
+        c.hpr[0] -= 360.0;
+        h_net -= 360.0;
       }
 
       if ((c.hpr[0] - last_h) < -180.0) {
-	c.hpr[0] += 360.0;
-	h_net += 360.0;
+        c.hpr[0] += 360.0;
+        h_net += 360.0;
       }
 
       cerr << "H is " << c.hpr[0] << " h_net is " << h_net << "\n";
@@ -257,7 +261,7 @@ void CurveFitter::
 compute_tangents(double scale) {
   // If the head and tail points match up, close the curve.
   bool closed =
-    (_data.front()._point.almostEqual(_data.back()._point, 0.001));
+    (_data.front()._point.almost_equal(_data.back()._point, 0.001));
 
   int i;
   int len = _data.size();
@@ -342,9 +346,9 @@ make_nurbs() const {
   const LVector3f &p1 = _data[1]._point;
 
   nc->rebuild_curveseg(RT_POINT, 0.0, pfVec4(p0[0], p0[1], p0[2], 1.0),
-		       RT_TANGENT, 0.0, pfVec4(t0[0], t0[1], t0[2], 0.0),
-		       RT_TANGENT, 1.0, pfVec4(t1[0], t1[1], t1[2], 0.0),
-		       RT_POINT, 1.0, pfVec4(p1[0], p1[1], p1[2], 1.0));
+                       RT_TANGENT, 0.0, pfVec4(t0[0], t0[1], t0[2], 0.0),
+                       RT_TANGENT, 1.0, pfVec4(t1[0], t1[1], t1[2], 0.0),
+                       RT_POINT, 1.0, pfVec4(p1[0], p1[1], p1[2], 1.0));
 
   int i;
   for (i = 2; i < _data.size(); i++) {
@@ -361,16 +365,16 @@ make_nurbs() const {
     const LVector3f &t1 = _data[i]._tangent;
     
     nc->rebuild_curveseg(RT_POINT, 0.0, pfVec4(p0[0], p0[1], p0[2], 1.0),
-			 RT_TANGENT, 0.0, pfVec4(t0[0], t0[1], t0[2], 0.0),
-			 RT_TANGENT, 1.0, pfVec4(t1[0], t1[1], t1[2], 0.0),
-			 RT_POINT, 1.0, pfVec4(p1[0], p1[1], p1[2], 1.0));
-			 */
+                         RT_TANGENT, 0.0, pfVec4(t0[0], t0[1], t0[2], 0.0),
+                         RT_TANGENT, 1.0, pfVec4(t1[0], t1[1], t1[2], 0.0),
+                         RT_POINT, 1.0, pfVec4(p1[0], p1[1], p1[2], 1.0));
+                         */
 
     const LVector3f &pi = _data[i]._point;
     nc->rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-			 RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-			 RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-			 RT_POINT, 1.0, pfVec4(pi[0], pi[1], pi[2], 1.0));
+                         RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
+                         RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
+                         RT_POINT, 1.0, pfVec4(pi[0], pi[1], pi[2], 1.0));
   }
 
   /*
@@ -379,10 +383,10 @@ make_nurbs() const {
   nc->get_point(nc->get_max_t(), junk);
   const LVector3f &pi = _data[_data.size()-1]._point;
   nc->rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-		       RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-		       RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-		       RT_CV, 0.0, pfVec4(pi[0], pi[1], pi[2], 1.0));
-		       */
+                       RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
+                       RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
+                       RT_CV, 0.0, pfVec4(pi[0], pi[1], pi[2], 1.0));
+                       */
   
   nc->recompute();
   return nc;
@@ -391,9 +395,8 @@ make_nurbs() const {
 
   // We start with the HermiteCurve produced above, then convert it to
   // NURBS form.
-  HermiteCurve *hc = make_hermite();
+  PT(HermiteCurve) hc = new HermiteCurve();
   NurbsCurve *nc = new NurbsCurve(*hc);
-  pfDelete(hc);
 
   // Now we even out the knots to smooth out the curve and make
   // everything c2 continuous.
@@ -453,14 +456,5 @@ output(ostream &out) const {
   for (di = _data.begin(); di != _data.end(); ++di) {
     out << (*di) << "\n";
   }
-}
-
-
-CurveFitter *make_CurveFitter() {
-  return new CurveFitter;
-}
-
-void rm_CurveFitter(CurveFitter *cf) {
-  delete cf;
 }
 

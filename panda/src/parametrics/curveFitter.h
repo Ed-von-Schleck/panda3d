@@ -16,35 +16,12 @@
 #define CURVEFITTER_H
 
 #include <typedef.h>
-#include <linMathOutput.h>
-#include <vector.h>
-#include <Performer/pr/pfLinMath.h>
-#include <iostream.h>
-
-////////////////////////////////////////////////////////////////////
-// Salivate interface
-////////////////////////////////////////////////////////////////////
-
-/*$ 
-#typehint bool int
-
-#exportclass CurveFitter
-#exportfunc make_CurveFitter rm_CurveFitter
-
-#exportmember CurveFitter reset
-#exportmember CurveFitter add_point
-#exportmember CurveFitter sample
-#exportmember CurveFitter generate_even
-#exportmember CurveFitter wrap_hpr
-#exportmember CurveFitter compute_timewarp
-#exportmember CurveFitter sort_points
-#exportmember CurveFitter desample
-#exportmember CurveFitter compute_tangents
-#exportmember CurveFitter make_hermite
-#exportmember CurveFitter make_nurbs
-#exportmember CurveFitter print
-
-$*/
+////#include <linMathOutput.h>
+#include "luse.h"
+#include <vector>
+////#include <Performer/pr/pfLinMath.h>
+#include <iostream>
+using namespace std;
 
 class HermiteCurve;
 class NurbsCurve;
@@ -55,7 +32,7 @@ class ParametricCurve;
 // Description : 
 ////////////////////////////////////////////////////////////////////
 class CurveFitter {
-public:
+PUBLISHED:
   void reset();
   void add_point(double t, const LVector3f &point);
 
@@ -73,6 +50,7 @@ public:
   
   void print() const;
 
+public:
   void output(ostream &out) const;
 
   class DataPoint {
@@ -93,6 +71,21 @@ public:
   
   typedef vector<DataPoint> Data;
   Data _data;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    register_type(_type_handle, "CurveFitter");
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
+private:
+  static TypeHandle _type_handle;
 };
 
 inline ostream &operator << (ostream &out, const CurveFitter::DataPoint &dp) {
@@ -104,8 +97,5 @@ inline ostream &operator << (ostream &out, const CurveFitter &cf) {
   cf.output(out);
   return out;
 }
-
-CurveFitter *make_CurveFitter();
-void rm_CurveFitter(CurveFitter *cf);
 
 #endif

@@ -22,32 +22,11 @@
 #include "curve.h"
 
 ////////////////////////////////////////////////////////////////////
-// Salivate interface
-////////////////////////////////////////////////////////////////////
-
-/*$ 
-#typehint bool int
-#typehint LVector3f pfVec3
-
-#exportclass HermiteCurve
-#exportfunc make_HermiteCurve rm_HermiteCurve
-#exportmember HermiteCurve get_num_cvs insert_cv append_cv 
-#exportmember HermiteCurve remove_cv remove_all_cvs
-#exportmember HermiteCurve set_cv_type set_cv_point set_cv_in set_cv_out
-#exportmember HermiteCurve set_cv_tstart set_cv_name
-#exportmember HermiteCurve get_cv_type get_cv_point get_cv_in get_cv_out
-#exportmember HermiteCurve get_cv_tstart get_cv_name
-#exportmember HermiteCurve Print print_cv
-#exportmember HermiteCurve write_egg
-
-#exportsymbol HC_CUT HC_FREE HC_G1 HC_SMOOTH
-$*/
-
-////////////////////////////////////////////////////////////////////
 // Defines 
 ////////////////////////////////////////////////////////////////////
 
 
+BEGIN_PUBLISH //[
 // Hermite curve continuity types.
 #define HC_CUT         1 
 // The curve is disconnected at this point.  All points between
@@ -70,10 +49,7 @@ $*/
 // derivative are continuous in parametric space.  When animating
 // motion across the join point, speed and direction of motion will
 // change continuously.  This is C1 parametric continuity.
-
-
-////#define LVector3f pfVec3
-//typedef pfVec3 LVector3f;
+END_PUBLISH //]
 
 class NurbsCurve;
 
@@ -93,9 +69,6 @@ public:
   void set_out(const LVector3f &out);
   void set_type(int type);
   void set_name(const char *name);
-
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
 
   void Output(ostream &out, int indent, int num_dimensions,
 	      bool show_in, bool show_out,
@@ -119,12 +92,7 @@ public:
 //               (since the CubicCurveseg class doesn't retain these).
 ////////////////////////////////////////////////////////////////////
 class HermiteCurve : public PiecewiseCurve {
-
-////////////////////////////////////////////////////////////////////
-// Member functions visible to Scheme
-////////////////////////////////////////////////////////////////////
-
-public:
+PUBLISHED:
   HermiteCurve();
   HermiteCurve(const ParametricCurve &pc);
 
@@ -172,9 +140,6 @@ public:
   bool write_egg(const char *filename);
   bool write_egg(ostream &out, const char *basename);
   
-////////////////////////////////////////////////////////////////////
-// Member functions not visible to Scheme
-////////////////////////////////////////////////////////////////////
 public:
 
   CubicCurveseg *get_curveseg(int ti) {
@@ -189,19 +154,29 @@ public:
 
   void Output(ostream &out, int indent=0) const;
 
+  virtual ~HermiteCurve();////
 protected:
-  virtual ~HermiteCurve();
 
   void invalidate_cv(int n, bool redo_all);
   int find_cv(double t);
   void recompute_basis();
 
   vector<HermiteCurveCV> _points;
-};
 
-// Wrappers for salivate
-HermiteCurve* make_HermiteCurve();
-HermiteCurve* make_HermiteCurve(const ParametricCurve &pc);
-void rm_HermiteCurve(HermiteCurve *curve);
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    register_type(_type_handle, "HermiteCurve");
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
+private:
+  static TypeHandle _type_handle;
+};
 
 #endif
