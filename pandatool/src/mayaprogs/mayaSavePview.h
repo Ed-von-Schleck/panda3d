@@ -19,20 +19,30 @@
 #ifndef MAYASAVEPVIEW_H
 #define MAYASAVEPVIEW_H
 
+// We don't want to include pre_maya_include.h here, since that would
+// necessitate linking with Pandatool's libmaya.dll, which would in
+// turn bring in a lot of stuff from panda that we don't really need.
+// Instead, we'll just define the Maya symbols we require here.
+
 // Maya will try to typedef bool unless this symbol is defined.
 #ifndef _BOOL
 #define _BOOL 1
 #endif
-
-#include <maya/MArgList.h>
-#include <maya/MPxCommand.h>
-#include <maya/MObject.h>
 
 // Even though we don't include any Panda headers, it's safe to
 // include this one, since it only defines some macros that we need to
 // make this program platform-independent.
 #include "dtool_config.h"
 
+#ifdef HAVE_IOSTREAM
+// This will ask Maya 5.0 or better to use the new <iostream> library
+// instead of the old <iostream.h> library.
+#define REQUIRE_IOSTREAM
+#endif  // HAVE_IOSTREAM
+
+#include <maya/MArgList.h>
+#include <maya/MPxCommand.h>
+#include <maya/MObject.h>
 
 ////////////////////////////////////////////////////////////////////
 //       Class : MayaSavePview

@@ -93,17 +93,6 @@ MayaToEggConverter(const string &program_name) :
 
   _from_selection = false;
 
-  // By default, we ignore any sliders whose name begins with
-  // "parallelBlender".  This is because sliders of this name are
-  // created automatically by the parallel blend system, and while
-  // they do not directly control the geometry, they are often
-  // inadvertently linked to the sliders that do (so that, for
-  // instance, dialing them down to zero will also dial down the
-  // effect of the true sliders to zero).  We don't want to monkey
-  // with them.  The user can change this list with the -ignore-slider
-  // command-line option to maya2egg.
-  _ignore_sliders.push_back(GlobPattern("parallelBlender*"));
-
   _polygon_output = false;
   _polygon_tolerance = 0.01;
   _respect_maya_double_sided = maya_default_double_sided;
@@ -122,6 +111,7 @@ MayaToEggConverter(const MayaToEggConverter &copy) :
   _from_selection(copy._from_selection),
   _subsets(copy._subsets),
   _ignore_sliders(copy._ignore_sliders),
+  _force_joints(copy._force_joints),
   _tree(this),
   _maya(copy._maya),
   _polygon_output(copy._polygon_output),
@@ -287,6 +277,52 @@ bool MayaToEggConverter::
 ignore_slider(const string &name) const {
   Globs::const_iterator gi;
   for (gi = _ignore_sliders.begin(); gi != _ignore_sliders.end(); ++gi) {
+    if ((*gi).matches(name)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::clear_force_joints
+//       Access: Public
+//  Description: Empties the list of force_joints added via
+//               add_force_joint().  No joints will be forced.
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+clear_force_joints() {
+  _force_joints.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::add_force_joint
+//       Access: Public
+//  Description: Adds a name pattern to the list of force_joints.
+//
+//               Any DAG node that matches a name on the list will be
+//               treated as if it were a joint during the conversion
+//               process; it will receive animation and position
+//               information.  Normally, a true Maya joint, as well as
+//               any DAG nodes whose transforms are animated, will
+//               automatically be flagged as a Panda joint.
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+add_force_joint(const GlobPattern &glob) {
+  _force_joints.push_back(glob);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::force_joint
+//       Access: Public
+//  Description: Returns true if the indicated name is on the list of
+//               DAG nodes to treat as a joint, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool MayaToEggConverter::
+force_joint(const string &name) const {
+  Globs::const_iterator gi;
+  for (gi = _force_joints.begin(); gi != _force_joints.end(); ++gi) {
     if ((*gi).matches(name)) {
       return true;
     }
@@ -743,7 +779,7 @@ process_model_node(MayaNodeDesc *node_desc) {
 
   if (mayaegg_cat.is_debug()) {
     mayaegg_cat.debug()
-      << path << ": " << dag_node.typeName();
+      << path << ": " << dag_node.typeName().asChar();
 
     if (MAnimUtil::isAnimated(dag_path)) {
       mayaegg_cat.debug(false)
@@ -988,9 +1024,12 @@ get_joint_transform(const MDagPath &dag_path, EggGroup *egg_group) {
   MTransformationMatrix matrix(transform.transformationMatrix());
 
   if (mayaegg_cat.is_spam()) {
+    MVector t = matrix.translation(MSpace::kWorld);
     mayaegg_cat.spam()
-      << "  translation: " << matrix.translation(MSpace::kWorld)
-      << "\n";
+      << "  translation: ["
+      << t[0] << ", "
+      << t[1] << ", "
+      << t[2] << "]\n";
     double d[3];
     MTransformationMatrix::RotationOrder rOrder;
 

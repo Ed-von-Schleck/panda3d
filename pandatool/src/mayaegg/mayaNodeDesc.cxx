@@ -19,6 +19,7 @@
 #include "mayaNodeDesc.h"
 #include "mayaNodeTree.h"
 #include "mayaBlendDesc.h"
+#include "mayaToEggConverter.h"
 #include "maya_funcs.h"
 #include "config_mayaegg.h"
 
@@ -88,14 +89,23 @@ MayaNodeDesc::
 //               some Maya instance.
 ////////////////////////////////////////////////////////////////////
 void MayaNodeDesc::
-from_dag_path(const MDagPath &dag_path) {
+from_dag_path(const MDagPath &dag_path, MayaToEggConverter *converter) {
   MStatus status;
 
   if (_dag_path == (MDagPath *)NULL) {
     _dag_path = new MDagPath(dag_path);
 
-    if (_dag_path->hasFn(MFn::kJoint)) {
-      // This node is a joint.
+    string name;
+    MFnDagNode dag_node(dag_path, &status);
+    if (!status) {
+      status.perror("MFnDagNode constructor");
+    } else {
+      name = dag_node.name().asChar();
+    }
+
+    if (_dag_path->hasFn(MFn::kJoint) || converter->force_joint(name)) {
+      // This node is a joint, or the user specifically asked to treat
+      // it like a joint.
       _joint_type = JT_joint;
       if (_parent != (MayaNodeDesc *)NULL) {
         _parent->mark_joint_parent();
@@ -378,7 +388,19 @@ check_blend_shapes(const MFnDagNode &node, const string &attrib_name) {
         status.perror("MFnBlendShapeDeformer constructor");
 
       } else {
-        if (_tree->ignore_slider(blends.name().asChar())) {
+        // Check if the slider is a "parallel blender", which is a
+        // construct created by Maya for Maya's internal purposes
+        // only.  We don't want to fiddle with the parallel blenders.
+        MPlug plug = blends.findPlug("pb");
+	bool is_parallel_blender;
+	status = plug.getValue(is_parallel_blender);
+        if (!status) {
+          status.perror("Could not get value of pb plug.");
+          is_parallel_blender = false;
+        }
+
+        if (is_parallel_blender || 
+            _tree->ignore_slider(blends.name().asChar())) {
           _tree->report_ignored_slider(blends.name().asChar());
 
         } else {

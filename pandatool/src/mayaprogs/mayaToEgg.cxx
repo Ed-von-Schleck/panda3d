@@ -97,15 +97,18 @@ MayaToEgg() :
   add_option
     ("ignore-slider", "name", 0,
      "Specifies the name of a slider (blend shape deformer) that maya2egg "
-     "should not process.  The slider will not be adjusted and it will not "
-     "become a part of the animation.  Since maya2egg will normally reset "
-     "all slider values to 0 before converting an animated character, this "
-     "option may be necessary in order to tell maya2egg to ignore sliders "
-     "for which doing this may cause an undesired side effect.  This "
+     "should not process.  The slider will not be touched during conversion "
+     "and it will not become a part of the animation.  This "
      "parameter may including globbing characters, and it may be repeated "
-     "as needed.  If the parameter does not appear at all, the default is "
-     "to ignore sliders named 'parallelBlender*'.",
+     "as needed.",
      &MayaToEgg::dispatch_vector_string, NULL, &_ignore_sliders);
+
+  add_option
+    ("force-joint", "name", 0,
+     "Specifies the name of a DAG node that maya2egg "
+     "should treat as a joint, even if it does not appear to be a Maya joint "
+     "and does not appear to be animated.",
+     &MayaToEgg::dispatch_vector_string, NULL, &_force_joints);
 
   add_option
     ("v", "", 0,
@@ -175,6 +178,13 @@ run() {
     converter.clear_ignore_sliders();
     for (si = _ignore_sliders.begin(); si != _ignore_sliders.end(); ++si) {
       converter.add_ignore_slider(GlobPattern(*si));
+    }
+  }
+
+  if (!_force_joints.empty()) {
+    converter.clear_force_joints();
+    for (si = _force_joints.begin(); si != _force_joints.end(); ++si) {
+      converter.add_force_joint(GlobPattern(*si));
     }
   }
 
