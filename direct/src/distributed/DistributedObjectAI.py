@@ -161,7 +161,7 @@ class DistributedObjectAI(DirectObject.DirectObject):
     
     def handleZoneChange(self, newParentId, newZoneId, oldParentId, oldZoneId):
         assert oldParentId == self.parentId
-        assert oldZoneId == self.zoneId
+        ##assert oldZoneId == self.zoneId
         self.parentId = newParentId
         self.zoneId = newZoneId
         self.air.changeDOZoneInTables(self, newZoneId, oldZoneId)
@@ -209,7 +209,7 @@ class DistributedObjectAI(DirectObject.DirectObject):
 
     def generateWithRequired(self, zoneId, optionalFields=[]):
         assert self.notify.debugStateCall(self)
-        # have we already allocated a doId?
+        # have we already allocated a doId?      
         if self.__preallocDoId:
             self.__preallocDoId = 0
             return self.generateWithRequiredAndId(
@@ -277,8 +277,6 @@ class DistributedObjectAI(DirectObject.DirectObject):
                 repository.ourChannel,
                 optionalFields)
         repository.send(dg)
-        self.parentId = parentId
-        self.zoneId = zoneId
             
     def initFromServerResponse(self, valDict):
         assert self.notify.debugStateCall(self)
