@@ -1,4 +1,4 @@
-/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_aux.c,v 1.4 2002/01/30 04:35:07 cxgeorge Exp $ */
+/* $Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_aux.c,v 1.5 2002/01/31 02:14:23 cxgeorge Exp $ */
 
 /*
  * Copyright (c) 1991-1997 Sam Leffler
@@ -30,7 +30,6 @@
  * Auxiliary Support Routines.
  */
 #include "tiffiop.h"
-#include "cmath.h"
 
 #ifdef COLORIMETRY_SUPPORT
 #include <math.h>
@@ -45,7 +44,7 @@ TIFFDefaultTransferFunction(TIFFDirectory* td)
     tf[0][0] = 0;
     for (i = 1; i < n; i++) {
         double t = (double)i/((double) n-1.);
-        tf[0][i] = (uint16)cfloor(65535.*pow(t, 2.2) + .5);
+        tf[0][i] = (uint16)floor(65535.*pow(t, 2.2) + .5);
     }
     if (td->td_samplesperpixel - td->td_extrasamples > 1) {
         tf[1] = (uint16 *)_TIFFmalloc(n * sizeof (uint16));
