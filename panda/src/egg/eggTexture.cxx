@@ -194,7 +194,7 @@ write(ostream &out, int indent_level) const {
     }
   }
 
-  if (get_tex_gen() != ET_unspecified) {
+  if (get_tex_gen() != TG_unspecified) {
     indent(out, indent_level + 2)
       << "<Scalar> tex-gen { " << get_tex_gen() << " }\n";
   }
@@ -1027,6 +1027,11 @@ operator << (ostream &out, EggTexture::CombineChannel cm) {
 
   case EggTexture::CC_alpha:
     return out << "alpha";
+
+  case EggTexture::CC_num_channels:
+    // This case is here just to prevent a compiler warning.  Fall out
+    // of the switch and return the error message.
+    break;
   }
 
   return out << "**invalid CombineChannel(" << (int)cm << ")**";
