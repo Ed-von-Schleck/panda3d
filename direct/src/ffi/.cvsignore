@@ -2,3 +2,5 @@
 Makefile
 genPyCode
 genPyCode.py
+*.pyc
+pp.dep
