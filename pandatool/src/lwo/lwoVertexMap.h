@@ -53,8 +53,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "lwoVertexMap.I"
-
 #endif
 
   
