@@ -19,7 +19,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexProjectorEffect::Constructor
-//       Access: Private
+//       Access: Protected
 //  Description: Use TexProjectorEffect::make() to construct a new
 //               TexProjectorEffect object.
 ////////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ TexProjectorEffect() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexProjectorEffect::Copy Constructor
-//       Access: Private
+//       Access: Protected
 //  Description: Use TexProjectorEffect::make() to construct a new
 //               TexProjectorEffect object.
 ////////////////////////////////////////////////////////////////////
@@ -46,20 +46,8 @@ TexProjectorEffect(const TexProjectorEffect &copy) :
 ////////////////////////////////////////////////////////////////////
 INLINE TexProjectorEffect::StageDef::
 StageDef() :
-  _to_lens_node(NULL),
-  _has_from(false)
+  _to_lens_node(NULL)
 {
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexProjectorEffect::StageDef::clear_from
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-INLINE void TexProjectorEffect::StageDef::
-clear_from() {
-  _has_from = false;
-  _from = NodePath();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -69,7 +57,6 @@ clear_from() {
 ////////////////////////////////////////////////////////////////////
 INLINE void TexProjectorEffect::StageDef::
 set_from(const NodePath &from) {
-  _has_from = true;
   _from = from;
 }
 
@@ -80,21 +67,10 @@ set_from(const NodePath &from) {
 ////////////////////////////////////////////////////////////////////
 INLINE int TexProjectorEffect::StageDef::
 compare_to(const TexProjectorEffect::StageDef &other) const {
-  if (_has_from != other._has_from) {
-    return _has_from < other._has_from;
-  }
-
   int compare = _to.compare_to(other._to);
   if (compare != 0) {
     return compare;
   }
 
-  if (_has_from) {
-    int compare = _from.compare_to(other._from);
-    if (compare != 0) {
-      return compare;
-    }
-  }
-
-  return 0;
+  return _from.compare_to(other._from);
 }

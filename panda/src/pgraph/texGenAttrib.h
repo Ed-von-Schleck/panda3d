@@ -22,7 +22,9 @@
 #include "pandabase.h"
 
 #include "renderAttrib.h"
+#include "textureStage.h"
 #include "texture.h"
+#include "pointerTo.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TexGenAttrib
@@ -31,24 +33,32 @@
 //               water like surface.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TexGenAttrib : public RenderAttrib {
-private:
 PUBLISHED:
   enum Mode {
-    M_spherical,
-    M_cubic,
-    M_nothing
+    M_off,
+    M_sphere_map,
+    M_cube_map,
+    M_world_position,
+    M_object_position,
+    M_eye_position,
   };
 
-private:
-  INLINE TexGenAttrib(Mode mode = M_nothing);
+protected:
+  INLINE TexGenAttrib();
+  INLINE TexGenAttrib(const TexGenAttrib &copy);
+
+public:
+  virtual ~TexGenAttrib();
 
 PUBLISHED:
-  static CPT(RenderAttrib) make(Mode mode);
-  static CPT(RenderAttrib) make_off();
+  static CPT(RenderAttrib) make();
 
-  INLINE bool is_off() const;
-  INLINE Mode get_mode() const;
-  INLINE Texture *get_texture() const;
+  CPT(RenderAttrib) add_stage(TextureStage *stage, Mode mode) const;
+  CPT(RenderAttrib) remove_stage(TextureStage *stage) const;
+
+  bool is_empty() const;
+  bool has_stage(TextureStage *stage) const;
+  Mode get_mode(TextureStage *stage) const;
 
 public:
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
@@ -56,11 +66,15 @@ public:
 
 protected:
   virtual int compare_to_impl(const RenderAttrib *other) const;
+  virtual CPT(RenderAttrib) compose_impl(const RenderAttrib *other) const;
+  virtual CPT(RenderAttrib) invert_compose_impl(const RenderAttrib *other) const;
   virtual RenderAttrib *make_default_impl() const;
 
 private:
-  Mode _mode;
-  PT(Texture) _texture;
+  typedef pmap<PT(TextureStage), Mode> Stages;
+  Stages _stages;
+
+  static CPT(RenderAttrib) _empty_attrib;
 
 public:
   static void register_with_read_factory();

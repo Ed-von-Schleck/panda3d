@@ -1158,6 +1158,18 @@ set_blend_mode(ColorWriteAttrib::Mode, ColorBlendAttrib::Mode,
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::finish_modify_state
+//       Access: Protected, Virtual
+//  Description: Called after the GSG state has been modified via
+//               modify_state() or set_state(), this hook is provided
+//               for the derived class to do any further state setup
+//               work.
+////////////////////////////////////////////////////////////////////
+void GraphicsStateGuardian::
+finish_modify_state() {
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::free_pointers
 //       Access: Protected, Virtual
 //  Description: Frees some memory that was explicitly allocated

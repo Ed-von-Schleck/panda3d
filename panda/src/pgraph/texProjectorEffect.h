@@ -61,7 +61,7 @@ class LensNode;
 //               flashlight effect or an image-based shadow.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA TexProjectorEffect : public RenderEffect {
-private:
+protected:
   INLINE TexProjectorEffect();
   INLINE TexProjectorEffect(const TexProjectorEffect &copy);
 
@@ -71,15 +71,13 @@ public:
 PUBLISHED:
   static CPT(RenderEffect) make();
 
-  CPT(RenderEffect) add_stage(TextureStage *stage, const NodePath &to) const;
-  CPT(RenderEffect) add_stage(TextureStage *stage, const NodePath &to, const NodePath &from) const;
+  CPT(RenderEffect) add_stage(TextureStage *stage, const NodePath &from, const NodePath &to) const;
   CPT(RenderEffect) remove_stage(TextureStage *stage) const;
 
   bool has_stage(TextureStage *stage) const;
 
-  NodePath get_to(TextureStage *stage) const;
-  bool has_from(TextureStage *stage) const;
   NodePath get_from(TextureStage *stage) const;
+  NodePath get_to(TextureStage *stage) const;
 
 public:
   virtual void output(ostream &out) const;
@@ -96,16 +94,14 @@ private:
   class StageDef {
   public:
     INLINE StageDef();
-    void set_to(const NodePath &to);
-    INLINE void clear_from();
     INLINE void set_from(const NodePath &from);
+    void set_to(const NodePath &to);
 
     INLINE int compare_to(const StageDef &other) const;
 
+    NodePath _from;
     NodePath _to;
     LensNode *_to_lens_node;
-    bool _has_from;
-    NodePath _from;
   };
 
   typedef pmap<PT(TextureStage), StageDef> Stages;

@@ -18,6 +18,7 @@
 
 #include "texProjectorEffect.h"
 #include "cullTraverserData.h"
+#include "texMatrixAttrib.h"
 #include "lensNode.h"
 #include "config_pgraph.h"
 #include "nodePath.h"
@@ -64,28 +65,11 @@ make() {
 //               definition is replaced.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderEffect) TexProjectorEffect::
-add_stage(TextureStage *stage, const NodePath &to) const {
+add_stage(TextureStage *stage, const NodePath &from, const NodePath &to) const {
   TexProjectorEffect *effect = new TexProjectorEffect(*this);
   StageDef &def = effect->_stages[stage];
-  def.set_to(to);
-  def.clear_from();
-  return return_new(effect);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexProjectorEffect::add_stage
-//       Access: Published, Static
-//  Description: Returns a new TexProjectorEffect just like this one,
-//               with the indicated projection for the given stage.
-//               If this stage already exists, its projection
-//               definition is replaced.
-////////////////////////////////////////////////////////////////////
-CPT(RenderEffect) TexProjectorEffect::
-add_stage(TextureStage *stage, const NodePath &to, const NodePath &from) const {
-  TexProjectorEffect *effect = new TexProjectorEffect(*this);
-  StageDef &def = effect->_stages[stage];
-  def.set_to(to);
   def.set_from(from);
+  def.set_to(to);
   return return_new(effect);
 }
 
@@ -117,6 +101,19 @@ has_stage(TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TexProjectorEffect::get_from
+//       Access: Published
+//  Description: Returns the NodePath that the indicated stage is
+//               transformed from.
+////////////////////////////////////////////////////////////////////
+NodePath TexProjectorEffect::
+get_from(TextureStage *stage) const {
+  Stages::const_iterator mi = _stages.find(stage);
+  nassertr(mi != _stages.end(), NodePath::fail());
+  return (*mi).second._from;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TexProjectorEffect::get_to
 //       Access: Published
 //  Description: Returns the NodePath that the indicated stage is
@@ -127,33 +124,6 @@ get_to(TextureStage *stage) const {
   Stages::const_iterator mi = _stages.find(stage);
   nassertr(mi != _stages.end(), NodePath::fail());
   return (*mi).second._to;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexProjectorEffect::has_from
-//       Access: Published
-//  Description: Returns true if the indicated stage has a specified
-//               from node, or false if the from node is the current
-//               node.
-////////////////////////////////////////////////////////////////////
-bool TexProjectorEffect::
-has_from(TextureStage *stage) const {
-  Stages::const_iterator mi = _stages.find(stage);
-  nassertr(mi != _stages.end(), false);
-  return (*mi).second._has_from;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexProjectorEffect::get_from
-//       Access: Published
-//  Description: Returns the NodePath that the indicated stage is
-//               transformed from, if any (see has_from()).
-////////////////////////////////////////////////////////////////////
-NodePath TexProjectorEffect::
-get_from(TextureStage *stage) const {
-  Stages::const_iterator mi = _stages.find(stage);
-  nassertr(mi != _stages.end(), NodePath::fail());
-  return (*mi).second._from;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -169,11 +139,8 @@ output(ostream &out) const {
   for (mi = _stages.begin(); mi != _stages.end(); ++mi) {
     TextureStage *stage = (*mi).first;
     const StageDef &def = (*mi).second;
-    out << " " << stage->get_name() << "(" << def._to.get_name();
-    if (def._has_from) {
-      out << ", " << def._from.get_name();
-    }
-    out << ")";
+    out << " " << stage->get_name() << "(" << def._to.get_name()
+        << ", " << def._from.get_name() << ")";
   }
 }
 
@@ -219,16 +186,11 @@ cull_callback(CullTraverser *trav, CullTraverserData &data,
     TextureStage *stage = (*mi).first;
     const StageDef &def = (*mi).second;
 
-    CPT(TransformState) transform;
-    if (def._has_from) {
-      transform = def._to.get_transform(def._from);
-    } else {
-      transform = def._to.get_transform(data._node_path.get_node_path());
-    }
+    CPT(TransformState) transform = def._from.get_transform(def._to);
 
     if (def._to_lens_node != (LensNode *)NULL &&
         def._to_lens_node->get_lens() != (Lens *)NULL) {
-      transform = transform->compose(TransformState::make_mat(def._to_lens_node->get_lens()->get_projection_mat()));
+      transform = TransformState::make_mat(def._to_lens_node->get_lens()->get_projection_mat())->compose(transform);
     }
 
     if (!transform->is_identity()) {

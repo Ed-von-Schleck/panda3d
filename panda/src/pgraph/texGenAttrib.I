@@ -19,48 +19,22 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexGenAttrib::Constructor
-//       Access: Private
+//       Access: Protected
 //  Description: Use TexGenAttrib::make() to construct a new
 //               TexGenAttrib object.
 ////////////////////////////////////////////////////////////////////
 INLINE TexGenAttrib::
-TexGenAttrib(TexGenAttrib::Mode mode) :
-  _mode(mode)
+TexGenAttrib() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexGenAttrib::Copy Constructor
+//       Access: Protected
+//  Description: Use TexGenAttrib::make() to construct a new
+//               TexGenAttrib object.
+////////////////////////////////////////////////////////////////////
+INLINE TexGenAttrib::
+TexGenAttrib(const TexGenAttrib &copy) :
+  _stages(copy._stages)
 {
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexGenAttrib::is_off
-//       Access: Published
-//  Description: Returns true if the TexGenAttrib is an 'off'
-//               TexGenAttrib, indicating that it should disable
-//               texturing.
-////////////////////////////////////////////////////////////////////
-INLINE bool TexGenAttrib::
-is_off() const {
-  return _mode == M_nothing;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexGenAttrib::get_texture
-//       Access: Published
-//  Description: If the TexGenAttrib is not an 'off' TexGenAttrib,
-//               returns the texture that is associated.  Otherwise,
-//               return NULL.
-////////////////////////////////////////////////////////////////////
-INLINE TexGenAttrib::Mode TexGenAttrib::
-get_mode() const {
-  return _mode;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexGenAttrib::get_texture
-//       Access: Published
-//  Description: If the TexGenAttrib is not an 'off' TexGenAttrib,
-//               returns the texture that is associated.  Otherwise,
-//               return NULL.
-////////////////////////////////////////////////////////////////////
-INLINE Texture *TexGenAttrib::
-get_texture() const {
-  return _texture;
 }

@@ -242,6 +242,7 @@ modify_state(const RenderState *state) {
   }
 #endif
   _state = _state->issue_delta_modify(state, this);
+  finish_modify_state();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -265,6 +266,7 @@ set_state(const RenderState *state) {
   }
 #endif
   _state = _state->issue_delta_set(state, this);
+  finish_modify_state();
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -27,6 +27,7 @@
 #include "depthTestAttrib.h"
 #include "textureAttrib.h"
 #include "texMatrixAttrib.h"
+#include "texGenAttrib.h"
 #include "textureStage.h"
 #include "textureApplyAttrib.h"
 #include "pointerToArray.h"
@@ -160,6 +161,8 @@ protected:
                               ColorBlendAttrib::Mode color_blend_mode,
                               TransparencyAttrib::Mode transparency_mode);
 
+  virtual void finish_modify_state();
+
   virtual void free_pointers();
   virtual PT(SavedFrameBuffer) save_frame_buffer(const RenderBuffer &buffer,
                                                  CPT(DisplayRegion) dr);
@@ -292,6 +295,7 @@ protected:
   int _decal_level;
 
   bool _dithering_enabled;
+  bool _texgen_forced_normal;
 
   int _max_lights;
   int _max_clip_planes;
@@ -301,6 +305,10 @@ protected:
 
   CPT(TextureAttrib) _current_texture;
   CPT(TexMatrixAttrib) _current_tex_mat;
+  bool _needs_tex_mat;
+  CPT(TexGenAttrib) _current_tex_gen;
+  bool _needs_tex_gen;
+
   CPT(DisplayRegion) _actual_display_region;
 
   int _pass_number;

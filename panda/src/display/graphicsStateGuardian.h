@@ -194,6 +194,8 @@ protected:
                                                  CPT(DisplayRegion) dr)=0;
   virtual void restore_frame_buffer(SavedFrameBuffer *frame_buffer)=0;
 
+  virtual void finish_modify_state();
+
   virtual void free_pointers();
   virtual void close_gsg();
   void panic_deactivate();

@@ -288,8 +288,8 @@
 // Uncomment these lines to compile everything individually instead of
 // combining into pgraph_composite*.cxx.
 
-//  #define COMBINED_SOURCES
-//  #define SOURCES $[SOURCES] $[INCLUDED_SOURCES]
+  #define COMBINED_SOURCES
+  #define SOURCES $[SOURCES] $[INCLUDED_SOURCES]
 
 #end lib_target
 

@@ -80,16 +80,6 @@ issue_normal_gl(const Geom *geom, Geom::NormalIterator &niterator,
   GLP(Normal3fv)(normal.get_data());
 }
 
-/*
-static void
-issue_texcoord_gl(const Geom *geom, Geom::TexCoordIterator &tciterator, 
-                GraphicsStateGuardianBase *) {
-  const TexCoordf &texcoord = geom->get_next_texcoord(tciterator);
-  //  GLCAT.spam() << "Issuing texcoord " << texcoord << "\n";
-  GLP(TexCoord2fv)(texcoord.get_data());
-}
-*/
-
 static void
 issue_texcoord_single_gl(const Geom *geom, 
                          Geom::MultiTexCoordIterator &tciterator, 
@@ -440,6 +430,8 @@ reset() {
   GLP(Disable)(GL_DITHER);
   _dithering_enabled = false;
 
+  _texgen_forced_normal = false;
+
   // Antialiasing.
   enable_line_smooth(false);
   enable_multisample(true);
@@ -469,6 +461,9 @@ reset() {
   }
   _current_texture = DCAST(TextureAttrib, TextureAttrib::make_all_off());
   _current_tex_mat = DCAST(TexMatrixAttrib, TexMatrixAttrib::make());
+  _needs_tex_mat = false;
+  _current_tex_gen = DCAST(TexGenAttrib, TexGenAttrib::make());
+  _needs_tex_gen = false;
 
   report_my_gl_errors();
 
@@ -2282,23 +2277,13 @@ issue_transform(const TransformState *transform) {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 issue_tex_matrix(const TexMatrixAttrib *attrib) {
-  int num_stages = _current_texture->get_num_on_stages();
-  nassertv(num_stages <= _max_texture_stages);
-
-  for (int i = 0; i < num_stages; i++) {
-    TextureStage *stage = _current_texture->get_on_stage(i);
-    _glActiveTexture(GL_TEXTURE0 + i);
-
-    GLP(MatrixMode)(GL_TEXTURE);
-    if (attrib->has_stage(stage)) {
-      GLP(LoadMatrixf)(_current_tex_mat->get_mat(stage).get_data());
-    } else {
-      GLP(LoadIdentity)();
-    }
-  }
-
+  // We don't apply the texture matrix right away, since we might yet
+  // get a TextureAttrib that changes the set of TextureStages we have
+  // active.  Instead, we simply set a flag that indicates we need to
+  // re-issue the texture matrix after all of the other attribs are
+  // done being issued.
   _current_tex_mat = attrib;
-  report_my_gl_errors();
+  _needs_tex_mat = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2308,39 +2293,13 @@ issue_tex_matrix(const TexMatrixAttrib *attrib) {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 issue_tex_gen(const TexGenAttrib *attrib) {
-  DO_PSTATS_STUFF(_texture_state_pcollector.add_level(1));
-  static bool forced_normal = false;
-  if (attrib->is_off()) {
-    //enable_texturing(false);
-    glDisable(GL_TEXTURE_GEN_S);
-    glDisable(GL_TEXTURE_GEN_T);
-
-    if (forced_normal) {
-      undo_force_normals();
-      forced_normal = false;
-    }
-  }
-  else if (attrib->get_mode() == TexGenAttrib::M_spherical) {
-#if 0
-    Texture *tex = attrib->get_texture();
-    nassertv(tex != (Texture *)NULL);
-    TextureContext *tc = tex->prepare_now(_prepared_objects, this);
-    apply_texture(tc);
-#else
-    // Set The Texture Generation Mode For S To Sphere Mapping
-    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    // Set The Texture Generation Mode For T To Sphere Mapping
-    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    glEnable(GL_TEXTURE_GEN_S); //Enable Texture Coord Generation For S
-    glEnable(GL_TEXTURE_GEN_T);	// Enable Texture Coord Generation For T
-
-    if (!forced_normal) {
-      force_normals();
-      forced_normal = true;
-    }
-#endif
-  }
-  report_my_gl_errors();
+  // We don't apply the texture coordinate generation commands right
+  // away, since we might yet get a TextureAttrib that changes the set
+  // of TextureStages we have active.  Instead, we simply set a flag
+  // that indicates we need to re-issue the TexGenAttrib after all of
+  // the other attribs are done being issued.
+  _current_tex_gen = attrib;
+  _needs_tex_gen = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2397,6 +2356,11 @@ issue_texture(const TextureAttrib *attrib) {
   }
 
   _current_texture = new_texture;
+
+  // Changing the set of texture stages will require us to reissue the
+  // texgen and texmat attribs.
+  _needs_tex_gen = true;
+  _needs_tex_mat = true;
 
   report_my_gl_errors();
 }
@@ -4139,6 +4103,169 @@ set_blend_mode(ColorWriteAttrib::Mode color_write_mode,
   enable_multisample_alpha_one(false);
   enable_multisample_alpha_mask(false);
   enable_blend(false);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GLGraphicsStateGuardian::finish_modify_state
+//       Access: Protected, Virtual
+//  Description: Called after the GSG state has been modified via
+//               modify_state() or set_state(), this hook is provided
+//               for the derived class to do any further state setup
+//               work.
+////////////////////////////////////////////////////////////////////
+void CLP(GraphicsStateGuardian)::
+finish_modify_state() {
+  // Apply the texture matrix, if needed.
+  if (_needs_tex_mat) {
+    _needs_tex_mat = false;
+
+    int num_stages = _current_texture->get_num_on_stages();
+    nassertv(num_stages <= _max_texture_stages);
+    
+    for (int i = 0; i < num_stages; i++) {
+      TextureStage *stage = _current_texture->get_on_stage(i);
+      _glActiveTexture(GL_TEXTURE0 + i);
+      
+      GLP(MatrixMode)(GL_TEXTURE);
+      if (_current_tex_mat->has_stage(stage)) {
+        GLP(LoadMatrixf)(_current_tex_mat->get_mat(stage).get_data());
+      } else {
+        // For some reason, the glLoadIdentity() call doesn't work on
+        // my Dell laptop's IBM OpenGL driver, when used in
+        // conjunction with glTexGen(), below.  But explicitly loading
+        // an identity matrix does work.
+        //        GLP(LoadIdentity)();
+        GLP(LoadMatrixf)(LMatrix4f::ident_mat().get_data());
+      }
+    }
+    report_my_gl_errors();
+  }
+
+  if (_needs_tex_gen) {
+    _needs_tex_gen = false;
+    bool force_normal = false;
+
+    int num_stages = _current_texture->get_num_on_stages();
+    nassertv(num_stages <= _max_texture_stages);
+    
+    // These are passed in for the four OBJECT_PLANE or EYE_PLANE
+    // values; they effectively define an identity matrix that maps
+    // the spatial coordinates one-for-one to UV's.  If you want a
+    // mapping other than identity, use a TexMatrixAttrib (or a
+    // TexProjectorEffect).
+    static const float s_data[4] = { 1, 0, 0, 0 };
+    static const float t_data[4] = { 0, 1, 0, 0 };
+    static const float r_data[4] = { 0, 0, 1, 0 };
+    static const float q_data[4] = { 0, 0, 0, 1 };
+    
+    for (int i = 0; i < num_stages; i++) {
+      TextureStage *stage = _current_texture->get_on_stage(i);
+      _glActiveTexture(GL_TEXTURE0 + i);
+      
+      switch (_current_tex_gen->get_mode(stage)) {
+      case TexGenAttrib::M_off:
+      case TexGenAttrib::M_cube_map:
+        GLP(Disable)(GL_TEXTURE_GEN_S);
+        GLP(Disable)(GL_TEXTURE_GEN_T);
+        GLP(Disable)(GL_TEXTURE_GEN_R);
+        GLP(Disable)(GL_TEXTURE_GEN_Q);
+        break;
+        
+      case TexGenAttrib::M_sphere_map:
+        GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+        GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+        GLP(Enable)(GL_TEXTURE_GEN_S);
+        GLP(Enable)(GL_TEXTURE_GEN_T);
+        GLP(Disable)(GL_TEXTURE_GEN_R);
+        GLP(Disable)(GL_TEXTURE_GEN_Q);
+        force_normal = true;
+        break;
+
+      case TexGenAttrib::M_object_position:
+        GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        GLP(TexGeni)(GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        GLP(TexGeni)(GL_Q, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        
+        GLP(TexGenfv)(GL_S, GL_OBJECT_PLANE, s_data);
+        GLP(TexGenfv)(GL_T, GL_OBJECT_PLANE, t_data);
+        GLP(TexGenfv)(GL_R, GL_OBJECT_PLANE, r_data);
+        GLP(TexGenfv)(GL_Q, GL_OBJECT_PLANE, q_data);
+        
+        GLP(Enable)(GL_TEXTURE_GEN_S);
+        GLP(Enable)(GL_TEXTURE_GEN_T);
+        GLP(Enable)(GL_TEXTURE_GEN_R);
+        GLP(Enable)(GL_TEXTURE_GEN_Q);
+        break;
+
+      case TexGenAttrib::M_eye_position:
+        // To represent eye position correctly, we need to temporarily
+        // load the coordinate-system transform.
+        GLP(MatrixMode)(GL_MODELVIEW);
+        GLP(PushMatrix)();
+        GLP(LoadMatrixf)(_scene_setup->get_cs_transform()->get_mat().get_data());
+
+        GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        GLP(TexGeni)(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        GLP(TexGeni)(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        
+        GLP(TexGenfv)(GL_S, GL_EYE_PLANE, s_data);
+        GLP(TexGenfv)(GL_T, GL_EYE_PLANE, t_data);
+        GLP(TexGenfv)(GL_R, GL_EYE_PLANE, r_data);
+        GLP(TexGenfv)(GL_Q, GL_EYE_PLANE, q_data);
+        
+        GLP(Enable)(GL_TEXTURE_GEN_S);
+        GLP(Enable)(GL_TEXTURE_GEN_T);
+        GLP(Enable)(GL_TEXTURE_GEN_R);
+        GLP(Enable)(GL_TEXTURE_GEN_Q);
+
+        GLP(MatrixMode)(GL_MODELVIEW);
+        GLP(PopMatrix)();
+        break;
+
+      case TexGenAttrib::M_world_position:
+        // We achieve world position coordinates by using the eye
+        // position mode, and loading the transform of the root
+        // node--thus putting the "eye" at the root.
+        GLP(MatrixMode)(GL_MODELVIEW);
+        GLP(PushMatrix)();
+        CPT(TransformState) root_transform = _scene_setup->get_render_transform();
+        GLP(LoadMatrixf)(root_transform->get_mat().get_data());
+        GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        GLP(TexGeni)(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        GLP(TexGeni)(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+        
+        GLP(TexGenfv)(GL_S, GL_EYE_PLANE, s_data);
+        GLP(TexGenfv)(GL_T, GL_EYE_PLANE, t_data);
+        GLP(TexGenfv)(GL_R, GL_EYE_PLANE, r_data);
+        GLP(TexGenfv)(GL_Q, GL_EYE_PLANE, q_data);
+        
+        GLP(Enable)(GL_TEXTURE_GEN_S);
+        GLP(Enable)(GL_TEXTURE_GEN_T);
+        GLP(Enable)(GL_TEXTURE_GEN_R);
+        GLP(Enable)(GL_TEXTURE_GEN_Q);
+
+        GLP(MatrixMode)(GL_MODELVIEW);
+        GLP(PopMatrix)();
+        break;
+      }
+    }
+
+    // Certain texgen modes (sphere_map, cube_map) require forcing the
+    // normal to be sent to the GL while the texgen mode is in effect.
+    if (force_normal != _texgen_forced_normal) {
+      if (force_normal) {
+        force_normals();
+      } else  {
+        undo_force_normals();
+      }
+      _texgen_forced_normal = force_normal;
+    }
+
+    report_my_gl_errors();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
