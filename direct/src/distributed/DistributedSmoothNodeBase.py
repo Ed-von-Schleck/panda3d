@@ -61,7 +61,7 @@ class DistributedSmoothNodeBase:
     def stopPosHprBroadcast(self):
         taskMgr.remove(self.getPosHprBroadcastTaskName())
 
-    def startPosHprBroadcast(self, frequency=.2):
+    def startPosHprBroadcast(self, period=.2):
         taskName = self.getPosHprBroadcastTaskName()
         # Set up telemetry optimization variables
         xyz = self.getPos()
@@ -75,7 +75,7 @@ class DistributedSmoothNodeBase:
         self.__storeR = hpr[2]
         self.__storeStop = 0
         self.__epsilon = 0.01
-        self.__broadcastFrequency = frequency
+        self.__broadcastPeriod = period
         # Broadcast our initial position
         self.b_clearSmoothing()
         self.d_setSmPosHpr(self.__storeX, self.__storeY, self.__storeZ,
@@ -83,12 +83,13 @@ class DistributedSmoothNodeBase:
         # remove any old tasks
         taskMgr.remove(taskName)
         # spawn the new task
-        taskMgr.doMethodLater(self.__broadcastFrequency, self.posHprBroadcast, taskName)
+        taskMgr.doMethodLater(self.__broadcastPeriod,
+                              self.posHprBroadcast, taskName)
 
     def posHprBroadcast(self, task):
         self.d_broadcastPosHpr()
         taskName = self.taskName("sendPosHpr")
-        taskMgr.doMethodLater(self.__broadcastFrequency,
+        taskMgr.doMethodLater(self.__broadcastPeriod,
                               self.posHprBroadcast, taskName)
         return Task.done
 
