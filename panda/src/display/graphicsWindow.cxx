@@ -252,7 +252,7 @@ get_channel(int index) {
     // Any other channel is some hardware-specific channel.
     nassertr(_pipe != NULL, NULL);
     chan = _pipe->get_hw_channel(this, index);
-    if (chan == NULL) {
+    if (chan == (GraphicsChannel *)NULL) {
       display_cat.error()
         << "GraphicsWindow::get_channel() - got a NULL channel" << endl;
     } else {
