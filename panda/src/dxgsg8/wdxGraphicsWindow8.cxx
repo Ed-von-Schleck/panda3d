@@ -388,6 +388,18 @@ do_fullscreen_resize(int x_size, int y_size) {
   return bResizeSucceeded;
 }
 
+//////////////////////////////////////////////////////////////////
+//     Function: WinGraphicsWindow::window_proc
+//       Access: Private
+//  Description: This is the nonstatic window_proc function.  It is
+//               called to handle window events for this particular
+//               window.
+////////////////////////////////////////////////////////////////////
+LONG wdxGraphicsWindow8::
+window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+  return WinGraphicsWindow::window_proc(hwnd,msg,wparam,lparam);
+}
+
 ////////////////////////////////////////////////////////////////////
 //     Function: wdxGraphicsWindow8::create_screen_buffers_and_device
 //       Access: Private

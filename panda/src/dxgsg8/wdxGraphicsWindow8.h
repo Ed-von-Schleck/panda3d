@@ -47,6 +47,7 @@ public:
 
   virtual bool begin_frame();
   virtual void end_flip();
+  virtual LONG window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
 protected:
   virtual void fullscreen_restored(WindowProperties &properties);

@@ -279,9 +279,11 @@ find_all_card_memavails() {
 
     hr = pDD->GetAvailableVidMem(&ddsGAVMCaps, &dwVidMemTotal, &dwVidMemFree);
     if (FAILED(hr)) {
-      wdxdisplay8_cat.error()
-        << "GetAvailableVidMem failed for device #"<< i<< D3DERRORSTRING(hr);
-      // goto skip_device;
+      wdxdisplay8_cat.error() << "GetAvailableVidMem failed for device #"<< i<< D3DERRORSTRING(hr);
+      // sometimes GetAvailableVidMem fails with hr=DDERR_NODIRECTDRAWHW for some unknown reason (bad drivers?)
+      // see bugs: 15327,18122, others.  is it because D3D8 object has already been created?
+      if(hr==DDERR_NODIRECTDRAWHW)
+          continue;
       exit(1);  // probably want to exit, since it may be my fault
     }
 
