@@ -1,5 +1,5 @@
 #ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_ccittrle.c,v 1.1 2000/10/04 01:14:42 drose Exp $";
+static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_ccittrle.c,v 1.2 2001/05/25 16:13:01 drose Exp $";
 #endif
 
 /*
@@ -37,39 +37,39 @@ static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Atti
 
 TIFFInitCCITTRLE(TIFF* tif)
 {
-	TIFFInitCCITTFax3(tif);		/* reuse G3 compression */
-	tif->tif_preencode = NULL;
-	tif->tif_postencode = NULL;
-	tif->tif_encoderow = TIFFNoRowEncode;
-	tif->tif_encodestrip = TIFFNoStripEncode;
-	tif->tif_encodetile = TIFFNoTileEncode;
-	tif->tif_close = NULL;
-	/*
-	 * This magic causes the regular G3 decompression
-	 * code to not skip to the EOL mark at the end of
-	 * a row, and to flush input data to a byte boundary
-	 * at the end of each row.
-	 */
-	tif->tif_options |= FAX3_NOEOL|FAX3_BYTEALIGN;
-	return (1);
+        TIFFInitCCITTFax3(tif);         /* reuse G3 compression */
+        tif->tif_preencode = NULL;
+        tif->tif_postencode = NULL;
+        tif->tif_encoderow = TIFFNoRowEncode;
+        tif->tif_encodestrip = TIFFNoStripEncode;
+        tif->tif_encodetile = TIFFNoTileEncode;
+        tif->tif_close = NULL;
+        /*
+         * This magic causes the regular G3 decompression
+         * code to not skip to the EOL mark at the end of
+         * a row, and to flush input data to a byte boundary
+         * at the end of each row.
+         */
+        tif->tif_options |= FAX3_NOEOL|FAX3_BYTEALIGN;
+        return (1);
 }
 
 int
 TIFFInitCCITTRLEW(TIFF* tif)
 {
-	TIFFInitCCITTFax3(tif);		/* reuse G3 compression */
-	tif->tif_preencode = NULL;
-	tif->tif_postencode = NULL;
-	tif->tif_encoderow = TIFFNoRowEncode;
-	tif->tif_encodestrip = TIFFNoStripEncode;
-	tif->tif_encodetile = TIFFNoTileEncode;
-	tif->tif_close = NULL;
-	/*
-	 * This magic causes the regular G3 decompression
-	 * code to not skip to the EOL mark at the end of
-	 * a row, and to flush input data to a byte boundary
-	 * at the end of each row.
-	 */
-	tif->tif_options |= FAX3_NOEOL|FAX3_WORDALIGN;
-	return (1);
+        TIFFInitCCITTFax3(tif);         /* reuse G3 compression */
+        tif->tif_preencode = NULL;
+        tif->tif_postencode = NULL;
+        tif->tif_encoderow = TIFFNoRowEncode;
+        tif->tif_encodestrip = TIFFNoStripEncode;
+        tif->tif_encodetile = TIFFNoTileEncode;
+        tif->tif_close = NULL;
+        /*
+         * This magic causes the regular G3 decompression
+         * code to not skip to the EOL mark at the end of
+         * a row, and to flush input data to a byte boundary
+         * at the end of each row.
+         */
+        tif->tif_options |= FAX3_NOEOL|FAX3_WORDALIGN;
+        return (1);
 }

@@ -1,5 +1,5 @@
 #ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_close.c,v 1.1 2000/10/04 01:14:42 drose Exp $";
+static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_close.c,v 1.2 2001/05/25 16:13:01 drose Exp $";
 #endif
 
 /*
@@ -34,18 +34,18 @@ static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Atti
 void
 TIFFClose(TIFF* tif)
 {
-	if (tif->tif_mode != O_RDONLY)
-		/*
-		 * Flush buffered data and directory (if dirty).
-		 */
-		TIFFFlush(tif);
-	if (tif->tif_cleanup)
-		(*tif->tif_cleanup)(tif);
-	TIFFFreeDirectory(tif);
-	if (tif->tif_rawdata && (tif->tif_flags&TIFF_MYBUFFER))
-		_TIFFfree(tif->tif_rawdata);
-	if (isMapped(tif))
-		TIFFUnmapFileContents(tif, tif->tif_base, tif->tif_size);
-	(void) TIFFCloseFile(tif);
-	_TIFFfree((char *)tif);
+        if (tif->tif_mode != O_RDONLY)
+                /*
+                 * Flush buffered data and directory (if dirty).
+                 */
+                TIFFFlush(tif);
+        if (tif->tif_cleanup)
+                (*tif->tif_cleanup)(tif);
+        TIFFFreeDirectory(tif);
+        if (tif->tif_rawdata && (tif->tif_flags&TIFF_MYBUFFER))
+                _TIFFfree(tif->tif_rawdata);
+        if (isMapped(tif))
+                TIFFUnmapFileContents(tif, tif->tif_base, tif->tif_size);
+        (void) TIFFCloseFile(tif);
+        _TIFFfree((char *)tif);
 }

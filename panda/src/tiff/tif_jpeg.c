@@ -1,5 +1,5 @@
 #ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_jpeg.c,v 1.1 2000/10/04 01:14:42 drose Exp $";
+static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_jpeg.c,v 1.2 2001/05/25 16:13:01 drose Exp $";
 #endif
 
 /*
@@ -35,5 +35,5 @@ static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Atti
 
 TIFFInitJPEG(TIFF* tif)
 {
-	return (1);
+        return (1);
 }

@@ -1,5 +1,5 @@
 #ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_error.c,v 1.1 2000/10/04 01:14:42 drose Exp $";
+static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_error.c,v 1.2 2001/05/25 16:13:01 drose Exp $";
 #endif
 
 /*
@@ -35,10 +35,10 @@ static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Atti
 static void
 defaultHandler(const char* module, const char* fmt, va_list ap)
 {
-	if (module != NULL)
-		fprintf(stderr, "%s: ", module);
-	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, ".\n");
+        if (module != NULL)
+                fprintf(stderr, "%s: ", module);
+        vfprintf(stderr, fmt, ap);
+        fprintf(stderr, ".\n");
 }
 
 static TIFFErrorHandler _errorHandler = defaultHandler;
@@ -46,18 +46,18 @@ static TIFFErrorHandler _errorHandler = defaultHandler;
 TIFFErrorHandler
 TIFFSetErrorHandler(TIFFErrorHandler handler)
 {
-	TIFFErrorHandler prev = _errorHandler;
-	_errorHandler = handler;
-	return (prev);
+        TIFFErrorHandler prev = _errorHandler;
+        _errorHandler = handler;
+        return (prev);
 }
 
 void
 TIFFError(const char* module, const char* fmt, ...)
 {
-	if (_errorHandler) {
-		va_list ap;
-		va_start(ap, fmt);
-		(*_errorHandler)(module, fmt, ap);
-		va_end(ap);
-	}
+        if (_errorHandler) {
+                va_list ap;
+                va_start(ap, fmt);
+                (*_errorHandler)(module, fmt, ap);
+                va_end(ap);
+        }
 }

@@ -1,5 +1,5 @@
 #ifndef lint
-static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_flush.c,v 1.1 2000/10/04 01:14:42 drose Exp $";
+static char rcsid[] = "$Header: /home/rndbit/src/panda3d-cvs/panda/src/tiff/Attic/tif_flush.c,v 1.2 2001/05/25 16:13:01 drose Exp $";
 #endif
 
 /*
@@ -35,14 +35,14 @@ int
 TIFFFlush(TIFF* tif)
 {
 
-	if (tif->tif_mode != O_RDONLY) {
-		if (!TIFFFlushData(tif))
-			return (0);
-		if ((tif->tif_flags & TIFF_DIRTYDIRECT) &&
-		    !TIFFWriteDirectory(tif))
-			return (0);
-	}
-	return (1);
+        if (tif->tif_mode != O_RDONLY) {
+                if (!TIFFFlushData(tif))
+                        return (0);
+                if ((tif->tif_flags & TIFF_DIRTYDIRECT) &&
+                    !TIFFWriteDirectory(tif))
+                        return (0);
+        }
+        return (1);
 }
 
 /*
@@ -51,12 +51,12 @@ TIFFFlush(TIFF* tif)
 int
 TIFFFlushData(TIFF* tif)
 {
-	if ((tif->tif_flags & TIFF_BEENWRITING) == 0)
-		return (0);
-	if (tif->tif_flags & TIFF_POSTENCODE) {
-		tif->tif_flags &= ~TIFF_POSTENCODE;
-		if (tif->tif_postencode && !(*tif->tif_postencode)(tif))
-			return (0);
-	}
-	return (TIFFFlushData1(tif));
+        if ((tif->tif_flags & TIFF_BEENWRITING) == 0)
+                return (0);
+        if (tif->tif_flags & TIFF_POSTENCODE) {
+                tif->tif_flags &= ~TIFF_POSTENCODE;
+                if (tif->tif_postencode && !(*tif->tif_postencode)(tif))
+                        return (0);
+        }
+        return (TIFFFlushData1(tif));
 }
