@@ -46,7 +46,7 @@ class FactoryParams;
 //               across all active GSG's, rather than specific to one
 //               particular GSG, as a CullBin is.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA TextureStage : public TypedWritableReferenceCount, public Namable {
+class EXPCL_PANDA TextureStage : public TypedWritableReferenceCount {
 private:
   TextureStage(const string &name);
 
@@ -92,6 +92,8 @@ PUBLISHED:
     CO_src_alpha,
     CO_one_minus_src_alpha,
   };
+
+  INLINE const string &get_name() const;
 
   INLINE void set_sort(int sort);
   INLINE int get_sort() const;
@@ -139,6 +141,7 @@ PUBLISHED:
   INLINE CombineOperand get_combine_alpha_operand2() const;
 
 private:
+  string _name;
   int _sort;
   Mode _mode;
   Colorf _color;

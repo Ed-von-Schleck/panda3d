@@ -100,7 +100,7 @@ private:
   CPT(RenderAttrib) do_add(const TextureAttrib *other, Operation op) const;
   CPT(RenderAttrib) do_remove(const TextureAttrib *other, Operation op) const;
 
-  INLINE void check_sorted();
+  INLINE void check_sorted() const;
   void sort_stages();
 
 private:
