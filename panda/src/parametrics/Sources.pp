@@ -1,7 +1,7 @@
 #define OTHER_LIBS interrogatedb:c dconfig:c dtoolutil:c dtoolbase:c dtool:m
 
 #begin lib_target
-  #define TARGET cull
+  #define TARGET parametrics
   #define LOCAL_LIBS \
     grutil linmath express putil pandabase
 
