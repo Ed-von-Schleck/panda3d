@@ -72,11 +72,16 @@ private:
   typedef pmap< PT(TextureStage), CPT(TransformState) > Stages;
   Stages _stages;
 
+  // This element is only used during reading from a bam file.  It has
+  // no meaningful value any other time.
+  size_t _num_stages;
+
   static CPT(RenderAttrib) _empty_attrib;
 
 public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &dg);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
 
 protected:
   static TypedWritable *make_from_bam(const FactoryParams &params);
