@@ -6,6 +6,7 @@ from DirectUtil import ROUND_TO
 import PandaObject
 import Task
 import string
+import ShowBase
 
 """
 Base class for all Direct Gui items.  Handles composite widgets and
@@ -220,8 +221,8 @@ class DirectGuiBase(PandaObject.PandaObject):
                 
     def initialiseoptions(self, myClass):
         """
-        initialiseoptions(myClass) - call all initialisation functions
-        to initialize widget options to default of keyword value
+        Call all initialisation functions to initialize widget 
+        options to default of keyword value
         """
         # This is to make sure this method class is only called by
         # the most specific class in the class hierarchy
@@ -264,14 +265,12 @@ class DirectGuiBase(PandaObject.PandaObject):
                     
     def isinitoption(self, option):
         """
-        isinitoption(option)
         Is this opition one that can only be specified at construction?
         """
         return self._optionInfo[option][_OPT_FUNCTION] is INITOPT
     
     def options(self):
         """
-        options()
         Print out a list of available widget options.
         Does not include subcomponent options.
         """
@@ -431,7 +430,6 @@ class DirectGuiBase(PandaObject.PandaObject):
         
     def cget(self, option):
         """
-        cget(option)
         Get current configuration setting for this option
         """
         # Return the value of an option, for example myWidget['font']. 
@@ -616,8 +614,8 @@ class DirectGuiBase(PandaObject.PandaObject):
     def destroy(self):
         # Clean out any hooks
         self.ignoreAll()
-        del(self._optionInfo)
-        del(self.__componentInfo)
+        del self._optionInfo
+        del self.__componentInfo
         del self.postInitialiseFuncList
         
     def bind(self, event, command, extraArgs = []):
@@ -652,7 +650,8 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
     # Determine the default initial state for inactive (or
     # unclickable) components.  If we are in edit mode, these are
     # actually clickable by default.
-    guiEdit = base.config.GetBool('direct-gui-edit', 0)
+    #guiEdit = base.config.GetBool('direct-gui-edit', 0)
+    guiEdit = config.GetBool('direct-gui-edit', 0)
     if guiEdit:
         inactiveInitState = NORMAL
     else:
@@ -660,7 +659,7 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
 
     guiDict = {}
 
-    def __init__(self, parent = aspect2d, **kw):
+    def __init__(self, parent = None, **kw):
         # Direct gui widgets are node paths
         # Direct gui widgets have:
         # -  stateNodePaths (to hold visible representation of widget)
@@ -691,6 +690,7 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
             ('guiId',          None,         INITOPT),
             # Initial pos/scale of the widget
             ('pos',            None,         INITOPT),
+            ('hpr',            None,         INITOPT),
             ('scale',          None,         INITOPT),
             ('color',          None,         INITOPT),
             # Do events pass through this widget?
@@ -711,15 +711,24 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
             self.guiItem.setId(self['guiId'])
         self.guiId = self.guiItem.getId()
         # Attach button to parent and make that self
-        self.assign(parent.attachNewNode( self.guiItem, self['sortOrder'] ) )
+        if (parent == None):
+            parent = aspect2d
+        self.assign(parent.attachNewNode(self.guiItem, self['sortOrder']))
         # Update pose to initial values
         if self['pos']:
             pos = self['pos']
-            # Can either be a Point3 or a tuple of 3 values
-            if isinstance(pos, Point3):
+            # Can either be a VBase3 or a tuple of 3 values
+            if isinstance(pos, VBase3):
                 self.setPos(pos)
             else:
                 apply(self.setPos, pos)
+        if self['hpr']:
+            hpr = self['hpr']
+            # Can either be a VBase3 or a tuple of 3 values
+            if isinstance(hpr, VBase3):
+                self.setHpr(hpr)
+            else:
+                apply(self.setHpr, hpr)
         if self['scale']:
             scale = self['scale']
             # Can either be a Vec3 or a tuple of 3 values
@@ -856,6 +865,7 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
         if self['frameSize']:
             # Use user specified bounds
             self.bounds = self['frameSize']
+            #print "%s bounds = %s" % (self.getName(),self.bounds)            
         else:
             if fClearFrame and (frameType != PGFrameStyle.TNone):
                 self.frameStyle[0].setType(PGFrameStyle.TNone)
@@ -989,9 +999,9 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
         
     def printConfig(self, indent = 0):
         space = ' ' * indent
-        print space + self.guiId
-        print space + 'Pos:   ' + `self.getPos()`
-        print space + 'Scale: ' + `self.getScale()`
+        print space + self.guiId, '-', self.__class__.__name__
+        print space + 'Pos:   ' + self.getPos().pPrintValues()
+        print space + 'Scale: ' + self.getScale().pPrintValues()
         # Print out children info
         for child in self.getChildrenAsList():
             messenger.send(PRINT + child.getName(), [indent + 2])
