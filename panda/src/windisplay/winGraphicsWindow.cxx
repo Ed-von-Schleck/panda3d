@@ -1399,7 +1399,18 @@ void PrintErrorMessage(DWORD msgID) {
   LocalFree( pMessageBuffer );
 }
 
-void ClearToBlack(HWND hWnd, const WindowProperties &props) {
+void
+ClearToBlack(HWND hWnd, const WindowProperties &props) {
+  if (props.has_origin()) {
+    windisplay_cat.info()
+      << "Skipping ClearToBlack, no origin specified yet.\n";
+    return;
+  }
+
+  if (windisplay_cat.is_debug()) {
+    windisplay_cat.debug()
+      << "ClearToBlack(" << hWnd << ", " << props << ")\n";
+  }
   // clear to black
   HDC hDC=GetDC(hWnd);  // GetDC is not particularly fast.  if this needs to be super-quick, we should cache GetDC's hDC
   RECT clrRect = {
