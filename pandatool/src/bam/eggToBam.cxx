@@ -46,7 +46,7 @@ EggToBam() :
   add_path_store_options();
 
   add_option
-    ("flatten", "flag", 0,
+    ("fl", "flag", 0,
      "Specifies whether to flatten the egg hierarchy after it is loaded.  "
      "If flag is zero, the egg hierarchy will not be flattened, but will "
      "instead be written to the bam file exactly as it is.  If flag is "
@@ -55,14 +55,6 @@ EggToBam() :
      "if this is not specified is taken from the egg-flatten Configrc "
      "variable.",
      &EggToBam::dispatch_int, &_has_egg_flatten, &_egg_flatten);
-
-  add_option
-    ("suppress-hidden", "flag", 0,
-     "Specifies whether to suppress hidden geometry.  If this is nonzero, "
-     "egg geometry tagged as \"hidden\" will be removed from the final "
-     "scene graph; otherwise, it will be preserved (but stashed).  The "
-     "default is nonzero, to remove it.",
-     &EggToBam::dispatch_int, NULL, &_egg_suppress_hidden);
 
   add_option
     ("ls", "", 0,
@@ -96,7 +88,6 @@ EggToBam() :
 
   _force_complete = true;
   _egg_flatten = 0;
-  _egg_suppress_hidden = 1;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -107,13 +98,10 @@ EggToBam() :
 void EggToBam::
 run() {
   if (_has_egg_flatten) {
-    // If the user specified some -flatten, we need to set the
+    // If the user specified some -fl, we need to set the
     // corresponding Configrc variable.
     egg_flatten = (_egg_flatten != 0);
   }
-
-  // We always set egg_suppress_hidden.
-  egg_suppress_hidden = _egg_suppress_hidden;
 
   if (_compression_off) {
     // If the user specified -NC, turn off channel compression.
