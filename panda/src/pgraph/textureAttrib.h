@@ -110,6 +110,8 @@ private:
 
   UpdateSeq _sort_seq;
 
+  int _num_on_textures;  //temporary count to complete_pointers from fill_in
+
 public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &dg);

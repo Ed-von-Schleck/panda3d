@@ -56,6 +56,36 @@ TextureStage(const string &name) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::Constructor
+//       Access: Published
+//  Description: Initialize the texture stage from other
+////////////////////////////////////////////////////////////////////
+TextureStage::
+TextureStage(TextureStage *copy) {
+  _name = copy->_name;
+  _sort = copy->_sort;
+  _priority = copy->_priority;
+  _texcoord_name = copy->_texcoord_name;
+  _mode = copy->_mode;
+  _color = copy->_color;
+  _combine_rgb_mode = copy->_combine_rgb_mode;
+  _combine_rgb_source0 = copy->_combine_rgb_source0;
+  _combine_rgb_operand0 = copy->_combine_rgb_operand0;
+  _combine_rgb_source1 = copy->_combine_rgb_source1;
+  _combine_rgb_operand1 = copy->_combine_rgb_operand1;
+  _combine_rgb_source2 = copy->_combine_rgb_source2;
+  _combine_rgb_operand2 = copy->_combine_rgb_operand2;
+  _combine_alpha_mode = copy->_combine_alpha_mode;
+  _combine_alpha_source0 = copy->_combine_alpha_source0;
+  _combine_alpha_operand0 = _combine_alpha_operand0;
+  _combine_alpha_source1 = copy->_combine_alpha_source1;
+  _combine_alpha_operand1 = copy->_combine_alpha_operand1;
+  _combine_alpha_source2 = copy->_combine_alpha_source2;
+  _combine_alpha_operand2 = copy->_combine_alpha_operand2;
+
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Destructor
 //       Access: Published, Virtual
 //  Description:

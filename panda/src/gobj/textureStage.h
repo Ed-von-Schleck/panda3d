@@ -42,6 +42,7 @@ class FactoryParams;
 class EXPCL_PANDA TextureStage : public TypedWritableReferenceCount {
 PUBLISHED:
   TextureStage(const string &name);
+  TextureStage(TextureStage *copy);
   virtual ~TextureStage();
 
   enum Mode {
@@ -94,6 +95,7 @@ PUBLISHED:
   INLINE int get_priority() const;
 
   INLINE bool operator < (const TextureStage &other) const;
+  INLINE TextureStage &operator = (const TextureStage &copy);
 
   INLINE void set_texcoord_name(const TexCoordName *name);
   INLINE void set_texcoord_name(const string &texcoord_name);

@@ -119,6 +119,37 @@ operator < (const TextureStage &other) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::opertor =
+//       Access: Published
+//  Description: just copy the members of other to this
+////////////////////////////////////////////////////////////////////
+INLINE TextureStage &TextureStage::
+operator = (const TextureStage &other) {
+  _name = other._name;
+  _sort = other._sort;
+  _priority = other._priority;
+  _texcoord_name = other._texcoord_name;
+  _mode = other._mode;
+  _color = other._color;
+  _combine_rgb_mode = other._combine_rgb_mode;
+  _combine_rgb_source0 = other._combine_rgb_source0;
+  _combine_rgb_operand0 = other._combine_rgb_operand0;
+  _combine_rgb_source1 = other._combine_rgb_source1;
+  _combine_rgb_operand1 = other._combine_rgb_operand1;
+  _combine_rgb_source2 = other._combine_rgb_source2;
+  _combine_rgb_operand2 = other._combine_rgb_operand2;
+  _combine_alpha_mode = other._combine_alpha_mode;
+  _combine_alpha_source0 = other._combine_alpha_source0;
+  _combine_alpha_operand0 = _combine_alpha_operand0;
+  _combine_alpha_source1 = other._combine_alpha_source1;
+  _combine_alpha_operand1 = other._combine_alpha_operand1;
+  _combine_alpha_source2 = other._combine_alpha_source2;
+  _combine_alpha_operand2 = other._combine_alpha_operand2;
+
+  return *this;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_texcoord_name
 //       Access: Published
 //  Description: Indicate which set of UV's this texture stage will

@@ -22,6 +22,7 @@
 #include "bamWriter.h"
 #include "datagram.h"
 #include "datagramIterator.h"
+#include "dcast.h"
 
 TypeHandle TextureAttrib::_type_handle;
 
@@ -687,9 +688,31 @@ void TextureAttrib::
 write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
 
+#if 1
   // TODO: write the multitexture data.
-
+  // write the boolean if _off_all_stages
+  dg.add_bool(_off_all_stages);
+  // write the number of off_stages
+  dg.add_uint16(get_num_off_stages());
+  // write the off stages pointers if any
+  OffStages::const_iterator fi;
+  for (fi = _off_stages.begin(); fi != _off_stages.end(); ++fi) {
+    TextureStage *stage = (*fi);
+    manager->write_pointer(dg, stage);
+  }
+  // write the number of on stages
+  dg.add_uint16(get_num_on_stages());
+  // write the on stages pointers if any
+  OnTextures::const_iterator nti;
+  for (nti = _on_textures.begin(); nti != _on_textures.end(); ++nti) {
+    TextureStage *stage = (*nti).first;
+    manager->write_pointer(dg, stage);
+    Texture *texture = (*nti).second;
+    manager->write_pointer(dg,texture);
+  }
+#else
   manager->write_pointer(dg, get_texture());
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -703,18 +726,38 @@ int TextureAttrib::
 complete_pointers(TypedWritable **p_list, BamReader *manager) {
   int pi = RenderAttrib::complete_pointers(p_list, manager);
 
-  TypedWritable *texture = p_list[pi++];
-  if (texture != (TypedWritable *)NULL) {
-    _on_stages.push_back(TextureStage::get_default());
-    _on_textures[TextureStage::get_default()] = DCAST(Texture, texture);
+  if (manager->get_file_minor_ver() < 11) {
+    TypedWritable *texture = p_list[pi++];
+    if (texture != (TypedWritable *)NULL) {
+      _on_stages.push_back(TextureStage::get_default());
+      _on_textures[TextureStage::get_default()] = DCAST(Texture, texture);
 
-    // We know the one-element array is already sorted.
-    _sort_seq = TextureStage::get_sort_seq();
-
-  } else {
-    // Pre-bam 4.11, a null pointer meant to turn off texturing.
-    _off_all_stages = true;
+      // We know the one-element array is already sorted.
+      _sort_seq = TextureStage::get_sort_seq();
+      
+    } else {
+      // Pre-bam 4.11, a null pointer meant to turn off texturing.
+      _off_all_stages = true;
+    }
   }
+  else {
+    pgraph_cat.debug() << "came here filling in textureattrib " << (void *)this << "\n";
+    //OnTextures::const_iterator bi = ta->_on_textures.begin();
+    OffStages::iterator ci = _off_stages.begin();
+    while (ci != _off_stages.end()) {
+      TextureStage *ts = DCAST(TextureStage, p_list[pi++]);
+      *ci = ts;
+      ++ci;
+    }
+    // read the pointers of the on_textures
+    for (int i=0; i<_num_on_textures; ++i) {
+      TextureStage *ts = DCAST(TextureStage, p_list[pi++]);
+      Texture *tx = DCAST(Texture, p_list[pi++]);
+      _on_textures[ts] = tx;
+      _on_stages.push_back(ts);
+    }
+  }
+  _sort_seq = UpdateSeq::old();
 
   return pi;
 }
@@ -750,8 +793,34 @@ void TextureAttrib::
 fillin(DatagramIterator &scan, BamReader *manager) {
   RenderAttrib::fillin(scan, manager);
 
-  // Read the _texture pointer.
-  manager->read_pointer(scan);
+  if (manager->get_file_minor_ver() < 11) {
+    // Read the _texture pointer.
+    manager->read_pointer(scan);
+  }
+  else {
+    pgraph_cat.debug() << "came here too\n";
+    // read the boolean if _off_all_stages
+    _off_all_stages = scan.get_bool();
+    // read the number of off_stages
+    int num_off_stages = scan.get_uint16();
+    
+    // Push back a NULL pointer for each off TextureStage for now, until
+    // we get the actual list of pointers later in complete_pointers().
+    //_off_stages.reserve(num_off_stages);
+    for (int i = 0; i < num_off_stages; i++) {
+      manager->read_pointer(scan);
+      _off_stages.push_back(NULL);
+    }
+    // read the number of on stages
+    _num_on_textures = scan.get_uint16();
+    // just read the pointers, all allocation will happen from
+    // complete_pointers because, it is a map template we get the
+    // actual list of pointers later in complete_pointers().
+    for (int i = 0; i < _num_on_textures; i++) {
+      manager->read_pointer(scan);
+      manager->read_pointer(scan);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
