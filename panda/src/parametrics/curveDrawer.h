@@ -67,9 +67,6 @@ PUBLISHED:
   void set_time_curve(ParametricCurve *curve);
   ParametricCurve *get_time_curve();
 
-  void set_surface(ParametricSurface *surface);
-  ParametricSurface *get_surface();
-
   GeomNode *get_geom_node();
   GeomNode *detach_geom_node();
 
