@@ -1094,22 +1094,38 @@ void Geom::
 write_datagram(BamWriter *manager, Datagram &me) {
   int i;
 
-  // TODO: write the multitexture data.
-
   // Coordinates
   WRITE_PTA(manager, me, IPD_Vertexf::write_datagram, _coords);
   // Normals
   WRITE_PTA(manager, me, IPD_Normalf::write_datagram, _norms);
   // Colors
   WRITE_PTA(manager, me, IPD_Colorf::write_datagram, _colors);
+  /*
+  // pre bam 4.11
   // Texture Coordinates
   WRITE_PTA(manager, me, IPD_TexCoordf::write_datagram, get_texcoords_array());
+  */
+  // write the multitexture data
+  nassertv(_texcoords_by_name.size() < 256);
+  me.add_uint8(_texcoords_by_name.size());  // write the size of the map
+  // write the TexCoordsByName pointers if any
+  TexCoordsByName::const_iterator tci;
+  for (tci = _texcoords_by_name.begin(); tci != _texcoords_by_name.end(); ++tci) {
+    CPT(TexCoordName) tc = (*tci).first;
+    manager->write_pointer(me, tc);
+    WRITE_PTA(manager, me, IPD_TexCoordf::write_datagram, (*tci).second._texcoords);
+    WRITE_PTA(manager, me, IPD_ushort::write_datagram, (*tci).second._tindex);
+  }
 
   // Now write out the indices for each array
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, _vindex);
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, _nindex);
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, _cindex);
+  /*
+  // pre bam 4.11
   WRITE_PTA(manager, me, IPD_ushort::write_datagram, get_texcoords_index());
+  */
+  // the texcoord indices are already written with the texcoords
 
   me.add_uint16(_numprims);
   WRITE_PTA(manager, me, IPD_int::write_datagram, _primlengths);
@@ -1119,6 +1135,42 @@ write_datagram(BamWriter *manager, Datagram &me) {
   for(i = 0; i < num_GeomAttrTypes; i++) {
     me.add_uint8(_bind[i]);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::complete_pointers
+//       Access: Public, Virtual
+//  Description: Receives an array of pointers, one for each time
+//               manager->read_pointer() was called in fillin().
+//               Returns the number of pointers processed.
+////////////////////////////////////////////////////////////////////
+int Geom::
+complete_pointers(TypedWritable **p_list, BamReader *manager) {
+  int pi = dDrawable::complete_pointers(p_list, manager);
+
+  // complete the pointers and build the _texcoords_by_name
+  TexCoordDefSet::iterator ci;
+  for (ci = _temp_texcoord_set.begin();
+       ci != _temp_texcoord_set.end();
+       ++ci) {
+    CPT(TexCoordName) tc = DCAST(TexCoordName, p_list[pi++]);
+    TexCoordDef *def = (*ci);
+    _texcoords_by_name[tc] = *def;
+    /*
+    cerr << "TexCoordName from Geom " << (void *)this
+         << " complete pointers " << tc << " " << *tc 
+         << " = " << def->_texcoords << " and " << def->_tindex << "\n";
+    */
+    delete def;
+    if (tc == TexCoordName::get_default()) {
+      _bind[G_TEXCOORD] = G_PER_VERTEX;
+    }
+  }
+  _temp_texcoord_set.clear();
+
+  make_dirty();
+
+  return pi;
 }
 
 
@@ -1142,14 +1194,31 @@ fillin(DatagramIterator& scan, BamReader* manager) {
   READ_PTA(manager, scan, IPD_Colorf::read_datagram, _colors);
   // Texture Coordinates
   PTA_TexCoordf texcoords;
-  READ_PTA(manager, scan, IPD_TexCoordf::read_datagram, texcoords);
-
+  if (manager->get_file_minor_ver() < 11) {
+    READ_PTA(manager, scan, IPD_TexCoordf::read_datagram, texcoords);
+  } else {
+    // read the multitexture data
+    int num_texcoords_by_names = scan.get_uint8();
+    // read the TexCoordsByName pointers of num_texcoords_by_names
+    TexCoordsByName::const_iterator tci;
+    _temp_texcoord_set.reserve(num_texcoords_by_names);
+    for (int i=0; i<num_texcoords_by_names; ++i) {
+      manager->read_pointer(scan);
+      TexCoordDef *tcd = new TexCoordDef;
+      READ_PTA(manager, scan, IPD_TexCoordf::read_datagram, tcd->_texcoords);
+      READ_PTA(manager, scan, IPD_ushort::read_datagram, tcd->_tindex);
+      _temp_texcoord_set.push_back(tcd);
+    }
+  }
+      
   // Now read in the indices for each array
   READ_PTA(manager, scan, IPD_ushort::read_datagram, _vindex);
   READ_PTA(manager, scan, IPD_ushort::read_datagram, _nindex);
   READ_PTA(manager, scan, IPD_ushort::read_datagram, _cindex);
   PTA_ushort tindex;
-  READ_PTA(manager, scan, IPD_ushort::read_datagram, tindex);
+  if (manager->get_file_minor_ver() < 11) {
+    READ_PTA(manager, scan, IPD_ushort::read_datagram, tindex);
+  }
 
   _numprims = scan.get_uint16();
 
@@ -1171,7 +1240,9 @@ fillin(DatagramIterator& scan, BamReader* manager) {
     _bind[i] = (enum GeomBindType) scan.get_uint8();
   }
 
-  if (_bind[G_TEXCOORD] == G_PER_VERTEX) {
-    set_texcoords(texcoords, G_PER_VERTEX, tindex);
+  if (manager->get_file_minor_ver() < 11) {
+    if (_bind[G_TEXCOORD] == G_PER_VERTEX) {
+      set_texcoords(texcoords, G_PER_VERTEX, tindex);
+    }
   }
 }

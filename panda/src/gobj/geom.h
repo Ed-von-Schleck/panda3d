@@ -23,6 +23,7 @@
 #include "drawable.h"
 
 #include "vector_typedWritable.h"
+#include "ordered_vector.h"
 #include "pointerTo.h"
 #include "pointerToArray.h"
 #include "typedef.h"
@@ -282,6 +283,11 @@ protected:
   typedef pmap<CPT(TexCoordName), TexCoordDef> TexCoordsByName;
   TexCoordsByName _texcoords_by_name;
 
+  // temporary storage until complete_pointers fills in _texcoords_by_name's TexCoordName *
+  typedef pvector<TexCoordDef *> TexCoordDefSet;
+  TexCoordDefSet _temp_texcoord_set;
+
+
 private:
   void clear_prepared(PreparedGraphicsObjects *prepared_objects);
   static int sum_lengths(const PTA_int &lengths);
@@ -302,6 +308,7 @@ private:
 public:
   //static void register_with_read_factory(void);
   virtual void write_datagram(BamWriter* manager, Datagram &me);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
 
   //static TypedWritable *make_Generic(const FactoryParams &params);
 

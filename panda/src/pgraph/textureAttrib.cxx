@@ -717,7 +717,6 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
   }
   else {
     pgraph_cat.debug() << "came here filling in textureattrib " << (void *)this << "\n";
-    //OnTextures::const_iterator bi = ta->_on_textures.begin();
     OffStages::iterator ci = _off_stages.begin();
     while (ci != _off_stages.end()) {
       TextureStage *ts = DCAST(TextureStage, p_list[pi++]);
