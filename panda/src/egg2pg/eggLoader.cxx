@@ -2977,7 +2977,17 @@ get_combine_source(const EggTexture *egg_tex,
                    EggTexture::CombineChannel channel, int n) {
   switch (egg_tex->get_combine_source(channel, n)) {
   case EggTexture::CS_unspecified:
-    // fall through
+    // The default source if it is unspecified is based on the
+    // parameter index.
+    switch (n) {
+    case 0:
+      return TextureStage::CS_previous;
+    case 1:
+      return TextureStage::CS_texture;
+    case 2:
+      return TextureStage::CS_constant;
+    }
+    // Otherwise, fall through
 
   case EggTexture::CS_texture:
     return TextureStage::CS_texture;
@@ -3006,7 +3016,14 @@ get_combine_operand(const EggTexture *egg_tex,
                     EggTexture::CombineChannel channel, int n) {
   switch (egg_tex->get_combine_operand(channel, n)) {
   case EggTexture::CS_unspecified:
-    return channel == EggTexture::CC_rgb ? TextureStage::CO_src_color : TextureStage::CO_src_alpha;
+    if (channel == EggTexture::CC_rgb) {
+      // The default operand for RGB is src_color, except for the
+      // third parameter, which defaults to src_alpha.
+      return n < 2 ? TextureStage::CO_src_color : TextureStage::CO_src_alpha;
+    } else {
+      // The default operand for alpha is always src_alpha.
+      return TextureStage::CO_src_alpha;
+    }
 
   case EggTexture::CO_src_color:
     return TextureStage::CO_src_color;

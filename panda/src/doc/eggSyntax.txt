@@ -204,6 +204,22 @@ appear before they are referenced.
       SRC-ALPHA
       ONE-MINUS-SRC-ALPHA
 
+    The default values if any of these are omitted are:
+      <Scalar> combine-rgb { modulate }
+      <Scalar> combine-alpha { modulate }
+      <Scalar> combine-rgb-source0 { previous }
+      <Scalar> combine-rgb-operand0 { src-color }
+      <Scalar> combine-rgb-source1 { texture }
+      <Scalar> combine-rgb-operand1 { src-color }
+      <Scalar> combine-rgb-source2 { constant }
+      <Scalar> combine-rgb-operand2 { src-alpha }
+      <Scalar> combine-alpha-source0 { previous }
+      <Scalar> combine-alpha-operand0 { src-alpha }
+      <Scalar> combine-alpha-source1 { texture }
+      <Scalar> combine-alpha-operand1 { src-alpha }
+      <Scalar> combine-alpha-source2 { constant }
+      <Scalar> combine-alpha-operand2 { src-alpha }
+
   <Scalar> tex-gen { mode }
 
     This specifies that texture coordinates for the primitives that
