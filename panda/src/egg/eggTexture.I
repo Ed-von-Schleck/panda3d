@@ -237,6 +237,96 @@ get_env_type() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::set_combine_mode
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+set_combine_mode(CombineChannel channel, CombineMode cm) {
+  nassertv((int)channel >= 0 && (int)channel < (int)CC_num_channels);
+  _combiner[channel]._mode = cm;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_combine_mode
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE EggTexture::CombineMode EggTexture::
+get_combine_mode(CombineChannel channel) const {
+  nassertr((int)channel >= 0 && (int)channel < (int)CC_num_channels, CM_unspecified);
+  return _combiner[channel]._mode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::set_combine_source
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+set_combine_source(CombineChannel channel, int n, CombineSource cs) {
+  nassertv((int)channel >= 0 && (int)channel < (int)CC_num_channels);
+  nassertv(n >= 0 && n < (int)CI_num_indices);
+  _combiner[channel]._ops[n]._source = cs;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_combine_source
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE EggTexture::CombineSource EggTexture::
+get_combine_source(CombineChannel channel, int n) const {
+  nassertr((int)channel >= 0 && (int)channel < (int)CC_num_channels, CS_unspecified);
+  nassertr(n >= 0 && n < (int)CI_num_indices, CS_unspecified);
+  return _combiner[channel]._ops[n]._source;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::set_combine_operand
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+set_combine_operand(CombineChannel channel, int n, CombineOperand co) {
+  nassertv((int)channel >= 0 && (int)channel < (int)CC_num_channels);
+  nassertv(n >= 0 && n < (int)CI_num_indices);
+  _combiner[channel]._ops[n]._operand = co;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_combine_operand
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE EggTexture::CombineOperand EggTexture::
+get_combine_operand(CombineChannel channel, int n) const {
+  nassertr((int)channel >= 0 && (int)channel < (int)CC_num_channels, CO_unspecified);
+  nassertr(n >= 0 && n < (int)CI_num_indices, CO_unspecified);
+  return _combiner[channel]._ops[n]._operand;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::set_tex_gen
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggTexture::
+set_tex_gen(TexGen tex_gen) {
+  _tex_gen = tex_gen;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_tex_gen
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE EggTexture::TexGen EggTexture::
+get_tex_gen() const {
+  return _tex_gen;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::set_stage_name
 //       Access: Published
 //  Description: Specifies the particular TextureStage this texture
@@ -682,6 +772,29 @@ has_alpha_file_channel() const {
 INLINE int EggTexture::
 get_alpha_file_channel() const {
   return _alpha_file_channel;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::SourceAndOperand::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE EggTexture::SourceAndOperand::
+SourceAndOperand() :
+  _source(CS_unspecified),
+  _operand(CO_unspecified)
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::Combiner::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE EggTexture::Combiner::
+Combiner() :
+  _mode(CM_unspecified)
+{
 }
 
 ////////////////////////////////////////////////////////////////////

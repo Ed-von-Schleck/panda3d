@@ -60,6 +60,7 @@
 #include "eggTable.h"
 #include "eggBinner.h"
 #include "eggVertexPool.h"
+#include "pt_EggTexture.h"
 #include "characterMaker.h"
 #include "character.h"
 #include "animBundleMaker.h"
@@ -318,6 +319,7 @@ make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
           for (int i = 0; i < num_textures; i++) {
             EggTexture *texture = egg_prim->get_texture(i);
             if (texture->has_transform() && 
+                texture->get_tex_gen() == EggTexture::TG_unspecified &&
                 texture->get_uv_name() == uv_obj->get_name()) {
               // If we have a texture matrix, apply it.
               uv = uv * egg_prim->get_texture(i)->get_transform();
@@ -468,6 +470,7 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
         for (int i = 0; i < num_textures; i++) {
           EggTexture *texture = egg_prim->get_texture(i);
           if (texture->has_transform() && 
+              texture->get_tex_gen() == EggTexture::TG_unspecified &&
               texture->get_uv_name() == uv_obj->get_name()) {
             // If we have a texture matrix, apply it.
             mat *= texture->get_transform();
@@ -559,28 +562,7 @@ make_nurbs_curve(EggNurbsCurve *egg_curve, PandaNode *parent,
   }
 
   rope->set_state(bucket._state);
-
-  // If we have a texture matrix, we have to apply that explicitly
-  // (the UV's are computed on the fly, so we can't precompute the
-  // texture matrix into them).
-  bool has_tex_mat = false;
-  LMatrix3d tex_mat = LMatrix3d::ident_mat();
-  int num_textures = egg_curve->get_num_textures();
-  for (int i = 0; i < num_textures; i++) {
-    EggTexture *texture = egg_curve->get_texture(i);
-    if (texture->has_transform() && !texture->has_uv_name()) {
-      tex_mat *= texture->get_transform();
-      has_tex_mat = true;
-    }
-  }
-  if (has_tex_mat) {
-    rope->set_uv_mode(RopeNode::UV_parametric);
-    LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
-                   tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
-                   0.0f, 0.0f, 1.0f, 0.0f,
-                   tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
-    rope->set_attrib(TexMatrixAttrib::make(mat4));
-  }
+  rope->set_uv_mode(RopeNode::UV_parametric);
 
   if (egg_curve->has_vertex_color()) {
     // If the curve had individual vertex color, enable it.
@@ -720,27 +702,6 @@ make_nurbs_surface(EggNurbsSurface *egg_surface, PandaNode *parent,
 
   sheet->set_state(bucket._state);
 
-  // If we have a texture matrix, we have to apply that explicitly
-  // (the UV's are computed on the fly, so we can't precompute the
-  // texture matrix into them).
-  bool has_tex_mat = false;
-  LMatrix3d tex_mat = LMatrix3d::ident_mat();
-  int num_textures = egg_surface->get_num_textures();
-  for (int i = 0; i < num_textures; i++) {
-    EggTexture *texture = egg_surface->get_texture(i);
-    if (texture->has_transform() && !texture->has_uv_name()) {
-      tex_mat *= texture->get_transform();
-      has_tex_mat = true;
-    }
-  }
-  if (has_tex_mat) {
-    LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
-                   tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
-                   0.0f, 0.0f, 1.0f, 0.0f,
-                   tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
-    sheet->set_attrib(TexMatrixAttrib::make(mat4));
-  }
-
   if (egg_surface->has_vertex_color()) {
     // If the surface had individual vertex color, enable it.
     sheet->set_use_vertex_color(true);
@@ -771,7 +732,7 @@ load_textures() {
 
   EggTextureCollection::iterator ti;
   for (ti = tc.begin(); ti != tc.end(); ++ti) {
-    PT(EggTexture) egg_tex = (*ti);
+    PT_EggTexture egg_tex = (*ti);
 
     TextureDef def;
     if (load_texture(def, egg_tex)) {
@@ -785,8 +746,8 @@ load_textures() {
   // the same pointers as the others.
   EggTextureCollection::TextureReplacement::const_iterator ri;
   for (ri = replace.begin(); ri != replace.end(); ++ri) {
-    PT(EggTexture) orig = (*ri).first;
-    PT(EggTexture) repl = (*ri).second;
+    PT_EggTexture orig = (*ri).first;
+    PT_EggTexture repl = (*ri).second;
 
     _textures[orig] = _textures[repl];
   }
@@ -870,6 +831,7 @@ load_texture(TextureDef &def, const EggTexture *egg_tex) {
   // Make a texture stage for the texture.
   PT(TextureStage) stage = make_texture_stage(egg_tex);
   def._texture = TextureAttrib::make_on(stage, tex);
+  def._stage = stage;
 
   return true;
 }
@@ -1204,14 +1166,77 @@ make_texture_stage(const EggTexture *egg_tex) {
   case EggTexture::ET_add:
     stage->set_mode(TextureStage::M_add);
     break;
-    
-  case EggTexture::ET_combine:
-    stage->set_mode(TextureStage::M_combine);
-    break;
 
   case EggTexture::ET_unspecified:
     break;
   }
+
+  switch (egg_tex->get_combine_mode(EggTexture::CC_rgb)) {
+  case EggTexture::CM_replace:
+    stage->set_combine_rgb(get_combine_mode(egg_tex, EggTexture::CC_rgb),
+                           get_combine_source(egg_tex, EggTexture::CC_rgb, 0),
+                           get_combine_operand(egg_tex, EggTexture::CC_rgb, 0));
+    break;
+
+  case EggTexture::CM_modulate:
+  case EggTexture::CM_add:
+  case EggTexture::CM_add_signed:
+  case EggTexture::CM_subtract:
+  case EggTexture::CM_dot3_rgb:
+  case EggTexture::CM_dot3_rgba:
+    stage->set_combine_rgb(get_combine_mode(egg_tex, EggTexture::CC_rgb),
+                           get_combine_source(egg_tex, EggTexture::CC_rgb, 0),
+                           get_combine_operand(egg_tex, EggTexture::CC_rgb, 0),
+                           get_combine_source(egg_tex, EggTexture::CC_rgb, 1),
+                           get_combine_operand(egg_tex, EggTexture::CC_rgb, 1));
+    break;
+
+  case EggTexture::CM_interpolate:
+    stage->set_combine_rgb(get_combine_mode(egg_tex, EggTexture::CC_rgb),
+                           get_combine_source(egg_tex, EggTexture::CC_rgb, 0),
+                           get_combine_operand(egg_tex, EggTexture::CC_rgb, 0),
+                           get_combine_source(egg_tex, EggTexture::CC_rgb, 1),
+                           get_combine_operand(egg_tex, EggTexture::CC_rgb, 1),
+                           get_combine_source(egg_tex, EggTexture::CC_rgb, 2),
+                           get_combine_operand(egg_tex, EggTexture::CC_rgb, 2));
+    break;
+
+  case EggTexture::CM_unspecified:
+    break;
+  }
+
+  switch (egg_tex->get_combine_mode(EggTexture::CC_alpha)) {
+  case EggTexture::CM_replace:
+    stage->set_combine_alpha(get_combine_mode(egg_tex, EggTexture::CC_alpha),
+                             get_combine_source(egg_tex, EggTexture::CC_alpha, 0),
+                             get_combine_operand(egg_tex, EggTexture::CC_alpha, 0));
+    break;
+
+  case EggTexture::CM_modulate:
+  case EggTexture::CM_add:
+  case EggTexture::CM_add_signed:
+  case EggTexture::CM_subtract:
+    stage->set_combine_alpha(get_combine_mode(egg_tex, EggTexture::CC_alpha),
+                             get_combine_source(egg_tex, EggTexture::CC_alpha, 0),
+                             get_combine_operand(egg_tex, EggTexture::CC_alpha, 0),
+                             get_combine_source(egg_tex, EggTexture::CC_alpha, 1),
+                             get_combine_operand(egg_tex, EggTexture::CC_alpha, 1));
+    break;
+    
+  case EggTexture::CM_interpolate:
+    stage->set_combine_alpha(get_combine_mode(egg_tex, EggTexture::CC_alpha),
+                             get_combine_source(egg_tex, EggTexture::CC_alpha, 0),
+                             get_combine_operand(egg_tex, EggTexture::CC_alpha, 0),
+                             get_combine_source(egg_tex, EggTexture::CC_alpha, 1),
+                             get_combine_operand(egg_tex, EggTexture::CC_alpha, 1),
+                             get_combine_source(egg_tex, EggTexture::CC_alpha, 2),
+                             get_combine_operand(egg_tex, EggTexture::CC_alpha, 2));
+    break;
+
+  case EggTexture::CM_unspecified:
+    break;
+  }
+
 
   if (egg_tex->has_uv_name() && !egg_tex->get_uv_name().empty()) {
     CPT(TexCoordName) name = 
@@ -1366,12 +1391,20 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
     bin = render_mode->get_bin();
   }
 
+  // These parametric primitive types can't have their UV's baked in,
+  // so if we have one of these we always need to apply the texture
+  // matrix as a separate attribute.
+  bool needs_tex_mat = (egg_prim->is_of_type(EggCurve::get_class_type()) ||
+                        egg_prim->is_of_type(EggSurface::get_class_type()));
+
   bucket.add_attrib(TextureAttrib::make_off());
   int num_textures = egg_prim->get_num_textures();
   CPT(RenderAttrib) texture_attrib = NULL;
+  CPT(RenderAttrib) tex_gen_attrib = NULL;
+  CPT(RenderAttrib) tex_mat_attrib = NULL;
 
   for (int i = 0; i < num_textures; i++) {
-    PT(EggTexture) egg_tex = egg_prim->get_texture(i);
+    PT_EggTexture egg_tex = egg_prim->get_texture(i);
 
     const TextureDef &def = _textures[egg_tex];
     if (def._texture != (const RenderAttrib *)NULL) {
@@ -1401,11 +1434,47 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
           }
         }
       }
+
+      // Check for a texgen attrib.
+      bool has_tex_gen = false;
+      if (egg_tex->get_tex_gen() != EggTexture::TG_unspecified) {
+        has_tex_gen = true;
+        if (tex_gen_attrib == (const RenderAttrib *)NULL) {
+          tex_gen_attrib = TexGenAttrib::make();
+        }
+        tex_gen_attrib = DCAST(TexGenAttrib, tex_gen_attrib)->
+          add_stage(def._stage, get_tex_gen(egg_tex));
+      }
+
+      if (has_tex_gen || needs_tex_mat) {
+        // If we need to apply the texture matrix to this stage,
+        // rather than baking it in, do so.
+        if (egg_tex->has_transform()) {
+          if (tex_mat_attrib == (const RenderAttrib *)NULL) {
+            tex_mat_attrib = TexMatrixAttrib::make();
+          }
+          const LMatrix3d &tex_mat = egg_tex->get_transform();
+          LMatrix4f mat4(tex_mat(0, 0), tex_mat(0, 1), 0.0f, tex_mat(0, 2),
+                         tex_mat(1, 0), tex_mat(1, 1), 0.0f, tex_mat(1, 2),
+                         0.0f, 0.0f, 1.0f, 0.0f,
+                         tex_mat(2, 0), tex_mat(2, 1), 0.0f, tex_mat(2, 2));
+          tex_mat_attrib = DCAST(TexMatrixAttrib, tex_mat_attrib)->
+            add_stage(def._stage, TransformState::make_mat(mat4));
+        }
+      }
     }
   }
 
   if (texture_attrib != (RenderAttrib *)NULL) {
     bucket.add_attrib(texture_attrib);
+  }
+
+  if (tex_gen_attrib != (RenderAttrib *)NULL) {
+    bucket.add_attrib(tex_gen_attrib);
+  }
+
+  if (tex_mat_attrib != (RenderAttrib *)NULL) {
+    bucket.add_attrib(tex_mat_attrib);
   }
 
   if (egg_prim->has_material()) {
@@ -2790,4 +2859,133 @@ make_transform(const EggTransform3d *egg_transform) {
   }
 
   return ts;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggLoader::get_combine_mode
+//       Access: Private, Static
+//  Description: Extracts the combine_mode from the given egg texture,
+//               and returns its corresponding TextureStage value.
+////////////////////////////////////////////////////////////////////
+TextureStage::CombineMode EggLoader::
+get_combine_mode(const EggTexture *egg_tex, EggTexture::CombineChannel channel) {
+  switch (egg_tex->get_combine_mode(channel)) {
+  case EggTexture::CM_unspecified:
+    // fall through
+
+  case EggTexture::CM_modulate:
+    return TextureStage::CM_modulate;
+
+  case EggTexture::CM_replace:
+    return TextureStage::CM_replace;
+
+  case EggTexture::CM_add:
+    return TextureStage::CM_add;
+
+  case EggTexture::CM_add_signed:
+    return TextureStage::CM_add_signed;
+
+  case EggTexture::CM_interpolate:
+    return TextureStage::CM_interpolate;
+
+  case EggTexture::CM_subtract:
+    return TextureStage::CM_subtract;
+
+  case EggTexture::CM_dot3_rgb:
+    return TextureStage::CM_dot3_rgb;
+
+  case EggTexture::CM_dot3_rgba:
+    return TextureStage::CM_dot3_rgba;
+  };
+
+  return TextureStage::CM_undefined;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggLoader::get_combine_source
+//       Access: Private, Static
+//  Description: Extracts the combine_source from the given egg texture,
+//               and returns its corresponding TextureStage value.
+////////////////////////////////////////////////////////////////////
+TextureStage::CombineSource EggLoader::
+get_combine_source(const EggTexture *egg_tex, 
+                   EggTexture::CombineChannel channel, int n) {
+  switch (egg_tex->get_combine_source(channel, n)) {
+  case EggTexture::CS_unspecified:
+    // fall through
+
+  case EggTexture::CS_texture:
+    return TextureStage::CS_texture;
+
+  case EggTexture::CS_constant:
+    return TextureStage::CS_constant;
+
+  case EggTexture::CS_primary_color:
+    return TextureStage::CS_primary_color;
+
+  case EggTexture::CS_previous:
+    return TextureStage::CS_previous;
+  };
+
+  return TextureStage::CS_undefined;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggLoader::get_combine_operand
+//       Access: Private, Static
+//  Description: Extracts the combine_operand from the given egg texture,
+//               and returns its corresponding TextureStage value.
+////////////////////////////////////////////////////////////////////
+TextureStage::CombineOperand EggLoader::
+get_combine_operand(const EggTexture *egg_tex, 
+                    EggTexture::CombineChannel channel, int n) {
+  switch (egg_tex->get_combine_operand(channel, n)) {
+  case EggTexture::CS_unspecified:
+    return channel == EggTexture::CC_rgb ? TextureStage::CO_src_color : TextureStage::CO_src_alpha;
+
+  case EggTexture::CO_src_color:
+    return TextureStage::CO_src_color;
+
+  case EggTexture::CO_one_minus_src_color:
+    return TextureStage::CO_one_minus_src_color;
+
+  case EggTexture::CO_src_alpha:
+    return TextureStage::CO_src_alpha;
+
+  case EggTexture::CO_one_minus_src_alpha:
+    return TextureStage::CO_one_minus_src_alpha;
+  };
+
+  return TextureStage::CO_undefined;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggLoader::get_tex_gen
+//       Access: Private, Static
+//  Description: Extracts the tex_gen from the given egg texture,
+//               and returns its corresponding TexGenAttrib mode.
+////////////////////////////////////////////////////////////////////
+TexGenAttrib::Mode EggLoader::
+get_tex_gen(const EggTexture *egg_tex) {
+  switch (egg_tex->get_tex_gen()) {
+  case EggTexture::TG_unspecified:
+    return TexGenAttrib::M_off;
+
+  case EggTexture::TG_sphere_map:
+    return TexGenAttrib::M_sphere_map;
+
+  case EggTexture::TG_cube_map:
+    return TexGenAttrib::M_cube_map;
+
+  case EggTexture::TG_world_position:
+    return TexGenAttrib::M_world_position;
+
+  case EggTexture::TG_object_position:
+    return TexGenAttrib::M_object_position;
+
+  case EggTexture::TG_eye_position:
+    return TexGenAttrib::M_eye_position;
+  };
+
+  return TexGenAttrib::M_off;
 }

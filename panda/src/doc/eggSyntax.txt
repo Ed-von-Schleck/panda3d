@@ -148,8 +148,7 @@ appear before they are referenced.
   <Scalar> envtype { environment-type }
 
     This specifies the type of texture environment to create; i.e. it
-    controls the way in which textures apply to models.  This is
-    particularly important in the presence of multitexturing.
+    controls the way in which textures apply to models.
     Environment-type may be one of:
 
       MODULATE
@@ -157,7 +156,66 @@ appear before they are referenced.
       BLEND
       REPLACE
       ADD
-      COMBINE
+
+  <Scalar> combine-rgb { combine-mode }
+  <Scalar> combine-alpha { combine-mode }
+  <Scalar> combine-rgb-source0 { combine-source }
+  <Scalar> combine-rgb-operand0 { combine-operand }
+  <Scalar> combine-rgb-source1 { combine-source }
+  <Scalar> combine-rgb-operand1 { combine-operand }
+  <Scalar> combine-rgb-source2 { combine-source }
+  <Scalar> combine-rgb-operand2 { combine-operand }
+  <Scalar> combine-alpha-source0 { combine-source }
+  <Scalar> combine-alpha-operand0 { combine-operand }
+  <Scalar> combine-alpha-source1 { combine-source }
+  <Scalar> combine-alpha-operand1 { combine-operand }
+  <Scalar> combine-alpha-source2 { combine-source }
+  <Scalar> combine-alpha-operand2 { combine-operand }
+
+    These options replace the envtype and specify the texture combiner
+    mode, which is usually used for multitexturing.  This specifies
+    how the texture combines with the base color and/or the other
+    textures applied previously.  You must specify both an rgb and an
+    alpha combine mode.  Some combine-modes use one source/operand
+    pair, and some use all three; most use just two.
+
+    combine-mode may be one of:
+
+      REPLACE
+      MODULATE
+      ADD
+      ADD-SIGNED
+      INTERPOLATE
+      SUBTRACT
+      DOT3-RGB
+      DOT3-RGBA
+
+    combine-source may be one of:
+
+      TEXTURE
+      CONSTANT
+      PRIMARY-COLOR
+      PREVIOUS
+
+    combine-operand may be one of:
+
+      SRC-COLOR
+      ONE-MINUS-SRC-COLOR
+      SRC-ALPHA
+      ONE-MINUS-SRC-ALPHA
+
+  <Scalar> tex-gen { mode }
+
+    This specifies that texture coordinates for the primitives that
+    reference this texture should be dynamically computed at runtime,
+    for instance to apply a reflection map or some other effect.  The
+    valid values for mode are:
+
+      SPHERE_MAP
+      CUBE_MAP
+      WORLD_POSITION
+      OBJECT_POSITION
+      EYE_POSITION
 
   <Scalar> stage-name { name }
 

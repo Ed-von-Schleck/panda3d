@@ -35,6 +35,8 @@
 #include "lmatrix.h"
 #include "indirectCompareTo.h"
 #include "textureAttrib.h"
+#include "textureStage.h"
+#include "texGenAttrib.h"
 #include "eggTransform3d.h"
 
 class EggNode;
@@ -81,6 +83,7 @@ private:
   class TextureDef {
   public:
     CPT(RenderAttrib) _texture;
+    PT(TextureStage) _stage;
   };
 
   void make_nurbs_curve(EggNurbsCurve *egg_curve, PandaNode *parent,
@@ -144,6 +147,18 @@ private:
                              const string &object_type);
 
   CPT(TransformState) make_transform(const EggTransform3d *egg_transform);
+
+  static TextureStage::CombineMode 
+  get_combine_mode(const EggTexture *egg_tex, EggTexture::CombineChannel channel);
+
+  static TextureStage::CombineSource
+  get_combine_source(const EggTexture *egg_tex, EggTexture::CombineChannel channel,
+                     int n);
+
+  static TextureStage::CombineOperand
+  get_combine_operand(const EggTexture *egg_tex, EggTexture::CombineChannel channel,
+                      int n);
+  static TexGenAttrib::Mode get_tex_gen(const EggTexture *egg_tex);
 
   Builder _builder;
 

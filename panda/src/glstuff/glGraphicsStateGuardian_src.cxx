@@ -3813,10 +3813,10 @@ GLint CLP(GraphicsStateGuardian)::
 get_texture_operand_type(TextureStage::CombineOperand co) const {
   switch (co) {
   case TextureStage::CO_undefined: // fall through
-  case TextureStage::CO_src_color: return GL_SRC_COLOR;
-  case TextureStage::CO_one_minus_src_color: return GL_ONE_MINUS_SRC_COLOR;
   case TextureStage::CO_src_alpha: return GL_SRC_ALPHA;
   case TextureStage::CO_one_minus_src_alpha: return GL_ONE_MINUS_SRC_ALPHA;
+  case TextureStage::CO_src_color: return GL_SRC_COLOR;
+  case TextureStage::CO_one_minus_src_color: return GL_ONE_MINUS_SRC_COLOR;
   }
 
   GLCAT.error()

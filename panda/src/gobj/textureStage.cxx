@@ -146,6 +146,50 @@ get_expected_num_combine_operands(TextureStage::CombineMode cm) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::operand_valid_for_rgb
+//       Access: Private, Static
+//  Description: Returns true if the indicated CombineOperand is valid
+//               for one of the RGB modes, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool TextureStage::
+operand_valid_for_rgb(TextureStage::CombineOperand co) {
+  switch (co) {
+  case CO_undefined:
+    return false;
+
+  case CO_src_color:
+  case CO_one_minus_src_color:
+  case CO_src_alpha:
+  case CO_one_minus_src_alpha:
+    return true;
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::operand_valid_for_alpha
+//       Access: Private, Static
+//  Description: Returns true if the indicated CombineOperand is valid
+//               for one of the alpha modes, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool TextureStage::
+operand_valid_for_alpha(TextureStage::CombineOperand co) {
+  switch (co) {
+  case CO_undefined:
+  case CO_src_color:
+  case CO_one_minus_src_color:
+    return false;
+
+  case CO_src_alpha:
+  case CO_one_minus_src_alpha:
+    return true;
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::register_with_read_factory
 //       Access: Public, Static
 //  Description: Factory method to generate a TextureStage object

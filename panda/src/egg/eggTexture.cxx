@@ -43,6 +43,7 @@ EggTexture(const string &tref_name, const string &filename)
   _magfilter = FT_unspecified;
   _anisotropic_degree = 0;
   _env_type = ET_unspecified;
+  _tex_gen = TG_unspecified;
   _sort = 0;
   _priority = 0;
   _color.set(0.0f, 0.0f, 0.0f, 1.0f);
@@ -79,6 +80,7 @@ operator = (const EggTexture &copy) {
   _magfilter = copy._magfilter;
   _anisotropic_degree = copy._anisotropic_degree;
   _env_type = copy._env_type;
+  _tex_gen = copy._tex_gen;
   _stage_name = copy._stage_name;
   _sort = copy._sort;
   _priority = copy._priority;
@@ -89,6 +91,8 @@ operator = (const EggTexture &copy) {
   _alpha_filename = copy._alpha_filename;
   _alpha_fullpath = copy._alpha_fullpath;
   _alpha_file_channel = copy._alpha_file_channel;
+  _combiner[0] = copy._combiner[0];
+  _combiner[1] = copy._combiner[1];
 
   return *this;
 }
@@ -155,6 +159,32 @@ write(ostream &out, int indent_level) const {
   if (get_env_type() != ET_unspecified) {
     indent(out, indent_level + 2)
       << "<Scalar> envtype { " << get_env_type() << " }\n";
+  }
+
+  for (int ci = 0; ci < (int)CC_num_channels; ci++) {
+    CombineChannel channel = (CombineChannel)ci;
+    if (get_combine_mode(channel) != CM_unspecified) {
+      indent(out, indent_level + 2)
+        << "<Scalar> combine-" << channel 
+        << " { " << get_combine_mode(channel) << " }\n";
+    }
+    for (int i = 0; i < (int)CI_num_indices; i++) {
+      if (get_combine_source(channel, i) != CS_unspecified) {
+        indent(out, indent_level + 2)
+          << "<Scalar> combine-" << channel << "-source" << i
+          << " { " << get_combine_source(channel, i) << " }\n";
+      }
+      if (get_combine_operand(channel, i) != CO_unspecified) {
+        indent(out, indent_level + 2)
+          << "<Scalar> combine-" << channel << "-operand" << i
+          << " { " << get_combine_operand(channel, i) << " }\n";
+      }
+    }
+  }
+
+  if (get_tex_gen() != ET_unspecified) {
+    indent(out, indent_level + 2)
+      << "<Scalar> tex-gen { " << get_tex_gen() << " }\n";
   }
 
   if (has_stage_name()) {
@@ -432,7 +462,7 @@ has_alpha_channel(int num_components) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_format
-//       Access: Published
+//       Access: Published, Static
 //  Description: Returns the Format value associated with the given
 //               string representation, or F_unspecified if the string
 //               does not match any known Format value.
@@ -483,7 +513,7 @@ string_format(const string &string) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_wrap_mode
-//       Access: Published
+//       Access: Published, Static
 //  Description: Returns the WrapMode value associated with the given
 //               string representation, or WM_unspecified if the string
 //               does not match any known WrapMode value.
@@ -501,7 +531,7 @@ string_wrap_mode(const string &string) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_filter_type
-//       Access: Published
+//       Access: Published, Static
 //  Description: Returns the FilterType value associated with the given
 //               string representation, or FT_unspecified if the string
 //               does not match any known FilterType value.
@@ -547,7 +577,7 @@ string_filter_type(const string &string) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::string_env_type
-//       Access: Published
+//       Access: Published, Static
 //  Description: Returns the EnvType value associated with the given
 //               string representation, or ET_unspecified if the string
 //               does not match any known EnvType value.
@@ -569,11 +599,130 @@ string_env_type(const string &string) {
   } else if (cmp_nocase_uh(string, "add") == 0) {
     return ET_add;
 
-  } else if (cmp_nocase_uh(string, "combine") == 0) {
-    return ET_combine;
-
   } else {
     return ET_unspecified;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::string_combine_mode
+//       Access: Published, Static
+//  Description: Returns the CombineMode value associated with the given
+//               string representation, or CM_unspecified if the string
+//               does not match any known CombineMode value.
+////////////////////////////////////////////////////////////////////
+EggTexture::CombineMode EggTexture::
+string_combine_mode(const string &string) {
+  if (cmp_nocase_uh(string, "replace") == 0) {
+    return CM_replace;
+
+  } else if (cmp_nocase_uh(string, "modulate") == 0) {
+    return CM_modulate;
+
+  } else if (cmp_nocase_uh(string, "add") == 0) {
+    return CM_add;
+
+  } else if (cmp_nocase_uh(string, "add_signed") == 0) {
+    return CM_add_signed;
+
+  } else if (cmp_nocase_uh(string, "interpolate") == 0) {
+    return CM_interpolate;
+
+  } else if (cmp_nocase_uh(string, "subtract") == 0) {
+    return CM_subtract;
+
+  } else if (cmp_nocase_uh(string, "dot3_rgb") == 0) {
+    return CM_dot3_rgb;
+
+  } else if (cmp_nocase_uh(string, "dot3_rgba") == 0) {
+    return CM_dot3_rgba;
+
+  } else {
+    return CM_unspecified;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::string_combine_source
+//       Access: Published, Static
+//  Description: Returns the CombineSource value associated with the given
+//               string representation, or CS_unspecified if the string
+//               does not match any known CombineSource value.
+////////////////////////////////////////////////////////////////////
+EggTexture::CombineSource EggTexture::
+string_combine_source(const string &string) {
+  if (cmp_nocase_uh(string, "texture") == 0) {
+    return CS_texture;
+
+  } else if (cmp_nocase_uh(string, "constant") == 0) {
+    return CS_constant;
+
+  } else if (cmp_nocase_uh(string, "primary_color") == 0) {
+    return CS_primary_color;
+
+  } else if (cmp_nocase_uh(string, "previous") == 0) {
+    return CS_previous;
+
+  } else {
+    return CS_unspecified;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::string_combine_operand
+//       Access: Published, Static
+//  Description: Returns the CombineOperand value associated with the given
+//               string representation, or CO_unspecified if the string
+//               does not match any known CombineOperand value.
+////////////////////////////////////////////////////////////////////
+EggTexture::CombineOperand EggTexture::
+string_combine_operand(const string &string) {
+  if (cmp_nocase_uh(string, "src_color") == 0) {
+    return CO_src_color;
+
+  } else if (cmp_nocase_uh(string, "one_minus_src_color") == 0) {
+    return CO_one_minus_src_color;
+
+  } else if (cmp_nocase_uh(string, "src_alpha") == 0) {
+    return CO_src_alpha;
+
+  } else if (cmp_nocase_uh(string, "one_minus_src_alpha") == 0) {
+    return CO_one_minus_src_alpha;
+
+  } else {
+    return CO_unspecified;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::string_tex_gen
+//       Access: Published, Static
+//  Description: Returns the TexGen value associated with the given
+//               string representation, or ET_unspecified if the string
+//               does not match any known TexGen value.
+////////////////////////////////////////////////////////////////////
+EggTexture::TexGen EggTexture::
+string_tex_gen(const string &string) {
+  if (cmp_nocase_uh(string, "unspecified") == 0) {
+    return TG_unspecified;
+
+  } else if (cmp_nocase_uh(string, "sphere_map") == 0) {
+    return TG_sphere_map;
+
+  } else if (cmp_nocase_uh(string, "cube_map") == 0) {
+    return TG_cube_map;
+
+  } else if (cmp_nocase_uh(string, "world_position") == 0) {
+    return TG_world_position;
+
+  } else if (cmp_nocase_uh(string, "object_position") == 0) {
+    return TG_object_position;
+
+  } else if (cmp_nocase_uh(string, "eye_position") == 0) {
+    return TG_eye_position;
+
+  } else {
+    return TG_unspecified;
   }
 }
 
@@ -714,11 +863,124 @@ ostream &operator << (ostream &out, EggTexture::EnvType type) {
 
   case EggTexture::ET_add:
     return out << "add";
-
-  case EggTexture::ET_combine:
-    return out << "combine";
   }
 
   nassertr(false, out);
   return out << "(**invalid**)";
+}
+
+ostream &
+operator << (ostream &out, EggTexture::CombineMode cm) {
+  switch (cm) {
+  case EggTexture::CM_unspecified:
+    return out << "unspecified";
+
+  case EggTexture::CM_replace:
+    return out << "replace";
+
+  case EggTexture::CM_modulate:
+    return out << "modulate";
+
+  case EggTexture::CM_add:
+    return out << "add";
+
+  case EggTexture::CM_add_signed:
+    return out << "add_signed";
+
+  case EggTexture::CM_interpolate:
+    return out << "interpolate";
+
+  case EggTexture::CM_subtract:
+    return out << "subtract";
+
+  case EggTexture::CM_dot3_rgb:
+    return out << "dot3_rgb";
+
+  case EggTexture::CM_dot3_rgba:
+    return out << "dot3_rgba";
+  }
+
+  return out << "**invalid CombineMode(" << (int)cm << ")**";
+}
+
+ostream &
+operator << (ostream &out, EggTexture::CombineChannel cm) {
+  switch (cm) {
+  case EggTexture::CC_rgb:
+    return out << "rgb";
+
+  case EggTexture::CC_alpha:
+    return out << "alpha";
+  }
+
+  return out << "**invalid CombineChannel(" << (int)cm << ")**";
+}
+
+ostream &
+operator << (ostream &out, EggTexture::CombineSource cs) {
+  switch (cs) {
+  case EggTexture::CS_unspecified:
+    return out << "unspecified";
+
+  case EggTexture::CS_texture:
+    return out << "texture";
+
+  case EggTexture::CS_constant:
+    return out << "constant";
+
+  case EggTexture::CS_primary_color:
+    return out << "primary_color";
+
+  case EggTexture::CS_previous:
+    return out << "previous";
+  }
+
+  return out << "**invalid CombineSource(" << (int)cs << ")**";
+}
+
+ostream &
+operator << (ostream &out, EggTexture::CombineOperand co) {
+  switch (co) {
+  case EggTexture::CO_unspecified:
+    return out << "unspecified";
+
+  case EggTexture::CO_src_color:
+    return out << "src_color";
+
+  case EggTexture::CO_one_minus_src_color:
+    return out << "one_minus_src_color";
+
+  case EggTexture::CO_src_alpha:
+    return out << "src_alpha";
+
+  case EggTexture::CO_one_minus_src_alpha:
+    return out << "one_minus_src_alpha";
+  }
+
+  return out << "**invalid CombineOperand(" << (int)co << ")**";
+}
+
+ostream &
+operator << (ostream &out, EggTexture::TexGen tex_gen) {
+  switch (tex_gen) {
+  case EggTexture::TG_unspecified:
+    return out << "unspecified";
+
+  case EggTexture::TG_sphere_map:
+    return out << "sphere_map";
+
+  case EggTexture::TG_cube_map:
+    return out << "cube_map";
+
+  case EggTexture::TG_world_position:
+    return out << "world_position";
+
+  case EggTexture::TG_object_position:
+    return out << "object_position";
+
+  case EggTexture::TG_eye_position:
+    return out << "eye_position";
+  }
+
+  return out << "**invalid TexGen(" << (int)tex_gen << ")**";
 }

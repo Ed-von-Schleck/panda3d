@@ -149,6 +149,8 @@ PUBLISHED:
 
 private:
   static int get_expected_num_combine_operands(CombineMode cm);
+  static bool operand_valid_for_rgb(CombineOperand co);
+  static bool operand_valid_for_alpha(CombineOperand co);
 
   string _name;
   int _sort;
@@ -208,10 +210,10 @@ private:
 
 INLINE ostream &operator << (ostream &out, const TextureStage &ts);
 
-ostream &operator << (ostream &out, TextureStage::Mode mode);
-ostream &operator << (ostream &out, TextureStage::CombineMode cm);
-ostream &operator << (ostream &out, TextureStage::CombineSource cs);
-ostream &operator << (ostream &out, TextureStage::CombineOperand co);
+EXPCL_PANDA ostream &operator << (ostream &out, TextureStage::Mode mode);
+EXPCL_PANDA ostream &operator << (ostream &out, TextureStage::CombineMode cm);
+EXPCL_PANDA ostream &operator << (ostream &out, TextureStage::CombineSource cs);
+EXPCL_PANDA ostream &operator << (ostream &out, TextureStage::CombineOperand co);
 
 
 #include "textureStage.I"

@@ -394,6 +394,126 @@ texture_body:
       texture->set_env_type(e);
     }
 
+  } else if (cmp_nocase_uh(name, "combine-rgb") == 0) {
+    EggTexture::CombineMode cm = EggTexture::string_combine_mode(strval);
+    if (cm == EggTexture::CM_unspecified) {
+      eggyywarning("Unknown combine mode " + strval);
+    } else {
+      texture->set_combine_mode(EggTexture::CC_rgb, cm);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-rgb-source0") == 0) {
+    EggTexture::CombineSource cs = EggTexture::string_combine_source(strval);
+    if (cs == EggTexture::CS_unspecified) {
+      eggyywarning("Unknown combine source " + strval);
+    } else {
+      texture->set_combine_source(EggTexture::CC_rgb, 0, cs);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-rgb-operand0") == 0) {
+    EggTexture::CombineOperand co = EggTexture::string_combine_operand(strval);
+    if (co == EggTexture::CO_unspecified) {
+      eggyywarning("Unknown combine operand " + strval);
+    } else {
+      texture->set_combine_operand(EggTexture::CC_rgb, 0, co);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-rgb-source1") == 0) {
+    EggTexture::CombineSource cs = EggTexture::string_combine_source(strval);
+    if (cs == EggTexture::CS_unspecified) {
+      eggyywarning("Unknown combine source " + strval);
+    } else {
+      texture->set_combine_source(EggTexture::CC_rgb, 1, cs);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-rgb-operand1") == 0) {
+    EggTexture::CombineOperand co = EggTexture::string_combine_operand(strval);
+    if (co == EggTexture::CO_unspecified) {
+      eggyywarning("Unknown combine operand " + strval);
+    } else {
+      texture->set_combine_operand(EggTexture::CC_rgb, 1, co);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-rgb-source2") == 0) {
+    EggTexture::CombineSource cs = EggTexture::string_combine_source(strval);
+    if (cs == EggTexture::CS_unspecified) {
+      eggyywarning("Unknown combine source " + strval);
+    } else {
+      texture->set_combine_source(EggTexture::CC_rgb, 2, cs);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-rgb-operand2") == 0) {
+    EggTexture::CombineOperand co = EggTexture::string_combine_operand(strval);
+    if (co == EggTexture::CO_unspecified) {
+      eggyywarning("Unknown combine operand " + strval);
+    } else {
+      texture->set_combine_operand(EggTexture::CC_rgb, 2, co);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha") == 0) {
+    EggTexture::CombineMode cm = EggTexture::string_combine_mode(strval);
+    if (cm == EggTexture::CM_unspecified) {
+      eggyywarning("Unknown combine mode " + strval);
+    } else {
+      texture->set_combine_mode(EggTexture::CC_alpha, cm);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha-source0") == 0) {
+    EggTexture::CombineSource cs = EggTexture::string_combine_source(strval);
+    if (cs == EggTexture::CS_unspecified) {
+      eggyywarning("Unknown combine source " + strval);
+    } else {
+      texture->set_combine_source(EggTexture::CC_alpha, 0, cs);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha-operand0") == 0) {
+    EggTexture::CombineOperand co = EggTexture::string_combine_operand(strval);
+    if (co == EggTexture::CO_unspecified) {
+      eggyywarning("Unknown combine operand " + strval);
+    } else {
+      texture->set_combine_operand(EggTexture::CC_alpha, 0, co);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha-source1") == 0) {
+    EggTexture::CombineSource cs = EggTexture::string_combine_source(strval);
+    if (cs == EggTexture::CS_unspecified) {
+      eggyywarning("Unknown combine source " + strval);
+    } else {
+      texture->set_combine_source(EggTexture::CC_alpha, 1, cs);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha-operand1") == 0) {
+    EggTexture::CombineOperand co = EggTexture::string_combine_operand(strval);
+    if (co == EggTexture::CO_unspecified) {
+      eggyywarning("Unknown combine operand " + strval);
+    } else {
+      texture->set_combine_operand(EggTexture::CC_alpha, 1, co);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha-source2") == 0) {
+    EggTexture::CombineSource cs = EggTexture::string_combine_source(strval);
+    if (cs == EggTexture::CS_unspecified) {
+      eggyywarning("Unknown combine source " + strval);
+    } else {
+      texture->set_combine_source(EggTexture::CC_alpha, 2, cs);
+    }
+
+  } else if (cmp_nocase_uh(name, "combine-alpha-operand2") == 0) {
+    EggTexture::CombineOperand co = EggTexture::string_combine_operand(strval);
+    if (co == EggTexture::CO_unspecified) {
+      eggyywarning("Unknown combine operand " + strval);
+    } else {
+      texture->set_combine_operand(EggTexture::CC_alpha, 2, co);
+    }
+
+  } else if (cmp_nocase_uh(name, "tex_gen") == 0) {
+    EggTexture::TexGen tex_gen = EggTexture::string_tex_gen(strval);
+    if (tex_gen == EggTexture::TG_unspecified) {
+      eggyywarning("Unknown texture env type " + strval);
+    } else {
+      texture->set_tex_gen(tex_gen);
+    }
+
   } else if (cmp_nocase_uh(name, "stage_name") == 0) {
     texture->set_stage_name(strval);
 

@@ -89,7 +89,47 @@ PUBLISHED:
     ET_blend,
     ET_replace,
     ET_add,
-    ET_combine,
+  };
+  enum CombineMode {
+    CM_unspecified,
+    CM_replace,
+    CM_modulate,
+    CM_add,
+    CM_add_signed,
+    CM_interpolate,
+    CM_subtract,
+    CM_dot3_rgb,
+    CM_dot3_rgba,
+  };
+  enum CombineChannel {
+    CC_rgb = 0,
+    CC_alpha = 1,
+    CC_num_channels = 2,
+  };
+  enum CombineIndex {
+    CI_num_indices = 3
+  };
+  enum CombineSource {
+    CS_unspecified,
+    CS_texture,
+    CS_constant,
+    CS_primary_color,
+    CS_previous,
+  };
+  enum CombineOperand {
+    CO_unspecified,
+    CO_src_color,
+    CO_one_minus_src_color,
+    CO_src_alpha,
+    CO_one_minus_src_alpha,
+  };
+  enum TexGen {
+    TG_unspecified,
+    TG_sphere_map,
+    TG_cube_map,
+    TG_world_position,
+    TG_object_position,
+    TG_eye_position,
   };
 
   INLINE void set_format(Format format);
@@ -119,6 +159,16 @@ PUBLISHED:
 
   INLINE void set_env_type(EnvType type);
   INLINE EnvType get_env_type() const;
+
+  INLINE void set_combine_mode(CombineChannel channel, CombineMode cm);
+  INLINE CombineMode get_combine_mode(CombineChannel channel) const;
+  INLINE void set_combine_source(CombineChannel channel, int n, CombineSource cs);
+  INLINE CombineSource get_combine_source(CombineChannel channel, int n) const;
+  INLINE void set_combine_operand(CombineChannel channel, int n, CombineOperand co);
+  INLINE CombineOperand get_combine_operand(CombineChannel channel, int n) const;
+
+  INLINE void set_tex_gen(TexGen tex_gen);
+  INLINE TexGen get_tex_gen() const;
 
   INLINE void set_stage_name(const string &stage_name);
   INLINE void clear_stage_name();
@@ -168,6 +218,10 @@ PUBLISHED:
   static WrapMode string_wrap_mode(const string &string);
   static FilterType string_filter_type(const string &string);
   static EnvType string_env_type(const string &string);
+  static CombineMode string_combine_mode(const string &string);
+  static CombineSource string_combine_source(const string &string);
+  static CombineOperand string_combine_operand(const string &string);
+  static TexGen string_tex_gen(const string &string);
 
 protected:
   virtual bool egg_start_parse_body();
@@ -190,6 +244,7 @@ private:
   FilterType _minfilter, _magfilter;
   int _anisotropic_degree;
   EnvType _env_type;
+  TexGen _tex_gen;
   string _stage_name;
   int _sort;
   int _priority;
@@ -201,6 +256,21 @@ private:
   Filename _alpha_fullpath;
   int _alpha_file_channel;
 
+  class SourceAndOperand {
+  public:
+    INLINE SourceAndOperand();
+    CombineSource _source;
+    CombineOperand _operand;
+  };
+
+  class Combiner {
+  public:
+    INLINE Combiner();
+    CombineMode _mode;
+    SourceAndOperand _ops[CI_num_indices];
+  };
+
+  Combiner _combiner[CC_num_channels];
 
 public:
   static TypeHandle get_class_type() {
@@ -241,10 +311,15 @@ INLINE ostream &operator << (ostream &out, const EggTexture &n) {
   return out << n.get_filename();
 }
 
-ostream EXPCL_PANDAEGG &operator << (ostream &out, EggTexture::Format format);
-ostream EXPCL_PANDAEGG &operator << (ostream &out, EggTexture::WrapMode mode);
-ostream EXPCL_PANDAEGG &operator << (ostream &out, EggTexture::FilterType type);
-ostream EXPCL_PANDAEGG &operator << (ostream &out, EggTexture::EnvType type);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::Format format);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::WrapMode mode);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::FilterType type);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::EnvType type);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::CombineMode cm);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::CombineChannel cc);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::CombineSource cs);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::CombineOperand co);
+EXPCL_PANDAEGG ostream &operator << (ostream &out, EggTexture::TexGen tex_gen);
 
 #include "eggTexture.I"
 
