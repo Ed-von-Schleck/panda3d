@@ -73,7 +73,7 @@ ostream &operator << (ostream &out, GeomAttrType t);
 // This is a totally arbitrary limit and may be increased almost
 // without penalty.  It is just used to control the static size of the
 // array stored in the MultiTexcoordIterator, below.
-static const int max_geom_texture_stages = 16;
+static const int max_geom_texture_stages = 32;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : Geom
