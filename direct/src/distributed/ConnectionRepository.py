@@ -268,6 +268,9 @@ class ConnectionRepository(DirectObject.DirectObject):
         
         else:
             self.ensureValidConnection()
+            if self.qcr.getOverflowFlag():
+                messenger.send(self.getOverflowEventName())
+                self.qcr.resetOverflowFlag()
             if self.qcr.dataAvailable():
                 datagram = NetDatagram()
                 if self.qcr.getData(datagram):
@@ -370,3 +373,8 @@ class ConnectionRepository(DirectObject.DirectObject):
             if `value`.find(str) >= 0:
                 matches.append(value)
         return matches
+
+    # DCR: temporary fix for publish
+    def getOverflowEventName(self):
+        return 'CRDatagramOverflow'
+    
