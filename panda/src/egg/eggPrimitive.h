@@ -80,6 +80,7 @@ PUBLISHED:
 
   INLINE void set_texture(EggTexture *texture);
   INLINE bool has_texture() const;
+  INLINE bool has_texture(EggTexture *texture) const;
   INLINE EggTexture *get_texture() const;
 
   INLINE void add_texture(EggTexture *texture);

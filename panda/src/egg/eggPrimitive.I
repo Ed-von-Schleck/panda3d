@@ -101,6 +101,17 @@ has_texture() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggPrimitive::has_texture
+//       Access: Published
+//  Description: Returns true if the primitive has the particular
+//               indicated texture, false otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool EggPrimitive::
+has_texture(EggTexture *texture) const {
+  return (find(_textures.begin(), _textures.end(), texture) != _textures.end());
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggPrimitive::get_texture
 //       Access: Published
 //  Description: Returns the first texture on the primitive, if any,
