@@ -183,9 +183,9 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         # If the class is a neverDisable class (which implies uberzone) we
         # should go ahead and generate it even though we are in the quiet zone
         dclass.startGenerate()
-        if dclass.getClassDef().neverDisable:
-            # Create a new distributed object, and put it in the dictionary
-            distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
+        #if dclass.getClassDef().neverDisable:
+        #    # Create a new distributed object, and put it in the dictionary
+        #    distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         dclass.stopGenerate()
 
