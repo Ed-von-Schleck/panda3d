@@ -4,7 +4,9 @@ import DirectNotifyGlobal
 import DirectObject
 from PyDatagram import PyDatagram
 
-class ConnectionRepository(DirectObject.DirectObject):
+import types
+
+class ConnectionRepository(DirectObject.DirectObject, CConnectionRepository):
     """
     This is a base class for things that know how to establish a
     connection (and exchange datagrams) with a gameserver.  This
@@ -17,6 +19,7 @@ class ConnectionRepository(DirectObject.DirectObject):
 
     def __init__(self, config):
         DirectObject.DirectObject.__init__(self)
+        CConnectionRepository.__init__(self)
 
         self.config = config
         
@@ -227,11 +230,14 @@ class ConnectionRepository(DirectObject.DirectObject):
     def startReaderPollTask(self):
         # Stop any tasks we are running now
         self.stopReaderPollTask()
+        self.accept(CConnectionRepository.getOverflowEventName(),
+                    self.handleReaderOverflow)
         taskMgr.add(self.readerPollUntilEmpty, "readerPollTask",
                     priority = self.taskPriority)
 
     def stopReaderPollTask(self):
         taskMgr.remove("readerPollTask")
+        self.ignore(CConnectionRepository.getOverflowEventName())
 
     def readerPollUntilEmpty(self, task):
         while self.readerPollOnce():
@@ -248,59 +254,10 @@ class ConnectionRepository(DirectObject.DirectObject):
         # time expires, if we're in collect-tcp mode.
         self.tcpConn.considerFlush()
 
-        if self.rsDoReport:
-            self.reportReaderStatistics()
-        
-        if self.connectHttp:
-            datagram = PyDatagram()
-            if self.tcpConn.receiveDatagram(datagram):
-                if self.rsDoReport:
-                    self.rsDatagramCount += 1
-                self.handleDatagram(datagram)
-                return 1
-
-            # Unable to receive a datagram: did we lose the connection?
-            if self.tcpConn.isClosed():
-                self.tcpConn = None
-                self.stopReaderPollTask()
-                self.lostConnection()
-            return 0
-        
-        else:
-            self.ensureValidConnection()
-            if self.qcr.dataAvailable():
-                datagram = NetDatagram()
-                if self.qcr.getData(datagram):
-                    if self.rsDoReport:
-                        self.rsDatagramCount += 1
-                    self.handleDatagram(datagram)
-                    return 1
-            return 0
-
-    def flush(self):
-        # Ensure the latest has been sent to the server.
-        if self.tcpConn:
-            self.tcpConn.flush()
-
-    def ensureValidConnection(self):
-        # Was the connection reset?
-        if self.connectHttp:
-            pass
-        else:
-            if self.qcm.resetConnectionAvailable():
-                resetConnectionPointer = PointerToConnection()
-                if self.qcm.getResetConnection(resetConnectionPointer):
-                    resetConn = resetConnectionPointer.p()
-                    self.qcm.closeConnection(resetConn)
-                    # if we've simulated a network plug pull, restore the
-                    # simulated plug
-                    self.restoreNetworkPlug()
-                    if self.tcpConn.this == resetConn.this:
-                        self.tcpConn = None
-                        self.stopReaderPollTask()
-                        self.lostConnection()
-                    else:
-                        self.notify.warning("Lost unknown connection.")
+    def handleReaderOverflow(self):
+        # this is called if the incoming-datagram queue overflowed and
+        # we lost some data. Override and handle if desired.
+        pass
 
     def lostConnection(self):
         # This should be overrided by a derived class to handle an
