@@ -28,7 +28,10 @@
     savedContext.I savedContext.h \
     texture.I texture.h \
     textureContext.I textureContext.h \
-    texturePool.I texturePool.h
+    texturePool.I texturePool.h \
+    texCoordName.I texCoordName.h \
+    textureStage.I textureStage.h \
+    textureStageManager.I textureStageManager.h
     
   #define INCLUDED_SOURCES \
     LOD.cxx \
@@ -42,7 +45,8 @@
     perspectiveLens.cxx pixelBuffer.cxx \
     preparedGraphicsObjects.cxx \
     lens.cxx  \
-    savedContext.cxx texture.cxx textureContext.cxx texturePool.cxx
+    savedContext.cxx texture.cxx textureContext.cxx texturePool.cxx \
+    texCoordName.cxx textureStage.cxx textureStageManager.cxx
 
   #define INSTALL_HEADERS \
     LOD.I LOD.h \
@@ -62,7 +66,10 @@
     savedContext.I savedContext.h \
     texture.I texture.h \
     textureContext.I textureContext.h \
-    texturePool.I texturePool.h
+    texturePool.I texturePool.h \
+    texCoordName.I texCoordName.h \
+    textureStage.I textureStage.h \
+    textureStageManager.I textureStageManager.h
 
   #define IGATESCAN all
 

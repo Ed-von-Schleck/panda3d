@@ -52,7 +52,7 @@ PUBLISHED:
 
   void write(ostream &out) const;
 
-  static TextureStageManager *get_global_ptr();
+  INLINE static TextureStageManager *get_global_ptr();
 
 private:
   // This method is only called by the TextureStage destructor.
