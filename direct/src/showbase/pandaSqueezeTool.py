@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
 # SQUEEZE
-# $Id: pandaSqueezeTool.py,v 1.5 2004/06/02 22:08:31 drwr Exp $
 #
 # squeeze a python program 
 #

@@ -688,6 +688,13 @@ def lerp(v0, v1, t):
     """
     return v0 + (t * (v1 - v0))
 
+def average(*args):
+    """ returns simple average of list of values """
+    val = 0.
+    for arg in args:
+        val += arg
+    return val / len(args)
+
 def boolEqual(a, b):
     """
     returns true if a and b are both true or both false.
@@ -909,6 +916,23 @@ def mostDerivedLast(classList):
         return result
     classList.sort(compare)
 
+def clampScalar(value, a, b):
+    # calling this ought to be faster than calling both min and max
+    if a < b:
+        if value < a:
+            return a
+        elif value > b:
+            return b
+        else:
+            return value
+    else:
+        if value < b:
+            return b
+        elif value > a:
+            return a
+        else:
+            return value
+
 def weightedChoice(choiceList, rng=random.random, sum=None):
     """given a list of (weight,item) pairs, chooses an item based on the
     weights. rng must return 0..1. if you happen to have the sum of the
@@ -963,6 +987,35 @@ def normalDistrib(a, b, gauss=random.gauss):
     99.7% figure includes 3 standard deviations _on_either_side_ of the mean.
     """
     return max(a, min(b, gauss((a+b)*.5, (b-a)/6.)))
+
+def weightedRand(valDict, rng=random.random):
+    """
+    pass in a dictionary with a selection -> weight mapping.  Eg.
+    {"Choice 1" : 10,
+     "Choice 2" : 30,
+     "bear"     : 100}
+
+    -Weights need not add up to any particular value.
+    -The actual selection will be returned.
+    """
+    selections = valDict.keys()
+    weights = valDict.values()
+
+    totalWeight = 0
+    for weight in weights:
+        totalWeight += weight
+
+    # get a random value between 0 and the total of the weights
+    randomWeight = rng() * totalWeight
+
+    # find the index that corresponds with this weight
+    for i in range(len(weights)):
+        totalWeight -= weights[i]
+        if totalWeight <= randomWeight:
+            return selections[i]
+
+    assert(True, "Should never get here")
+    return selections[-1]
 
 def randUint31(rng=random.random):
     """returns a random integer in [0..2^31).

@@ -259,9 +259,12 @@ class ShowBase(DirectObject.DirectObject):
         __builtins__["directNotify"] = directNotify
         __builtins__["globalClock"] = ClockObject.getGlobalClock()
         __builtins__["vfs"] = vfs
+        __builtins__["__dev__"] = base.config.GetBool('want-dev', 0)
         if __debug__:
             __builtins__["deltaProfiler"] = DeltaProfiler.DeltaProfiler("ShowBase")
             __builtins__["onScreenDebug"] = OnScreenDebug.OnScreenDebug()
+
+        ShowBase.notify.info('__dev__ == %s' % __dev__)
 
         # Now hang a hook on the window-event from Panda.  This allows
         # us to detect when the user resizes, minimizes, or closes the
@@ -1548,9 +1551,9 @@ class ShowBase(DirectObject.DirectObject):
         """
         movie(namePrefix = 'movie', duration=1.0, fps=30, format='rgb', sd=4)
 
-        Spawn a task to capture a movie using the takeSnapshot function.
+        Spawn a task to capture a movie using the screenshot function.
         - namePrefix will be used to form output file names (can include
-          path information (e.g. 'I:/beta/frames/myMovie')
+          path information (e.g. '/i/beta/frames/myMovie')
         - duration is the length of the movie in seconds
         - fps is the frame rate of the resulting movie
         - format specifies output file format (e.g. rgb, bmp)
@@ -1572,7 +1575,7 @@ class ShowBase(DirectObject.DirectObject):
         else:
             frameName = state.outputString % state.frameIndex
             self.notify.info("Capturing frame: " + frameName)
-            takeSnapshot(self.win, frameName )
+            self.win.saveScreenshot(Filename(frameName))
             state.frameIndex += 1
             return Task.cont
 
