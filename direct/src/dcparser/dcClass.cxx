@@ -692,11 +692,10 @@ ai_format_update(const string &field_name, int do_id,
 ////////////////////////////////////////////////////////////////////
 Datagram DCClass::
 ai_format_generate(PyObject *distobj, int do_id, 
-                   int parent_id, int zone_id, CHANNEL_TYPE district_channel_id, CHANNEL_TYPE from_channel_id,
+                   int parent_id, int zone_id,
+                   CHANNEL_TYPE district_channel_id, CHANNEL_TYPE from_channel_id,
                    PyObject *optional_fields) const {
-
   DCPacker packer;
-
 
   packer.RAW_PACK_CHANNEL(district_channel_id);
   packer.RAW_PACK_CHANNEL(from_channel_id);
