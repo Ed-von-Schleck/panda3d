@@ -4225,7 +4225,11 @@ r_force_recompute_bounds(PandaNode *node) {
 
     int num_geoms = gnode->get_num_geoms();
     for (int i = 0; i < num_geoms; i++) {
-      gnode->get_geom(i)->mark_bound_stale();
+      const Geom *geom = gnode->get_geom(i);
+      // It's ok to cast away the const modifier on this Geom pointer,
+      // since marking the bounding volume stale doesn't really change
+      // the Geom in any substantial way.
+      ((Geom *)geom)->mark_bound_stale();
     }
   }
 

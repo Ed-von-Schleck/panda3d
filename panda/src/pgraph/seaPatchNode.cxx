@@ -151,7 +151,7 @@ recurse_children(PandaNode *node, LMatrix4f net_trans_mat) {
     GeomNode *geom_node = DCAST(GeomNode, node);
     int num_geoms = geom_node->get_num_geoms();
     for(int j =0; j < num_geoms; j++) { 
-      PT(Geom) geom = geom_node->get_geom(j);
+      Geom *geom = geom_node->get_unique_geom(j);
       do_wave(geom, net_trans_mat);
     }
   }

@@ -183,6 +183,7 @@ PUBLISHED:
   INLINE PTA_ushort get_colors_index() const;
   INLINE PTA_ushort get_texcoords_index() const;
   INLINE PTA_ushort get_texcoords_index(const TexCoordName *name) const;
+  INLINE bool are_texcoords_indexed() const;
 
   void prepare(PreparedGraphicsObjects *prepared_objects);
 
@@ -234,7 +235,7 @@ public:
   int release_all();
 
   // From parent dDrawable
-  virtual void draw(GraphicsStateGuardianBase *gsg);
+  virtual void draw(GraphicsStateGuardianBase *gsg) const;
 
   // From parent Configurable
   virtual void config();

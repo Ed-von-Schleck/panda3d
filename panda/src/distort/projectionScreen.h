@@ -116,7 +116,7 @@ private:
                                    const NodePath &camera,
                                    LMatrix4f &rel_mat,
                                    bool &computed_rel_mat);
-  PT(Geom) make_mesh_geom(Geom *geom, Lens *lens, LMatrix4f &rel_mat);
+  PT(Geom) make_mesh_geom(const Geom *geom, Lens *lens, LMatrix4f &rel_mat);
 
 
   NodePath _projector;

@@ -874,18 +874,18 @@ release_all() {
 //  Description: Actually draws the Geom with the indicated GSG.
 ////////////////////////////////////////////////////////////////////
 void Geom::
-draw(GraphicsStateGuardianBase *gsg) {
+draw(GraphicsStateGuardianBase *gsg) const {
   PreparedGraphicsObjects *prepared_objects = gsg->get_prepared_objects();
   if (is_dirty()) {
-    config(); 
-    release(prepared_objects);
+    ((Geom *)this)->config(); 
+    ((Geom *)this)->release(prepared_objects);
   }
 
   if (retained_mode) {
-    GeomContext *gc = prepare_now(gsg->get_prepared_objects(), gsg);
-    draw_immediate(gsg, gc);
+    GeomContext *gc = ((Geom *)this)->prepare_now(gsg->get_prepared_objects(), gsg);
+    ((Geom *)this)->draw_immediate(gsg, gc);
   } else {
-    draw_immediate(gsg, NULL);
+    ((Geom *)this)->draw_immediate(gsg, NULL);
   }
 }
 

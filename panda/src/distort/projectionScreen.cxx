@@ -469,6 +469,12 @@ recompute_child(const WorkingNodePath &np, LMatrix4f &rel_mat,
     // the relative matrix from this point.
     LMatrix4f new_rel_mat;
     bool computed_new_rel_mat = false;
+
+    if (distort_cat.is_spam()) {
+      distort_cat.spam()
+        << "Saving rel_mat " << (void *)&new_rel_mat << " at " << np << "\n";
+    }
+
     recompute_node(np, new_rel_mat, computed_new_rel_mat);
     
   } else {
@@ -492,11 +498,23 @@ recompute_geom_node(const WorkingNodePath &np, LMatrix4f &rel_mat,
     NodePath true_np = np.get_node_path();
     rel_mat = true_np.get_mat(_projector);
     computed_rel_mat = true;
+
+    if (distort_cat.is_spam()) {
+      distort_cat.spam()
+        << "Computing rel_mat " << (void *)&rel_mat << " at " << np << "\n";
+      distort_cat.spam()
+        << "  " << rel_mat << "\n";
+    }
+  } else {
+    if (distort_cat.is_spam()) {
+      distort_cat.spam()
+        << "Applying rel_mat " << (void *)&rel_mat << " to " << np << "\n";
+    }
   }
 
   int num_geoms = node->get_num_geoms();
   for (int i = 0; i < num_geoms; i++) {
-    Geom *geom = node->get_geom(i);
+    Geom *geom = node->get_unique_geom(i);
     recompute_geom(geom, rel_mat);
   }
 }
@@ -549,7 +567,8 @@ recompute_geom(Geom *geom, const LMatrix4f &rel_mat) {
 
   // Now set the UV's.  If the geom already has indexed UV's, we need
   // to make a new index for the geom.
-  if (geom->get_texcoords_index() == (ushort *)NULL) {
+  geom->remove_texcoords(_texcoord_name);
+  if (!geom->are_texcoords_indexed()) {
     // Simple case: no indexing needed.
     geom->set_texcoords(_texcoord_name, uvs);
 
@@ -663,7 +682,7 @@ make_mesh_geom_node(const WorkingNodePath &np, const NodePath &camera,
 
   int num_geoms = node->get_num_geoms();
   for (int i = 0; i < num_geoms; i++) {
-    Geom *geom = node->get_geom(i);
+    const Geom *geom = node->get_geom(i);
     PT(Geom) new_geom = 
       make_mesh_geom(geom, lens_node->get_lens(), rel_mat);
     if (new_geom != (Geom *)NULL) {
@@ -683,7 +702,7 @@ make_mesh_geom_node(const WorkingNodePath &np, const NodePath &camera,
 //               that involves an unprojectable vertex is eliminated.
 ////////////////////////////////////////////////////////////////////
 PT(Geom) ProjectionScreen::
-make_mesh_geom(Geom *geom, Lens *lens, LMatrix4f &rel_mat) {
+make_mesh_geom(const Geom *geom, Lens *lens, LMatrix4f &rel_mat) {
   Geom *new_geom = geom->make_copy();
   PT(Geom) result = new_geom;
 

@@ -203,6 +203,23 @@ get_texcoords_index(const TexCoordName *name) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Geom::are_texcoords_indexed
+//       Access: Published
+//  Description: Returns true if any texcoords on the Geom (and,
+//               therefore, all of them) are indexed, false if there
+//               are no texcoords on the Geom already or if the
+//               texcoords on the Geom are nonindexed.
+////////////////////////////////////////////////////////////////////
+INLINE bool Geom::
+are_texcoords_indexed() const {
+  if (_texcoords_by_name.empty()) {
+    return false;
+  }
+  TexCoordsByName::const_iterator tci = _texcoords_by_name.begin();
+  return ((*tci).second._tindex != (ushort *)NULL);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Geom::set_num_prims
 //       Access: Published
 //  Description: Sets the number of primitives in the Geom.  The
