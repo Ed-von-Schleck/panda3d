@@ -1132,12 +1132,19 @@ apply_texture_attributes(Texture *tex, const EggTexture *egg_tex) {
 ////////////////////////////////////////////////////////////////////
 PT(TextureStage) EggLoader::
 make_texture_stage(const EggTexture *egg_tex) {
-  // If the egg texture specifies any relevant properties, it gets its
-  // own texture stage; otherwise, it gets the default texture stage.
-  if (egg_tex->get_env_type() == EggTexture::ET_unspecified &&
-      !egg_tex->has_stage_name() &&
-      !egg_tex->has_sort() &&
-      !egg_tex->has_uv_name()) {
+  // If the egg texture specifies any relevant TextureStage
+  // properties, or if it is multitextured on top of anything else, it
+  // gets its own texture stage; otherwise, it gets the default
+  // texture stage.
+  if (!egg_tex->has_stage_name() &&
+      !egg_tex->has_uv_name() &&
+      !egg_tex->has_color() && 
+      egg_tex->get_env_type() == EggTexture::ET_unspecified &&
+      egg_tex->get_combine_mode(EggTexture::CC_rgb) == EggTexture::CM_unspecified &&
+      egg_tex->get_combine_mode(EggTexture::CC_alpha) == EggTexture::CM_unspecified &&
+
+      !egg_tex->has_priority() &&
+      egg_tex->get_multitexture_sort() == 0) {
     return TextureStage::get_default();
   }
 
@@ -1241,9 +1248,7 @@ make_texture_stage(const EggTexture *egg_tex) {
     stage->set_texcoord_name(name);
   }
 
-  if (egg_tex->has_sort()) {
-    stage->set_sort(egg_tex->get_sort());
-  }
+  stage->set_sort(egg_tex->get_multitexture_sort() * 10);
 
   if (egg_tex->has_priority()) {
     stage->set_sort(egg_tex->get_priority());

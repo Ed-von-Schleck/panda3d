@@ -225,11 +225,6 @@ appear before they are referenced.
     other multitexturing parameter has been specified), or the system
     default TextureStage is used if multitexturing is not required.
 
-  <Scalar> sort { sort-value }
-
-    Specifies an integer sort value to rank this texture in order
-    among other textures that are applied to the same geometry.
-
   <Scalar> priority { priority-value }
 
     Specifies an integer sort value to rank this texture in priority

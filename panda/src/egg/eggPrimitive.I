@@ -156,11 +156,6 @@ get_num_textures() const {
 //       Access: Published
 //  Description: Returns the nth texture that has been applied to the
 //               primitive.
-//
-//               Note that, in the case of multiple textures being
-//               applied to a single primitive, the order in which the
-//               textures are applied does not affect the rendering
-//               order; use EggTexture::set_sort() to specify that.
 ////////////////////////////////////////////////////////////////////
 INLINE EggTexture *EggPrimitive::
 get_texture(int n) const {

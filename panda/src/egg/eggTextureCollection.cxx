@@ -153,6 +153,13 @@ insert_textures(EggGroupNode *node, EggGroupNode::iterator position) {
 //               each time a texture reference is encountered.  This
 //               side effect is taken advantage of by
 //               remove_unused_textures().
+//
+//               And one more side effect: this function identifies
+//               the presence of multitexturing in the egg file, and
+//               calls multitexture_over() on each texture
+//               appropriately so that, after this call, you may
+//               expect get_multitexture_sort() to return a reasonable
+//               value for each texture.
 ////////////////////////////////////////////////////////////////////
 int EggTextureCollection::
 find_used_textures(EggNode *node) {
@@ -160,19 +167,37 @@ find_used_textures(EggNode *node) {
 
   if (node->is_of_type(EggPrimitive::get_class_type())) {
     EggPrimitive *primitive = DCAST(EggPrimitive, node);
+
+    bool found_any_new = false;
     int num_textures = primitive->get_num_textures();
     for (int i = 0; i < num_textures; i++) {
       EggTexture *tex = primitive->get_texture(i);
+
       Textures::iterator ti = _textures.find(tex);
       if (ti == _textures.end()) {
         // Here's a new texture!
         num_found++;
+        found_any_new = true;
         _textures.insert(Textures::value_type(tex, 1));
         _ordered_textures.push_back(tex);
       } else {
         // Here's a texture we'd already known about.  Increment its
         // usage count.
         (*ti).second++;
+      }
+
+      // Get the multitexture ordering right.
+      for (int j = 0; j < i; j++) {
+        // The return value of this function will be false if there is
+        // some cycle in the texture layout order; e.g. A layers over
+        // B on one primitive, but B layers over A on another
+        // primitive.  In that case the Egg Loader won't be able to
+        // assign a unique ordering between A and B, so it's probably
+        // an error worth reporting to the user--but we don't report
+        // it here, because this is a much lower-level function that
+        // gets called in other contexts too.  That means it doesn't
+        // get reported at all, but too bad.
+        tex->multitexture_over(primitive->get_texture(j));
       }
     }
 

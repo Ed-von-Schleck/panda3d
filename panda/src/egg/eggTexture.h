@@ -37,6 +37,7 @@ PUBLISHED:
   EggTexture(const string &tref_name, const string &filename);
   EggTexture(const EggTexture &copy);
   EggTexture &operator = (const EggTexture &copy);
+  virtual ~EggTexture(); 
 
   virtual void write(ostream &out, int indent_level) const;
 
@@ -175,11 +176,6 @@ PUBLISHED:
   INLINE bool has_stage_name() const;
   INLINE const string &get_stage_name() const;
 
-  INLINE void set_sort(int sort);
-  INLINE void clear_sort();
-  INLINE bool has_sort() const;
-  INLINE int get_sort() const;
-
   INLINE void set_priority(int priority);
   INLINE void clear_priority();
   INLINE bool has_priority() const;
@@ -214,6 +210,10 @@ PUBLISHED:
   INLINE bool has_alpha_file_channel() const;
   INLINE int get_alpha_file_channel() const;
 
+  void clear_multitexture();
+  bool multitexture_over(EggTexture *other);
+  INLINE int get_multitexture_sort() const;
+
   static Format string_format(const string &string);
   static WrapMode string_wrap_mode(const string &string);
   static FilterType string_filter_type(const string &string);
@@ -227,16 +227,18 @@ protected:
   virtual bool egg_start_parse_body();
 
 private:
+  typedef pset<EggTexture *> MultiTextures;
+  bool r_min_multitexture_sort(int sort, MultiTextures &cycle_detector);
+
   enum Flags {
     F_has_transform          = 0x0001,
     F_has_alpha_filename     = 0x0002,
     F_has_anisotropic_degree = 0x0004,
     F_has_alpha_file_channel = 0x0008,
     F_has_stage_name         = 0x0010,
-    F_has_sort               = 0x0020,
-    F_has_uv_name            = 0x0040,
-    F_has_priority           = 0x0080,
-    F_has_color              = 0x0100,
+    F_has_uv_name            = 0x0020,
+    F_has_priority           = 0x0040,
+    F_has_color              = 0x0080,
   };
 
   Format _format;
@@ -246,7 +248,6 @@ private:
   EnvType _env_type;
   TexGen _tex_gen;
   string _stage_name;
-  int _sort;
   int _priority;
   Colorf _color;
   string _uv_name;
@@ -255,6 +256,7 @@ private:
   Filename _alpha_filename;
   Filename _alpha_fullpath;
   int _alpha_file_channel;
+  int _multitexture_sort;
 
   class SourceAndOperand {
   public:
@@ -271,6 +273,11 @@ private:
   };
 
   Combiner _combiner[CC_num_channels];
+
+  // This is the set of all of the textures that are multitextured on
+  // top of (and under) this one.  This is filled in by
+  // multitexture_over().
+  MultiTextures _over_textures, _under_textures;
 
 public:
   static TypeHandle get_class_type() {

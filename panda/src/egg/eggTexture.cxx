@@ -44,12 +44,12 @@ EggTexture(const string &tref_name, const string &filename)
   _anisotropic_degree = 0;
   _env_type = ET_unspecified;
   _tex_gen = TG_unspecified;
-  _sort = 0;
   _priority = 0;
   _color.set(0.0f, 0.0f, 0.0f, 1.0f);
   _flags = 0;
   _transform = LMatrix3d::ident_mat();
   _alpha_file_channel = 0;
+  _multitexture_sort = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -69,6 +69,8 @@ EggTexture(const EggTexture &copy) {
 ////////////////////////////////////////////////////////////////////
 EggTexture &EggTexture::
 operator = (const EggTexture &copy) {
+  clear_multitexture();
+
   EggFilenameNode::operator = (copy);
   EggRenderMode::operator = (copy);
 
@@ -82,7 +84,6 @@ operator = (const EggTexture &copy) {
   _env_type = copy._env_type;
   _tex_gen = copy._tex_gen;
   _stage_name = copy._stage_name;
-  _sort = copy._sort;
   _priority = copy._priority;
   _color = copy._color;
   _uv_name = copy._uv_name;
@@ -91,10 +92,21 @@ operator = (const EggTexture &copy) {
   _alpha_filename = copy._alpha_filename;
   _alpha_fullpath = copy._alpha_fullpath;
   _alpha_file_channel = copy._alpha_file_channel;
+  _multitexture_sort = 0;
   _combiner[0] = copy._combiner[0];
   _combiner[1] = copy._combiner[1];
 
   return *this;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::Destructor
+//       Access: Published, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+EggTexture::
+~EggTexture() {
+  clear_multitexture();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -190,11 +202,6 @@ write(ostream &out, int indent_level) const {
   if (has_stage_name()) {
     indent(out, indent_level + 2)
       << "<Scalar> stage-name { " << get_stage_name() << " }\n";
-  }
-
-  if (has_sort()) {
-    indent(out, indent_level + 2)
-      << "<Scalar> sort { " << get_sort() << " }\n";
   }
 
   if (has_priority()) {
@@ -458,6 +465,76 @@ has_alpha_channel(int num_components) const {
   }
 
   return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::clear_multitexture
+//       Access: Published
+//  Description: Resets the multitexture flags set by
+//               multitexture_over().  After this call,
+//               get_multitexture() will return false, and
+//               get_multitexture_sort() will return 0.
+////////////////////////////////////////////////////////////////////
+void EggTexture::
+clear_multitexture() {
+  _multitexture_sort = 0;
+
+  // Now empty out the _over_textures and _under_textures sets.  This
+  // requires a bit of care so we don't end up in mutual recursion or
+  // iterating through self-modifying structures.  To avoid this, we
+  // empty the sets first, and then walk through their original
+  // contents.
+  MultiTextures orig_over_textures, orig_under_textures;
+  orig_over_textures.swap(_over_textures);
+  orig_under_textures.swap(_under_textures);
+
+  MultiTextures::iterator mti;
+  for (mti = orig_over_textures.begin(); 
+       mti != orig_over_textures.end(); 
+       ++mti) {
+    EggTexture *other = (*mti);
+    other->_under_textures.erase(this);
+  }
+  for (mti = orig_under_textures.begin(); 
+       mti != orig_under_textures.end(); 
+       ++mti) {
+    EggTexture *other = (*mti);
+    other->_over_textures.erase(this);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::multitexture_over
+//       Access: Published
+//  Description: Indicates that this texture should be layered on top
+//               of the other texture.  This will guarantee that
+//               this->get_multitexture_sort() >
+//               other->get_multitexture_sort(), at least until
+//               clear_multitexture() is called on either one.
+//
+//               The return value is true if successful, or false if
+//               there is a failure because the other texture was
+//               already layered on top of this one (or there is a
+//               three- or more-way cycle).
+////////////////////////////////////////////////////////////////////
+bool EggTexture::
+multitexture_over(EggTexture *other) {
+  if (get_multitexture_sort() <= other->get_multitexture_sort()) {
+    MultiTextures cycle_detector;
+    if (!r_min_multitexture_sort(other->get_multitexture_sort() + 1,
+                                 cycle_detector)) {
+      // Found a cycle right off the bat!
+      return false;
+    }
+  }
+
+  if (_over_textures.insert(other).second) {
+    bool inserted_under = other->_under_textures.insert(this).second;
+    nassertr(inserted_under, false);
+  }
+  nassertr(get_multitexture_sort() > other->get_multitexture_sort(), false);
+
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -740,6 +817,45 @@ egg_start_parse_body() {
   egg_start_texture_body();
   return true;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::r_min_multitexture_sort
+//       Access: Private
+//  Description: Ensures that our multitexture_sort is at least the
+//               indicated value.
+////////////////////////////////////////////////////////////////////
+bool EggTexture::
+r_min_multitexture_sort(int sort, EggTexture::MultiTextures &cycle_detector) {
+  if (_multitexture_sort >= sort) {
+    // No problem.
+    return true;
+  }
+
+  if (!cycle_detector.insert(this).second) {
+    // Oops, we just hit a cycle!
+    return false;
+  }
+
+  _multitexture_sort = sort;
+
+  // Now we also have to increment all of the textures that we are
+  // under.
+  bool no_cycles = true;
+
+  MultiTextures::iterator mti;
+  for (mti = _under_textures.begin();
+       mti != _under_textures.end();
+       ++mti) {
+    EggTexture *other = (*mti);
+    if (!other->r_min_multitexture_sort(sort + 1, cycle_detector)) {
+      // Oops, found a cycle!
+      no_cycles = false;
+    }
+  }
+
+  return no_cycles;
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Format output operator

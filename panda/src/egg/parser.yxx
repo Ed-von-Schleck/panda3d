@@ -517,9 +517,6 @@ texture_body:
   } else if (cmp_nocase_uh(name, "stage_name") == 0) {
     texture->set_stage_name(strval);
 
-  } else if (cmp_nocase_uh(name, "sort") == 0) {
-    texture->set_sort((int)value);
-
   } else if (cmp_nocase_uh(name, "priority") == 0) {
     texture->set_priority((int)value);
 

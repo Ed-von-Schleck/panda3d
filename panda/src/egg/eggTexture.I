@@ -381,56 +381,6 @@ get_stage_name() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: EggTexture::set_sort
-//       Access: Published
-//  Description: Sets the ordering of this texture with respect to
-//               other textures also applied on the same geometry.
-//               This is only meaningful in the presence of
-//               multitexturing.
-////////////////////////////////////////////////////////////////////
-INLINE void EggTexture::
-set_sort(int sort) {
-  _sort = sort;
-  _flags |= F_has_sort;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggTexture::clear_sort
-//       Access: Published
-//  Description: Removes the specification of multitexture ordering
-//               from the texture.  The default sort value is 0.
-////////////////////////////////////////////////////////////////////
-INLINE void EggTexture::
-clear_sort() {
-  _sort = 0;
-  _flags &= ~F_has_sort;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggTexture::has_sort
-//       Access: Published
-//  Description: Returns true if a sort value for multitexture
-//               ordering has been specified for the texture, false
-//               otherwise.
-////////////////////////////////////////////////////////////////////
-INLINE bool EggTexture::
-has_sort() const {
-  return (_flags & F_has_sort) != 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: EggTexture::get_sort
-//       Access: Published
-//  Description: Returns the multitexture ordering value that has been
-//               specified for the texture, or 0 if no sort value has
-//               been specified.
-////////////////////////////////////////////////////////////////////
-INLINE int EggTexture::
-get_sort() const {
-  return _sort;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: EggTexture::set_priority
 //       Access: Published
 //  Description: Sets the importance of this texture with respect to
@@ -772,6 +722,21 @@ has_alpha_file_channel() const {
 INLINE int EggTexture::
 get_alpha_file_channel() const {
   return _alpha_file_channel;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggTexture::get_multitexture_sort
+//       Access: Published
+//  Description: Returns an integer that represents the depth to which
+//               this texture is layered on all other textures in the
+//               egg file.  In general, if texture A is layered over
+//               texture B, then sort(A) > sort(B).  If texture A is
+//               never layered over any other texture, then sort(A) ==
+//               0.  More than that is difficult to guarantee.
+////////////////////////////////////////////////////////////////////
+INLINE int EggTexture::
+get_multitexture_sort() const {
+  return _multitexture_sort;
 }
 
 ////////////////////////////////////////////////////////////////////
