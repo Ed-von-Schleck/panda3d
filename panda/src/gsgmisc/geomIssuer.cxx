@@ -36,6 +36,11 @@ issue_texcoord_noop(const Geom *, Geom::TexCoordIterator &,
 }
 
 static void
+issue_multitexcoord_noop(const Geom *, Geom::MultiTexCoordIterator &,
+                         GraphicsStateGuardianBase *) {
+}
+
+static void
 issue_color_noop(const Geom *, Geom::ColorIterator &, 
                  GraphicsStateGuardianBase *) {
 }
@@ -57,6 +62,7 @@ GeomIssuer() {
     _vertex_command[i] = issue_vertex_noop;
     _normal_command[i] = issue_normal_noop;
     _texcoord_command[i] = issue_texcoord_noop;
+    _multitexcoord_command[i] = issue_multitexcoord_noop;
     _color_command[i] = issue_color_noop;
   }
   _geom = NULL;
