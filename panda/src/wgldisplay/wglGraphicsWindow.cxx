@@ -58,7 +58,7 @@ void wglGraphicsWindow::
 make_current() {
   wglGraphicsStateGuardian *wglgsg;
   DCAST_INTO_V(wglgsg, _gsg);
-  wglMakeCurrent(_hdc, wglgsg->_context);
+  wglMakeCurrent(_hdc, wglgsg->get_context(_hdc));
 
   // Now that we have made the context current to a window, we can
   // reset the GSG state if this is the first time it has been used.
@@ -121,13 +121,24 @@ open_window() {
   wglGraphicsStateGuardian *wglgsg;
   DCAST_INTO_R(wglgsg, _gsg, false);
 
-  // Set up the pixel format of the window appropriately for GL.
   _hdc = GetDC(_hWnd);
 
-  if (!SetPixelFormat(_hdc, wglgsg->_pfnum, &wglgsg->_pixelformat)) {
+  // Set up the pixel format of the window appropriately for GL.
+  int pfnum = wglgsg->get_pfnum();
+
+  PIXELFORMATDESCRIPTOR pixelformat;
+  DescribePixelFormat(_hdc, pfnum, sizeof(PIXELFORMATDESCRIPTOR), 
+                      &pixelformat);
+
+#ifdef _DEBUG
+  char msg[200];
+  sprintf(msg, "Selected GL PixelFormat is #%d", pfnum);
+  print_pfd(&pixelformat, msg);
+#endif
+
+  if (!SetPixelFormat(_hdc, pfnum, &pixelformat)) {
     wgldisplay_cat.error()
-      << "SetPixelFormat(" << wglgsg->_pfnum
-      << ") failed after window create\n";
+      << "SetPixelFormat(" << pfnum << ") failed after window create\n";
     close_window();
     return false;
   }
@@ -211,3 +222,58 @@ setup_colormap() {
   SelectPalette(_hdc, _colormap, FALSE);
   RealizePalette(_hdc);
 }
+
+#ifdef _DEBUG
+////////////////////////////////////////////////////////////////////
+//     Function: wglGraphicsWindow::print_pfd
+//       Access: Private, Static
+//  Description: Reports information about the selected pixel format
+//               descriptor, along with the indicated message.
+////////////////////////////////////////////////////////////////////
+void wglGraphicsWindow::
+print_pfd(PIXELFORMATDESCRIPTOR *pfd, char *msg) {
+  OGLDriverType drvtype;
+  if ((pfd->dwFlags & PFD_GENERIC_ACCELERATED) && 
+      (pfd->dwFlags & PFD_GENERIC_FORMAT)) {
+    drvtype=MCD;
+  } else if (!(pfd->dwFlags & PFD_GENERIC_ACCELERATED) && !(pfd->dwFlags & PFD_GENERIC_FORMAT)) {
+    drvtype=ICD;
+  } else {
+    drvtype=Software;
+  }
+
+#define PRINT_FLAG(FLG) ((pfd->dwFlags &  PFD_##FLG) ? (" PFD_" #FLG "|") : "")
+  wgldisplay_cat.spam()
+    << "================================\n";
+
+  wgldisplay_cat.spam()
+    << msg << ", " << OGLDrvStrings[drvtype] << " driver\n"
+    << "PFD flags: 0x" << (void*)pfd->dwFlags << " (" 
+    << PRINT_FLAG(GENERIC_ACCELERATED) 
+    << PRINT_FLAG(GENERIC_FORMAT)
+    << PRINT_FLAG(DOUBLEBUFFER)
+    << PRINT_FLAG(SUPPORT_OPENGL)
+    << PRINT_FLAG(SUPPORT_GDI)
+    << PRINT_FLAG(STEREO)
+    << PRINT_FLAG(DRAW_TO_WINDOW)
+    << PRINT_FLAG(DRAW_TO_BITMAP)
+    << PRINT_FLAG(SWAP_EXCHANGE)
+    << PRINT_FLAG(SWAP_COPY)
+    << PRINT_FLAG(SWAP_LAYER_BUFFERS)
+    << PRINT_FLAG(NEED_PALETTE)
+    << PRINT_FLAG(NEED_SYSTEM_PALETTE)
+    << PRINT_FLAG(SUPPORT_DIRECTDRAW) << ")\n"
+    << "PFD iPixelType: "
+    << ((pfd->iPixelType==PFD_TYPE_RGBA) ? "PFD_TYPE_RGBA":"PFD_TYPE_COLORINDEX")
+    << endl
+    << "PFD cColorBits: " << (DWORD)pfd->cColorBits
+    << "  R: " << (DWORD)pfd->cRedBits
+    <<" G: " << (DWORD)pfd->cGreenBits
+    <<" B: " << (DWORD)pfd->cBlueBits << endl
+    << "PFD cAlphaBits: " << (DWORD)pfd->cAlphaBits
+    << "  DepthBits: " << (DWORD)pfd->cDepthBits
+    <<" StencilBits: " << (DWORD)pfd->cStencilBits
+    <<" AccumBits: " << (DWORD)pfd->cAccumBits
+    << endl;
+}
+#endif

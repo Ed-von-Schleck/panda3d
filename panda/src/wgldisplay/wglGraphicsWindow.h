@@ -44,6 +44,10 @@ protected:
 private:
   void setup_colormap();
 
+#ifdef _DEBUG
+  static void print_pfd(PIXELFORMATDESCRIPTOR *pfd, char *msg);
+#endif
+
   HDC _hdc;
   HPALETTE _colormap;
 

@@ -45,10 +45,6 @@ private:
   int find_pixfmtnum(FrameBufferProperties &properties, HDC hdc,
                      bool bLookforHW) const;
 
-#ifdef _DEBUG
-  static void print_pfd(PIXELFORMATDESCRIPTOR *pfd, char *msg);
-#endif
-
 public:
   static TypeHandle get_class_type() {
     return _type_handle;

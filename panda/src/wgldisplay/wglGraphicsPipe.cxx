@@ -85,8 +85,9 @@ make_gsg(const FrameBufferProperties &properties) {
   
   FrameBufferProperties new_properties = properties;
 
-  // Get a handle to the screen's DC so we can create a context
-  // suitable for rendering to the screen.
+  // Get a handle to the screen's DC so we can choose a set of frame
+  // buffer properties suitable for rendering to windows on this
+  // screen.
   HDC hdc = GetDC(NULL);
   int pfnum = choose_pfnum(new_properties, hdc);
 
@@ -103,43 +104,12 @@ make_gsg(const FrameBufferProperties &properties) {
       << "config() - picking pixfmt #" << pfnum <<endl;
   }
 
-  PIXELFORMATDESCRIPTOR pixelformat;
-  DescribePixelFormat(hdc, pfnum, sizeof(PIXELFORMATDESCRIPTOR), 
-                      &pixelformat);
-
-#ifdef _DEBUG
-  char msg[200];
-  sprintf(msg, "Selected GL PixelFormat is #%d", pfnum);
-  print_pfd(&pixelformat, msg);
-#endif
-
-  // We're setting the pixel format on the main window!  That appears
-  // to work, and it doesn't seem to do any harm to other apps.  How
-  // strange.
-  if (!SetPixelFormat(hdc, pfnum, &pixelformat)) {
-    wgldisplay_cat.error()
-      << "Could not set pixel format.\n";
-    return NULL;
-  }
-
-  // Attempt to create a context.
-  HGLRC context = wglCreateContext(hdc);
-
-  // Now we're done with the hdc, so release it.
+  // Now we're done with the screen's hdc, so release it.
   ReleaseDC(NULL, hdc);
-
-  if (context == NULL) {
-    wgldisplay_cat.error()
-      << "Could not create GL context.\n";
-    return NULL;
-  }
 
   // Now we can make a GSG.
   PT(wglGraphicsStateGuardian) gsg = 
-    new wglGraphicsStateGuardian(new_properties);
-  gsg->_context = context;
-  gsg->_pfnum = pfnum;
-  gsg->_pixelformat = pixelformat;
+    new wglGraphicsStateGuardian(new_properties, pfnum);
 
   return gsg.p();
 }
@@ -339,58 +309,3 @@ find_pixfmtnum(FrameBufferProperties &properties, HDC hdc,
 
   return pfnum;
 }
-
-#ifdef _DEBUG
-////////////////////////////////////////////////////////////////////
-//     Function: wglGraphicsPipe::print_pfd
-//       Access: Private, Static
-//  Description: Reports information about the selected pixel format
-//               descriptor, along with the indicated message.
-////////////////////////////////////////////////////////////////////
-void wglGraphicsPipe::
-print_pfd(PIXELFORMATDESCRIPTOR *pfd, char *msg) {
-  OGLDriverType drvtype;
-  if ((pfd->dwFlags & PFD_GENERIC_ACCELERATED) && 
-      (pfd->dwFlags & PFD_GENERIC_FORMAT)) {
-    drvtype=MCD;
-  } else if (!(pfd->dwFlags & PFD_GENERIC_ACCELERATED) && !(pfd->dwFlags & PFD_GENERIC_FORMAT)) {
-    drvtype=ICD;
-  } else {
-    drvtype=Software;
-  }
-
-#define PRINT_FLAG(FLG) ((pfd->dwFlags &  PFD_##FLG) ? (" PFD_" #FLG "|") : "")
-  wgldisplay_cat.spam()
-    << "================================\n";
-
-  wgldisplay_cat.spam()
-    << msg << ", " << OGLDrvStrings[drvtype] << " driver\n"
-    << "PFD flags: 0x" << (void*)pfd->dwFlags << " (" 
-    << PRINT_FLAG(GENERIC_ACCELERATED) 
-    << PRINT_FLAG(GENERIC_FORMAT)
-    << PRINT_FLAG(DOUBLEBUFFER)
-    << PRINT_FLAG(SUPPORT_OPENGL)
-    << PRINT_FLAG(SUPPORT_GDI)
-    << PRINT_FLAG(STEREO)
-    << PRINT_FLAG(DRAW_TO_WINDOW)
-    << PRINT_FLAG(DRAW_TO_BITMAP)
-    << PRINT_FLAG(SWAP_EXCHANGE)
-    << PRINT_FLAG(SWAP_COPY)
-    << PRINT_FLAG(SWAP_LAYER_BUFFERS)
-    << PRINT_FLAG(NEED_PALETTE)
-    << PRINT_FLAG(NEED_SYSTEM_PALETTE)
-    << PRINT_FLAG(SUPPORT_DIRECTDRAW) << ")\n"
-    << "PFD iPixelType: "
-    << ((pfd->iPixelType==PFD_TYPE_RGBA) ? "PFD_TYPE_RGBA":"PFD_TYPE_COLORINDEX")
-    << endl
-    << "PFD cColorBits: " << (DWORD)pfd->cColorBits
-    << "  R: " << (DWORD)pfd->cRedBits
-    <<" G: " << (DWORD)pfd->cGreenBits
-    <<" B: " << (DWORD)pfd->cBlueBits << endl
-    << "PFD cAlphaBits: " << (DWORD)pfd->cAlphaBits
-    << "  DepthBits: " << (DWORD)pfd->cDepthBits
-    <<" StencilBits: " << (DWORD)pfd->cStencilBits
-    <<" AccumBits: " << (DWORD)pfd->cAccumBits
-    << endl;
-}
-#endif
