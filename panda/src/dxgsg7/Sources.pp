@@ -1,5 +1,8 @@
 #define BUILD_DIRECTORY $[HAVE_DX]
 
+// dont try build dxgsg7 until its moved to new window stuff
+#define BUILD_DIRECTORY
+
 #define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
                    dtoolutil:c dtoolbase:c dtool:m
 #define USE_PACKAGES dx
