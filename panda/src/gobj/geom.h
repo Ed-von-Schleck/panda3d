@@ -33,6 +33,7 @@
 #include "pta_TexCoordf.h"
 #include "pta_ushort.h"
 #include "pta_int.h"
+#include "texCoordName.h"
 #include "textureStage.h"
 
 class Datagram;
@@ -103,7 +104,7 @@ public:
   public:
     int _num_stages;
     const TexCoordf *_array[max_geom_texture_stages];
-    const ushort *_index;
+    const ushort *_index[max_geom_texture_stages];
   };
   class ColorIterator {
   public:
@@ -162,52 +163,43 @@ PUBLISHED:
                   const PTA_ushort &cindex = PTA_ushort());
   void set_texcoords(const PTA_TexCoordf &texcoords, GeomBindType bind,
                      const PTA_ushort &tindex = PTA_ushort());
+  void set_texcoords(const TexCoordName *name, const PTA_TexCoordf &texcoords,
+                     const PTA_ushort &tindex = PTA_ushort());
+  void remove_texcoords(const TexCoordName *name);
 
 public:
   // These can't be published because of the pass-by-reference
   // primitive types.
-  void get_coords(PTA_Vertexf &coords,
-                  GeomBindType &bind,
+  void get_coords(PTA_Vertexf &coords, GeomBindType &bind,
                   PTA_ushort &vindex) const;
 
-  void get_coords(PTA_Vertexf &coords,
-                  PTA_ushort &vindex) const;
+  void get_coords(PTA_Vertexf &coords, PTA_ushort &vindex) const;
 
-  void get_normals(PTA_Normalf &norms,
-                   GeomBindType &bind,
+  void get_normals(PTA_Normalf &norms, GeomBindType &bind,
                    PTA_ushort &nindex) const;
   void get_colors(PTA_Colorf &colors,
-                  GeomBindType &bind,
-                  PTA_ushort &cindex) const;
-  void get_texcoords(PTA_TexCoordf &texcoords,
-                     GeomBindType &bind,
+                  GeomBindType &bind, PTA_ushort &cindex) const;
+  void get_texcoords(PTA_TexCoordf &texcoords, GeomBindType &bind,
                      PTA_ushort &tindex) const;
+
 
 PUBLISHED:
   virtual bool is_dynamic() const;
 
   INLINE GeomBindType get_binding(int attr) const;
+  INLINE bool has_texcoords(const TexCoordName *name) const;
 
   INLINE PTA_Vertexf get_coords_array() const;
   INLINE PTA_Normalf get_normals_array() const;
   INLINE PTA_Colorf get_colors_array() const;
   INLINE PTA_TexCoordf get_texcoords_array() const;
-  INLINE PTA_TexCoordf get_texcoords_array(int stage_index) const;
+  INLINE PTA_TexCoordf get_texcoords_array(const TexCoordName *name) const;
 
   INLINE PTA_ushort get_coords_index() const;
   INLINE PTA_ushort get_normals_index() const;
   INLINE PTA_ushort get_colors_index() const;
   INLINE PTA_ushort get_texcoords_index() const;
-
-  INLINE int get_num_texture_stages() const;
-  INLINE TextureStage *get_texture_stage(int stage_index) const;
-  INLINE void set_texture_stage(int stage_index, TextureStage *stage);
-  INLINE void set_texcoords_array(int stage_index, const PTA_TexCoordf &array);
-
-  INLINE int find_texture_stage(TextureStage *stage) const;
-  INLINE void remove_texture_stage(int stage_index);
-  INLINE int add_texture_stage(TextureStage *stage, 
-                               const PTA_TexCoordf &array);
+  INLINE PTA_ushort get_texcoords_index(const TexCoordName *name) const;
 
   void prepare(PreparedGraphicsObjects *prepared_objects);
 
@@ -267,7 +259,6 @@ protected:
   PTA_ushort _vindex;
   PTA_ushort _nindex;
   PTA_ushort _cindex;
-  PTA_ushort _tindex;
 
   int _numprims,_num_vertices;
   PTA_int _primlengths;
@@ -280,17 +271,14 @@ protected:
   GetNextTexCoord *_get_texcoord;
   GetNextMultiTexCoord *_get_multitexcoord;
 
-  class TextureStageDef {
+  class TexCoordDef {
   public:
-    PT(TextureStage) _stage;
     PTA_TexCoordf _texcoords;
+    PTA_ushort _tindex;
   };
 
-  typedef pvector<TextureStageDef> TextureStages;
-  TextureStages _texture_stages;
-
-  typedef pmap<TextureStage *, int> TextureStageIndex;
-  TextureStageIndex _texture_stage_index;
+  typedef pmap<CPT(TexCoordName), TexCoordDef> TexCoordsByName;
+  TexCoordsByName _texcoords_by_name;
 
 private:
   void clear_prepared(PreparedGraphicsObjects *prepared_objects);

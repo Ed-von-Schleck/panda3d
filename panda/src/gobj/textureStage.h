@@ -21,8 +21,9 @@
 
 #include "pandabase.h"
 
+#include "texCoordName.h"
+#include "pointerTo.h"
 #include "typedWritableReferenceCount.h"
-#include "namable.h"
 #include "luse.h"
 
 class FactoryParams;
@@ -100,6 +101,9 @@ PUBLISHED:
 
   INLINE bool operator < (const TextureStage &other) const;
 
+  INLINE void set_texcoord_name(const TexCoordName *name);
+  INLINE const TexCoordName *get_texcoord_name() const;
+
   INLINE void set_mode(Mode mode);
   INLINE Mode get_mode() const;
 
@@ -140,9 +144,13 @@ PUBLISHED:
   INLINE CombineSource get_combine_alpha_source2() const;
   INLINE CombineOperand get_combine_alpha_operand2() const;
 
+  void write(ostream &out) const;
+  void output(ostream &out) const;
+
 private:
   string _name;
   int _sort;
+  CPT(TexCoordName) _texcoord_name;
   Mode _mode;
   Colorf _color;
 
@@ -178,10 +186,8 @@ public:
   }
   static void init_type() {
     TypedWritableReferenceCount::init_type();
-    Namable::init_type();
     register_type(_type_handle, "TextureStage",
-                  TypedWritableReferenceCount::get_class_type(),
-                  Namable::get_class_type());
+                  TypedWritableReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
