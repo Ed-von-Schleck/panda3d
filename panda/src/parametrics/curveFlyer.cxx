@@ -199,7 +199,7 @@ cont() {
 //  Description: Returns true if the flyer is currently flying,
 //               false if it is stopped.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurveFlyer::
+bool ParametricCurveFlyer::
 playing() const {
   return !_stopped;
 }
@@ -215,7 +215,7 @@ playing() const {
 //               event).
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveFlyer::
-set_loop(boolean flag) {
+set_loop(bool flag) {
   _loop_flag = flag;
 }
 
@@ -224,7 +224,7 @@ set_loop(boolean flag) {
 //       Access: Public, Scheme
 //  Description: Returns the flyer's automatic loop mode setting.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurveFlyer::
+bool ParametricCurveFlyer::
 get_loop() const {
   return _loop_flag;
 }
@@ -242,7 +242,7 @@ get_loop() const {
 //               will supply the entire rotation component.
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveFlyer::
-set_face_forward(boolean flag) {
+set_face_forward(bool flag) {
   _face_forward = flag;
 }
 
@@ -251,7 +251,7 @@ set_face_forward(boolean flag) {
 //       Access: Public, Scheme
 //  Description: Returns the flyer's face-forward setting.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurveFlyer::
+bool ParametricCurveFlyer::
 get_face_forward() const {
   return _face_forward;
 }
@@ -343,7 +343,7 @@ set_stop_event(const char *string) {
 //               be an orthonormal transform.  Also see get_coord().
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveFlyer::
-get_matrix(pfMatrix &mat) {
+get_matrix(LMatrix4f &mat) {
   recompute_position();
   mat = _mat;
 }
@@ -356,7 +356,7 @@ get_matrix(pfMatrix &mat) {
 //               the flyer's current position along the curve.
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveFlyer::
-get_coord(pfVec3 &xyz, pfVec3 &hpr) {
+get_coord(LVector3f &xyz, LVector3f &hpr) {
   recompute_position();
   xyz = _coord.xyz;
   hpr = _coord.hpr;
@@ -366,7 +366,7 @@ get_coord(pfVec3 &xyz, pfVec3 &hpr) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ParametricCurveFlyer::get
 //       Access: Public, Virtual
-//  Description: The Joinable output function; returns the pfMatrix
+//  Description: The Joinable output function; returns the LMatrix4f
 //               that should be applied to the DCS.
 ////////////////////////////////////////////////////////////////////
 void *ParametricCurveFlyer::
@@ -431,8 +431,8 @@ recompute_position() {
   if (_face_forward) {
     if (tangent.dot(tangent) > 0.0) {
       // Recompute the hpr if the tangent is not zero.
-      pfMatrix mat;
-      look_at(mat, tangent, pfVec3(0.0, 0.0, 1.0));
+      LMatrix4f mat;
+      look_at(mat, tangent, LVector3f(0.0, 0.0, 1.0));
       pfCoord c;
       mat.getOrthoCoord(&c);
       _h = c.hpr[0];
@@ -445,7 +445,7 @@ recompute_position() {
     // Now apply the hpr curve.
     VecType hprw;
     _hpr_curve->get_point(t, hprw);
-    _coord.hpr += pfVec3(hprw[0], hprw[1], hprw[2]);
+    _coord.hpr += LVector3f(hprw[0], hprw[1], hprw[2]);
   }
     
   _mat.makeCoord(&_coord);

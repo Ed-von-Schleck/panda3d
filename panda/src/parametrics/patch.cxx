@@ -36,27 +36,12 @@
 void
 compute_nurbs_basis(int order, 
 		    const double knots_in[],
-		    pfMatrix &basis);
+		    LMatrix4f &basis);
 
 
 ////////////////////////////////////////////////////////////////////
 // Statics
 ////////////////////////////////////////////////////////////////////
-
-pfType *ParametricSurface::classType = NULL;
-static InitReg ParametricSurfaceInit(ParametricSurface::init);
-
-pfType *SIsoCurve::classType = NULL;
-static InitReg SIsoCurveInit(SIsoCurve::init);
-
-pfType *TIsoCurve::classType = NULL;
-static InitReg TIsoCurveInit(TIsoCurve::init);
-
-pfType *Quilt::classType = NULL;
-static InitReg QuiltInit(Quilt::init);
-
-pfType *BicubicPatch::classType = NULL;
-static InitReg BicubicPatchInit(BicubicPatch::init);
 
 
 static const VecType zero(0.0, 0.0, 0.0);
@@ -74,7 +59,6 @@ static const VecType zero(0.0, 0.0, 0.0);
 ////////////////////////////////////////////////////////////////////
 ParametricSurface::
 ParametricSurface() {
-  setType(classType);
 }
 
 
@@ -85,7 +69,7 @@ ParametricSurface() {
 //               here is always true; a derived class may override
 //               this function to occasionally return false.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricSurface::
+bool ParametricSurface::
 is_valid() const {
   return true;
 }
@@ -162,7 +146,7 @@ Print() const {
     DINFO(dnparametrics) 
       << "Incomplete surface." << dnend;
   } else {
-    pfVec3 c00, c01, c10, c11;
+    LVector3f c00, c01, c10, c11;
     get_point(0.0, 0.0, c00);
     get_point(0.0, 1.0, c01);
     get_point(1.0, 0.0, c10);
@@ -173,53 +157,6 @@ Print() const {
       << c00 << "\n" << c01 << "\n" << c10 << "\n" << c11 
       << dnend;
   }
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricSurface::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void ParametricSurface::
-init() {
-  if (classType==NULL) {
-    pfGroup::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'ParametricSurface'"
-			 << dnend;
-    classType = new pfType(pfGroup::getClassType(), "ParametricSurface");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricSurface::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int ParametricSurface::
-store_pfb(void *) {
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricSurface::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int ParametricSurface::
-load_pfb(void *) {
-  return 0;
 }
 
 
@@ -246,7 +183,7 @@ void rm_SIsoCurve(SIsoCurve *curve) {
 //       Access: Public, Scheme, Virtual
 //  Description: Returns true if the curve is defined.
 ////////////////////////////////////////////////////////////////////
-boolean SIsoCurve::
+bool SIsoCurve::
 is_valid() const {
   return _surface->is_valid() && _s >= 0.0 && _s <= _surface->get_max_s();
 }
@@ -273,7 +210,7 @@ get_max_t() const {
 //               point to the value of the curve at the beginning or
 //               end (whichever is nearer) and returns false.
 ////////////////////////////////////////////////////////////////////
-boolean SIsoCurve::
+bool SIsoCurve::
 get_point(double t, VecType &point) const {
   return _surface->get_point(_s, t, point);
 }
@@ -285,7 +222,7 @@ get_point(double t, VecType &point) const {
 //  Description: Returns the tangent of the curve at a given parametric
 //               point t.
 ////////////////////////////////////////////////////////////////////
-boolean SIsoCurve::
+bool SIsoCurve::
 get_tangent(double t, VecType &tangent) const {
   return _surface->get_s_tan(_s, t, tangent);
 }
@@ -297,7 +234,7 @@ get_tangent(double t, VecType &tangent) const {
 //  Description: Returns the tangent of the first derivative of the
 //               curve at the point t.
 ////////////////////////////////////////////////////////////////////
-boolean SIsoCurve::
+bool SIsoCurve::
 get_2ndtangent(double t, VecType &tangent2) const {
   // Not implemented.  Does anyone care?
   return false;
@@ -310,7 +247,7 @@ get_2ndtangent(double t, VecType &tangent2) const {
 //  Description: Simultaneously returns the point and tangent of the
 //               curve at a given parametric point t.
 ////////////////////////////////////////////////////////////////////
-boolean SIsoCurve::
+bool SIsoCurve::
 get_pt(double t, VecType &point, VecType &tangent) const {
   return get_point(t, point) && get_tangent(t, tangent);
 }
@@ -322,7 +259,7 @@ get_pt(double t, VecType &point, VecType &tangent) const {
 //               BezierSeg structs that describe the curve.  Returns
 //               true if successful, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean SIsoCurve::
+bool SIsoCurve::
 GetBezierSegs(BezierSegs &bz_segs) const {
   if (!is_valid()) {
     return false;
@@ -376,21 +313,6 @@ GetBezierSegs(BezierSegs &bz_segs) const {
   return true;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: SIsoCurve::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void SIsoCurve::
-init() {
-  if (classType==NULL) {
-    ParametricCurve::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'SIsoCurve'"
-			 << dnend;
-    classType = new pfType(ParametricSurface::getClassType(), "SIsoCurve");
-  }
-}
-
 
 TIsoCurve *make_TIsoCurve(ParametricSurface *surface, double t) {
   return new TIsoCurve(surface, t);
@@ -405,7 +327,7 @@ void rm_TIsoCurve(TIsoCurve *curve) {
 //       Access: Public, Scheme, Virtual
 //  Description: Returns true if the curve is defined.
 ////////////////////////////////////////////////////////////////////
-boolean TIsoCurve::
+bool TIsoCurve::
 is_valid() const {
   return _surface->is_valid() && _t >= 0.0 && _t <= _surface->get_max_t();
 }
@@ -432,7 +354,7 @@ get_max_t() const {
 //               point to the value of the curve at the beginning or
 //               end (whichever is nearer) and returns false.
 ////////////////////////////////////////////////////////////////////
-boolean TIsoCurve::
+bool TIsoCurve::
 get_point(double t, VecType &point) const {
   return _surface->get_point(t, _t, point);
 }
@@ -444,7 +366,7 @@ get_point(double t, VecType &point) const {
 //  Description: Returns the tangent of the curve at a given parametric
 //               point t.
 ////////////////////////////////////////////////////////////////////
-boolean TIsoCurve::
+bool TIsoCurve::
 get_tangent(double t, VecType &tangent) const {
   return _surface->get_t_tan(t, _t, tangent);
 }
@@ -456,7 +378,7 @@ get_tangent(double t, VecType &tangent) const {
 //  Description: Returns the tangent of the first derivative of the
 //               curve at the point t.
 ////////////////////////////////////////////////////////////////////
-boolean TIsoCurve::
+bool TIsoCurve::
 get_2ndtangent(double t, VecType &tangent2) const {
   // Not implemented.  Does anyone care?
   return false;
@@ -469,7 +391,7 @@ get_2ndtangent(double t, VecType &tangent2) const {
 //  Description: Simultaneously returns the point and tangent of the
 //               curve at a given parametric point t.
 ////////////////////////////////////////////////////////////////////
-boolean TIsoCurve::
+bool TIsoCurve::
 get_pt(double t, VecType &point, VecType &tangent) const {
   return get_point(t, point) && get_tangent(t, tangent);
 }
@@ -481,7 +403,7 @@ get_pt(double t, VecType &point, VecType &tangent) const {
 //               BezierSeg structs that describe the curve.  Returns
 //               true if successful, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean TIsoCurve::
+bool TIsoCurve::
 GetBezierSegs(BezierSegs &bz_segs) const {
   if (!is_valid()) {
     return false;
@@ -536,28 +458,12 @@ GetBezierSegs(BezierSegs &bz_segs) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TIsoCurve::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void TIsoCurve::
-init() {
-  if (classType==NULL) {
-    ParametricCurve::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'TIsoCurve'"
-			 << dnend;
-    classType = new pfType(ParametricSurface::getClassType(), "TIsoCurve");
-  }
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: Quilt::Constructor
 //       Access: Public
 //  Description: Sets up an empty quilt.
 ////////////////////////////////////////////////////////////////////
 Quilt::
 Quilt() {
-  setType(classType);
   _patches = NULL;
   _num_s = _num_t = 0;
 
@@ -574,7 +480,6 @@ Quilt() {
 ////////////////////////////////////////////////////////////////////
 Quilt::
 Quilt(int num_s, int num_t) {
-  setType(classType);
   _patches = NULL;
   reset_quilt(num_s, num_t);
 }
@@ -586,7 +491,7 @@ Quilt(int num_s, int num_t) {
 //  Description: Returns true if the surface is defined.  In the case
 //               of a Quilt, this means we have at least one patch.
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 is_valid() const {
   return (_num_s>0 && _num_t>0);
 }
@@ -674,7 +579,7 @@ set_max_t(double t) {
 //  Description: Computes the surface point at a given parametric
 //               point s,t.  
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 get_point(double s, double t, VecType &point) const {
   const ParametricSurface *patch = find_patch(s, t);
   return (patch==NULL) ? false : patch->get_point(s, t, point);
@@ -687,7 +592,7 @@ get_point(double s, double t, VecType &point) const {
 //  Description: Computes the tangent to the surface in the s
 //               direction at a given parametric point s,t.
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 get_s_tan(double s, double t, VecType &tangent) const {
   const ParametricSurface *patch = find_patch(s, t);
   return (patch==NULL) ? false : patch->get_s_tan(s, t, tangent);
@@ -699,7 +604,7 @@ get_s_tan(double s, double t, VecType &tangent) const {
 //  Description: Computes the tangent to the surface in the t
 //               direction at a given parametric point s,t.
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 get_t_tan(double s, double t, VecType &tangent) const {
   const ParametricSurface *patch = find_patch(s, t);
   return (patch==NULL) ? false : patch->get_t_tan(s, t, tangent);
@@ -711,7 +616,7 @@ get_t_tan(double s, double t, VecType &tangent) const {
 //  Description: Computes the surface normal at a given parametric
 //               point s,t.  
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 get_normal(double s, double t, VecType &normal) const {
   const ParametricSurface *patch = find_patch(s, t);
   return (patch==NULL) ? false : patch->get_normal(s, t, normal);
@@ -723,7 +628,7 @@ get_normal(double s, double t, VecType &normal) const {
 //  Description: Computes the point and the normal of the patch at a
 //               given parametric point s,t.  
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 get_pn(double s, double t, VecType &point, VecType &normal) const {
   const ParametricSurface *patch = find_patch(s, t);
   return (patch==NULL) ? false : patch->get_pn(s, t, point, normal);
@@ -829,7 +734,7 @@ get_tlength(int ti) const {
 //               of the surface.  Later segments are moved
 //               accordingly.
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 set_tlength(int ti, double tlength) {
   if (ti<0 || ti>=_num_t) {
     return false;
@@ -862,7 +767,7 @@ get_slength(int si) const {
 //               of the surface.  Later segments are moved
 //               accordingly.
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 set_slength(int si, double tlength) {
   if (si<0 || si>=_num_s) {
     return false;
@@ -940,7 +845,7 @@ make_nurbs(int s_order, int t_order,
 //               patches, if possible.  Returns true if successful,
 //               false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean Quilt::
+bool Quilt::
 GetBezierPatches(BezierPatches &bz_patches) const {
   bz_patches.erase(bz_patches.begin(), bz_patches.end());
   int si, ti, n;
@@ -961,95 +866,6 @@ GetBezierPatches(BezierPatches &bz_patches) const {
   }
 
   return true;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Quilt::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void Quilt::
-init() {
-  if (classType==NULL) {
-    ParametricSurface::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'Quilt'"
-			 << dnend;
-    classType = new pfType(ParametricSurface::getClassType(), "Quilt");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: Quilt::descend_pfb
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-int Quilt::
-descend_pfb(void *handle) {
-  int num_patches = _num_s * _num_t;
-  for (int i = 0; i < num_patches; i++) {
-    pfdDescendObject_pfb(_patches[i], handle);
-  }
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Quilt::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int Quilt::
-store_pfb(void *handle) {
-  ParametricSurface::store_pfb(handle);
-
-  pfdStoreData_pfb(&_num_s, sizeof(_num_s), handle);
-  pfdStoreData_pfb(&_num_t, sizeof(_num_t), handle);
-  int num_patches = _num_s * _num_t;
-  for (int i = 0; i < num_patches; i++) {
-    pfdStoreObjectRef_pfb(_patches[i], handle);
-  }
-  pfdStoreData_pfb(_sends, _num_s * sizeof(double), handle);
-  pfdStoreData_pfb(_tends, _num_t * sizeof(double), handle);
-  pfdStoreData_pfb(&_last_si, sizeof(_last_si), handle);
-  pfdStoreData_pfb(&_last_ti, sizeof(_last_ti), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Quilt::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int Quilt::
-load_pfb(void *handle) {
-  ParametricSurface::load_pfb(handle);
-
-  int num_s, num_t;
-  pfdLoadData_pfb(&num_s, sizeof(num_s), handle);
-  pfdLoadData_pfb(&num_t, sizeof(num_t), handle);
-  reset_quilt(num_s, num_t);
-
-  int num_patches = _num_s * _num_t;
-  for (int i = 0; i < num_patches; i++) {
-    pfdLoadObjectRef_pfb((pfObject **)&_patches[i], handle);
-  }
-
-  pfdLoadData_pfb(_sends, _num_s * sizeof(double), handle);
-  pfdLoadData_pfb(_tends, _num_t * sizeof(double), handle);
-  pfdLoadData_pfb(&_last_si, sizeof(_last_si), handle);
-  pfdLoadData_pfb(&_last_ti, sizeof(_last_ti), handle);
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1192,7 +1008,6 @@ HermitePatchCV(const HermitePatchCV &c) :
 ////////////////////////////////////////////////////////////////////
 BicubicPatch::
 BicubicPatch() {
-  setType(classType);
 }
 
 
@@ -1206,7 +1021,6 @@ BicubicPatch(const HermitePatchCV &cv00,
 	     const HermitePatchCV &cv10,
 	     const HermitePatchCV &cv01,
 	     const HermitePatchCV &cv11) {
-  setType(classType);
   hermite_basis(cv00, cv10, cv01, cv11);
 }
 
@@ -1217,10 +1031,9 @@ BicubicPatch(const HermitePatchCV &cv00,
 //  Description: Constructs a Bezier patch.
 ////////////////////////////////////////////////////////////////////
 BicubicPatch::
-BicubicPatch(const pfMatrix &Gx, 
-	     const pfMatrix &Gy,
-	     const pfMatrix &Gz) {
-  setType(classType);
+BicubicPatch(const LMatrix4f &Gx, 
+	     const LMatrix4f &Gy,
+	     const LMatrix4f &Gz) {
   bezier_basis(Gx, Gy, Gz);
 }
 
@@ -1234,7 +1047,6 @@ BicubicPatch(int s_order, int t_order,
 	     const double s_knots[], const double t_knots[],
 	     const pfVec4 cvs[], 
 	     int ti_scale, int si_offset, int ti_offset) {
-  setType(classType);
   nurbs_basis(s_order, t_order,
 	      s_knots, t_knots,
 	      cvs,
@@ -1249,7 +1061,7 @@ BicubicPatch(int s_order, int t_order,
 //  Description: Computes the surface point at a given parametric
 //               point s,t.  
 ////////////////////////////////////////////////////////////////////
-boolean BicubicPatch::
+bool BicubicPatch::
 get_point(double s, double t, VecType &point) const {
   evaluate_point(pfVec4(s*s*s, s*s, s, 1.0),
 		 pfVec4(t*t*t, t*t, t, 1.0),
@@ -1264,7 +1076,7 @@ get_point(double s, double t, VecType &point) const {
 //  Description: Computes the tangent to the surface in the s
 //               direction at a given parametric point s,t.
 ////////////////////////////////////////////////////////////////////
-boolean BicubicPatch::
+bool BicubicPatch::
 get_s_tan(double s, double t, VecType &tangent) const {
   evaluate_vector(pfVec4(3.0*s*s, 2.0*s, 1.0, 0.0),
 		  pfVec4(t*t*t, t*t, t, 1.0),
@@ -1278,7 +1090,7 @@ get_s_tan(double s, double t, VecType &tangent) const {
 //  Description: Computes the tangent to the surface in the t
 //               direction at a given parametric point s,t.
 ////////////////////////////////////////////////////////////////////
-boolean BicubicPatch::
+bool BicubicPatch::
 get_t_tan(double s, double t, VecType &tangent) const {
   evaluate_vector(pfVec4(s*s*s, s*s, s, 1.0),
 		  pfVec4(3.0*t*t, 2.0*t, 1.0, 0.0),
@@ -1292,7 +1104,7 @@ get_t_tan(double s, double t, VecType &tangent) const {
 //  Description: Computes the surface normal at a given parametric
 //               point s,t.  
 ////////////////////////////////////////////////////////////////////
-boolean BicubicPatch::
+bool BicubicPatch::
 get_normal(double s, double t, VecType &normal) const {
   pfVec4 sv(s*s*s, s*s, s, 1.0);
   pfVec4 tv(t*t*t, t*t, t, 1.0);
@@ -1314,7 +1126,7 @@ get_normal(double s, double t, VecType &normal) const {
 //  Description: Computes the point and the normal of the patch at a
 //               given parametric point s,t.  
 ////////////////////////////////////////////////////////////////////
-boolean BicubicPatch::
+bool BicubicPatch::
 get_pn(double s, double t, VecType &point, VecType &normal) const {
   pfVec4 sv(s*s*s, s*s, s, 1.0);
   pfVec4 tv(t*t*t, t*t, t, 1.0);
@@ -1346,30 +1158,30 @@ hermite_basis(const HermitePatchCV &cv00,
 	      const HermitePatchCV &cv10,
 	      const HermitePatchCV &cv01,
 	      const HermitePatchCV &cv11) {
-  static pfMatrix
+  static LMatrix4f
     Mh(2, -3, 0, 1,
        -2, 3, 0, 0,
        1, -2, 1, 0,
        1, -1, 0, 0);
-  static pfMatrix 
+  static LMatrix4f 
     MhT(2, -2, 1, 1,
 	-3, 3, -2, -1,
 	0, 0, 1, 0,
 	1, 0, 0, 0);
 
-  pfMatrix
+  LMatrix4f
     Ghx(cv00._p[0], cv01._p[0], cv00._t_out[0], cv01._t_in[0],
 	cv10._p[0], cv11._p[0], cv10._t_out[0], cv11._t_in[0],
 	cv00._s_out[0], cv01._s_out[0], cv00._twist[0], cv01._twist[0],
 	cv10._s_in[0], cv11._s_in[0], cv10._twist[0], cv11._twist[0]);
 
-  pfMatrix
+  LMatrix4f
     Ghy(cv00._p[1], cv01._p[1], cv00._t_out[1], cv01._t_in[1],
 	cv10._p[1], cv11._p[1], cv10._t_out[1], cv11._t_in[1],
 	cv00._s_out[1], cv01._s_out[1], cv00._twist[1], cv01._twist[1],
 	cv10._s_in[1], cv11._s_in[1], cv10._twist[1], cv11._twist[1]);
 
-  pfMatrix
+  LMatrix4f
     Ghz(cv00._p[2], cv01._p[2], cv00._t_out[2], cv01._t_in[2],
 	cv10._p[2], cv11._p[2], cv10._t_out[2], cv11._t_in[2],
 	cv00._s_out[2], cv01._s_out[2], cv00._twist[2], cv01._twist[2],
@@ -1392,15 +1204,15 @@ hermite_basis(const HermitePatchCV &cv00,
 //               Gy[1][0] is the y-coordinate of point (s=1,t=0), etc.
 ////////////////////////////////////////////////////////////////////
 void BicubicPatch::
-bezier_basis(const pfMatrix &Gx, 
-	     const pfMatrix &Gy,
-	     const pfMatrix &Gz) {
-  static pfMatrix
+bezier_basis(const LMatrix4f &Gx, 
+	     const LMatrix4f &Gy,
+	     const LMatrix4f &Gz) {
+  static LMatrix4f
     Mb(-1, 3, -3, 1,
        3, -6, 3, 0,
        -3, 3, 0, 0,
        1, 0, 0, 0);
-  static pfMatrix
+  static LMatrix4f
     MbT(-1, 3, -3, 1,
        3, -6, 3, 0,
        -3, 3, 0, 0,
@@ -1430,7 +1242,7 @@ nurbs_basis(int s_order, int t_order,
   dnassert(s_order>=1 && s_order<=4);
   dnassert(t_order>=1 && t_order<=4);
 
-  pfMatrix sB, tB, sBT;
+  LMatrix4f sB, tB, sBT;
 
   compute_nurbs_basis(s_order, s_knots, sB);
   compute_nurbs_basis(t_order, t_knots, tB);
@@ -1447,25 +1259,25 @@ nurbs_basis(int s_order, int t_order,
     }
   }
 
-  pfMatrix 
+  LMatrix4f 
     Gx(c[0][0][0], c[0][1][0], c[0][2][0], c[0][3][0],
        c[1][0][0], c[1][1][0], c[1][2][0], c[1][3][0],
        c[2][0][0], c[2][1][0], c[2][2][0], c[2][3][0],
        c[3][0][0], c[3][1][0], c[3][2][0], c[3][3][0]);
 
-  pfMatrix 
+  LMatrix4f 
     Gy(c[0][0][1], c[0][1][1], c[0][2][1], c[0][3][1],
        c[1][0][1], c[1][1][1], c[1][2][1], c[1][3][1],
        c[2][0][1], c[2][1][1], c[2][2][1], c[2][3][1],
        c[3][0][1], c[3][1][1], c[3][2][1], c[3][3][1]);
 
-  pfMatrix 
+  LMatrix4f 
     Gz(c[0][0][2], c[0][1][2], c[0][2][2], c[0][3][2],
        c[1][0][2], c[1][1][2], c[1][2][2], c[1][3][2],
        c[2][0][2], c[2][1][2], c[2][2][2], c[2][3][2],
        c[3][0][2], c[3][1][2], c[3][2][2], c[3][3][2]);
 
-  pfMatrix 
+  LMatrix4f 
     Gw(c[0][0][3], c[0][1][3], c[0][2][3], c[0][3][3],
        c[1][0][3], c[1][1][3], c[1][2][3], c[1][3][3],
        c[2][0][3], c[2][1][3], c[2][2][3], c[2][3][3],
@@ -1488,18 +1300,18 @@ nurbs_basis(int s_order, int t_order,
 //               change the _s or _t members of the structure.
 //               Returns true if successful, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean BicubicPatch::
+bool BicubicPatch::
 GetBezierPatch(BezierPatch &patch) const {
-  static pfMatrix
+  static LMatrix4f
     Mbi(0.0, 0.0, 0.0, 1.0,
 	0.0, 0.0, 1.0/3.0, 1.0,
 	0.0, 1.0/3.0, 2.0/3.0, 1.0,
 	1.0, 1.0, 1.0, 1.0);
 
-  pfMatrix Gx = Mbi * Bx * Mbi;
-  pfMatrix Gy = Mbi * By * Mbi;
-  pfMatrix Gz = Mbi * Bz * Mbi;
-  pfMatrix Gw(1.0, 1.0, 1.0, 1.0,
+  LMatrix4f Gx = Mbi * Bx * Mbi;
+  LMatrix4f Gy = Mbi * By * Mbi;
+  LMatrix4f Gz = Mbi * Bz * Mbi;
+  LMatrix4f Gw(1.0, 1.0, 1.0, 1.0,
 	      1.0, 1.0, 1.0, 1.0,
 	      1.0, 1.0, 1.0, 1.0,
 	      1.0, 1.0, 1.0, 1.0);
@@ -1531,64 +1343,6 @@ GetBezierPatch(BezierPatch &patch) const {
   return true;
 }
 
-
-////////////////////////////////////////////////////////////////////
-//     Function: BicubicPatch::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void BicubicPatch::
-init() {
-  if (classType==NULL) {
-    ParametricSurface::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'BicubicPatch'"
-			 << dnend;
-    classType = new pfType(ParametricSurface::getClassType(), "BicubicPatch");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: BicubicPatch::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int BicubicPatch::
-store_pfb(void *handle) {
-  ParametricSurface::store_pfb(handle);
-  pfdStoreData_pfb(&Bx, sizeof(Bx), handle);
-  pfdStoreData_pfb(&By, sizeof(By), handle);
-  pfdStoreData_pfb(&Bz, sizeof(Bz), handle);
-  pfdStoreData_pfb(&Bw, sizeof(Bw), handle);
-  pfdStoreData_pfb(&rational, sizeof(rational), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: BicubicPatch::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int BicubicPatch::
-load_pfb(void *handle) {
-  ParametricSurface::load_pfb(handle);
-  pfdLoadData_pfb(&Bx, sizeof(Bx), handle);
-  pfdLoadData_pfb(&By, sizeof(By), handle);
-  pfdLoadData_pfb(&Bz, sizeof(Bz), handle);
-  pfdLoadData_pfb(&Bw, sizeof(Bw), handle);
-  pfdLoadData_pfb(&rational, sizeof(rational), handle);
-  return 0;
-}
 
 
 ////////////////////////////////////////////////////////////////////

@@ -16,13 +16,16 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
+#include "luse.h"
 #include "parametrics.h"
+#include "typedWriteableReferenceCount.h"
+#include "namable.h"
 #include "nurbsCurveDrawer.h"
-#include "patch.h"
-#include <linMathOutput.h>
+////#include "patch.h"
+////#include <linMathOutput.h>
 
 #include <math.h>
-#include <Performer/pf/pfGeode.h>
+////#include <Performer/pf/pfGeode.h>
 
 
 ////////////////////////////////////////////////////////////////////
@@ -30,12 +33,6 @@
 //       Access: Public, Scheme
 //  Description:
 ////////////////////////////////////////////////////////////////////
-
-NurbsCurveDrawer* make_NurbsCurveDrawer( NurbsCurve *curve )
-{
-  return ( new NurbsCurveDrawer(curve) );
-}
-
 NurbsCurveDrawer::
 NurbsCurveDrawer(NurbsCurve *curve) : ParametricCurveDrawer(curve) {
   set_cv_color(1.0, 0.0, 0.0);
@@ -57,12 +54,6 @@ NurbsCurveDrawer(NurbsCurve *curve) : ParametricCurveDrawer(curve) {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-
-void rm_NurbsCurveDrawer( NurbsCurveDrawer* hcd )
-{
-  delete hcd;
-}
-
 NurbsCurveDrawer::
 ~NurbsCurveDrawer() {
 }
@@ -121,7 +112,7 @@ set_hull_color(float r, float g, float b) {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 draw() {
   NurbsCurve *nurbs = (NurbsCurve *)_curve;
   // Make sure the curve is fresh.
@@ -143,7 +134,7 @@ draw() {
       double t = nurbs->GetKnot(i);
       if (t != lt) {
 	lt = t;
-	pfVec3 knot_pos, knot_tan;
+	LVector3f knot_pos, knot_tan;
 	nurbs->get_pt(nurbs->GetKnot(i), knot_pos, knot_tan);
 	_knots.move_to(_mapper(knot_pos, knot_tan, t));
 	ki++;
@@ -151,27 +142,27 @@ draw() {
       _knotnums.push_back(ki);
     }
 
-    _knots.create(_geode, _frame_accurate);
+    _knots.create(_geom_node, _frame_accurate);
   }
 
   if (_show_cvs) {
     _num_cvs = nurbs->get_num_cvs();
     for (i = 0; i < _num_cvs; i++) {
-      _cvs.move_to(_mapper(nurbs->get_cv_point(i), pfVec3(0.0, 0.0, 0.0),
+      _cvs.move_to(_mapper(nurbs->get_cv_point(i), LVector3f(0.0, 0.0, 0.0),
 			   nurbs->GetKnot(i+1)));
     }
 
-    _cvs.create(_geode, _frame_accurate);
+    _cvs.create(_geom_node, _frame_accurate);
   }
 
   if (_show_hull) {
     _num_cvs = nurbs->get_num_cvs();
     for (i = 0; i < _num_cvs; i++) {
-      _hull.draw_to(_mapper(nurbs->get_cv_point(i), pfVec3(0.0, 0.0, 0.0),
+      _hull.draw_to(_mapper(nurbs->get_cv_point(i), LVector3f(0.0, 0.0, 0.0),
 			    nurbs->GetKnot(i+1)));
     }
 
-    _hull.create(_geode, _frame_accurate);
+    _hull.create(_geom_node, _frame_accurate);
   }
 
   return true;
@@ -184,7 +175,7 @@ draw() {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 recompute(double t1, double t2, ParametricCurve *curve) {
   return draw();
 }
@@ -196,7 +187,7 @@ recompute(double t1, double t2, ParametricCurve *curve) {
 //  Description: Sets the flag that hides or shows the CV's.
 ////////////////////////////////////////////////////////////////////
 void NurbsCurveDrawer::
-set_show_cvs(boolean flag) {
+set_show_cvs(bool flag) {
   _show_cvs = flag;
   if (_drawn) {
     draw();
@@ -208,7 +199,7 @@ set_show_cvs(boolean flag) {
 //       Access: Public, Scheme
 //  Description: Returns the current state of the show-CV's flag.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 get_show_cvs() const {
   return _show_cvs;
 }
@@ -219,7 +210,7 @@ get_show_cvs() const {
 //  Description: Sets the flag that hides or shows the convex hull.
 ////////////////////////////////////////////////////////////////////
 void NurbsCurveDrawer::
-set_show_hull(boolean flag) {
+set_show_hull(bool flag) {
   _show_hull = flag;
   if (_drawn) {
     draw();
@@ -231,7 +222,7 @@ set_show_hull(boolean flag) {
 //       Access: Public, Scheme
 //  Description: Returns the current state of the show-hull flag.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 get_show_hull() const {
   return _show_hull;
 }
@@ -242,7 +233,7 @@ get_show_hull() const {
 //  Description: Sets the flag that hides or shows the knots.
 ////////////////////////////////////////////////////////////////////
 void NurbsCurveDrawer::
-set_show_knots(boolean flag) {
+set_show_knots(bool flag) {
   _show_knots = flag;
   if (_drawn) {
     draw();
@@ -254,7 +245,7 @@ set_show_knots(boolean flag) {
 //       Access: Public, Scheme
 //  Description: Returns the current state of the show-knots flag.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 get_show_knots() const {
   return _show_knots;
 }
@@ -267,7 +258,7 @@ get_show_knots() const {
 //               in a different color.  Returns true if the CV exists
 //               and has been drawn, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 hilight(int n, float hr, float hg, float hb) {
   // If there's no curve, do nothing and return false.
   if (_curve==NULL || !_curve->is_valid()) {
@@ -284,7 +275,7 @@ hilight(int n, float hr, float hg, float hb) {
     _cvs.set_vertex_color(n, hr, hg, hb);
   }
   if (_show_knots) {
-    dnassert(_knotnums[n] >= 0 && _knotnums[n] < _knots.get_num_vertices());
+    ///dnassert(_knotnums[n] >= 0 && _knotnums[n] < _knots.get_num_vertices());
     _knots.set_vertex_color(_knotnums[n], hr, hg, hb);
   }
 
@@ -297,7 +288,7 @@ hilight(int n, float hr, float hg, float hb) {
 //       Access: Public, Scheme
 //  Description: Removes the hilight previously set on a CV.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurveDrawer::
+bool NurbsCurveDrawer::
 unhilight(int n) {
   if (_curve==NULL || !_curve->is_valid()) {
     return false;
@@ -312,7 +303,7 @@ unhilight(int n) {
     _cvs.set_vertex_color(n, _cv_color[0], _cv_color[1], _cv_color[2]);
   }
   if (_show_knots) {
-    dnassert(_knotnums[n] >= 0 && _knotnums[n] < _knots.get_num_vertices());
+    ///dnassert(_knotnums[n] >= 0 && _knotnums[n] < _knots.get_num_vertices());
     _knots.set_vertex_color(_knotnums[n],
 			    _knot_color[0], _knot_color[1], _knot_color[2]);
   }

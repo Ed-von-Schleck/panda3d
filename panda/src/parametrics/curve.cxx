@@ -16,57 +16,33 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
+#include "StdAfx.h"
+////#include "pandabase.h"
+#include "luse.h"
 #include "parametrics.h"
+#include "typedWriteableReferenceCount.h"
+#include "namable.h"
 #include "curve.h"
 #include "hermiteCurve.h"
 #include "nurbsCurve.h"
 #include "curveDrawer.h"
 
-#include <initReg.h>
-#include <linMathOutput.h>
+////#include <initReg.h>
+////#include <linMathOutput.h>
 #include <DConfig.h>
-#include <perfalloc.h>
-#include <pfb_util.h>
-#include <set.h>
-#include <multimap.h>
+////#include <perfalloc.h>
+////#include <pfb_util.h>
+////#include <set.h>
+////#include <multimap.h>
 
 #include <math.h>
-#include <fstream.h>
-#include <alloca.h>
-#include <Performer/pf/pfBuffer.h>
+#include <fstream>
+////#include <alloca.h>
 
-////////////////////////////////////////////////////////////////////
-// DNotify Categories 
-////////////////////////////////////////////////////////////////////
-
-DNCategory dnparametrics = { "parametrics", DNTRUE, &dnall };
-
-////////////////////////////////////////////////////////////////////
-// Configuration
-////////////////////////////////////////////////////////////////////
-
-Configure( parametrics );
-EnvSpecs( parametrics ) = {NULL};
-ArgSpecs( parametrics ) = {NULL};
-ScanFiles( parametrics ) = DC_SCAN;
-FilePrefix( parametrics ) = NULL;
-ConfigFn( parametrics )
-{
-   DNRegister(dnparametrics);
-}
 
 ////////////////////////////////////////////////////////////////////
 // Statics
 ////////////////////////////////////////////////////////////////////
-
-pfType *ParametricCurve::classType = NULL;
-static InitReg ParametricCurveInit(ParametricCurve::init);
-
-pfType *PiecewiseCurve::classType = NULL;
-static InitReg PiecewiseCurveInit(PiecewiseCurve::init);
-
-pfType *CubicCurveseg::classType = NULL;
-static InitReg CubicCurvesegInit(CubicCurveseg::init);
 
 
 
@@ -80,7 +56,6 @@ static InitReg CubicCurvesegInit(CubicCurveseg::init);
 ////////////////////////////////////////////////////////////////////
 ParametricCurve::
 ParametricCurve() {
-  setType(classType);
   _curve_type = PCT_NONE;
   _num_dimensions = 3;
 }
@@ -93,7 +68,7 @@ ParametricCurve() {
 //               class function always returns true; derived classes
 //               might override this to sometimes return false.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurve::
+bool ParametricCurve::
 is_valid() const {
   return true;
 }
@@ -144,7 +119,7 @@ set_curve_type(int type) {
     break;
     
   default:
-    dnassert(FALSE);
+    assert(FALSE);
   }
 }
 
@@ -209,7 +184,7 @@ calc_length() const {
 float ParametricCurve::
 calc_length(double from, double to) const {
   double t1, t2;
-  pfVec3 p1, p2;
+  LVector3f p1, p2;
 
   // Normally we expect from < to.  If they came in backwards, reverse
   // them.
@@ -232,7 +207,7 @@ calc_length(double from, double to) const {
     t2 = (to - from) * (double)i / (double)num_segs + from;
     get_point(t2, p2);
 
-    net += r_calc_length(t1, t2, p1, p2, p1.distance(p2));
+    net += r_calc_length(t1, t2, p1, p2, (p1 - p2).length());
   }
   return net;
 }
@@ -274,7 +249,7 @@ compute_t(double start_t, double length_offset, double guess,
   // guess.
   double actual_length = calc_length(start_t, guess);
   double max_t = get_max_t();
-  boolean clamped = false;
+  bool clamped = false;
   
   // Are we close enough yet?
   cerr << "Got " << actual_length << " wanted " << length_offset << "\n";
@@ -304,86 +279,13 @@ compute_t(double start_t, double length_offset, double guess,
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurve::convert_to_hermite
-//       Access: Public, Scheme
-//  Description: Stores an equivalent curve representation in the
-//               indicated Hermite curve, if possible.  Returns true
-//               if successful, false otherwise.
-////////////////////////////////////////////////////////////////////
-boolean ParametricCurve::
-convert_to_hermite(HermiteCurve &hc) const {
-  BezierSegs bz_segs;
-  if (!GetBezierSegs(bz_segs)) {
-    return false;
-  }
-
-  // Now convert the Bezier segments to a Hermite.  Normally, the
-  // Beziers will match up head-to-tail, but if they don't, that's a
-  // cut.
-  hc.remove_all_cvs();
-  hc.set_curve_type(_curve_type);
-
-  int i, n;
-  if (!bz_segs.empty()) {
-    double scale_in = 0.0;
-    double scale_out = bz_segs[0]._t;
-    n = hc.append_cv(HC_SMOOTH, bz_segs[0]._v[0]);
-    hc.set_cv_out(n, 3.0 * (bz_segs[0]._v[1] - bz_segs[0]._v[0]) / scale_out);
-
-    for (i = 0; i < bz_segs.size()-1; i++) {
-      scale_in = scale_out;
-      scale_out = bz_segs[i+1]._t - bz_segs[i]._t;
-
-      if (!bz_segs[i]._v[3].almostEqual(bz_segs[i+1]._v[0], 0.0001)) {
-	// Oops, we have a cut.
-	hc.set_cv_type(n, HC_CUT);
-      }
-
-      n = hc.append_cv(HC_FREE, bz_segs[i+1]._v[0]);
-      hc.set_cv_in(n, 3.0 * (bz_segs[i]._v[3] - bz_segs[i]._v[2]) / scale_in);
-      hc.set_cv_tstart(n, bz_segs[i]._t);
-
-      hc.set_cv_out(n, 3.0 * (bz_segs[i+1]._v[1] - bz_segs[i+1]._v[0]) / scale_out);
-    }
-
-    // Now the last CV.
-    scale_in = scale_out;
-    i = bz_segs.size()-1;
-    n = hc.append_cv(HC_SMOOTH, bz_segs[i]._v[3]);
-    hc.set_cv_in(n, 3.0 * (bz_segs[i]._v[3] - bz_segs[i]._v[2]) / scale_in);
-    hc.set_cv_tstart(n, bz_segs[i]._t);
-  }
-
-  // Finally, go through and figure out which CV's are smooth or G1.
-  int num_cvs = hc.get_num_cvs();
-  for (n = 1; n < num_cvs-1; n++) {
-    if (hc.get_cv_type(n)!=HC_CUT) {
-      pfVec3 in = hc.get_cv_in(n);
-      pfVec3 out = hc.get_cv_out(n);
-      
-      if (in.almostEqual(out, 0.0001)) {
-	hc.set_cv_type(n, HC_SMOOTH);
-      } else {
-	in.normalize();
-	out.normalize();
-	if (in.almostEqual(out, 0.0001)) {
-	  hc.set_cv_type(n, HC_G1);
-	}
-      }
-    }
-  }
-
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: ParametricCurve::convert_to_nurbs
 //       Access: Public
 //  Description: Stores in the indicated NurbsCurve a NURBS
 //               representation of an equivalent curve.  Returns true
 //               if successful, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurve::
+bool ParametricCurve::
 convert_to_nurbs(NurbsCurve &nc) const {
   BezierSegs bz_segs;
   if (!GetBezierSegs(bz_segs)) {
@@ -400,7 +302,7 @@ convert_to_nurbs(NurbsCurve &nc) const {
       nc.append_cv(bz_segs[i]._v[1]);
       nc.append_cv(bz_segs[i]._v[2]);
       if (i == bz_segs.size()-1 || 
-	  !bz_segs[i]._v[3].almostEqual(bz_segs[i+1]._v[0], 0.0001)) {
+	  !bz_segs[i]._v[3].almost_equal(bz_segs[i+1]._v[0], 0.0001)) {
 	nc.append_cv(bz_segs[i]._v[3]);
       }
     }
@@ -420,7 +322,7 @@ convert_to_nurbs(NurbsCurve &nc) const {
       nc.set_knot(ki+2, t);
       ki += 3;
       if (i == bz_segs.size()-1 || 
-	  !bz_segs[i]._v[3].almostEqual(bz_segs[i+1]._v[0], 0.0001)) {
+	  !bz_segs[i]._v[3].almost_equal(bz_segs[i+1]._v[0], 0.0001)) {
 	nc.set_knot(ki, t);
 	ki++;
       }
@@ -445,7 +347,7 @@ ascii_draw() const {
 
   float minx, minz, maxx, maxz;
 
-  VecType p;
+  LVector3f p;
   get_point(0.0, p);
   minx = maxx = p[0];
   minz = maxz = p[2];
@@ -533,56 +435,6 @@ unregister_drawer(ParametricCurveDrawer *drawer) {
 
 
 
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurve::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void ParametricCurve::
-init() {
-  if (classType==NULL) {
-    pfGroup::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'ParametricCurve'"
-			 << dnend;
-    classType = new pfType(pfGroup::getClassType(), "ParametricCurve");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurve::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int ParametricCurve::
-store_pfb(void *handle) {
-  pfdStoreData_pfb(&_curve_type, sizeof(_curve_type), handle);
-  pfdStoreData_pfb(&_num_dimensions, sizeof(_num_dimensions), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurve::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int ParametricCurve::
-load_pfb(void *handle) {
-  pfdLoadData_pfb(&_curve_type, sizeof(_curve_type), handle);
-  pfdLoadData_pfb(&_num_dimensions, sizeof(_num_dimensions), handle);
-  return 0;
-}
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ParametricCurve::Destructor
@@ -650,7 +502,7 @@ invalidate_all() {
 //               has the length seglength.
 ////////////////////////////////////////////////////////////////////
 float ParametricCurve::
-r_calc_length(double t1, double t2, const pfVec3 &p1, const pfVec3 &p2,
+r_calc_length(double t1, double t2, const LVector3f &p1, const LVector3f &p2,
 	      float seglength) const {
   static const float length_tolerance = 0.0000001;
   static const double t_tolerance = 0.000001;
@@ -661,7 +513,7 @@ r_calc_length(double t1, double t2, const pfVec3 &p1, const pfVec3 &p2,
     return 0.0;
   } else {
     double tmid;
-    pfVec3 pmid;
+    LVector3f pmid;
     float left, right;
     
     // Calculate the point on the curve midway between the two
@@ -670,8 +522,8 @@ r_calc_length(double t1, double t2, const pfVec3 &p1, const pfVec3 &p2,
     get_point(tmid, pmid);
     
     // Did we increase the length of the segment measurably?
-    left = p1.distance(pmid);
-    right = pmid.distance(p2);
+    left = (p1 - pmid).length();
+    right = (pmid - p2).length();
 
     if ((left + right) - seglength < length_tolerance) {
       // No.  We're done.
@@ -687,46 +539,16 @@ r_calc_length(double t1, double t2, const pfVec3 &p1, const pfVec3 &p2,
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::Curveseg::descend_pfb
+//     Function: ParametricCurve::write_datagram
 //       Access: Public
-//  Description: 
+//  Description: Function to write the important information in
+//               the particular object to a Datagram
 ////////////////////////////////////////////////////////////////////
-int PiecewiseCurve::Curveseg::
-descend_pfb(void *handle) {
-  pfdDescendObject_pfb(_curve, handle);
-  return 0;
-}
+void ParametricCurve::
+write_datagram(BamWriter *, Datagram &) {
+  // TODO: write the write_datagram.
+} 
 
-////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::Curveseg::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int PiecewiseCurve::Curveseg::
-store_pfb(void *handle) {
-  pfdStoreObjectRef_pfb(_curve, handle);
-  pfdStoreData_pfb(&_tend, sizeof(_tend), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::Curveseg::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int PiecewiseCurve::Curveseg::
-load_pfb(void *handle) {
-  pfdLoadObjectRef_pfb((pfObject **)&_curve, handle);
-  pfdLoadData_pfb(&_tend, sizeof(_tend), handle);
-  return 0;
-}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PiecewiseCurve::Constructor
@@ -735,7 +557,6 @@ load_pfb(void *handle) {
 ////////////////////////////////////////////////////////////////////
 PiecewiseCurve::
 PiecewiseCurve() {
-  setType(classType);
   _last_ti = 0;
 }
 
@@ -747,7 +568,7 @@ PiecewiseCurve() {
 //               a PiecewiseCurve, this means we have at least one
 //               segment.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 is_valid() const {
   return !_segs.empty();
 }
@@ -774,10 +595,10 @@ get_max_t() const {
 //               point to the value of the curve at the beginning or
 //               end (whichever is nearer) and returns false.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
-get_point(double t, VecType &point) const {
+bool PiecewiseCurve::
+get_point(double t, LVector3f &point) const {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   // We use | instead of || so we won't short-circuit this calculation.
   return result | curve->get_point(t, point);
@@ -790,10 +611,10 @@ get_point(double t, VecType &point) const {
 //  Description: Returns the tangent of the curve at a given parametric
 //               point t.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
-get_tangent(double t, VecType &tangent) const {
+bool PiecewiseCurve::
+get_tangent(double t, LVector3f &tangent) const {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   // We use | instead of || so we won't short-circuit this calculation.
   return result | curve->get_tangent(t, tangent);
@@ -806,10 +627,10 @@ get_tangent(double t, VecType &tangent) const {
 //  Description: Returns the tangent of the first derivative of the
 //               curve at the point t.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
-get_2ndtangent(double t, VecType &tangent2) const {
+bool PiecewiseCurve::
+get_2ndtangent(double t, LVector3f &tangent2) const {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   // We use | instead of || so we won't short-circuit this calculation.
   return result | curve->get_2ndtangent(t, tangent2);
@@ -822,21 +643,21 @@ get_2ndtangent(double t, VecType &tangent2) const {
 //               point (px, py, pz) at time t, but keeps the same
 //               tangent value at that point.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 adjust_point(double t, 
 	     float px, float py, float pz) {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   if (!result) {
     cerr << "No curve segment at t = " << t << "\n";
     return false;
   }
 
-  rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-		   RT_POINT, t, pfVec4(px, py, pz, 1.0),
-		   RT_TANGENT | RT_KEEP_ORIG, t, pfVec4(),
-		   RT_CV | RT_KEEP_ORIG, 0.0, pfVec4());
+  rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, LVector4f(),
+		   RT_POINT, t, LVector4f(px, py, pz, 1.0),
+		   RT_TANGENT | RT_KEEP_ORIG, t, LVector4f(),
+		   RT_CV | RT_KEEP_ORIG, 0.0, LVector4f());
   return true;
 }
 
@@ -847,21 +668,21 @@ adjust_point(double t,
 //               (tx, ty, tz) at time t, but keeps the same position
 //               at the point.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 adjust_tangent(double t, 
 	       float tx, float ty, float tz) {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   if (!result) {
     cerr << "No curve segment at t = " << t << "\n";
     return false;
   }
 
-  rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-		   RT_POINT | RT_KEEP_ORIG, t, pfVec4(),
-		   RT_TANGENT, t, pfVec4(tx, ty, tz, 0.0),
-		   RT_CV | RT_KEEP_ORIG, 0.0, pfVec4());
+  rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, LVector4f(),
+		   RT_POINT | RT_KEEP_ORIG, t, LVector4f(),
+		   RT_TANGENT, t, LVector4f(tx, ty, tz, 0.0),
+		   RT_CV | RT_KEEP_ORIG, 0.0, LVector4f());
   return true;
 }
 
@@ -871,22 +692,22 @@ adjust_tangent(double t,
 //  Description: Recomputes the curve such that it passes through the
 //               point (px, py, pz) with the tangent (tx, ty, tz).
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 adjust_pt(double t, 
 	  float px, float py, float pz,
 	  float tx, float ty, float tz) {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   if (!result) {
     cerr << "No curve segment at t = " << t << "\n";
     return false;
   }
 
-  rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
-		   RT_POINT, t, pfVec4(px, py, pz, 1.0),
-		   RT_TANGENT, t, pfVec4(tx, ty, tz, 0.0),
-		   RT_CV | RT_KEEP_ORIG, 0.0, pfVec4());
+  rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, LVector4f(),
+		   RT_POINT, t, LVector4f(px, py, pz, 1.0),
+		   RT_TANGENT, t, LVector4f(tx, ty, tz, 0.0),
+		   RT_CV | RT_KEEP_ORIG, 0.0, LVector4f());
   return true;
 }
 
@@ -897,10 +718,10 @@ adjust_pt(double t,
 //  Description: Simultaneously returns the point and tangent of the
 //               curve at a given parametric point t.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
-get_pt(double t, VecType &point, VecType &tangent) const {
+bool PiecewiseCurve::
+get_pt(double t, LVector3f &point, LVector3f &tangent) const {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   // We use | instead of || so we won't short-circuit this calculation.
   return result | curve->get_pt(t, point, tangent);
@@ -926,7 +747,7 @@ get_num_segs() const {
 ////////////////////////////////////////////////////////////////////
 ParametricCurve *PiecewiseCurve::
 get_curveseg(int ti) {
-  dnassert(ti>=0 && ti<_segs.size());
+  assert(ti>=0 && ti<_segs.size());
   return _segs[ti]._curve;
 }
 
@@ -944,7 +765,7 @@ get_curveseg(int ti) {
 //               segment, so that the overall length of the curve is
 //               not changed.
 //////////////////////////////////////////////////////////////////// 
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 insert_curveseg(int ti, ParametricCurve *seg, double tlength) {
   if (ti<0 || ti>_segs.size()) {
     return false;
@@ -973,7 +794,7 @@ insert_curveseg(int ti, ParametricCurve *seg, double tlength) {
 //               frees it.  Returns true if the segment was defined,
 //               false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 remove_curveseg(int ti) {
   if (ti<0 || ti>=_segs.size()) {
     return false;
@@ -1012,7 +833,7 @@ remove_all_curvesegs() {
 ////////////////////////////////////////////////////////////////////
 double PiecewiseCurve::
 get_tlength(int ti) const {
-  dnassert(ti>=0 && ti<_segs.size());
+  assert(ti>=0 && ti<_segs.size());
   return (ti==0) ? _segs[ti]._tend : _segs[ti]._tend - _segs[ti-1]._tend;
 }
 
@@ -1024,7 +845,7 @@ get_tlength(int ti) const {
 ////////////////////////////////////////////////////////////////////
 double PiecewiseCurve::
 get_tstart(int ti) const {
-  dnassert(ti>=0 && ti<=_segs.size());
+  assert(ti>=0 && ti<=_segs.size());
   return (ti==0) ? 0.0 : _segs[ti-1]._tend;
 }
 
@@ -1036,7 +857,7 @@ get_tstart(int ti) const {
 ////////////////////////////////////////////////////////////////////
 double PiecewiseCurve::
 get_tend(int ti) const {
-  dnassert(ti>=0 && ti<_segs.size());
+  assert(ti>=0 && ti<_segs.size());
   return _segs[ti]._tend;
 }
 
@@ -1049,7 +870,7 @@ get_tend(int ti) const {
 //               lengthened by the corresponding amount to keep the
 //               overall length of the curve the same.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 set_tlength(int ti, double tlength) {
   if (ti<0 || ti>=_segs.size()) {
     return false;
@@ -1077,16 +898,16 @@ set_tlength(int ti, double tlength) {
 ////////////////////////////////////////////////////////////////////
 void PiecewiseCurve::
 make_nurbs(int order, int num_cvs,
-	   const double knots[], const pfVec4 cvs[]) {
+	   const double knots[], const LVector4f cvs[]) {
   remove_all_curvesegs();
 
   for (int i=0; i<num_cvs - order + 1; i++) {
     if (knots[i+order] > knots[i+order-1]) {
       int ti = get_num_segs();
-      boolean result = 
+      bool result = 
 	insert_curveseg(ti, new CubicCurveseg(order, knots+i, cvs+i),
 			knots[i+order] - knots[i+order-1]);
-      dnassert(result);
+      assert(result);
     }
   }
 }
@@ -1101,7 +922,7 @@ make_nurbs(int order, int num_cvs,
 //               CubicCurvesegs.  Returns true if successful, false
 //               otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 GetBezierSegs(BezierSegs &bz_segs) const {
   bz_segs.erase(bz_segs.begin(), bz_segs.end());
   int i, n;
@@ -1126,78 +947,14 @@ GetBezierSegs(BezierSegs &bz_segs) const {
 //               CubicCurveseg::compute_seg).  Returns true if
 //               possible, false if something goes horribly wrong.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
-rebuild_curveseg(int, double, const pfVec4 &,
-		 int, double, const pfVec4 &,
-		 int, double, const pfVec4 &,
-		 int, double, const pfVec4 &) {
+bool PiecewiseCurve::
+rebuild_curveseg(int, double, const LVector4f &,
+		 int, double, const LVector4f &,
+		 int, double, const LVector4f &,
+		 int, double, const LVector4f &) {
   cerr << "rebuild_curveseg not implemented for this curve type.\n";
   return false;
 }
-
-////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void PiecewiseCurve::
-init() {
-  if (classType==NULL) {
-    ParametricCurve::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'PiecewiseCurve'"
-			 << dnend;
-    classType = new pfType(ParametricCurve::getClassType(), "PiecewiseCurve");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::descend_pfb
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-int PiecewiseCurve::
-descend_pfb(void *handle) {
-  descend_pfb_pieces(_segs.begin(), _segs.end(), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int PiecewiseCurve::
-store_pfb(void *handle) {
-  ParametricCurve::store_pfb(handle);
-  store_pfb_pieces(_segs.begin(), _segs.end(), handle);
-  pfdStoreData_pfb(&_last_ti, sizeof(_last_ti), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PiecewiseCurve::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int PiecewiseCurve::
-load_pfb(void *handle) {
-  ParametricCurve::load_pfb(handle);
-  load_pfb_pieces(_segs, handle);
-  pfdLoadData_pfb(&_last_ti, sizeof(_last_ti), handle);
-  return 0;
-}
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PiecewiseCurve::Destructor
@@ -1221,7 +978,7 @@ PiecewiseCurve::
 //               t to the nearest point on this segment, and returns
 //               false.
 ////////////////////////////////////////////////////////////////////
-boolean PiecewiseCurve::
+bool PiecewiseCurve::
 find_curve(const ParametricCurve *&curve, double &t) const {
   // Check the index computed by the last call to find_curve().  If
   // it's still a reasonable starting value, start searching from
@@ -1264,7 +1021,7 @@ find_curve(const ParametricCurve *&curve, double &t) const {
   }
 
   if (ti >= _segs.size() || !_segs[ti]._curve->is_valid()) {
-    dnassert(ti <= _segs.size());
+    assert(ti <= _segs.size());
 
     // If we're out of bounds, or the curve is undefined, we're probably
     // screwed.  There's one exception: if we were right on a border between
@@ -1320,7 +1077,7 @@ double PiecewiseCurve::
 current_seg_range(double t) const {
   int ti = _last_ti;
 
-  dnassert(ti < _segs.size());
+  assert(ti < _segs.size());
 
   // Adjust t to the range [0,1).
   if (ti > 0) {
@@ -1339,7 +1096,6 @@ current_seg_range(double t) const {
 ////////////////////////////////////////////////////////////////////
 CubicCurveseg::
 CubicCurveseg() {
-  setType(classType);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1349,13 +1105,11 @@ CubicCurveseg() {
 //               (the columns of the matrix) explicitly.
 ////////////////////////////////////////////////////////////////////
 CubicCurveseg::
-CubicCurveseg(const pfMatrix &basis) {
-  setType(classType);
-
-  basis.getCol(0, &Bx[0], &Bx[1], &Bx[2], &Bx[3]);
-  basis.getCol(1, &By[0], &By[1], &By[2], &By[3]);
-  basis.getCol(2, &Bz[0], &Bz[1], &Bz[2], &Bz[3]);
-  basis.getCol(3, &Bw[0], &Bw[1], &Bw[2], &Bw[3]);
+CubicCurveseg(const LMatrix4f &basis) {
+  Bx = basis.get_col(0);
+  By = basis.get_col(1);
+  Bz = basis.get_col(2);
+  Bw = basis.get_col(3);
   rational = true;
 }
 
@@ -1367,7 +1121,6 @@ CubicCurveseg(const pfMatrix &basis) {
 CubicCurveseg::
 CubicCurveseg(const HermiteCurveCV &cv0,
 	      const HermiteCurveCV &cv1) {
-  setType(classType);
   hermite_basis(cv0, cv1);
 }
 
@@ -1379,7 +1132,6 @@ CubicCurveseg(const HermiteCurveCV &cv0,
 ////////////////////////////////////////////////////////////////////
 CubicCurveseg::
 CubicCurveseg(const BezierSeg &seg) {
-  setType(classType);
   bezier_basis(seg);
 }
 
@@ -1391,8 +1143,7 @@ CubicCurveseg(const BezierSeg &seg) {
 //               nurbs_basis for a description of the parameters.
 ////////////////////////////////////////////////////////////////////
 CubicCurveseg::
-CubicCurveseg(int order, const double knots[], const pfVec4 cvs[]) {
-  setType(classType);
+CubicCurveseg(int order, const double knots[], const LVector4f cvs[]) {
   nurbs_basis(order, knots, cvs);
 }
 
@@ -1404,9 +1155,9 @@ CubicCurveseg(int order, const double knots[], const pfVec4 cvs[]) {
 //  Description: Computes the surface point at a given parametric
 //               point t.  
 ////////////////////////////////////////////////////////////////////
-boolean CubicCurveseg::
-get_point(double t, VecType &point) const {
-  evaluate_point(pfVec4(t*t*t, t*t, t, 1.0), point);
+bool CubicCurveseg::
+get_point(double t, LVector3f &point) const {
+  evaluate_point(LVector4f(t*t*t, t*t, t, 1.0), point);
   return true;
 }
 
@@ -1416,9 +1167,9 @@ get_point(double t, VecType &point) const {
 //  Description: Computes the surface tangent at a given parametric
 //               point t.
 ////////////////////////////////////////////////////////////////////
-boolean CubicCurveseg::
-get_tangent(double t, VecType &tangent) const {
-  evaluate_vector(pfVec4(3.0*t*t, 2.0*t, 1.0, 0.0), tangent);
+bool CubicCurveseg::
+get_tangent(double t, LVector3f &tangent) const {
+  evaluate_vector(LVector4f(3.0*t*t, 2.0*t, 1.0, 0.0), tangent);
   return true;
 }
 
@@ -1428,10 +1179,10 @@ get_tangent(double t, VecType &tangent) const {
 //  Description: Simultaneously computes the point and the tangent at
 //               the given parametric point.
 ////////////////////////////////////////////////////////////////////
-boolean CubicCurveseg::
-get_pt(double t, VecType &point, VecType &tangent) const {
-  evaluate_point(pfVec4(t*t*t, t*t, t, 1.0), point);
-  evaluate_vector(pfVec4(3.0*t*t, 2.0*t, 1.0, 0.0), tangent);
+bool CubicCurveseg::
+get_pt(double t, LVector3f &point, LVector3f &tangent) const {
+  evaluate_point(LVector4f(t*t*t, t*t, t, 1.0), point);
+  evaluate_vector(LVector4f(3.0*t*t, 2.0*t, 1.0, 0.0), tangent);
   return true;
 }
 
@@ -1441,9 +1192,9 @@ get_pt(double t, VecType &point, VecType &tangent) const {
 //  Description: Computes the surface 2nd-order tangent at a given
 //               parametric point t.
 ////////////////////////////////////////////////////////////////////
-boolean CubicCurveseg::
-get_2ndtangent(double t, VecType &tangent2) const {
-  evaluate_vector(pfVec4(6.0*t, 2.0, 0.0, 0.0), tangent2);
+bool CubicCurveseg::
+get_2ndtangent(double t, LVector3f &tangent2) const {
+  evaluate_vector(LVector4f(6.0*t, 2.0, 0.0, 0.0), tangent2);
   return true;
 }
 
@@ -1459,17 +1210,17 @@ void CubicCurveseg::
 hermite_basis(const HermiteCurveCV &cv0,
 	      const HermiteCurveCV &cv1,
 	      double tlength) {
-  static pfMatrix 
+  static LMatrix4f 
     Mh(2, -3, 0, 1,
        -2, 3, 0, 0,
        1, -2, 1, 0,
        1, -1, 0, 0);
 
-  pfVec4 Gx(cv0._p[0], cv1._p[0],
+  LVector4f Gx(cv0._p[0], cv1._p[0],
 	    cv0._out[0]*tlength, cv1._in[0]*tlength);
-  pfVec4 Gy(cv0._p[1], cv1._p[1],
+  LVector4f Gy(cv0._p[1], cv1._p[1],
 	    cv0._out[1]*tlength, cv1._in[1]*tlength);
-  pfVec4 Gz(cv0._p[2], cv1._p[2], 
+  LVector4f Gz(cv0._p[2], cv1._p[2], 
 	    cv0._out[2]*tlength, cv1._in[2]*tlength);
 
   Bx = Gx * Mh;
@@ -1487,15 +1238,15 @@ hermite_basis(const HermiteCurveCV &cv0,
 ////////////////////////////////////////////////////////////////////
 void CubicCurveseg::
 bezier_basis(const BezierSeg &seg) {
-  static pfMatrix 
+  static LMatrix4f 
     Mb(-1, 3, -3, 1,
        3, -6, 3, 0,
        -3, 3, 0, 0,
        1, 0, 0, 0);
 
-  pfVec4 Gx(seg._v[0][0], seg._v[1][0], seg._v[2][0], seg._v[3][0]);
-  pfVec4 Gy(seg._v[0][1], seg._v[1][1], seg._v[2][1], seg._v[3][1]);
-  pfVec4 Gz(seg._v[0][2], seg._v[1][2], seg._v[2][2], seg._v[3][2]);
+  LVector4f Gx(seg._v[0][0], seg._v[1][0], seg._v[2][0], seg._v[3][0]);
+  LVector4f Gy(seg._v[0][1], seg._v[1][1], seg._v[2][1], seg._v[3][1]);
+  LVector4f Gz(seg._v[0][2], seg._v[1][2], seg._v[2][2], seg._v[3][2]);
 
   Bx = Gx * Mb;
   By = Gy * Mb;
@@ -1503,11 +1254,11 @@ bezier_basis(const BezierSeg &seg) {
   rational = false;
 }
 
-static pfVec4
+static LVector4f
 nurbs_blending_function(int order, int i, int j,
 			const double knots[]) {
   // This is doubly recursive.  Ick.
-  pfVec4 r;
+  LVector4f r;
 
   if (j==1) {
     if (i==order-1 && knots[i] < knots[i+1]) {
@@ -1517,8 +1268,8 @@ nurbs_blending_function(int order, int i, int j,
     }
 
   } else {
-    pfVec4 bi0 = nurbs_blending_function(order, i, j-1, knots);
-    pfVec4 bi1 = nurbs_blending_function(order, i+1, j-1, knots);
+    LVector4f bi0 = nurbs_blending_function(order, i, j-1, knots);
+    LVector4f bi1 = nurbs_blending_function(order, i+1, j-1, knots);
 
     float d0 = knots[i+j-1] - knots[i];
     float d1 = knots[i+j] - knots[i+1];
@@ -1563,7 +1314,7 @@ nurbs_blending_function(int order, int i, int j,
 void
 compute_nurbs_basis(int order, 
 		    const double knots_in[],
-		    pfMatrix &basis) {
+		    LMatrix4f &basis) {
   int i;
 
   // Scale the supplied knots to the range 0..1.
@@ -1573,9 +1324,9 @@ compute_nurbs_basis(int order,
 
   if (mink==maxk) {
     // Huh.  What were you thinking?  This is a trivial NURBS.
-    DWARNING(dnparametrics)
-      << "Trivial NURBS curve specified." << dnend;
-    memset((void *)&basis, 0, sizeof(pfMatrix));
+    parametrics_cat->warning()
+      << "Trivial NURBS curve specified." << endl;
+    memset((void *)&basis, 0, sizeof(LMatrix4f));
     return;
   }
 
@@ -1584,17 +1335,17 @@ compute_nurbs_basis(int order,
   }
 
 
-  pfVec4 b[4];
+  LVector4f b[4];
   for (i = 0; i<order; i++) {
     b[i] = nurbs_blending_function(order, i, order, knots);
   }
 
   for (i = 0; i<order; i++) {
-    basis.setRow(i, b[i][0], b[i][1], b[i][2], b[i][3]);
+    basis.set_row(i, b[i]);
   }
 
   for (i=order; i<4; i++) {
-    basis.setRow(i, 0.0, 0.0, 0.0, 0.0);
+    basis.set_row(i, LVector4f::zero());
   }
 }
   
@@ -1609,23 +1360,23 @@ compute_nurbs_basis(int order,
 //               array of order values.
 ////////////////////////////////////////////////////////////////////
 void CubicCurveseg::
-nurbs_basis(int order, const double knots[], const pfVec4 cvs[]) {
-  dnassert(order>=1 && order<=4);
+nurbs_basis(int order, const double knots[], const LVector4f cvs[]) {
+  assert(order>=1 && order<=4);
 
-  pfMatrix B;
+  LMatrix4f B;
   compute_nurbs_basis(order, knots, B);
 
   // Create a local copy of our CV's, so we can zero out the unused
   // elements.
-  pfVec4 c[4];
+  LVector4f c[4];
   for (int i = 0; i < 4; i++) {
-    c[i] = (i<order) ? cvs[i] : pfVec4(0.0, 0.0, 0.0, 0.0);
+    c[i] = (i<order) ? cvs[i] : LVector4f(0.0, 0.0, 0.0, 0.0);
   }
 
-  Bx = pfVec4(c[0][0], c[1][0], c[2][0], c[3][0]) * B;
-  By = pfVec4(c[0][1], c[1][1], c[2][1], c[3][1]) * B;
-  Bz = pfVec4(c[0][2], c[1][2], c[2][2], c[3][2]) * B;
-  Bw = pfVec4(c[0][3], c[1][3], c[2][3], c[3][3]) * B;
+  Bx = LVector4f(c[0][0], c[1][0], c[2][0], c[3][0]) * B;
+  By = LVector4f(c[0][1], c[1][1], c[2][1], c[3][1]) * B;
+  Bz = LVector4f(c[0][2], c[1][2], c[2][2], c[3][2]) * B;
+  Bw = LVector4f(c[0][3], c[1][3], c[2][3], c[3][3]) * B;
 
   rational = true;
 }
@@ -1638,20 +1389,20 @@ nurbs_basis(int order, const double knots[], const pfVec4 cvs[]) {
 //               not change the _t member of the structure.  Returns
 //               true if successful, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean CubicCurveseg::
+bool CubicCurveseg::
 GetBezierSeg(BezierSeg &seg) const {
-  static pfMatrix
+  static LMatrix4f
     Mbi(0.0, 0.0, 0.0, 1.0,
 	0.0, 0.0, 1.0/3.0, 1.0,
 	0.0, 1.0/3.0, 2.0/3.0, 1.0,
 	1.0, 1.0, 1.0, 1.0);
 
-  pfVec4 Gx = Bx * Mbi;
-  pfVec4 Gy = By * Mbi;
-  pfVec4 Gz = Bz * Mbi;
+  LVector4f Gx = Bx * Mbi;
+  LVector4f Gy = By * Mbi;
+  LVector4f Gz = Bz * Mbi;
 
   if (rational) {
-    pfVec4 Gw = Bw * Mbi;
+    LVector4f Gw = Bw * Mbi;
     seg._v[0].set(Gx[0]/Gw[0], Gy[0]/Gw[0], Gz[0]/Gw[0]);
     seg._v[1].set(Gx[1]/Gw[1], Gy[1]/Gw[1], Gz[1]/Gw[1]);
     seg._v[2].set(Gx[2]/Gw[2], Gy[2]/Gw[2], Gz[2]/Gw[2]);
@@ -1668,12 +1419,12 @@ GetBezierSeg(BezierSeg &seg) const {
 
 
 // We need this operator since Performer didn't supply it.
-inline pfVec4 
-operator * (const pfMatrix &M, const pfVec4 &v) {
-  return pfVec4(M[0][0]*v[0] + M[0][1]*v[1] + M[0][2]*v[2] + M[0][3]*v[3],
-		M[1][0]*v[0] + M[1][1]*v[1] + M[1][2]*v[2] + M[1][3]*v[3],
-		M[2][0]*v[0] + M[2][1]*v[1] + M[2][2]*v[2] + M[2][3]*v[3],
-		M[3][0]*v[0] + M[3][1]*v[1] + M[3][2]*v[2] + M[3][3]*v[3]);
+inline LVector4f 
+operator * (const LMatrix4f &M, const LVector4f &v) {
+  return LVector4f(M(0,0)*v[0] + M(0,1)*v[1] + M(0,2)*v[2] + M(0,3)*v[3],
+		M(1,0)*v[0] + M(1,1)*v[1] + M(1,2)*v[2] + M(1,3)*v[3],
+		M(2,0)*v[0] + M(2,1)*v[1] + M(2,2)*v[2] + M(2,3)*v[3],
+		M(3,0)*v[0] + M(3,1)*v[1] + M(3,2)*v[2] + M(3,3)*v[3]);
 }
 		
 ////////////////////////////////////////////////////////////////////
@@ -1682,49 +1433,50 @@ operator * (const pfMatrix &M, const pfVec4 &v) {
 //               compute_seg.  Builds the indicated column of T
 //               and P.
 ////////////////////////////////////////////////////////////////////
-static boolean
+static bool
 compute_seg_col(int c,
-		int rtype, double t, const pfVec4 &v,
-		const pfMatrix &B, 
-		const pfMatrix &Bi,
-		const pfMatrix &G,
-		const pfMatrix &GB,
-		pfMatrix &T, pfMatrix &P) {
+		int rtype, double t, const LVector4f &v,
+		const LMatrix4f &B, 
+		const LMatrix4f &Bi,
+		const LMatrix4f &G,
+		const LMatrix4f &GB,
+		LMatrix4f &T, LMatrix4f &P) {
   int keep_orig = (rtype & RT_KEEP_ORIG);
 
   switch (rtype & RT_BASE_TYPE) {
     // RT_point defines the point on the curve at t.  This is the vector
     // [ t^3 t^2 t^1 t^0 ].
   case RT_POINT:
-    T.setCol(c, t*t*t, t*t, t, 1.0);
+    T.set_col(c, LVector4f(t*t*t, t*t, t, 1.0));
     if (keep_orig) {
-      pfVec4 ov = GB * pfVec4(t*t*t, t*t, t, 1.0);
-      P.setCol(c, ov[0], ov[1], ov[2], ov[3]);
+      LVector4f ov = GB * LVector4f(t*t*t, t*t, t, 1.0);
+
+      P.set_col(c, ov);
     } else {
-      P.setCol(c, v[0], v[1], v[2], v[3]);
+      P.set_col(c, v);
     }
     break;
     
     // RT_tangent defines the tangent to the curve at t.  This is
     // the vector [ 3t^2 2t 1 0 ].
   case RT_TANGENT:
-    T.setCol(c, 3.0*t*t, 2.0*t, 1.0, 0.0);
+    T.set_col(c, LVector4f(3.0*t*t, 2.0*t, 1.0, 0.0));
     if (keep_orig) {
-      pfVec4 ov = GB * pfVec4(3.0*t*t, 2.0*t, 1.0, 0.0);
-      P.setCol(c, ov[0], ov[1], ov[2], ov[3]);
+      LVector4f ov = GB * LVector4f(3.0*t*t, 2.0*t, 1.0, 0.0);
+      P.set_col(c, ov);
     } else {
-      P.setCol(c, v[0], v[1], v[2], v[3]);
+      P.set_col(c, v);
     }
     break;
     
     // RT_cv defines the cth control point.  This is the cth column
     // vector from Bi.
   case RT_CV:
-    T.setCol(c, Bi[0][c], Bi[1][c], Bi[2][c], Bi[3][c]);
+    T.set_col(c, Bi.get_col(c));
     if (keep_orig) {
-      P.setCol(c, G[0][c], G[1][c], G[2][c], G[3][c]);
+      P.set_col(c, G.get_col(c));
     } else {
-      P.setCol(c, v[0], v[1], v[2], v[3]);
+      P.set_col(c, v);
     }
     break;
     
@@ -1787,14 +1539,14 @@ compute_seg_col(int c,
 //               The return value is true if all the parameters are
 //               sensible, or false if there is some error.
 ////////////////////////////////////////////////////////////////////
-boolean CubicCurveseg::
-compute_seg(int rtype0, double t0, const pfVec4 &v0,
-	    int rtype1, double t1, const pfVec4 &v1,
-	    int rtype2, double t2, const pfVec4 &v2,
-	    int rtype3, double t3, const pfVec4 &v3,
-	    const pfMatrix &B, 
-	    const pfMatrix &Bi,
-	    pfMatrix &G) {
+bool CubicCurveseg::
+compute_seg(int rtype0, double t0, const LVector4f &v0,
+	    int rtype1, double t1, const LVector4f &v1,
+	    int rtype2, double t2, const LVector4f &v2,
+	    int rtype3, double t3, const LVector4f &v3,
+	    const LMatrix4f &B, 
+	    const LMatrix4f &Bi,
+	    LMatrix4f &G) {
 
   // We can define a cubic curve segment given four arbitrary
   // properties of the segment: any point along the curve, any tangent
@@ -1814,7 +1566,7 @@ compute_seg(int rtype0, double t0, const pfVec4 &v0,
   // of its columns contains the vector that is the solution of the
   // corresponding column in T.
 
-  pfMatrix T, P, GB;
+  LMatrix4f T, P, GB;
 
   // GB is G * B, but we only need to compute this if any of the
   // columns wants the value from the original G.
@@ -1829,11 +1581,8 @@ compute_seg(int rtype0, double t0, const pfVec4 &v0,
     return false;
   }
 
-  pfMatrix Ti;
-  if (!Ti.invertFull(T)) {
-    cerr << "Cannot invert T!\n";
-    return false;
-  }
+  LMatrix4f Ti;
+  Ti = invert(T);
 
   // Now we have T and P such that P represents the solution of T,
   // when T is applied to the geometry and basis matrices.  That is,
@@ -1845,64 +1594,6 @@ compute_seg(int rtype0, double t0, const pfVec4 &v0,
   G = P * Ti * Bi;
 
   return true;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CubicCurveseg::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void CubicCurveseg::
-init() {
-  if (classType==NULL) {
-    ParametricCurve::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'CubicCurveseg'"
-			 << dnend;
-    classType = new pfType(ParametricCurve::getClassType(), "CubicCurveseg");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CubicCurveseg::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int CubicCurveseg::
-store_pfb(void *handle) {
-  ParametricCurve::store_pfb(handle);
-  pfdStoreData_pfb(&Bx, sizeof(Bx), handle);
-  pfdStoreData_pfb(&By, sizeof(By), handle);
-  pfdStoreData_pfb(&Bz, sizeof(Bz), handle);
-  pfdStoreData_pfb(&Bw, sizeof(Bw), handle);
-  pfdStoreData_pfb(&rational, sizeof(rational), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CubicCurveseg::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int CubicCurveseg::
-load_pfb(void *handle) {
-  ParametricCurve::load_pfb(handle);
-  pfdLoadData_pfb(&Bx, sizeof(Bx), handle);
-  pfdLoadData_pfb(&By, sizeof(By), handle);
-  pfdLoadData_pfb(&Bz, sizeof(Bz), handle);
-  pfdLoadData_pfb(&Bw, sizeof(Bw), handle);
-  pfdLoadData_pfb(&rational, sizeof(rational), handle);
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////

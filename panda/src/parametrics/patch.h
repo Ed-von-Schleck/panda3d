@@ -22,17 +22,18 @@
 #include "curve.h"
 
 #include <typedef.h>
-#include <vector.h>
-#include <Performer/pr/pfLinMath.h>
-#include <Performer/pf/pfGroup.h>
-#include <DNotify.h>
+#include <vector>
+////#include <Performer/pr/pfLinMath.h>
+////#include <Performer/pf/pfGroup.h>
+////#include <DNotify.h>
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////
 // Salivate interface
 ////////////////////////////////////////////////////////////////////
 /*$ 
-#typehint boolean int
-#typehint VecType pfVec3
+#typehint bool int
+#typehint VecType LVector3f
 
 #exportclass ParametricSurface
 #exportmember ParametricSurface is_valid get_max_s get_max_t
@@ -81,16 +82,16 @@ class ParametricSurface : public pfGroup {
 ////////////////////////////////////////////////////////////////////
 
 public:
-  virtual boolean is_valid() const;
+  virtual bool is_valid() const;
 
   virtual double get_max_s() const;
   virtual double get_max_t() const;
 
-  virtual boolean get_point(double s, double t, VecType &point) const=0;
-  virtual boolean get_s_tan(double s, double t, VecType &tangent) const=0;
-  virtual boolean get_t_tan(double s, double t, VecType &tangent) const=0;
-  virtual boolean get_normal(double s, double t, VecType &normal) const=0;
-  virtual boolean get_pn(double s, double t, 
+  virtual bool get_point(double s, double t, VecType &point) const=0;
+  virtual bool get_s_tan(double s, double t, VecType &tangent) const=0;
+  virtual bool get_t_tan(double s, double t, VecType &tangent) const=0;
+  virtual bool get_normal(double s, double t, VecType &normal) const=0;
+  virtual bool get_pn(double s, double t, 
 			 VecType &point, VecType &normal) const=0;
 
   float calc_s_length(double t) const;
@@ -104,41 +105,23 @@ public:
 public:
   struct BezierPatch {
   public:
-    pfVec3 _v[4][4];
+    LVector3f _v[4][4];
     double _s, _t;
   };
   typedef vector<vector<BezierPatch> > BezierPatches;
 
   ParametricSurface();
 
-  virtual boolean GetBezierPatches(BezierPatches &) const {
+  virtual bool GetBezierPatches(BezierPatches &) const {
     return false;
   }
 
-  virtual boolean GetBezierPatch(BezierPatch &) const {
+  virtual bool GetBezierPatch(BezierPatch &) const {
     return false;
   }
-
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { dnassert(false); return NULL; }
-  static int st_descend_pfb(pfNode *, void *) { return 0; }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((ParametricSurface *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((ParametricSurface *)node)->load_pfb(handle);
-  }
-
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
 
 protected:
   virtual ~ParametricSurface();
-
-private:
-  static pfType *classType;
 };
 
 
@@ -154,13 +137,13 @@ public:
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 public:
-  virtual boolean is_valid() const;
+  virtual bool is_valid() const;
   virtual double get_max_t() const;
 
-  virtual boolean get_point(double t, VecType &point) const;
-  virtual boolean get_tangent(double t, VecType &tangent) const;
-  virtual boolean get_pt(double t, VecType &point, VecType &tangent) const;
-  virtual boolean get_2ndtangent(double t, VecType &tangent2) const;
+  virtual bool get_point(double t, VecType &point) const;
+  virtual bool get_tangent(double t, VecType &tangent) const;
+  virtual bool get_pt(double t, VecType &point, VecType &tangent) const;
+  virtual bool get_2ndtangent(double t, VecType &tangent2) const;
 
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
@@ -169,21 +152,14 @@ public:
   SIsoCurve(const ParametricSurface *surface, double s) :
     _surface(surface), _s(s) 
   {
-    setType(classType);
   }
 
-  virtual boolean GetBezierSegs(BezierSegs &bz_segs) const;
-
-  static void init();
-  static pfType *getClassType() { return classType; }
+  virtual bool GetBezierSegs(BezierSegs &bz_segs) const;
 
 protected:
 
   const ParametricSurface *_surface;
   double _s;
-
-private:
-  static pfType *classType;
 };
 SIsoCurve *make_SIsoCurve(ParametricSurface *surface, double s);
 void rm_SIsoCurve(SIsoCurve *curve);
@@ -201,13 +177,13 @@ public:
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 public:
-  virtual boolean is_valid() const;
+  virtual bool is_valid() const;
   virtual double get_max_t() const;
 
-  virtual boolean get_point(double t, VecType &point) const;
-  virtual boolean get_tangent(double t, VecType &tangent) const;
-  virtual boolean get_pt(double t, VecType &point, VecType &tangent) const;
-  virtual boolean get_2ndtangent(double t, VecType &tangent2) const;
+  virtual bool get_point(double t, VecType &point) const;
+  virtual bool get_tangent(double t, VecType &tangent) const;
+  virtual bool get_pt(double t, VecType &point, VecType &tangent) const;
+  virtual bool get_2ndtangent(double t, VecType &tangent2) const;
 
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
@@ -216,21 +192,14 @@ public:
   TIsoCurve(const ParametricSurface *surface, double t) :
     _surface(surface), _t(t)
   {
-    setType(classType);
   }
 
-  virtual boolean GetBezierSegs(BezierSegs &bz_segs) const;
-
-  static void init();
-  static pfType *getClassType() { return classType; }
+  virtual bool GetBezierSegs(BezierSegs &bz_segs) const;
 
 protected:
 
   const ParametricSurface *_surface;
   double _t;
-
-private:
-  static pfType *classType;
 };
 TIsoCurve *make_TIsoCurve(ParametricSurface *surface, double t);
 void rm_TIsoCurve(TIsoCurve *curve);
@@ -246,7 +215,7 @@ class Quilt : public ParametricSurface {
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 public:
-  virtual boolean is_valid() const;
+  virtual bool is_valid() const;
 
   int get_num_s() const;
   int get_num_t() const;
@@ -257,11 +226,11 @@ public:
   void set_max_s(double s);
   void set_max_t(double t);
 
-  virtual boolean get_point(double s, double t, VecType &point) const;
-  virtual boolean get_s_tan(double s, double t, VecType &tangent) const;
-  virtual boolean get_t_tan(double s, double t, VecType &tangent) const;
-  virtual boolean get_normal(double s, double t, VecType &normal) const;
-  virtual boolean get_pn(double s, double t, 
+  virtual bool get_point(double s, double t, VecType &point) const;
+  virtual bool get_s_tan(double s, double t, VecType &tangent) const;
+  virtual bool get_t_tan(double s, double t, VecType &tangent) const;
+  virtual bool get_normal(double s, double t, VecType &normal) const;
+  virtual bool get_pn(double s, double t, 
 			 VecType &point, VecType &normal) const;
 
 ////////////////////////////////////////////////////////////////////
@@ -277,35 +246,17 @@ public:
   ParametricSurface *get_patch(int si, int ti);
   
   double get_slength(int si) const;
-  boolean set_slength(int si, double tlength);
+  bool set_slength(int si, double tlength);
   
   double get_tlength(int ti) const;
-  boolean set_tlength(int ti, double tlength);
+  bool set_tlength(int ti, double tlength);
 
   void make_nurbs(int s_order, int t_order,
 		  int num_s_cvs, int num_t_cvs,
 		  const double s_knots[], const double t_tknots[],
 		  const pfVec4 cvs[]);
 
-  virtual boolean GetBezierPatches(BezierPatches &bz_patches) const;
-
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { return new Quilt; }
-  static int st_descend_pfb(pfNode *node, void *handle) {
-    return ((Quilt *)node)->descend_pfb(handle);
-  }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((Quilt *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((Quilt *)node)->load_pfb(handle);
-  }
-
-  int descend_pfb(void *handle);
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
+  virtual bool GetBezierPatches(BezierPatches &bz_patches) const;
 
 protected:
   virtual ~Quilt();
@@ -317,9 +268,6 @@ protected:
 
   double *_sends, *_tends;        // Two arrays of doubles.
   int _last_si, _last_ti;
-
-private:
-  static pfType *classType;
 };
 
 
@@ -353,11 +301,11 @@ public:
 ////////////////////////////////////////////////////////////////////
 
 public:
-  virtual boolean get_point(double s, double t, VecType &point) const;
-  virtual boolean get_s_tan(double s, double t, VecType &tangent) const;
-  virtual boolean get_t_tan(double s, double t, VecType &tangent) const;
-  virtual boolean get_normal(double s, double t, VecType &normal) const;
-  virtual boolean get_pn(double s, double t, 
+  virtual bool get_point(double s, double t, VecType &point) const;
+  virtual bool get_s_tan(double s, double t, VecType &tangent) const;
+  virtual bool get_t_tan(double s, double t, VecType &tangent) const;
+  virtual bool get_normal(double s, double t, VecType &normal) const;
+  virtual bool get_pn(double s, double t, 
 			 VecType &point, VecType &normal) const;
 
 ////////////////////////////////////////////////////////////////////
@@ -369,9 +317,9 @@ public:
 	       const HermitePatchCV &cv10,
 	       const HermitePatchCV &cv01,
 	       const HermitePatchCV &cv11);
-  BicubicPatch(const pfMatrix &Gx, 
-	       const pfMatrix &Gy,
-	       const pfMatrix &Gz);
+  BicubicPatch(const LMatrix4f &Gx, 
+	       const LMatrix4f &Gy,
+	       const LMatrix4f &Gz);
   BicubicPatch(int s_order, int t_order,
 	       const double s_knots[], const double t_knots[],
 	       const pfVec4 cvs[], 
@@ -382,9 +330,9 @@ public:
 		     const HermitePatchCV &cv01,
 		     const HermitePatchCV &cv11);
 
-  void bezier_basis(const pfMatrix &Gx, 
-		    const pfMatrix &Gy,
-		    const pfMatrix &Gz);
+  void bezier_basis(const LMatrix4f &Gx, 
+		    const LMatrix4f &Gy,
+		    const LMatrix4f &Gz);
 
   void nurbs_basis(int s_order, int t_order,
 		   const double s_knots[], const double t_knots[],
@@ -409,31 +357,13 @@ public:
 	       tv.dot(sv * Bz));
   }
 
-  virtual boolean GetBezierPatch(BezierPatch &patch) const;
-
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { return new BicubicPatch; }
-  static int st_descend_pfb(pfNode *, void *) { return 0; }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((BicubicPatch *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((BicubicPatch *)node)->load_pfb(handle);
-  }
-
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
+  virtual bool GetBezierPatch(BezierPatch &patch) const;
 
 protected:
   virtual ~BicubicPatch();
 
-  pfMatrix Bx, By, Bz, Bw;
-  boolean rational;
-
-private:
-  static pfType *classType;
+  LMatrix4f Bx, By, Bz, Bw;
+  bool rational;
 };
 
 #endif

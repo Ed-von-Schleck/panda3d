@@ -32,8 +32,8 @@
 
 /*$ 
 
-#typehint boolean int
-#typehint VecType pfVec3
+#typehint bool int
+#typehint VecType LVector3f
 
 #exportclass tFlyerSource
 #exportfunc make_tFlyerSource
@@ -95,10 +95,10 @@ class tFlyerSource : public Joinable {
       void stop();
       void cont();
 
-      boolean playing() const;
+      bool playing() const;
 
-      void set_loop(boolean flag);
-      boolean get_loop() const;
+      void set_loop(bool flag);
+      bool get_loop() const;
 
       void set_time(double time);
       double get_time() const;
@@ -107,8 +107,8 @@ class tFlyerSource : public Joinable {
       double get_extra_time() const;
       double get_prev_extra_time() const;
 
-      void set_real_time(boolean flag);
-      boolean get_real_time() const;
+      void set_real_time(bool flag);
+      bool get_real_time() const;
 
       void set_play_rate(double rate);
       double get_play_rate() const;
@@ -169,9 +169,9 @@ class tFlyerSource : public Joinable {
       double  _fake_framerate;
       double  _recip_framerate;
       char   *_stop_event;
-      boolean _loop_flag;
-      boolean _stopped;
-      boolean _real_time;
+      bool _loop_flag;
+      bool _stopped;
+      bool _real_time;
 };
 
 tFlyerSource* make_tFlyerSource( void );
@@ -268,7 +268,7 @@ class tFlyerWarp : public tFlyerAdaptor {
    protected:
       ParametricCurve *_curve;
       double _last_data;
-      boolean _changed;
+      bool _changed;
 };
 
 
@@ -298,11 +298,11 @@ class tFlyerTarget : public Joinable {
       void set_hpr_curve(ParametricCurve *curve);
       ParametricCurve *get_hpr_curve();
 
-      void set_face_forward(boolean flag);
-      boolean get_face_forward() const;
+      void set_face_forward(bool flag);
+      bool get_face_forward() const;
 
-      void get_matrix(pfMatrix &mat);
-      void get_coord(pfVec3 &xyz, pfVec3 &hpr);
+      void get_matrix(LMatrix4f &mat);
+      void get_coord(LVector3f &xyz, LVector3f &hpr);
 
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
@@ -319,12 +319,12 @@ class tFlyerTarget : public Joinable {
       }
 
       ParametricCurve *_curve, *_hpr_curve;
-      boolean  _face_forward;
+      bool  _face_forward;
       double   _h, _p;
-      pfMatrix _mat;
+      LMatrix4f _mat;
       pfCoord  _coord;
       double _last_data;
-      boolean _changed;
+      bool _changed;
 };
 
 tFlyerTarget* make_tFlyerTarget(ParametricCurve *curve);

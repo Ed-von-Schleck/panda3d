@@ -26,8 +26,8 @@
 ////////////////////////////////////////////////////////////////////
 
 /*$ 
-#typehint boolean int
-#typehint VecType pfVec3
+#typehint bool int
+#typehint LVector3f pfVec3
 
 #exportclass HermiteCurve
 #exportfunc make_HermiteCurve rm_HermiteCurve
@@ -72,8 +72,8 @@ $*/
 // change continuously.  This is C1 parametric continuity.
 
 
-#define VecType pfVec3
-//typedef pfVec3 VecType;
+////#define LVector3f pfVec3
+//typedef pfVec3 LVector3f;
 
 class NurbsCurve;
 
@@ -88,9 +88,9 @@ public:
   HermiteCurveCV(const HermiteCurveCV &c);
   ~HermiteCurveCV();
   
-  void set_point(const VecType &point) { _p = point; }
-  void set_in(const VecType &in);
-  void set_out(const VecType &out);
+  void set_point(const LVector3f &point) { _p = point; }
+  void set_in(const LVector3f &in);
+  void set_out(const LVector3f &out);
   void set_type(int type);
   void set_name(const char *name);
 
@@ -98,10 +98,10 @@ public:
   int load_pfb(void *handle);
 
   void Output(ostream &out, int indent, int num_dimensions,
-	      boolean show_in, boolean show_out,
+	      bool show_in, bool show_out,
 	      double scale_in, double scale_out) const;
   
-  VecType _p, _in, _out;
+  LVector3f _p, _in, _out;
   int _type;
   char *_name;
 };
@@ -132,45 +132,45 @@ public:
 
   int insert_cv(double t);
   int append_cv(int type, float x, float y, float z);
-  inline int append_cv(int type, const VecType &v) {
+  inline int append_cv(int type, const LVector3f &v) {
     return append_cv(type, v[0], v[1], v[2]);
   }
 
-  boolean remove_cv(int n);
+  bool remove_cv(int n);
   void remove_all_cvs();
 
-  boolean set_cv_type(int n, int type);
-  boolean set_cv_point(int n, float x, float y, float z);
-  inline boolean set_cv_point(int n, const VecType &v) {
+  bool set_cv_type(int n, int type);
+  bool set_cv_point(int n, float x, float y, float z);
+  inline bool set_cv_point(int n, const LVector3f &v) {
     return set_cv_point(n, v[0], v[1], v[2]);
   }
-  boolean set_cv_in(int n, float x, float y, float z);
-  inline boolean set_cv_in(int n, const VecType &v) {
+  bool set_cv_in(int n, float x, float y, float z);
+  inline bool set_cv_in(int n, const LVector3f &v) {
     return set_cv_in(n, v[0], v[1], v[2]);
   }
-  boolean set_cv_out(int n, float x, float y, float z);
-  inline boolean set_cv_out(int n, const VecType &v) {
+  bool set_cv_out(int n, float x, float y, float z);
+  inline bool set_cv_out(int n, const LVector3f &v) {
     return set_cv_out(n, v[0], v[1], v[2]);
   }
-  boolean set_cv_tstart(int n, double tstart);
-  boolean set_cv_name(int n, const char *name);
+  bool set_cv_tstart(int n, double tstart);
+  bool set_cv_name(int n, const char *name);
 
 
   int get_cv_type(int n) const;
-  const VecType &get_cv_point(int n) const;
-  void get_cv_point(int n, VecType &v) const;
-  const VecType &get_cv_in(int n) const;
-  void get_cv_in(int n, VecType &v) const;
-  const VecType &get_cv_out(int n) const;
-  void get_cv_out(int n, VecType &v) const;
+  const LVector3f &get_cv_point(int n) const;
+  void get_cv_point(int n, LVector3f &v) const;
+  const LVector3f &get_cv_in(int n) const;
+  void get_cv_in(int n, LVector3f &v) const;
+  const LVector3f &get_cv_out(int n) const;
+  void get_cv_out(int n, LVector3f &v) const;
   double get_cv_tstart(int n) const;
   const char *get_cv_name(int n) const;
 
   void Print() const;
   void print_cv(int n) const;
 
-  boolean write_egg(const char *filename);
-  boolean write_egg(ostream &out, const char *basename);
+  bool write_egg(const char *filename);
+  bool write_egg(ostream &out, const char *basename);
   
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
@@ -181,42 +181,22 @@ public:
     return (CubicCurveseg *)PiecewiseCurve::get_curveseg(ti);
   }
 
-  virtual boolean
-  rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
-		   int rtype1, double t1, const pfVec4 &v1,
-		   int rtype2, double t2, const pfVec4 &v2,
-		   int rtype3, double t3, const pfVec4 &v3);
-
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { return new HermiteCurve; }
-  static int st_descend_pfb(pfNode *node, void *handle) {
-    return ((HermiteCurve *)node)->descend_pfb(handle);
-  }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((HermiteCurve *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((HermiteCurve *)node)->load_pfb(handle);
-  }
-
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
+  virtual bool
+  rebuild_curveseg(int rtype0, double t0, const LVector4f &v0,
+		   int rtype1, double t1, const LVector4f &v1,
+		   int rtype2, double t2, const LVector4f &v2,
+		   int rtype3, double t3, const LVector4f &v3);
 
   void Output(ostream &out, int indent=0) const;
 
 protected:
   virtual ~HermiteCurve();
 
-  void invalidate_cv(int n, boolean redo_all);
+  void invalidate_cv(int n, bool redo_all);
   int find_cv(double t);
   void recompute_basis();
 
-  perf_vector<HermiteCurveCV> _points;
-
-private:
-  static pfType *classType;
+  vector<HermiteCurveCV> _points;
 };
 
 // Wrappers for salivate

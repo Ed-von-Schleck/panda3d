@@ -22,27 +22,7 @@
 #include "curveDrawer.h"
 #include "nurbsCurve.h"
 #include "lineSegs.h"
-#include <Performer/pr/pfLinMath.h>
-
-////////////////////////////////////////////////////////////////////
-// Salivate interface
-////////////////////////////////////////////////////////////////////
-/*$ 
-#typehint boolean int
-#typehint VecType pfVec3
-
-#exportclass NurbsCurveDrawer
-#exportfunc  make_NurbsCurveDrawer
-#exportfunc  rm_NurbsCurveDrawer
-#exportmember NurbsCurveDrawer set_cv_color
-#exportmember NurbsCurveDrawer set_hull_color
-#exportmember NurbsCurveDrawer set_knot_color
-#exportmember NurbsCurveDrawer draw recompute
-#exportmember NurbsCurveDrawer set_show_cvs get_show_cvs
-#exportmember NurbsCurveDrawer set_show_hull get_show_hull
-#exportmember NurbsCurveDrawer set_show_knots get_show_knots
-#exportmember NurbsCurveDrawer hilight unhilight
-$*/
+////#include <Performer/pr/pfLinMath.h>
 
 ////////////////////////////////////////////////////////////////////
 // Defines 
@@ -54,13 +34,13 @@ $*/
 // Description : Draws a Nurbs curve, also drawing in the control
 //               vertices and tangent vectors.
 ////////////////////////////////////////////////////////////////////
-class NurbsCurveDrawer : public ParametricCurveDrawer {
+class EXPCL_PANDA NurbsCurveDrawer : public ParametricCurveDrawer {
 
 ////////////////////////////////////////////////////////////////////
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 
-public:
+PUBLISHED:
   NurbsCurveDrawer(NurbsCurve *curve);
   virtual ~NurbsCurveDrawer();
 
@@ -68,33 +48,48 @@ public:
   void set_hull_color(float r, float g, float b);
   void set_knot_color(float r, float g, float b);
 
-  virtual boolean draw();
-  virtual boolean recompute(double t1, double t2, ParametricCurve *curve=NULL);
+  virtual bool draw();
+  virtual bool recompute(double t1, double t2, ParametricCurve *curve=NULL);
 
-  void set_show_cvs(boolean flag);
-  boolean get_show_cvs() const;
-  void set_show_hull(boolean flag);
-  boolean get_show_hull() const;
-  void set_show_knots(boolean flag);
-  boolean get_show_knots() const;
+  void set_show_cvs(bool flag);
+  bool get_show_cvs() const;
+  void set_show_hull(bool flag);
+  bool get_show_hull() const;
+  void set_show_knots(bool flag);
+  bool get_show_knots() const;
 
-  boolean hilight(int n, float hr=1.0, float hg=1.0, float hb=0.0);
-  boolean unhilight(int n);
+  bool hilight(int n, float hr=1.0, float hg=1.0, float hb=0.0);
+  bool unhilight(int n);
 
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
 ////////////////////////////////////////////////////////////////////
 protected:
-  pfVec3 _cv_color, _hull_color, _knot_color;
+  LVector3f _cv_color, _hull_color, _knot_color;
   int _num_cvs, _num_hull, _num_knots;
   LineSegs _hull, _knots, _cvs;
   vector<int> _knotnums;
 
-  boolean _show_cvs, _show_hull, _show_knots;
-};
+  bool _show_cvs, _show_hull, _show_knots;
 
-NurbsCurveDrawer* make_NurbsCurveDrawer( NurbsCurve* Curve );
-void rm_NurbsCurveDrawer( NurbsCurveDrawer* hcd );
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ParametricCurveDrawer::init_type();
+    register_type(_type_handle, "NurbsCurveDrawer",
+                  ParametricCurveDrawer::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
+private:
+  static TypeHandle _type_handle;
+};
   
 #endif
 

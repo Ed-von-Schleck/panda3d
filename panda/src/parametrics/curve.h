@@ -20,40 +20,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include <typedef.h>
-#include <plist.h>
-#include <pvector.h>
-#include <Performer/pr/pfLinMath.h>
-#include <Performer/pf/pfGroup.h>
-#include <DNotify.h>
-
-////////////////////////////////////////////////////////////////////
-// Salivate interface
-////////////////////////////////////////////////////////////////////
-
-/*$ 
-#typehint boolean int
-#typehint VecType pfVec3
-
-#exportclass ParametricCurve
-#exportmember ParametricCurve is_valid get_max_t
-#exportmember ParametricCurve set_curve_type get_curve_type
-#exportmember ParametricCurve set_num_dimensions get_num_dimensions
-#exportmember ParametricCurve calc_length
-#exportmember ParametricCurve compute_t
-#exportmember ParametricCurve convert_to_hermite
-#exportmember ParametricCurve convert_to_nurbs
-#exportmember ParametricCurve ascii_draw
-
-#exportclass PiecewiseCurve
-#exportmember PiecewiseCurve is_valid get_max_t
-#exportmember PiecewiseCurve get_point get_tangent get_pt get_2ndtangent
-#exportmember PiecewiseCurve adjust_point adjust_tangent adjust_pt
-
-#exportclass CubicCurveseg
-#exportmember CubicCurveseg get_point get_tangent get_pt get_2ndtangent
-
-#exportsymbol PCT_NONE PCT_XYZ PCT_HPR PCT_T
-$*/
+#include <list>
+#include <vector>
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////
 // Defines 
@@ -64,6 +33,7 @@ $*/
 // and writer code about the intention of this curve, and have no
 // other effect on the curve.
 
+BEGIN_PUBLISH //[
 #define PCT_NONE        0
 // Unspecified type.
 
@@ -75,10 +45,11 @@ $*/
 
 #define PCT_T           3
 // A one-dimensional timewarp curve.
+END_PUBLISH //]
 
 
-#define VecType pfVec3
-//typedef pfVec3 VecType;
+//#define LVector3f LVector3f
+//typedef LVector3f LVector3f;
 
 
 // These symbols are used to define the shape of the curve segment to
@@ -104,14 +75,15 @@ class NurbsCurve;
 //               This encapsulates all curves in 3-d space defined
 //               for a single parameter t in the range [0,get_max_t()].
 ////////////////////////////////////////////////////////////////////
-class ParametricCurve : public pfGroup {
+class EXPCL_PANDA ParametricCurve : public TypedWriteableReferenceCount,
+    public Namable {
 
 ////////////////////////////////////////////////////////////////////
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 
-public:
-  virtual boolean is_valid() const;
+PUBLISHED:
+  virtual bool is_valid() const;
 
   virtual double get_max_t() const;
 
@@ -121,20 +93,21 @@ public:
   void set_num_dimensions(int num);
   int get_num_dimensions() const;
 
-  virtual boolean get_point(double t, VecType &point) const=0;
-  virtual boolean get_tangent(double t, VecType &tangent) const=0;
-  virtual boolean get_pt(double t, VecType &point, VecType &tangent) const=0;
-  virtual boolean get_2ndtangent(double t, VecType &tangent2) const=0;
-
   float calc_length() const;
   float calc_length(double from, double to) const;
   double compute_t(double start_t, double length_offset, double guess, 
 		   double threshold) const;
 
-  boolean convert_to_hermite(HermiteCurve &hc) const;
-  boolean convert_to_nurbs(NurbsCurve &nc) const;
+  ////bool convert_to_hermite(HermiteCurve &hc) const;
+  bool convert_to_nurbs(NurbsCurve &nc) const;
 
   void ascii_draw() const;
+
+public:
+  virtual bool get_point(double t, LVector3f &point) const=0;
+  virtual bool get_tangent(double t, LVector3f &tangent) const=0;
+  virtual bool get_pt(double t, LVector3f &point, LVector3f &tangent) const=0;
+  virtual bool get_2ndtangent(double t, LVector3f &tangent2) const=0;
 
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
@@ -143,35 +116,22 @@ public:
 
   struct BezierSeg {
   public:
-    pfVec3 _v[4];
+    LVector3f _v[4];
     double _t;
   };
   typedef vector<BezierSeg> BezierSegs;
 
   ParametricCurve();
 
-  virtual boolean GetBezierSegs(BezierSegs &) const {
+  virtual void write_datagram(BamWriter *, Datagram &); 
+
+  virtual bool GetBezierSegs(BezierSegs &) const {
     return false;
   }
 
-  virtual boolean GetBezierSeg(BezierSeg &) const {
+  virtual bool GetBezierSeg(BezierSeg &) const {
     return false;
   }
-
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { dnassert(false); return NULL; }
-  static int st_descend_pfb(pfNode *, void *) { return 0; }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((ParametricCurve *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((ParametricCurve *)node)->load_pfb(handle);
-  }
-
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
 
   void register_drawer(ParametricCurveDrawer *drawer);
   void unregister_drawer(ParametricCurveDrawer *drawer);
@@ -183,15 +143,29 @@ protected:
   void invalidate_all();
 
   float r_calc_length(double t1, double t2,
-		      const pfVec3 &p1, const pfVec3 &p2,
+		      const LVector3f &p1, const LVector3f &p2,
 		      float seglength) const;
 
-  typedef perf_list< ParametricCurveDrawer * > DrawerList;
+  typedef list< ParametricCurveDrawer * > DrawerList;
   DrawerList _drawers;
   int _curve_type;
   int _num_dimensions;
+
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    register_type(_type_handle, "ParametricCurve");
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
 private:
-  static pfType *classType;
+  static TypeHandle _type_handle;
 };
 
 
@@ -202,26 +176,26 @@ private:
 //               length of each curve segment in parametric space is
 //               definable.
 ////////////////////////////////////////////////////////////////////
-class PiecewiseCurve : public ParametricCurve {
+class EXPCL_PANDA PiecewiseCurve : public ParametricCurve {
 public:
 
 ////////////////////////////////////////////////////////////////////
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
-public:
-  virtual boolean is_valid() const;
+PUBLISHED:
+  virtual bool is_valid() const;
   virtual double get_max_t() const;
 
-  virtual boolean get_point(double t, VecType &point) const;
-  virtual boolean get_tangent(double t, VecType &tangent) const;
-  virtual boolean get_pt(double t, VecType &point, VecType &tangent) const;
-  virtual boolean get_2ndtangent(double t, VecType &tangent2) const;
+  virtual bool get_point(double t, LVector3f &point) const;
+  virtual bool get_tangent(double t, LVector3f &tangent) const;
+  virtual bool get_pt(double t, LVector3f &point, LVector3f &tangent) const;
+  virtual bool get_2ndtangent(double t, LVector3f &tangent2) const;
 
-  boolean adjust_point(double t, 
+  bool adjust_point(double t, 
 		       float px, float py, float pz);
-  boolean adjust_tangent(double t, 
+  bool adjust_tangent(double t, 
 			 float tx, float ty, float tz);
-  boolean adjust_pt(double t, 
+  bool adjust_pt(double t, 
 		    float px, float py, float pz,
 		    float tx, float ty, float tz);
 
@@ -234,49 +208,31 @@ public:
   int get_num_segs() const;
 
   ParametricCurve *get_curveseg(int ti);
-  boolean insert_curveseg(int ti, ParametricCurve *seg, double tlength);
+  bool insert_curveseg(int ti, ParametricCurve *seg, double tlength);
 
-  boolean remove_curveseg(int ti);
+  bool remove_curveseg(int ti);
   void remove_all_curvesegs();
   
   double get_tlength(int ti) const;
   double get_tstart(int ti) const;
   double get_tend(int ti) const;
-  boolean set_tlength(int ti, double tlength);
+  bool set_tlength(int ti, double tlength);
 
   void make_nurbs(int order, int num_cvs,
-		  const double knots[], const pfVec4 cvs[]);
+		  const double knots[], const LVector4f cvs[]);
 
-  virtual boolean GetBezierSegs(BezierSegs &bz_segs) const;
+  virtual bool GetBezierSegs(BezierSegs &bz_segs) const;
 
-  virtual boolean
-  rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
-		   int rtype1, double t1, const pfVec4 &v1,
-		   int rtype2, double t2, const pfVec4 &v2,
-		   int rtype3, double t3, const pfVec4 &v3);
-
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { return new PiecewiseCurve; }
-  static int st_descend_pfb(pfNode *node, void *handle) {
-    return ((PiecewiseCurve *)node)->descend_pfb(handle);
-  }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((PiecewiseCurve *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((PiecewiseCurve *)node)->load_pfb(handle);
-  }
-
-  int descend_pfb(void *handle);
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
+  virtual bool
+  rebuild_curveseg(int rtype0, double t0, const LVector4f &v0,
+		   int rtype1, double t1, const LVector4f &v1,
+		   int rtype2, double t2, const LVector4f &v2,
+		   int rtype3, double t3, const LVector4f &v3);
 
 protected:
   ~PiecewiseCurve();
 
-  boolean find_curve(const ParametricCurve *&curve, double &t) const;
+  bool find_curve(const ParametricCurve *&curve, double &t) const;
   double current_seg_range(double t) const;
 
   class Curveseg {
@@ -292,11 +248,26 @@ protected:
     double _tend;
   };
 
-  perf_vector<Curveseg> _segs;
+  vector<Curveseg> _segs;
   int _last_ti;
 
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ParametricCurve::init_type();
+    register_type(_type_handle, "PiecewiseCurve",
+                  ParametricCurve::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
 private:
-  static pfType *classType;
+  static TypeHandle _type_handle;
 };
 
 
@@ -326,35 +297,34 @@ private:
 //               basis vectors are not retained; this might be handled
 //               in a subclass (for instance, HermiteCurve).
 ////////////////////////////////////////////////////////////////////
-class CubicCurveseg : public ParametricCurve {
-public:
+class EXPCL_PANDA CubicCurveseg : public ParametricCurve {
 
 ////////////////////////////////////////////////////////////////////
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 
-public:
-  virtual boolean get_point(double t, VecType &point) const;
-  virtual boolean get_tangent(double t, VecType &tangent) const;
-  virtual boolean get_pt(double t, VecType &point, VecType &tangent) const;
-  virtual boolean get_2ndtangent(double t, VecType &tangent2) const;
+PUBLISHED:
+  virtual bool get_point(double t, LVector3f &point) const;
+  virtual bool get_tangent(double t, LVector3f &tangent) const;
+  virtual bool get_pt(double t, LVector3f &point, LVector3f &tangent) const;
+  virtual bool get_2ndtangent(double t, LVector3f &tangent2) const;
 
 ////////////////////////////////////////////////////////////////////
 // Member functions not visible to Scheme
 ////////////////////////////////////////////////////////////////////
 public:
   CubicCurveseg();
-  CubicCurveseg(const pfMatrix &basis);
+  CubicCurveseg(const LMatrix4f &basis);
   CubicCurveseg(const HermiteCurveCV &cv0,
 		const HermiteCurveCV &cv1);
   CubicCurveseg(const BezierSeg &seg);
-  CubicCurveseg(int order, const double knots[], const pfVec4 cvs[]);
+  CubicCurveseg(int order, const double knots[], const LVector4f cvs[]);
 
   void hermite_basis(const HermiteCurveCV &cv0,
 		     const HermiteCurveCV &cv1,
 		     double tlength = 1.0);
   void bezier_basis(const BezierSeg &seg);
-  void nurbs_basis(int order, const double knots[], const pfVec4 cvs[]);
+  void nurbs_basis(int order, const double knots[], const LVector4f cvs[]);
 
   // evaluate_point() and evaluate_vector() both evaluate the curve at
   // a given point by applying the basis vector against the vector 
@@ -367,59 +337,59 @@ public:
   // points, and will never scale by the homogeneous coordinate (which
   // would be zero anyway).
 
-  void evaluate_point(const pfVec4 &tv, VecType &result) const {
+  void evaluate_point(const LVector4f &tv, LVector3f &result) const {
     double h = (rational) ? tv.dot(Bw) : 1.0;
     result.set(tv.dot(Bx) / h,
 	       tv.dot(By) / h,
 	       tv.dot(Bz) / h);
   }
 
-  void evaluate_vector(const pfVec4 &tv, VecType &result) const {
+  void evaluate_vector(const LVector4f &tv, LVector3f &result) const {
     result.set(tv.dot(Bx),
 	       tv.dot(By),
 	       tv.dot(Bz));
   }
 
-  virtual boolean GetBezierSeg(BezierSeg &seg) const;
+  virtual bool GetBezierSeg(BezierSeg &seg) const;
 
-  static boolean compute_seg(int rtype0, double t0, const pfVec4 &v0,
-			     int rtype1, double t1, const pfVec4 &v1,
-			     int rtype2, double t2, const pfVec4 &v2,
-			     int rtype3, double t3, const pfVec4 &v3,
-			     const pfMatrix &B, 
-			     const pfMatrix &Bi,
-			     pfMatrix &G);
+  static bool compute_seg(int rtype0, double t0, const LVector4f &v0,
+			     int rtype1, double t1, const LVector4f &v1,
+			     int rtype2, double t2, const LVector4f &v2,
+			     int rtype3, double t3, const LVector4f &v3,
+			     const LMatrix4f &B, 
+			     const LMatrix4f &Bi,
+			     LMatrix4f &G);
 
-  static void init();
-  static pfType *getClassType() { return classType; }
-  
-  static pfNode *st_new_pfb() { return new CubicCurveseg; }
-  static int st_descend_pfb(pfNode *, void *) { return 0; }
-  static int st_store_pfb(pfNode *node, void *handle) {
-    return ((CubicCurveseg *)node)->store_pfb(handle);
-  }
-  static int st_load_pfb(pfNode *node, void *handle) {
-    return ((CubicCurveseg *)node)->load_pfb(handle);
-  }
-
-  int store_pfb(void *handle);
-  int load_pfb(void *handle);
-
-  pfVec4 Bx, By, Bz, Bw;
-  boolean rational;
+  LVector4f Bx, By, Bz, Bw;
+  bool rational;
 
 protected:
   virtual ~CubicCurveseg();
 
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ParametricCurve::init_type();
+    register_type(_type_handle, "CubicCurveseg",
+                  ParametricCurve::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
 private:
-  static pfType *classType;
+  static TypeHandle _type_handle;
 };
 
 // This function is used internally to build the NURBS basis matrix
 // based on a given knot sequence.
 void compute_nurbs_basis(int order, 
 			 const double knots_in[],
-			 pfMatrix &basis);
+			 LMatrix4f &basis);
 
 
 #endif

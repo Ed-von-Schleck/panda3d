@@ -33,8 +33,6 @@
 // Statics
 ////////////////////////////////////////////////////////////////////
 
-pfType *HermiteCurve::classType = NULL;
-static InitReg HermiteCurveInit(HermiteCurve::init);
 
 
 static const VecType zero(0.0, 0.0, 0.0);
@@ -58,11 +56,11 @@ Indent(ostream &out, int indent) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: show_vec3
-//  Description: This function writes a pfVec3, with a specified
+//  Description: This function writes a LVector3f, with a specified
 //               number of significant dimensions.
 ////////////////////////////////////////////////////////////////////
 static ostream &
-show_vec3(ostream &out, int indent, const pfVec3 &v, int num_dimensions) {
+show_vec3(ostream &out, int indent, const LVector3f &v, int num_dimensions) {
   Indent(out, indent) << v[0];
   for (int i = 1; i<num_dimensions; i++) {
     out << " " << v[i];
@@ -259,7 +257,7 @@ load_pfb(void *handle) {
 ////////////////////////////////////////////////////////////////////
 void HermiteCurveCV::
 Output(ostream &out, int indent, int num_dimensions,
-       boolean show_in, boolean show_out,
+       bool show_in, bool show_out,
        double scale_in, double scale_out) const {
   if (show_in) {
     Indent(out, indent) << "<Vertex> {\n";
@@ -323,7 +321,6 @@ void rm_HermiteCurve(HermiteCurve *curve) {
 ////////////////////////////////////////////////////////////////////
 HermiteCurve::
 HermiteCurve() {
-  setType(classType);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -334,8 +331,6 @@ HermiteCurve() {
 ////////////////////////////////////////////////////////////////////
 HermiteCurve::
 HermiteCurve(const ParametricCurve &nc) {
-  setType(classType);
-
   if (!nc.convert_to_hermite(*this)) {
     DWARNING(dnparametrics) 
       << "Cannot make a Hermite from the indicated curve."
@@ -396,7 +391,7 @@ insert_cv(double t) {
   cv._out = cv._in = tan / 2.0;
 
   _points.insert(_points.begin() + n + 1, cv);
-  boolean result =
+  bool result =
     insert_curveseg(n, new CubicCurveseg, t - get_cv_tstart(n));
   dnassert(result);
 
@@ -423,7 +418,7 @@ append_cv(int type, float x, float y, float z) {
   cv.set_out(zero);
   _points.push_back(cv);
   if (_points.size()>1) {
-    boolean result =
+    bool result =
       insert_curveseg(_segs.size(), new CubicCurveseg, 1.0);
     dnassert(result);
   }
@@ -441,7 +436,7 @@ append_cv(int type, float x, float y, float z) {
 //  Description: Removes the given CV from the curve.  Returns true if
 //               the CV existed, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 remove_cv(int n) {
   if (n<0 || n>=_points.size()) {
     return false;
@@ -491,13 +486,13 @@ remove_all_cvs() {
 //               type to HC_G1 or HC_SMOOTH may adjust the out
 //               tangent to match the in tangent.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 set_cv_type(int n, int type) {
   if (n<0 || n>=_points.size()) {
     return false;
   }
 
-  boolean changed_cut = false;
+  bool changed_cut = false;
 
   if (type!=_points[n]._type) {
     changed_cut = (type==HC_CUT || _points[n]._type==HC_CUT);
@@ -514,7 +509,7 @@ set_cv_type(int n, int type) {
 //       Access: Public, Scheme
 //  Description: Changes the given CV's position.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 set_cv_point(int n, float x, float y, float z) {
   if (n<0 || n>=_points.size()) {
     return false;
@@ -531,7 +526,7 @@ set_cv_point(int n, float x, float y, float z) {
 //               continuity type, this may also adjust the out
 //               tangent.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 set_cv_in(int n, float x, float y, float z) {
   if (n<0 || n>=_points.size()) {
     return false;
@@ -548,7 +543,7 @@ set_cv_in(int n, float x, float y, float z) {
 //               continuity type, this may also adjust the in
 //               tangent.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 set_cv_out(int n, float x, float y, float z) {
   if (n<0 || n>=_points.size()) {
     return false;
@@ -564,7 +559,7 @@ set_cv_out(int n, float x, float y, float z) {
 //  Description: Changes the given CV's parametric starting time.
 //               This may affect the shape of the curve.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 set_cv_tstart(int n, double tstart) {
   if (n<=0 || n>=_points.size()) {
     return false;
@@ -583,7 +578,7 @@ set_cv_tstart(int n, double tstart) {
 //       Access: Public, Scheme
 //  Description: Changes the name associated with a particular CV.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 set_cv_name(int n, const char *name) {
   if (n<0 || n>=_points.size()) {
     return false;
@@ -782,7 +777,7 @@ print_cv(int n) const {
 //               not exist; appends to the end of it if it does.
 //               Returns true if the file is successfully written.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 write_egg(const char *filename) {
   const char *basename = strrchr(filename, '/');
   basename = (basename==NULL) ? filename : basename+1;
@@ -798,7 +793,7 @@ write_egg(const char *filename) {
 //               specified output stream.  Returns true if the file is
 //               successfully written.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 write_egg(ostream &out, const char *basename) {
   if (getName()==NULL) {
     // If we don't have a name, come up with one.
@@ -847,64 +842,13 @@ write_egg(ostream &out, const char *basename) {
 //               CubicCurveseg::compute_seg).  Returns true if
 //               possible, false if something goes horribly wrong.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurve::
+bool HermiteCurve::
 rebuild_curveseg(int, double, const pfVec4 &,
 		 int, double, const pfVec4 &,
 		 int, double, const pfVec4 &,
 		 int, double, const pfVec4 &) {
   cerr << "rebuild_curveseg not implemented for this curve type.\n";
   return false;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: HermiteCurve::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void HermiteCurve::
-init() {
-  if (classType==NULL) {
-    PiecewiseCurve::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'HermiteCurve'"
-			 << dnend;
-    classType = new pfType(PiecewiseCurve::getClassType(), "HermiteCurve");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: HermiteCurve::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int HermiteCurve::
-store_pfb(void *handle) {
-  PiecewiseCurve::store_pfb(handle);
-  store_pfb_pieces(_points.begin(), _points.end(), handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: HermiteCurve::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int HermiteCurve::
-load_pfb(void *handle) {
-  PiecewiseCurve::load_pfb(handle);
-  load_pfb_pieces(_points, handle);
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -919,8 +863,8 @@ Output(ostream &out, int indent) const {
 
   int i;
   for (i = 0; i<_points.size(); i++) {
-    boolean show_in = (i!=0);
-    boolean show_out = (i!=_points.size()-1);
+    bool show_in = (i!=0);
+    bool show_out = (i!=_points.size()-1);
     _points[i].Output(out, indent+2, _num_dimensions, 
 		      show_in, show_out,
 		      show_in ? get_tlength(i-1) : 0.0,
@@ -987,7 +931,7 @@ HermiteCurve::
 }
 
 static void
-wrap_hpr(const pfVec3 &hpr1, pfVec3 &hpr2) {
+wrap_hpr(const LVector3f &hpr1, LVector3f &hpr2) {
   for (int i = 0; i < 3; i++) {
     while ((hpr2[i] - hpr1[i]) > 180.0) {
       hpr2[i] -= 360.0;
@@ -1006,7 +950,7 @@ wrap_hpr(const pfVec3 &hpr1, pfVec3 &hpr2) {
 //               after a change.
 ////////////////////////////////////////////////////////////////////
 void HermiteCurve::
-invalidate_cv(int n, boolean redo_all) {
+invalidate_cv(int n, bool redo_all) {
   double t1 = 0.0, t2 = get_max_t();
   if (n>0 && _points[n-1]._type!=HC_CUT) {
     const HermiteCurveCV &p1 = _points[n-1];

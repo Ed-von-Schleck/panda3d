@@ -28,8 +28,8 @@
 // Salivate interface
 ////////////////////////////////////////////////////////////////////
 /*$ 
-#typehint boolean int
-#typehint VecType pfVec3
+#typehint bool int
+#typehint VecType LVector3f
 
 #exportclass HermiteCurveDrawer
 #exportfunc  make_HermiteCurveDrawer
@@ -63,14 +63,14 @@ public:
 
   void set_cv_color(float r, float g, float b);
 
-  virtual boolean draw();
-  virtual boolean recompute(double t1, double t2, ParametricCurve *curve=NULL);
+  virtual bool draw();
+  virtual bool recompute(double t1, double t2, ParametricCurve *curve=NULL);
 
-  void set_show_cvs(boolean flag);
-  boolean get_show_cvs() const;
+  void set_show_cvs(bool flag);
+  bool get_show_cvs() const;
 
-  boolean hilight(int n, float hr=1.0, float hg=1.0, float hb=0.0);
-  boolean unhilight(int n);
+  bool hilight(int n, float hr=1.0, float hg=1.0, float hb=0.0);
+  bool unhilight(int n);
 
   void set_tangent_scale(double scale);
   double get_tangent_scale() const;
@@ -82,7 +82,7 @@ protected:
   float _pr, _pg, _pb;
   LineSegs _points, _tangents;
   int _num_points;
-  boolean _show_cvs;
+  bool _show_cvs;
   double _tangent_scale;
 };
 

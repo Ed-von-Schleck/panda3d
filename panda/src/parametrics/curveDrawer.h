@@ -21,53 +21,17 @@
 
 #include "curve.h"
 #include "lineSegs.h"
-#include <Performer/pr/pfLinMath.h>
-
-////////////////////////////////////////////////////////////////////
-// Salivate interface
-////////////////////////////////////////////////////////////////////
-/*$ 
-#typehint boolean int
-#typehint VecType pfVec3
-
-#exportclass ParametricCurveDrawer
-#exportfunc make_ParametricCurveDrawer
-#exportfunc rm_ParametricCurveDrawer
-#exportmember ParametricCurveDrawer set_curve get_curve
-#wrappermember pf-downcast-null-convert ParametricCurveDrawer get_curve
-#exportmember ParametricCurveDrawer set_time_curve get_time_curve
-#wrappermember pf-downcast-null-convert ParametricCurveDrawer get_time_curve
-#exportmember ParametricCurveDrawer set_surface get_surface
-#wrappermember pf-downcast-null-convert ParametricCurveDrawer get_surface
-#exportmember ParametricCurveDrawer get_geode detach_geode
-#exportmember ParametricCurveDrawer set_num_segs get_num_segs
-#exportmember ParametricCurveDrawer set_num_ticks get_num_ticks
-#exportmember ParametricCurveDrawer set_color set_tick_color
-#exportmember ParametricCurveDrawer set_frame_accurate
-#exportmember ParametricCurveDrawer draw recompute hide
-#exportmember ParametricCurveDrawer set_tick_scale get_tick_scale
-#exportmember ParametricCurveDrawer get_frame_accurate
-#exportmember ParametricCurveDrawer set_graph_type
-
-#exportsymbol PCD_DEFAULT
-#exportsymbol PCD_XVST
-#exportsymbol PCD_YVST
-#exportsymbol PCD_ZVST
-#exportsymbol PCD_DXVST
-#exportsymbol PCD_DYVST
-#exportsymbol PCD_DZVST
-#exportsymbol PCD_IXVST
-#exportsymbol PCD_IYVST
-$*/
+////#include <Performer/pr/pfLinMath.h>
 
 ////////////////////////////////////////////////////////////////////
 // Defines 
 ////////////////////////////////////////////////////////////////////
 
-typedef pfVec3 VecTypeMapper(const VecType &point, 
-			     const VecType &tangent, 
+typedef LVector3f LVector3fMapper(const LVector3f &point, 
+			     const LVector3f &tangent, 
 			     double t);
 
+BEGIN_PUBLISH //[
 // The different kinds of ParametricCurveDrawer graph types
 #define PCD_DEFAULT 1
 #define PCD_XVST    2
@@ -78,6 +42,7 @@ typedef pfVec3 VecTypeMapper(const VecType &point,
 #define PCD_DZVST   8
 #define PCD_IXVST   9
 #define PCD_IYVST   10
+END_PUBLISH //]
 
 class ParametricSurface;
 
@@ -86,13 +51,13 @@ class ParametricSurface;
 // Description : Draws a 3-d parametric curve in the scene by creating
 //               a series of line segments to approximate the curve.
 ////////////////////////////////////////////////////////////////////
-class ParametricCurveDrawer {
+class EXPCL_PANDA ParametricCurveDrawer {
 
 ////////////////////////////////////////////////////////////////////
 // Member functions visible to Scheme
 ////////////////////////////////////////////////////////////////////
 
-public:
+PUBLISHED:
   ParametricCurveDrawer(ParametricCurve *curve);
   virtual ~ParametricCurveDrawer();
 
@@ -105,8 +70,8 @@ public:
   void set_surface(ParametricSurface *surface);
   ParametricSurface *get_surface();
 
-  pfGeode *get_geode();
-  pfGeode *detach_geode();
+  GeomNode *get_geom_node();
+  GeomNode *detach_geom_node();
 
   void set_num_segs(int num_segs);
   int get_num_segs() const;
@@ -117,11 +82,11 @@ public:
   void set_color(float r, float g, float b);
   void set_tick_color(float r, float g, float b);
 
-  void set_frame_accurate(boolean frame_accurate);
-  boolean get_frame_accurate() const;
+  void set_frame_accurate(bool frame_accurate);
+  bool get_frame_accurate() const;
 
-  virtual boolean draw();
-  virtual boolean recompute(double t1, double t2, ParametricCurve *curve=NULL);
+  virtual bool draw();
+  virtual bool recompute(double t1, double t2, ParametricCurve *curve=NULL);
   void hide();
 
   void set_tick_scale(double scale);
@@ -140,35 +105,46 @@ public:
 
   void disable(ParametricCurve *curve);
 
-  void set_mapper(VecTypeMapper *mapper);
+  void set_mapper(LVector3fMapper *mapper);
 
-  static pfVec3 DefaultMap(const VecType &point, const VecType &, double);
-  static pfVec3 XvsT(const VecType &point, const VecType &, double t);
-  static pfVec3 iXvsT(const VecType &point, const VecType &, double t);
-  static pfVec3 YvsT(const VecType &point, const VecType &, double t);
-  static pfVec3 iYvsT(const VecType &point, const VecType &, double t);
-  static pfVec3 ZvsT(const VecType &point, const VecType &, double t);
-  static pfVec3 dXvsT(const VecType &, const VecType &tangent, double t);
-  static pfVec3 dYvsT(const VecType &, const VecType &tangent, double t);
-  static pfVec3 dZvsT(const VecType &, const VecType &tangent, double t);
+  static LVector3f DefaultMap(const LVector3f &point, const LVector3f &, double);
+  static LVector3f XvsT(const LVector3f &point, const LVector3f &, double t);
+  static LVector3f iXvsT(const LVector3f &point, const LVector3f &, double t);
+  static LVector3f YvsT(const LVector3f &point, const LVector3f &, double t);
+  static LVector3f iYvsT(const LVector3f &point, const LVector3f &, double t);
+  static LVector3f ZvsT(const LVector3f &point, const LVector3f &, double t);
+  static LVector3f dXvsT(const LVector3f &, const LVector3f &tangent, double t);
+  static LVector3f dYvsT(const LVector3f &, const LVector3f &tangent, double t);
+  static LVector3f dZvsT(const LVector3f &, const LVector3f &tangent, double t);
 
 protected:
-  static void get_tick_marks(const pfVec3 &tangent, pfVec3 &t1, pfVec3 &t2);
+  static void get_tick_marks(const LVector3f &tangent, LVector3f &t1, LVector3f &t2);
 
-  pfGeode *_geode;
+  PT(GeomNode) _geom_node;
   int _num_segs;
   ParametricCurve *_curve, *_time_curve;
-  ParametricSurface *_surface;
   LineSegs _lines, _ticks;
-  boolean _drawn;
+  bool _drawn;
   int _num_ticks;
   double _tick_scale;
-  boolean _frame_accurate;
-  VecTypeMapper *_mapper;
+  bool _frame_accurate;
+  LVector3fMapper *_mapper;
+
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    register_type(_type_handle, "ParametricCurveDrawer");
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+ 
+private:
+  static TypeHandle _type_handle;
 };
-
-ParametricCurveDrawer* make_ParametricCurveDrawer( ParametricCurve *curve );
-void rm_ParametricCurveDrawer( ParametricCurveDrawer* pcd );
-
   
 #endif

@@ -26,7 +26,7 @@
 ////////////////////////////////////////////////////////////////////
 
 /*$ 
-#typehint boolean int
+#typehint bool int
 
 #exportclass CurveFitter
 #exportfunc make_CurveFitter rm_CurveFitter
@@ -57,9 +57,9 @@ class ParametricCurve;
 class CurveFitter {
 public:
   void reset();
-  void add_point(double t, const pfVec3 &point);
+  void add_point(double t, const LVector3f &point);
 
-  void sample(ParametricCurve *curve, int count, boolean even);
+  void sample(ParametricCurve *curve, int count, bool even);
   void generate_even(int count, double net_distance, double net_time);
 
   void wrap_hpr();
@@ -87,8 +87,8 @@ public:
     }
     
     double _t;
-    pfVec3 _point;
-    pfVec3 _tangent;
+    LVector3f _point;
+    LVector3f _tangent;
   };
   
   typedef vector<DataPoint> Data;

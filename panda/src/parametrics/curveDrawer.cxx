@@ -16,12 +16,14 @@
 // Includes
 ////////////////////////////////////////////////////////////////////
 
-#include "parametrics.h"
-#include "curveDrawer.h"
-#include "patch.h"
-
 #include <math.h>
-#include <Performer/pf/pfGeode.h>
+
+#include "luse.h"
+#include "parametrics.h"
+#include "typedWriteableReferenceCount.h"
+#include "namable.h"
+#include "curveDrawer.h"
+////#include "patch.h"
 
 
 ////////////////////////////////////////////////////////////////////
@@ -29,25 +31,17 @@
 //       Access: Public, Scheme
 //  Description:
 ////////////////////////////////////////////////////////////////////
-
-ParametricCurveDrawer* make_ParametricCurveDrawer( ParametricCurve *curve )
-{
-  return ( new ParametricCurveDrawer(curve) );
-}
-
 ParametricCurveDrawer::
 ParametricCurveDrawer(ParametricCurve *curve) {
   _curve = curve;
   _time_curve = NULL;
-  _surface = NULL;
   _lines.set_color(1.0, 1.0, 1.0);
   _ticks.set_color(1.0, 0.0, 0.0);
   _tick_scale = 0.1;
   _num_segs = 100;
   _num_ticks = 0;
   _frame_accurate = false;
-  _geode = new pfGeode;
-  pfRef(_geode);
+  _geom_node = new GeomNode;
   _drawn = false;
   _mapper = DefaultMap;
   _curve->register_drawer(this);
@@ -58,16 +52,9 @@ ParametricCurveDrawer(ParametricCurve *curve) {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-
-void rm_ParametricCurveDrawer( ParametricCurveDrawer* pcd )
-{
-  delete pcd;
-}
-
 ParametricCurveDrawer::
 ~ParametricCurveDrawer() {
   hide();
-  pfUnrefDelete(_geode);
   if (_curve!=NULL) {
     _curve->unregister_drawer(this);
   }
@@ -134,72 +121,42 @@ get_time_curve() {
   return _time_curve;
 }
 
+
 ////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurveDrawer::set_surface
+//     Function: ParametricCurveDrawer::get_geom_node
 //       Access: Public, Scheme
-//  Description: Defines the curve as a curve-on-surface.  This curve
-//               will be drawn on the surface of an arbitrary
-//               ParametricSurface.  It is assumed that the curve will
-//               be defined in the (x, y) plane with coordinates in
-//               the range [0,1].
-////////////////////////////////////////////////////////////////////
-void ParametricCurveDrawer::
-set_surface(ParametricSurface *curve) {
-  _surface = curve;
-  if (_drawn) {
-    draw();
-  }
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurveDrawer::get_surface
-//       Access: Public, Scheme
-//  Description:
-////////////////////////////////////////////////////////////////////
-ParametricSurface *ParametricCurveDrawer::
-get_surface() {
-  return _surface;
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurveDrawer::get_geode
-//       Access: Public, Scheme
-//  Description: Returns a pointer to the drawer's pfGeode.  This is
+//  Description: Returns a pointer to the drawer's GeomNode.  This is
 //               where the drawer will build the visible
-//               representation of the curve.  This geode must be
+//               representation of the curve.  This GeomNode must be
 //               inserted into the scene graph to make the curve
-//               visible.  The geode remains connected to the drawer,
+//               visible.  The GeomNode remains connected to the drawer,
 //               so that future updates to the drawer will reflect in
-//               the geode, and the geode will be emptied when the
-//               drawer destructs.  Also see detach_geode().
+//               the GeomNode, and the GeomNode will be emptied when the
+//               drawer destructs.  Also see detach_geom_node().
 ////////////////////////////////////////////////////////////////////
-pfGeode *ParametricCurveDrawer::
-get_geode() {
-  return _geode;
+GeomNode *ParametricCurveDrawer::
+get_geom_node() {
+  return _geom_node;
 }
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ParametricCurveDrawer::detach_geode
+//     Function: ParametricCurveDrawer::detach_geom_node
 //       Access: Public, Scheme
-//  Description: Detaches the pfGeode from the drawer so that the
+//  Description: Detaches the GeomNode from the drawer so that the
 //               drawing will remain after the death of the drawer.
-//               Returns the now-static geode.  A new, dynamic geode
-//               is created for the drawer's future use; get_geode()
-//               will return this new geode which will be empty until
+//               Returns the now-static GeomNode.  A new, dynamic GeomNode
+//               is created for the drawer's future use; get_geom_node()
+//               will return this new GeomNode which will be empty until
 //               the next call to draw().
 ////////////////////////////////////////////////////////////////////
-pfGeode *ParametricCurveDrawer::
-detach_geode() {
+GeomNode *ParametricCurveDrawer::
+detach_geom_node() {
   if (!_drawn) {
     draw();
   }
-  pfGeode *g = _geode;
-  pfUnref(g);
-  _geode = new pfGeode;
-  pfRef(_geode);
+  PT(GeomNode) g = _geom_node;
+  _geom_node = new GeomNode;
   _drawn = false;
   return g;
 }
@@ -306,7 +263,7 @@ set_tick_color(float r, float g, float b) {
 //               scene has updated.
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveDrawer::
-set_frame_accurate(boolean frame_accurate) {
+set_frame_accurate(bool frame_accurate) {
   _frame_accurate = frame_accurate;
   if (_drawn) {
     draw();
@@ -319,7 +276,7 @@ set_frame_accurate(boolean frame_accurate) {
 //  Description: Returns whether the curve is drawn in frame-accurate
 //               mode.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurveDrawer::
+bool ParametricCurveDrawer::
 get_frame_accurate() const {
   return _frame_accurate;
 }
@@ -331,10 +288,10 @@ get_frame_accurate() const {
 //       Access: Public, Scheme, Virtual
 //  Description: Creates a series of line segments that approximates
 //               the curve.  These line segments may be made visible
-//               by adding the geode returned by get_geode() into the
+//               by adding the GeomNode returned by get_geom_node() into the
 //               scene graph.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurveDrawer::
+bool ParametricCurveDrawer::
 draw() {
   // First, remove the old drawing, if any.
   hide();
@@ -349,8 +306,8 @@ draw() {
 
   double scale = _curve->get_max_t() / (double)(total_segs-1);
   double t;
-  VecType point, tangent;
-  boolean last_in, next_in;
+  LVector3f point, tangent;
+  bool last_in, next_in;
 
   last_in = false;
   int i;
@@ -363,12 +320,7 @@ draw() {
 
     next_in = _curve->get_pt(t, point, tangent);
 
-    pfVec3 p = _mapper(point, tangent, t);
-
-    // But we do care about the surface, if we have such a thing.
-    if (_surface) {
-      _surface->get_point(p[0], p[1], p);
-    }
+    LVector3f p = _mapper(point, tangent, t);
 
     if (!next_in || !last_in) {
       _lines.move_to(p);
@@ -378,12 +330,12 @@ draw() {
     last_in = next_in;
   }
 
-  _lines.create(_geode, _frame_accurate);
+  _lines.create(_geom_node, _frame_accurate);
   _drawn = true;
 
   // Now draw the time tick marks.
   if (_num_ticks > 0) {
-    VecType tangent2;
+    LVector3f tangent2;
     int total_ticks = floor(_curve->get_max_t() * _num_ticks + 0.5);
 
     scale = get_max_t() / (double)(total_ticks-1);
@@ -397,17 +349,8 @@ draw() {
       _curve->get_pt(t, point, tangent);
       _curve->get_2ndtangent(t, tangent2);
       
-      pfVec3 pt = _mapper(point, tangent, t);
-      if (_surface) {
-	tangent += pt;
-	tangent2 += pt;
-	_surface->get_point(pt[0], pt[1], pt);
-	_surface->get_point(tangent[0], tangent[1], tangent);
-	_surface->get_point(tangent2[0], tangent2[1], tangent2);
-	tangent -= pt;
-	tangent2 -= pt;
-      }
-      pfVec3 t1, t2;
+      LVector3f pt = _mapper(point, tangent, t);
+      LVector3f t1, t2;
       get_tick_marks(_mapper(tangent, tangent2, t + 1.0), t1, t2);
       
       _ticks.move_to(pt - t1 * _tick_scale);
@@ -415,7 +358,7 @@ draw() {
       _ticks.move_to(pt - t2 * _tick_scale);
       _ticks.draw_to(pt + t2 * _tick_scale);
     }
-    _ticks.create(_geode, _frame_accurate);
+    _ticks.create(_geom_node, _frame_accurate);
   }
 	
 
@@ -429,13 +372,13 @@ draw() {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-boolean ParametricCurveDrawer::
+bool ParametricCurveDrawer::
 recompute(double t1, double t2, ParametricCurve *curve) {
   if (!_drawn || _curve==NULL || !_curve->is_valid()) {
     return false;
   }
 
-  boolean redraw_curve = true;
+  bool redraw_curve = true;
 
   if (_time_curve!=NULL) {
     if (curve != _time_curve) {
@@ -458,7 +401,7 @@ recompute(double t1, double t2, ParametricCurve *curve) {
 
   int n1, n2, i;
   double scale, t;
-  VecType point, tangent;
+  LVector3f point, tangent;
 
   if (redraw_curve) {
     // Compute the number of total segments we will draw.  This is based
@@ -470,8 +413,8 @@ recompute(double t1, double t2, ParametricCurve *curve) {
     n2 = (int)ceil(t2 * (total_segs-1));
     
     // This should be implied by the above t1, t2 bounds check.
-    dnassert(n1>=0 && n1<total_segs);
-    dnassert(n2>=0 && n2<total_segs);
+    nassertr(n1>=0 && n1<total_segs, false);
+    nassertr(n2>=0 && n2<total_segs, false);
     
     scale = _curve->get_max_t() / (double)(total_segs-1);
     
@@ -480,16 +423,13 @@ recompute(double t1, double t2, ParametricCurve *curve) {
       
       _curve->get_pt(t, point, tangent);
 
-      pfVec3 p = _mapper(point, tangent, t);
-      if (_surface) {
-	_surface->get_point(p[0], p[1], p);
-      }
+      LVector3f p = _mapper(point, tangent, t);
       _lines.set_vertex(i, p);
     }
   }
     
   if (_num_ticks > 0) {
-    VecType tangent2;
+    LVector3f tangent2;
     int total_ticks = floor(_curve->get_max_t() * _num_ticks + 0.5);
 
     n1 = (int)floor(t1 * (total_ticks-1));
@@ -506,17 +446,8 @@ recompute(double t1, double t2, ParametricCurve *curve) {
       _curve->get_pt(t, point, tangent);
       _curve->get_2ndtangent(t, tangent2);
       
-      pfVec3 pt = _mapper(point, tangent, t);
-      if (_surface) {
-	tangent += pt;
-	tangent2 += pt;
-	_surface->get_point(pt[0], pt[1], pt);
-	_surface->get_point(tangent[0], tangent[1], tangent);
-	_surface->get_point(tangent2[0], tangent2[1], tangent2);
-	tangent -= pt;
-	tangent2 -= pt;
-      }
-      pfVec3 t1, t2;
+      LVector3f pt = _mapper(point, tangent, t);
+      LVector3f t1, t2;
       get_tick_marks(_mapper(tangent, tangent2, t + 1.0), 
 		     t1, t2);
       
@@ -539,18 +470,7 @@ recompute(double t1, double t2, ParametricCurve *curve) {
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveDrawer::
 hide() {
-  pfGeoSet *geoset;
-  int ok;
-  int n = _geode->getNumGSets();
-  while (n > 0) {
-    geoset = _geode->getGSet(--n);
-    ok = _geode->removeGSet(geoset);
-    dnassert(ok);
-    ok = pfDelete(geoset);
-    if (!ok) {
-      DWARNING(dnparametrics) << "Geoset not deleted." << dnend;
-    }
-  }
+  _geom_node->clear();
   _drawn = false;
 }
 
@@ -629,7 +549,7 @@ set_graph_type(int graph_type) {
     break;
 
   default:
-    DWARNING(dnparametrics) << "Invalid graph_type " << graph_type << dnend;
+    parametrics_cat->warning() << "Invalid graph_type " << graph_type << endl;
   }
 }
 
@@ -652,9 +572,9 @@ disable(ParametricCurve *curve) {
     _curve = NULL;
     hide();
   } else {
-    DWARNING(dnparametrics)
+    parametrics_cat->warning()
       << "ParametricCurveDrawer::disable() called on nonsensible curve"
-      << dnend;
+      << endl;
   }
 }
 
@@ -667,7 +587,7 @@ disable(ParametricCurve *curve) {
 //               it to a three-dimensional representation.
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveDrawer::
-set_mapper(VecTypeMapper *mapper) {
+set_mapper(LVector3fMapper *mapper) {
   // If the mapper hasn't changed, don't force a redraw.
   if (_mapper != mapper) {
     _mapper = mapper;
@@ -685,9 +605,9 @@ set_mapper(VecTypeMapper *mapper) {
 //               each point, showing the line's three-dimensional
 //               shape.
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-DefaultMap(const VecType &point, const VecType &, double) {
-  return pfVec3(point[0], point[1], point[2]);
+LVector3f ParametricCurveDrawer::
+DefaultMap(const LVector3f &point, const LVector3f &, double) {
+  return LVector3f(point[0], point[1], point[2]);
 }
 
 
@@ -697,9 +617,9 @@ DefaultMap(const VecType &point, const VecType &, double) {
 //  Description: This mapping function shows a graph of X(t), with the
 //               x along the Y axis and t along the X axis.
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-XvsT(const VecType &point, const VecType &, double t) {
-  return pfVec3(t, point[0], 0.0);
+LVector3f ParametricCurveDrawer::
+XvsT(const LVector3f &point, const LVector3f &, double t) {
+  return LVector3f(t, point[0], 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -708,9 +628,9 @@ XvsT(const VecType &point, const VecType &, double t) {
 //  Description: This mapping function shows a graph of X(t), with the
 //               x along the X axis and t along the Y axis.
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-iXvsT(const VecType &point, const VecType &, double t) {
-  return pfVec3(point[0], t, 0.0);
+LVector3f ParametricCurveDrawer::
+iXvsT(const LVector3f &point, const LVector3f &, double t) {
+  return LVector3f(point[0], t, 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -719,9 +639,9 @@ iXvsT(const VecType &point, const VecType &, double t) {
 //  Description: This mapping function shows a graph of Y(t), with the
 //               y along the Y axis and t along the X axis.
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-YvsT(const VecType &point, const VecType &, double t) {
-  return pfVec3(t, point[1], 0.0);
+LVector3f ParametricCurveDrawer::
+YvsT(const LVector3f &point, const LVector3f &, double t) {
+  return LVector3f(t, point[1], 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -730,9 +650,9 @@ YvsT(const VecType &point, const VecType &, double t) {
 //  Description: This mapping function shows a graph of Y(t), with the
 //               y along the X axis and t along the Y axis.
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-iYvsT(const VecType &point, const VecType &, double t) {
-  return pfVec3(point[1], t, 0.0);
+LVector3f ParametricCurveDrawer::
+iYvsT(const LVector3f &point, const LVector3f &, double t) {
+  return LVector3f(point[1], t, 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -741,9 +661,9 @@ iYvsT(const VecType &point, const VecType &, double t) {
 //  Description: This mapping function shows a graph of Z(t), with the
 //               z along the Y axis and t along the X axis.
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-ZvsT(const VecType &point, const VecType &, double t) {
-  return pfVec3(t, point[2], 0.0);
+LVector3f ParametricCurveDrawer::
+ZvsT(const LVector3f &point, const LVector3f &, double t) {
+  return LVector3f(t, point[2], 0.0);
 }
 
 
@@ -753,9 +673,9 @@ ZvsT(const VecType &point, const VecType &, double t) {
 //  Description: This mapping function shows a graph of dX(t), the
 //               derivative of X(t).
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-dXvsT(const VecType &, const VecType &tangent, double t) {
-  return pfVec3(t, tangent[0], 0.0);
+LVector3f ParametricCurveDrawer::
+dXvsT(const LVector3f &, const LVector3f &tangent, double t) {
+  return LVector3f(t, tangent[0], 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -764,9 +684,9 @@ dXvsT(const VecType &, const VecType &tangent, double t) {
 //  Description: This mapping function shows a graph of dY(t), the
 //               derivative of Y(t).
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-dYvsT(const VecType &, const VecType &tangent, double t) {
-  return pfVec3(t, tangent[1], 0.0);
+LVector3f ParametricCurveDrawer::
+dYvsT(const LVector3f &, const LVector3f &tangent, double t) {
+  return LVector3f(t, tangent[1], 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -775,9 +695,9 @@ dYvsT(const VecType &, const VecType &tangent, double t) {
 //  Description: This mapping function shows a graph of dZ(t), the
 //               derivative of Z(t).
 ////////////////////////////////////////////////////////////////////
-pfVec3 ParametricCurveDrawer::
-dZvsT(const VecType &, const VecType &tangent, double t) {
-  return pfVec3(t, tangent[2], 0.0);
+LVector3f ParametricCurveDrawer::
+dZvsT(const LVector3f &, const LVector3f &tangent, double t) {
+  return LVector3f(t, tangent[2], 0.0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -788,24 +708,24 @@ dZvsT(const VecType &, const VecType &tangent, double t) {
 //               drawing as tick marks.
 ////////////////////////////////////////////////////////////////////
 void ParametricCurveDrawer::
-get_tick_marks(const pfVec3 &tangent, pfVec3 &t1, pfVec3 &t2) {
-  pfVec3 tn = tangent;
+get_tick_marks(const LVector3f &tangent, LVector3f &t1, LVector3f &t2) {
+  LVector3f tn = tangent;
   tn.normalize();
 
   // Decide the smallest axis of tn and cross with the corresponding
   // unit vector.
   if (fabs(tn[0]) <= fabs(tn[1]) && fabs(tn[0]) <= fabs(tn[2])) {
     // X is smallest.
-    t1.cross(tn, pfVec3(1.0, 0.0, 0.0));
+    t1 = tn.cross(LVector3f(1.0, 0.0, 0.0));
 
   } else if (fabs(tn[1]) <= fabs(tn[2])) {
     // Y is smallest.
-    t1.cross(tn, pfVec3(0.0, 1.0, 0.0));
+    t1 = tn.cross(LVector3f(0.0, 1.0, 0.0));
 
   } else {
     // Z is smallest.
-    t1.cross(tn, pfVec3(0.0, 0.0, 1.0));
+    t1 = tn.cross(LVector3f(0.0, 0.0, 1.0));
   }
 
-  t2.cross(tn, t1);
+  t2 = tn.cross(t1);
 }

@@ -27,8 +27,8 @@
 // Salivate interface
 ////////////////////////////////////////////////////////////////////
 /*$ 
-#typehint boolean int
-#typehint VecType pfVec3
+#typehint bool int
+#typehint VecType LVector3f
 
 #exportclass ParametricCurveFlyer
 #exportfunc make_ParametricCurveFlyer
@@ -80,13 +80,13 @@ public:
   void stop();
   void cont();
 
-  boolean playing() const;
+  bool playing() const;
 
-  void set_loop(boolean flag);
-  boolean get_loop() const;
+  void set_loop(bool flag);
+  bool get_loop() const;
 
-  void set_face_forward(boolean flag);
-  boolean get_face_forward() const;
+  void set_face_forward(bool flag);
+  bool get_face_forward() const;
 
   void set_time(double time);
   double get_time() const;
@@ -96,8 +96,8 @@ public:
 
   void set_stop_event(const char *string);
 
-  void get_matrix(pfMatrix &mat);
-  void get_coord(pfVec3 &xyz, pfVec3 &hpr);
+  void get_matrix(LMatrix4f &mat);
+  void get_coord(LVector3f &xyz, LVector3f &hpr);
   
 
 ////////////////////////////////////////////////////////////////////
@@ -120,12 +120,12 @@ protected:
   ParametricCurve *_curve, *_hpr_curve, *_time_curve;
   double _play_rate;
   char *_stop_event;
-  boolean _loop_flag;
-  boolean _face_forward;
+  bool _loop_flag;
+  bool _face_forward;
   double _start_time;
-  boolean _stopped;
+  bool _stopped;
 
-  pfMatrix _mat;
+  LMatrix4f _mat;
   pfCoord _coord;
   double _h, _p;
 };

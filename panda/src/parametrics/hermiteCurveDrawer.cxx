@@ -91,7 +91,7 @@ set_cv_color(float r, float g, float b) {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurveDrawer::
+bool HermiteCurveDrawer::
 draw() {
   // First, draw the curve itself.
   if (!ParametricCurveDrawer::draw()) {
@@ -118,13 +118,13 @@ draw() {
       in_tangent = herm->get_cv_in(i);
       out_tangent = herm->get_cv_out(i);
 
-      pfVec3 pi = _mapper(point, in_tangent, t);
-      pfVec3 po = _mapper(point, out_tangent, t);
+      LVector3f pi = _mapper(point, in_tangent, t);
+      LVector3f po = _mapper(point, out_tangent, t);
 
-      pfVec3 tan_pi = _mapper(point - in_tangent * _tangent_scale,
+      LVector3f tan_pi = _mapper(point - in_tangent * _tangent_scale,
 			      in_tangent,
 			      t - in_length * _tangent_scale);
-      pfVec3 tan_po = _mapper(point + out_tangent * _tangent_scale,
+      LVector3f tan_po = _mapper(point + out_tangent * _tangent_scale,
 			      out_tangent,
 			      t + out_length * _tangent_scale);
 
@@ -159,7 +159,7 @@ draw() {
 //       Access: Public, Scheme, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurveDrawer::
+bool HermiteCurveDrawer::
 recompute(double t1, double t2, ParametricCurve *curve) {
   // First, recompute the curve itself.
   if (!ParametricCurveDrawer::recompute(t1, t2, curve)) {
@@ -194,13 +194,13 @@ recompute(double t1, double t2, ParametricCurve *curve) {
 	in_tangent = herm->get_cv_in(i);
 	out_tangent = herm->get_cv_out(i);
 	
-	pfVec3 pi = _mapper(point, in_tangent, t);
-	pfVec3 po = _mapper(point, out_tangent, t);
+	LVector3f pi = _mapper(point, in_tangent, t);
+	LVector3f po = _mapper(point, out_tangent, t);
 	
-	pfVec3 tan_pi = _mapper(point - in_tangent * _tangent_scale,
+	LVector3f tan_pi = _mapper(point - in_tangent * _tangent_scale,
 				in_tangent,
 				t - in_length * _tangent_scale);
-	pfVec3 tan_po = _mapper(point + out_tangent * _tangent_scale,
+	LVector3f tan_po = _mapper(point + out_tangent * _tangent_scale,
 				out_tangent,
 				t + out_length * _tangent_scale);
 	
@@ -238,7 +238,7 @@ recompute(double t1, double t2, ParametricCurve *curve) {
 //               ParametricCurveDrawer).
 ////////////////////////////////////////////////////////////////////
 void HermiteCurveDrawer::
-set_show_cvs(boolean flag) {
+set_show_cvs(bool flag) {
   _show_cvs = flag;
   if (_drawn) {
     draw();
@@ -250,7 +250,7 @@ set_show_cvs(boolean flag) {
 //       Access: Public, Scheme
 //  Description: Returns the current state of the show-CV's flag.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurveDrawer::
+bool HermiteCurveDrawer::
 get_show_cvs() const {
   return _show_cvs;
 }
@@ -263,7 +263,7 @@ get_show_cvs() const {
 //               different color.  Returns true if the CV exists and
 //               has been drawn, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurveDrawer::
+bool HermiteCurveDrawer::
 hilight(int n, float hr, float hg, float hb) {
   // If there's no curve, do nothing and return false.
   if (_curve==NULL || !_curve->is_valid()) {
@@ -295,7 +295,7 @@ hilight(int n, float hr, float hg, float hb) {
 //       Access: Public, Scheme
 //  Description: Removes the hilight previously set on a CV.
 ////////////////////////////////////////////////////////////////////
-boolean HermiteCurveDrawer::
+bool HermiteCurveDrawer::
 unhilight(int n) {
   return hilight(n, _pr, _pg, _pb);
 }

@@ -1,22 +1,14 @@
-// Filename: parametrics.h
-// Created by:  drose (05Mar97)
+// Filename: config_parametrics.h
+// Created by:  drose (19Mar00)
 // 
 ////////////////////////////////////////////////////////////////////
-// Copyright (C) 1992,93,94,95,96,97  Walt Disney Imagineering, Inc.
-// 
-// These  coded  instructions,  statements,  data   structures   and
-// computer  programs contain unpublished proprietary information of
-// Walt Disney Imagineering and are protected by  Federal  copyright
-// law.  They may  not be  disclosed to third  parties  or copied or
-// duplicated in any form, in whole or in part,  without  the  prior
-// written consent of Walt Disney Imagineering Inc.
-////////////////////////////////////////////////////////////////////
-//
-#ifndef PARAMETRICS_H
-#define PARAMETRICS_H
 
-#include <DNotify.h>
+#ifndef CONFIG_PARAMETRICS_H
+#define CONFIG_PARAMETRICS_H
 
-extern DNCategory dnparametrics;  // in curve.C
+#include <pandabase.h>
+#include <notifyCategoryProxy.h>
+
+NotifyCategoryDecl(parametrics, EXPCL_PANDA, EXPTP_PANDA);
 
 #endif

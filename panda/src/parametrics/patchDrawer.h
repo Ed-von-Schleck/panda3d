@@ -26,8 +26,8 @@
 // Salivate interface
 ////////////////////////////////////////////////////////////////////
 /*$ 
-#typehint boolean int
-#typehint VecType pfVec3
+#typehint bool int
+#typehint VecType LVector3f
 
 #exportfunc make_ParametricSurfaceDrawer rm_ParametricSurfaceDrawer
 
@@ -76,7 +76,7 @@ public:
 
   void set_color(float r, float g, float b);
 
-  boolean draw();
+  bool draw();
   void hide();
 
 ////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ public:
   int _num_s, _num_t;
   ParametricSurface *_surface;
   pfVec4 _color;
-  boolean _drawn;
+  bool _drawn;
   static pfGeoState *geostate;
 };
 

@@ -169,15 +169,15 @@ void tFlyerSource::cont() {
    }
 }
 
-boolean tFlyerSource::playing() const {
+bool tFlyerSource::playing() const {
    return !_stopped;
 }
 
-void tFlyerSource::set_loop(boolean flag) {
+void tFlyerSource::set_loop(bool flag) {
    _loop_flag = flag;
 }
 
-boolean tFlyerSource::get_loop() const {
+bool tFlyerSource::get_loop() const {
    return _loop_flag;
 }
 
@@ -250,13 +250,13 @@ double tFlyerSource::get_prev_extra_time() const {
 //               set_play_rate() specifies the units of tFlyer time
 //               that elapse per frame.
 ////////////////////////////////////////////////////////////////////
-void tFlyerSource::set_real_time(boolean flag) {
+void tFlyerSource::set_real_time(bool flag) {
    double t = get_time();
    _real_time = flag;
    set_time(t);
 }
 
-boolean tFlyerSource::get_real_time() const {
+bool tFlyerSource::get_real_time() const {
    return _real_time;
 }
 
@@ -541,7 +541,7 @@ void tFlyerWarp::set_curve(ParametricCurve *curve)
 
 void tFlyerWarp::set(void *data)
 {
-   pfVec3 point;
+   LVector3f point;
 
    double next_data = *(double *)data;
    if (_changed || next_data != _last_data) {
@@ -624,20 +624,20 @@ ParametricCurve *tFlyerTarget::get_hpr_curve() {
    return _hpr_curve;
 }
 
-void tFlyerTarget::set_face_forward(boolean flag) {
+void tFlyerTarget::set_face_forward(bool flag) {
    _face_forward = flag;
    _changed = true;
 }
 
-boolean tFlyerTarget::get_face_forward() const {
+bool tFlyerTarget::get_face_forward() const {
    return _face_forward;
 }
 
-void tFlyerTarget::get_matrix(pfMatrix &mat) {
+void tFlyerTarget::get_matrix(LMatrix4f &mat) {
    mat = _mat;
 }
 
-void tFlyerTarget::get_coord(pfVec3 &xyz, pfVec3 &hpr) {
+void tFlyerTarget::get_coord(LVector3f &xyz, LVector3f &hpr) {
    xyz = _coord.xyz;
    hpr = _coord.hpr;
 }
@@ -671,7 +671,7 @@ void tFlyerTarget::recompute_position(double time) {
    _coord.xyz.set(point[0], point[1], point[2]);
    _coord.hpr.set(0., 0., 0.);
    if (_face_forward) {
-      pfVec3 tn_xyz(tangent[0], tangent[1], tangent[2]);
+      LVector3f tn_xyz(tangent[0], tangent[1], tangent[2]);
       float d2 = tn_xyz.dot(tn_xyz);
       float dot;
       if (d2 > 0.) {
@@ -690,7 +690,7 @@ void tFlyerTarget::recompute_position(double time) {
 	       _h = (tangent[0] >= 0.) ? -180. : 180.;
 	    }
 	 }
-	 dot = tn_xyz.dot(pfVec3(tn_xy[0], tn_xy[1], 0.));
+	 dot = tn_xyz.dot(LVector3f(tn_xy[0], tn_xy[1], 0.));
 	 if (dot <= epsilon) {
 	    _p = pfArcCos(dot);
 	    if (tangent[2] < 0.) {
@@ -703,7 +703,7 @@ void tFlyerTarget::recompute_position(double time) {
    if (_hpr_curve != NULL && _hpr_curve->is_valid()) {
       VecType hprw;
       _hpr_curve->get_point(time, hprw);
-      _coord.hpr += pfVec3(hprw[0], hprw[1], hprw[2]);
+      _coord.hpr += LVector3f(hprw[0], hprw[1], hprw[2]);
    }
    _mat.makeCoord(&_coord);
    //   DDEBUG(dntflytgt) << "position at time (" << time << "): {" << _coord.xyz[0] << ", " << _coord.xyz[1] << ", " << _coord.xyz[2] << "}" << dnend;

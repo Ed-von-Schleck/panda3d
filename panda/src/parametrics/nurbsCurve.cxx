@@ -12,22 +12,23 @@
 // written consent of Walt Disney Imagineering Inc.
 ////////////////////////////////////////////////////////////////////
 
+#include "luse.h"
+#include "typedWriteableReferenceCount.h"
+#include "namable.h"
 #include "nurbsCurve.h"
 #include "parametrics.h"
-#include <initReg.h>
-#include <linMathOutput.h>
-#include <fstream.h>
-#include <alloca.h>
+////#include <initReg.h>
+////#include <linMathOutput.h>
+#include <fstream>
+////#include <alloca.h>
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////
 // Statics
 ////////////////////////////////////////////////////////////////////
 
-pfType *NurbsCurve::classType = NULL;
-static InitReg NurbsCurveInit(NurbsCurve::init);
 
-
-static const VecType zero(0.0, 0.0, 0.0);
+static const LVector3f zero(0.0, 0.0, 0.0);
 // This is returned occasionally from some of the functions, and is
 // used from time to time as an initializer.
 
@@ -46,21 +47,6 @@ Indent(ostream &out, int indent) {
   return out;
 }
 
-
-// Wrapper for salivate
-NurbsCurve* make_NurbsCurve() {
-  return new NurbsCurve();
-}
-NurbsCurve* make_NurbsCurve(const ParametricCurve &pc) {
-  return new NurbsCurve(pc);
-}
-
-// Wrapper for salivate
-void rm_NurbsCurve(NurbsCurve *curve) {
-  pfDelete(curve);
-}
-
-
 ////////////////////////////////////////////////////////////////////
 //     Function: NurbsCurve::Constructor
 //       Access: Public, Scheme
@@ -68,7 +54,6 @@ void rm_NurbsCurve(NurbsCurve *curve) {
 ////////////////////////////////////////////////////////////////////
 NurbsCurve::
 NurbsCurve() {
-  setType(classType);
   _order = 4;
 }
 
@@ -80,13 +65,12 @@ NurbsCurve() {
 ////////////////////////////////////////////////////////////////////
 NurbsCurve::
 NurbsCurve(const ParametricCurve &pc) {
-  setType(classType);
   _order = 4;
   
   if (!pc.convert_to_nurbs(*this)) {
-    DWARNING(dnparametrics) 
-      << "Cannot make a NURBS from the indicated curve."
-      << dnend;
+    ///DWARNING(dnparametrics) 
+      ///<< "Cannot make a NURBS from the indicated curve."
+      ///<< dnend;
   }
 }
 
@@ -98,8 +82,7 @@ NurbsCurve(const ParametricCurve &pc) {
 ////////////////////////////////////////////////////////////////////
 NurbsCurve::
 NurbsCurve(int order, int num_cvs,
-	   const double knots[], const pfVec4 cvs[]) {
-  setType(classType);
+	   const double knots[], const LVector4f cvs[]) {
   _order = order;
 
   int i;
@@ -126,13 +109,13 @@ NurbsCurve(int order, int num_cvs,
 void NurbsCurve::
 set_order(int order) {
   if (order < 1 || order > 4) {
-    DWARNING(dnparametrics) 
-      << "Invalid NURBS curve order: " << order << dnend;
+    ///DWARNING(dnparametrics) 
+      ///<< "Invalid NURBS curve order: " << order << dnend;
     return;
   }
   if (!_cvs.empty()) {
-    DWARNING(dnparametrics) 
-      << "Cannot change NURBS curve order on a nonempty curve." << dnend;
+    ///DWARNING(dnparametrics) 
+      ///<< "Cannot change NURBS curve order on a nonempty curve." << dnend;
     return;
   }
   _order = order;
@@ -192,7 +175,7 @@ insert_cv(double t) {
   // First, get the new values of all the CV's that will change.
   // These are the CV's in the range [k - (_order-1), k-1].
 
-  pfVec4 new_cvs[3];
+  LVector4f new_cvs[3];
   int i;
   for (i = 0; i < _order-1; i++) {
     int nk = i + k - (_order-1);
@@ -230,7 +213,7 @@ insert_cv(double t) {
 ////////////////////////////////////////////////////////////////////
 int NurbsCurve::
 append_cv(float x, float y, float z) {
-  return append_cv(pfVec4(x, y, z, 1.0));
+  return append_cv(LVector4f(x, y, z, 1.0));
 }
 
 
@@ -240,7 +223,7 @@ append_cv(float x, float y, float z) {
 //  Description: Removes the indicated CV from the curve.  Returns
 //               true if the CV index was valid, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 remove_cv(int n) {
   if (n < 0 || n >= _cvs.size()) {
     return false;
@@ -267,7 +250,7 @@ remove_all_cvs() {
 //  Description: Repositions the indicated CV.  Returns true if there
 //               is such a CV, false otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 set_cv_point(int n, float x, float y, float z) {
   if (n < 0 || n >= _cvs.size()) {
     return false;
@@ -284,11 +267,11 @@ set_cv_point(int n, float x, float y, float z) {
 //  Description: Returns the position of the indicated CV.
 ////////////////////////////////////////////////////////////////////
 void NurbsCurve::
-get_cv_point(int n, VecType &v) const {
+get_cv_point(int n, LVector3f &v) const {
   if (n < 0 || n >= _cvs.size()) {
     v = zero;
   } else {
-    v = (const pfVec3 &)_cvs[n]._p / _cvs[n]._p[3];
+    v = (const LVector3f &)_cvs[n]._p / _cvs[n]._p[3];
   }
 }
 
@@ -297,13 +280,13 @@ get_cv_point(int n, VecType &v) const {
 //       Access: Public, Scheme
 //  Description: Returns the position of the indicated CV.
 ////////////////////////////////////////////////////////////////////
-const VecType &NurbsCurve::
+const LVector3f &NurbsCurve::
 get_cv_point(int n) const {
   if (n < 0 || n >= _cvs.size()) {
     return zero;
   } else {
-    static pfVec3 result;
-    result = (pfVec3 &)_cvs[n]._p / _cvs[n]._p[3];
+    static LVector3f result;
+    result = (LVector3f &)_cvs[n]._p / _cvs[n]._p[3];
     return result;
   }
 }
@@ -314,7 +297,7 @@ get_cv_point(int n) const {
 //       Access: Public, Scheme
 //  Description: Sets the weight of the indicated CV.          
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 set_cv_weight(int n, float w) {
   if (n < 0 || n >= _cvs.size()) {
     return false;
@@ -348,7 +331,7 @@ get_cv_weight(int n) const {
 //               changed.  It is also an error to set a knot value
 //               outside the range of its neighbors.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 set_knot(int n, double t) {
   if (n < _order || n-1 >= _cvs.size()) {
     return false;
@@ -399,7 +382,7 @@ Print() const {
   cout << "CV's:\n";
   int i;
   for (i = 0; i < _cvs.size(); i++) {
-    pfVec3 p = (const pfVec3 &)_cvs[i]._p / _cvs[i]._p[3];
+    LVector3f p = (const LVector3f &)_cvs[i]._p / _cvs[i]._p[3];
     cout << i << ") " << p << ", weight " << _cvs[i]._p[3] << "\n";
   }
 
@@ -420,7 +403,7 @@ print_cv(int n) const {
   if (n < 0 || n >= _cvs.size()) {
     cout << "No such CV: " << n << "\n";
   } else {
-    pfVec3 p = (const pfVec3 &)_cvs[n]._p / _cvs[n]._p[3];
+    LVector3f p = (const LVector3f &)_cvs[n]._p / _cvs[n]._p[3];
     cout << "CV " << n << ": " << p << ", weight " 
 	 << _cvs[n]._p[3] << "\n";
   }
@@ -438,12 +421,12 @@ print_cv(int n) const {
 //               true if the resulting curve is valid, false
 //               otherwise.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 recompute() {
   _segs.erase(_segs.begin(), _segs.end());
 
   double knots[8];
-  pfVec4 cvs[4];
+  LVector4f cvs[4];
 
   if (_cvs.size() > _order-1) {
     for (int cv = 0; cv < _cvs.size()-(_order-1); cv++) {
@@ -520,7 +503,7 @@ adjust_pt(double t,
 	  float px, float py, float pz,
 	  float tx, float ty, float tz) {
   const ParametricCurve *curve;
-  boolean result = find_curve(curve, t);
+  bool result = find_curve(curve, t);
 
   if (!result) {
     cerr << "  no curve segment at t\n";
@@ -544,11 +527,11 @@ adjust_pt(double t,
 
   // Now copy the cvs and knots in question.
   double knots[8];
-  pfVec4 cvs[4];
+  LVector4f cvs[4];
 
   int c;
   for (c = 0; c < 4; c++) {
-    cvs[c] = (c < _order) ? _cvs[c+cv]._p : pfVec4(0.0, 0.0, 0.0, 0.0);
+    cvs[c] = (c < _order) ? _cvs[c+cv]._p : LVector4f(0.0, 0.0, 0.0, 0.0);
   }
   for (c = 0; c < _order+_order; c++) {
     knots[c] = GetKnot(c+cv);
@@ -556,10 +539,10 @@ adjust_pt(double t,
 
   dnassert(_order>=1 && _order<=4);
 
-  pfMatrix B;
+  LMatrix4f B;
   compute_nurbs_basis(_order, knots, B);
 
-  pfMatrix Bi;
+  LMatrix4f Bi;
   if (!Bi.invertFull(B)) {
     cerr << "Cannot invert B!\n";
     return;
@@ -584,11 +567,11 @@ adjust_pt(double t,
   // Column 3 of T is the same as column 3 of B^(-1)
   //   This refers to the last control point.
 
-  pfMatrix T = Bi;
+  LMatrix4f T = Bi;
   T.setCol(1, t*t*t, t*t, t, 1.0);
   T.setCol(2, 3.0*t*t, 2.0*t, 1.0, 0.0);
 
-  pfMatrix Ti;
+  LMatrix4f Ti;
   if (!Ti.invertFull(T)) {
     cerr << "Cannot invert T!\n";
   }
@@ -602,7 +585,7 @@ adjust_pt(double t,
   // Column 2 of P is the (new) desired tangent to the curve at t.
   // Column 3 of P is the last control point.
 
-  pfMatrix P;
+  LMatrix4f P;
   
   P.setCol(0, cvs[0][0], cvs[0][1], cvs[0][2], cvs[0][3]);
   P.setCol(1, px, py, pz, 1.0);
@@ -611,12 +594,12 @@ adjust_pt(double t,
 
   // Now we simply solve for G to get G = P * T^(-1) * B^(-1).
 
-  pfMatrix G = P * Ti * Bi;
+  LMatrix4f G = P * Ti * Bi;
 
   // Now extract the new CV's from the new G matrix, and restore them
   // to the curve.
   for (c = 0; c < _order; c++) {
-    pfVec4 &s = _cvs[c+cv]._p;
+    LVector4f &s = _cvs[c+cv]._p;
     G.getCol(c, &s[0], &s[1], &s[2], &s[3]);
   }
 }
@@ -631,15 +614,15 @@ adjust_pt(double t,
 //               CubicCurveseg::compute_seg).  Returns true if
 //               possible, false if something goes horribly wrong.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
-rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
-		 int rtype1, double t1, const pfVec4 &v1,
-		 int rtype2, double t2, const pfVec4 &v2,
-		 int rtype3, double t3, const pfVec4 &v3) {
+bool NurbsCurve::
+rebuild_curveseg(int rtype0, double t0, const LVector4f &v0,
+		 int rtype1, double t1, const LVector4f &v1,
+		 int rtype2, double t2, const LVector4f &v2,
+		 int rtype3, double t3, const LVector4f &v3) {
   // Figure out which CV's contributed to this segment.
   int seg = 0;
 
-  dnassert(_cvs.size() > _order-1);
+  ///dnassert(_cvs.size() > _order-1);
 
   int cv = 0;
   for (cv = 0; cv < _cvs.size()-(_order-1); cv++) {
@@ -652,7 +635,7 @@ rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
   }
 
   // Now copy the cvs and knots in question.
-  pfMatrix G;
+  LMatrix4f G;
   double knots[8];
 
   int c;
@@ -661,10 +644,10 @@ rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
   // properties depends on the original value.
   if ((rtype0 | rtype1 | rtype2 | rtype3) & RT_KEEP_ORIG) {
     for (c = 0; c < 4; c++) {
-      static const pfVec4 zero(0.0, 0.0, 0.0, 0.0);
-      const pfVec4 &s = (c < _order) ? _cvs[c+cv]._p : zero;
+      static const LVector4f zero(0.0, 0.0, 0.0, 0.0);
+      const LVector4f &s = (c < _order) ? _cvs[c+cv]._p : zero;
       
-      G.setCol(c, s[0], s[1], s[2], s[3]);
+      G.set_col(c, s);
     }
   }
 
@@ -673,14 +656,11 @@ rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
     knots[c] = GetKnot(c+cv);
   }
 
-  pfMatrix B;
+  LMatrix4f B;
   compute_nurbs_basis(_order, knots, B);
 
-  pfMatrix Bi;
-  if (!Bi.invertFull(B)) {
-    cerr << "Cannot invert B!\n";
-    return false;
-  }
+  LMatrix4f Bi;
+  Bi = invert(B);
 
   if (!CubicCurveseg::compute_seg(rtype0, t0, v0,
 				  rtype1, t1, v1,
@@ -693,8 +673,7 @@ rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
   // Now extract the new CV's from the new G matrix, and restore them
   // to the curve.
   for (c = 0; c < _order; c++) {
-    pfVec4 &s = _cvs[c+cv]._p;
-    G.getCol(c, &s[0], &s[1], &s[2], &s[3]);
+    _cvs[c+cv]._p = G.get_col(c);
   }
 
   return true;
@@ -710,12 +689,12 @@ rebuild_curveseg(int rtype0, double t0, const pfVec4 &v0,
 //               not exist; appends to the end of it if it does.
 //               Returns true if the file is successfully written.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 write_egg(const char *filename) {
   const char *basename = strrchr(filename, '/');
   basename = (basename==NULL) ? filename : basename+1;
 
-  ofstream out(filename, ios::app, 0666);
+  ofstream out(filename, ios::app);
   return write_egg(out, basename);
 }
 
@@ -726,9 +705,9 @@ write_egg(const char *filename) {
 //               specified output stream.  Returns true if the file is
 //               successfully written.
 ////////////////////////////////////////////////////////////////////
-boolean NurbsCurve::
+bool NurbsCurve::
 write_egg(ostream &out, const char *basename) {
-  if (getName()==NULL) {
+  if (get_name().empty()) {
     // If we don't have a name, come up with one.
     int len = strlen(basename);
     if (len>4 && strcmp(basename+len-4, ".egg")==0) {
@@ -754,7 +733,7 @@ write_egg(ostream &out, const char *basename) {
       name[len] = '\0';
     };
 
-    setName(name);
+    set_name(name);
   }
 
   Output(out);
@@ -781,22 +760,22 @@ write_egg(ostream &out, const char *basename) {
 void NurbsCurve::
 splice(double t, const NurbsCurve &other) {
   if (other._order != _order) {
-    DWARNING(dnparametrics)
-      << "Cannot splice NURBS curves of different orders!" << dnend;
+    ///DWARNING(dnparametrics)
+      ///<< "Cannot splice NURBS curves of different orders!" << dnend;
     return;
   }
 
   double old_t = get_max_t();
 
   if (t < old_t) {
-    DWARNING(dnparametrics)
-      << "Invalid splicing in the middle of a curve!" << dnend;
+    ///DWARNING(dnparametrics)
+      ///<< "Invalid splicing in the middle of a curve!" << dnend;
     t = old_t;
   }
 
   // First, define a vector of all the current CV's except the last
   // one.
-  perf_vector<CV> new_cvs(_cvs);
+  vector<CV> new_cvs(_cvs);
   if (!new_cvs.empty()) {
     new_cvs.pop_back();
   }
@@ -823,55 +802,6 @@ splice(double t, const NurbsCurve &other) {
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NurbsCurve::init
-//       Access: Public, Static
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void NurbsCurve::
-init() {
-  if (classType==NULL) {
-    PiecewiseCurve::init();
-    DINFO(dnparametrics) << "Initializing Performer subclass 'NurbsCurve'"
-			 << dnend;
-    classType = new pfType(PiecewiseCurve::getClassType(), "NurbsCurve");
-
-    pfdAddCustomNode_pfb(classType, classType->getName(),
-			 st_descend_pfb, st_store_pfb, 
-			 st_new_pfb, st_load_pfb);
-  }
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: NurbsCurve::store_pfb
-//       Access: Public
-//  Description: This function is called when the object is written to
-//               a pfb file.  It should call pfdStoreData_pfb() to
-//               write out the node's custom data.
-////////////////////////////////////////////////////////////////////
-int NurbsCurve::
-store_pfb(void *handle) {
-  PiecewiseCurve::store_pfb(handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: NurbsCurve::load_pfb
-//       Access: Public
-//  Description: This function is called when the object is
-//               encountered in a pfb file.  The object has already
-//               been allocated and constructed and its parent's data
-//               has been read in; this function should read in
-//               whatever custom data is required via calls to
-//               pfdLoadData_pfb().
-////////////////////////////////////////////////////////////////////
-int NurbsCurve::
-load_pfb(void *handle) {
-  PiecewiseCurve::load_pfb(handle);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: NurbsCurve::Output
 //       Access: Public
 //  Description: Formats the Nurbs curve for output to an Egg file.
@@ -879,7 +809,7 @@ load_pfb(void *handle) {
 void NurbsCurve::
 Output(ostream &out, int indent) const {
   Indent(out, indent)
-    << "<VertexPool> " << getName() << ".pool {\n";
+    << "<VertexPool> " << get_name() << ".pool {\n";
 
   int cv;
   for (cv = 0; cv < _cvs.size(); cv++) {
@@ -888,7 +818,7 @@ Output(ostream &out, int indent) const {
   }
   Indent(out, indent) << "}\n";
     
-  Indent(out, indent) << "<NURBSCurve> " << getName() << " {\n";
+  Indent(out, indent) << "<NURBSCurve> " << get_name() << " {\n";
 
   if (_curve_type!=PCT_NONE) {
     Indent(out, indent+2) << "<Char*> type { ";
@@ -933,7 +863,7 @@ Output(ostream &out, int indent) const {
     out << " " << cv;
   }
   out << "\n";
-  Indent(out, indent+4) << "<Ref> { " << getName() << ".pool }\n";
+  Indent(out, indent+4) << "<Ref> { " << get_name() << ".pool }\n";
   Indent(out, indent+2) << "}\n";
 
   Indent(out, indent) << "}\n";

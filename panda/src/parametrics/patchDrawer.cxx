@@ -223,7 +223,7 @@ set_color(float r, float g, float b) {
 //               by adding the geode returned by get_geode() into the
 //               scene graph.
 ////////////////////////////////////////////////////////////////////
-boolean ParametricSurfaceDrawer::
+bool ParametricSurfaceDrawer::
 draw() {
   // First, remove the old drawing, if any.
   hide();
@@ -248,15 +248,15 @@ draw() {
   int tstrip_length = 2*(num_s-1)+2;
 
   // Create and allocate a bunch of arrays to put in the geoset.
-  pfVec3 *verts;
-  pfVec3 *norms;
+  LVector3f *verts;
+  LVector3f *norms;
   pfVec4 *colors;
   int *lengths;
   ushort *cindex;
   ushort *vindex;
 
-  verts = (pfVec3 *)perf_allocate(num_verts * sizeof(pfVec3), verts);
-  norms = (pfVec3 *)perf_allocate(num_verts * sizeof(pfVec3), norms);
+  verts = (LVector3f *)perf_allocate(num_verts * sizeof(LVector3f), verts);
+  norms = (LVector3f *)perf_allocate(num_verts * sizeof(LVector3f), norms);
   colors = (pfVec4 *)perf_allocate(1 * sizeof(pfVec4), colors);
   lengths = (int *)perf_allocate(num_tstrips * sizeof(int), lengths);
   cindex = (ushort *)perf_allocate(1 * sizeof(ushort), cindex);

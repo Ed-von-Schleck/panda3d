@@ -37,7 +37,7 @@ reset() {
 //  Description: Adds a single sample point.
 ////////////////////////////////////////////////////////////////////
 void CurveFitter::
-add_point(double t, const pfVec3 &point) {
+add_point(double t, const LVector3f &point) {
   DataPoint dp;
   dp._t = t;
   dp._point = point;
@@ -53,7 +53,7 @@ add_point(double t, const pfVec3 &point) {
 //               curve length, as opposed to the parametric length.
 ////////////////////////////////////////////////////////////////////
 void CurveFitter::
-sample(ParametricCurve *curve, int count, boolean even) {
+sample(ParametricCurve *curve, int count, bool even) {
   double max_t = curve->get_max_t();
   double t, last_t, d;
   DataPoint dp;
@@ -114,8 +114,8 @@ generate_even(int count, double net_distance, double net_time) {
 void CurveFitter::
 wrap_hpr() {
   Data::iterator di;
-  pfVec3 last(0.0, 0.0, 0.0);
-  pfVec3 net(0.0, 0.0, 0.0);
+  LVector3f last(0.0, 0.0, 0.0);
+  LVector3f net(0.0, 0.0, 0.0);
 
   for (di = _data.begin(); di != _data.end(); ++di) {
     int i;
@@ -164,14 +164,14 @@ compute_timewarp(const ParametricCurve *xyz) {
     /*
     // Special HPR computation
     {
-      pfVec3 tangent;
-      pfMatrix mat;
+      LVector3f tangent;
+      LMatrix4f mat;
       pfCoord c;
       static double last_h = 0.0;
       static double h_net = 0.0;
 
       xyz->get_tangent(t, tangent);
-      look_at(mat, tangent, pfVec3(0.0, 0.0, 1.0));
+      look_at(mat, tangent, LVector3f(0.0, 0.0, 1.0));
       mat.getOrthoCoord(&c);
       cerr << "Replacing R " << c.hpr[2] << " with " << (*di)._point[1] << "\n";
       c.hpr[2] = (*di)._point[1];
@@ -256,7 +256,7 @@ desample(double factor) {
 void CurveFitter::
 compute_tangents(double scale) {
   // If the head and tail points match up, close the curve.
-  boolean closed =
+  bool closed =
     (_data.front()._point.almostEqual(_data.back()._point, 0.001));
 
   int i;
@@ -327,19 +327,19 @@ make_nurbs() const {
   nc->set_order(4);
 
   // First, we need four CV's to get started.
-  nc->append_cv(pfVec3(0.0, 0.0, 0.0));
-  nc->append_cv(pfVec3(0.0, 0.0, 0.0));
-  nc->append_cv(pfVec3(0.0, 0.0, 0.0));
-  nc->append_cv(pfVec3(0.0, 0.0, 0.0));
+  nc->append_cv(LVector3f(0.0, 0.0, 0.0));
+  nc->append_cv(LVector3f(0.0, 0.0, 0.0));
+  nc->append_cv(LVector3f(0.0, 0.0, 0.0));
+  nc->append_cv(LVector3f(0.0, 0.0, 0.0));
   nc->set_knot(4, _data[1]._t);
 
   nc->recompute();
-  pfVec3 junk;
+  LVector3f junk;
   nc->get_point(nc->get_max_t(), junk);  // Reference the last segment.
-  const pfVec3 &p0 = _data[0]._point;
-  pfVec3 t0 = _data[0]._tangent * 2.0;
-  pfVec3 t1 = _data[1]._tangent * 2.0;
-  const pfVec3 &p1 = _data[1]._point;
+  const LVector3f &p0 = _data[0]._point;
+  LVector3f t0 = _data[0]._tangent * 2.0;
+  LVector3f t1 = _data[1]._tangent * 2.0;
+  const LVector3f &p1 = _data[1]._point;
 
   nc->rebuild_curveseg(RT_POINT, 0.0, pfVec4(p0[0], p0[1], p0[2], 1.0),
 		       RT_TANGENT, 0.0, pfVec4(t0[0], t0[1], t0[2], 0.0),
@@ -349,16 +349,16 @@ make_nurbs() const {
   int i;
   for (i = 2; i < _data.size(); i++) {
     cerr << "Adding point " << i << "\n";
-    nc->append_cv(pfVec3(0.0, 0.0, 0.0));
+    nc->append_cv(LVector3f(0.0, 0.0, 0.0));
     nc->set_knot(i + 3, _data[i]._t);
     nc->recompute();
     nc->get_point(nc->get_max_t(), junk);
 
     /*
-    const pfVec3 &p0 = _data[i-1]._point;
-    const pfVec3 &t0 = _data[i-1]._tangent;
-    const pfVec3 &p1 = _data[i]._point;
-    const pfVec3 &t1 = _data[i]._tangent;
+    const LVector3f &p0 = _data[i-1]._point;
+    const LVector3f &t0 = _data[i-1]._tangent;
+    const LVector3f &p1 = _data[i]._point;
+    const LVector3f &t1 = _data[i]._tangent;
     
     nc->rebuild_curveseg(RT_POINT, 0.0, pfVec4(p0[0], p0[1], p0[2], 1.0),
 			 RT_TANGENT, 0.0, pfVec4(t0[0], t0[1], t0[2], 0.0),
@@ -366,7 +366,7 @@ make_nurbs() const {
 			 RT_POINT, 1.0, pfVec4(p1[0], p1[1], p1[2], 1.0));
 			 */
 
-    const pfVec3 &pi = _data[i]._point;
+    const LVector3f &pi = _data[i]._point;
     nc->rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
 			 RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
 			 RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
@@ -374,10 +374,10 @@ make_nurbs() const {
   }
 
   /*
-  nc->append_cv(pfVec3(0.0, 0.0, 0.0));
+  nc->append_cv(LVector3f(0.0, 0.0, 0.0));
   nc->recompute();
   nc->get_point(nc->get_max_t(), junk);
-  const pfVec3 &pi = _data[_data.size()-1]._point;
+  const LVector3f &pi = _data[_data.size()-1]._point;
   nc->rebuild_curveseg(RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
 		       RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
 		       RT_CV | RT_KEEP_ORIG, 0.0, pfVec4(),
