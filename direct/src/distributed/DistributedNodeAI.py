@@ -1,7 +1,6 @@
 from AIBaseGlobal import *
 from PandaModules import NodePath
 import DistributedObjectAI
-import Task
 
 class DistributedNodeAI(DistributedObjectAI.DistributedObjectAI, NodePath):
     def __init__(self, air, name=None):
@@ -95,5 +94,3 @@ class DistributedNodeAI(DistributedObjectAI.DistributedObjectAI, NodePath):
     # setPosHpr provided by NodePath
     def d_setPosHpr(self, x, y, z, h, p, r):
         self.sendUpdate("setPosHpr", [x, y, z, h, p, r])
-
-
