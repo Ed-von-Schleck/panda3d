@@ -38,7 +38,7 @@
 #defer phase_prefix $[if $[PHASE],phase_$[PHASE]/]
 
 #defer install_model_dir $[install_dir]/$[phase_prefix]$[INSTALL_TO]
-#define filter_dirs $[TARGET_DIR(filter_egg optchar_egg)]
+#define filter_dirs $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]
 
 #defer source_prefix $[SOURCE_DIR:%=%/]
 
@@ -182,6 +182,7 @@ $[TAB]rm -rf $[filter_dirs]
     $[if $[pal_egg_targets],$[pal_egg_dir]] \
     $[if $[bam_targets],$[bam_dir]] \
     $[if $[POLY_MODEL(soft_char_egg)] $[NURBS_MODEL(soft_char_egg)],$[soft_maps_dir]] \
+    $[TARGET_DIR(filter_char_egg)] \
     $[texattrib_dir] \
     $[install_egg_dirs] \
     $[install_dna_dirs] \
@@ -249,7 +250,7 @@ $[TAB]maya2egg $[MAYA2EGG_OPTS] -o $[target] $[source]
 #forscopes maya_char_egg
   #if $[POLY_MODEL]
     #define target $[EGG_PREFIX]$[POLY_MODEL].egg
-    #define source $[MAYA_PREFIX]$[POLY_MODEL].mb
+    #define source $[MAYA_PREFIX]$[or $[MODEL],$[POLY_MODEL]].mb
 $[target] : $[source]
 $[TAB]maya2egg $[MAYA2EGG_OPTS] -p -a model -cn "$[CHAR_NAME]" -o $[target] $[source]
   #endif
@@ -287,14 +288,14 @@ $[TAB]multify xf $[source] -C $[DATABASE]
     #define scene $[SCENE_PREFIX]$[MODEL].1-0.dsc
     #define source $[DATABASE]/SCENES/$[scene]
 $[target] : $[source]
-$[TAB]soft2egg $[SOFT2EGG_OPTS] -p -M $[target] -N $[CHAR_NAME] -d $[DATABASE] -s $[scene] -t $[soft_maps_dir]
+$[TAB]$[SOFT2EGG] $[SOFT2EGG_OPTS] $[if $[SOFTIMAGE_RSRC],-r "$[osfilename $[SOFTIMAGE_RSRC]]"] -p -M $[target] -N $[CHAR_NAME] -d $[DATABASE] -t $[DATABASE]/PICTURES -s $[scene]
   #endif
   #if $[NURBS_MODEL]
     #define target $[EGG_PREFIX]$[NURBS_MODEL].egg
     #define scene $[SCENE_PREFIX]$[MODEL].1-0.dsc
     #define source $[DATABASE]/SCENES/$[scene]
 $[target] : $[source]
-$[TAB]soft2egg $[SOFT2EGG_OPTS] -n -M $[target] -N $[CHAR_NAME] -d $[DATABASE] -s $[scene] -t $[soft_maps_dir]
+$[TAB]$[SOFT2EGG] $[SOFT2EGG_OPTS] $[if $[SOFTIMAGE_RSRC],-r "$[osfilename $[SOFTIMAGE_RSRC]]"] -n -M $[target] -N $[CHAR_NAME] -d $[DATABASE] -t $[DATABASE]/PICTURES -s $[scene]
   #endif
 
 #end soft_char_egg
@@ -312,7 +313,7 @@ $[TAB]soft2egg $[SOFT2EGG_OPTS] -n -M $[target] -N $[CHAR_NAME] -d $[DATABASE] -
       #set end $[word 2,$[$[anim]_frames]]
     #endif
 $[target] : $[source]
-$[TAB]soft2egg $[SOFT2EGG_OPTS] -a -A $[target] -N $[CHAR_NAME] -d $[DATABASE] -s $[scene] $[begin:%=-b%] $[end:%=-e%]
+$[TAB]$[SOFT2EGG] $[SOFT2EGG_OPTS] $[if $[SOFTIMAGE_RSRC],-r "$[osfilename $[SOFTIMAGE_RSRC]]"] -a -A $[target] -N $[CHAR_NAME] -d $[DATABASE] -s $[scene] $[begin:%=-b%] $[end:%=-e%]
   #end anim
 #end soft_char_egg
 
@@ -372,9 +373,9 @@ $[TAB]egg-optchar $[OPTCHAR_OPTS] -d $[TARGET_DIR] $[sources]
     #define target $[pal_egg_dir]/$[notdir $[egg]]
 $[target] : $[source] $[pt] $[pal_egg_dir]/stamp
     #if $[PHASE]
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dr $[install_dir] -dm $[install_dir]/%g/maps -ds $[install_dir]/shadow_pal -g phase_$[PHASE] -gdir phase_$[PHASE] -o $[target] $[source]
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dr $[install_dir] -dm $[install_dir]/%g/maps -ds $[install_dir]/shadow_pal -g phase_$[PHASE] -gdir phase_$[PHASE] -o $[target] $[source]
     #else
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dr $[install_dir] -dm $[install_dir]/%g/maps -ds $[install_dir]/shadow_pal -o $[target] $[source]
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dr $[install_dir] -dm $[install_dir]/%g/maps -ds $[install_dir]/shadow_pal -o $[target] $[source]
     #endif
 
 $[pt] :
@@ -596,7 +597,7 @@ opt-pal : pal do-opt-pal install
 optimize-palettes : opt-pal
 
 do-opt-pal :
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dm $[install_dir]/%g/maps -opt -egg
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dm $[install_dir]/%g/maps -opt -egg
 
 #
 # repal : reexamine the textures.txa file and do whatever needs to be
@@ -604,7 +605,7 @@ $[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dm $[install_dir]/%g
 # files are up-to-date.
 #
 repal :
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dm $[install_dir]/%g/maps -all -egg
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dm $[install_dir]/%g/maps -all -egg
 
 re-pal : repal
 
@@ -613,7 +614,7 @@ re-pal : repal
 # palette images to fix it.
 #
 fix-pal :
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dm $[install_dir]/%g/maps -redo -all -egg
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dm $[install_dir]/%g/maps -redo -all -egg
 
 #
 # undo-pal : blow away all the palettization information and start fresh.
@@ -626,14 +627,18 @@ $[TAB]rm -f $[texattrib_file:%.txa=%.boo]
 # user's perusal.
 #
 pi :
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dm $[install_dir]/%g/maps -pi
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dm $[install_dir]/%g/maps -pi
+
+.PHONY: pi.txt
+pi.txt : 
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dm $[install_dir]/%g/maps -pi >pi.txt
 
 #
 # pal-stats : report palettization statistics to standard output for the
 # user's perusal.
 #
 pal-stats :
-$[TAB]egg-palettize $[PALETTIZE_OPTS] -a $[texattrib_file] -dm $[install_dir]/%g/maps -s
+$[TAB]egg-palettize $[PALETTIZE_OPTS] -af $[texattrib_file] -dm $[install_dir]/%g/maps -s
 stats-pal : pal-stats
 
 // Somehow, something in the cttools confuses some shells, so that

@@ -28,6 +28,8 @@
 
 #include "pandatoolbase.h"
 
+#include "eggVertex.h"
+#include "eggVertexPool.h"
 #include "referenceCount.h"
 #include "pointerTo.h"
 #include "namable.h"
@@ -51,25 +53,32 @@ public:
   ~SoftNodeDesc();
 
   void set_parent(SoftNodeDesc *parent);
+  void force_set_parent(SoftNodeDesc *parent);
   void set_model(SAA_Elem *model);
   bool has_model() const;
   SAA_Elem *get_model() const;
 
   bool is_joint() const;
+  bool is_junk() const;
   void set_joint();
-  //  bool is_joint_parent() const;
+  bool is_joint_parent() const;
+  bool is_partial(char *search_prefix);
 
   SoftNodeDesc *_parent;
+  SoftNodeDesc *_parentJoint; // keep track of who is your parent joint
   typedef pvector< PT(SoftNodeDesc) > Children;
   Children _children;
-  
+
 private:
   void clear_egg();
-  //  void mark_joint_parent();
-  //  void check_pseudo_joints(bool joint_above);
+  void mark_joint_parent();
+  void check_joint_parent();
+  void check_junk(bool parent_junk);
+  void check_pseudo_joints(bool joint_above);
+
+  void set_parentJoint(SAA_Scene *scene, SoftNodeDesc *lastJoint);
 
   SAA_ModelType type;
-  const char *fullname;
 
   SAA_Elem *_model;
 
@@ -83,6 +92,7 @@ private:
     JT_pseudo_joint, // Not a joint in Soft, but treated just like a
                      // joint for the purposes of the converter.
     JT_joint_parent, // A parent or ancestor of a joint or pseudo joint.
+    JT_junk,         // originated from con-/fly-/car_rig/bars etc.
   };
   JointType _joint_type;
 
@@ -90,12 +100,20 @@ public:
 
   char **texNameArray;
   int uRepeat, vRepeat;
-  float        matrix[4][4];
+  float matrix[4][4];
+
+  const char *fullname;
 
   int numTri;
   //  int numShapes;
   int numTexLoc;
   int numTexGlb;
+  int *numTexTri;
+
+  // if the node is a MNSRF
+  int numNurbTexLoc;
+  int numNurbTexGlb;
+  int numNurbMats;
 
   float *uScale;
   float *vScale;
@@ -110,9 +128,20 @@ public:
   SAA_SubElem *triangles;
   SAA_GeomType gtype;
 
-  void get_transform(SAA_Scene *scene, EggGroup *egg_group, bool set_transform=FALSE);
-  void get_joint_transform(SAA_Scene *scene, EggGroup *egg_group, EggXfmSAnim *anim);
-  void load_model(SAA_Scene *scene, SAA_ModelType type);
+  EggGroup *get_egg_group()const {return _egg_group;}
+
+  void get_transform(SAA_Scene *scene, EggGroup *egg_group, bool global);
+  void get_joint_transform(SAA_Scene *scene, EggGroup *egg_group, EggXfmSAnim *anim, bool global);
+  void load_poly_model(SAA_Scene *scene, SAA_ModelType type);
+  void load_nurbs_model(SAA_Scene *scene, SAA_ModelType type);
+
+  void make_morph_table(float time);
+  void make_linear_morph_table(int numShapes, float time);
+  void make_weighted_morph_table(int numShapes, float time);
+  void make_expression_morph_table(int numShapes, float time);
+
+  void make_vertex_offsets(int numShapes);
+  int find_shape_vert(LPoint3d p3d, SAA_DVector *vertices, int numVert);
 
   static TypeHandle get_class_type() {
     return _type_handle;

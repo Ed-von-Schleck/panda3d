@@ -426,7 +426,7 @@ determine_alpha_mode() {
 //       Access: Public, Virtual
 //  Description: Walks back up the hierarchy, looking for an EggGroup
 //               or EggPrimitive or some such object at this level or
-//               above this group that has an depth_write_mode other
+//               above this group that has a depth_write_mode other
 //               than DWM_unspecified.  Returns a valid EggRenderMode
 //               pointer if one is found, or NULL otherwise.
 ////////////////////////////////////////////////////////////////////
@@ -443,7 +443,7 @@ determine_depth_write_mode() {
 //       Access: Public, Virtual
 //  Description: Walks back up the hierarchy, looking for an EggGroup
 //               or EggPrimitive or some such object at this level or
-//               above this group that has an depth_test_mode other
+//               above this group that has a depth_test_mode other
 //               than DTM_unspecified.  Returns a valid EggRenderMode
 //               pointer if one is found, or NULL otherwise.
 ////////////////////////////////////////////////////////////////////
@@ -453,6 +453,23 @@ determine_depth_test_mode() {
     return this;
   }
   return EggGroupNode::determine_depth_test_mode();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggGroup::determine_visibility_mode
+//       Access: Public, Virtual
+//  Description: Walks back up the hierarchy, looking for an EggGroup
+//               or EggPrimitive or some such object at this level or
+//               above this group that has a visibility_mode other
+//               than VM_unspecified.  Returns a valid EggRenderMode
+//               pointer if one is found, or NULL otherwise.
+////////////////////////////////////////////////////////////////////
+EggRenderMode *EggGroup::
+determine_visibility_mode() {
+  if (get_visibility_mode() != VM_unspecified) {
+    return this;
+  }
+  return EggGroupNode::determine_visibility_mode();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -764,10 +781,6 @@ string_cs_type(const string &string) {
     return CST_polyset;
   } else if (cmp_nocase_uh(string, "sphere") == 0) {
     return CST_sphere;
-  } else if (cmp_nocase_uh(string, "inversesphere") == 0) {
-    return CST_inverse_sphere;
-  } else if (cmp_nocase_uh(string, "geode") == 0) {
-    return CST_geode;
   } else if (cmp_nocase_uh(string, "tube") == 0) {
     return CST_tube;
   } else {
@@ -800,6 +813,8 @@ string_collide_flags(const string &string) {
     return CF_center;
   } else if (cmp_nocase_uh(string, "turnstile") == 0) {
     return CF_turnstile;
+  } else if (cmp_nocase_uh(string, "level") == 0) {
+    return CF_level;
   } else {
     return CF_none;
   }
@@ -956,7 +971,7 @@ adjust_under() {
 void EggGroup::
 r_transform(const LMatrix4d &mat, const LMatrix4d &inv,
             CoordinateSystem to_cs) {
-  if (!transform_is_identity()) {
+  if (has_transform() || get_group_type() == GT_joint) {
     // Since we want to apply this transform to all matrices,
     // including nested matrices, we can't simply premult it in and
     // leave it, because that would leave the rotational component in
@@ -1138,10 +1153,6 @@ ostream &operator << (ostream &out, EggGroup::CollisionSolidType t) {
     return out << "Polyset";
   case EggGroup::CST_sphere:
     return out << "Sphere";
-  case EggGroup::CST_inverse_sphere:
-    return out << "InverseSphere";
-  case EggGroup::CST_geode:
-    return out << "Geode";
   case EggGroup::CST_tube:
     return out << "Tube";
   }
@@ -1187,6 +1198,10 @@ ostream &operator << (ostream &out, EggGroup::CollideFlags t) {
   }
   if (bits & EggGroup::CF_turnstile) {
     out << space << "turnstile";
+    space = " ";
+  }
+  if (bits & EggGroup::CF_level) {
+    out << space << "level";
     space = " ";
   }
   return out;

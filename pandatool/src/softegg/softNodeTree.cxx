@@ -27,6 +27,7 @@
 #include "eggTable.h"
 #include "eggXfmSAnim.h"
 #include "eggData.h"
+#include "softToEggConverter.h"
 #include "dcast.h"
 
 #include <SAA.h>
@@ -38,7 +39,8 @@
 ////////////////////////////////////////////////////////////////////
 SoftNodeTree::
 SoftNodeTree() {
-  _root = new SoftNodeDesc;
+  _root = new SoftNodeDesc(NULL, "----root");
+  _root->fullname = "----root";
   _fps = 0.0;
   _use_prefix = 0;
   _search_prefix = NULL;
@@ -126,7 +128,7 @@ GetModelNoteInfo( SAA_Scene *scene, SAA_Elem *model ) {
     else
       modelNote[size] = '\0';
     
-    cout << "\nmodelNote = " << modelNote << endl;
+    softegg_cat.spam() << "\nmodelNote = " << modelNote << endl;
   }
   
   return modelNote;
@@ -168,13 +170,14 @@ GetRootName( const char *name ) {
 bool SoftNodeTree::
 build_complete_hierarchy(SAA_Scene &scene, SAA_Database &database) {
   SI_Error status;
+  SoftNodeDesc *node;
 
   // Get the entire Soft scene.
   int numModels;
   SAA_Elem *models;
 
   SAA_sceneGetNbModels( &scene, &numModels ); 
-  cout << "Scene has " << numModels << " model(s)...\n";
+  softegg_cat.spam() << "Scene has " << numModels << " model(s)...\n";
   
   // This while loop walks through the entire Soft hierarchy, one
   // node at a time. 
@@ -189,21 +192,37 @@ build_complete_hierarchy(SAA_Scene &scene, SAA_Database &database) {
       for ( int i = 0; i < numModels; i++ ) {
         int level;
         status = SAA_elementGetHierarchyLevel( &scene, &models[i], &level );
-        cout << "model[" << i << "]" << endl;
-        cout << " level " << level << endl;
-        cout << " status is " << status << "\n";
-        
-        //        if (!level) {
-          build_node(&scene, &models[i]);
-          //        }
+        softegg_cat.spam() << "model[" << i << "]" << endl;
+        softegg_cat.spam() << " level " << level << endl;
+        softegg_cat.spam() << " status is " << status << "\n";
+
+        node = build_node(&scene, &models[i]);
+        if (!level && node)
+          node->set_parent(_root);
       }
     }
   }
-# if 0  
-  if (all_ok) {
-    _root->check_pseudo_joints(false);
-  }
-#endif  
+
+  softegg_cat.spam() << "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\n";
+
+  // check the nodes that are junk for animation/artist control purposes
+  _root->check_junk(false);
+
+  softegg_cat.spam() << "jpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjpjp\n";
+
+  // check the nodes that are parent of ancestors of a joint
+  _root->check_joint_parent();
+
+  softegg_cat.spam() << "pppppppppppppppppppppppppppppppppppppppppppppppppppppppp\n";
+
+  // check the nodes that are pseudo joints
+  _root->check_pseudo_joints(false);
+
+  softegg_cat.spam() << "========================================================\n";
+
+  // find _parentJoint for each node
+  _root->set_parentJoint(&scene, NULL);
+
   return all_ok;
 }
 #if 0
@@ -296,6 +315,20 @@ get_node(int n) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: SoftNodeTree::get_node
+//       Access: Public
+//  Description: Returns the node named 'name' in the hierarchy, in
+//               an arbitrary ordering.
+////////////////////////////////////////////////////////////////////
+SoftNodeDesc *SoftNodeTree::
+get_node(string name) const {
+  NodesByName::const_iterator ni = _nodes_by_name.find(name);
+  if (ni != _nodes_by_name.end())
+    return (*ni).second;
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: SoftNodeTree::clear_egg
 //       Access: Public
 //  Description: Removes all of the references to generated egg
@@ -305,7 +338,7 @@ get_node(int n) const {
 void SoftNodeTree::
 clear_egg(EggData *egg_data, EggGroupNode *egg_root, 
           EggGroupNode *skeleton_node) {
-  //  _root->clear_egg();
+  _root->clear_egg();
   _egg_data = egg_data;
   _egg_root = egg_root;
   _skeleton_node = skeleton_node;
@@ -322,8 +355,14 @@ EggGroup *SoftNodeTree::
 get_egg_group(SoftNodeDesc *node_desc) {
   nassertr(_egg_root != (EggGroupNode *)NULL, NULL);
 
-  cout << node_desc->_egg_group << endl;
-  cout << node_desc->_parent << endl;
+  // lets print some relationship
+  softegg_cat.spam() << " group " << node_desc->get_name() << "(" << node_desc->_egg_group << ")";
+  if (node_desc->_parent)
+    softegg_cat.spam() << " parent " << node_desc->_parent->get_name() << "(" << node_desc->_parent << ")";
+  else
+    softegg_cat.spam() << " parent " << node_desc->_parent;
+  softegg_cat.spam() << endl;
+
   if (node_desc->_egg_group == (EggGroup *)NULL) {
     // We need to make a new group node.
     EggGroup *egg_group;
@@ -333,105 +372,16 @@ get_egg_group(SoftNodeDesc *node_desc) {
       egg_group->set_group_type(EggGroup::GT_joint);
     }
 
-    if (!node_desc->_parent || node_desc->_parent == _root) {
+    if (stec.flatten || (!node_desc->_parentJoint || node_desc->_parentJoint == _root)) {
       // The parent is the root.
+      softegg_cat.spam() << "came hereeeee\n";
       _egg_root->add_child(egg_group);
     } else {
       // The parent is another node.
-      EggGroup *parent_egg_group = get_egg_group(node_desc->_parent);
+      EggGroup *parent_egg_group = get_egg_group(node_desc->_parentJoint);
       parent_egg_group->add_child(egg_group);
     }
 
-#if 0
-    SoftEggGroupUserData *parent_user_data = NULL;
-
-    if (node_desc->_parent == _root) {
-      // The parent is the root.
-      _egg_root->add_child(egg_group);
-
-    } else {
-      // The parent is another node.
-      EggGroup *parent_egg_group = get_egg_group(node_desc->_parent);
-      parent_egg_group->add_child(egg_group);
-
-      if (parent_egg_group->has_user_data()) {
-        DCAST_INTO_R(parent_user_data, parent_egg_group->get_user_data(), NULL);
-      }
-    }
-
-    if (node_desc->has_models()) {
-      // Check for an object type setting, from Oliver's plug-in.
-      MObject dag_object = node_desc->get_dag_path().node();
-      string object_type;
-      if (get_enum_attribute(dag_object, "eggObjectTypes1", object_type)) {
-        egg_group->add_object_type(object_type);
-      }
-      if (get_enum_attribute(dag_object, "eggObjectTypes2", object_type)) {
-        egg_group->add_object_type(object_type);
-      }
-      if (get_enum_attribute(dag_object, "eggObjectTypes3", object_type)) {
-        egg_group->add_object_type(object_type);
-      }
-
-      // Is the node flagged to be invisible?  If it is, and is has no
-      // other egg flags, it is implicitly tagged "backstage", so it
-      // won't get converted.  (But it might be an invisible collision
-      // solid, which is why we do this only if it has no other egg
-      // flags.)
-      bool visible = true;
-      get_bool_attribute(dag_object, "visibility", visible);
-      if (!visible && egg_group->get_num_object_types() == 0) {
-        egg_group->add_object_type("backstage");
-      }
-
-      // We treat the object type "billboard" as a special case: we
-      // apply this one right away and also flag the group as an
-      // instance.
-      if (egg_group->has_object_type("billboard")) {    
-        egg_group->remove_object_type("billboard");
-        egg_group->set_group_type(EggGroup::GT_instance);
-        egg_group->set_billboard_type(EggGroup::BT_axis);
-        
-      } else if (egg_group->has_object_type("billboard-point")) {    
-        egg_group->remove_object_type("billboard-point");
-        egg_group->set_group_type(EggGroup::GT_instance);
-        egg_group->set_billboard_type(EggGroup::BT_point_camera_relative);
-      }
-      
-      // We also treat the object type "dcs" and "model" as a special
-      // case, so we can test for these flags later.
-      if (egg_group->has_object_type("dcs")) {
-        egg_group->remove_object_type("dcs");
-        egg_group->set_dcs_type(EggGroup::DC_default);
-      }
-      if (egg_group->has_object_type("model")) {
-        egg_group->remove_object_type("model");
-        egg_group->set_model_flag(true);
-      }
-      
-      // And "vertex-color" and "double-sided" have meaning only to
-      // this converter.
-      SoftEggGroupUserData *user_data;
-      if (parent_user_data == (SoftEggGroupUserData *)NULL) {
-        user_data = new SoftEggGroupUserData;
-      } else {
-        // Inherit the flags from above.
-        user_data = new SoftEggGroupUserData(*parent_user_data);
-      }
-
-      if (egg_group->has_object_type("vertex-color")) {
-        egg_group->remove_object_type("vertex-color");
-        user_data->_vertex_color = true;
-      }
-      if (egg_group->has_object_type("double-sided")) {
-        egg_group->remove_object_type("double-sided");
-        user_data->_double_sided = true;
-      }
-      egg_group->set_user_data(user_data);
-    }
-#endif
-    //    EggUserData *user_data = new EggUserData;
-    //    egg_group->set_user_data(user_data);
     node_desc->_egg_group = egg_group;
   }
   
@@ -450,8 +400,16 @@ get_egg_table(SoftNodeDesc *node_desc) {
   nassertr(_skeleton_node != (EggGroupNode *)NULL, NULL);
   nassertr(node_desc->is_joint(), NULL);
   
+  // lets print some relationship
+  softegg_cat.spam() << " group " << node_desc->get_name() << "(" << node_desc->_egg_group << ")";
+  if (node_desc->_parent)
+    softegg_cat.spam() << " parent " << node_desc->_parent->get_name() << "(" << node_desc->_parent << ")";
+  else
+    softegg_cat.spam() << " parent " << node_desc->_parent;
+  softegg_cat.spam() << endl;
+
   if (node_desc->_egg_table == (EggTable *)NULL) {
-    cout << "creating a new table\n";
+    softegg_cat.spam() << "creating a new table\n";
     // We need to make a new table node.
     //    nassertr(node_desc->_parent != (SoftNodeDesc *)NULL, NULL);
     
@@ -460,16 +418,16 @@ get_egg_table(SoftNodeDesc *node_desc) {
     node_desc->_anim->set_fps(_fps);
     egg_table->add_child(node_desc->_anim);
     
-    //    if (!node_desc->_parent->is_joint()) {
-    // The parent is not a joint; put it at the top.
-    _skeleton_node->add_child(egg_table);
-    /*
+    if (stec.flatten || (!node_desc->_parentJoint || node_desc->_parentJoint == _root)) {
+      //    if (!node_desc->_parent->is_joint()) {
+      // The parent is not a joint; put it at the top.
+      _skeleton_node->add_child(egg_table);
     } else {
       // The parent is another joint.
-      EggTable *parent_egg_table = get_egg_table(node_desc->_parent);
+      EggTable *parent_egg_table = get_egg_table(node_desc->_parentJoint);
       parent_egg_table->add_child(egg_table);
     }
-    */
+
     node_desc->_egg_table = egg_table;
   }
   
@@ -490,78 +448,134 @@ get_egg_anim(SoftNodeDesc *node_desc) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: SoftNodeTree::handle_null
+//       Access: Public
+//  Description: Sets joint information for MNILL node
+////////////////////////////////////////////////////////////////////
+void SoftNodeTree::
+handle_null(SAA_Scene *scene, SoftNodeDesc *node_desc, const char *node_name) {
+  const char *name = node_name;
+  SAA_AlgorithmType    algo;
+  SAA_Elem *model = node_desc->get_model();
+  
+  SAA_modelGetAlgorithm( scene, model, &algo );
+  softegg_cat.spam() << " null algorithm: " << algo << endl;
+  
+  if ( algo == SAA_ALG_INV_KIN ) {
+    //    MakeJoint( &scene, lastJoint, lastAnim,  model, name );
+    node_desc->set_joint();
+    softegg_cat.spam() << " encountered IK root: " << name << endl;
+  }
+  else if ( algo == SAA_ALG_INV_KIN_LEAF ) {
+    //    MakeJoint( &scene, lastJoint, lastAnim, model, name );
+    node_desc->set_joint();
+    softegg_cat.spam() << " encountered IK leaf: " << name << endl;
+  }
+  else if ( algo == SAA_ALG_STANDARD ) {
+    SAA_Boolean isSkeleton = FALSE;
+    softegg_cat.spam() << " encountered Standard null: " << name << endl;
+
+    SAA_modelIsSkeleton( scene, model, &isSkeleton );
+
+    // check to see if this NULL is used as a skeleton
+    // or is animated via constraint only ( these nodes are
+    // tagged by the animator with the keyword "joint"
+    // somewhere in the nodes name)
+    if ( isSkeleton || (strstr( name, "joint" ) != NULL) ) {
+      //      MakeJoint( &scene, lastJoint, lastAnim, model, name );
+      node_desc->set_joint();
+      softegg_cat.spam() << " animating Standard null!!!\n";
+      softegg_cat.spam() << "isSkeleton: " << isSkeleton << endl;
+    }
+  }
+  else
+    softegg_cat.spam() << " encountered some other NULL: " << algo << endl;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: SoftNodeTree::build_node
 //       Access: Public
 //  Description: Returns a pointer to the node corresponding to the
 //               indicated dag_path object, creating it first if
 //               necessary.
 ////////////////////////////////////////////////////////////////////
-void SoftNodeTree::
+SoftNodeDesc *SoftNodeTree::
 build_node(SAA_Scene *scene, SAA_Elem *model) {
-  char *name;
+  char *name, *fullname;
   string node_name;
   int numChildren;
   int thisChild;
   SAA_Elem *children;
+  SAA_ModelType type;
   SAA_Boolean isSkeleton = FALSE;
 
+  fullname = GetFullName(scene, model);
   if (_use_prefix)
-    name = GetFullName(scene, model);
+    name = fullname;
   else
     name = GetName(scene, model);
 
   node_name = name;
 
-  ///////////////////////////////////////////////////////////////////////
-  // check to see if this is a branch we don't want to descend - this
-  // will prevent creating geometry for animation control structures
-  ///////////////////////////////////////////////////////////////////////
+  SoftNodeDesc *node_desc = r_build_node(NULL, node_name);
 
-  /*
-  if ( (strstr(name, "con-") == NULL) && 
-       (strstr(name, "con_") == NULL) && 
-       (strstr(name, "fly_") == NULL) && 
-       (strstr(name, "fly-") == NULL) && 
-       (strstr(name, "camRIG") == NULL) &&
-       (strstr(name, "bars") == NULL) && 
-       // split
-       (!_search_prefix || (strstr(name, _search_prefix) != NULL)) )
-    {
-  */
-      SoftNodeDesc *node_desc = r_build_node(NULL, node_name);
-      node_desc->set_model(model);
-      SAA_modelIsSkeleton( scene, model, &isSkeleton );
-      if (isSkeleton || (strstr(node_desc->get_name().c_str(), "joint") != NULL))
-        node_desc->set_joint();
-      
-      SAA_modelGetNbChildren( scene, model, &numChildren );
-      cout << " Model " << node_name << " children: " << numChildren << endl;
-      
-      if ( numChildren ) {
-        children = new SAA_Elem[numChildren];
-        SAA_modelGetChildren( scene, model, numChildren, children );
-        if (!children)
-          cout << "Not enough Memory for children...\n";
-        
-        for ( thisChild = 0; thisChild < numChildren; thisChild++ ) {
-          if (_use_prefix)
-            node_name = GetFullName(scene, &children[thisChild]);
-          else
-            node_name = GetName(scene, &children[thisChild]);
-          
-          cout << " building child " << thisChild << "...";
+  node_desc->fullname = fullname;
+  node_desc->set_model(model);
+  SAA_modelIsSkeleton( scene, model, &isSkeleton );
 
-          SoftNodeDesc *node_child = r_build_node(node_desc, node_name);
-          node_child->set_model(&children[thisChild]);
-          
-          //  if (strstr(name, "joint") != NULL)
-          SAA_modelIsSkeleton( scene, &children[thisChild], &isSkeleton );
-          if (isSkeleton || (strstr(node_child->get_name().c_str(), "joint") != NULL))
-            node_child->set_joint();
-        }
-      }
-      //    }
-  return;
+  // find out what type of node we're dealing with
+  SAA_modelGetType( scene, node_desc->get_model(), &type );
+  
+  if (type == SAA_MJNT || isSkeleton || (strstr(node_desc->get_name().c_str(), "joint") != NULL))
+    node_desc->set_joint();
+  
+  // treat the MNILL differently, because it needs to detect and set some joints
+  if (type == SAA_MNILL)
+    handle_null(scene, node_desc, name);
+
+  if (node_desc->is_joint())
+    softegg_cat.spam() << "type: " << type << " isSkeleton: " << isSkeleton << endl;
+
+  // get to the children
+  SAA_modelGetNbChildren( scene, model, &numChildren );
+  softegg_cat.spam() << " Model " << node_name << " children: " << numChildren << endl;
+  
+  if ( numChildren ) {
+    children = new SAA_Elem[numChildren];
+    SAA_modelGetChildren( scene, model, numChildren, children );
+    if (!children)
+      softegg_cat.info() << "Not enough Memory for children...\n";
+    
+    for ( thisChild = 0; thisChild < numChildren; thisChild++ ) {
+      fullname = GetFullName(scene, &children[thisChild]);
+      if (_use_prefix)
+        node_name = fullname;
+      else
+        node_name = GetName(scene, &children[thisChild]);
+      
+      softegg_cat.spam() << " building child " << thisChild << "...";
+      
+      SoftNodeDesc *node_child = r_build_node(node_desc, node_name);
+
+      node_child->fullname = fullname;
+      node_child->set_model(&children[thisChild]);
+      SAA_modelIsSkeleton( scene, &children[thisChild], &isSkeleton );
+
+      // find out what type of node we're dealing with
+      SAA_modelGetType( scene, node_child->get_model(), &type );
+      
+      if (type == SAA_MJNT || isSkeleton || (strstr(node_child->get_name().c_str(), "joint") != NULL))
+        node_child->set_joint();
+
+      // treat the MNILL differently, because it needs to detect and set some joints
+      if (type == SAA_MNILL)
+        handle_null(scene, node_child, node_name.c_str());
+
+      if (node_child->is_joint())
+        softegg_cat.spam() << "type: " << type << " isSkeleton: " << isSkeleton << endl;
+    }
+  }
+  return node_desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -574,10 +588,10 @@ r_build_node(SoftNodeDesc *parent_node, const string &name) {
   SoftNodeDesc *node_desc;
 
   // If we have already encountered this pathname, return the
-  // corresponding MayaNodeDesc immediately.
+  // corresponding SoftNodeDesc immediately.
   NodesByName::const_iterator ni = _nodes_by_name.find(name);
   if (ni != _nodes_by_name.end()) {
-    cout << (*ni).first << endl;
+    softegg_cat.spam() << "  already built node " << (*ni).first;
     node_desc = (*ni).second;
     node_desc->set_parent(parent_node);
     return node_desc;
@@ -585,17 +599,9 @@ r_build_node(SoftNodeDesc *parent_node, const string &name) {
 
   // Otherwise, we have to create it.  Do this recursively, so we
   // create each node along the path.
-  /*
-  if (!parent_node) {
-    node_desc = _root;
-  }
-  else {
-  */
-    node_desc = new SoftNodeDesc(parent_node, name);
-    /*
-  }
-    */
-  cout << " node name : " << name << endl;
+  node_desc = new SoftNodeDesc(parent_node, name);
+
+  softegg_cat.spam() << " node name : " << name << endl;
   _nodes.push_back(node_desc);
 
   _nodes_by_name.insert(NodesByName::value_type(name, node_desc));

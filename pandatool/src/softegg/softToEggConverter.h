@@ -19,6 +19,14 @@
 #ifndef SOFTTOEGGCONVERTER_H
 #define SOFTTOEGGCONVERTER_H
 
+#include "pandatoolbase.h"
+#include "somethingToEggConverter.h"
+#include "softNodeTree.h"
+
+#include "eggTextureCollection.h"
+#include "distanceUnit.h"
+#include "coordinateSystem.h"
+
 #ifdef _MIN
 #undef _MIN
 #endif
@@ -26,16 +34,8 @@
 #undef _MAX
 #endif
 
-#include "pandatoolbase.h"
-#include "somethingToEggConverter.h"
-#include "softNodeTree.h"
-
 #include <SAA.h>
 #include <SI_macros.h>
-
-#include "eggTextureCollection.h"
-#include "distanceUnit.h"
-#include "coordinateSystem.h"
 
 class EggData;
 class EggGroup;
@@ -44,7 +44,7 @@ class EggVertexPool;
 class EggNurbsCurve;
 class EggPrimitive;
 class EggXfmSAnim;
-//class MayaShaderColorDef;
+class EggSAnimData;
 
 
 ////////////////////////////////////////////////////////////////////
@@ -67,6 +67,9 @@ public:
   bool HandleGetopts(int &idx, int argc, char **argv);
   bool DoGetopts(int &argc, char **&argv);
 
+  SoftNodeDesc *find_node(string name);
+  int *FindClosestTriVert( EggVertexPool *vpool, SAA_DVector *vertices, int numVert );
+
   virtual SomethingToEggConverter *make_copy();
   virtual string get_name() const;
   virtual string get_extension() const;
@@ -80,55 +83,34 @@ private:
   bool convert_flip(double start_frame, double end_frame, 
                     double frame_inc, double output_frame_rate);
 
-  bool convert_char_model();
+  bool make_soft_skin();
+  bool cleanup_soft_skin();
   bool convert_char_chan();
+  bool convert_char_model();
   bool convert_hierarchy(EggGroupNode *egg_root);
   bool process_model_node(SoftNodeDesc *node_desc);
 
-  /*
-  void get_joint_transform(const MDagPath &dag_path, EggGroup *egg_group);
+  void make_polyset(SoftNodeDesc *node_desc, EggGroup *egg_group, SAA_ModelType type);
+  void make_nurb_surface(SoftNodeDesc *node_desc, EggGroup *egg_group, SAA_ModelType type);
+  void add_knots( vector <double> &eggKnots, double *knots, int numKnots, SAA_Boolean closed, int degree );
 
-  // I ran into core dumps trying to pass around a MFnMesh object by
-  // value.  From now on, all MFn* objects will be passed around by
-  // reference.
-  void make_nurbs_surface(const MDagPath &dag_path, 
-                          MFnNurbsSurface &surface,
-                          EggGroup *group);
-  EggNurbsCurve *make_trim_curve(const MFnNurbsCurve &curve,
-                                 const string &nurbs_name,
-                                 EggGroupNode *egg_group,
-                                 int trim_curve_index);
-  void make_nurbs_curve(const MDagPath &dag_path, 
-                        const MFnNurbsCurve &curve,
-                        EggGroup *group);
-  */
-  void make_polyset(SoftNodeDesc *node_Desc, EggGroup *egg_group, SAA_ModelType type);
-  void handle_null(SAA_Elem *model, EggGroup *egg_group, SAA_ModelType type, const char *node_name);
-  /*
-  void make_locator(const MDagPath &dag_path, const MFnDagNode &dag_node,
-                    EggGroup *egg_group);
-  bool get_vertex_weights(const MDagPath &dag_path, const MFnMesh &mesh,
-                          pvector<EggGroup *> &joints, MFloatArray &weights);
-  */
   void set_shader_attributes(SoftNodeDesc *node_desc, EggPrimitive &primitive, char *texName);
   void apply_texture_properties(EggTexture &tex, int uRepeat, int vRepeat);
-  /*
-  bool compare_texture_properties(EggTexture &tex, 
-                                  const MayaShaderColorDef &color_def);
-  */
+
   bool reparent_decals(EggGroupNode *egg_parent);
 
   string _program_name;
   bool _from_selection;
 
-  SoftNodeTree _tree;
-
   SI_Error            result;
-  SAA_Scene           scene;
   SAA_Elem            model;
   SAA_Database        database;
 
 public:
+
+  SoftNodeTree _tree;
+
+  SAA_Scene           scene;
 
   char *_getopts;
   
@@ -136,7 +118,7 @@ public:
   const char *_commandName;
 
   // This is the entire command line.
-  const char *_commandLine;
+  char _commandLine[4096];
 
   char        *rsrc_path;
   char        *database_name;
@@ -175,20 +157,11 @@ public:
   
   char *GetTextureName( SAA_Scene *scene, SAA_Elem *texture );
 
-  /*
-  MayaShaders _shaders;
-  */
   EggTextureCollection _textures;
-  /*
-  PT(MayaApi) _maya;
-  */
 
   bool _polygon_output;
   double _polygon_tolerance;
-  /*
-  bool _respect_maya_double_sided;
-  bool _always_show_vertex_color;
-  */
+
   enum TransformType {
     TT_invalid,
     TT_all,
@@ -199,7 +172,14 @@ public:
   TransformType _transform_type;
 
   static TransformType string_transform_type(const string &arg);
+
+  typedef pvector<EggSAnimData *> MorphTable;
+  MorphTable _morph_table;
+
+  EggTable *morph_node;
+  EggSAnimData *find_morph_table(char *name);
 };
 
+extern const int TEX_PER_MAT;
 
 #endif

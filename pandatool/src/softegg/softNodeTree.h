@@ -39,18 +39,21 @@ class EggGroupNode;
 class SoftNodeTree {
 public:
   SoftNodeTree();
-  void build_node(SAA_Scene *scene, SAA_Elem *model);
+  SoftNodeDesc *build_node(SAA_Scene *scene, SAA_Elem *model);
   bool build_complete_hierarchy(SAA_Scene &scene, SAA_Database &database);
+  void handle_null(SAA_Scene *scene, SoftNodeDesc *node_desc, const char *node_name);
   //  bool build_selected_hierarchy(SAA_Scene *s, SAA_Database *d, char *scene_name);
 
   int get_num_nodes() const;
   SoftNodeDesc *get_node(int n) const;
+  SoftNodeDesc *get_node(string name) const;
 
   char *GetRootName(const char *);
   char *GetModelNoteInfo(SAA_Scene *, SAA_Elem *);
   char *GetName(SAA_Scene *scene, SAA_Elem *element);
   char *GetFullName(SAA_Scene *scene, SAA_Elem *element);
 
+  EggGroupNode *get_egg_root() {return _egg_root;}
   EggGroup *get_egg_group(SoftNodeDesc *node_desc);
   EggTable *get_egg_table(SoftNodeDesc *node_desc);
   EggXfmSAnim *get_egg_anim(SoftNodeDesc *node_desc);

@@ -108,6 +108,7 @@ do_finish_reparent(EggJointPointer *new_parent) {
     EggGroupNode *egg_parent = _joint->get_parent();
     if (egg_parent != (EggGroupNode *)NULL) {
       egg_parent->remove_child(_joint.p());
+      egg_parent->steal_children(*_joint);
     }
 
   } else {
@@ -208,7 +209,7 @@ expose(EggGroup::DCSType dcs_type) {
 bool EggJointNodePointer::
 has_vertices() const {
   if (_joint != (EggGroup *)NULL) {
-    return (_joint->vref_size() != 0);
+    return (_joint->vref_size() != 0) || _joint->joint_has_primitives();
   }
 
   return false;

@@ -103,6 +103,7 @@ MayaToEggConverter(const string &program_name) :
 MayaToEggConverter::
 MayaToEggConverter(const MayaToEggConverter &copy) :
   _from_selection(copy._from_selection),
+  _subsets(copy._subsets),
   _maya(copy._maya),
   _polygon_output(copy._polygon_output),
   _polygon_tolerance(copy._polygon_tolerance),
@@ -201,7 +202,47 @@ convert_file(const Filename &filename) {
     _character_name = filename.get_basename_wo_extension();
   }
 
-  return convert_maya(false);
+  return convert_maya();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::clear_subsets
+//       Access: Public
+//  Description: Empties the list of subset nodes added via
+//               add_subset().  The entire file will once again be
+//               converted.
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+clear_subsets() {
+  _subsets.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::add_subset
+//       Access: Public
+//  Description: Adds a name pattern to the list of subset nodes.  If
+//               the list of subset nodes is not empty, then only a
+//               subset of the nodes in the maya file will be
+//               converted: those whose names match one of the
+//               patterns given on this list.
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+add_subset(const GlobPattern &glob) {
+  _subsets.push_back(glob);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::set_from_selection
+//       Access: Public
+//  Description: Sets the flag that indicates whether the currently
+//               selected Maya geometry will be converted.  If this is
+//               true, and the selection is nonempty, then only the
+//               selected geometry will be converted.  If this is
+//               false, the entire file will be converted.
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+set_from_selection(bool from_selection) {
+  _from_selection = from_selection;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -223,14 +264,10 @@ get_input_units() {
 //       Access: Public
 //  Description: Fills up the egg_data structure according to the
 //               global maya model data.  Returns true if successful,
-//               false if there is an error.  If from_selection is
-//               true, the converted geometry is based on that which
-//               is selected; otherwise, it is the entire Maya scene.
+//               false if there is an error.
 ////////////////////////////////////////////////////////////////////
 bool MayaToEggConverter::
-convert_maya(bool from_selection) {
-  _from_selection = from_selection;
-
+convert_maya() {
   clear();
 
   if (!open_api()) {
@@ -277,12 +314,24 @@ convert_maya(bool from_selection) {
 
   frame_inc = frame_inc * input_frame_rate / output_frame_rate;
 
-  bool all_ok = true;
+  bool all_ok = _tree.build_hierarchy();
 
-  if (_from_selection) {
-    all_ok = _tree.build_selected_hierarchy();
-  } else {
-    all_ok = _tree.build_complete_hierarchy();
+  if (all_ok) {
+    if (_from_selection) {
+      all_ok = _tree.tag_selected();
+
+    } else if (!_subsets.empty()) {
+      Subsets::const_iterator si;
+      for (si = _subsets.begin(); si != _subsets.end(); ++si) {
+        if (!_tree.tag_named(*si)) {
+          mayaegg_cat.info()
+            << "No node matching " << *si << " found.\n";
+        }
+      }
+
+    } else {
+      _tree.tag_all();
+    }
   }
 
   if (all_ok) {
@@ -557,7 +606,8 @@ convert_hierarchy(EggGroupNode *egg_root) {
 
   _tree.clear_egg(&get_egg_data(), egg_root, NULL);
   for (int i = 0; i < num_nodes; i++) {
-    if (!process_model_node(_tree.get_node(i))) {
+    MayaNodeDesc *node = _tree.get_node(i);
+    if (!process_model_node(node)) {
       return false;
     }
   }
@@ -610,15 +660,7 @@ process_model_node(MayaNodeDesc *node_desc) {
     mayaegg_cat.debug(false) << "\n";
   }
 
-  if (node_desc->is_joint()) {
-    // Don't bother with joints unless we're getting an animatable
-    // model.
-    if (_animation_convert == AC_model) { 
-      EggGroup *egg_group = _tree.get_egg_group(node_desc);
-      get_joint_transform(dag_path, egg_group);
-    }
-
-  } else if (dag_node.inUnderWorld()) {
+  if (dag_node.inUnderWorld()) {
     if (mayaegg_cat.is_debug()) {
       mayaegg_cat.debug()
         << "Ignoring underworld node " << path
@@ -648,16 +690,18 @@ process_model_node(MayaNodeDesc *node_desc) {
 
   } else if (dag_path.hasFn(MFn::kNurbsSurface)) {
     EggGroup *egg_group = _tree.get_egg_group(node_desc);
-    get_transform(dag_path, egg_group);
-    
-    MFnNurbsSurface surface(dag_path, &status);
-    if (!status) {
-      mayaegg_cat.info()
-        << "Error in node " << path
-        << ":\n"
-        << "  it appears to have a NURBS surface, but does not.\n";
-    } else {
-      make_nurbs_surface(dag_path, surface, egg_group);
+    get_transform(node_desc, dag_path, egg_group);
+
+    if (node_desc->is_tagged()) {
+      MFnNurbsSurface surface(dag_path, &status);
+      if (!status) {
+        mayaegg_cat.info()
+          << "Error in node " << path
+          << ":\n"
+          << "  it appears to have a NURBS surface, but does not.\n";
+      } else {
+        make_nurbs_surface(dag_path, surface, egg_group);
+      }
     }
 
   } else if (dag_path.hasFn(MFn::kNurbsCurve)) {
@@ -666,29 +710,33 @@ process_model_node(MayaNodeDesc *node_desc) {
     // things in them.
     if (_animation_convert != AC_model) {
       EggGroup *egg_group = _tree.get_egg_group(node_desc);
-      get_transform(dag_path, egg_group);
-      
-      MFnNurbsCurve curve(dag_path, &status);
-      if (!status) {
-        mayaegg_cat.info()
-          << "Error in node " << path << ":\n"
-          << "  it appears to have a NURBS curve, but does not.\n";
-      } else {
-        make_nurbs_curve(dag_path, curve, egg_group);
+      get_transform(node_desc, dag_path, egg_group);
+
+      if (node_desc->is_tagged()) {
+        MFnNurbsCurve curve(dag_path, &status);
+        if (!status) {
+          mayaegg_cat.info()
+            << "Error in node " << path << ":\n"
+            << "  it appears to have a NURBS curve, but does not.\n";
+        } else {
+          make_nurbs_curve(dag_path, curve, egg_group);
+        }
       }
     }
       
   } else if (dag_path.hasFn(MFn::kMesh)) {
     EggGroup *egg_group = _tree.get_egg_group(node_desc);
-    get_transform(dag_path, egg_group);
+    get_transform(node_desc, dag_path, egg_group);
 
-    MFnMesh mesh(dag_path, &status);
-    if (!status) {
-      mayaegg_cat.info()
-        << "Error in node " << path << ":\n"
-        << "  it appears to have a polygon mesh, but does not.\n";
-    } else {
-      make_polyset(dag_path, mesh, egg_group);
+    if (node_desc->is_tagged()) {
+      MFnMesh mesh(dag_path, &status);
+      if (!status) {
+        mayaegg_cat.info()
+          << "Error in node " << path << ":\n"
+          << "  it appears to have a polygon mesh, but does not.\n";
+      } else {
+        make_polyset(dag_path, mesh, egg_group);
+      }
     }
 
   } else if (dag_path.hasFn(MFn::kLocator)) {
@@ -698,24 +746,26 @@ process_model_node(MayaNodeDesc *node_desc) {
       mayaegg_cat.debug()
         << "Locator at " << path << "\n";
     }
-    
-    // Presumably, the locator's position has some meaning to the
-    // end-user, so we will implicitly tag it with the DCS flag so it
-    // won't get flattened out.
-    if (_animation_convert != AC_model) {
-      // For now, don't set the DCS flag on locators within
-      // character models, since egg-optchar doesn't understand
-      // this.  Perhaps there's no reason to ever change this, since
-      // locators within character models may not be meaningful.
-      egg_group->set_dcs_type(EggGroup::DC_net);
+
+    if (node_desc->is_tagged()) {
+      // Presumably, the locator's position has some meaning to the
+      // end-user, so we will implicitly tag it with the DCS flag so it
+      // won't get flattened out.
+      if (_animation_convert != AC_model) {
+        // For now, don't set the DCS flag on locators within
+        // character models, since egg-optchar doesn't understand
+        // this.  Perhaps there's no reason to ever change this, since
+        // locators within character models may not be meaningful.
+        egg_group->set_dcs_type(EggGroup::DC_net);
+      }
+      get_transform(node_desc, dag_path, egg_group);
+      make_locator(dag_path, dag_node, egg_group);
     }
-    get_transform(dag_path, egg_group);
-    make_locator(dag_path, dag_node, egg_group);
 
   } else {
     // Just a generic node.
     EggGroup *egg_group = _tree.get_egg_group(node_desc);
-    get_transform(dag_path, egg_group);
+    get_transform(node_desc, dag_path, egg_group);
   }
 
   return true;
@@ -728,10 +778,15 @@ process_model_node(MayaNodeDesc *node_desc) {
 //               and applies it to the corresponding Egg node.
 ////////////////////////////////////////////////////////////////////
 void MayaToEggConverter::
-get_transform(const MDagPath &dag_path, EggGroup *egg_group) {
+get_transform(MayaNodeDesc *node_desc, const MDagPath &dag_path, 
+              EggGroup *egg_group) {
   if (_animation_convert == AC_model) {
     // When we're getting an animated model, we only get transforms
-    // for joints.
+    // for joints, and they get converted in a special way.
+
+    if (node_desc->is_joint()) { 
+      get_joint_transform(dag_path, egg_group);
+    }
     return;
   }
 
@@ -1371,7 +1426,7 @@ make_polyset(const MDagPath &dag_path, const MFnMesh &mesh,
     // If this flag is false, we respect the maya double-sided
     // settings only if the egg "double-sided" flag is also set.
     if (!egg_double_sided) {
-      maya_double_sided = false;
+      double_sided = false;
     }
   }
 
@@ -1716,9 +1771,8 @@ get_vertex_weights(const MDagPath &dag_path, const MFnMesh &mesh,
 
     it.next();
   }
-  
-  mayaegg_cat.error()
-    << "Unable to find a cluster handle for the DG node.\n"; 
+
+  // The mesh was not soft-skinned.
   return false;
 }
 

@@ -59,6 +59,17 @@ is_joint() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggNode::is_anim_matrix
+//       Access: Public, Virtual
+//  Description: Returns true if this node represents a table of
+//               animation transformation data, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool EggNode::
+is_anim_matrix() const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggNode::determine_alpha_mode
 //       Access: Public, Virtual
 //  Description: Walks back up the hierarchy, looking for an EggGroup
@@ -110,6 +121,24 @@ determine_depth_test_mode() {
     return (EggRenderMode *)NULL;
   }
   return _parent->determine_depth_test_mode();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggNode::determine_visibility_mode
+//       Access: Public, Virtual
+//  Description: Walks back up the hierarchy, looking for an EggGroup
+//               or EggPrimitive or some such object at this level or
+//               above this node that has a visibility_mode other than
+//               VM_unspecified.  Returns a valid EggRenderMode pointer
+//               if one is found, or NULL otherwise.
+////////////////////////////////////////////////////////////////////
+EggRenderMode *EggNode::
+determine_visibility_mode() {
+  if (_parent == (EggGroupNode *)NULL) {
+    // Too bad; we're done.
+    return (EggRenderMode *)NULL;
+  }
+  return _parent->determine_visibility_mode();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -291,6 +320,30 @@ update_under(int depth_offset) {
 ////////////////////////////////////////////////////////////////////
 void EggNode::
 adjust_under() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggNode::has_primitives
+//       Access: Protected, Virtual
+//  Description: Returns true if there are any primitives
+//               (e.g. polygons) defined within this group or below,
+//               false otherwise.
+////////////////////////////////////////////////////////////////////
+bool EggNode::
+has_primitives() const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggNode::joint_has_primitives
+//       Access: Protected, Virtual
+//  Description: Returns true if there are any primitives
+//               (e.g. polygons) defined within this group or below,
+//               but the search does not include nested joints.
+////////////////////////////////////////////////////////////////////
+bool EggNode::
+joint_has_primitives() const {
+  return false;
 }
 
 

@@ -17,8 +17,23 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "mayaNodeDesc.h"
+#include "maya_funcs.h"
 
 TypeHandle MayaNodeDesc::_type_handle;
+
+// This is a list of the names of Maya connections that count as a
+// transform.
+static const char *transform_connections[] = {
+  "translate",
+  "translateX",
+  "translateY",
+  "translateZ",
+  "rotate",
+  "rotateX",
+  "rotateY",
+  "rotateZ",
+};
+static const int num_transform_connections = sizeof(transform_connections) / sizeof(const char *);
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaNodeDesc::Constructor
@@ -35,6 +50,7 @@ MayaNodeDesc(MayaNodeDesc *parent, const string &name) :
   _egg_table = (EggTable *)NULL;
   _anim = (EggXfmSAnim *)NULL;
   _joint_type = JT_none;
+  _tagged = false;
 
   // Add ourselves to our parent.
   if (_parent != (MayaNodeDesc *)NULL) {
@@ -71,6 +87,31 @@ from_dag_path(const MDagPath &dag_path) {
       if (_parent != (MayaNodeDesc *)NULL) {
         _parent->mark_joint_parent();
       }
+
+    } else {
+      // The node is not a joint, but maybe its transform is
+      // controlled by connected inputs.  If so, we should treat it
+      // like a joint.
+      bool transform_connected = false;
+
+      MStatus status;
+      MObject node = dag_path.node(&status);
+      if (status) {
+        for (int i = 0; 
+             i < num_transform_connections && !transform_connected;
+             i++) {
+          if (is_connected(node, transform_connections[i])) {
+            transform_connected = true;
+          }
+        }
+      }
+      
+      if (transform_connected) {
+        _joint_type = JT_joint;
+        if (_parent != (MayaNodeDesc *)NULL) {
+          _parent->mark_joint_parent();
+        }
+      }
     }
   }
 }
@@ -101,7 +142,7 @@ get_dag_path() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaNodeDesc::is_joint
-//       Access: Private
+//       Access: Public
 //  Description: Returns true if the node should be treated as a joint
 //               by the converter.
 ////////////////////////////////////////////////////////////////////
@@ -112,7 +153,7 @@ is_joint() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaNodeDesc::is_joint_parent
-//       Access: Private
+//       Access: Public
 //  Description: Returns true if the node is the parent or ancestor of
 //               a joint.
 ////////////////////////////////////////////////////////////////////
@@ -120,6 +161,46 @@ bool MayaNodeDesc::
 is_joint_parent() const {
   return _joint_type == JT_joint_parent;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaNodeDesc::is_tagged
+//       Access: Public
+//  Description: Returns true if the node has been tagged to be
+//               converted, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool MayaNodeDesc::
+is_tagged() const {
+  return _tagged;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaNodeDesc::tag
+//       Access: Private
+//  Description: Tags this node for conversion, but does not tag child
+//               nodes.
+////////////////////////////////////////////////////////////////////
+void MayaNodeDesc::
+tag() {
+  _tagged = true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaNodeDesc::tag_recursively
+//       Access: Private
+//  Description: Tags this node and all descendant nodes for
+//               conversion.
+////////////////////////////////////////////////////////////////////
+void MayaNodeDesc::
+tag_recursively() {
+  _tagged = true;
+
+  Children::const_iterator ci;
+  for (ci = _children.begin(); ci != _children.end(); ++ci) {
+    MayaNodeDesc *child = (*ci);
+    child->tag_recursively();
+  }
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaNodeDesc::clear_egg

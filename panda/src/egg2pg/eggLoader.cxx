@@ -238,6 +238,10 @@ make_nonindexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
                           const LMatrix4d *transform) {
   BuilderBucket bucket;
   setup_bucket(bucket, parent, egg_prim);
+  if (bucket._hidden && egg_suppress_hidden) {
+    // Eat this primitive.
+    return;
+  }
 
   LMatrix4d mat;
 
@@ -331,6 +335,10 @@ make_indexed_primitive(EggPrimitive *egg_prim, PandaNode *parent,
                        ComputedVerticesMaker &_comp_verts_maker) {
   BuilderBucket bucket;
   setup_bucket(bucket, parent, egg_prim);
+  if (bucket._hidden && egg_suppress_hidden) {
+    // Eat this primitive.
+    return;
+  }
 
   bucket.set_coords(_comp_verts_maker._coords);
   bucket.set_normals(_comp_verts_maker._norms);
@@ -510,6 +518,10 @@ make_nurbs_curve(EggNurbsCurve *egg_curve, PandaNode *parent,
   // from it.
   BuilderBucket bucket;
   setup_bucket(bucket, parent, egg_curve);
+  if (bucket._hidden && egg_suppress_hidden) {
+    // Eat this primitive.
+    return;
+  }
 
   rope->set_state(bucket._state);
 
@@ -661,6 +673,10 @@ make_nurbs_surface(EggNurbsSurface *egg_surface, PandaNode *parent,
   // from it.
   BuilderBucket bucket;
   setup_bucket(bucket, parent, egg_surface);
+  if (bucket._hidden && egg_suppress_hidden) {
+    // Eat this primitive.
+    return;
+  }
 
   sheet->set_state(bucket._state);
 
@@ -1235,6 +1251,7 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
   EggRenderMode::AlphaMode am = EggRenderMode::AM_unspecified;
   EggRenderMode::DepthWriteMode dwm = EggRenderMode::DWM_unspecified;
   EggRenderMode::DepthTestMode dtm = EggRenderMode::DTM_unspecified;
+  EggRenderMode::VisibilityMode vm = EggRenderMode::VM_unspecified;
   bool implicit_alpha = false;
   bool has_draw_order = false;
   int draw_order = 0;
@@ -1253,6 +1270,10 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
   render_mode = egg_prim->determine_depth_test_mode();
   if (render_mode != (EggRenderMode *)NULL) {
     dtm = render_mode->get_depth_test_mode();
+  }
+  render_mode = egg_prim->determine_visibility_mode();
+  if (render_mode != (EggRenderMode *)NULL) {
+    vm = render_mode->get_visibility_mode();
   }
   render_mode = egg_prim->determine_draw_order();
   if (render_mode != (EggRenderMode *)NULL) {
@@ -1379,6 +1400,16 @@ setup_bucket(BuilderBucket &bucket, PandaNode *parent,
     bucket.add_attrib(DepthTestAttrib::make(DepthTestAttrib::M_none));
     break;
 
+  default:
+    break;
+  }
+
+  switch (vm) {
+  case EggRenderMode::VM_hidden:
+    bucket._hidden = true;
+    break;
+
+  case EggRenderMode::VM_normal:
   default:
     break;
   }
@@ -1524,8 +1555,7 @@ make_node(EggGroup *egg_group, PandaNode *parent) {
     CharacterMaker char_maker(egg_group, *this);
     node = char_maker.make_node();
 
-  } else if (egg_group->get_cs_type() != EggGroup::CST_none &&
-             egg_group->get_cs_type() != EggGroup::CST_geode) {
+  } else if (egg_group->get_cs_type() != EggGroup::CST_none) {
     // A collision group: create collision geometry.
     node = new CollisionNode(egg_group->get_name());
 
@@ -1612,9 +1642,11 @@ PandaNode *EggLoader::
 create_group_arc(EggGroup *egg_group, PandaNode *parent, PandaNode *node) {
   parent->add_child(node);
 
-  // If the group had a transform, apply it to the arc.
+  // If the group had a transform, apply it to the node.
   if (egg_group->has_transform()) {
-    node->set_transform(make_transform(egg_group));
+    CPT(TransformState) transform = make_transform(egg_group);
+    node->set_transform(transform);
+    node->set_prev_transform(transform);
   }
 
   // If the group has a billboard flag, apply that.
@@ -1738,17 +1770,8 @@ make_collision_solids(EggGroup *start_group, EggGroup *egg_group,
 
   switch (start_group->get_cs_type()) {
   case EggGroup::CST_none:
-  case EggGroup::CST_geode:
     // No collision flags; do nothing.  Don't even traverse further.
     return;
-
-  case EggGroup::CST_inverse_sphere:
-    // These aren't presently supported.
-    egg2pg_cat.error()
-      << "Not presently supported: <Collide> { "
-      << egg_group->get_cs_type() << " }\n";
-    _error = true;
-    break;
 
   case EggGroup::CST_plane:
     make_collision_plane(egg_group, cnode, start_group->get_collide_flags());
@@ -1950,7 +1973,7 @@ make_collision_tube(EggGroup *egg_group, CollisionNode *cnode,
         EggVertex *vtx = (*vi);
         LPoint3d pos = vtx->get_pos3() * mat;
         vpos.push_back(pos);
-        center += vtx->get_pos3();
+        center += pos;
       }
       center /= (double)num_vertices;
 
@@ -2125,6 +2148,9 @@ apply_collision_flags(CollisionSolid *solid,
                       EggGroup::CollideFlags flags) {
   if ((flags & EggGroup::CF_intangible) != 0) {
     solid->set_tangible(false);
+  }
+  if ((flags & EggGroup::CF_level) != 0) {
+    solid->set_effective_normal(LVector3f::up());
   }
 }
 

@@ -20,6 +20,7 @@
 #include "mayaToEggConverter.h"
 #include "config_mayaegg.h"
 #include "config_maya.h"  // for maya_cat
+#include "globPattern.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaToEgg::Constructor
@@ -66,12 +67,30 @@ MayaToEgg() :
      &MayaToEgg::dispatch_none, &_respect_maya_double_sided);
 
   add_option
+    ("suppress-vcolor", "", 0,
+     "Ignore vertex color for geometry that has a texture applied.  "
+     "(This is the way Maya normally renders internally.)  The egg flag "
+     "'vertex-color' may be applied to a particular model to override "
+     "this setting locally.",
+     &MayaToEgg::dispatch_none, &_suppress_vertex_color);
+
+  add_option
     ("trans", "type", 0,
      "Specifies which transforms in the Maya file should be converted to "
      "transforms in the egg file.  The option may be one of all, model, "
      "dcs, or none.  The default is model, which means only transforms on "
      "nodes that have the model flag or the dcs flag are preserved.",
      &MayaToEgg::dispatch_transform_type, NULL, &_transform_type);
+
+  add_option
+    ("subset", "name", 0,
+     "Specifies that only a subset of the geometry in the Maya file should "
+     "be converted; specifically, the geometry under the node or nodes whose "
+     "name matches the parameter (which may include globbing characters "
+     "like * or ?).  This parameter may be repeated multiple times to name "
+     "multiple roots.  If it is omitted altogether, the entire file is "
+     "converted.",
+     &MayaToEgg::dispatch_vector_string, NULL, &_subsets);
 
   add_option
     ("v", "", 0,
@@ -120,7 +139,13 @@ run() {
   converter._polygon_output = _polygon_output;
   converter._polygon_tolerance = _polygon_tolerance;
   converter._respect_maya_double_sided = _respect_maya_double_sided;
+  converter._always_show_vertex_color = !_suppress_vertex_color;
   converter._transform_type = _transform_type;
+
+  vector_string::const_iterator si;
+  for (si = _subsets.begin(); si != _subsets.end(); ++si) {
+    converter.add_subset(GlobPattern(*si));
+  }
 
   // Copy in the path and animation parameters.
   apply_parameters(converter);
