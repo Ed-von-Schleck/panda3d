@@ -35,6 +35,21 @@ TexGenAttrib() {
 ////////////////////////////////////////////////////////////////////
 INLINE TexGenAttrib::
 TexGenAttrib(const TexGenAttrib &copy) :
-  _stages(copy._stages)
+  _stages(copy._stages),
+  _no_texcoords(copy._no_texcoords)
 {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexGenAttrib::get_no_texcoords
+//       Access: Public
+//  Description: Returns the set of TextureStages that have texture
+//               coordinates computed for them, and hence do not need
+//               to have texture coordinates sent from the Geom.  This
+//               is, of course, the set of TextureStages that is
+//               listed in the attrib (except for those listed with M_off).
+////////////////////////////////////////////////////////////////////
+INLINE const Geom::NoTexCoordStages &TexGenAttrib::
+get_no_texcoords() const {
+  return _no_texcoords;
 }

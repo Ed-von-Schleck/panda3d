@@ -35,6 +35,7 @@
 #include "pta_int.h"
 #include "texCoordName.h"
 #include "textureStage.h"
+#include "pset.h"
 
 class Datagram;
 class DatagramIterator;
@@ -212,6 +213,7 @@ PUBLISHED:
 
 public:
   typedef pvector< PT(TextureStage) > ActiveTextureStages;
+  typedef pset<TextureStage *> NoTexCoordStages;
 
   INLINE VertexIterator make_vertex_iterator() const;
   INLINE const Vertexf &get_next_vertex(VertexIterator &viterator) const;
@@ -222,7 +224,8 @@ public:
   INLINE TexCoordIterator make_texcoord_iterator() const;
   INLINE const TexCoordf &get_next_texcoord(TexCoordIterator &tciterator) const;
   void setup_multitexcoord_iterator(MultiTexCoordIterator &iterator,
-                                    const ActiveTextureStages &active_stages) const;
+                                    const ActiveTextureStages &active_stages,
+                                    const NoTexCoordStages &no_texcoords) const;
   INLINE const TexCoordf &get_next_multitexcoord(MultiTexCoordIterator &tciterator, int n) const;
 
   INLINE ColorIterator make_color_iterator() const;

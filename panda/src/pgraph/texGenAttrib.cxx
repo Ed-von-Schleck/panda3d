@@ -65,6 +65,9 @@ CPT(RenderAttrib) TexGenAttrib::
 add_stage(TextureStage *stage, TexGenAttrib::Mode mode) const {
   TexGenAttrib *attrib = new TexGenAttrib(*this);
   attrib->_stages[stage] = mode;
+  if (mode != M_off) {
+    attrib->_no_texcoords.insert(stage);
+  }
   return return_new(attrib);
 }
 
@@ -78,6 +81,7 @@ CPT(RenderAttrib) TexGenAttrib::
 remove_stage(TextureStage *stage) const {
   TexGenAttrib *attrib = new TexGenAttrib(*this);
   attrib->_stages.erase(stage);
+  attrib->_no_texcoords.erase(stage);
   return return_new(attrib);
 }
 
@@ -296,6 +300,14 @@ compose_impl(const RenderAttrib *other) const {
     ++result;
   }
 
+  // Now copy from _stages to _no_texcoords.
+  Stages::const_iterator ri;
+  for (ri = attrib->_stages.begin(); ri != attrib->_stages.end(); ++ri) {
+    if ((*ri).second != M_off) {
+      attrib->_no_texcoords.insert((*ri).first);
+    }
+  }
+
   return return_new(attrib);
 }
 
@@ -357,6 +369,14 @@ invert_compose_impl(const RenderAttrib *other) const {
     *result = *bi;
     ++bi;
     ++result;
+  }
+
+  // Now copy from _stages to _no_texcoords.
+  Stages::const_iterator ri;
+  for (ri = attrib->_stages.begin(); ri != attrib->_stages.end(); ++ri) {
+    if ((*ri).second != M_off) {
+      attrib->_no_texcoords.insert((*ri).first);
+    }
   }
 
   return return_new(attrib);

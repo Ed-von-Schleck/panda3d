@@ -21,6 +21,7 @@
 
 #include "pandabase.h"
 
+#include "geom.h"
 #include "renderAttrib.h"
 #include "textureStage.h"
 #include "texture.h"
@@ -64,6 +65,8 @@ PUBLISHED:
   Mode get_mode(TextureStage *stage) const;
 
 public:
+  INLINE const Geom::NoTexCoordStages &get_no_texcoords() const;
+
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
   virtual void output(ostream &out) const;
 
@@ -76,6 +79,8 @@ protected:
 private:
   typedef pmap<PT(TextureStage), Mode> Stages;
   Stages _stages;
+
+  Geom::NoTexCoordStages _no_texcoords;
 
   static CPT(RenderAttrib) _empty_attrib;
 

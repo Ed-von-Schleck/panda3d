@@ -751,24 +751,29 @@ write_verbose(ostream &out, int indent_level) const {
 ////////////////////////////////////////////////////////////////////
 void Geom::
 setup_multitexcoord_iterator(MultiTexCoordIterator &iterator,
-                             const ActiveTextureStages &active_stages) const {
+                             const ActiveTextureStages &active_stages,
+                             const NoTexCoordStages &no_texcoords) const {
   check_config();
   iterator._num_stages = 0;
   int max_stage_index = (int)active_stages.size();
   int i = 0;
   for (int stage_index = 0; stage_index < max_stage_index; stage_index++) {
     TextureStage *stage = active_stages[stage_index];
-    const TexCoordName *name = stage->get_texcoord_name();
-    TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
-    if (tci != _texcoords_by_name.end()) {
-      // This Geom does have texcoords for this stage.
-      const TexCoordDef &def = (*tci).second;
-
-      nassertv(i < max_geom_texture_stages);
-      iterator._stages[i]._array = def._texcoords;
-      iterator._stages[i]._index = def._tindex;
-      iterator._stage_index[i] = stage_index;
-      i++;
+    if (no_texcoords.find(stage) == no_texcoords.end()) {
+      // This stage is not one of the stages that doesn't need
+      // texcoords issued for it.
+      const TexCoordName *name = stage->get_texcoord_name();
+      TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
+      if (tci != _texcoords_by_name.end()) {
+        // This Geom does have texcoords for this stage.
+        const TexCoordDef &def = (*tci).second;
+        
+        nassertv(i < max_geom_texture_stages);
+        iterator._stages[i]._array = def._texcoords;
+        iterator._stages[i]._index = def._tindex;
+        iterator._stage_index[i] = stage_index;
+        i++;
+      }
     }
   }
 
