@@ -2121,46 +2121,24 @@ get_bin_draw_order() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: NodePath::set_texture
 //       Access: Published
-//  Description: Sets the geometry at this level and below to render
-//               using the indicated texture.
+//  Description: Adds the indicated texture to the list of textures
+//               that will be rendered on the default texture stage.
 //
-//               This replaces any texture specification at this node
-//               with a new specification that assigns the indicated
-//               texture to the default stage.  If there was any
-//               multitexture specification on this node, it is
-//               replaced; however, texture specifications for
-//               additional multitexture stages inherited from nodes
-//               above or below are not changed, unless the priority
-//               overrides.
-//
-//               See also add_texture().
+//               This is the deprecated single-texture variant of this
+//               method; it is now superceded by set_texture() that
+//               accepts a stage and texture.  However, this method
+//               may be used in the presence of multitexture if you
+//               just want to adjust the default stage.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
 set_texture(Texture *tex, int priority) {
   nassertv_always(!is_empty());
   PT(TextureStage) stage = TextureStage::get_default();
-
-  node()->set_attrib(TextureAttrib::make_on(stage, tex), priority);
+  set_texture(stage, tex, priority);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NodePath::set_texture_off
-//       Access: Published
-//  Description: Sets the geometry at this level and below to render
-//               using no texture.  This is normally the default, but
-//               it may be useful to use this to contradict
-//               set_texture() at a higher node level (or, with a
-//               priority, to override a set_texture() at a lower
-//               level).
-////////////////////////////////////////////////////////////////////
-void NodePath::
-set_texture_off(int priority) {
-  nassertv_always(!is_empty());
-  node()->set_attrib(TextureAttrib::make_all_off(), priority);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: NodePath::add_texture
+//     Function: NodePath::set_texture
 //       Access: Published
 //  Description: Adds the indicated texture to the list of textures
 //               that will be rendered on the indicated multitexture
@@ -2171,7 +2149,7 @@ set_texture_off(int priority) {
 //               specification set up in the TextureStage object.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-add_texture(TextureStage *stage, Texture *tex, int priority) {
+set_texture(TextureStage *stage, Texture *tex, int priority) {
   nassertv_always(!is_empty());
 
   const RenderAttrib *attrib =
@@ -2192,23 +2170,33 @@ add_texture(TextureStage *stage, Texture *tex, int priority) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NodePath::remove_texture
+//     Function: NodePath::set_texture_off
 //       Access: Published
-//  Description: Performs one of two different operations: 
-//
-//               (1) if the node has a reference to the indicated
-//               texture stage (e.g. add_texture() was previously
-//               called with this stage), undoes that operation and
-//               removes it from the list.  This node will no longer
-//               affect the named texture stage in the future.
-//
-//               (2) if the node does *not* already have a reference
-//               to the indicated texture stage, adds a reference to
-//               turn the texture stage off at this level and below,
-//               overriding an "on" operation from above.
+//  Description: Sets the geometry at this level and below to render
+//               using no texture, on any stage.  This is different
+//               from not specifying a texture; rather, this
+//               specifically contradicts set_texture() at a higher
+//               node level (or, with a priority, overrides a
+//               set_texture() at a lower level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-remove_texture(TextureStage *stage, int priority) {
+set_texture_off(int priority) {
+  nassertv_always(!is_empty());
+  node()->set_attrib(TextureAttrib::make_all_off(), priority);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_texture_off
+//       Access: Published
+//  Description: Sets the geometry at this level and below to render
+//               using no texture, on the indicated stage.  This is
+//               different from not specifying a texture; rather, this
+//               specifically contradicts set_texture() at a higher
+//               node level (or, with a priority, overrides a
+//               set_texture() at a lower level).
+////////////////////////////////////////////////////////////////////
+void NodePath::
+set_texture_off(TextureStage *stage, int priority) {
   nassertv_always(!is_empty());
 
   const RenderAttrib *attrib =
@@ -2218,21 +2206,31 @@ remove_texture(TextureStage *stage, int priority) {
                    node()->get_state()->get_override(TextureAttrib::get_class_type()));
     const TextureAttrib *tsa = DCAST(TextureAttrib, attrib);
 
-    if (tsa->has_on_stage(stage)) {
-      // Modify the existing TextureAttrib to remove the indicated
-      // texture from the "on" list.
-      node()->set_attrib(tsa->remove_on_stage(stage), priority);
-    } else {
-      // Modify the existing TextureAttrib to add the indicated
-      // texture to the "off" list.
-      node()->set_attrib(tsa->add_off_stage(stage), priority);
-    }
+    // Modify the existing TextureAttrib to add the indicated texture
+    // to the "off" list.  This also, incidentally, removes it from
+    // the "on" list if it is there.
+    node()->set_attrib(tsa->add_off_stage(stage), priority);
 
   } else {
     // Create a new TextureAttrib for this node that turns off the
     // indicated stage.
     node()->set_attrib(TextureAttrib::make_off(stage), priority);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_texture
+//       Access: Published
+//  Description: Completely removes any texture adjustment that may
+//               have been set via set_texture() or set_texture_off()
+//               from this particular node.  This allows whatever
+//               textures might be otherwise affecting the geometry to
+//               show instead.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_texture() {
+  nassertv_always(!is_empty());
+  node()->clear_attrib(TextureAttrib::get_class_type());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2263,21 +2261,6 @@ clear_texture(TextureStage *stage) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NodePath::clear_texture
-//       Access: Published
-//  Description: Completely removes any texture adjustment that may
-//               have been set via set_texture() or set_texture_off()
-//               from this particular node.  This allows whatever
-//               textures might be otherwise affecting the geometry to
-//               show instead.
-////////////////////////////////////////////////////////////////////
-void NodePath::
-clear_texture() {
-  nassertv_always(!is_empty());
-  node()->clear_attrib(TextureAttrib::get_class_type());
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: NodePath::has_texture
 //       Access: Published
 //  Description: Returns true if a texture has been applied to this
@@ -2298,7 +2281,7 @@ has_texture() const {
 //  Description: Returns true if texturing has been specifically
 //               enabled on this particular node for the indicated
 //               stage.  This means that someone called
-//               add_texture() on this node with the indicated stage
+//               set_texture() on this node with the indicated stage
 //               name, or the stage_name is the default stage_name,
 //               and someone called set_texture() on this node.
 ////////////////////////////////////////////////////////////////////
@@ -2345,7 +2328,7 @@ has_texture_off() const {
 //  Description: Returns true if texturing has been specifically
 //               disabled on this particular node for the indicated
 //               stage.  This means that someone called
-//               remove_texture() on this node with the indicated
+//               set_texture_off() on this node with the indicated
 //               stage name, or that someone called set_texture_off()
 //               on this node to remove all stages.
 ////////////////////////////////////////////////////////////////////
@@ -2436,6 +2419,17 @@ set_tex_transform(TextureStage *stage, const TransformState *transform) {
 ////////////////////////////////////////////////////////////////////
 //     Function: NodePath::clear_tex_transform
 //       Access: Published
+//  Description: Removes all texture matrices from the current node.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_transform() {
+  nassertv_always(!is_empty());
+  node()->clear_attrib(TexMatrixAttrib::get_class_type());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_transform
+//       Access: Published
 //  Description: Removes the texture matrix on the current node for
 //               the given stage.
 ////////////////////////////////////////////////////////////////////
@@ -2456,17 +2450,6 @@ clear_tex_transform(TextureStage *stage) {
       node()->set_attrib(tma);
     }
   }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: NodePath::clear_tex_transform
-//       Access: Published
-//  Description: Removes all texture matrices from the current node.
-////////////////////////////////////////////////////////////////////
-void NodePath::
-clear_tex_transform() {
-  nassertv_always(!is_empty());
-  node()->clear_attrib(TexMatrixAttrib::get_class_type());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2572,13 +2555,13 @@ get_tex_transform(const NodePath &other, TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NodePath::add_tex_gen
+//     Function: NodePath::set_tex_gen
 //       Access: Published
 //  Description: Enables automatic texture coordinate generation for
 //               the indicated texture stage.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-add_tex_gen(TextureStage *stage, TexGenAttrib::Mode mode, int priority) {
+set_tex_gen(TextureStage *stage, TexGenAttrib::Mode mode, int priority) {
   nassertv_always(!is_empty());
 
   const RenderAttrib *attrib =
@@ -2596,6 +2579,18 @@ add_tex_gen(TextureStage *stage, TexGenAttrib::Mode mode, int priority) {
   }
 
   node()->set_attrib(tga->add_stage(stage, mode), priority);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tex_gen
+//       Access: Published
+//  Description: Removes the texture coordinate generation mode from
+//               all texture stages on this node.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+clear_tex_gen() {
+  nassertv_always(!is_empty());
+  node()->clear_attrib(TexGenAttrib::get_class_type());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2621,18 +2616,6 @@ clear_tex_gen(TextureStage *stage) {
       node()->set_attrib(tga);
     }
   }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: NodePath::clear_tex_gen
-//       Access: Published
-//  Description: Removes the texture coordinate generation mode from
-//               all texture stages on this node.
-////////////////////////////////////////////////////////////////////
-void NodePath::
-clear_tex_gen() {
-  nassertv_always(!is_empty());
-  node()->clear_attrib(TexGenAttrib::get_class_type());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2678,7 +2661,7 @@ get_tex_gen(TextureStage *stage) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: NodePath::add_tex_projector
+//     Function: NodePath::set_tex_projector
 //       Access: Published
 //  Description: Establishes a TexProjectorEffect on this node, which
 //               can be used to establish projective texturing (but
@@ -2689,7 +2672,7 @@ get_tex_gen(TextureStage *stage) const {
 //               adjust this node's texture coordinates.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
-add_tex_projector(TextureStage *stage, const NodePath &from, const NodePath &to) {
+set_tex_projector(TextureStage *stage, const NodePath &from, const NodePath &to) {
   nassertv_always(!is_empty());
 
   const RenderEffect *effect =
@@ -2821,9 +2804,9 @@ get_tex_projector_to(TextureStage *stage) const {
 void NodePath::
 project_texture(TextureStage *stage, Texture *tex, const NodePath &projector) {
   nassertv(!projector.is_empty() && projector.node()->is_of_type(LensNode::get_class_type()));
-  add_texture(stage, tex);
-  add_tex_gen(stage, TexGenAttrib::M_world_position);
-  add_tex_projector(stage, NodePath(), projector);
+  set_texture(stage, tex);
+  set_tex_gen(stage, TexGenAttrib::M_world_position);
+  set_tex_projector(stage, NodePath(), projector);
 }
 
 ////////////////////////////////////////////////////////////////////
