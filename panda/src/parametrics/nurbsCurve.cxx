@@ -12,8 +12,8 @@
 // written consent of Walt Disney Imagineering Inc.
 ////////////////////////////////////////////////////////////////////
 
-#include "luse.h"
 #include "nurbsCurve.h"
+#include "luse.h"
 #include "parametrics.h"
 ////#include <initReg.h>
 ////#include <linMathOutput.h>
@@ -25,6 +25,7 @@ using namespace std;
 // Statics
 ////////////////////////////////////////////////////////////////////
 
+TypeHandle NurbsCurve::_type_handle;
 
 static const LVector3f zero = LVector3f(0.0, 0.0, 0.0);
 // This is returned occasionally from some of the functions, and is
