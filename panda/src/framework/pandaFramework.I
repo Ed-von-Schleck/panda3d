@@ -92,7 +92,7 @@ get_window(int n) const {
 //  Description: Closes the indicated WindowFramework window and
 //               removes it from the list.
 ////////////////////////////////////////////////////////////////////
-void PandaFramework::
+INLINE void PandaFramework::
 close_window(WindowFramework *wf) {
   int n = find_window(wf);
   if (n >= 0) {
