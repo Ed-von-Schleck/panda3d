@@ -55,10 +55,6 @@ BEGIN_PUBLISH //[
 END_PUBLISH //]
 
 
-//#define LVector3f LVector3f
-//typedef LVector3f LVector3f;
-
-
 // These symbols are used to define the shape of the curve segment to
 // CubicCurveseg::compute_seg().
 
@@ -85,10 +81,6 @@ class NurbsCurve;
 class EXPCL_PANDA ParametricCurve : public TypedWriteableReferenceCount,
     public Namable {
 
-////////////////////////////////////////////////////////////////////
-// Member functions visible to Scheme
-////////////////////////////////////////////////////////////////////
-
 PUBLISHED:
   virtual bool is_valid() const;
 
@@ -105,7 +97,7 @@ PUBLISHED:
   double compute_t(double start_t, double length_offset, double guess, 
 		   double threshold) const;
 
-  ////bool convert_to_hermite(HermiteCurve &hc) const;
+  bool convert_to_hermite(HermiteCurve &hc) const;
   bool convert_to_nurbs(NurbsCurve &nc) const;
 
   void ascii_draw() const;
@@ -116,9 +108,6 @@ public:
   virtual bool get_pt(double t, LVector3f &point, LVector3f &tangent) const=0;
   virtual bool get_2ndtangent(double t, LVector3f &tangent2) const=0;
 
-////////////////////////////////////////////////////////////////////
-// Member functions not visible to Scheme
-////////////////////////////////////////////////////////////////////
 public:
 
   struct BezierSeg {
@@ -158,7 +147,6 @@ protected:
   int _curve_type;
   int _num_dimensions;
 
-
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
@@ -184,11 +172,6 @@ private:
 //               definable.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA PiecewiseCurve : public ParametricCurve {
-public:
-
-////////////////////////////////////////////////////////////////////
-// Member functions visible to Scheme
-////////////////////////////////////////////////////////////////////
 PUBLISHED:
   virtual bool is_valid() const;
   virtual double get_max_t() const;
@@ -206,9 +189,6 @@ PUBLISHED:
 		    float px, float py, float pz,
 		    float tx, float ty, float tz);
 
-////////////////////////////////////////////////////////////////////
-// Member functions not visible to Scheme
-////////////////////////////////////////////////////////////////////
 public:
   PiecewiseCurve();
 
