@@ -359,19 +359,58 @@ def contains(whole, sub):
     # If you got here, whole must contain sub
     return 1
 
+def replace(list, old, new, all=0):
+    """
+    replace 'old' with 'new' in 'list'
+    if all == 0, replace first occurrence
+    otherwise replace all occurrences
+    returns the number of items replaced
+    """
+    if old not in list:
+        return 0
+
+    if not all:
+        i = list.index(old)
+        list[i] = new
+        return 1
+    else:
+        numReplaced = 0
+        for i in xrange(len(list)):
+            if list[i] == old:
+                numReplaced += 1
+                list[i] = new
+        return numReplaced
+
 def reduceAngle(deg):
     """
-    Reduces an angle (in degrees) to a value between -180. and 180.
+    Reduces an angle (in degrees) to a value in [-180..180)
     """
-    return (math.fmod((deg + 180.0), 360.0) - 180.0)
+    return (((deg + 180.) % 360.) - 180.)
     
-def shortestDestAngle(src, dest):
+def fitSrcAngle2Dest(src, dest):
     """
-    Returns a version of dest that is numerically closest to src. It is
-    assumed that src is between -180. and 180.
-    Example: (shortest-dest-angle 50. -170.) --> 190.
+    given a src and destination angle, returns an equivalent src angle
+    that is within [-180..180) of dest
+    examples:
+    fitSrcAngle2Dest(30,60) == 30
+    fitSrcAngle2Dest(60,30) == 60
+    fitSrcAngle2Dest(0,180) == 0
+    fitSrcAngle2Dest(-1,180) == 359
+    fitSrcAngle2Dest(-180,180) == 180
     """
-    return (src + (reduceAngle(dest - src)))
+    return dest + reduceAngle(src - dest)
+
+def fitDestAngle2Src(src, dest):
+    """
+    given a src and destination angle, returns an equivalent dest angle
+    that is within [-180..180) of src
+    examples:
+    fitDestAngle2Src(30,60) == 60
+    fitDestAngle2Src(60,30) == 30
+    fitDestAngle2Src(0,180) == -180
+    fitDestAngle2Src(1,180) == 180
+    """
+    return src + (reduceAngle(dest - src))
 
 def closestDestAngle2(src, dest):
     # The function above didn't seem to do what I wanted. So I hacked

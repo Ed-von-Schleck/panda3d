@@ -26,8 +26,8 @@
 ////////////////////////////////////////////////////////////////////
 INLINE bool HTTPChannel::
 is_valid() const {
-  return (!_source.is_null() && _state != S_failure && 
-          (_status_code / 100) == 2);
+  return (_state != S_failure && (_status_code / 100) == 2 &&
+          (_server_response_has_no_body || !_source.is_null()));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ get_url() const {
 //               server, as one of the HTTPClient enumerated types,
 //               e.g. HTTPClient::HV_11.
 ////////////////////////////////////////////////////////////////////
-INLINE HTTPClient::HTTPVersion HTTPChannel::
+INLINE HTTPEnum::HTTPVersion HTTPChannel::
 get_http_version() const {
   return _http_version;
 }
@@ -113,26 +113,34 @@ get_status_string() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: HTTPChannel::get_realm
+//     Function: HTTPChannel::get_www_realm
 //       Access: Published
 //  Description: If the document failed to connect because of a 401
-//               (Authorization required) or 407 (Proxy authorization
-//               required) error, this method should return the
+//               (Authorization required), this method will return the
 //               "realm" returned by the server in which the requested
 //               document must be authenticated.  This string may be
 //               presented to the user to request an associated
 //               username and password (which then should be stored in
 //               HTTPClient::set_username()).
-//
-//               If the document was retrieved successfully, or failed
-//               to connect for some other reason, this string will be
-//               empty.  If it is empty even in the presence of a 401
-//               or 407 error, then the client code and the server do
-//               not have a common scheme for exchanging passwords.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &HTTPChannel::
-get_realm() const {
-  return _realm;
+get_www_realm() const {
+  return _www_realm;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::get_proxy_realm
+//       Access: Published
+//  Description: If the document failed to connect because of a 407
+//               (Proxy authorization required), this method will
+//               return the "realm" returned by the proxy.  This
+//               string may be presented to the user to request an
+//               associated username and password (which then should
+//               be stored in HTTPClient::set_username()).
+////////////////////////////////////////////////////////////////////
+INLINE const string &HTTPChannel::
+get_proxy_realm() const {
+  return _proxy_realm;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -183,6 +191,65 @@ set_persistent_connection(bool persistent_connection) {
 INLINE bool HTTPChannel::
 get_persistent_connection() const {
   return _persistent_connection;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::set_connect_timeout
+//       Access: Published
+//  Description: Sets the maximum length of time, in seconds, that the
+//               channel will wait before giving up on establishing a
+//               TCP connection.
+//
+//               At the present, this is used only for the nonblocking
+//               interfaces (e.g. begin_get_document(),
+//               begin_connect_to()), but it is used whether
+//               set_blocking_connect() is true or false.
+////////////////////////////////////////////////////////////////////
+INLINE void HTTPChannel::
+set_connect_timeout(double connect_timeout) {
+  _connect_timeout = connect_timeout;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::get_connect_timeout
+//       Access: Published
+//  Description: Returns the length of time, in seconds, to wait for a
+//               new nonblocking socket to connect.  See
+//               set_connect_timeout().
+////////////////////////////////////////////////////////////////////
+INLINE double HTTPChannel::
+get_connect_timeout() const {
+  return _connect_timeout;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::set_blocking_connect
+//       Access: Published
+//  Description: If this flag is true, a socket connect will block
+//               even for nonblocking I/O calls like
+//               begin_get_document(), begin_connect_to(), etc.  If
+//               false, a socket connect will not block for
+//               nonblocking I/O calls, but will block for blocking
+//               I/O calls (get_document(), connect_to(), etc.).
+////////////////////////////////////////////////////////////////////
+INLINE void HTTPChannel::
+set_blocking_connect(bool blocking_connect) {
+  _blocking_connect = blocking_connect;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::get_blocking_connect
+//       Access: Published
+//  Description: If this flag is true, a socket connect will block
+//               even for nonblocking I/O calls like
+//               begin_get_document(), begin_connect_to(), etc.  If
+//               false, a socket connect will not block for
+//               nonblocking I/O calls, but will block for blocking
+//               I/O calls (get_document(), connect_to(), etc.).
+////////////////////////////////////////////////////////////////////
+INLINE bool HTTPChannel::
+get_blocking_connect() const {
+  return _blocking_connect;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -313,20 +380,38 @@ get_file_size() const {
 INLINE void HTTPChannel::
 reset() {
   reset_for_new_request();
-  free_bio();
+  reset_to_new();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: HTTPChannel::post_form
+//     Function: HTTPChannel::clear_extra_headers
 //       Access: Published
-//  Description: Posts form data to a particular URL and retrieves the
-//               response.
+//  Description: Resets the extra headers that were previously added
+//               via calls to send_extra_header().
 ////////////////////////////////////////////////////////////////////
-INLINE bool HTTPChannel::
-post_form(const URLSpec &url, const string &body) {
-  begin_request(M_post, url, body, false, 0, 0);
-  run();
-  return is_valid();
+INLINE void HTTPChannel::
+clear_extra_headers() {
+  _send_extra_headers = string();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::send_extra_header
+//       Access: Published
+//  Description: Specifies an additional key: value pair that is added
+//               into the header sent to the server with the next
+//               request.  This is passed along with no interpretation
+//               by the HTTPChannel code.  You may call this
+//               repeatedly to append multiple headers.
+//
+//               This is persistent for one request only; it must be
+//               set again for each new request.
+////////////////////////////////////////////////////////////////////
+INLINE void HTTPChannel::
+send_extra_header(const string &key, const string &value) {
+  _send_extra_headers += key;
+  _send_extra_headers += ": ";
+  _send_extra_headers += value;
+  _send_extra_headers += "\r\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -337,7 +422,7 @@ post_form(const URLSpec &url, const string &body) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool HTTPChannel::
 get_document(const URLSpec &url) {
-  begin_request(M_get, url, string(), false, 0, 0);
+  begin_request(HTTPEnum::M_get, url, string(), false, 0, 0);
   run();
   return is_valid();
 }
@@ -354,7 +439,7 @@ get_document(const URLSpec &url) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool HTTPChannel::
 get_subdocument(const URLSpec &url, size_t first_byte, size_t last_byte) {
-  begin_request(M_get, url, string(), false, first_byte, last_byte);
+  begin_request(HTTPEnum::M_get, url, string(), false, first_byte, last_byte);
   run();
   return is_valid();
 }
@@ -370,7 +455,59 @@ get_subdocument(const URLSpec &url, size_t first_byte, size_t last_byte) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool HTTPChannel::
 get_header(const URLSpec &url) {
-  begin_request(M_head, url, string(), false, 0, 0);
+  begin_request(HTTPEnum::M_head, url, string(), false, 0, 0);
+  run();
+  return is_valid();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::post_form
+//       Access: Published
+//  Description: Posts form data to a particular URL and retrieves the
+//               response.
+////////////////////////////////////////////////////////////////////
+INLINE bool HTTPChannel::
+post_form(const URLSpec &url, const string &body) {
+  begin_request(HTTPEnum::M_post, url, body, false, 0, 0);
+  run();
+  return is_valid();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::put_document
+//       Access: Published
+//  Description: Uploads the indicated body to the server to replace
+//               the indicated URL, if the server allows this.
+////////////////////////////////////////////////////////////////////
+INLINE bool HTTPChannel::
+put_document(const URLSpec &url, const string &body) {
+  begin_request(HTTPEnum::M_put, url, body, false, 0, 0);
+  run();
+  return is_valid();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::delete_document
+//       Access: Published
+//  Description: Requests the server to remove the indicated URL.
+////////////////////////////////////////////////////////////////////
+INLINE bool HTTPChannel::
+delete_document(const URLSpec &url) {
+  begin_request(HTTPEnum::M_delete, url, string(), false, 0, 0);
+  run();
+  return is_valid();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::get_trace
+//       Access: Published
+//  Description: Sends a TRACE message to the server, which should
+//               return back the same message as the server received
+//               it, allowing inspection of proxy hops, etc.
+////////////////////////////////////////////////////////////////////
+INLINE bool HTTPChannel::
+get_trace(const URLSpec &url) {
+  begin_request(HTTPEnum::M_trace, url, string(), false, 0, 0);
   run();
   return is_valid();
 }
@@ -389,28 +526,9 @@ get_header(const URLSpec &url) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool HTTPChannel::
 connect_to(const URLSpec &url) {
-  begin_request(M_connect, url, string(), false, 0, 0);
+  begin_request(HTTPEnum::M_connect, url, string(), false, 0, 0);
   run();
   return is_connection_ready();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: HTTPChannel::begin_post_form
-//       Access: Published
-//  Description: Posts form data to a particular URL and retrieves the
-//               response, all using non-blocking I/O.  See
-//               begin_get_document() and post_form().
-//
-//               It is important to note that you *must* call run()
-//               repeatedly after calling this method until run()
-//               returns false, and you may not call any other
-//               document posting or retrieving methods using the
-//               HTTPChannel object in the interim, or your form data
-//               may not get posted.
-////////////////////////////////////////////////////////////////////
-INLINE void HTTPChannel::
-begin_post_form(const URLSpec &url, const string &body) {
-  begin_request(M_post, url, body, true, 0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -429,7 +547,7 @@ begin_post_form(const URLSpec &url, const string &body) {
 ////////////////////////////////////////////////////////////////////
 INLINE void HTTPChannel::
 begin_get_document(const URLSpec &url) {
-  begin_request(M_get, url, string(), true, 0, 0);
+  begin_request(HTTPEnum::M_get, url, string(), true, 0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -446,7 +564,7 @@ begin_get_document(const URLSpec &url) {
 INLINE void HTTPChannel::
 begin_get_subdocument(const URLSpec &url, size_t first_byte, 
                       size_t last_byte) {
-  begin_request(M_get, url, string(), true, first_byte, last_byte);
+  begin_request(HTTPEnum::M_get, url, string(), true, first_byte, last_byte);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -457,7 +575,26 @@ begin_get_subdocument(const URLSpec &url, size_t first_byte,
 ////////////////////////////////////////////////////////////////////
 INLINE void HTTPChannel::
 begin_get_header(const URLSpec &url) {
-  begin_request(M_head, url, string(), true, 0, 0);
+  begin_request(HTTPEnum::M_head, url, string(), true, 0, 0);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::begin_post_form
+//       Access: Published
+//  Description: Posts form data to a particular URL and retrieves the
+//               response, all using non-blocking I/O.  See
+//               begin_get_document() and post_form().
+//
+//               It is important to note that you *must* call run()
+//               repeatedly after calling this method until run()
+//               returns false, and you may not call any other
+//               document posting or retrieving methods using the
+//               HTTPChannel object in the interim, or your form data
+//               may not get posted.
+////////////////////////////////////////////////////////////////////
+INLINE void HTTPChannel::
+begin_post_form(const URLSpec &url, const string &body) {
+  begin_request(HTTPEnum::M_post, url, body, true, 0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -480,7 +617,7 @@ begin_get_header(const URLSpec &url) {
 ////////////////////////////////////////////////////////////////////
 INLINE void HTTPChannel::
 begin_connect_to(const URLSpec &url) {
-  begin_request(M_connect, url, string(), true, 0, 0);
+  begin_request(HTTPEnum::M_connect, url, string(), true, 0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////

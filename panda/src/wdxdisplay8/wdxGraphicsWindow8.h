@@ -91,6 +91,7 @@ public:
   virtual unsigned int verify_window_sizes(unsigned int numsizes,unsigned int *dimen);
   bool special_check_fullscreen_resolution(UINT xsize,UINT ysize);
   virtual int get_depth_bitwidth(void);
+  virtual void get_framebuffer_format(PixelBuffer::Type &fb_type, PixelBuffer::Format &fb_format);
 
 protected:
   ButtonHandle lookup_key(WPARAM wparam) const;
@@ -100,8 +101,8 @@ protected:
   bool search_for_device(LPDIRECT3D8 pD3D8,DXDeviceInfo *pDevinfo);
   void search_for_valid_displaymode(UINT RequestedXsize,UINT RequestedYsize,bool bWantZBuffer,bool bWantStencil,
                                     UINT *pSupportedScreenDepthsMask,bool *pCouldntFindAnyValidZBuf,
-                                    D3DFORMAT *pSuggestedPixFmt);
-  bool FindBestDepthFormat(DXScreenData &Display,D3DDISPLAYMODE &TestDisplayMode,D3DFORMAT *pBestFmt,bool bWantStencil,bool bForce16bpp) const;
+                                    D3DFORMAT *pSuggestedPixFmt,bool bVerboseMode = false);
+  bool FindBestDepthFormat(DXScreenData &Display,D3DDISPLAYMODE &TestDisplayMode,D3DFORMAT *pBestFmt,bool bWantStencil,bool bForce16bpp,bool bVerboseMode = false) const;
   void init_resized_window(void);
   bool reset_device_resize_window(UINT new_xsize, UINT new_ysize);
   void setup_colormap(void);

@@ -24,6 +24,7 @@
 #include "filename.h"
 #include "buffer.h"
 #include "zStream.h"
+#include "config_express.h"
 
 #include "decompressor.h"
 
@@ -130,7 +131,7 @@ initiate(const Filename &source_file, const Filename &dest_file) {
         << dest_filename << " does not already exist.\n";
     }
   }
-  if (!dest_filename.open_write(*dest_fstream)) {
+  if (!dest_filename.open_write(*dest_fstream, true)) {
     downloader_cat.error()
       << "Unable to write to " << dest_filename << "\n";
     return get_write_error();
@@ -173,7 +174,9 @@ run() {
 
   // All done!
   cleanup();
-  _source_filename.unlink();
+  if (!keep_temporary_files) {
+    _source_filename.unlink();
+  }
   return EU_success;
 }
 
@@ -197,6 +200,9 @@ decompress(const Filename &source_file) {
   }
 
   cleanup();
+  if (!keep_temporary_files) {
+    _source_filename.unlink();
+  }
   return true;
 }
 

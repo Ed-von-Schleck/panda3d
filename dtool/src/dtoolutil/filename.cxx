@@ -1199,21 +1199,26 @@ open_read(ifstream &stream) const {
 //               or set_binary().
 ////////////////////////////////////////////////////////////////////
 bool Filename::
-open_write(ofstream &stream) const {
+open_write(ofstream &stream, bool truncate) const {
   assert(is_text() || is_binary());
 
   int open_mode = ios::out;
 
+  if (truncate) {
+    open_mode |= ios::trunc;
+
+  } else {
 #ifdef WIN32_VC
-  // Windows insists on having this set to prevent the file from being
-  // truncated when we open it.  Makes ios::trunc kind of pointless,
-  // doesn't it?  On the other hand, setting ios::in also seems to
-  // imply ios::nocreate (!), so we should only set this if the file
-  // already exists.
-  if (exists()) {
-    open_mode |= ios::in;
-  }
+    // Windows insists on having ios::in set to prevent the file from
+    // being truncated when we open it.  Makes ios::trunc kind of
+    // pointless, doesn't it?  On the other hand, setting ios::in also
+    // seems to imply ios::nocreate (!), so we should only set this if
+    // the file already exists.
+    if (exists()) {
+      open_mode |= ios::in;
+    }
 #endif
+  }
 
 #ifdef HAVE_IOS_BINARY
   // For some reason, some systems (like Irix) don't define
@@ -1316,7 +1321,36 @@ open_read_write(fstream &stream) const {
 ////////////////////////////////////////////////////////////////////
 bool Filename::
 touch() const {
-#ifdef HAVE_UTIME_H
+#ifdef WIN32_VC
+  // In Windows, we have to use the Windows API to do this reliably.
+
+  // First, guarantee the file exists (and also get its handle).
+  string os_specific = to_os_specific();
+  HANDLE fhandle;
+  fhandle = CreateFile(os_specific.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE,
+                       NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (fhandle == INVALID_HANDLE_VALUE) {
+    return false;
+  }
+
+  // Now update the file time and date.
+  SYSTEMTIME sysnow;
+  FILETIME ftnow;
+  GetSystemTime(&sysnow);
+  if (!SystemTimeToFileTime(&sysnow, &ftnow)) {
+    CloseHandle(fhandle);
+    return false;
+  }
+  
+  if (!SetFileTime(fhandle, NULL, NULL, &ftnow)) {
+    CloseHandle(fhandle);
+    return false;
+  }
+
+  CloseHandle(fhandle);
+  return true;
+
+#elif defined(HAVE_UTIME_H)
   // Most Unix systems can do this explicitly.
 
   string os_specific = to_os_specific();
@@ -1349,14 +1383,14 @@ touch() const {
     return false;
   }
   return true;
-#else  // HAVE_UTIME_H
+#else  // WIN32, HAVE_UTIME_H
   // Other systems may not have an explicit control over the
   // modification time.  For these systems, we'll just temporarily
   // open the file in append mode, then close it again (it gets closed
   // when the ofstream goes out of scope).
   ofstream file;
   return open_append(file);
-#endif  // HAVE_UTIME_H
+#endif  // WIN32, HAVE_UTIME_H
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1398,12 +1432,27 @@ rename_to(const Filename &other) const {
 //               itself.  This assumes that the Filename contains the
 //               name of a file, not a directory name; it ensures that
 //               the directory containing the file exists.
+//
+//               However, if the filename ends in a slash, it assumes
+//               the Filename represents the name of a directory, and
+//               creates all the paths.
 ////////////////////////////////////////////////////////////////////
 bool Filename::
 make_dir() const {
+  if (empty()) {
+    return false;
+  }
   Filename path = *this;
   path.standardize();
-  string dirname = path.get_dirname();
+  string dirname;
+  if (_filename[_filename.length() - 1] == '/') {
+    // The Filename ends in a slash; it represents a directory.
+    dirname = path.get_fullpath();
+
+  } else {
+    // The Filename does not end in a slash; it represents a file.
+    dirname = path.get_dirname();
+  }
 
   // First, make sure everything up to the last path is known.  We
   // don't care too much if any of these fail; maybe they failed

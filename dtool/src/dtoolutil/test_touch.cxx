@@ -1,5 +1,5 @@
-// Filename: apply_patch.cxx
-// Created by:  
+// Filename: test_pfstream.cxx
+// Created by:  drose (04Nov02)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -16,35 +16,20 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include <pandabase.h>
-#ifndef HAVE_GETOPT
-  #include <gnu_getopt.h>
-#else
-  #include <getopt.h>
-#endif
-#include <patchfile.h>
-#include <filename.h>
+#include "dtoolbase.h"
+#include "filename.h"
 
-int
+int 
 main(int argc, char *argv[]) {
-  if (argc < 3) {
-    cerr << "Usage: apply_patch <patch> <file>" << endl;
-    return 1;
+  if (argc < 2) {
+    cout << "test_touch filename [filename ... ]\n";
+    return (1);
   }
 
-  Filename patch = argv[1];
-  patch.set_binary();
-
-  Filename file = argv[2];
-  file.set_binary();
-
-  Patchfile pfile;
-
-  cerr << "Applying patch file " << patch << " to " << file << endl;
-  if (pfile.apply(patch, file) == false) {
-    cerr << "apply patch failed" << endl;
-    return 1;
+  for (int i = 1; i < argc; i++) {
+    Filename filename(argv[i]);
+    filename.touch();
   }
 
-  return 0;
+  return (0);
 }

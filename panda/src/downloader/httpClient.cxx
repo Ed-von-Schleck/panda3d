@@ -23,13 +23,13 @@
 #include "config_express.h"
 #include "virtualFileSystem.h"
 #include "executionEnvironment.h"
+#include "httpBasicAuthorization.h"
+#include "httpDigestAuthorization.h"
 
 #ifdef HAVE_SSL
 
-#define REPORT_SSL_ERRORS 1
-
 #include <openssl/rand.h>
-#ifdef REPORT_SSL_ERRORS
+#ifdef REPORT_OPENSSL_ERRORS
 #include <openssl/err.h>
 #endif
 
@@ -51,7 +51,7 @@ X509_STORE *HTTPClient::_x509_store = NULL;
 ////////////////////////////////////////////////////////////////////
 HTTPClient::
 HTTPClient() {
-  _http_version = HV_11;
+  _http_version = HTTPEnum::HV_11;
   _verify_ssl = verify_ssl ? VS_normal : VS_no_verify;
   _ssl_ctx = (SSL_CTX *)NULL;
 
@@ -191,16 +191,16 @@ get_username(const string &server, const string &realm) const {
 string HTTPClient::
 get_http_version_string() const {
   switch (_http_version) {
-  case HV_09:
+  case HTTPEnum::HV_09:
     return "HTTP/0.9";
 
-  case HV_10:
+  case HTTPEnum::HV_10:
     return "HTTP/1.0";
 
-  case HV_11:
+  case HTTPEnum::HV_11:
     return "HTTP/1.1";
 
-  case HV_other:
+  case HTTPEnum::HV_other:
     // Report the best we can do.
     return "HTTP/1.1";
   }
@@ -216,16 +216,16 @@ get_http_version_string() const {
 //               the appropriate enumerated value, or HV_other if the
 //               version is unknown.
 ////////////////////////////////////////////////////////////////////
-HTTPClient::HTTPVersion HTTPClient::
+HTTPEnum::HTTPVersion HTTPClient::
 parse_http_version_string(const string &version) {
   if (version == "HTTP/1.0") {
-    return HV_10;
+    return HTTPEnum::HV_10;
   } else if (version == "HTTP/1.1") {
-    return HV_11;
+    return HTTPEnum::HV_11;
   } else if (version.substr(0, 6) == "HTTP/0") {
-    return HV_09;
+    return HTTPEnum::HV_09;
   } else {
-    return HV_other;
+    return HTTPEnum::HV_other;
   }
 }
 
@@ -254,7 +254,7 @@ load_certificates(const Filename &filename) {
   if (result <= 0) {
     downloader_cat.info()
       << "Could not load certificates from " << filename << ".\n";
-#ifdef REPORT_SSL_ERRORS
+#ifdef REPORT_OPENSSL_ERRORS
     ERR_print_errors_fp(stderr);
 #endif
     return false;
@@ -509,6 +509,159 @@ add_http_username(const string &http_username) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: HTTPClient::select_username
+//       Access: Private
+//  Description: Chooses a suitable username:password string for the
+//               given URL and realm.
+////////////////////////////////////////////////////////////////////
+string HTTPClient::
+select_username(const URLSpec &url, bool is_proxy, const string &realm) const {
+  string username;
+
+  // Look in several places in order to find the matching username.
+
+  // Fist, if there's a username on the URL, that always wins (except
+  // when we are looking for a proxy username).
+  if (url.has_username() && !is_proxy) {
+    username = url.get_username();
+  }
+
+  // Otherwise, start looking on the HTTPClient.  
+  if (is_proxy) {
+    if (username.empty()) {
+      // Try the *proxy/realm.
+      username = get_username("*proxy", realm);
+    }
+    if (username.empty()) {
+      // Then, try *proxy/any realm.
+      username = get_username("*proxy", string());
+    }
+  }
+  if (username.empty()) {
+    // Try the specific server/realm.
+    username = get_username(url.get_server(), realm);
+  }
+  if (username.empty()) {
+    // Then, try the specific server/any realm.
+    username = get_username(url.get_server(), string());
+  }
+  if (username.empty()) {
+    // Then, try any server with this realm.
+    username = get_username(string(), realm);
+  }
+  if (username.empty()) {
+    // Then, take the general password.
+    username = get_username(string(), string());
+  }
+
+  return username;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPClient::select_auth
+//       Access: Private
+//  Description: Chooses a suitable pre-computed authorization for the
+//               indicated URL.  Returns NULL if no authorization
+//               matches.
+////////////////////////////////////////////////////////////////////
+HTTPAuthorization *HTTPClient::
+select_auth(const URLSpec &url, bool is_proxy, const string &last_realm) {
+  Domains &domains = is_proxy ? _proxy_domains : _www_domains;
+  string canon = HTTPAuthorization::get_canonical_url(url).get_url();
+
+  // Look for the longest domain string that is a prefix of our
+  // canonical URL.  We have to make a linear scan through the list.
+  Domains::const_iterator best_di = domains.end();
+  size_t longest_length = 0;
+  Domains::const_iterator di;
+  for (di = domains.begin(); di != domains.end(); ++di) {
+    const string &domain = (*di).first;
+    size_t length = domain.length();
+    if (domain == canon.substr(0, length)) {
+      // This domain string matches.  Is it the longest?
+      if (length > longest_length) {
+        best_di = di;
+        longest_length = length;
+      }
+    }
+  }
+
+  if (best_di != domains.end()) {
+    // Ok, we found a matching domain.  Use it.
+    if (downloader_cat.is_spam()) {
+      downloader_cat.spam()
+        << "Choosing domain " << (*best_di).first << " for " << url << "\n";
+    }
+    const Realms &realms = (*best_di).second._realms;
+    // First, try our last realm.
+    Realms::const_iterator ri;
+    ri = realms.find(last_realm);
+    if (ri != realms.end()) {
+      return (*ri).second;
+    }
+
+    if (!realms.empty()) {
+      // Oh well, just return the first realm.
+      return (*realms.begin()).second;
+    }
+  }
+
+  // No matching domains.
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPClient::generate_auth
+//       Access: Private
+//  Description: Generates a new authorization entry in response to a
+//               401 or 407 challenge from the server or proxy.  The
+//               new authorization entry is stored for future
+//               connections to the same server (or, more precisely,
+//               the same domain, which may be a subset of the server,
+//               or it may include multiple servers).
+////////////////////////////////////////////////////////////////////
+PT(HTTPAuthorization) HTTPClient::
+generate_auth(const URLSpec &url, bool is_proxy, const string &challenge) {
+  HTTPAuthorization::AuthenticationSchemes schemes;
+  HTTPAuthorization::parse_authentication_schemes(schemes, challenge);
+
+  PT(HTTPAuthorization) auth;
+  HTTPAuthorization::AuthenticationSchemes::iterator si;
+
+  si = schemes.find("digest");
+  if (si != schemes.end()) {
+    auth = new HTTPDigestAuthorization((*si).second, url, is_proxy);
+  }
+
+  if (auth == (HTTPAuthorization *)NULL || !auth->is_valid()) {
+    si = schemes.find("basic");
+    if (si != schemes.end()) {
+      auth = new HTTPBasicAuthorization((*si).second, url, is_proxy);
+    }
+  }
+
+  if (auth == (HTTPAuthorization *)NULL || !auth->is_valid()) {
+    downloader_cat.warning() 
+      << "Don't know how to use any of the server's available authorization schemes:\n";
+    for (si = schemes.begin(); si != schemes.end(); ++si) {
+      downloader_cat.warning() << (*si).first << "\n";
+    }
+
+  } else {
+    // Now that we've got an authorization, store it under under each
+    // of its suggested domains for future use.
+    Domains &domains = is_proxy ? _proxy_domains : _www_domains;
+    const vector_string &domain = auth->get_domain();
+    vector_string::const_iterator si;
+    for (si = domain.begin(); si != domain.end(); ++si) {
+      domains[(*si)]._realms[auth->get_realm()] = auth;
+    }
+  }
+
+  return auth;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: HTTPClient::initialize_ssl
 //       Access: Private, Static
 //  Description: Called once the first time this class is used to
@@ -516,7 +669,7 @@ add_http_username(const string &http_username) {
 ////////////////////////////////////////////////////////////////////
 void HTTPClient::
 initialize_ssl() {
-#ifdef REPORT_SSL_ERRORS
+#ifdef REPORT_OPENSSL_ERRORS
   ERR_load_crypto_strings();
   ERR_load_SSL_strings();
 #endif
@@ -562,28 +715,58 @@ load_verify_locations(SSL_CTX *ctx, const Filename &ca_file) {
   // just read, and call the low-level routines to read the
   // certificates from the BIO.
   BIO *mbio = BIO_new_mem_buf((void *)data.data(), data.length());
+
+  // We have to be sure and clear the OpenSSL error state before we
+  // call this function, or it will get confused.
+  ERR_clear_error();
   inf = PEM_X509_INFO_read_bio(mbio, NULL, NULL, NULL);
   BIO_free(mbio);
 
   if (!inf) {
     // Could not scan certificates.
+    downloader_cat.info()
+      << "PEM_X509_INFO_read_bio() returned NULL.\n";
+#ifdef REPORT_OPENSSL_ERRORS
+    ERR_print_errors_fp(stderr);
+#endif
     return 0;
+  }
+  
+  if (downloader_cat.is_spam()) {
+    downloader_cat.spam()
+      << "PEM_X509_INFO_read_bio() found " << sk_X509_INFO_num(inf)
+      << " entries.\n";
   }
 
   // Now add the certificates to the context.
   X509_STORE *store = ctx->cert_store;
 
   int count = 0;
-  for (int i = 0; i < sk_X509_INFO_num(inf); i++) {
+  int num_entries = sk_X509_INFO_num(inf);
+  for (int i = 0; i < num_entries; i++) {
     X509_INFO *itmp = sk_X509_INFO_value(inf, i);
 
     if (itmp->x509) {
       X509_STORE_add_cert(store, itmp->x509);
       count++;
+      if (downloader_cat.is_spam()) {
+        downloader_cat.spam()
+          << "Entry " << i << " is x509\n";
+      }
 
     } else if (itmp->crl) {
       X509_STORE_add_crl(store, itmp->crl);
       count++;
+      if (downloader_cat.is_spam()) {
+        downloader_cat.spam()
+          << "Entry " << i << " is crl\n";
+      }
+
+    } else {
+      if (downloader_cat.is_spam()) {
+        downloader_cat.spam()
+          << "Entry " << i << " is unknown type\n";
+      }
     }
   }
   sk_X509_INFO_pop_free(inf, X509_INFO_free);
@@ -745,4 +928,3 @@ ssl_msg_callback(int write_p, int version, int content_type,
 #endif  // defined(SSL_097) && !defined(NDEBUG)
 
 #endif  // HAVE_SSL
-

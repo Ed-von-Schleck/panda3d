@@ -29,6 +29,7 @@
 #ifdef HAVE_SSL
 
 #include "httpClient.h"
+#include "httpEnum.h"
 #include "urlSpec.h"
 #include "virtualFile.h"
 #include "bioPtr.h"
@@ -76,16 +77,22 @@ PUBLISHED:
   INLINE bool is_valid() const;
   INLINE bool is_connection_ready() const;
   INLINE const URLSpec &get_url() const;
-  INLINE HTTPClient::HTTPVersion get_http_version() const;
+  INLINE HTTPEnum::HTTPVersion get_http_version() const;
   INLINE const string &get_http_version_string() const;
   INLINE int get_status_code() const;
   INLINE const string &get_status_string() const;
-  INLINE const string &get_realm() const;
+  INLINE const string &get_www_realm() const;
+  INLINE const string &get_proxy_realm() const;
   INLINE const URLSpec &get_redirect() const;
   string get_header_value(const string &key) const;
 
   INLINE void set_persistent_connection(bool persistent_connection);
   INLINE bool get_persistent_connection() const;
+
+  INLINE void set_connect_timeout(double timeout_seconds);
+  INLINE double get_connect_timeout() const;
+  INLINE void set_blocking_connect(bool blocking_connect);
+  INLINE bool get_blocking_connect() const;
 
   INLINE void set_download_throttle(bool download_throttle);
   INLINE bool get_download_throttle() const;
@@ -102,40 +109,43 @@ PUBLISHED:
 
   INLINE void reset();
 
-  INLINE bool post_form(const URLSpec &url, const string &body);
+  INLINE void clear_extra_headers();
+  INLINE void send_extra_header(const string &key, const string &value);
+
   INLINE bool get_document(const URLSpec &url);
   INLINE bool get_subdocument(const URLSpec &url, 
                               size_t first_byte, size_t last_byte);
   INLINE bool get_header(const URLSpec &url);
+  INLINE bool post_form(const URLSpec &url, const string &body);
+  INLINE bool put_document(const URLSpec &url, const string &body);
+  INLINE bool delete_document(const URLSpec &url);
+  INLINE bool get_trace(const URLSpec &url);
   INLINE bool connect_to(const URLSpec &url);
 
-  INLINE void begin_post_form(const URLSpec &url, const string &body);
   INLINE void begin_get_document(const URLSpec &url);
   INLINE void begin_get_subdocument(const URLSpec &url, 
                                     size_t first_byte, size_t last_byte);
   INLINE void begin_get_header(const URLSpec &url);
+  INLINE void begin_post_form(const URLSpec &url, const string &body);
   bool run();
   INLINE void begin_connect_to(const URLSpec &url);
 
   ISocketStream *read_body();
-  bool download_to_file(const Filename &filename, size_t first_byte = 0);
-  bool download_to_ram(Ramfile *ramfile);
+  bool download_to_file(const Filename &filename, bool subdocument_resumes = true);
+  bool download_to_ram(Ramfile *ramfile, bool subdocument_resumes = true);
   SocketStream *get_connection();
 
   INLINE size_t get_bytes_downloaded() const;
   INLINE size_t get_bytes_requested() const;
   INLINE bool is_download_complete() const;
 
-private:
-  enum Method {
-    M_get,
-    M_head,
-    M_post,
-    M_connect
-  };
+public:
+  static string downcase(const string &s);
 
+private:
   bool reached_done_state();
   bool run_connecting();
+  bool run_connecting_wait();
   bool run_proxy_ready();
   bool run_proxy_request_sent();
   bool run_proxy_reading_header();
@@ -153,10 +163,13 @@ private:
   bool run_download_to_file();
   bool run_download_to_ram();
 
-  void begin_request(Method method, const URLSpec &url, 
+  void begin_request(HTTPEnum::Method method, const URLSpec &url, 
                      const string &body, bool nonblocking,
                      size_t first_byte, size_t last_byte);
   void reset_for_new_request();
+
+  void finished_body(bool has_trailer);
+  bool reset_download_position();
 
   bool http_getline(string &str);
   bool http_send(const string &str);
@@ -172,43 +185,42 @@ private:
 
   void make_header();
   void make_proxy_request_text();
-  void make_request_text(const string &authorization);
+  void make_request_text();
 
   void set_url(const URLSpec &url);
   void store_header_field(const string &field_name, const string &field_value);
-  bool get_authorization(string &authorization,
-                         const string &authenticate_request, 
-                         const URLSpec &url, bool is_proxy);
-
-  static string downcase(const string &s);
-  static string base64_encode(const string &s);
-  static size_t scan_quoted_or_unquoted_string(string &result, const string &source, size_t start);
 
 #ifndef NDEBUG
   static void show_send(const string &message);
 #endif
 
-  void free_bio();
   void reset_download_to();
+  void reset_to_new();
+  void close_connection();
 
   HTTPClient *_client;
   URLSpec _proxy;
   PT(BioPtr) _bio;
   PT(BioStreamPtr) _source;
   bool _persistent_connection;
+  double _connect_timeout;
+  bool _blocking_connect;
   bool _download_throttle;
   double _max_bytes_per_second;
   double _max_updates_per_second;
   double _seconds_per_update;
   int _bytes_per_update;
   bool _nonblocking;
+  string _send_extra_headers;
 
   URLSpec _url;
-  Method _method;
+  HTTPEnum::Method _method;
+  string request_path;
   string _header;
   string _body;
   bool _want_ssl;
   bool _proxy_serves_document;
+  bool _server_response_has_no_body;
   size_t _first_byte;
   size_t _last_byte;
 
@@ -218,18 +230,26 @@ private:
     DD_ram,
   };
   DownloadDest _download_dest;
+  bool _subdocument_resumes;
   Filename _download_to_filename;
   ofstream _download_to_file;
   Ramfile *_download_to_ramfile;
 
   int _read_index;
 
-  HTTPClient::HTTPVersion _http_version;
+  HTTPEnum::HTTPVersion _http_version;
   string _http_version_string;
   int _status_code;
   string _status_string;
-  string _realm;
   URLSpec _redirect;
+
+  string _proxy_realm;
+  string _proxy_username;
+  PT(HTTPAuthorization) _proxy_auth;
+
+  string _www_realm;
+  string _www_username;
+  PT(HTTPAuthorization) _www_auth;
 
   enum ResponseType {
     RT_none,
@@ -256,6 +276,7 @@ private:
   enum State {
     S_new,
     S_connecting,
+    S_connecting_wait,
     S_proxy_ready,
     S_proxy_request_sent,
     S_proxy_reading_header,
@@ -273,6 +294,7 @@ private:
   };
   State _state;
   State _done_state;
+  double _started_connecting_time;
   bool _started_download;
   string _proxy_header;
   string _proxy_request_text;
@@ -287,13 +309,6 @@ private:
   pset<URLSpec> _redirect_trail;
   int _last_status_code;
   double _last_run_time;
-
-  typedef pmap<string, string> Tokens;
-  typedef pmap<string, Tokens> AuthenticationSchemes;
-  static void parse_authentication_schemes(AuthenticationSchemes &schemes,
-                                           const string &field_value);
-  bool get_basic_authorization(string &authorization, const Tokens &tokens,
-                               const URLSpec &url, bool is_proxy);
 
 public:
   virtual TypeHandle get_type() const {

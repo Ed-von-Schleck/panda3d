@@ -19,9 +19,11 @@
 #ifndef CONFIG_DOWNLOADER_H
 #define CONFIG_DOWNLOADER_H
 
-#include <pandabase.h>
-#include <notifyCategoryProxy.h>
+#include "pandabase.h"
+#include "notifyCategoryProxy.h"
+#include "dconfig.h"
 
+ConfigureDecl(config_downloader, EXPCL_PANDAEXPRESS, EXPTP_PANDAEXPRESS);
 NotifyCategoryDecl(downloader, EXPCL_PANDAEXPRESS, EXPTP_PANDAEXPRESS);
 
 extern const int downloader_disk_write_frequency;
@@ -42,5 +44,11 @@ extern const bool early_random_seed;
 extern const bool verify_ssl;
 extern const string http_proxy;
 extern const string http_proxy_username;
+extern const double connect_timeout;
+
+// Later, we can make this conditional on NDEBUG or something along
+// those lines; for now, we define it always to be true so we get
+// error messages from OpenSSL wherever possible.
+#define REPORT_OPENSSL_ERRORS 1
 
 #endif
