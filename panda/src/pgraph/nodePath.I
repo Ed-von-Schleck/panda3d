@@ -326,7 +326,9 @@ has_parent() const {
 ////////////////////////////////////////////////////////////////////
 INLINE NodePath NodePath::
 get_parent() const {
-  nassertr(has_parent(), NodePath::fail());
+  if (!has_parent()) {
+    return NodePath::fail();
+  }
   NodePath parent;
   parent._head = _head->get_next();
   return parent;
@@ -1122,6 +1124,100 @@ compare_to(const NodePath &other) const {
   // equivalent if and only if the NodePaths are equivalent.  So we
   // only have to compare pointers.
   return _head - other._head;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::set_tag
+//       Access: Published
+//  Description: Associates a user-defined value with a user-defined
+//               key which is stored on the node.  This value has no
+//               meaning to Panda; but it is stored indefinitely on
+//               the node until it is requested again.
+//
+//               Each unique key stores a different string value.
+//               There is no effective limit on the number of
+//               different keys that may be stored or on the length of
+//               any one key's value.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+set_tag(const string &key, const string &value) {
+  nassertv_always(!is_empty());
+  node()->set_tag(key, value);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_tag
+//       Access: Published
+//  Description: Retrieves the user-defined value that was previously
+//               set on this node for the particular key, if any.  If
+//               no value has been previously set, returns the empty
+//               string.  See also get_net_tag().
+////////////////////////////////////////////////////////////////////
+INLINE string NodePath::
+get_tag(const string &key) const {
+  // An empty NodePath quietly returns no tags.  This makes
+  // get_net_tag() easier to implement.
+  if (is_empty()) {
+    return string();
+  }
+  return node()->get_tag(key);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_tag
+//       Access: Published
+//  Description: Returns true if a value has been defined on this node
+//               for the particular key (even if that value is the
+//               empty string), or false if no value has been set.
+//               See also has_net_tag().
+////////////////////////////////////////////////////////////////////
+INLINE bool NodePath::
+has_tag(const string &key) const {
+  // An empty NodePath quietly has no tags.  This makes has_net_tag()
+  // easier to implement.
+  if (is_empty()) {
+    return false;
+  }
+  return node()->has_tag(key);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::clear_tag
+//       Access: Published
+//  Description: Removes the value defined for this key on this
+//               particular node.  After a call to clear_tag(),
+//               has_tag() will return false for the indicated key.
+////////////////////////////////////////////////////////////////////
+INLINE void NodePath::
+clear_tag(const string &key) {
+  nassertv_always(!is_empty());
+  node()->clear_tag(key);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_net_tag
+//       Access: Published
+//  Description: Returns the tag value that has been defined on this
+//               node, or the nearest ancestor node, for the indicated
+//               key.  If no value has been defined for the indicated
+//               key on any ancestor node, returns the empty string.
+//               See also get_tag().
+////////////////////////////////////////////////////////////////////
+INLINE string NodePath::
+get_net_tag(const string &key) const {
+  return find_net_tag(key).get_tag(key);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_net_tag
+//       Access: Published
+//  Description: Returns true if the indicated tag value has been
+//               defined on this node or on any ancestor node, or
+//               false otherwise.  See also has_tag().
+////////////////////////////////////////////////////////////////////
+INLINE bool NodePath::
+has_net_tag(const string &key) const {
+  return find_net_tag(key).has_tag(key);
 }
 
 

@@ -182,6 +182,7 @@ PUBLISHED:
   NodePathCollection get_children() const;
   INLINE int get_num_children() const;
   INLINE NodePath get_child(int n) const;
+  NodePathCollection get_stashed_children() const;
 
   INLINE bool has_parent() const;
   INLINE NodePath get_parent() const;
@@ -517,6 +518,14 @@ PUBLISHED:
   int flatten_light();
   int flatten_medium();
   int flatten_strong();
+
+  INLINE void set_tag(const string &key, const string &value);
+  INLINE string get_tag(const string &key) const;
+  INLINE bool has_tag(const string &key) const;
+  INLINE void clear_tag(const string &key);
+  INLINE string get_net_tag(const string &key) const;
+  INLINE bool has_net_tag(const string &key) const;
+  NodePath find_net_tag(const string &key) const;
 
   bool write_bam_file(const string &filename) const;
 
