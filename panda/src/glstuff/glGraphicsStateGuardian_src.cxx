@@ -288,8 +288,6 @@ reset() {
   GraphicsStateGuardian::reset();
 
   // Output the vendor and version strings.
-  show_gl_string("GL_VENDOR", GL_VENDOR);
-  show_gl_string("GL_RENDERER", GL_RENDERER);
   get_gl_version();
 
   // Save the extensions tokens.
@@ -2823,11 +2821,14 @@ show_gl_string(const string &name, GLenum id) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GLGraphicsStateGuardian::get_gl_version
-//       Access: Protected
+//       Access: Protected, Virtual
 //  Description: Queries the runtime version of OpenGL in use.
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 get_gl_version() {
+  show_gl_string("GL_VENDOR", GL_VENDOR);
+  show_gl_string("GL_RENDERER", GL_RENDERER);
+
   _gl_version_major = 0;
   _gl_version_minor = 0;
   _gl_version_release = 0;

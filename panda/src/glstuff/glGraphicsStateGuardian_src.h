@@ -134,7 +134,7 @@ protected:
   static bool report_errors_loop(int line, const char *source_file, 
                                  GLenum error_code, int &error_count);
   void show_gl_string(const string &name, GLenum id);
-  void get_gl_version();
+  virtual void get_gl_version();
   void save_extensions(const char *extensions);
   virtual void get_extra_extensions();
   void report_extensions() const;

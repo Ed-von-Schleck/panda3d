@@ -18,6 +18,7 @@
 
 #include "glxGraphicsStateGuardian.h"
 #include "config_glxdisplay.h"
+#include "config_glgsg.h"
 
 #include <dlfcn.h>
 
@@ -44,7 +45,9 @@ glxGraphicsStateGuardian(const FrameBufferProperties &properties,
   if (share_with != (glxGraphicsStateGuardian *)NULL) {
     _prepared_objects = share_with->get_prepared_objects();
   }
+  
   _libgl_handle = NULL;
+  _checked_get_proc_address = false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -64,6 +67,47 @@ glxGraphicsStateGuardian::
   if (_libgl_handle != (void *)NULL) {
     dlclose(_libgl_handle);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: glxGraphicsStateGuardian::glx_is_at_least_version
+//       Access: Public
+//  Description: Returns true if the runtime GLX version number is at
+//               least the indicated value, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool glxGraphicsStateGuardian::
+glx_is_at_least_version(int major_version, int minor_version) const {
+  if (_glx_version_major < major_version) {
+    return false;
+  }
+  if (_glx_version_minor < minor_version) {
+    return false;
+  }
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: glxGraphicsStateGuardian::get_gl_version
+//       Access: Protected, Virtual
+//  Description: Queries the runtime version of OpenGL in use.
+////////////////////////////////////////////////////////////////////
+void glxGraphicsStateGuardian::
+get_gl_version() {
+  GLGraphicsStateGuardian::get_gl_version();
+
+  show_glx_client_string("GLX_VENDOR", GLX_VENDOR);
+  show_glx_client_string("GLX_VERSION", GLX_VERSION);
+  show_glx_server_string("GLX_VENDOR", GLX_VENDOR);
+  show_glx_server_string("GLX_VERSION", GLX_VERSION);
+
+  glXQueryVersion(_display, &_glx_version_major, &_glx_version_minor);
+
+  // We output to glgsg_cat instead of glxdisplay_cat, since this is
+  // where the GL version has been output, and it's nice to see the
+  // two of these together.
+  glgsg_cat.debug()
+    << "GLX_VERSION = " << _glx_version_major << "." << _glx_version_minor 
+    << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -91,6 +135,49 @@ get_extra_extensions() {
 ////////////////////////////////////////////////////////////////////
 void *glxGraphicsStateGuardian::
 get_extension_func(const char *name) {
+  if (!_checked_get_proc_address) {
+    // First, check if we have glxGetProcAddress available.  This will
+    // be superior if we can get it.
+    const char *funcName = NULL;
+
+    if (glx_is_at_least_version(1, 4)) {
+      funcName = "glXGetProcAddress";
+
+    } else if (has_extension("GLX_ARB_get_proc_address")) {
+      funcName = "glXGetProcAddressARB";
+    }
+
+    if (funcName != NULL) {
+      _glxGetProcAddress = (PFNGLXGETPROCADDRESSPROC)get_system_func(funcName);
+      if (_glxGetProcAddress == NULL) {
+        glxdisplay_cat.warning()
+          << "Couldn't load function " << funcName
+          << ", GL extensions may be unavailable.\n";
+      }
+    }
+
+    _checked_get_proc_address = true;
+  }
+
+  // Use glxGetProcAddress() if we've got it; it should be more robust.
+  if (_glxGetProcAddress != NULL) {
+    return (void *)_glxGetProcAddress((const GLubyte *)name);
+  }
+
+  // Otherwise, fall back to the OS-provided calls.
+  return get_system_func(name);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: glxGraphicsStateGuardian::get_system_func
+//       Access: Private
+//  Description: Support for get_extension_func(), above, that uses
+//               system calls to find a GL or GLX function (in the
+//               absence of a working glxGetProcAddress() function to
+//               call).
+////////////////////////////////////////////////////////////////////
+void *glxGraphicsStateGuardian::
+get_system_func(const char *name) {
   if (_libgl_handle == (void *)NULL) {
     // We open the current executable, rather than naming a particular
     // library.  Presumably libGL.so (or whatever the library should
@@ -112,4 +199,44 @@ get_extension_func(const char *name) {
   }
 
   return dlsym(_libgl_handle, name);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: glxGraphicsStateGuardian::show_glx_client_string
+//       Access: Protected
+//  Description: Outputs the result of glxGetClientString() on the
+//               indicated tag.
+////////////////////////////////////////////////////////////////////
+void glxGraphicsStateGuardian::
+show_glx_client_string(const string &name, int id) {
+  if (glgsg_cat.is_debug()) {
+    const char *text = glXGetClientString(_display, id);
+    if (text == (const char *)NULL) {
+      glgsg_cat.debug()
+        << "Unable to query " << name << " (client)\n";
+    } else {
+      glgsg_cat.debug()
+        << name << " (client) = " << (const char *)text << "\n";
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: glxGraphicsStateGuardian::show_glx_server_string
+//       Access: Protected
+//  Description: Outputs the result of glxQueryServerString() on the
+//               indicated tag.
+////////////////////////////////////////////////////////////////////
+void glxGraphicsStateGuardian::
+show_glx_server_string(const string &name, int id) {
+  if (glgsg_cat.is_debug()) {
+    const char *text = glXQueryServerString(_display, _screen, id);
+    if (text == (const char *)NULL) {
+      glgsg_cat.debug()
+        << "Unable to query " << name << " (server)\n";
+    } else {
+      glgsg_cat.debug()
+        << name << " (server) = " << (const char *)text << "\n";
+    }
+  }
 }
