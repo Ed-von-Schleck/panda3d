@@ -46,8 +46,8 @@ public:
   typedef TT TType;
   typedef CT CType;
   typedef pmap<CPT(TexCoordName), TType> TexCoords;
-  typedef TexCoords::const_iterator tc_const_iterator;
-  typedef TexCoords::size_type tc_size_type;
+  typedef TYPENAME TexCoords::const_iterator tc_const_iterator;
+  typedef TYPENAME TexCoords::size_type tc_size_type;
 
   INLINE BuilderVertexTempl();
   INLINE BuilderVertexTempl(const VType &c);

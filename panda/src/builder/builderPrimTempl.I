@@ -332,7 +332,7 @@ has_any_pixel_size() const {
 //               vertices on this primitive.
 ////////////////////////////////////////////////////////////////////
 template <class VTX>
-INLINE BuilderPrimTempl<VTX>::tcn_const_iterator BuilderPrimTempl<VTX>::
+INLINE TYPENAME BuilderPrimTempl<VTX>::tcn_const_iterator BuilderPrimTempl<VTX>::
 tcn_begin() const {
   return _texcoord_names.begin();
 }
@@ -345,7 +345,7 @@ tcn_begin() const {
 //               vertices on this primitive.
 ////////////////////////////////////////////////////////////////////
 template <class VTX>
-INLINE BuilderPrimTempl<VTX>::tcn_const_iterator BuilderPrimTempl<VTX>::
+INLINE TYPENAME BuilderPrimTempl<VTX>::tcn_const_iterator BuilderPrimTempl<VTX>::
 tcn_end() const {
   return _texcoord_names.end();
 }
@@ -357,7 +357,7 @@ tcn_end() const {
 //               to all vertices on this primitive.
 ////////////////////////////////////////////////////////////////////
 template <class VTX>
-INLINE BuilderPrimTempl<VTX>::tcn_size_type BuilderPrimTempl<VTX>::
+INLINE TYPENAME BuilderPrimTempl<VTX>::tcn_size_type BuilderPrimTempl<VTX>::
 tcn_size() const {
   return _texcoord_names.size();
 }
@@ -888,7 +888,7 @@ update_overall_attrib() {
     // Get the intersection of TexCoordNames that are defined on all
     // vertices.
     const Vertex &vtx = get_vertex(0);
-    Vertex::tc_const_iterator tci;
+    TYPENAME Vertex::tc_const_iterator tci;
     for (tci = vtx.tc_begin(); tci != vtx.tc_end(); ++tci) {
       const TexCoordName *name = (*tci).first;
       bool has_texcoord = true;

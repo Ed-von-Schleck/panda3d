@@ -257,7 +257,6 @@ fill_geom(Geom *geom, const PTA_ushort &v_array,
     } else {
       TexCoordFill::const_iterator tci2;
       for (tci2 = texcoords.begin(); tci2 != tci; ++tci2) {
-        const TexCoordName *name2 = (*tci2).first;
         PTA_ushort t_array2 = (*tci).second;
         if (memcmp(t_array2, t_array, sizeof(ushort) * t_len)==0) {
           t_array = t_array2;

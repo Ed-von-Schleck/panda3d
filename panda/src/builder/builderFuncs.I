@@ -741,7 +741,7 @@ build_geoms(InputIterator first, InputIterator last,
         if (bind_colors == G_PER_VERTEX) {
           colors.push_back((*i).get_vertex(v).get_color());
         }
-        TexCoordFill::iterator tci;
+        TYPENAME TexCoordFill::iterator tci;
         for (tci = texcoords.begin(); tci != texcoords.end(); ++tci) {
           const TexCoordName *name = (*tci).first;
           if ((*i).get_vertex(v).has_texcoord(name)) {

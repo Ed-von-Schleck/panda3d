@@ -171,7 +171,7 @@ clear_normal() {
 template <class VT, class NT, class TT, class CT>
 INLINE bool BuilderVertexTempl<VT, NT, TT, CT>::
 has_texcoord(const TexCoordName *name) const {
-  TexCoords::const_iterator ti = _texcoords.find(name);
+  TYPENAME TexCoords::const_iterator ti = _texcoords.find(name);
   return (ti != _texcoords.end());
 }
 
@@ -186,7 +186,7 @@ has_texcoord(const TexCoordName *name) const {
 template <class VT, class NT, class TT, class CT>
 INLINE TYPENAME BuilderVertexTempl<VT, NT, TT, CT>::TType BuilderVertexTempl<VT, NT, TT, CT>::
 get_texcoord(const TexCoordName *name) const {
-  TexCoords::const_iterator ti = _texcoords.find(name);
+  TYPENAME TexCoords::const_iterator ti = _texcoords.find(name);
   nassertr(ti != _texcoords.end(), (*ti).second);
   return (*ti).second;
 }
@@ -223,7 +223,7 @@ clear_texcoord(const TexCoordName *name) {
 //               the set of TexCoord names and their definitions.
 ////////////////////////////////////////////////////////////////////
 template <class VT, class NT, class TT, class CT>
-INLINE BuilderVertexTempl<VT, NT, TT, CT>::tc_const_iterator BuilderVertexTempl<VT, NT, TT, CT>::
+INLINE TYPENAME BuilderVertexTempl<VT, NT, TT, CT>::tc_const_iterator BuilderVertexTempl<VT, NT, TT, CT>::
 tc_begin() const {
   return _texcoords.begin();
 }
@@ -235,7 +235,7 @@ tc_begin() const {
 //               the set of TexCoord names and their definitions.
 ////////////////////////////////////////////////////////////////////
 template <class VT, class NT, class TT, class CT>
-INLINE BuilderVertexTempl<VT, NT, TT, CT>::tc_const_iterator BuilderVertexTempl<VT, NT, TT, CT>::
+INLINE TYPENAME BuilderVertexTempl<VT, NT, TT, CT>::tc_const_iterator BuilderVertexTempl<VT, NT, TT, CT>::
 tc_end() const {
   return _texcoords.end();
 }
@@ -246,7 +246,7 @@ tc_end() const {
 //  Description: Returns the number of TexCoord definitions.
 ////////////////////////////////////////////////////////////////////
 template <class VT, class NT, class TT, class CT>
-INLINE BuilderVertexTempl<VT, NT, TT, CT>::tc_size_type BuilderVertexTempl<VT, NT, TT, CT>::
+INLINE TYPENAME BuilderVertexTempl<VT, NT, TT, CT>::tc_size_type BuilderVertexTempl<VT, NT, TT, CT>::
 tc_size() const {
   return _texcoords.size();
 }
@@ -372,7 +372,7 @@ compare_to(const BuilderVertexTempl<VT, NT, TT, CT> &other) const {
     }
   }
 
-  TexCoords::const_iterator ai, bi;
+  TYPENAME TexCoords::const_iterator ai, bi;
   ai = _texcoords.begin();
   bi = other._texcoords.begin();
   while (ai != _texcoords.end() && bi != other._texcoords.end()) {
@@ -420,7 +420,7 @@ output(ostream &out) const {
       out << " color " << get_color();
     }
 
-    TexCoords::const_iterator ti;
+    TYPENAME TexCoords::const_iterator ti;
     for (ti = _texcoords.begin(); ti != _texcoords.end(); ++ti) {
       const TexCoordName *name = (*ti).first;
       out << " texcoord \"" << name->get_name() << "\" " << (*ti).second;
