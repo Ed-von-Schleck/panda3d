@@ -1,5 +1,5 @@
-// Filename: dcField.h
-// Created by:  drose (11Oct00)
+// Filename: dcParameter.h
+// Created by:  drose (15Jun04)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -16,8 +16,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef DCFIELD_H
-#define DCFIELD_H
+#ifndef DCPARAMETER_H
+#define DCPARAMETER_H
 
 #include "dcbase.h"
 #include "dcPackerInterface.h"
@@ -33,45 +33,40 @@
 
 #endif  // HAVE_PYTHON
 
-class DCAtomicField;
-class DCMolecularField;
+class DCSimpleParameter;
+class DCClassParameter;
+class DCArrayParameter;
+class DCTypedefParameter;
 class HashGenerator;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : DCField
-// Description : A single field of a Distributed Class, either atomic
-//               or molecular.
+//       Class : DCParameter
+// Description : Represents the type specification for a single
+//               parameter within a field specification.  This may be
+//               a simple type, or it may be a class or an array
+//               reference.
+//
+//               This may also be a typedef reference to another type,
+//               which has the same properties as the referenced type,
+//               but a different name.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCField : public DCPackerInterface {
+class EXPCL_DIRECT DCParameter : public DCPackerInterface {
+protected:
+  DCParameter();
+public:
+  virtual ~DCParameter();
+
 PUBLISHED:
-  int get_number() const;
+  virtual DCSimpleParameter *as_simple_parameter();
+  virtual DCClassParameter *as_class_parameter();
+  virtual DCArrayParameter *as_array_parameter();
+  virtual DCTypedefParameter *as_typedef_parameter();
 
-  virtual DCAtomicField *as_atomic_field();
-  virtual DCMolecularField *as_molecular_field();
-
-#ifdef HAVE_PYTHON
-  bool pack_args(Datagram &datagram, PyObject *sequence) const;
-  PyObject *unpack_args(DatagramIterator &iterator) const;
-
-  void receive_update(PyObject *distobj, DatagramIterator &iterator) const;
-
-  Datagram client_format_update(int do_id, PyObject *args) const;
-  Datagram ai_format_update(int do_id, int to_id, int from_id, PyObject *args) const;
-#endif 
+  virtual DCParameter *make_copy() const=0;
 
 public:
-  DCField(const string &name);
-  virtual ~DCField();
-  virtual void write(ostream &out, bool brief, int indent_level) const=0;
+  virtual void output(ostream &out, bool brief) const=0;
   virtual void generate_hash(HashGenerator &hash) const;
-
-  virtual bool has_nested_fields() const;
-  virtual DCPackType get_pack_type() const;
-
-protected:
-  int _number;
-
-  friend class DCClass;
 };
 
 #endif

@@ -1,0 +1,89 @@
+// Filename: dcParameter.cxx
+// Created by:  drose (15Jun04)
+//
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+//
+// All use of this software is subject to the terms of the Panda 3d
+// Software license.  You should have received a copy of this license
+// along with this source code; you will also find a current copy of
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
+//
+// To contact the maintainers of this program write to
+// panda3d-general@lists.sourceforge.net .
+//
+////////////////////////////////////////////////////////////////////
+
+#include "dcParameter.h"
+#include "hashGenerator.h"
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::Constructor
+//       Access: Protected
+//  Description:
+////////////////////////////////////////////////////////////////////
+DCParameter::
+DCParameter() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::Destructor
+//       Access: Public, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+DCParameter::
+~DCParameter() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::as_simple_parameter
+//       Access: Published, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+DCSimpleParameter *DCParameter::
+as_simple_parameter() {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::as_class_parameter
+//       Access: Published, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+DCClassParameter *DCParameter::
+as_class_parameter() {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::as_array_parameter
+//       Access: Published, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+DCArrayParameter *DCParameter::
+as_array_parameter() {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::as_typedef_parameter
+//       Access: Published, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+DCTypedefParameter *DCParameter::
+as_typedef_parameter() {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCParameter::generate_hash
+//       Access: Public, Virtual
+//  Description: Accumulates the properties of this type into the
+//               hash.
+////////////////////////////////////////////////////////////////////
+void DCParameter::
+generate_hash(HashGenerator &) const {
+}
