@@ -22,7 +22,7 @@
 #include "curveDrawer.h"
 #include "nurbsCurve.h"
 #include "lineSegs.h"
-////#include <Performer/pr/pfLinMath.h>
+
 
 ////////////////////////////////////////////////////////////////////
 // Defines 
