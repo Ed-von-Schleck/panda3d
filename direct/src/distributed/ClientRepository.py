@@ -58,7 +58,7 @@ class ClientRepository(DirectObject.DirectObject):
         self.rsDatagramCount = 0
         self.rsUpdateObjs = {}
         self.rsLastUpdate = 0
-        self.rsDoReport = base.config.GetBool('reader-statistics', 1)
+        self.rsDoReport = base.config.GetBool('reader-statistics', 0)
         self.rsUpdateInterval = base.config.GetDouble('reader-statistics-interval', 10)
         return None
 
@@ -97,7 +97,7 @@ class ClientRepository(DirectObject.DirectObject):
             self.name2cdc[dcClass.getName()]=clientDistClass
         return None
 
-    def connect(self, serverList,
+    def connect(self, serverList, allowProxy,
                 successCallback = None, successArgs = [],
                 failureCallback = None, failureArgs = []):
         """
@@ -110,8 +110,13 @@ class ClientRepository(DirectObject.DirectObject):
         known.
         """
 
-        if self.hasProxy:
-            self.notify.info("Connecting to gameserver via proxy: %s" % (self.proxy.cStr()))
+        hasProxy = 0
+        if allowProxy:
+            proxies = self.http.getProxiesForUrl(serverList[0])
+            hasProxy = (proxies != '')
+
+        if hasProxy:
+            self.notify.info("Connecting to gameserver via proxy: %s" % (proxies))
         else:
             self.notify.info("Connecting to gameserver directly (no proxy).");
 
@@ -120,7 +125,7 @@ class ClientRepository(DirectObject.DirectObject):
         elif self.connectMethod == 'nspr':
             self.connectHttp = 0
         else:
-            self.connectHttp = (self.hasProxy or serverList[0].getScheme() == 'https')
+            self.connectHttp = (hasProxy or serverList[0].isSsl())
 
         self.bootedIndex = None
         self.bootedText = None
@@ -134,7 +139,12 @@ class ClientRepository(DirectObject.DirectObject):
             # run out of servers).
             
             ch = self.http.makeChannel(0)
-            self.httpConnectCallback(ch, serverList, 0,
+            # Temporary try..except for old Pandas.
+            try:
+                ch.setAllowProxy(allowProxy)
+            except:
+                pass
+            self.httpConnectCallback(ch, serverList, 0, hasProxy,
                                      successCallback, successArgs,
                                      failureCallback, failureArgs)
 
@@ -169,7 +179,7 @@ class ClientRepository(DirectObject.DirectObject):
 
             # Failed to connect.
             if failureCallback:
-                failureCallback(0, *failureArgs)
+                failureCallback(hasProxy, 0, *failureArgs)
 
     def disconnect(self):
         """Closes the previously-established connection.
@@ -183,7 +193,7 @@ class ClientRepository(DirectObject.DirectObject):
             self.tcpConn = None
         self.stopReaderPollTask()
                     
-    def httpConnectCallback(self, ch, serverList, serverIndex,
+    def httpConnectCallback(self, ch, serverList, serverIndex, hasProxy,
                             successCallback, successArgs,
                             failureCallback, failureArgs):
         if ch.isConnectionReady():
@@ -202,12 +212,13 @@ class ClientRepository(DirectObject.DirectObject):
             ch.spawnTask(name = 'connect-to-server',
                          callback = self.httpConnectCallback,
                          extraArgs = [ch, serverList, serverIndex + 1,
+                                      hasProxy,
                                       successCallback, successArgs,
                                       failureCallback, failureArgs])
         else:
             # No more servers to try; we have to give up now.
             if failureCallback:
-                failureCallback(ch.getStatusCode(), *failureArgs)
+                failureCallback(hasProxy, ch.getStatusCode(), *failureArgs)
 
     def startReaderPollTask(self):
         # Stop any tasks we are running now
@@ -537,11 +548,18 @@ class ClientRepository(DirectObject.DirectObject):
             self.bootedText = None
             ClientRepository.notify.warning(
                 "Server is booting us out with no explanation.")
+
+
+    def handleServerHeartbeat(self, di):
+        # Got a heartbeat message from the server.
+        ClientRepository.notify.info("Server heartbeat.")
         
 
     def handleUnexpectedMsgType(self, msgType, di):
         if msgType == CLIENT_GO_GET_LOST:
             self.handleGoGetLost(di)
+        elif msgType == CLIENT_HEARTBEAT:
+            self.handleServerHeartbeat(di)
         else:
             currentLoginState = self.loginFSM.getCurrentState()
             if currentLoginState:
