@@ -277,14 +277,12 @@ DXGraphicsStateGuardian7(const FrameBufferProperties &properties) :
 ////////////////////////////////////////////////////////////////////
 DXGraphicsStateGuardian7::
 ~DXGraphicsStateGuardian7() {
-    assert((_pScrn==NULL) || IS_VALID_PTR(_pScrn));
-
-   
+/*   
     if(IS_VALID_PTR(_pScrn)) {
         assert((_pScrn->pD3DDevice==NULL) || IS_VALID_PTR(_pScrn->pD3DDevice));
         _pScrn->pD3DDevice->SetTexture(0, NULL);  // this frees reference to the old texture
     }
-
+*/
     _pCurTexContext = NULL;
 
     // free_dxgsg_objects() ????????????
