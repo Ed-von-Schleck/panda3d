@@ -1,18 +1,19 @@
 // Filename: patchfile.cxx
 // Created by:  darren, mike (09Jan97)
+// $Id: patchfile.cxx,v 1.19.14.1 2004/08/28 00:33:58 jtlee Exp $
 //
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
 //
 // All use of this software is subject to the terms of the Panda 3d
 // Software license.  You should have received a copy of this license
 // along with this source code; you will also find a current copy of
-// the license at http://www.panda3d.org/license.txt .
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
 //
 // To contact the maintainers of this program write to
-// panda3d@yahoogroups.com .
+// panda3d-general@lists.sourceforge.net .
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -87,10 +88,12 @@ const PN_uint32 Patchfile::_magic_number = 0xfeebfaac;
 // To version 2 on 11/2/02 to store copy offsets as relative.
 const PN_uint16 Patchfile::_current_version = 2;
 
-const PN_uint32 Patchfile::_HASHTABLESIZE = PN_uint32(1) << 16;
+const PN_uint32 Patchfile::_HASH_BITS = 24;
+const PN_uint32 Patchfile::_HASHTABLESIZE = PN_uint32(1) << Patchfile::_HASH_BITS;
 const PN_uint32 Patchfile::_DEFAULT_FOOTPRINT_LENGTH = 9; // this produced the smallest patch file for libpanda.dll when tested, 12/20/2000
 const PN_uint32 Patchfile::_NULL_VALUE = PN_uint32(0) - 1;
 const PN_uint32 Patchfile::_MAX_RUN_LENGTH = (PN_uint32(1) << 16) - 1;
+const PN_uint32 Patchfile::_HASH_MASK = (PN_uint32(1) << Patchfile::_HASH_BITS) - 1;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Patchfile::Constructor
@@ -526,29 +529,32 @@ internal_read_header(const Filename &patch_file) {
 //       Access: Private
 //  Description:
 ////////////////////////////////////////////////////////////////////
-PN_uint16 Patchfile::
+PN_uint32 Patchfile::
 calc_hash(const char *buffer) {
 #ifdef USE_MD5_FOR_HASHTABLE_INDEX_VALUES
   HashVal hash;
-
-  md5_a_buffer((const unsigned char*)buffer, (int)_footprint_length, hash);
+  hash.hash_buffer(buffer, _footprint_length);
 
   //cout << PN_uint16(hash.get_value(0)) << " ";
 
   return PN_uint16(hash.get_value(0));
 #else
-  PN_uint16 hash_value = 0;
+  PN_uint32 hash_value = 0;
 
   for(int i = 0; i < (int)_footprint_length; i++) {
     // this is probably not such a good hash. to be replaced
     /// --> TRIED MD5, was not worth it for the execution-time hit on 800Mhz PC
-    hash_value ^= (*buffer) << (i % 8);
+    hash_value ^= PN_uint32(*buffer) << ((i * 2) % Patchfile::_HASH_BITS);
     buffer++;
   }
 
+  // use the bits that overflowed past the end of the hash bit range
+  // (this is intended for _HASH_BITS == 24)
+  hash_value ^= (hash_value >> Patchfile::_HASH_BITS);
+
   //cout << hash_value << " ";
 
-  return hash_value;
+  return hash_value & _HASH_MASK;
 #endif
 }
 
@@ -609,7 +615,7 @@ build_hash_link_tables(const char *buffer_orig, PN_uint32 length_orig,
     double t = GET_PROFILE_TIME();
 #endif
 
-    PN_uint16 hash_value = calc_hash(&buffer_orig[i]);
+    PN_uint32 hash_value = calc_hash(&buffer_orig[i]);
 
 #ifdef PROFILE_PATCH_BUILD
     hashCalc += GET_PROFILE_TIME() - t;
@@ -673,7 +679,19 @@ build_hash_link_tables(const char *buffer_orig, PN_uint32 length_orig,
 //               two strings of bytes
 ////////////////////////////////////////////////////////////////////
 PN_uint32 Patchfile::
-calc_match_length(const char* buf1, const char* buf2, PN_uint32 max_length) {
+calc_match_length(const char* buf1, const char* buf2, PN_uint32 max_length,
+                  PN_uint32 min_length) {
+  // early out: look ahead and sample the end of the minimum range
+  if (min_length > 2) {
+    if (min_length >= max_length)
+      return 0;
+    if (buf1[min_length] != buf2[min_length] ||
+	buf1[min_length-1] != buf2[min_length-1] ||
+	buf1[min_length-2] != buf2[min_length-2]) {
+      return 0;
+    }
+  }
+  
   PN_uint32 length = 0;
   while ((length < max_length) && (*buf1 == *buf2)) {
     buf1++, buf2++, length++;
@@ -697,7 +715,7 @@ find_longest_match(PN_uint32 new_pos, PN_uint32 &copy_pos, PN_uint16 &copy_lengt
   copy_length = 0;
 
   // get offset of matching string (in orig file) from hash table
-  PN_uint16 hash_value = calc_hash(&buffer_new[new_pos]);
+  PN_uint32 hash_value = calc_hash(&buffer_new[new_pos]);
 
   // if no match, bail
   if (_NULL_VALUE == hash_table[hash_value])
@@ -706,8 +724,12 @@ find_longest_match(PN_uint32 new_pos, PN_uint32 &copy_pos, PN_uint16 &copy_lengt
   copy_pos = hash_table[hash_value];
 
   // calc match length
-  copy_length = (PN_uint16)calc_match_length(&buffer_new[new_pos], &buffer_orig[copy_pos],
-                  min(min((length_new - new_pos),(length_orig - copy_pos)), _MAX_RUN_LENGTH));
+  copy_length = (PN_uint16)calc_match_length(&buffer_new[new_pos],
+					     &buffer_orig[copy_pos],
+					     min(min((length_new - new_pos),
+						     (length_orig - copy_pos)),
+						 _MAX_RUN_LENGTH),
+					     0);
 
   // run through link table, see if we find any longer matches
   PN_uint32 match_offset;
@@ -715,8 +737,12 @@ find_longest_match(PN_uint32 new_pos, PN_uint32 &copy_pos, PN_uint16 &copy_lengt
   match_offset = link_table[copy_pos];
 
   while (match_offset != _NULL_VALUE) {
-    match_length = (PN_uint16)calc_match_length(&buffer_new[new_pos], &buffer_orig[match_offset],
-                      min(min((length_new - new_pos),(length_orig - match_offset)), _MAX_RUN_LENGTH));
+    match_length = (PN_uint16)calc_match_length(&buffer_new[new_pos],
+						&buffer_orig[match_offset],
+						min(min((length_new - new_pos),
+							(length_orig - match_offset)),
+						    _MAX_RUN_LENGTH),
+						copy_length);
 
     // have we found a longer match?
     if (match_length > copy_length) {
@@ -786,8 +812,8 @@ emit_COPY(ofstream &write_stream, PN_uint16 length, PN_uint32 COPY_pos,
 //               "Differential Compression: A Generalized Solution
 //               for Binary Files" by Randal C. Burns (p.13).
 //               For an original file of size M and a new file of
-//               size N, this algorithm is O(M) in space and O(M*N)
-//               in time.
+//               size N, this algorithm is O(M) in space and
+//               O(M*N) (worst-case) in time.
 ////////////////////////////////////////////////////////////////////
 bool Patchfile::
 build(Filename file_orig, Filename file_new, Filename patch_name) {

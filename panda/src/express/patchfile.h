@@ -1,18 +1,19 @@
 // Filename: patchfile.h
 // Created by:  darren, mike (09Jan97)
+// $Id: patchfile.h,v 1.9.14.1 2004/08/28 00:33:58 jtlee Exp $
 //
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
 //
 // All use of this software is subject to the terms of the Panda 3d
 // Software license.  You should have received a copy of this license
 // along with this source code; you will also find a current copy of
-// the license at http://www.panda3d.org/license.txt .
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
 //
 // To contact the maintainers of this program write to
-// panda3d@yahoogroups.com .
+// panda3d-general@lists.sourceforge.net .
 //
 ////////////////////////////////////////////////////////////////////
 #ifndef PATCHFILE_H
@@ -84,11 +85,12 @@ private:
   // stuff for the build operation
   void build_hash_link_tables(const char *buffer_orig, PN_uint32 length_orig,
     PN_uint32 *hash_table, PN_uint32 *link_table);
-  PN_uint16 calc_hash(const char *buffer);
+  PN_uint32 calc_hash(const char *buffer);
   void find_longest_match(PN_uint32 new_pos, PN_uint32 &copy_pos, PN_uint16 &copy_length,
     PN_uint32 *hash_table, PN_uint32 *link_table, const char* buffer_orig,
     PN_uint32 length_orig, const char* buffer_new, PN_uint32 length_new);
-  PN_uint32 calc_match_length(const char* buf1, const char* buf2, PN_uint32 max_length);
+  PN_uint32 calc_match_length(const char* buf1, const char* buf2, PN_uint32 max_length,
+    PN_uint32 min_length);
 
   void emit_ADD(ofstream &write_stream, PN_uint16 length, const char* buffer,
                 PN_uint32 ADD_pos);
@@ -96,10 +98,12 @@ private:
                  PN_uint32 COPY_pos, PN_uint32 last_copy_pos,
                  PN_uint32 ADD_pos);
 
+  static const PN_uint32 _HASH_BITS;
   static const PN_uint32 _HASHTABLESIZE;
   static const PN_uint32 _DEFAULT_FOOTPRINT_LENGTH;
   static const PN_uint32 _NULL_VALUE;
   static const PN_uint32 _MAX_RUN_LENGTH;
+  static const PN_uint32 _HASH_MASK;
 
   PN_uint32 _footprint_length;
 
