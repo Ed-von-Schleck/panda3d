@@ -20,6 +20,7 @@
 #include "eggGroupNode.h"
 #include "eggPrimitive.h"
 #include "eggTexture.h"
+#include "pt_EggTexture.h"
 
 #include "nameUniquifier.h"
 
@@ -253,7 +254,7 @@ int EggTextureCollection::
 collapse_equivalent_textures(int eq, EggTextureCollection::TextureReplacement &removed) {
   int num_collapsed = 0;
 
-  typedef pset<PT(EggTexture), UniqueEggTextures> Collapser;
+  typedef pset<PT_EggTexture, UniqueEggTextures> Collapser;
   UniqueEggTextures uet(eq);
   Collapser collapser(uet);
 
@@ -373,7 +374,7 @@ bool EggTextureCollection::
 add_texture(EggTexture *texture) {
   nassertr(_textures.size() == _ordered_textures.size(), false);
 
-  PT(EggTexture) new_tex = texture;
+  PT_EggTexture new_tex = texture;
 
   Textures::const_iterator ti;
   ti = _textures.find(new_tex);
@@ -410,7 +411,7 @@ remove_texture(EggTexture *texture) {
   _textures.erase(ti);
 
   OrderedTextures::iterator oti;
-  PT(EggTexture) ptex = texture;
+  PT_EggTexture ptex = texture;
   oti = find(_ordered_textures.begin(), _ordered_textures.end(), ptex);
   nassertr(oti != _ordered_textures.end(), false);
 

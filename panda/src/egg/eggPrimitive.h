@@ -30,6 +30,7 @@
 #include "pt_EggTexture.h"
 #include "pt_EggMaterial.h"
 #include "vector_PT_EggVertex.h"
+#include "vector_PT_EggTexture.h"
 
 #include "pointerTo.h"
 #include "pvector.h"
@@ -185,7 +186,7 @@ protected:
 
 
 private:
-  typedef pvector<PT_EggTexture> Textures;
+  typedef vector_PT_EggTexture Textures;
   Textures _textures;
   PT_EggMaterial _material;
   bool _bface;

@@ -19,6 +19,7 @@
 #include "eggUtilities.h"
 #include "eggPrimitive.h"
 #include "eggGroupNode.h"
+#include "pt_EggTexture.h"
 
 
 ////////////////////////////////////////////////////////////////////
@@ -37,7 +38,7 @@ get_textures_by_filename(const EggNode *node, EggTextureFilenames &result) {
 
     int num_textures = prim->get_num_textures();
     for (int i = 0; i < num_textures; i++) {
-      PT(EggTexture) tex = prim->get_texture(i);
+      PT_EggTexture tex = prim->get_texture(i);
       result[tex->get_filename()].insert(tex);
     }
 
