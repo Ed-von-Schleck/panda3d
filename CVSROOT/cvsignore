@@ -1,5 +1,5 @@
 pp.dep
 Opt?-*
 *.pyc
-Copy?of?*
+Copy\\ of\\ *
 Copy?(?)?of?*
