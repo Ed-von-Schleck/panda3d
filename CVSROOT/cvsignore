@@ -1,5 +1,3 @@
-"pp.dep"
-"Opt?-*"
-"*.pyc"
-"Copy of *"
-"Copy (?) of *"
+pp.dep
+Opt?-*
+*.pyc
