@@ -49,6 +49,7 @@ int Palettizer::_pi_version = 11;
 
 int Palettizer::_min_pi_version = 8;
 // Dropped support for versions 7 and below on 7/14/03.
+int Palettizer::_max_pi_version = 13;
 
 int Palettizer::_read_pi_version = 0;
 
@@ -1014,12 +1015,22 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   TypedWritable::fillin(scan, manager);
 
   _read_pi_version = scan.get_int32();
+  if (_read_pi_version >= 12) {
+    scan.get_string();
+  }
   _map_dirname = scan.get_string();
   _shadow_dirname = FilenameUnifier::get_bam_filename(scan.get_string());
   _rel_dirname = FilenameUnifier::get_bam_filename(scan.get_string());
   FilenameUnifier::set_rel_dirname(_rel_dirname);
   _pal_x_size = scan.get_int32();
   _pal_y_size = scan.get_int32();
+  if (_read_pi_version >= 13) {
+    scan.get_float64();
+    scan.get_float64();
+    scan.get_float64();
+    scan.get_float64();
+  }
+
   _margin = scan.get_int32();
   _omit_solitary = scan.get_bool();
   _coverage_threshold = scan.get_float64();

@@ -570,7 +570,7 @@ run() {
 
     pal = DCAST(Palettizer, obj);
 
-    if (pal->_read_pi_version > pal->_pi_version) {
+    if (pal->_read_pi_version > pal->_max_pi_version) {
       nout << FilenameUnifier::make_user_filename(state_filename)
            << " was written by a more recent version of egg-palettize "
            << "than this one.  You will need to update your egg-palettize.\n";

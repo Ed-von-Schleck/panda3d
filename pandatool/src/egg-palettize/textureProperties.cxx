@@ -857,6 +857,10 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   if (Palettizer::_read_pi_version >= 9) {
     _generic_format = scan.get_bool();
   }
+  if (Palettizer::_read_pi_version >= 13) {
+    scan.get_bool();
+  }
+
   _minfilter = (EggTexture::FilterType)scan.get_int32();
   _magfilter = (EggTexture::FilterType)scan.get_int32();
   _anisotropic_degree = scan.get_int32();
