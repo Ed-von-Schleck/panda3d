@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: TexCoordName::get_name
 //       Access: Published
-//  Description:
+//  Description: Return the name string of this texcoordname
 ////////////////////////////////////////////////////////////////////
 INLINE const string &TexCoordName::
 get_name() const {

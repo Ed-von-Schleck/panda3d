@@ -25,7 +25,8 @@ TextureStageManager *TextureStageManager::_global_ptr = NULL;
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::Constructor
 //       Access: Private
-//  Description: 
+//  Description: Create default TexCoordName, Texture Stage and an
+//               initial sort sequence
 ////////////////////////////////////////////////////////////////////
 TextureStageManager::
 TextureStageManager() {
@@ -40,7 +41,7 @@ TextureStageManager() {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::Destructor
 //       Access: Private
-//  Description: 
+//  Description: Does nothing currently
 ////////////////////////////////////////////////////////////////////
 TextureStageManager::
 ~TextureStageManager() {
@@ -99,14 +100,16 @@ make_texcoord (const string &name) {
 ////////////////////////////////////////////////////////////////////
 void TextureStageManager::
 write (ostream &out) const {
-  
+  _default_stage->write(out);
+  _default_texcoord->output(out);
+
+  out << "Number of TextureStages = " << _stages.size() << ", sort seq = " << get_sort_seq() << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::remove_stage
 //       Access: Private
-//  Description: 
-//               This method is only called by the TextureStage
+//  Description: This method is only called by the TextureStage
 //               destructor.
 ////////////////////////////////////////////////////////////////////
 void TextureStageManager::
@@ -131,8 +134,7 @@ remove_stage(TextureStage *stage) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::remove_texcoord
 //       Access: Private
-//  Description: 
-//               This method is only called by the TexCoordName
+//  Description: This method is only called by the TexCoordName
 //               destructor.
 ////////////////////////////////////////////////////////////////////
 void TextureStageManager::

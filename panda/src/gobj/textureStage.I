@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_name
 //       Access: Published
-//  Description:
+//  Description: Returns the name of this texture stage
 ////////////////////////////////////////////////////////////////////
 INLINE const string &TextureStage::
 get_name() const {
@@ -30,7 +30,7 @@ get_name() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_sort
 //       Access: Published
-//  Description:
+//  Description: Returns the sort order of this texture stage
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureStage::
 get_sort() const {
@@ -40,7 +40,9 @@ get_sort() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_priority
 //       Access: Published
-//  Description:
+//  Description: Returns the priority associated with this stage.
+//               This is specially helpful for cards that do not
+//               support more than n stages of multi-texturing
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureStage::
 get_priority() const {
@@ -50,7 +52,7 @@ get_priority() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::opertor <
 //       Access: Published
-//  Description:
+//  Description: Compare if the sort order is lower
 ////////////////////////////////////////////////////////////////////
 INLINE bool TextureStage::
 operator < (const TextureStage &other) const {
@@ -60,7 +62,7 @@ operator < (const TextureStage &other) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_texcoord_name
 //       Access: Published
-//  Description:
+//  Description: Set the TexCoordName
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_texcoord_name(const TexCoordName *name) {
@@ -70,7 +72,7 @@ set_texcoord_name(const TexCoordName *name) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_texcoord_name
 //       Access: Published
-//  Description:
+//  Description: Returns the TexCoordName
 ////////////////////////////////////////////////////////////////////
 INLINE const TexCoordName *TextureStage::
 get_texcoord_name() const {
@@ -80,7 +82,7 @@ get_texcoord_name() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_mode
 //       Access: Published
-//  Description:
+//  Description: Set the mode of this texture stage
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_mode(TextureStage::Mode mode) {
@@ -90,7 +92,7 @@ set_mode(TextureStage::Mode mode) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_mode
 //       Access: Published
-//  Description:
+//  Description: Return the mode of this stage
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::Mode TextureStage::
 get_mode() const {
@@ -100,7 +102,7 @@ get_mode() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_color
 //       Access: Published
-//  Description:
+//  Description: Set the color for this stage
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_color(const Colorf &color) {
@@ -110,7 +112,7 @@ set_color(const Colorf &color) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_color
 //       Access: Published
-//  Description:
+//  Description: return the color for this stage
 ////////////////////////////////////////////////////////////////////
 INLINE Colorf TextureStage::
 get_color() const {
@@ -120,7 +122,7 @@ get_color() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_combine_rgb
 //       Access: Published
-//  Description:
+//  Description: Set combine_rgb_mode with source and operand
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_combine_rgb(CombineMode mode, 
@@ -133,7 +135,7 @@ set_combine_rgb(CombineMode mode,
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_combine_rgb
 //       Access: Published
-//  Description:
+//  Description: Set combine_rgb_mode with two sources and operands
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_combine_rgb(CombineMode mode, 
@@ -149,7 +151,7 @@ set_combine_rgb(CombineMode mode,
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_combine_rgb
 //       Access: Published
-//  Description:
+//  Description: Set combine_rgb_mode with three sources and operands
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_combine_rgb(CombineMode mode, 
@@ -168,7 +170,7 @@ set_combine_rgb(CombineMode mode,
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_mode
 //       Access: Published
-//  Description:
+//  Description: Get the combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineMode TextureStage::
 get_combine_rgb_mode() const {
@@ -178,7 +180,7 @@ get_combine_rgb_mode() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_source0
 //       Access: Published
-//  Description:
+//  Description: Get source0 of combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineSource TextureStage::
 get_combine_rgb_source0() const {
@@ -188,7 +190,7 @@ get_combine_rgb_source0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_operand0
 //       Access: Published
-//  Description:
+//  Description: Get operand0 of combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineOperand TextureStage::
 get_combine_rgb_operand0() const {
@@ -198,7 +200,7 @@ get_combine_rgb_operand0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_source1
 //       Access: Published
-//  Description:
+//  Description: Get source1 of combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineSource TextureStage::
 get_combine_rgb_source1() const {
@@ -208,7 +210,7 @@ get_combine_rgb_source1() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_operand1
 //       Access: Published
-//  Description:
+//  Description: Get operand1 of combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineOperand TextureStage::
 get_combine_rgb_operand1() const {
@@ -218,7 +220,7 @@ get_combine_rgb_operand1() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_source2
 //       Access: Published
-//  Description:
+//  Description: Get source2 of combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineSource TextureStage::
 get_combine_rgb_source2() const {
@@ -228,7 +230,7 @@ get_combine_rgb_source2() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_rgb_operand2
 //       Access: Published
-//  Description:
+//  Description: Get operand2 of combine_rgb_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineOperand TextureStage::
 get_combine_rgb_operand2() const {
@@ -238,7 +240,7 @@ get_combine_rgb_operand2() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_combine_alpha
 //       Access: Published
-//  Description:
+//  Description: Set combine_alpha_mode with single source and operand
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_combine_alpha(CombineMode mode, 
@@ -251,7 +253,7 @@ set_combine_alpha(CombineMode mode,
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_combine_alpha
 //       Access: Published
-//  Description:
+//  Description: Set combin_alpha_mode with two sources and operands
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_combine_alpha(CombineMode mode, 
@@ -267,7 +269,7 @@ set_combine_alpha(CombineMode mode,
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_combine_alpha
 //       Access: Published
-//  Description:
+//  Description: Set combine_alpha_mode with three sources and operands
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
 set_combine_alpha(CombineMode mode, 
@@ -286,7 +288,7 @@ set_combine_alpha(CombineMode mode,
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha
 //       Access: Published
-//  Description:
+//  Description: Get combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineMode TextureStage::
 get_combine_alpha_mode() const {
@@ -296,7 +298,7 @@ get_combine_alpha_mode() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha_source0
 //       Access: Published
-//  Description:
+//  Description: Get source0 of combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineSource TextureStage::
 get_combine_alpha_source0() const {
@@ -306,7 +308,7 @@ get_combine_alpha_source0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha_operand0
 //       Access: Published
-//  Description:
+//  Description: Get operand0 of combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineOperand TextureStage::
 get_combine_alpha_operand0() const {
@@ -316,7 +318,7 @@ get_combine_alpha_operand0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha_source1
 //       Access: Published
-//  Description:
+//  Description: Get source1 of combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineSource TextureStage::
 get_combine_alpha_source1() const {
@@ -326,7 +328,7 @@ get_combine_alpha_source1() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha_operand1
 //       Access: Published
-//  Description:
+//  Description: Get operand1 of combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineOperand TextureStage::
 get_combine_alpha_operand1() const {
@@ -336,7 +338,7 @@ get_combine_alpha_operand1() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha_source2
 //       Access: Published
-//  Description:
+//  Description: Get source2 of combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineSource TextureStage::
 get_combine_alpha_source2() const {
@@ -346,7 +348,7 @@ get_combine_alpha_source2() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::get_combine_alpha_operand2
 //       Access: Published
-//  Description:
+//  Description: Get operand2 of combine_alpha_mode
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage::CombineOperand TextureStage::
 get_combine_alpha_operand2() const {

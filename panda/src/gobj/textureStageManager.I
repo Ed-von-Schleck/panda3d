@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_default_stage
 //       Access: Published
-//  Description:
+//  Description: Return the default Texture Stage
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage *TextureStageManager::
 get_default_stage() {
@@ -30,7 +30,7 @@ get_default_stage() {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_default_texcoord
 //       Access: Published
-//  Description:
+//  Description: Return the default TexCoordName
 ////////////////////////////////////////////////////////////////////
 INLINE TexCoordName *TextureStageManager::
 get_default_texcoord() {
@@ -40,7 +40,7 @@ get_default_texcoord() {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_num_stage
 //       Access: Published
-//  Description:
+//  Description: Return the number of stages accumulated so far
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureStageManager::
 get_num_stages() const {
@@ -50,7 +50,7 @@ get_num_stages() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_stage
 //       Access: Published
-//  Description:
+//  Description: Return the nth Texture Stage. NULL if n out-of-bound
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage *TextureStageManager::
 get_stage(int n) const {
@@ -62,7 +62,7 @@ get_stage(int n) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_num_texcoords
 //       Access: Published
-//  Description:
+//  Description: Return the number of TexCoordNames accumulated so far
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureStageManager::
 get_num_texcoords() const {
@@ -72,7 +72,7 @@ get_num_texcoords() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_texcoord
 //       Access: Published
-//  Description:
+//  Description: Return the nth TexCoordName. NULL if n out-of-bound
 ////////////////////////////////////////////////////////////////////
 INLINE TexCoordName *TextureStageManager::
 get_texcoord(int n) const {
@@ -84,7 +84,7 @@ get_texcoord(int n) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::get_sort_seq
 //       Access: Published
-//  Description:
+//  Description: Return the current sort sequence to update cache
 ////////////////////////////////////////////////////////////////////
 INLINE UpdateSeq TextureStageManager::
 get_sort_seq() const {
@@ -95,7 +95,7 @@ get_sort_seq() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStageManager::inc_sort_seq
 //       Access: Private
-//  Description:
+//  Description: Increment sort sequence, means cache is updated
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStageManager::
 inc_sort_seq() {

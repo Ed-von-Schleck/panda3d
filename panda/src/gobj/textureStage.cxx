@@ -21,7 +21,7 @@ TypeHandle TextureStage::_type_handle;
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Constructor
 //       Access: Private
-//  Description:
+//  Description: Initialize the texture stage at construction
 ////////////////////////////////////////////////////////////////////
 TextureStage::
 TextureStage(const string &name, TexCoordName *texcoord_name) {
@@ -50,7 +50,7 @@ TextureStage(const string &name, TexCoordName *texcoord_name) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Destructor
 //       Access: Published
-//  Description:
+//  Description: Just remove this stage from texture stage manager
 ////////////////////////////////////////////////////////////////////
 TextureStage::
 ~TextureStage() {
@@ -60,7 +60,8 @@ TextureStage::
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_sort
 //       Access: Published
-//  Description:
+//  Description: Assign the sort order. Also makes sure to update
+//               sort seq in Texture Stage Manager
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 set_sort(int sort){
@@ -71,7 +72,8 @@ set_sort(int sort){
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::set_priority
 //       Access: Published
-//  Description:
+//  Description: Assign the priority. Also makes sure to update
+//               sort seq in Texture Stage Manager
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 set_priority(int priority){
@@ -82,7 +84,7 @@ set_priority(int priority){
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Destructor
 //       Access: Published
-//  Description:
+//  Description: Writes the details of this stage
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 write(ostream &out) const {
@@ -116,7 +118,7 @@ write(ostream &out) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureStage::Destructor
 //       Access: Published
-//  Description:
+//  Description: Just a single line output
 ////////////////////////////////////////////////////////////////////
 void TextureStage::
 output(ostream &out) const {

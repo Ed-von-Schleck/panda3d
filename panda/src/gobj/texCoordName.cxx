@@ -28,7 +28,7 @@ TypeHandle TexCoordName::_type_handle;
 ////////////////////////////////////////////////////////////////////
 //     Function: TexCoordName::Constructor
 //       Access: Private
-//  Description: Constructor to build the TexCoordName ..more coming
+//  Description: Constructor to build the TexCoordName
 
 ////////////////////////////////////////////////////////////////////
 TexCoordName::
@@ -39,7 +39,7 @@ TexCoordName (const string &name) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TexCoordName::Destructor
 //       Access: Published
-//  Description: Destructor to more coming....
+//  Description: make sure to remove self from Texture Stage Manager
 
 ////////////////////////////////////////////////////////////////////
 TexCoordName::
