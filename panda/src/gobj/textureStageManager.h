@@ -65,7 +65,7 @@ private:
 
 private:
   PT(TextureStage) _default_stage;
-  PT(TexCoordName) _default_texcoords;
+  PT(TexCoordName) _default_texcoord;
 
   // With the exception of the default stage, above, we don't store
   // reference-counting pointers to the TextureStage objects within
@@ -86,6 +86,7 @@ private:
   static TextureStageManager *_global_ptr;
 
   friend class TextureStage;
+  friend class TexCoordName;
 };
 
 #include "textureStageManager.I"
