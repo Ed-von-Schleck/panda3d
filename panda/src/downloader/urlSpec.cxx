@@ -99,6 +99,24 @@ get_port() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: URLSpec::get_server_and_port
+//       Access: Published
+//  Description: Returns a string consisting of the server name,
+//               followed by a colon, followed by the port number.  If
+//               the port number is not explicitly given in the URL,
+//               this string will include the implicit port number.
+////////////////////////////////////////////////////////////////////
+string URLSpec::
+get_server_and_port() const {
+  if (has_port()) {
+    return _url.substr(_server_start, _port_end - _server_start);
+  }
+  ostringstream strm;
+  strm << get_server() << ":" << get_port();
+  return strm.str();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: URLSpec::get_path
 //       Access: Published
 //  Description: Returns the path specified by the URL, or "/" if no
@@ -298,6 +316,28 @@ set_port(int port) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: URLSpec::set_server_and_port
+//       Access: Published
+//  Description: Replaces the server and port parts of the URL
+//               specification simultaneously.  The input string
+//               should be of the form "server:port", or just
+//               "server" to make the port number implicit.
+////////////////////////////////////////////////////////////////////
+void URLSpec::
+set_server_and_port(const string &server_and_port) {
+  if (server_and_port.empty() && !has_authority()) {
+    return;
+  }
+  string authority;
+
+  if (has_username()) {
+    authority = get_username() + "@";
+  }
+  authority += server_and_port;
+  set_authority(authority);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: URLSpec::set_path
 //       Access: Published
 //  Description: Replaces the path part of the URL specification.
@@ -317,16 +357,26 @@ set_path(const string &path) {
 
   } else if (!has_path()) {
     // Insert a new path specification.
-    length_adjust = path.length();
+    string cpath = path;
+    if (cpath[0] != '/') {
+      // Paths must always begin with a slash.
+      cpath = '/' + cpath;
+    }
+    length_adjust = cpath.length();
 
-    _url = _url.substr(0, _path_start) + path + _url.substr(_path_end);
+    _url = _url.substr(0, _path_start) + cpath + _url.substr(_path_end);
     _flags |= F_has_path;
 
   } else {
     // Replace an existing path specification.
+    string cpath = path;
+    if (cpath[0] != '/') {
+      // Paths must always begin with a slash.
+      cpath = '/' + cpath;
+    }
     int old_length = (int)_path_end - (int)_path_start;
-    length_adjust = path.length() - old_length;
-    _url = _url.substr(0, _path_start) + path + _url.substr(_path_end);
+    length_adjust = cpath.length() - old_length;
+    _url = _url.substr(0, _path_start) + cpath + _url.substr(_path_end);
   }
 
   _path_end += length_adjust;
@@ -674,6 +724,8 @@ unquote_plus(const string &source) {
 ////////////////////////////////////////////////////////////////////
 void URLSpec::
 parse_authority() {
+  _flags &= ~(F_has_username | F_has_server | F_has_port);
+
   if (!has_authority()) {
     return;
   }

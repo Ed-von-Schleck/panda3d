@@ -28,7 +28,7 @@
 //               because the socket has genuinely closed, or false if
 //               we can expect more data to come along shortly.
 ////////////////////////////////////////////////////////////////////
-INLINE bool IChunkedStream::
+bool IChunkedStream::
 is_closed() {
   if (_buf._done || (*_buf._source)->is_closed()) {
     return true;

@@ -6,7 +6,7 @@
 #begin lib_target
   #define TARGET downloader
 
-  #define COMBINED_SOURCES $[TARGET]_composite1.cxx \
+  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx \
     $[if $[HAVE_NET], $[TARGET]_composite3.cxx] \
     $[if $[HAVE_ZLIB], $[TARGET]_composite4.cxx] \
 
@@ -18,14 +18,18 @@
     bioStream.I bioStream.h bioStreamBuf.h \
     chunkedStream.I chunkedStream.h chunkedStreamBuf.h \
     extractor.h \
+    httpAuthorization.I httpAuthorization.h \
+    httpBasicAuthorization.I httpBasicAuthorization.h \
     httpClient.I httpClient.h \
     httpChannel.I httpChannel.h \
+    httpDigestAuthorization.I httpDigestAuthorization.h \
+    httpEnum.h \
     identityStream.I identityStream.h identityStreamBuf.h \
     multiplexStream.I multiplexStream.h \
     multiplexStreamBuf.I multiplexStreamBuf.h \
     socketStream.h socketStream.I \
     urlSpec.I urlSpec.h \
-    $[if $[HAVE_NET], downloadDb.I downloadDb.h] \
+    $[if $[HAVE_NET], downloadDb.I downloadDb.h downloader.I downloader.h] \
     $[if $[HAVE_ZLIB], decompressor.h download_utils.h] \
     $[if $[HAVE_CRYPTO], patcher.cxx patcher.h patcher.I]
     
@@ -37,13 +41,17 @@
     bioStream.cxx bioStreamBuf.cxx \
     chunkedStream.cxx chunkedStreamBuf.cxx \
     extractor.cxx \
+    httpAuthorization.cxx \
+    httpBasicAuthorization.cxx \
     httpClient.cxx \
     httpChannel.cxx \
+    httpDigestAuthorization.cxx \
+    httpEnum.cxx \
     identityStream.cxx identityStreamBuf.cxx \
     multiplexStream.cxx multiplexStreamBuf.cxx \
     socketStream.cxx \
     urlSpec.cxx \
-    $[if $[HAVE_NET], downloadDb.cxx] \
+    $[if $[HAVE_NET], downloadDb.cxx downloader.cxx] \
     $[if $[HAVE_ZLIB], decompressor.cxx download_utils.cxx]
 
   #define INSTALL_HEADERS \
@@ -55,9 +63,14 @@
     config_downloader.h \
     decompressor.h \
     download_utils.h downloadDb.h downloadDb.I \
+    downloader.h downloader.I \
     extractor.h \
+    httpAuthorization.I httpAuthorization.h \
+    httpBasicAuthorization.I httpBasicAuthorization.h \
     httpClient.I httpClient.h \
     httpChannel.I httpChannel.h \
+    httpDigestAuthorization.I httpDigestAuthorization.h \
+    httpEnum.h \
     identityStream.I identityStream.h identityStreamBuf.h \
     multiplexStream.I multiplexStream.h \
     multiplexStreamBuf.I multiplexStreamBuf.I \
