@@ -128,3 +128,32 @@ extract_bytes(size_t size) {
   return string(ptr + last_index, size);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function : output
+//       Access : Public
+//  Description : Write a string representation of this instance to
+//                <out>.
+////////////////////////////////////////////////////////////////////
+void DatagramIterator::
+output(ostream &out) const {
+  #ifndef NDEBUG //[
+  out<<""<<"DatagramIterator";
+  #endif //] NDEBUG
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : write
+//       Access : Public
+//  Description : Write a string representation of this instance to
+//                <out>.
+////////////////////////////////////////////////////////////////////
+void DatagramIterator::
+write(ostream &out, unsigned int indent) const {
+  #ifndef NDEBUG //[
+  out.width(indent);
+  out<<""<<"DatagramIterator:\n";
+  get_datagram().write(out, indent+2);
+  #endif //] NDEBUG
+}
+
+
