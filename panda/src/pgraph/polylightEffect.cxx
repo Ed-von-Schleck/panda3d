@@ -22,7 +22,10 @@
 #include "nodePath.h"
 #include "pmap.h"
 #include "colorScaleAttrib.h"
+#include "cullTraverserData.h"
+
 #include <math.h>
+
 TypeHandle PolylightEffect::_type_handle;
 
 ////////////////////////////////////////////////////////////////////

@@ -38,7 +38,7 @@ TypeHandle TextureAttrib::_type_handle;
 CPT(RenderAttrib) TextureAttrib::
 make(Texture *texture) {
   TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return make(O_set, tex_mgr->get_default_stage(), texture);
+  return make_on(tex_mgr->get_default_stage(), texture);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -57,104 +57,160 @@ make_off() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::make_set
+//       Access: Published, Static
+//  Description: Constructs a new TextureAttrib object that replaces
+//               any previous texture stages with the indicated stage
+//               only.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TextureAttrib::
+make_set(TextureStage *stage, Texture *tex) {
+  TextureAttrib *attrib = new TextureAttrib;
+  attrib->_off_all_stages = true;
+  attrib->_on_stages.push_back(stage);
+  attrib->_on_textures[stage] = tex;
+
+  attrib->_sort_seq = UpdateSeq::old();
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::make_on
+//       Access: Published, Static
+//  Description: Constructs a new TextureAttrib object that turns on
+//               the indicated stage, but does not affect any other
+//               stages.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TextureAttrib::
+make_on(TextureStage *stage, Texture *tex) {
+  TextureAttrib *attrib = new TextureAttrib;
+  attrib->_on_stages.push_back(stage);
+  attrib->_on_textures[stage] = tex;
+
+  attrib->_sort_seq = UpdateSeq::old();
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::make_off
+//       Access: Published, Static
+//  Description: Constructs a new TextureAttrib object that turns off
+//               the indicated stage, but does not affect any other
+//               stages.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TextureAttrib::
+make_off(TextureStage *stage) {
+  TextureAttrib *attrib = new TextureAttrib;
+  attrib->_off_stages.insert(stage);
+
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::make_all_off
 //       Access: Published, Static
 //  Description: Constructs a new TextureAttrib object that turns off
-//               all stages (and hence disables stageing).
+//               all stages (and hence disables texturing).
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
 make_all_off() {
   TextureAttrib *attrib = new TextureAttrib;
-  attrib->_operation = O_set;
+  attrib->_off_all_stages = true;
   return return_new(attrib);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make
-//       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that turns on (or
-//               off, according to op) the indicate stage(s).
+//     Function: TextureAttrib::add_on_stage
+//       Access: Published
+//  Description: Returns a new TextureAttrib, just like this one, but
+//               with the indicated stage added to the list of stages
+//               turned on by this attrib.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
-make(TextureAttrib::Operation op, TextureStage *stage, Texture *tex) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_operation = op;
-  attrib->_stages.push_back(stage);
-  attrib->_textures[stage] = tex;
+add_on_stage(TextureStage *stage, Texture *tex) const {
+  TextureAttrib *attrib = new TextureAttrib(*this);
+  pair<OnTextures::iterator, bool> insert_result = 
+    attrib->_on_textures.insert(OnTextures::value_type(stage, tex));
+  if (insert_result.second) {
+    // If the insert was successful--we have added a new stage that
+    // wasn't present before--then add the stage to the linear list
+    // also.
+    attrib->_on_stages.push_back(stage);
+    attrib->_sort_seq = UpdateSeq::old();
 
-  attrib->_sort_seq = UpdateSeq::old();
+    // Also ensure it is removed from the off_stages list.
+    attrib->_off_stages.erase(stage);
+
+  } else {
+    // If the insert was unsuccessful, it means there was already a
+    // definition for that stage.  Replace it.
+    (*insert_result.first).second = tex;
+  }
   return return_new(attrib);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make
-//       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that turns on (or
-//               off, according to op) the indicate stage(s).
+//     Function: TextureAttrib::remove_on_stage
+//       Access: Published
+//  Description: Returns a new TextureAttrib, just like this one, but
+//               with the indicated stage removed from the list of
+//               stages turned on by this attrib.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
-make(TextureAttrib::Operation op, 
-     TextureStage *stageA, Texture *texA,
-     TextureStage *stageB, Texture *texB) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_operation = op;
-  attrib->_stages.push_back(stageA);
-  attrib->_textures[stageA] = texA;
-  attrib->_stages.push_back(stageB);
-  attrib->_textures[stageB] = texB;
+remove_on_stage(TextureStage *stage) const {
+  TextureAttrib *attrib = new TextureAttrib(*this);
 
-  attrib->_sort_seq = UpdateSeq::old();
+  OnTextures::iterator ti = attrib->_on_textures.find(stage);
+  if (ti != attrib->_on_textures.end()) {
+    attrib->_on_textures.erase(ti);
+    OnStages::iterator si = 
+      find(attrib->_on_stages.begin(), attrib->_on_stages.end(), stage);
+    if (si != attrib->_on_stages.end()) {
+      attrib->_on_stages.erase(si);
+    }
+  }
+
   return return_new(attrib);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make
-//       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that turns on (or
-//               off, according to op) the indicate stage(s).
+//     Function: TextureAttrib::add_off_stage
+//       Access: Published
+//  Description: Returns a new TextureAttrib, just like this one, but
+//               with the indicated stage added to the list of stages
+//               turned off by this attrib.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
-make(TextureAttrib::Operation op,
-     TextureStage *stageA, Texture *texA,
-     TextureStage *stageB, Texture *texB,
-     TextureStage *stageC, Texture *texC) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_operation = op;
-  attrib->_stages.push_back(stageA);
-  attrib->_textures[stageA] = texA;
-  attrib->_stages.push_back(stageB);
-  attrib->_textures[stageB] = texB;
-  attrib->_stages.push_back(stageC);
-  attrib->_textures[stageC] = texC;
+add_off_stage(TextureStage *stage) const {
+  TextureAttrib *attrib = new TextureAttrib(*this);
+  if (!_off_all_stages) {
+    attrib->_off_stages.insert(stage);
 
-  attrib->_sort_seq = UpdateSeq::old();
+    // Also ensure it is removed from the on_stages list.
+    OnTextures::iterator ti = attrib->_on_textures.find(stage);
+    if (ti != attrib->_on_textures.end()) {
+      attrib->_on_textures.erase(ti);
+      OnStages::iterator si = 
+        find(attrib->_on_stages.begin(), attrib->_on_stages.end(), stage);
+      if (si != attrib->_on_stages.end()) {
+        attrib->_on_stages.erase(si);
+      }
+    }
+  }
   return return_new(attrib);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::make
-//       Access: Published, Static
-//  Description: Constructs a new TextureAttrib object that turns on (or
-//               off, according to op) the indicate stage(s).
+//     Function: TextureAttrib::remove_off_stage
+//       Access: Published
+//  Description: Returns a new TextureAttrib, just like this one, but
+//               with the indicated stage removed from the list of
+//               stages turned off by this attrib.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TextureAttrib::
-make(TextureAttrib::Operation op,
-     TextureStage *stageA, Texture *texA,
-     TextureStage *stageB, Texture *texB,
-     TextureStage *stageC, Texture *texC,
-     TextureStage *stageD, Texture *texD) {
-  TextureAttrib *attrib = new TextureAttrib;
-  attrib->_operation = op;
-  attrib->_stages.push_back(stageA);
-  attrib->_textures[stageA] = texA;
-  attrib->_stages.push_back(stageB);
-  attrib->_textures[stageB] = texB;
-  attrib->_stages.push_back(stageC);
-  attrib->_textures[stageC] = texC;
-  attrib->_stages.push_back(stageD);
-  attrib->_textures[stageD] = texD;
-
-  attrib->_sort_seq = UpdateSeq::old();
+remove_off_stage(TextureStage *stage) const {
+  TextureAttrib *attrib = new TextureAttrib(*this);
+  attrib->_off_stages.erase(stage);
   return return_new(attrib);
 }
 
@@ -179,32 +235,46 @@ issue(GraphicsStateGuardianBase *gsg) const {
 ////////////////////////////////////////////////////////////////////
 void TextureAttrib::
 output(ostream &out) const {
+  check_sorted();
+
   out << get_type() << ":";
-  if (_operation == O_set && _stages.empty()) {
-    out << "all off";
-  } else {
-    switch (_operation) {
-    case O_set:
-      out << "set";
-      break;
-    case O_add:
-      out << "add";
-      break;
-    case O_remove:
-      out << "remove";
-      break;
+  if (_off_stages.empty()) {
+    if (_on_stages.empty()) {
+      if (_off_all_stages) {
+        out << "all off";
+      } else {
+        out << "identity";
+      }
+    } else {
+      if (_off_all_stages) {
+        out << "set";
+      } else {
+        out << "on";
+      }
     }
 
-    Stages::const_iterator li;
-    for (li = _stages.begin(); li != _stages.end(); ++li) {
-      TextureStage *stage = (*li);
-      Textures::const_iterator ti = _textures.find(stage);
-      if (ti != _textures.end()) {
-        Texture *tex = (*ti).second;
-        out << " " << stage->get_name() << ":" << tex->get_name();
-      } else {
-        out << " " << stage->get_name();
-      }
+  } else {
+    out << "off";
+    OffStages::const_iterator fi;
+    for (fi = _off_stages.begin(); fi != _off_stages.end(); ++fi) {
+      TextureStage *stage = (*fi);
+      out << " " << stage->get_name();
+    }
+
+    if (!_on_stages.empty()) {
+      out << " on";
+    }
+  }
+    
+  OnStages::const_iterator li;
+  for (li = _on_stages.begin(); li != _on_stages.end(); ++li) {
+    TextureStage *stage = (*li);
+    OnTextures::const_iterator ti = _on_textures.find(stage);
+    if (ti != _on_textures.end()) {
+      Texture *tex = (*ti).second;
+      out << " " << stage->get_name() << ":" << tex->get_name();
+    } else {
+      out << " " << stage->get_name();
     }
   }
 }
@@ -229,14 +299,14 @@ compare_to_impl(const RenderAttrib *other) const {
   const TextureAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
 
-  if (_operation != ta->_operation) {
-    return (int)_operation - (int)ta->_operation;
+  if (_off_all_stages != ta->_off_all_stages) {
+    return (int)_off_all_stages - (int)ta->_off_all_stages;
   }
 
-  Textures::const_iterator li = _textures.begin();
-  Textures::const_iterator oli = ta->_textures.begin();
+  OnTextures::const_iterator li = _on_textures.begin();
+  OnTextures::const_iterator oli = ta->_on_textures.begin();
 
-  while (li != _textures.end() && oli != ta->_textures.end()) {
+  while (li != _on_textures.end() && oli != ta->_on_textures.end()) {
     TextureStage *stage = (*li).first;
     TextureStage *other_stage = (*oli).first;
 
@@ -254,10 +324,32 @@ compare_to_impl(const RenderAttrib *other) const {
     ++oli;
   }
 
-  if (li != _textures.end()) {
+  if (li != _on_textures.end()) {
     return 1;
   }
-  if (oli != ta->_textures.end()) {
+  if (oli != ta->_on_textures.end()) {
+    return -1;
+  }
+
+  OffStages::const_iterator fi = _off_stages.begin();
+  OffStages::const_iterator ofi = ta->_off_stages.begin();
+
+  while (fi != _off_stages.end() && ofi != ta->_off_stages.end()) {
+    TextureStage *stage = (*fi);
+    TextureStage *other_stage = (*ofi);
+
+    if (stage != other_stage) {
+      return stage < other_stage ? -1 : 1;
+    }
+
+    ++fi;
+    ++ofi;
+  }
+
+  if (fi != _off_stages.end()) {
+    return 1;
+  }
+  if (ofi != ta->_off_stages.end()) {
     return -1;
   }
   
@@ -286,29 +378,130 @@ compose_impl(const RenderAttrib *other) const {
   const TextureAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
 
-  if (ta->_operation == O_set) {
-    // If the other type is O_set, it doesn't matter what we are.
+  if (ta->_off_all_stages) {
+    // If the other type turns off all stages, it doesn't matter what
+    // we are.
     return ta;
   }
 
-  if (_operation == ta->_operation) {
-    // If the operation types match, the composition is simply the
-    // union.
-    return do_add(ta, _operation);
+  // This is a three-way merge between ai, bi, and ci, except that bi
+  // and ci should have no intersection and therefore needn't be
+  // compared to each other.
+  OnTextures::const_iterator ai = _on_textures.begin();
+  OnTextures::const_iterator bi = ta->_on_textures.begin();
+  OffStages::const_iterator ci = ta->_off_stages.begin();
 
-  } else if (ta->_operation == O_remove) {
-    // If the other operation type is remove, and our type is add or
-    // set, then remove.
-    return do_remove(ta, _operation);
+  // Create a new TextureAttrib that will hold the result.
+  TextureAttrib *new_attrib = new TextureAttrib;
+  insert_iterator<OnTextures> result = 
+    inserter(new_attrib->_on_textures, new_attrib->_on_textures.end());
 
-  } else if (_operation == O_remove) {
-    // If our type is remove, then the other one wins.
-    return ta;
+  while (ai != _on_textures.end() && 
+         bi != ta->_on_textures.end() && 
+         ci != ta->_off_stages.end()) {
+    if ((*ai).first < (*bi).first) {
+      if ((*ai).first < (*ci)) {
+        // Here is a stage that we have in the original, which is not
+        // present in the secondary.
+        *result = *ai;
+        new_attrib->_on_stages.push_back((*ai).first);
+        ++ai;
+        ++result;
 
-  } else {
-    // Otherwise, the result is the union.
-    return do_add(ta, _operation);
+      } else if ((*ci) < (*ai).first) {
+        // Here is a stage that is turned off in the secondary, but
+        // was not present in the original.
+        ++ci;
+
+      } else { // (*ci) == (*ai).first
+        // Here is a stage that is turned off in the secondary, and
+        // was present in the original.
+        ++ai;
+        ++ci;
+      }
+
+    } else if ((*bi).first < (*ai).first) {
+      // Here is a new stage we have in the secondary, that was not
+      // present in the original.
+      *result = *bi;
+      new_attrib->_on_stages.push_back((*bi).first);
+      ++bi;
+      ++result;
+
+    } else {  // (*bi).first == (*ai).first
+      // Here is a stage we have in both.
+      *result = *ai;
+      new_attrib->_on_stages.push_back((*ai).first);
+      ++ai;
+      ++bi;
+      ++result;
+    }
   }
+
+  while (ai != _on_textures.end() && bi != ta->_on_textures.end()) {
+    if ((*ai).first < (*bi).first) {
+      // Here is a stage that we have in the original, which is not
+      // present in the secondary.
+      *result = *ai;
+      new_attrib->_on_stages.push_back((*ai).first);
+      ++ai;
+      ++result;
+
+    } else if ((*bi).first < (*ai).first) {
+      // Here is a new stage we have in the secondary, that was not
+      // present in the original.
+      *result = *bi;
+      new_attrib->_on_stages.push_back((*bi).first);
+      ++bi;
+      ++result;
+
+    } else {
+      // Here is a stage we have in both.
+      *result = *ai;
+      new_attrib->_on_stages.push_back((*ai).first);
+      ++ai;
+      ++bi;
+      ++result;
+    }
+  }
+
+  while (ai != _on_textures.end() && ci != ta->_off_stages.end()) {
+    if ((*ai).first < (*ci)) {
+      // Here is a stage that we have in the original, which is not
+      // present in the secondary.
+      *result = *ai;
+      new_attrib->_on_stages.push_back((*ai).first);
+      ++ai;
+      ++result;
+      
+    } else if ((*ci) < (*ai).first) {
+      // Here is a stage that is turned off in the secondary, but
+      // was not present in the original.
+      ++ci;
+      
+    } else { // (*ci) == (*ai).first
+      // Here is a stage that is turned off in the secondary, and
+      // was present in the original.
+      ++ai;
+      ++ci;
+    }
+  }
+
+  while (ai != _on_textures.end()) {
+    *result = *ai;
+    new_attrib->_on_stages.push_back((*ai).first);
+    ++ai;
+    ++result;
+  }
+
+  while (bi != ta->_on_textures.end()) {
+    *result = *bi;
+    new_attrib->_on_stages.push_back((*bi).first);
+    ++bi;
+    ++result;
+  }
+
+  return return_new(new_attrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -342,113 +535,6 @@ invert_compose_impl(const RenderAttrib *other) const {
 RenderAttrib *TextureAttrib::
 make_default_impl() const {
   return new TextureAttrib;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::do_add
-//       Access: Private
-//  Description: Returns a new TextureAttrib that represents all the
-//               stages of this attrib, with those of the other one
-//               added in.
-////////////////////////////////////////////////////////////////////
-CPT(RenderAttrib) TextureAttrib::
-do_add(const TextureAttrib *other, TextureAttrib::Operation op) const {
-  Textures::const_iterator ai = _textures.begin();
-  Textures::const_iterator bi = other->_textures.begin();
-
-  // Create a new TextureAttrib that will hold the result.
-  TextureAttrib *new_attrib = new TextureAttrib;
-  new_attrib->_operation = op;
-  insert_iterator<Textures> result = 
-    inserter(new_attrib->_textures, new_attrib->_textures.end());
-
-  while (ai != _textures.end() && bi != other->_textures.end()) {
-    if ((*ai).first < (*bi).first) {
-      // Here is a stage that we have in the original, which is not
-      // present in the secondary.
-      *result = *ai;
-      new_attrib->_stages.push_back((*ai).first);
-      ++ai;
-      ++result;
-    } else if ((*bi).first < (*ai).first) {
-      // Here is a new stage we have in the secondary, that was not
-      // present in the original.
-      *result = *bi;
-      new_attrib->_stages.push_back((*bi).first);
-      ++bi;
-      ++result;
-    } else {
-      // Here is a stage we have in both.
-      *result = *ai;
-      new_attrib->_stages.push_back((*ai).first);
-      ++ai;
-      ++bi;
-      ++result;
-    }
-  }
-
-  while (ai != _textures.end()) {
-    *result = *ai;
-    new_attrib->_stages.push_back((*ai).first);
-    ++ai;
-    ++result;
-  }
-
-  while (bi != other->_textures.end()) {
-    *result = *bi;
-    new_attrib->_stages.push_back((*bi).first);
-    ++bi;
-    ++result;
-  }
-
-  return return_new(new_attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::do_remove
-//       Access: Private
-//  Description: Returns a new TextureAttrib that represents all the
-//               stages of this attrib, with those of the other one
-//               removed.
-////////////////////////////////////////////////////////////////////
-CPT(RenderAttrib) TextureAttrib::
-do_remove(const TextureAttrib *other, TextureAttrib::Operation op) const {
-  Textures::const_iterator ai = _textures.begin();
-  Textures::const_iterator bi = other->_textures.begin();
-
-  // Create a new TextureAttrib that will hold the result.
-  TextureAttrib *new_attrib = new TextureAttrib;
-  new_attrib->_operation = op;
-  insert_iterator<Textures> result = 
-    inserter(new_attrib->_textures, new_attrib->_textures.end());
-
-  while (ai != _textures.end() && bi != other->_textures.end()) {
-    if ((*ai).first < (*bi).first) {
-      // Here is a stage that we have in the original, which is
-      // not present in the secondary.  Keep it.
-      *result = *ai;
-      new_attrib->_stages.push_back((*ai).first);
-      ++ai;
-      ++result;
-    } else if ((*bi).first < (*ai).first) {
-      // Here is a new stage we have in the secondary, that was
-      // not present in the original.  Ignore it.
-      ++bi;
-    } else {
-      // Here is a stage we have in both.  Drop it.
-      ++ai;
-      ++bi;
-    }
-  }
-
-  while (ai != _textures.end()) {
-    *result = *ai;
-    new_attrib->_stages.push_back((*ai).first);
-    ++ai;
-    ++result;
-  }
-
-  return return_new(new_attrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -489,9 +575,8 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
   TypedWritable *texture = p_list[pi++];
   if (texture != (TypedWritable *)NULL) {
     TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-    _operation = O_set;
-    _stages.push_back(tex_mgr->get_default_stage());
-    _textures[tex_mgr->get_default_stage()] = DCAST(Texture, texture);
+    _on_stages.push_back(tex_mgr->get_default_stage());
+    _on_textures[tex_mgr->get_default_stage()] = DCAST(Texture, texture);
     _sort_seq = tex_mgr->get_sort_seq();
   }
 
@@ -534,14 +619,14 @@ fillin(DatagramIterator &scan, BamReader *manager) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::sort_stages
+//     Function: TextureAttrib::sort_on_stages
 //       Access: Private
 //  Description: Sorts the list of stages so that they are listed in
 //               render order.
 ////////////////////////////////////////////////////////////////////
 void TextureAttrib::
-sort_stages() {
-  sort(_stages.begin(), _stages.end(), IndirectLess<TextureStage>());
+sort_on_stages() {
+  sort(_on_stages.begin(), _on_stages.end(), IndirectLess<TextureStage>());
 
   TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   _sort_seq = tex_mgr->get_sort_seq();

@@ -569,6 +569,23 @@ get_attrib(TypeHandle type) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: RenderState::get_override
+//       Access: Published, Virtual
+//  Description: Looks for a RenderAttrib of the indicated type in the
+//               state, and returns its override value if it is found,
+//               or 0 if it is not.
+////////////////////////////////////////////////////////////////////
+int RenderState::
+get_override(TypeHandle type) const {
+  Attributes::const_iterator ai;
+  ai = _attributes.find(Attribute(type));
+  if (ai != _attributes.end()) {
+    return (*ai)._override;
+  }
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: RenderState::output
 //       Access: Published, Virtual
 //  Description: 

@@ -25,8 +25,25 @@
 ////////////////////////////////////////////////////////////////////
 INLINE TextureAttrib::
 TextureAttrib() {
-  _operation = O_set;
+  _off_all_stages = false;
   _sort_seq = UpdateSeq::old();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::Copy Constructor
+//       Access: Private
+//  Description: Use TextureAttrib::make() to construct a new
+//               TextureAttrib object.  The copy constructor is only
+//               defined to facilitate methods like add_on_stage().
+////////////////////////////////////////////////////////////////////
+INLINE TextureAttrib::
+TextureAttrib(const TextureAttrib &copy) :
+  _on_stages(copy._on_stages),
+  _off_stages(copy._off_stages),
+  _off_all_stages(copy._off_all_stages),
+  _on_textures(copy._on_textures),
+  _sort_seq(copy._sort_seq)
+{
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -49,114 +66,101 @@ is_off() const {
 //     Function: TextureAttrib::get_texture
 //       Access: Published
 //  Description: If the TextureAttrib is not an 'off' TextureAttrib,
-//               returns the texture that is associated.  Otherwise,
-//               return NULL.
-//
-//               This method is deprecated, and is provided for
-//               backward compatibility; you should use the
-//               multitexture form of this instead.
+//               returns the base-level texture that is associated.
+//               Otherwise, return NULL.
 ////////////////////////////////////////////////////////////////////
 INLINE Texture *TextureAttrib::
 get_texture() const {
-  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
-  return get_texture(tex_mgr->get_default_stage());
+  if (_on_stages.empty()) {
+    return NULL;
+  }
+  check_sorted();
+  return get_on_texture(_on_stages[0]);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_operation
+//     Function: TextureAttrib::get_num_on_stages
 //       Access: Published
-//  Description: Returns the basic operation type of the TextureAttrib.
-//               If this is O_set, the stages listed here completely
-//               replace any stages that were already on.  If this is
-//               O_add, the stages here are added to the set of of
-//               stages that were already on, and if O_remove, the
-//               stages here are removed from the set of stages that
-//               were on.
-////////////////////////////////////////////////////////////////////
-INLINE TextureAttrib::Operation TextureAttrib::
-get_operation() const {
-  return _operation;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_num_stages
-//       Access: Published
-//  Description: Returns the number of stages listed in the attribute.
+//  Description: Returns the number of stages that are turned on by
+//               the attribute.
 ////////////////////////////////////////////////////////////////////
 INLINE int TextureAttrib::
-get_num_stages() const {
+get_num_on_stages() const {
   check_sorted();
-  return _stages.size();
+  return _on_stages.size();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_stage
+//     Function: TextureAttrib::get_on_stage
 //       Access: Published
-//  Description: Returns the nth stage listed in the attribute, sorted
-//               in render order.
+//  Description: Returns the nth stage turned on by the attribute,
+//               sorted in render order.
 ////////////////////////////////////////////////////////////////////
 INLINE TextureStage *TextureAttrib::
-get_stage(int n) const {
-  nassertr(n >= 0 && n < (int)_stages.size(), (TextureStage *)NULL);
-  return _stages[n];
+get_on_stage(int n) const {
+  nassertr(n >= 0 && n < (int)_on_stages.size(), (TextureStage *)NULL);
+  return _on_stages[n];
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::has_stage
+//     Function: TextureAttrib::has_on_stage
 //       Access: Published
-//  Description: Returns true if the indicated stage is listed in the
-//               attrib, false otherwise.
+//  Description: Returns true if the indicated stage is turned on by
+//               the attrib, false otherwise.
 ////////////////////////////////////////////////////////////////////
 INLINE bool TextureAttrib::
-has_stage(TextureStage *stage) const {
-  return _textures.find(stage) != _textures.end();
+has_on_stage(TextureStage *stage) const {
+  return _on_textures.find(stage) != _on_textures.end();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_texture
+//     Function: TextureAttrib::get_on_texture
 //       Access: Published
 //  Description: Returns the texture associated with the indicated
 //               stage, or NULL if no texture is associated.
 ////////////////////////////////////////////////////////////////////
 INLINE Texture *TextureAttrib::
-get_texture(TextureStage *stage) const {
-  Textures::const_iterator ti;
-  ti = _textures.find(stage);
-  if (ti != _textures.end()) {
+get_on_texture(TextureStage *stage) const {
+  OnTextures::const_iterator ti;
+  ti = _on_textures.find(stage);
+  if (ti != _on_textures.end()) {
     return (*ti).second;
   }
   return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::add_stage
+//     Function: TextureAttrib::get_num_off_stages
 //       Access: Published
-//  Description: Returns a new TextureAttrib, just like this one, but
-//               with the indicated stage added to the list of stages.
+//  Description: Returns the number of stages that are turned off by
+//               the attribute.
 ////////////////////////////////////////////////////////////////////
-INLINE CPT(RenderAttrib) TextureAttrib::
-add_stage(TextureStage *stage, Texture *tex) const {
-  if (_operation == O_remove) {  
-    return compose(make(O_remove, stage, tex));
-  } else {
-    return compose(make(O_add, stage, tex));
-  }
+INLINE int TextureAttrib::
+get_num_off_stages() const {
+  return _off_stages.size();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::remove_stage
+//     Function: TextureAttrib::get_off_stage
 //       Access: Published
-//  Description: Returns a new TextureAttrib, just like this one, but
-//               with the indicated stage removed from the list of
-//               stages.
+//  Description: Returns the nth stage turned off by the attribute,
+//               sorted in arbitrary (pointer) order.
 ////////////////////////////////////////////////////////////////////
-INLINE CPT(RenderAttrib) TextureAttrib::
-remove_stage(TextureStage *stage) const {
-  if (_operation == O_remove) {  
-    return compose(make(O_add, stage, NULL));
-  } else {
-    return compose(make(O_remove, stage, NULL));
-  }
+INLINE TextureStage *TextureAttrib::
+get_off_stage(int n) const {
+  nassertr(n >= 0 && n < (int)_off_stages.size(), (TextureStage *)NULL);
+  return _off_stages[n];
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::has_off_stage
+//       Access: Published
+//  Description: Returns true if the indicated stage is turned off by
+//               the attrib, false otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool TextureAttrib::
+has_off_stage(TextureStage *stage) const {
+  return _off_all_stages || _off_stages.find(stage) != _off_stages.end();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -167,7 +171,7 @@ remove_stage(TextureStage *stage) const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool TextureAttrib::
 is_identity() const {
-  return _operation != O_set && _stages.empty();
+  return _on_stages.empty() && _off_stages.empty() && !_off_all_stages;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -178,25 +182,25 @@ is_identity() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool TextureAttrib::
 is_all_off() const {
-  return _operation == O_set && _stages.empty();
+  return _on_stages.empty() && _off_all_stages;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_stages
+//     Function: TextureAttrib::get_on_stages
 //       Access: Published
 //  Description: Returns the complete list of stages defined within
 //               this TextureAttrib, suitable for passing to
 //               Geom::setup_multitexcoord_iterator().
 ////////////////////////////////////////////////////////////////////
 INLINE const Geom::ActiveTextureStages &TextureAttrib::
-get_stages() const {
-  return _stages;
+get_on_stages() const {
+  return _on_stages;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::check_sorted
 //       Access: Private
-//  Description: Confirms whether the _stages list is still sorted.
+//  Description: Confirms whether the _on_stages list is still sorted.
 //               It will become unsorted if someone calls
 //               TextureStage::set_sort().
 //
@@ -207,6 +211,6 @@ INLINE void TextureAttrib::
 check_sorted() const {
   TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
   if (_sort_seq != tex_mgr->get_sort_seq()) {
-    ((TextureAttrib *)this)->sort_stages();
+    ((TextureAttrib *)this)->sort_on_stages();
   }
 }

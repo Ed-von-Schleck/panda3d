@@ -24,6 +24,8 @@
 #include "renderAttrib.h"
 #include "luse.h"
 
+class FactoryParams;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : TexMatrixAttrib
 // Description : Applies a transform matrix to UV's before they are

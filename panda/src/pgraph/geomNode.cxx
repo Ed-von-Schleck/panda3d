@@ -20,12 +20,16 @@
 #include "geomTransformer.h"
 #include "sceneGraphReducer.h"
 #include "accumulatedAttribs.h"
+#include "colorAttrib.h"
+#include "colorScaleAttrib.h"
+#include "texMatrixAttrib.h"
 #include "bamReader.h"
 #include "bamWriter.h"
 #include "datagram.h"
 #include "datagramIterator.h"
 #include "indent.h"
 #include "pset.h"
+#include "config_pgraph.h"
 
 TypeHandle GeomNode::_type_handle;
 

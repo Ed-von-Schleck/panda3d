@@ -153,7 +153,6 @@
     modelNode.cxx \
     modelPool.cxx \
     modelRoot.cxx \
-    nodePath.cxx \
     nodePathCollection.cxx \
     nodePathComponent.cxx \
     nodePathLerps.cxx \

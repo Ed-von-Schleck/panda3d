@@ -23,6 +23,8 @@
 
 #include "renderAttrib.h"
 
+class FactoryParams;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : TextureApplyAttrib
 // Description : Specifies how textures are applied; specifically, how

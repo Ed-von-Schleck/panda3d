@@ -28,6 +28,7 @@
 #include "textureStageManager.h"
 #include "indirectLess.h"
 #include "geom.h"
+#include "ordered_vector.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TextureAttrib
@@ -38,6 +39,7 @@
 class EXPCL_PANDA TextureAttrib : public RenderAttrib {
 private:
   INLINE TextureAttrib();
+  INLINE TextureAttrib(const TextureAttrib &copy);
 
 PUBLISHED:
   // These methods are deprecated, but they remain for now, for
@@ -53,44 +55,30 @@ PUBLISHED:
   // TextureAttrib.  Each TextureAttrib can add or remove individual
   // texture stages from the complete set of textures that are to be
   // applied; this is similar to the mechanism of LightAttrib.
-  enum Operation {
-    O_set,
-    O_add,
-    O_remove
-  };
-
+  static CPT(RenderAttrib) make_set(TextureStage *stage, Texture *tex);
+  static CPT(RenderAttrib) make_on(TextureStage *stage, Texture *tex);
+  static CPT(RenderAttrib) make_off(TextureStage *stage);
   static CPT(RenderAttrib) make_all_off();
-  static CPT(RenderAttrib) make(Operation op, 
-                                TextureStage *stage, Texture *tex);
-  static CPT(RenderAttrib) make(Operation op, 
-                                TextureStage *stageA, Texture *texA,
-                                TextureStage *stageB, Texture *texB);
-  static CPT(RenderAttrib) make(Operation op, 
-                                TextureStage *stageA, Texture *texA,
-                                TextureStage *stageB, Texture *texB,
-                                TextureStage *stageC, Texture *texC);
-  static CPT(RenderAttrib) make(Operation op, 
-                                TextureStage *stageA, Texture *texA,
-                                TextureStage *stageB, Texture *texB,
-                                TextureStage *stageC, Texture *texC,
-                                TextureStage *stageD, Texture *texD);
 
-  INLINE Operation get_operation() const;
+  INLINE int get_num_on_stages() const;
+  INLINE TextureStage *get_on_stage(int n) const;
+  INLINE bool has_on_stage(TextureStage *stage) const;
+  INLINE Texture *get_on_texture(TextureStage *stage) const;
 
-  INLINE int get_num_stages() const;
-  INLINE TextureStage *get_stage(int n) const;
+  INLINE int get_num_off_stages() const;
+  INLINE TextureStage *get_off_stage(int n) const;
+  INLINE bool has_off_stage(TextureStage *stage) const;
 
-  INLINE bool has_stage(TextureStage *stage) const;
-  INLINE Texture *get_texture(TextureStage *stage) const;
-
-  INLINE CPT(RenderAttrib) add_stage(TextureStage *stage, Texture *tex) const;
-  INLINE CPT(RenderAttrib) remove_stage(TextureStage *stage) const;
+  CPT(RenderAttrib) add_on_stage(TextureStage *stage, Texture *tex) const;
+  CPT(RenderAttrib) remove_on_stage(TextureStage *stage) const;
+  CPT(RenderAttrib) add_off_stage(TextureStage *stage) const;
+  CPT(RenderAttrib) remove_off_stage(TextureStage *stage) const;
 
   INLINE bool is_identity() const;
   INLINE bool is_all_off() const;
 
 public:
-  INLINE const Geom::ActiveTextureStages &get_stages() const;
+  INLINE const Geom::ActiveTextureStages &get_on_stages() const;
 
   virtual void issue(GraphicsStateGuardianBase *gsg) const;
   virtual void output(ostream &out) const;
@@ -102,20 +90,19 @@ protected:
   virtual RenderAttrib *make_default_impl() const;
 
 private:
-  CPT(RenderAttrib) do_add(const TextureAttrib *other, Operation op) const;
-  CPT(RenderAttrib) do_remove(const TextureAttrib *other, Operation op) const;
-
   INLINE void check_sorted() const;
-  void sort_stages();
+  void sort_on_stages();
 
 private:
-  Operation _operation;
+  typedef Geom::ActiveTextureStages OnStages;
+  OnStages _on_stages;
 
-  typedef Geom::ActiveTextureStages Stages;
-  Stages _stages;
+  typedef ov_set<TextureStage *> OffStages;
+  OffStages _off_stages;
+  bool _off_all_stages;
 
-  typedef pmap< TextureStage *, PT(Texture) > Textures;
-  Textures _textures;
+  typedef pmap< TextureStage *, PT(Texture) > OnTextures;
+  OnTextures _on_textures;
 
   UpdateSeq _sort_seq;
 

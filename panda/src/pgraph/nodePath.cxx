@@ -2115,11 +2115,25 @@ get_bin_draw_order() const {
 //       Access: Published
 //  Description: Sets the geometry at this level and below to render
 //               using the indicated texture.
+//
+//               This replaces any texture specification at this node
+//               with a new specification that assigns the indicated
+//               texture to the default stage.  If there was any
+//               multitexture specification on this node, it is
+//               replaced; however, texture specifications for
+//               additional multitexture stages inherited from nodes
+//               above or below are not changed, unless the priority
+//               overrides.
+//
+//               See also add_texture().
 ////////////////////////////////////////////////////////////////////
 void NodePath::
 set_texture(Texture *tex, int priority) {
   nassertv_always(!is_empty());
-  node()->set_attrib(TextureAttrib::make(tex), priority);
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  PT(TextureStage) stage = tex_mgr->get_default_stage();
+
+  node()->set_attrib(TextureAttrib::make_on(stage, tex), priority);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2135,7 +2149,86 @@ set_texture(Texture *tex, int priority) {
 void NodePath::
 set_texture_off(int priority) {
   nassertv_always(!is_empty());
-  node()->set_attrib(TextureAttrib::make_off(), priority);
+  node()->set_attrib(TextureAttrib::make_all_off(), priority);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::add_texture
+//       Access: Published
+//  Description: Adds the indicated texture to the list of textures
+//               that will be rendered on the indicated multitexture
+//               stage.  If there are multiple texture stages
+//               specified (possibly on multiple different nodes at
+//               different levels), they will all be applied to
+//               geometry together, according to the stage
+//               specification set up in the TextureStage object
+//               returned from TextureStageManager::make_stage().
+////////////////////////////////////////////////////////////////////
+void NodePath::
+add_texture(const string &stage_name, Texture *tex) {
+  nassertv_always(!is_empty());
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TextureAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    int priority = node()->get_state()->get_override(TextureAttrib::get_class_type());
+    const TextureAttrib *tsa = DCAST(TextureAttrib, attrib);
+
+    // Modify the existing TextureAttrib to add the indicated
+    // texture.
+    node()->set_attrib(tsa->add_on_stage(stage, tex), priority);
+
+  } else {
+    // Create a new TextureAttrib for this node.
+    node()->set_attrib(TextureAttrib::make_on(stage, tex));
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::remove_texture
+//       Access: Published
+//  Description: Performs one of two different operations: 
+//
+//               (1) if the node has a reference to the indicated
+//               texture stage (e.g. add_texture() was previously
+//               called with this stage), undoes that operation and
+//               removes it from the list.  This node will no longer
+//               affect the named texture stage in the future.
+//
+//               (2) if the node does *not* already have a reference
+//               to the indicated texture stage, adds a reference to
+//               turn the texture stage off at this level and below,
+//               overriding an "on" operation from above.
+////////////////////////////////////////////////////////////////////
+void NodePath::
+remove_texture(const string &stage_name) {
+  nassertv_always(!is_empty());
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(TextureAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    int priority = node()->get_state()->get_override(TextureAttrib::get_class_type());
+    const TextureAttrib *tsa = DCAST(TextureAttrib, attrib);
+
+    if (tsa->has_on_stage(stage)) {
+      // Modify the existing TextureAttrib to remove the indicated
+      // texture from the "on" list.
+      node()->set_attrib(tsa->remove_on_stage(stage), priority);
+    } else {
+      // Modify the existing TextureAttrib to add the indicated
+      // texture to the "off" list.
+      node()->set_attrib(tsa->add_off_stage(stage), priority);
+    }
+
+  } else {
+    // Create a new TextureAttrib for this node that turns off the
+    // indicated stage.
+    node()->set_attrib(TextureAttrib::make_off(stage));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2165,12 +2258,30 @@ clear_texture() {
 ////////////////////////////////////////////////////////////////////
 bool NodePath::
 has_texture() const {
+  return get_texture() != (Texture *)NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_texture
+//       Access: Published
+//  Description: Returns true if texturing has been specifically
+//               enabled on this particular node for the indicated
+//               stage.  This means that someone called
+//               add_texture() on this node with the indicated stage
+//               name, or the stage_name is the default stage_name,
+//               and someone called set_texture() on this node.
+////////////////////////////////////////////////////////////////////
+bool NodePath::
+has_texture(const string &stage_name) const {
   nassertr_always(!is_empty(), false);
+
   const RenderAttrib *attrib =
-    node()->get_attrib(TextureAttrib::get_class_type());
+    node()->get_attrib(ColorAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
     const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
-    return !ta->is_off();
+    return ta->has_on_stage(stage);
   }
 
   return false;
@@ -2179,7 +2290,7 @@ has_texture() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: NodePath::has_texture_off
 //       Access: Published
-//  Description: Returns true if a texture has been specifically
+//  Description: Returns true if texturing has been specifically
 //               disabled on this particular node via
 //               set_texture_off(), false otherwise.  This is not the
 //               same thing as asking whether the geometry at this
@@ -2193,7 +2304,33 @@ has_texture_off() const {
     node()->get_attrib(ColorAttrib::get_class_type());
   if (attrib != (const RenderAttrib *)NULL) {
     const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
-    return ta->is_off();
+    return ta->is_all_off();
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::has_texture_off
+//       Access: Published
+//  Description: Returns true if texturing has been specifically
+//               disabled on this particular node for the indicated
+//               stage.  This means that someone called
+//               remove_texture() on this node with the indicated
+//               stage name, or that someone called set_texture_off()
+//               on this node to remove all stages.
+////////////////////////////////////////////////////////////////////
+bool NodePath::
+has_texture_off(const string &stage_name) const {
+  nassertr_always(!is_empty(), false);
+
+  const RenderAttrib *attrib =
+    node()->get_attrib(ColorAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+    const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
+    return ta->has_off_stage(stage);
   }
 
   return false;
@@ -2202,10 +2339,10 @@ has_texture_off() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: NodePath::get_texture
 //       Access: Published
-//  Description: Returns the texture that has been set on this
-//               particular node, or NULL if no texture has been set.
-//               This is not necessarily the texture that will be
-//               applied to the geometry at or below this level, as
+//  Description: Returns the base-level texture that has been set on
+//               this particular node, or NULL if no texture has been
+//               set.  This is not necessarily the texture that will
+//               be applied to the geometry at or below this level, as
 //               another texture at a higher or lower level may
 //               override.
 //
@@ -2219,6 +2356,28 @@ get_texture() const {
   if (attrib != (const RenderAttrib *)NULL) {
     const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
     return ta->get_texture();
+  }
+
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: NodePath::get_texture
+//       Access: Published
+//  Description: Returns the texture that has been set on the
+//               indicated stage for this particular node, or NULL if
+//               no texture has been set for this stage.
+////////////////////////////////////////////////////////////////////
+Texture *NodePath::
+get_texture(const string &stage_name) const {
+  nassertr_always(!is_empty(), NULL);
+  const RenderAttrib *attrib =
+    node()->get_attrib(TextureAttrib::get_class_type());
+  if (attrib != (const RenderAttrib *)NULL) {
+    TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+    PT(TextureStage) stage = tex_mgr->make_stage(stage_name);
+    const TextureAttrib *ta = DCAST(TextureAttrib, attrib);
+    return ta->get_on_texture(stage);
   }
 
   return NULL;

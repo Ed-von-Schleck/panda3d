@@ -489,10 +489,15 @@ PUBLISHED:
 
   void set_texture(Texture *tex, int priority = 0);
   void set_texture_off(int priority = 0);
+  void add_texture(const string &stage_name, Texture *tex);
+  void remove_texture(const string &stage_name);
   void clear_texture();
   bool has_texture() const;
+  bool has_texture(const string &stage_name) const;
   bool has_texture_off() const;
+  bool has_texture_off(const string &stage_name) const;
   Texture *get_texture() const;
+  Texture *get_texture(const string &stage_name) const;
 
   Texture *find_texture(const string &name) const;
   TextureCollection find_all_textures() const;
