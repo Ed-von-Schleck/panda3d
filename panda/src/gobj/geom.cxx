@@ -1093,6 +1093,8 @@ void Geom::
 write_datagram(BamWriter *manager, Datagram &me) {
   int i;
 
+  // TODO: write the multitexture data.
+
   // Coordinates
   WRITE_PTA(manager, me, IPD_Vertexf::write_datagram, _coords);
   // Normals
