@@ -54,6 +54,15 @@ def youngest(files):
     if (source > result): result = source;
   return(result);
 
+def debug_older(file,others):
+    print [file, others]
+    y=youngest(others)
+    fd=filedate(file)
+    print "youngest", y
+    print "filedate", fd
+    print "is older", fd<y
+    return fd<y
+
 def older(file,others):
   return (filedate(file)<youngest(others));
 
@@ -856,6 +865,8 @@ def CompileBison(pre,dstc,dsth,src):
   #wdstc = backslashify("built/tmp/"    +dstc)
   #wdsth = backslashify("built/include/"+dsth)
   #wsrc = backslashify(src)
+  dstc=base+"/"+dstc
+  dsth=base+"/"+dsth
   if (older(dstc,src) or older(dsth,src)):
     CopyFile("built/tmp/", src)
     if (COMPILER=="MSVC7"):
@@ -863,8 +874,8 @@ def CompileBison(pre,dstc,dsth,src):
       bisonFullPath=os.path.abspath(STDTHIRDPARTY+"win-util/bison.exe")
       oscdcmd("built/tmp", bisonFullPath+" -y -d -p " + pre + " " + fn)
       #oscmd(bisonFullPath+" -y -d -p " + pre + " " + fn)
-      osmove("built/tmp/y_tab.c", base+"/"+dstc) # not os.path.join() because we want "/"
-      osmove("built/tmp/y_tab.h", base+"/"+dsth) # not os.path.join() because we want "/"
+      osmove("built/tmp/y_tab.c", dstc) # not os.path.join() because we want "/"
+      osmove("built/tmp/y_tab.h", dsth) # not os.path.join() because we want "/"
       #oscmd("move /y built\\tmp\\y_tab.c " + wdstc)
       #oscmd("move /y built\\tmp\\y_tab.h " + wdsth)
     if (COMPILER=="LINUXA"):
