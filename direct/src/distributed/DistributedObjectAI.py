@@ -98,7 +98,8 @@ class DistributedObjectAI(DirectObject.DirectObject):
                 if self.air:
                     self.air.deallocateChannel(self.doId)
             self.air = None
-            del self.parentId
+            if hasattr(self, 'parentId'):
+                del self.parentId
             del self.zoneId
 
     def isDeleted(self):
@@ -158,9 +159,9 @@ class DistributedObjectAI(DirectObject.DirectObject):
         # does not include the quiet zone.
         return 'DOLogicalChangeZone-%s' % self.doId
     
-    def handleZoneChange(self, newParentId, newZoneId, oldZoneId, oldParentId):
-        #assert oldParentId == self.parentId
-        #assert oldZoneId == self.zoneId
+    def handleZoneChange(self, newParentId, newZoneId, oldParentId, oldZoneId):
+        assert oldParentId == self.parentId
+        assert oldZoneId == self.zoneId
         self.parentId = newParentId
         self.zoneId = newZoneId
         self.air.changeDOZoneInTables(self, newZoneId, oldZoneId)
@@ -216,7 +217,9 @@ class DistributedObjectAI(DirectObject.DirectObject):
             
         # The repository is the one that really does the work
         self.air.generateWithRequired(self, zoneId, optionalFields)
-        #self.parentId = parentId
+        #HACK:
+        parentId = simbase.air.districtId
+        self.parentId = parentId
         self.zoneId = zoneId
         self.generate()
 
@@ -231,7 +234,9 @@ class DistributedObjectAI(DirectObject.DirectObject):
 
         # The repository is the one that really does the work
         self.air.generateWithRequiredAndId(self, doId, zoneId, optionalFields)
-        #self.parentId = parentId
+        #HACK:
+        parentId = simbase.air.districtId
+        self.parentId = parentId
         self.zoneId = zoneId
         self.generate()
 
@@ -251,9 +256,11 @@ class DistributedObjectAI(DirectObject.DirectObject):
         self.generate()
 
     def generate(self):
+        """
+        Inheritors should put functions that require self.zoneId or
+        other networked info in this function.
+        """
         assert self.notify.debugStateCall(self)
-        # Inheritors should put functions that require self.zoneId or
-        # other networked info in this function.
 
     def generateInit(self):
         """
@@ -263,12 +270,9 @@ class DistributedObjectAI(DirectObject.DirectObject):
 
     def sendGenerateWithRequired(self, repository, parentId, zoneId, optionalFields=[]):
         assert self.notify.debugStateCall(self)
-        print "\n\n  repository.districtId: %s, repository.ourChannel: %s\n"%(
-                repository.districtId, repository.ourChannel)
         # Make the dclass do the hard work
         dg = self.dclass.aiFormatGenerate(
                 self, self.doId, parentId, zoneId,
-                #repository.districtId,
                 repository.serverId,
                 repository.ourChannel,
                 optionalFields)
