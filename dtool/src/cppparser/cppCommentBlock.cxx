@@ -1,7 +1,0 @@
-// Filename: cppCommentBlock.C
-// Created by:  drose (15Aug00)
-// 
-////////////////////////////////////////////////////////////////////
-
-#include "cppCommentBlock.h"
-
