@@ -656,7 +656,13 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
     TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
     _on_stages.push_back(tex_mgr->get_default_stage());
     _on_textures[tex_mgr->get_default_stage()] = DCAST(Texture, texture);
+
+    // We know the one-element array is already sorted.
     _sort_seq = tex_mgr->get_sort_seq();
+
+  } else {
+    // Pre-bam 4.11, a null pointer meant to turn off texturing.
+    _off_all_stages = true;
   }
 
   return pi;
