@@ -114,25 +114,25 @@ static toff_t
 istream_seek(thandle_t fd, off_t off, int whence) {
   istream *in = (istream *)fd;
 
-  ios::seek_dir dir;
+  int dir;
   switch (whence) {
   case SEEK_SET:
-    dir = ios::beg;
+    dir = (int)ios::beg;
     break;
 
   case SEEK_END:
-    dir = ios::end;
+    dir = (int)ios::end;
     break;
 
   case SEEK_CUR:
-    dir = ios::cur;
+    dir = (int)ios::cur;
     break;
 
   default:
     return in->tellg();
   }
 
-  in->seekg(off, dir);
+  in->seekg(off, (ios::seekdir)dir);
   return in->tellg();
 }
 
@@ -140,25 +140,25 @@ static toff_t
 ostream_seek(thandle_t fd, off_t off, int whence) {
   ostream *out = (ostream *)fd;
 
-  ios::seek_dir dir;
+  int dir;
   switch (whence) {
   case SEEK_SET:
-    dir = ios::beg;
+    dir = (int)ios::beg;
     break;
 
   case SEEK_END:
-    dir = ios::end;
+    dir = (int)ios::end;
     break;
 
   case SEEK_CUR:
-    dir = ios::cur;
+    dir = (int)ios::cur;
     break;
 
   default:
     return out->tellp();
   }
 
-  out->seekp(off, dir);
+  out->seekp(off, (ios::seekdir)dir);
   return out->tellp();
 }
 
