@@ -144,7 +144,7 @@ open_window() {
   }
 
   // Initializes _colormap
-  setup_colormap();
+  setup_colormap(pixelformat);
   return true;
 }
 
@@ -169,21 +169,15 @@ close_window() {
 //               creating a GL context.
 ////////////////////////////////////////////////////////////////////
 void wglGraphicsWindow::
-setup_colormap() {
-  PIXELFORMATDESCRIPTOR pfd;
+setup_colormap(const PIXELFORMATDESCRIPTOR &pixelformat) {
   LOGPALETTE *logical;
   int n;
 
-  /* grab the pixel format */
-  memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
-  DescribePixelFormat(_hdc, GetPixelFormat(_hdc),
-                      sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-  if (!(pfd.dwFlags & PFD_NEED_PALETTE ||
-      pfd.iPixelType == PFD_TYPE_COLORINDEX))
+  if (!(pixelformat.dwFlags & PFD_NEED_PALETTE ||
+      pixelformat.iPixelType == PFD_TYPE_COLORINDEX))
     return;
 
-  n = 1 << pfd.cColorBits;
+  n = 1 << pixelformat.cColorBits;
 
   /* allocate a bunch of memory for the logical palette (assume 256
      colors in a Win32 palette */
@@ -198,20 +192,20 @@ setup_colormap() {
   /* start with a copy of the current system palette */
   GetSystemPaletteEntries(_hdc, 0, 256, &logical->palPalEntry[0]);
 
-  if (pfd.iPixelType == PFD_TYPE_RGBA) {
-    int redMask = (1 << pfd.cRedBits) - 1;
-    int greenMask = (1 << pfd.cGreenBits) - 1;
-    int blueMask = (1 << pfd.cBlueBits) - 1;
+  if (pixelformat.iPixelType == PFD_TYPE_RGBA) {
+    int redMask = (1 << pixelformat.cRedBits) - 1;
+    int greenMask = (1 << pixelformat.cGreenBits) - 1;
+    int blueMask = (1 << pixelformat.cBlueBits) - 1;
     int i;
 
     /* fill in an RGBA color palette */
     for (i = 0; i < n; ++i) {
       logical->palPalEntry[i].peRed =
-        (((i >> pfd.cRedShift)   & redMask)   * 255) / redMask;
+        (((i >> pixelformat.cRedShift)   & redMask)   * 255) / redMask;
       logical->palPalEntry[i].peGreen =
-        (((i >> pfd.cGreenShift) & greenMask) * 255) / greenMask;
+        (((i >> pixelformat.cGreenShift) & greenMask) * 255) / greenMask;
         logical->palPalEntry[i].peBlue =
-        (((i >> pfd.cBlueShift)  & blueMask)  * 255) / blueMask;
+        (((i >> pixelformat.cBlueShift)  & blueMask)  * 255) / blueMask;
       logical->palPalEntry[i].peFlags = 0;
     }
   }

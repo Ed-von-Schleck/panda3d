@@ -42,7 +42,7 @@ protected:
   virtual void close_window();
 
 private:
-  void setup_colormap();
+  void setup_colormap(const PIXELFORMATDESCRIPTOR &pixelformat);
 
 #ifdef _DEBUG
   static void print_pfd(PIXELFORMATDESCRIPTOR *pfd, char *msg);
