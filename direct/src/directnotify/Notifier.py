@@ -181,4 +181,4 @@ class Notifier:
         If we ever need to do something else than Python print, you
         could put it here.
         """
-            print string
+        print string
