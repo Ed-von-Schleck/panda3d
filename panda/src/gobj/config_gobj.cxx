@@ -219,4 +219,6 @@ ConfigureFn(config_gobj) {
   MatrixLens::register_with_read_factory();
   PerspectiveLens::register_with_read_factory();
   Texture::register_with_read_factory();
+  TextureStage::register_with_read_factory();
+  TexCoordName::register_with_read_factory();
 }
