@@ -39,7 +39,7 @@ class ClientRepository(DirectObject.DirectObject):
         # This is a much better socket library, but it may be more
         # than you need for most applications; and the Panda net
         # interface doesn't support proxies at all.
-        self.connectHttp = base.config.GetBool('connect-http', 1)
+        self.connectHttp = base.config.GetBool('connect-http', 0)
 
         self.tcpConn = None
         return None
@@ -76,7 +76,12 @@ class ClientRepository(DirectObject.DirectObject):
         known.
         """
 
+        if self.hasProxy:
+            # If we have a proxy, we'd better use connectHttp.
+            self.connectHttp = 1
+
         if self.connectHttp:
+            self.notify.info("Connecting via HTTP interface.")
             ch = self.http.makeChannel(0)
             ch.beginConnectTo(serverURL)
             ch.spawnTask(name = 'connect-to-server',
@@ -84,6 +89,7 @@ class ClientRepository(DirectObject.DirectObject):
                          extraArgs = [ch, successCallback, successArgs,
                                       failureCallback, failureArgs])
         else:
+            self.notify.info("Connecting directly via NSPR interface.")
             self.qcm = QueuedConnectionManager()
             gameServerTimeoutMs = base.config.GetInt("game-server-timeout-ms",
                                                      20000)
