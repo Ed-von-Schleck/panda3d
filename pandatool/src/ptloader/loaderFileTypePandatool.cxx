@@ -119,10 +119,6 @@ load_file(const Filename &path, bool) const {
       egg_data.transform(LMatrix4d::scale_mat(scale));
     }
 
-    if (!egg_data.has_normals()) {
-      egg_data.recompute_polygon_normals();
-    }
-
     result = load_egg_data(egg_data);
   }
   _converter->clear_egg_data();
