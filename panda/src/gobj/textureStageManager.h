@@ -73,12 +73,12 @@ private:
   // themselves from the TextureStageManager as they destruct.
   typedef pvector<TextureStage *> Stages;
   Stages _stages;
-  typedef pset<string, TextureStage *> StagesByName;
+  typedef pmap<string, TextureStage *> StagesByName;
   StagesByName _stages_by_name;
 
   typedef pvector<TexCoordName *> TexCoords;
   TexCoords _texcoords;
-  typedef pset<string, TexCoordName *> TexCoordsByName;
+  typedef pmap<string, TexCoordName *> TexCoordsByName;
   TexCoordsByName _texcoords_by_name;
 
   UpdateSeq _sort_seq;

@@ -35,6 +35,7 @@
 #include "pta_int.h"
 #include "texCoordName.h"
 #include "textureStage.h"
+#include "textureStageManager.h"
 
 class Datagram;
 class DatagramIterator;
@@ -282,6 +283,7 @@ protected:
 
 private:
   void clear_prepared(PreparedGraphicsObjects *prepared_objects);
+  static int sum_lengths(const PTA_int &lengths);
 
   // A Geom keeps a list (actually, a map) of all the
   // PreparedGraphicsObjects tables that it has been prepared into.

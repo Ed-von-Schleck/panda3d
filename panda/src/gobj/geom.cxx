@@ -174,12 +174,12 @@ operator = (const Geom &copy) {
   _coords = copy._coords;
   _norms = copy._norms;
   _colors = copy._colors;
-  _texcoords = copy._texcoords;
 
   _vindex = copy._vindex;
   _nindex = copy._nindex;
   _cindex = copy._cindex;
-  _tindex = copy._tindex;
+
+  _texcoords_by_name = copy._texcoords_by_name;
 
   _numprims = copy._numprims;
   _num_vertices = copy._num_vertices;
@@ -322,15 +322,64 @@ set_colors(const PTA_Colorf &colors, GeomBindType bind,
 ////////////////////////////////////////////////////////////////////
 //     Function: Geom::set_texcoords
 //       Access: Published
-//  Description:
+//  Description: This single-texturing version of set_texcoords() only
+//               changes the default texcoords name.  Use the version
+//               of set_texcoords() that takes a TexCoordName
+//               parameter to set up different texture coordinates for
+//               different stages of a multitexture pipeline.
 ////////////////////////////////////////////////////////////////////
 void Geom::
 set_texcoords(const PTA_TexCoordf &texcoords, GeomBindType bind,
               const PTA_ushort &tindex) {
-  _texcoords = texcoords;
-  assert(bind == G_PER_VERTEX || bind == G_OFF);
-  _bind[G_TEXCOORD] = bind;
-  _tindex = tindex;
+  nassertv(bind == G_PER_VERTEX || bind == G_OFF);
+
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  if (bind == G_OFF) {
+    remove_texcoords(tex_mgr->get_default_texcoord());
+  } else {
+    set_texcoords(tex_mgr->get_default_texcoord(), texcoords, tindex);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::set_texcoords
+//       Access: Published
+//  Description: Sets the texture coordinates for a particular name of
+//               the pipeline.  This implicitly sets the binding of
+//               these texture coordinates to G_PER_VERTEX.  See also
+//               remove_texcoords().
+////////////////////////////////////////////////////////////////////
+void Geom::
+set_texcoords(const TexCoordName *name, const PTA_TexCoordf &texcoords,
+              const PTA_ushort &tindex) {
+  TexCoordDef &def = _texcoords_by_name[name];
+  def._texcoords = texcoords;
+  def._tindex = tindex;
+
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  if (name == tex_mgr->get_default_texcoord()) {
+    _bind[G_TEXCOORD] = G_PER_VERTEX;
+  }
+
+  make_dirty();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::remove_texcoords
+//       Access: Published
+//  Description: Removes the texture coordinates for a particular name
+//               of the pipeline.  This implicitly sets the binding of
+//               these texture coordinates to G_OFF.  See also
+//               set_texcoords().
+////////////////////////////////////////////////////////////////////
+void Geom::
+remove_texcoords(const TexCoordName *name) {
+  _texcoords_by_name.erase(name);
+
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  if (name == tex_mgr->get_default_texcoord()) {
+    _bind[G_TEXCOORD] = G_OFF;
+  }
 
   make_dirty();
 }
@@ -391,14 +440,28 @@ get_colors(PTA_Colorf &colors, GeomBindType &bind,
 ////////////////////////////////////////////////////////////////////
 //     Function: Geom::get_texcoords
 //       Access: Public
-//  Description:
+//  Description: Returns the texcoords associated with the default
+//               name only.  See has_texcoords(),
+//               get_texcoords_array(), and get_texcoords_index() to
+//               get the texcoords associated with an arbitrary name
+//               of a multitexture pipeline.
 ////////////////////////////////////////////////////////////////////
 void Geom::
 get_texcoords(PTA_TexCoordf &texcoords, GeomBindType &bind,
-              PTA_ushort &tindex) const {
-  texcoords = _texcoords;
-  bind = _bind[G_TEXCOORD];
-  tindex = _tindex;
+              PTA_ushort &tindex) const { 
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  TexCoordsByName::const_iterator tci = 
+    _texcoords_by_name.find(tex_mgr->get_default_texcoord());
+  if (tci != _texcoords_by_name.end()) {
+    const TexCoordDef &def = (*tci).second;
+    texcoords = def._texcoords;
+    bind = G_PER_VERTEX;
+    tindex = def._tindex;
+  } else {
+    texcoords.clear();
+    bind = G_OFF;
+    tindex.clear();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -517,11 +580,23 @@ config() {
   }
 
   // Set up texture coordinate rendering configuration
-  if (_texcoords != (TexCoordf*)0L && _bind[G_TEXCOORD] != G_OFF) {
-    _get_texcoord =
-      (_tindex == (ushort*)0L) ? get_texcoord_nonindexed : get_texcoord_indexed;
-  } else {
+  if (_texcoords_by_name.empty()) {
     _get_texcoord = get_texcoord_noop;
+
+  } else {
+    _get_texcoord = get_texcoord_indexed;
+
+    // If any of the texture coordinates are nonindexed, all of them
+    // must be.
+    TexCoordsByName::const_iterator tci;
+    for (tci = _texcoords_by_name.begin(); 
+         tci != _texcoords_by_name.end();
+         ++tci) {
+      if ((*tci).second._tindex == (ushort *)NULL) {
+        _get_texcoord = get_texcoord_nonindexed;
+        break;
+      }
+    }
   }
 
   // Set up color rendering configuration
@@ -665,11 +740,10 @@ init() {
   _coords.clear();
   _norms.clear();
   _colors.clear();
-  _texcoords.clear();
   _vindex.clear();
   _nindex.clear();
   _cindex.clear();
-  _tindex.clear();
+  _texcoords_by_name.clear();
   _primlengths.clear();
 
   for ( i = 0; i < num_GeomAttrTypes; i++ )
@@ -739,6 +813,25 @@ clear_prepared(PreparedGraphicsObjects *prepared_objects) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Geom::sum_lengths
+//       Access: Private, Static
+//  Description: Returns the total number of vertices named in the
+//               lengths array.
+////////////////////////////////////////////////////////////////////
+int Geom::
+sum_lengths(const PTA_int &lengths) {
+  int num_vertices = 0;
+
+  for (PTA_int::const_iterator li = lengths.begin();
+       li != lengths.end();
+       ++li) {
+    num_vertices += (*li);
+  }
+
+  return num_vertices;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Geom::write_datagram
 //       Access: Public
 //  Description: Function to write the important information in
@@ -749,22 +842,22 @@ write_datagram(BamWriter *manager, Datagram &me) {
   int i;
 
   //Coordinates
-  WRITE_PTA(manager, me, IPD_Vertexf::write_datagram, _coords)
+  WRITE_PTA(manager, me, IPD_Vertexf::write_datagram, _coords);
   //Normals
-  WRITE_PTA(manager, me, IPD_Normalf::write_datagram, _norms)
+  WRITE_PTA(manager, me, IPD_Normalf::write_datagram, _norms);
   //Colors
-  WRITE_PTA(manager, me, IPD_Colorf::write_datagram, _colors)
+  WRITE_PTA(manager, me, IPD_Colorf::write_datagram, _colors);
   //Texture Coordinates
-  WRITE_PTA(manager, me, IPD_TexCoordf::write_datagram, _texcoords)
+  WRITE_PTA(manager, me, IPD_TexCoordf::write_datagram, get_texcoords_array());
 
   //Now write out the indices for each array
-  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _vindex)
-  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _nindex)
-  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _cindex)
-  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _tindex)
+  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _vindex);
+  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _nindex);
+  WRITE_PTA(manager, me, IPD_ushort::write_datagram, _cindex);
+  WRITE_PTA(manager, me, IPD_ushort::write_datagram, get_texcoords_index());
 
   me.add_uint16(_numprims);
-  WRITE_PTA(manager, me, IPD_int::write_datagram, _primlengths)
+  WRITE_PTA(manager, me, IPD_int::write_datagram, _primlengths);
 
   //Write out the bindings for vertices, normals,
   //colors and texture coordinates
@@ -787,36 +880,44 @@ fillin(DatagramIterator& scan, BamReader* manager) {
   int i;
 
   //Coordinates
-  READ_PTA(manager, scan, IPD_Vertexf::read_datagram, _coords)
+  READ_PTA(manager, scan, IPD_Vertexf::read_datagram, _coords);
   //Normals
-  READ_PTA(manager, scan, IPD_Normalf::read_datagram, _norms)
+  READ_PTA(manager, scan, IPD_Normalf::read_datagram, _norms);
   //Colors
-  READ_PTA(manager, scan, IPD_Colorf::read_datagram, _colors)
+  READ_PTA(manager, scan, IPD_Colorf::read_datagram, _colors);
   //Texture Coordinates
-  READ_PTA(manager, scan, IPD_TexCoordf::read_datagram, _texcoords)
+  PTA_TexCoordf texcoords;
+  READ_PTA(manager, scan, IPD_TexCoordf::read_datagram, texcoords);
 
   //Now read in the indices for each array
-  READ_PTA(manager, scan, IPD_ushort::read_datagram, _vindex)
-  READ_PTA(manager, scan, IPD_ushort::read_datagram, _nindex)
-  READ_PTA(manager, scan, IPD_ushort::read_datagram, _cindex)
-  READ_PTA(manager, scan, IPD_ushort::read_datagram, _tindex)
+  READ_PTA(manager, scan, IPD_ushort::read_datagram, _vindex);
+  READ_PTA(manager, scan, IPD_ushort::read_datagram, _nindex);
+  READ_PTA(manager, scan, IPD_ushort::read_datagram, _cindex);
+  PTA_ushort tindex;
+  READ_PTA(manager, scan, IPD_ushort::read_datagram, tindex);
 
   _numprims = scan.get_uint16();
 
   // is there any point in doing this for uses_components()==false?
-  READ_PTA(manager, scan, IPD_int::read_datagram, _primlengths)
+  READ_PTA(manager, scan, IPD_int::read_datagram, _primlengths);
 
   if (uses_components()) {
-      _num_vertices = PTA_int_arraysum(_primlengths);
+    _num_vertices = sum_lengths(_primlengths);
+
   } else {
-      // except for strips & fans with the length arrays, total verts will be simply this
-      _num_vertices = _numprims*get_num_vertices_per_prim();
+    // except for strips & fans with the length arrays, total verts
+    // will be simply this
+    _num_vertices = _numprims * get_num_vertices_per_prim();
   }
 
   //Write out the bindings for vertices, normals,
   //colors and texture coordinates
   for(i = 0; i < num_GeomAttrTypes; i++) {
     _bind[i] = (enum GeomBindType) scan.get_uint8();
+  }
+
+  if (_bind[G_TEXCOORD] == G_PER_VERTEX) {
+    set_texcoords(texcoords, G_PER_VERTEX, tindex);
   }
 }
 

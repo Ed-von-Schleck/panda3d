@@ -77,10 +77,35 @@ get_colors_array() const {
 //               or G_OFF.  It may either be indexed or nonindexed,
 //               depending on whether get_texcoords_index() returns a
 //               NULL array.
+//
+//               This method is used in the single-texture case: it
+//               returns the default texture coordinates only.  In the
+//               presence of multitexturing, use the version of
+//               get_texcoords_array() method that takes a
+//               TexCoordName parameter.
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_TexCoordf Geom::
 get_texcoords_array() const {
-  return _texcoords;
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  return get_texcoords_array(tex_mgr->get_default_texcoord());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::get_texcoords_array
+//       Access: Published
+//  Description: Returns the texcoords array in the geom with the
+//               indicated name.  This allows multitexturing support
+//               with multiple sets of texture coordinates in the same
+//               geom.  The return value will be NULL if there are no
+//               texture coordinates with the indicated name.
+////////////////////////////////////////////////////////////////////
+INLINE PTA_TexCoordf Geom::
+get_texcoords_array(const TexCoordName *name) const {
+  TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
+  if (tci != _texcoords_by_name.end()) {
+    return (*tci).second._texcoords;
+  }
+  return PTA_TexCoordf();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -121,10 +146,36 @@ get_colors_index() const {
 //       Access: Published
 //  Description: Returns the array of indices that, if nonempty, will
 //               be used to traverse the vertices in texcoords_array.
+//
+//               This method is used in the single-texture case: it
+//               returns the default texture coordinates only.  In the
+//               presence of multitexturing, use the version of
+//               get_texcoords_array() method that takes a
+//               TexCoordName parameter.
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_ushort Geom::
 get_texcoords_index() const {
-  return _tindex;
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  return get_texcoords_index(tex_mgr->get_default_texcoord());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::get_texcoords_index
+//       Access: Published
+//  Description: Returns the texcoords index within the geom with the
+//               indicated name.  This allows multitexturing support
+//               with multiple sets of texture coordinates in the same
+//               geom.  The return value will be NULL if there are no
+//               texture coordinates with the indicated name, or if
+//               the geom does not use indexed texcoords.
+////////////////////////////////////////////////////////////////////
+INLINE PTA_ushort Geom::
+get_texcoords_index(const TexCoordName *name) const {
+  TexCoordsByName::const_iterator tci = _texcoords_by_name.find(name);
+  if (tci != _texcoords_by_name.end()) {
+    return (*tci).second._tindex;
+  }
+  return PTA_ushort();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -166,19 +217,6 @@ get_num_vertices() const {
   return _num_vertices;
 }
 
-INLINE int PTA_int_arraysum(const PTA_int &lengths) {
-    assert(lengths.size()>0);
-    
-    int *pLen=&lengths[0];
-    int *pArrayEnd=pLen+lengths.size();
-    int nVerts = 0;
-    for (;pLen<pArrayEnd;pLen++) {
-      nVerts += *pLen;
-    }
-    return nVerts;
-}
-
-
 ////////////////////////////////////////////////////////////////////
 //     Function: Geom::set_lengths
 //       Access: Published
@@ -191,7 +229,7 @@ INLINE int PTA_int_arraysum(const PTA_int &lengths) {
 INLINE void Geom::
 set_lengths(const PTA_int &lengths) {
   _primlengths = lengths;
-  _num_vertices = PTA_int_arraysum(lengths);
+  _num_vertices = sum_lengths(lengths);
   make_dirty();
 }
 
@@ -293,8 +331,18 @@ INLINE Geom::TexCoordIterator Geom::
 make_texcoord_iterator() const {
   check_config();
   TexCoordIterator i;
-  i._array = _texcoords;
-  i._index = _tindex;
+
+  TextureStageManager *tex_mgr = TextureStageManager::get_global_ptr();
+  TexCoordsByName::const_iterator tci = 
+    _texcoords_by_name.find(tex_mgr->get_default_texcoord());
+  if (tci != _texcoords_by_name.end()) {
+    i._array = (*tci).second._texcoords;
+    i._index = (*tci).second._tindex;;
+  } else {
+    i._array = NULL;
+    i._index = NULL;
+  }
+
   return i;
 }
 
