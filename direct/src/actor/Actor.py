@@ -763,6 +763,8 @@ class Actor(PandaObject, NodePath):
 
         if node == None:
             node = self.attachNewNode(jointName)
+            if joint.getType().isDerivedFrom(MovingPartMatrix.getClassType()):
+                node.setMat(joint.getInitialValue())
 
         # Store a dictionary of jointName : node to list the controls
         # requested for joints.  The controls will actually be applied
@@ -1362,6 +1364,8 @@ class Actor(PandaObject, NodePath):
                     joint = animBundle.makeChildDynamic(jointName)
                     if joint:
                         joint.setValueNode(node.node())
+                    else:
+                        Actor.notify.debug("controlled joint %s is not present", jointName)
 
         # bind anim
         animControl = bundle.bindAnim(animBundle, -1)
