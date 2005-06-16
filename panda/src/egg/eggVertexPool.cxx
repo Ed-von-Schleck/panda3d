@@ -179,6 +179,20 @@ get_highest_index() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggVertexPool::set_highest_index
+//       Access: Public
+//  Description: Artificially changes the "highest index number", so
+//               that a newly created vertex will begin at this number
+//               plus 1.  This can be used to default a vertex pool to
+//               start counting at 1 (or any other index number),
+//               instead of the default of 0.  Use with caution.
+////////////////////////////////////////////////////////////////////
+void EggVertexPool::
+set_highest_index(int highest_index) {
+  _highest_index = highest_index;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggVertexPool::begin()
 //       Access: Public
 //  Description: Returns an iterator that can be used to traverse

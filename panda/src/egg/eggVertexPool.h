@@ -91,6 +91,7 @@ PUBLISHED:
 
   // Returns 0 if the pool is empty.
   int get_highest_index() const;
+  void set_highest_index(int highest_index);
 
 public:
   // Can be used to traverse all the vertices in index number order.
