@@ -89,7 +89,7 @@ class SliderWidget(Pmw.MegaWidget):
 	    ('style',           VALUATOR_MINI,      INITOPT),
             ('relief',          RAISED,             self.setRelief),
             ('borderwidth',     2,                  self.setBorderwidth),
-            ('background',      'SystemButtonFace', self.setBackground),
+            ('background',      'grey75',           self.setBackground),
 	    ('fliparrow',       0,                  INITOPT),
             # Behavior
             # Bounds
