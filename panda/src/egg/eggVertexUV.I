@@ -1,0 +1,122 @@
+// Filename: eggVertexUV.I
+// Created by:  drose (20Jul04)
+//
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+//
+// All use of this software is subject to the terms of the Panda 3d
+// Software license.  You should have received a copy of this license
+// along with this source code; you will also find a current copy of
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
+//
+// To contact the maintainers of this program write to
+// panda3d-general@lists.sourceforge.net .
+//
+////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::get_uv
+//       Access: Published
+//  Description: Returns the texture coordinate pair.
+////////////////////////////////////////////////////////////////////
+INLINE const TexCoordd &EggVertexUV::
+get_uv() const {
+  return _uv;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::set_uv
+//       Access: Published
+//  Description: Sets the texture coordinate pair.
+////////////////////////////////////////////////////////////////////
+INLINE void EggVertexUV::
+set_uv(const TexCoordd &uv) {
+  _uv = uv;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::has_tangent
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE bool EggVertexUV::
+has_tangent() const {
+  return (_flags & F_has_tangent) != 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::get_tangent
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE const Normald &EggVertexUV::
+get_tangent() const {
+  nassertr(has_tangent(), _tangent);
+  return _tangent;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::set_tangent
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggVertexUV::
+set_tangent(const Normald &tangent) {
+  _tangent = tangent;
+  _flags |= F_has_tangent;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::clear_tangent
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggVertexUV::
+clear_tangent() {
+  _flags &= ~F_has_tangent;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::has_binormal
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE bool EggVertexUV::
+has_binormal() const {
+  return (_flags & F_has_binormal) != 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::get_binormal
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE const Normald &EggVertexUV::
+get_binormal() const {
+  nassertr(has_binormal(), _binormal);
+  return _binormal;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::set_binormal
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggVertexUV::
+set_binormal(const Normald &binormal) {
+  _binormal = binormal;
+  _flags |= F_has_binormal;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertexUV::clear_binormal
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void EggVertexUV::
+clear_binormal() {
+  _flags &= ~F_has_binormal;
+}
