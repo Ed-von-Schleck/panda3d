@@ -1,7 +1,0 @@
-.cvsignore
-Makefile
-dtool_config.h
-bin
-etc
-include
-lib

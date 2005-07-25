@@ -1,3 +1,0 @@
-
-#include "smoothMover.cxx"
-
