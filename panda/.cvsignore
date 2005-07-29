@@ -1,8 +1,5 @@
 .cvsignore
 Makefile
 pp.dep
-bin
-etc
-include
-lib
-shared
+built
+
