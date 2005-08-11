@@ -760,7 +760,6 @@ class TaskManager:
         signal.signal(signal.SIGINT, signal.default_int_handler)
         if self.fKeyboardInterrupt:
             raise KeyboardInterrupt
-        return
 
     def run(self):
         # Set the clock to have last frame's time in case we were

@@ -108,7 +108,6 @@ class DistributedObject(PandaObject):
     def setCacheable(self, bool):
         assert((bool == 1) or (bool == 0))
         self.cacheable = bool
-        return None
 
     def getCacheable(self):
         return self.cacheable

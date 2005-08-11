@@ -216,7 +216,6 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         self.setComponentP(p)
         self.setComponentR(r)
         self.setComponentTLive(timestamp)
-        return
 
     ### component set pos and hpr functions ###
 
