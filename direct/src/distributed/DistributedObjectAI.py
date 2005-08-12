@@ -182,6 +182,10 @@ class DistributedObjectAI(DirectObject):
             self.air.sendSetLocation(self, parentId, zoneId)
 
         def setLocation(self, parentId, zoneId):
+            # Prevent Duplicate SetLocations for being Called
+            if (self.parentId == parentId) and (self.zoneId == zoneId):
+                return
+
             oldParentId = self.parentId
             oldZoneId = self.zoneId
             if ((oldParentId != parentId) or

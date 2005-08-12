@@ -383,6 +383,10 @@ class DistributedObject(PandaObject):
             self.cr.sendSetLocation(self.doId, parentId, zoneId)
             
         def setLocation(self, parentId, zoneId):
+            # Prevent Duplicate SetLocations for being Called
+            if (self.parentId == parentId) and (self.zoneId == zoneId):
+                return
+
             #self.notify.info("setLocation: %s parentId: %s zoneId: %s" % (self.doId, parentId, zoneId))
             # parentId can be 'None', e.g. when an object is being disabled
             oldParentId = self.parentId
