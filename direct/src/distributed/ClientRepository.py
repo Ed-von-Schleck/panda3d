@@ -25,7 +25,7 @@ class ClientRepository(ConnectionRepository):
     notify = DirectNotifyGlobal.directNotify.newCategory("ClientRepository")
 
     def __init__(self):
-        ConnectionRepository.__init__(self, base.config)
+        ConnectionRepository.__init__(self, base.config, hasOwnerView=True)
 
         self.context=100000
         self.setClientDatagram(1)
@@ -38,6 +38,7 @@ class ClientRepository(ConnectionRepository):
 
         self.readDCFile()
         self.cache=CRCache.CRCache()
+        self.cacheOwner=CRCache.CRCache()
         self.serverDelta = 0
 
         self.bootedIndex = None
@@ -79,6 +80,12 @@ class ClientRepository(ConnectionRepository):
     # Define uniqueName
     def uniqueName(self, desc):
         return desc
+
+    def getTables(self, ownerView):
+        if ownerView:
+            return self.doId2doOwner, self.cacheOwner
+        else:
+            return self.doId2do, self.cache
 
     def abruptCleanup(self):
         """
@@ -204,6 +211,22 @@ class ClientRepository(ConnectionRepository):
             distObj = self.generateWithRequiredOtherFields(dclass, doId, di)
         dclass.stopGenerate()
 
+    def handleGenerateWithRequiredOtherOwner(self, di):
+        assert wantOtpServer
+        # Get the class Id
+        classId = di.getUint16()
+        # Get the DO Id
+        doId = di.getUint32()
+        # parentId and zoneId are not relevant here
+        parentId = di.getUint32()
+        zoneId = di.getUint32()
+        # Look up the dclass
+        dclass = self.dclassesByNumber[classId]
+        dclass.startGenerate()
+        # Create a new distributed object, and put it in the dictionary
+        distObj = self.generateWithRequiredOtherFieldsOwner(dclass, doId, di)
+        dclass.stopGenerate()
+
     def handleQuietZoneGenerateWithRequired(self, di):
         # Special handler for quiet zone generates -- we need to filter
         if wantOtpServer:
@@ -325,7 +348,7 @@ class ClientRepository(ConnectionRepository):
         return  distObj
 
     def generateWithRequiredOtherFields(self, dclass, doId, di,
-            parentId = None, zoneId = None):
+                                        parentId = None, zoneId = None):
         if self.doId2do.has_key(doId):
             # ...it is in our dictionary.
             # Just update it.
@@ -370,40 +393,82 @@ class ClientRepository(ConnectionRepository):
             # updateRequiredOtherFields calls announceGenerate
         return distObj
 
+    def generateWithRequiredOtherFieldsOwner(self, dclass, doId, di):
+        if self.doId2doOwner.has_key(doId):
+            # ...it is in our dictionary.
+            # Just update it.
+            distObj = self.doId2doOwner[doId]
+            assert(distObj.dclass == dclass)
+            distObj.generate()
+            distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
+            # updateRequiredOtherFields calls announceGenerate
+        elif self.cacheOwner.contains(doId):
+            # ...it is in the cache.
+            # Pull it out of the cache:
+            distObj = self.cacheOwner.retrieve(doId)
+            assert(distObj.dclass == dclass)
+            # put it in the dictionary:
+            self.doId2doOwner[doId] = distObj
+            # and update it.
+            distObj.generate()
+            distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
+            # updateRequiredOtherFields calls announceGenerate
+        else:
+            # ...it is not in the dictionary or the cache.
+            # Construct a new one
+            classDef = dclass.getClassDef()
+            if classDef == None:
+                self.notify.error("Could not create an undefined %s object." % (dclass.getName()))
+            distObj = classDef(self)
+            distObj.dclass = dclass
+            # Assign it an Id
+            distObj.doId = doId
+            # Put the new do in the dictionary
+            self.doId2doOwner[doId] = distObj
+            # Update the required fields
+            distObj.generateInit()  # Only called when constructed
+            distObj.generate()
+            distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
+            # updateRequiredOtherFields calls announceGenerate
+        return distObj
 
-    def handleDisable(self, di):
+
+    def handleDisable(self, di, ownerView=False):
         # Get the DO Id
         doId = di.getUint32()
         # disable it.
-        self.disableDoId(doId)
+        self.disableDoId(doId, ownerView)
 
-    def disableDoId(self, doId):
-         # Make sure the object exists
-        if self.doId2do.has_key(doId):
+    def disableDoId(self, doId, ownerView=False):
+        table, cache = self.getTables(ownerView)
+        # Make sure the object exists
+        if table.has_key(doId):
             # Look up the object
-            distObj = self.doId2do[doId]
+            distObj = table[doId]
             # remove the object from the dictionary
-            del self.doId2do[doId]
+            del table[doId]
 
             # Only cache the object if it is a "cacheable" type
             # object; this way we don't clutter up the caches with
             # trivial objects that don't benefit from caching.
             if distObj.getCacheable():
-                self.cache.cache(distObj)
+                cache.cache(distObj)
             else:
                 distObj.deleteOrDelay()
         else:
             ClientRepository.notify.warning(
                 "Disable failed. DistObj "
                 + str(doId) +
-                " is not in dictionary")
+                " is not in dictionary, ownerView=%s" % ownerView)
 
     def handleDelete(self, di):
+        if wantOtpServer:
+            assert 0
         # Get the DO Id
         doId = di.getUint32()
         self.deleteObject(doId)
 
-    def deleteObject(self, doId):
+    def deleteObject(self, doId, ownerView=False):
         """
         Removes the object from the client's view of the world.  This
         should normally not be called except in the case of error
@@ -418,6 +483,8 @@ class ClientRepository(ConnectionRepository):
         This is not a distributed message and does not delete the
         object on the server or on any other client.
         """
+        if wantOtpServer:
+            assert 0
         if self.doId2do.has_key(doId):
             # If it is in the dictionary, remove it.
             obj = self.doId2do[doId]
@@ -527,16 +594,17 @@ class ClientRepository(ConnectionRepository):
                 self.handleGenerateWithRequired(di)
             elif msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
                 self.handleGenerateWithRequiredOther(di)
+            elif msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER:
+                self.handleGenerateWithRequiredOtherOwner(di)
             elif msgType == CLIENT_OBJECT_UPDATE_FIELD:
                 self.handleUpdateField(di)
-            elif msgType == CLIENT_OBJECT_DISABLE_RESP:
+            elif msgType == CLIENT_OBJECT_DISABLE:
                 self.handleDisable(di)
+            elif msgType == CLIENT_OBJECT_DISABLE_OWNER:
+                self.handleDisable(di, ownerView=True)
             elif msgType == CLIENT_OBJECT_DELETE_RESP:
+                assert 0
                 self.handleDelete(di)
-            elif msgType == CLIENT_CREATE_OBJECT_REQUIRED:
-                self.handleGenerateWithRequired(di)
-            elif msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
-                self.handleGenerateWithRequiredOther(di)
             elif msgType == CLIENT_DONE_INTEREST_RESP:
                 self.handleInterestDoneMessage(di)
             elif msgType == CLIENT_QUERY_ONE_FIELD_RESP:

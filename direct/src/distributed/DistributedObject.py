@@ -246,9 +246,12 @@ class DistributedObject(PandaObject):
         dclass.receiveUpdateAllRequired(self, di)
         self.announceGenerate()
 
-    def updateRequiredOtherFields(self, dclass, di):
+    def updateRequiredOtherFields(self, dclass, di, ownerView=False):
         # First, update the required fields
-        dclass.receiveUpdateBroadcastRequired(self, di)
+        if ownerView:
+            dclass.receiveUpdateBroadcastRequiredOwner(self, di)
+        else:
+            dclass.receiveUpdateBroadcastRequired(self, di)
 
         # Announce generate after updating all the required fields,
         # but before we update the non-required fields.

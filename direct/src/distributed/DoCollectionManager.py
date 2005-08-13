@@ -1,15 +1,23 @@
 #hack:
-BAD_DO_ID = BAD_ZONE_ID = -1
+BAD_DO_ID = BAD_ZONE_ID = BAD_CHANNEL_ID = -1
 
 class DoCollectionManager:
     def __init__(self):
         # Dict of {DistributedObject ids : DistributedObjects}
         self.doId2do = {}
+        # Dict of {DistributedObject ids : DistributedObjects} for 'owner' views of objects
+        self.doId2doOwner = {}
         if wantOtpServer:
             # Dict of {
             #   parent DistributedObject id: 
             #     { zoneIds : [child DistributedObject ids] }}
             self.__doHierarchy = {}
+
+    def getDoTable(self, ownerView):
+        if ownerView:
+            return self.doId2doOwner
+        else:
+            return self.doId2do
 
     def doFind(self, str):
         """
@@ -192,22 +200,26 @@ class DoCollectionManager:
                 objList.remove(objId)
     
     if wantOtpServer:
-        def addDOToTables(self, do, location=None):
+        def addDOToTables(self, do, location=None, ownerView=False):
             assert self.notify.debugStateCall(self)
-            if location is None:
-                location = (do.parentId, do.zoneId)
+            if not ownerView:
+                if location is None:
+                    location = (do.parentId, do.zoneId)
 
-            #assert do.doId not in self.doId2do
-            if do.doId in self.doId2do:
+            doTable = self.getDoTable(ownerView)
+            
+            #assert do.doId not in doTable
+            if do.doId in doTable:
                 print "ignoring repeated object %s" % (do.doId)
                 return
             
-            self.doId2do[do.doId]=do
+            doTable[do.doId]=do
 
-            if self.isValidLocationTuple(location):
-                assert do.doId not in self.zoneId2doIds.get(location,{})
-                self.zoneId2doIds.setdefault(location, {})
-                self.zoneId2doIds[location][do.doId]=do
+            if not ownerView:
+                if self.isValidLocationTuple(location):
+                    assert do.doId not in self.zoneId2doIds.get(location,{})
+                    self.zoneId2doIds.setdefault(location, {})
+                    self.zoneId2doIds[location][do.doId]=do
 
         def isValidLocationTuple(self, location):
             return (location is not None

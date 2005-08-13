@@ -28,7 +28,8 @@ class PyDatagram(Datagram):
         STBlob32: (Datagram.addString32, None),
         }
 
-        
+    #def addChannel(self, channelId):
+    #    ...
     addChannel = Datagram.addUint64
     
     def AddServerHeader(self, channel, sender, code):

@@ -19,11 +19,15 @@ class ConnectionRepository(
     notify = DirectNotifyGlobal.directNotify.newCategory("ConnectionRepository")
     taskPriority = -30
 
-    def __init__(self, config):
+    def __init__(self, config, hasOwnerView=False):
         assert self.notify.debugCall()
         DoInterestManager.__init__(self)
         DoCollectionManager.__init__(self)
-        CConnectionRepository.__init__(self)
+        # let the C connection repository know whether we're supporting
+        # 'owner' views of distributed objects (i.e. 'receives p2p',
+        # 'I own this object and have a separate view of it regardless of
+        # where it currently is located')
+        CConnectionRepository.__init__(self, hasOwnerView)
         self.setPythonRepository(self)
 
         self.config = config
