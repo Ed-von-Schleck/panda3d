@@ -1003,7 +1003,7 @@ ai_database_generate_context(
   packer.raw_pack_uint16(STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT);
   packer.raw_pack_uint32(parent_id);  
   packer.raw_pack_uint32(zone_id);
-  //packer.RAW_PACK_CHANNEL(owner_channel);
+  packer.RAW_PACK_CHANNEL(owner_channel);
   packer.raw_pack_uint16(_number); // DCD class ID
   packer.raw_pack_uint32(context_id);
 

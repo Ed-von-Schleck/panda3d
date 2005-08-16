@@ -1,5 +1,6 @@
 #hack:
-BAD_DO_ID = BAD_ZONE_ID = BAD_CHANNEL_ID = -1
+BAD_DO_ID = BAD_ZONE_ID = 0xFFFFFFFF
+BAD_CHANNEL_ID = 0xFFFFFFFFFFFFFFFF
 
 class DoCollectionManager:
     def __init__(self):
