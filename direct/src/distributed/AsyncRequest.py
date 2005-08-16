@@ -52,9 +52,9 @@ class AsyncRequest(DirectObject):
 
     def delete(self):
         assert self.notify.debugCall()
+        self.ignoreAll()
         self.timeoutTask.remove()
         del self.timeoutTask
-        self.ignoreAll()
         if 0:
             for i in self.neededObjects.values():
                 if i is not None:
