@@ -455,6 +455,48 @@ receive_update_broadcast_required(PyObject *distobj, DatagramIterator &di) const
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
+//     Function: DCClass::receive_update_broadcast_required_owner
+//       Access: Published
+//  Description: Processes a big datagram that includes all of the
+//               "required" fields that are sent along with a normal
+//               "generate with required" message.  This is all of the
+//               atomic fields that are marked "broadcast p2p". Should
+//               be used for 'owner-view' objects.
+////////////////////////////////////////////////////////////////////
+void DCClass::
+receive_update_broadcast_required_owner(PyObject *distobj,
+					DatagramIterator &di) const {
+#ifdef WITHIN_PANDA
+  PStatTimer timer(((DCClass *)this)->_class_update_pcollector);
+#endif
+  DCPacker packer;
+  packer.set_unpack_data(di.get_remaining_bytes());
+
+  int num_fields = get_num_inherited_fields();
+  for (int i = 0; i < num_fields && !PyErr_Occurred(); ++i) {
+    DCField *field = get_inherited_field(i);
+    if (field->as_molecular_field() == (DCMolecularField *)NULL &&
+        field->is_required()) {
+      packer.begin_unpack(field);
+      if (field->is_p2p()) {
+	field->receive_update(packer, distobj);
+      } else {
+	// It's not a p2p field; skip over it. It's difficult to filter this
+	// on the server, ask Roger for the reason.
+	packer.unpack_skip();
+      }
+      if (!packer.end_unpack()) {
+	break;
+      }
+    }
+  }
+
+  di.skip_bytes(packer.get_num_unpacked_bytes());
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
 //     Function: DCClass::receive_update_all_required
 //       Access: Published
 //  Description: Processes a big datagram that includes all of the
@@ -939,7 +981,7 @@ ai_format_generate(PyObject *distobj, int do_id,
 #endif  // HAVE_PYTHON
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCClass::ai_database_generate
+//     Function: DCClass::ai_database_generate_context
 //       Access: Published
 //  Description: Generates a datagram containing the message necessary
 //               to create a new database distributed object from the AI.
@@ -949,6 +991,50 @@ ai_format_generate(PyObject *distobj, int do_id,
 ////////////////////////////////////////////////////////////////////
 Datagram DCClass::
 ai_database_generate_context(
+    unsigned int context_id, unsigned int parent_id, unsigned int zone_id,
+    CHANNEL_TYPE owner_channel,
+    CHANNEL_TYPE database_server_id, CHANNEL_TYPE from_channel_id) const 
+{
+  DCPacker packer;
+  packer.raw_pack_uint8(1);
+  packer.RAW_PACK_CHANNEL(database_server_id);
+  packer.RAW_PACK_CHANNEL(from_channel_id);
+  //packer.raw_pack_uint8('A');
+  packer.raw_pack_uint16(STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT);
+  packer.raw_pack_uint32(parent_id);  
+  packer.raw_pack_uint32(zone_id);
+  packer.RAW_PACK_CHANNEL(owner_channel);
+  packer.raw_pack_uint16(_number); // DCD class ID
+  packer.raw_pack_uint32(context_id);
+
+  // Specify all of the required fields.
+  int num_fields = get_num_inherited_fields();
+  for (int i = 0; i < num_fields; ++i) {
+    DCField *field = get_inherited_field(i);
+    if (field->is_required() && field->as_molecular_field() == NULL) {
+      packer.begin_pack(field);
+      packer.pack_default_value();
+      packer.end_pack();
+    }
+  }
+
+  return Datagram(packer.get_data(), packer.get_length());
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+// TODO: remove this once Skyler has things working with the new server
+////////////////////////////////////////////////////////////////////
+//     Function: DCClass::ai_database_generate_context_old
+//       Access: Published
+//  Description: Generates a datagram containing the message necessary
+//               to create a new database distributed object from the AI.
+//
+//               First Pass is to only incldue required values
+//               (with Defaults).                   
+////////////////////////////////////////////////////////////////////
+Datagram DCClass::
+ai_database_generate_context_old(
     unsigned int context_id, unsigned int parent_id, unsigned int zone_id,
     CHANNEL_TYPE database_server_id, CHANNEL_TYPE from_channel_id) const 
 {

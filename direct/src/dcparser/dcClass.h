@@ -88,6 +88,7 @@ PUBLISHED:
 
   void receive_update(PyObject *distobj, DatagramIterator &di) const;
   void receive_update_broadcast_required(PyObject *distobj, DatagramIterator &di) const;
+  void receive_update_broadcast_required_owner(PyObject *distobj, DatagramIterator &di) const;
   void receive_update_all_required(PyObject *distobj, DatagramIterator &di) const;
   void receive_update_other(PyObject *distobj, DatagramIterator &di) const;
 
@@ -112,7 +113,9 @@ PUBLISHED:
   Datagram client_format_generate(PyObject *distobj, int do_id, int zone_id,                              
                                   PyObject *optional_fields) const;
 
-  Datagram ai_database_generate_context(unsigned int context_id, unsigned int parent_id, unsigned int zone_id,
+  Datagram ai_database_generate_context(unsigned int context_id, unsigned int parent_id, unsigned int zone_id, CHANNEL_TYPE owner_channel,
+                                CHANNEL_TYPE database_server_id, CHANNEL_TYPE from_channel_id) const;
+  Datagram ai_database_generate_context_old(unsigned int context_id, unsigned int parent_id, unsigned int zone_id,
                                 CHANNEL_TYPE database_server_id, CHANNEL_TYPE from_channel_id) const;
   
 #endif 
