@@ -83,7 +83,7 @@ class ClientRepository(ConnectionRepository):
 
     def getTables(self, ownerView):
         if ownerView:
-            return self.doId2doOwner, self.cacheOwner
+            return self.doId2ownerView, self.cacheOwner
         else:
             return self.doId2do, self.cache
 
@@ -394,10 +394,10 @@ class ClientRepository(ConnectionRepository):
         return distObj
 
     def generateWithRequiredOtherFieldsOwner(self, dclass, doId, di):
-        if self.doId2doOwner.has_key(doId):
+        if self.doId2ownerView.has_key(doId):
             # ...it is in our dictionary.
             # Just update it.
-            distObj = self.doId2doOwner[doId]
+            distObj = self.doId2ownerView[doId]
             assert(distObj.dclass == dclass)
             distObj.generate()
             distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
@@ -408,7 +408,7 @@ class ClientRepository(ConnectionRepository):
             distObj = self.cacheOwner.retrieve(doId)
             assert(distObj.dclass == dclass)
             # put it in the dictionary:
-            self.doId2doOwner[doId] = distObj
+            self.doId2ownerView[doId] = distObj
             # and update it.
             distObj.generate()
             distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
@@ -424,7 +424,7 @@ class ClientRepository(ConnectionRepository):
             # Assign it an Id
             distObj.doId = doId
             # Put the new do in the dictionary
-            self.doId2doOwner[doId] = distObj
+            self.doId2ownerView[doId] = distObj
             # Update the required fields
             distObj.generateInit()  # Only called when constructed
             distObj.generate()

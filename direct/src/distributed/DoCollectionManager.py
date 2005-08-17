@@ -10,7 +10,7 @@ class DoCollectionManager:
         # for NON-OTP: zoneId to dict of doId->DistributedObjectAI
         self.zoneId2doIds={}
         # Dict of {DistributedObject ids : DistributedObjects} for 'owner' views of objects
-        self.doId2doOwner = {}
+        self.doId2ownerView = {}
         if wantOtpServer:
             # Dict of {
             #   parent DistributedObject id: 
@@ -19,7 +19,7 @@ class DoCollectionManager:
 
     def getDoTable(self, ownerView):
         if ownerView:
-            return self.doId2doOwner
+            return self.doId2ownerView
         else:
             return self.doId2do
 

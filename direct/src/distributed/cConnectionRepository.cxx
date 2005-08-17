@@ -477,9 +477,9 @@ handle_update_field_owner() {
       PyObject_GetAttrString(_python_repository, "doId2do");
     nassertr(doId2do != NULL, false);
 
-    PyObject *doId2doOwner =
-      PyObject_GetAttrString(_python_repository, "doId2doOwner");
-    nassertr(doId2doOwner != NULL, false);
+    PyObject *doId2ownerView =
+      PyObject_GetAttrString(_python_repository, "doId2ownerView");
+    nassertr(doId2ownerView != NULL, false);
 
     #ifdef USE_PYTHON_2_2_OR_EARLIER
     PyObject *doId = PyInt_FromLong(do_id);
@@ -488,8 +488,8 @@ handle_update_field_owner() {
     #endif
 
     // pass the update to the owner view first
-    PyObject *distobjOV = PyDict_GetItem(doId2doOwner, doId);
-    Py_DECREF(doId2doOwner);
+    PyObject *distobjOV = PyDict_GetItem(doId2ownerView, doId);
+    Py_DECREF(doId2ownerView);
 
     if (distobjOV != NULL) {
       PyObject *dclass_obj = PyObject_GetAttrString(distobjOV, "dclass");
