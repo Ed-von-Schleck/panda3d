@@ -34,15 +34,18 @@ class DirectSliderBar(DirectFrame):
         optiondefs = (
             # Define type of DirectGuiWidget
             ('pgFunc',         PGSliderBar,        None),
-            ('width',          10,                 None),
-            ('height',         1,                  None),
+            ('width',          6,                  None),
+            ('height',         0.05,               None),
+            ('buttonWidth',    10,                 None), #temporary until we take a button art
+            ('buttonHeight',   5,                  None), #temporary until we take a button art
+            ('scale',          0.2,                None),
             ('button',         None,               None),
             ('sliderOnly',     0,                  self.setSliderOnly),
             ('negativeMapping',0,                  self.setNegativeMapping),
             ('range',          100,                self.setRange),
             ('value',          0,                  self.setValue),
-            ('barBorderWidth', (0,0),              self.setBarBorderWidth),
-            ('barColor',       (1,0,0,1),          self.setBarColor),
+            ('barBorderWidth', 0.03,               self.setBarBorderWidth),
+            ('barColor',       (0.6,0.6,0.6,0.3),  self.setBarColor),
             ('barRelief',      FLAT,               self.setBarRelief),
             ('active',         0,                  self.setActive),
             ('sortOrder',      NO_FADE_SORT_INDEX, None),
@@ -52,8 +55,8 @@ class DirectSliderBar(DirectFrame):
             )
         if kw.has_key('text'):
             textoptiondefs = (
-                ('text_pos',    (0,-0.025),          None),
-                ('text_scale',  0.1,                 None),
+                ('text_pos',    (3.2,-0.14),         None), #x should be half of width
+                ('text_scale',  0.4,                 None),
                 ('text_fg',     (1,1,1,1),           None),
                 ('text_shadow', (0,0,0,1),           None),
                 ('text_align',  TextNode.ALeft,      None)
@@ -76,26 +79,22 @@ class DirectSliderBar(DirectFrame):
             self.guiItem.setup(self.getWidth(), self.getHeight(), self['range'])
         else:
             #figure out what is happening?????
-            #self.guiItem.setState(0)
-            #self.guiItem.clearStateDef(0)
-            self.guiItem.setFrame(-3.0, 3.0, -0.125, 0.125)
-            self.barStyle.setWidth(0.05, 0.05)
-            self.barStyle.setColor(0.6,0.6,0.6,1)
+            self.guiItem.setFrame(-self['width']*0.5, self['width']*0.5,
+                                  -self['height']*0.5, self['height']*0.5)
             self.barStyle.setType(PGFrameStyle.TBevelIn)
             self.guiItem.setFrameStyle(0, self.barStyle)
-            self.guiItem.setScale(2)
-            self.guiItem.setup(6, 0.5, self['range'])
+            #self.guiItem.setScale(2)
+            #self.guiItem.setup(6, 0.5, self['range'])
+            self.guiItem.setup(self['width'], 0.5, self['range'])
+            #self.guiItem.setup(self['width'], self['height'], self['range'])
             self.guiItem.setValue(self['value'])
-            if (self['scale'] != None):
-                self.setScale(self['scale'])
-            else:
-                self.setScale(0.1)
 
-        self.guiItem.setActive(1)
+            self.guiItem.getSliderButton().node().setFrame(-self['buttonWidth']*0.5, self['buttonWidth']*0.5,
+                                                           -self['buttonHeight']*0.5, self['buttonHeight']*0.5)
+            #self.guiItem.setMagnifier(self['buttonHeight']) # Make the mouseWatcherRegion bigger on Y
+            #self.guiItem.getSliderButton().node().setFrameStyle(0, self.barStyle)
 
-        #self.barStyle.setColor(0.8,0.8,0.8,1)
-        #self.barStyle.setType(PGFrameStyle.TBevelOut)
-        #self.updateBarStyle()
+            self.guiItem.setActive(1)
 
         if (self['command'] != None):
             # Attach command function to slider button movement
@@ -129,7 +128,7 @@ class DirectSliderBar(DirectFrame):
         self.updateBarStyle()
 
     def setBarBorderWidth(self):
-        self.barStyle.setWidth(*self['barBorderWidth'])
+        self.barStyle.setWidth(self['barBorderWidth'],self['barBorderWidth'])
         self.updateBarStyle()
 
     def setBarColor(self):
