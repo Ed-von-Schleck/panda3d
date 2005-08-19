@@ -11,7 +11,6 @@ class DistributedNodeUD(DistributedObjectUD):
             DistributedObjectUD.__init__(self, air)
             if name is None:
                 name = self.__class__.__name__
-            NodePath.__init__(self, name)
 
     def b_setParent(self, parentToken):
         if type(parentToken) == types.StringType:
@@ -27,11 +26,11 @@ class DistributedNodeUD(DistributedObjectUD):
             self.sendUpdate("setParent", [parentToken])
 
     def setParentStr(self, parentToken):
-        self.notify.debug('setParentStr(%s): %s' % (self.doId, parentToken))
+        self.notify.debugCall()
         self.do_setParent(parentToken)
 
     def setParent(self, parentToken):
-        self.notify.debug('setParent(%s): %s' % (self.doId, parentToken))
+        self.notify.debugCall()
         self.do_setParent(parentToken)
 
     def do_setParent(self, parentToken):
