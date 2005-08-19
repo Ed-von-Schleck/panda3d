@@ -25,6 +25,7 @@ class ClientRepository(ConnectionRepository):
     notify = DirectNotifyGlobal.directNotify.newCategory("ClientRepository")
 
     def __init__(self):
+        self.dcSuffix=""
         ConnectionRepository.__init__(self, base.config, hasOwnerView=True)
 
         self.context=100000
@@ -76,6 +77,21 @@ class ClientRepository(ConnectionRepository):
         self.DOIDbase = 0
         self.DOIDnext = 0
         self.DOIDlast = 0
+
+    ## def queryObjectAll(self, doID, context=0):
+        ## """
+        ## Get a one-time snapshot look at the object.
+        ## """
+        ## assert self.notify.debugStateCall(self)
+        ## # Create a message
+        ## datagram = PyDatagram()
+        ## datagram.AddServerHeader(
+            ## doID, localAvatar.getDoId(), 2020)           
+        ## # A context that can be used to index the response if needed
+        ## datagram.addUint32(context)
+        ## self.send(datagram)
+        ## # Make sure the message gets there.
+        ## self.flush()
 
     # Define uniqueName
     def uniqueName(self, desc):
@@ -179,6 +195,7 @@ class ClientRepository(ConnectionRepository):
         if wantOtpServer:
             parentId = di.getUint32()
             zoneId = di.getUint32()
+            assert parentId == 4617 or parentId in self.doId2do
         # Get the class Id
         classId = di.getUint16()
         # Get the DO Id
@@ -197,6 +214,7 @@ class ClientRepository(ConnectionRepository):
         if wantOtpServer:
             parentId = di.getUint32()
             zoneId = di.getUint32()
+            assert parentId == 4617 or parentId in self.doId2do
         # Get the class Id
         classId = di.getUint16()
         # Get the DO Id
@@ -232,6 +250,7 @@ class ClientRepository(ConnectionRepository):
         if wantOtpServer:
             parentId = di.getUint32()
             zoneId = di.getUint32()
+            assert parentId in self.doId2do
         # Get the class Id
         classId = di.getUint16()
         # Get the DO Id
@@ -254,6 +273,7 @@ class ClientRepository(ConnectionRepository):
         if wantOtpServer:
             parentId = di.getUint32()
             zoneId = di.getUint32()
+            assert parentId in self.doId2do
         # Get the class Id
         classId = di.getUint16()
         # Get the DO Id
@@ -319,33 +339,33 @@ class ClientRepository(ConnectionRepository):
                 print "New DO:%s, dclass:%s"%(doId, dclass.getName())
         return distObj
 
-    def generateGlobalObject(self, doId, dcname):
-        # Look up the dclass
-        dclass = self.dclassesByName[dcname]
-        # Create a new distributed object, and put it in the dictionary
-        #distObj = self.generateWithRequiredFields(dclass, doId, di)
+    ## def generateGlobalObject(self, doId, dcname):
+        ## # Look up the dclass
+        ## dclass = self.dclassesByName[dcname]
+        ## # Create a new distributed object, and put it in the dictionary
+        ## #distObj = self.generateWithRequiredFields(dclass, doId, di)
 
-        # Construct a new one
-        classDef = dclass.getClassDef()
-        if classDef == None:
-             self.notify.error("Could not create an undefined %s object."%(
-                dclass.getName()))
-        distObj = classDef(self)
-        distObj.dclass = dclass
-        # Assign it an Id
-        distObj.doId = doId
-        # Put the new do in the dictionary
-        self.doId2do[doId] = distObj
-        # Update the required fields
-        distObj.generateInit()  # Only called when constructed
-        distObj.generate()
-        if wantOtpServer:
-            # TODO: ROGER: where should we get parentId and zoneId?
-            parentId = None
-            zoneId = None
-            distObj.setLocation(parentId, zoneId)
-        # updateRequiredFields calls announceGenerate
-        return  distObj
+        ## # Construct a new one
+        ## classDef = dclass.getClassDef()
+        ## if classDef == None:
+             ## self.notify.error("Could not create an undefined %s object."%(
+                ## dclass.getName()))
+        ## distObj = classDef(self)
+        ## distObj.dclass = dclass
+        ## # Assign it an Id
+        ## distObj.doId = doId
+        ## # Put the new do in the dictionary
+        ## self.doId2do[doId] = distObj
+        ## # Update the required fields
+        ## distObj.generateInit()  # Only called when constructed
+        ## distObj.generate()
+        ## if wantOtpServer:
+            ## # TODO: ROGER: where should we get parentId and zoneId?
+            ## parentId = None
+            ## zoneId = None
+            ## distObj.setLocation(parentId, zoneId)
+        ## # updateRequiredFields calls announceGenerate
+        ## return  distObj
 
     def generateWithRequiredOtherFields(self, dclass, doId, di,
                                         parentId = None, zoneId = None):
