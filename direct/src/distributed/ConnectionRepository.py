@@ -63,9 +63,44 @@ class ConnectionRepository(
         # DC file.  The AIRepository will redefine this to 'AI'.
         self.dcSuffix = ''
 
-    def generateGlobalObject(self, doId, dcname):
+    def generateGlobalObject(self, doId, dcname, values=None):
+        def applyFieldValues(distObj, dclass, values):
+            for i in range(dclass.getNumInheritedFields()):
+                field = dclass.getInheritedField(i)
+                if field.asMolecularField() == None:
+                    value = values.get(field.getName(), None)
+                    if value is None and field.isRequired():
+                        # Gee, this could be better.  What would really be
+                        # nicer is to get value from field.getDefaultValue
+                        # or similar, but that returns a binary string, not
+                        # a python tuple, like the following does.  If you
+                        # want to change something better, please go ahead.
+                        packer = DCPacker()
+                        packer.beginPack(field)
+                        packer.packDefaultValue()
+                        packer.endPack()
+                        
+                        unpacker = DCPacker()
+                        unpacker.setUnpackData(packer.getString())
+                        unpacker.beginUnpack(field)
+                        value = unpacker.unpackObject()
+                        unpacker.endUnpack()
+                    if value is not None:
+                        try:
+                            function = getattr(distObj, field.getName())
+                            function(*value)
+                        except AttributeError:
+                            self.notify.error("\n\n\nNot able to find %s.%s"%(
+                                distObj.__class__.__name__, field.getName()))
+                            pass
+            
         # Look up the dclass
-        dclass = self.dclassesByName[dcname+self.dcSuffix]
+        dclass = self.dclassesByName.get(dcname+self.dcSuffix)
+        if dclass is None:
+            print "\n\n\nNeed to define", dcname+self.dcSuffix
+            dclass = self.dclassesByName.get(dcname+'AI')
+        if dclass is None:
+            dclass = self.dclassesByName.get(dcname)
         # Create a new distributed object, and put it in the dictionary
         #distObj = self.generateWithRequiredFields(dclass, doId, di)
 
@@ -83,6 +118,8 @@ class ConnectionRepository(
         # Update the required fields
         distObj.generateInit()  # Only called when constructed
         distObj.generate()
+        if values is not None:
+            applyFieldValues(distObj, dclass, values)
         distObj.announceGenerate()
         distObj.parentId = 0
         distObj.zoneId = 0
