@@ -141,24 +141,6 @@ class AsyncRequest(DirectObject):
                 self._checkCompletion, [None])
             self.air.queryObjectAll(doId, context)
 
-    ## def askForObjectAIReceive(self, doId, context=None):
-        ## """
-        ## Request an already created object, i.e. read from database.
-        ## """
-        ## assert self.notify.debugCall()
-        ## assert doId
-        ## object = self.air.doId2do.get(doId)
-        ## self.neededObjects[doId]=object
-        ## if object is not None:
-            ## self._checkCompletion(None, context, object)
-        ## else:
-            ## if context is None:
-                ## context=self.air.allocateContext()
-            ## self.accept(
-                ## "doRequestResponse-%s"%(context,), 
-                ## self._checkCompletion, [None])
-            ## self.air.queryObjectAIReceive(doId, context)
-
     #def addInterestInObject(self, doId, context=None):
     #    """
     #    Request an already created object, i.e. read from database
@@ -191,7 +173,6 @@ class AsyncRequest(DirectObject):
             context=self.air.allocateContext()
         newDBRequestGen = config.GetBool( #HACK:
             'new-database-request-generate', 0)
-        print "\n\n\nnewDBRequestGen", newDBRequestGen
         if newDBRequestGen:
             self.accept(
                 self.air.getDatabaseGenerateResponseEvent(context),
