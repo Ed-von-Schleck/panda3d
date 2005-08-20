@@ -189,9 +189,22 @@ class AsyncRequest(DirectObject):
         self.neededObjects[name]=None
         if context is None:
             context=self.air.allocateContext()
-        self.accept(
-            "doRequestResponse-%s"%(context,), self._checkCompletion, [name])
+        newDBRequestGen = config.GetBool( #HACK:
+            'new-database-request-generate', 0)
+        print "\n\n\nnewDBRequestGen", newDBRequestGen
+        if newDBRequestGen:
+            self.accept(
+                self.air.getDatabaseGenerateResponseEvent(context),
+                self._doCreateObject, [name, className, values])
+        else:
+            self.accept(
+                "doRequestResponse-%s"%(context,), self._checkCompletion, [name])
         self.air.requestDatabaseGenerate(className, context, values=values)
+    
+    def _doCreateObject(self, name, className, values, doId):
+        assert self.notify.debugCall()
+        distObj = self.air.generateGlobalObject(doId, className, values)
+        self._checkCompletion(name, None, distObj)
 
     def finish(self):
         """
