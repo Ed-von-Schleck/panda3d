@@ -42,6 +42,8 @@ class AsyncRequest(DirectObject):
         timeout is how many seconds to wait before aborting the request.
         """
         assert self.notify.debugCall()
+        if __debug__:
+            self.__deleted=False
         assert isinstance(air, ConnectionRepository) # The api to AsyncRequest has changed.
         #DirectObject.DirectObject.__init__(self)
         self.air=air
@@ -52,6 +54,9 @@ class AsyncRequest(DirectObject):
 
     def delete(self):
         assert self.notify.debugCall()
+        assert not self.__deleted
+        if __debug__:
+            self.__deleted=True
         self.ignoreAll()
         self.timeoutTask.remove()
         del self.timeoutTask
@@ -77,6 +82,7 @@ class AsyncRequest(DirectObject):
         call this base method to cleanup.
         """
         assert self.notify.debugCall("neededObjects: %s"%(self.neededObjects,))
+        assert not self.__deleted
         if __debug__:
             global BreakOnTimeout
             if BreakOnTimeout:
@@ -91,6 +97,7 @@ class AsyncRequest(DirectObject):
         finish() if we do.
         """
         assert self.notify.debugCall()
+        assert not self.__deleted
         if name is not None:
             self.neededObjects[name]=distObj
         else:
@@ -106,6 +113,7 @@ class AsyncRequest(DirectObject):
         Request an already created object, i.e. read from database.
         """
         assert self.notify.debugCall()
+        assert not self.__deleted
         if key is None:
             # default the dictionary key to the fieldName
             key = fieldName
@@ -128,6 +136,7 @@ class AsyncRequest(DirectObject):
         Request an already created object, i.e. read from database.
         """
         assert self.notify.debugCall()
+        assert not self.__deleted
         assert doId
         object = self.air.doId2do.get(doId)
         self.neededObjects[doId]=object
@@ -166,6 +175,7 @@ class AsyncRequest(DirectObject):
         your self.finish() function.
         """
         assert self.notify.debugCall()
+        assert not self.__deleted
         assert name
         assert className
         self.neededObjects[name]=None
@@ -184,6 +194,7 @@ class AsyncRequest(DirectObject):
     
     def _doCreateObject(self, name, className, values, doId):
         assert self.notify.debugCall()
+        assert not self.__deleted
         distObj = self.air.generateGlobalObject(doId, className, values)
         self._checkCompletion(name, None, distObj)
 
@@ -195,4 +206,5 @@ class AsyncRequest(DirectObject):
         If the other requests timeout, finish will not be called.
         """
         assert self.notify.debugCall()
+        assert not self.__deleted
         self.delete()
