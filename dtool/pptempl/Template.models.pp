@@ -38,9 +38,26 @@
 #defer phase_prefix $[if $[PHASE],phase_$[PHASE]/]
 
 #defer install_model_dir $[install_dir]/$[phase_prefix]$[INSTALL_TO]
-#define filter_dirs $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]
+#define filter_dirs $[sort $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]]
 
 #defer source_prefix $[SOURCE_DIR:%=%/]
+
+#if $[LANGUAGES]
+  #define exlanguage_sources $[notdir $[filter %.flt %.mb %.ma %.lwo %.LWO %.egg,$[wildcard $[TOPDIR]/$[DIRPREFIX]*_$[LANGUAGE].*]]]
+
+  #forscopes flt_egg
+    #if $[SOURCES]
+      #define default_langlist $[filter %_$[DEFAULT_LANGUAGE].flt,$[SOURCES]]
+      #define locallist $[filter %.flt,$[exlanguage_sources]]
+      #define havelist
+      #foreach file $[default_langlist]
+        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].flt=%_$[LANGUAGE].flt]
+        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
+      #end file
+      #set SOURCES $[sort $[SOURCES] $[havelist]]
+    #endif
+  #end flt_egg
+#endif
 
 #define build_models \
    $[SOURCES(flt_egg):%.flt=%.egg] \
@@ -54,6 +71,21 @@
    $[forscopes maya_char_egg,$[ANIMS:%=$[EGG_PREFIX]%$[CHAN_SUFFIX].egg]]
 
 #define build_eggs $[sort $[build_models] $[build_anims]]
+
+#if $[LANGUAGES]
+  #forscopes install_egg filter_egg
+    #if $[SOURCES]
+      #define default_langlist $[filter %_$[DEFAULT_LANGUAGE].egg,$[SOURCES]]
+      #define locallist $[filter %_$[LANGUAGE].egg,$[build_eggs] $[exlanguage_sources]]
+      #define havelist
+      #foreach file $[default_langlist]
+        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].egg=%_$[LANGUAGE].egg]
+        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
+      #end file
+      #set SOURCES $[sort $[SOURCES] $[havelist]]
+    #endif
+  #end install_egg filter_egg
+#endif
 
 // Get the list of egg files that are to be installed
 #define install_pal_eggs
@@ -107,7 +139,6 @@
 
 #define install_other_dirs $[sort $[forscopes install_audio install_icons install_misc,$[install_model_dir]]]
 #define installed_other $[sort $[forscopes install_audio install_icons install_misc,$[SOURCES:%=$[install_model_dir]/%]]]
-
 
 #define pal_egg_targets $[sort $[patsubst %,$[pal_egg_dir]/%,$[notdir $[install_pal_eggs]]]]
 #define bam_targets $[install_eggs:%.egg=$[bam_dir]/%.bam]
