@@ -691,6 +691,7 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
             ('guiId',          None,         INITOPT),
             # Initial pos/scale of the widget
             ('pos',            None,         INITOPT),
+            ('hpr',            None,         INITOPT),
             ('scale',          None,         INITOPT),
             ('color',          None,         INITOPT),
             # Do events pass through this widget?
@@ -720,6 +721,13 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
                 self.setPos(pos)
             else:
                 apply(self.setPos, pos)
+        if self['hpr']:
+            hpr = self['hpr']
+            # Can either be a VBase3 or a tuple of 3 values
+            if isinstance(hpr, VBase3):
+                self.setHpr(hpr)
+            else:
+                apply(self.setHpr, hpr)
         if self['scale']:
             scale = self['scale']
             # Can either be a Vec3 or a tuple of 3 values
