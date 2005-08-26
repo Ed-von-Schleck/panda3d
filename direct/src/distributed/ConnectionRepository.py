@@ -21,13 +21,15 @@ class ConnectionRepository(
 
     def __init__(self, config, hasOwnerView=False):
         assert self.notify.debugCall()
-        DoInterestManager.__init__(self)
-        DoCollectionManager.__init__(self)
         # let the C connection repository know whether we're supporting
         # 'owner' views of distributed objects (i.e. 'receives p2p',
         # 'I own this object and have a separate view of it regardless of
         # where it currently is located')
         CConnectionRepository.__init__(self, hasOwnerView)
+        # DoInterestManager.__init__ relies on CConnectionRepository being
+        # initialized
+        DoInterestManager.__init__(self)
+        DoCollectionManager.__init__(self)
         self.setPythonRepository(self)
 
         self.config = config
@@ -162,7 +164,7 @@ class ConnectionRepository(
 
         # Now import all of the modules required by the DC file.
         for n in range(dcFile.getNumImportModules()):
-            moduleName = dcFile.getImportModule(n)
+            moduleName = dcFile.getImportModule(n)[:]
 
             # Maybe the module name is represented as "moduleName/AI".
             suffix = moduleName.split('/')
@@ -225,9 +227,63 @@ class ConnectionRepository(
                 #else:
                 #    dclass.setClassDef(classDef)
                 dclass.setClassDef(classDef)
+
             self.dclassesByName[className] = dclass
             if number >= 0:
                 self.dclassesByNumber[number] = dclass
+
+        # Owner Views
+        if self.hasOwnerView():
+            ownerDcSuffix = self.dcSuffix + 'OV'
+            # dict of class names (without 'OV') that have owner views
+            ownerImportSymbols = {}
+
+            # Now import all of the modules required by the DC file.
+            for n in range(dcFile.getNumImportModules()):
+                moduleName = dcFile.getImportModule(n)
+
+                # Maybe the module name is represented as "moduleName/AI".
+                suffix = moduleName.split('/')
+                moduleName = suffix[0]
+                suffix=suffix[1:]
+                if ownerDcSuffix in suffix:
+                    moduleName = moduleName + ownerDcSuffix
+
+                importSymbols = []
+                for i in range(dcFile.getNumImportSymbols(n)):
+                    symbolName = dcFile.getImportSymbol(n, i)
+
+                    # Check for the OV suffix
+                    suffix = symbolName.split('/')
+                    symbolName = suffix[0]
+                    suffix=suffix[1:]
+                    if ownerDcSuffix in suffix:
+                        symbolName += ownerDcSuffix
+                    importSymbols.append(symbolName)
+                    ownerImportSymbols[symbolName] = None
+
+                self.importModule(dcImports, moduleName, importSymbols)
+
+            # Now get the class definition for the owner classes named
+            # in the DC file.
+            for i in range(dcFile.getNumClasses()):
+                dclass = dcFile.getClass(i)
+                if ((dclass.getName()+ownerDcSuffix) in ownerImportSymbols):
+                    number = dclass.getNumber()
+                    className = dclass.getName() + ownerDcSuffix
+
+                    # Does the class have a definition defined in the newly
+                    # imported namespace?
+                    classDef = dcImports.get(className)
+                    if classDef is None:
+                        self.notify.error("No class definition for %s." % className)
+                    else:
+                        if type(classDef) == types.ModuleType:
+                            if not hasattr(classDef, className):
+                                self.notify.error("Module %s does not define class %s." % (className, className))
+                            classDef = getattr(classDef, className)
+                        dclass.setOwnerClassDef(classDef)
+                        self.dclassesByName[className] = dclass
 
     def importModule(self, dcImports, moduleName, importSymbols):
         """

@@ -60,6 +60,8 @@ PUBLISHED:
 
   INLINE DCFile &get_dc_file();
 
+  INLINE bool has_owner_view() const;
+
   INLINE void set_client_datagram(bool client_datagram);
   INLINE bool get_client_datagram() const;
 

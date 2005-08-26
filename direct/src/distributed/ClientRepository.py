@@ -420,7 +420,7 @@ class ClientRepository(ConnectionRepository):
             distObj = self.doId2ownerView[doId]
             assert(distObj.dclass == dclass)
             distObj.generate()
-            distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
+            distObj.updateRequiredOtherFields(dclass, di)
             # updateRequiredOtherFields calls announceGenerate
         elif self.cacheOwner.contains(doId):
             # ...it is in the cache.
@@ -431,14 +431,14 @@ class ClientRepository(ConnectionRepository):
             self.doId2ownerView[doId] = distObj
             # and update it.
             distObj.generate()
-            distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
+            distObj.updateRequiredOtherFields(dclass, di)
             # updateRequiredOtherFields calls announceGenerate
         else:
             # ...it is not in the dictionary or the cache.
             # Construct a new one
-            classDef = dclass.getClassDef()
+            classDef = dclass.getOwnerClassDef()
             if classDef == None:
-                self.notify.error("Could not create an undefined %s object." % (dclass.getName()))
+                self.notify.error("Could not create an undefined %s object. Have you created an owner view?" % (dclass.getName()))
             distObj = classDef(self)
             distObj.dclass = dclass
             # Assign it an Id
@@ -448,7 +448,7 @@ class ClientRepository(ConnectionRepository):
             # Update the required fields
             distObj.generateInit()  # Only called when constructed
             distObj.generate()
-            distObj.updateRequiredOtherFields(dclass, di, ownerView=True)
+            distObj.updateRequiredOtherFields(dclass, di)
             # updateRequiredOtherFields calls announceGenerate
         return distObj
 

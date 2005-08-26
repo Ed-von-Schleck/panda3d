@@ -9,16 +9,24 @@ class DoCollectionManager:
         # for OTP: (parentId, zoneId) to dict of doId->DistributedObjectAI
         # for NON-OTP: zoneId to dict of doId->DistributedObjectAI
         self.zoneId2doIds={}
-        # Dict of {DistributedObject ids : DistributedObjects} for 'owner' views of objects
-        self.doId2ownerView = {}
+        if self.hasOwnerView():
+            # Dict of {DistributedObject ids : DistributedObjects} for 'owner' views of objects
+            self.doId2ownerView = {}
         if wantOtpServer:
             # Dict of {
             #   parent DistributedObject id: 
             #     { zoneIds : [child DistributedObject ids] }}
             self.__doHierarchy = {}
 
+    def getDo(self, doId):
+        return self.doId2do.get(doId)
+    def getOwnerView(self, doId):
+        assert self.hasOwnerView()
+        return self.doId2ownerView.get(doId)
+
     def getDoTable(self, ownerView):
         if ownerView:
+            assert self.hasOwnerView()
             return self.doId2ownerView
         else:
             return self.doId2do

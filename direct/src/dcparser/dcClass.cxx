@@ -63,6 +63,7 @@ DCClass(DCFile *dc_file, const string &name, bool is_struct, bool bogus_class) :
       
 #ifdef HAVE_PYTHON
   _class_def = NULL;
+  _owner_class_def = NULL;
 #endif
 }
 
@@ -84,6 +85,7 @@ DCClass::
 
 #ifdef HAVE_PYTHON
   Py_XDECREF(_class_def);
+  Py_XDECREF(_owner_class_def);
 #endif
 }
 
@@ -381,6 +383,54 @@ get_class_def() const {
 
   Py_INCREF(_class_def);
   return _class_def;
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: DCClass::has_owner_class_def
+//       Access: Published
+//  Description: Returns true if the DCClass object has an associated
+//               Python owner class definition, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool DCClass::
+has_owner_class_def() const {
+  return (_owner_class_def != NULL);
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: DCClass::set_owner_class_def
+//       Access: Published
+//  Description: Sets the owner class object associated with this
+//               DistributedClass.  This object will be used to
+//               construct new owner instances of the class.
+////////////////////////////////////////////////////////////////////
+void DCClass::
+set_owner_class_def(PyObject *owner_class_def) {
+  Py_XINCREF(owner_class_def);
+  Py_XDECREF(_owner_class_def);
+  _owner_class_def = owner_class_def;
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: DCClass::get_owner_class_def
+//       Access: Published
+//  Description: Returns the owner class object that was previously
+//               associated with this DistributedClass.  This will
+//               return a new reference to the object.
+////////////////////////////////////////////////////////////////////
+PyObject *DCClass::
+get_owner_class_def() const {
+  if (_owner_class_def == NULL) {
+    return Py_None;
+  }
+
+  Py_INCREF(_owner_class_def);
+  return _owner_class_def;
 }
 #endif  // HAVE_PYTHON
 

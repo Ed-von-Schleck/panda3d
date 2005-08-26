@@ -85,6 +85,9 @@ PUBLISHED:
   bool has_class_def() const;
   void set_class_def(PyObject *class_def);
   PyObject *get_class_def() const;
+  bool has_owner_class_def() const;
+  void set_owner_class_def(PyObject *owner_class_def);
+  PyObject *get_owner_class_def() const;
 
   void receive_update(PyObject *distobj, DatagramIterator &di) const;
   void receive_update_broadcast_required(PyObject *distobj, DatagramIterator &di) const;
@@ -162,6 +165,7 @@ private:
 
 #ifdef HAVE_PYTHON
   PyObject *_class_def;
+  PyObject *_owner_class_def;
 #endif
 
   friend class DCField;
