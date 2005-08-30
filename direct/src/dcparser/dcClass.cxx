@@ -510,7 +510,7 @@ receive_update_broadcast_required(PyObject *distobj, DatagramIterator &di) const
 //  Description: Processes a big datagram that includes all of the
 //               "required" fields that are sent along with a normal
 //               "generate with required" message.  This is all of the
-//               atomic fields that are marked "broadcast p2p". Should
+//               atomic fields that are marked "broadcast ownrecv". Should
 //               be used for 'owner-view' objects.
 ////////////////////////////////////////////////////////////////////
 void DCClass::
@@ -528,11 +528,11 @@ receive_update_broadcast_required_owner(PyObject *distobj,
     if (field->as_molecular_field() == (DCMolecularField *)NULL &&
         field->is_required()) {
       packer.begin_unpack(field);
-      if (field->is_p2p()) {
+      if (field->is_ownrecv()) {
 	field->receive_update(packer, distobj);
       } else {
-	// It's not a p2p field; skip over it. It's difficult to filter this
-	// on the server, ask Roger for the reason.
+	// It's not an ownrecv field; skip over it. It's difficult
+	// to filter this on the server, ask Roger for the reason.
 	packer.unpack_skip();
       }
       if (!packer.end_unpack()) {
