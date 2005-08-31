@@ -86,8 +86,9 @@ class AsyncRequest(DirectObject):
         if __debug__:
             global BreakOnTimeout
             if BreakOnTimeout:
-                print "\n\nself.neededObjects =", self.neededObjects
-                print "\ntimed out after %s seconds."%(task.delayTime,)
+                print "\n\nself.avatarId =", self.avatarId
+                print "\nself.neededObjects =", self.neededObjects
+                print "\ntimed out after %s seconds.\n\n"%(task.delayTime,)
                 import pdb; pdb.set_trace()
         self.delete()
 
