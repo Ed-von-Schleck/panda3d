@@ -22,7 +22,7 @@ class ConnectionRepository(
     def __init__(self, config, hasOwnerView=False):
         assert self.notify.debugCall()
         # let the C connection repository know whether we're supporting
-        # 'owner' views of distributed objects (i.e. 'receives p2p',
+        # 'owner' views of distributed objects (i.e. 'receives ownrecv',
         # 'I own this object and have a separate view of it regardless of
         # where it currently is located')
         CConnectionRepository.__init__(self, hasOwnerView)

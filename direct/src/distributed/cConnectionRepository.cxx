@@ -507,7 +507,7 @@ handle_update_field_owner() {
       packer.set_unpack_data(_di.get_remaining_bytes());
       int field_id = packer.raw_unpack_uint16();
       DCField *field = dclass->get_field_by_index(field_id);
-      if (field->is_p2p()) {
+      if (field->is_ownrecv()) {
 	// It's a good idea to ensure the reference count to distobjOV is
 	// raised while we call the update method--otherwise, the update
 	// method might get into trouble if it tried to delete the
