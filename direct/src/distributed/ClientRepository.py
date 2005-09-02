@@ -85,7 +85,7 @@ class ClientRepository(ConnectionRepository):
         ## assert self.notify.debugStateCall(self)
         ## # Create a message
         ## datagram = PyDatagram()
-        ## datagram.AddServerHeader(
+        ## datagram.addServerHeader(
             ## doID, localAvatar.getDoId(), 2020)           
         ## # A context that can be used to index the response if needed
         ## datagram.addUint32(context)

@@ -32,7 +32,7 @@ class PyDatagram(Datagram):
     #    ...
     addChannel = Datagram.addUint64
     
-    def AddServerHeader(self, channel, sender, code):
+    def addServerHeader(self, channel, sender, code):
         self.addInt8(1)
         self.addChannel(channel)
         self.addChannel(sender)
@@ -46,7 +46,7 @@ class PyDatagram(Datagram):
         self.addUint16(code)
     
     
-    def AddServerControlHeader(self,   code):
+    def addServerControlHeader(self,   code):
         self.addInt8(1)
         self.addChannel(CONTROL_MESSAGE)
         self.addUint16(code)
