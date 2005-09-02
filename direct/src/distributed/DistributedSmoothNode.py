@@ -106,7 +106,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         self.smoother.computeAndApplySmoothMat(self)
             
     def doSmoothTask(self, task):
-        self.smoother.computeAndApplySmoothMat(self)
+        self.smoothPosition()
         return cont
 
     def wantsSmoothing(self):
