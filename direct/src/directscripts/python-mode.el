@@ -1337,7 +1337,7 @@ filter."
     ))
 
 (defun pyo-shell (&optional argprompt)
-  "This is Jesse's hacked version of py-shell which runs the debug python"
+  "This is Jesse's hacked version of py-shell which runs the optimized python"
   (interactive "P")
   ;; Set the default shell if not already set
   (when (null pyo-which-shell)
@@ -1392,6 +1392,48 @@ filter."
     (use-local-map py-shell-map)
     ))
 
+(defun py-shell-named (bufname)
+  "This is Darren's hacked version of py-shell that allows for multiple
+   Python shells in a single Emacs window via different buffer names.
+   Creates a buffer named *Python-bufname*
+   "
+  ;; Set the default shell if not already set
+  (when (null py-which-shell)
+    (py-toggle-shells py-default-interpreter))
+  (let ((bname py-which-bufname))
+    (when bufname
+      (setq bname (concat py-which-bufname "-" bufname)))
+    (switch-to-buffer ;; -other-window
+     (apply 'make-comint bname py-which-shell nil py-which-args))
+    (make-local-variable 'comint-prompt-regexp)
+    (setq comint-prompt-regexp "^>>> \\|^[.][.][.] \\|^(pdb) ")
+    (add-hook 'comint-output-filter-functions
+             'py-comint-output-filter-function)
+    (set-syntax-table py-mode-syntax-table)
+    (use-local-map py-shell-map))
+  )
+
+(defun is-py-proc (proc)
+  (and (eq (compare-strings py-which-bufname 0 (length py-which-bufname)
+                           (process-name proc) 0 (length py-which-bufname)) t)
+       (not (eq (process-name proc) "Python Output")))
+)
+
+(defun for-all-py-procs (callback)
+  "Call a function for each python process. Callback must accept process.
+  If args are provided they will be passed to callback before process."
+  ;; run through all the Python processes and call the callback
+  (mapcar
+   (lambda (proc)
+     (if (is-py-proc proc)
+        (let ()
+          (apply callback (list proc))
+          )
+       )
+     )
+   (process-list)
+   )
+  )
 
 (defun py-clear-queue ()
   "Clear the queue of temporary files waiting to execute."
@@ -3321,19 +3363,16 @@ These are Python temporary files awaiting execution."
 (defun py-redefine-class (&optional async)
   (interactive "P")
   (save-excursion
-      (py-mark-def-or-class t)
-      ;; mark is before point
-      (py-redefine-class-region (mark) (point) async)
-      )
+    (py-mark-def-or-class t)
+    ;; mark is before point
+    (py-redefine-class-region (mark) (point) async)
+    )
   )
 
 
-(defun py-redefine-class-region (start end &optional async)
+(defun py-redefine-class-region-for-proc (start end proc)
   (interactive "r\nP")
-  (or (< start end)
-      (error "Region is empty"))
-  (let* ((proc (get-process py-which-bufname))
-	 (temp (if (memq 'broken-temp-names py-emacs-features)
+  (let* ((temp (if (memq 'broken-temp-names py-emacs-features)
 		   (let
 		       ((sn py-serial-number)
 			(pid (and (fboundp 'emacs-pid) (emacs-pid))))
@@ -3350,6 +3389,18 @@ These are Python temporary files awaiting execution."
       (py-redefine-class-file proc file)
      ))))
 
+(defun py-redefine-class-region (start end &optional async)
+  (interactive "r\nP")
+  (or (< start end)
+      (error "Region is empty"))
+  ;; run through all the Python processes and redefine the class
+  (let ((curbuf (current-buffer)))
+    (for-all-py-procs (lambda (proc)
+                       (set-buffer curbuf)
+                       (py-redefine-class-region-for-proc start end proc)))
+    (set-buffer curbuf)
+    )
+  )
 
 ;; Python subprocess utilities and filters
 (defun py-redefine-class-file (proc filename)
