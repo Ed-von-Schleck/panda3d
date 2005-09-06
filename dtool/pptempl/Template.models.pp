@@ -37,9 +37,26 @@
 #defer phase_prefix $[if $[PHASE],phase_$[PHASE]/]
 
 #defer install_model_dir $[install_dir]/$[phase_prefix]$[INSTALL_TO]
-#define filter_dirs $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]
+#define filter_dirs $[sort $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]]
 
 #defer source_prefix $[SOURCE_DIR:%=%/]
+
+#if $[LANGUAGES]
+  #define exlanguage_sources $[notdir $[filter %.flt %.mb %.ma %.lwo %.LWO %.egg,$[wildcard $[TOPDIR]/$[DIRPREFIX]*_$[LANGUAGE].*]]]
+
+  #forscopes flt_egg
+    #if $[SOURCES]
+      #define default_langlist $[filter %_$[DEFAULT_LANGUAGE].flt,$[SOURCES]]
+      #define locallist $[filter %.flt,$[exlanguage_sources]]
+      #define havelist
+      #foreach file $[default_langlist]
+        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].flt=%_$[LANGUAGE].flt]
+        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
+      #end file
+      #set SOURCES $[sort $[SOURCES] $[havelist]]
+    #endif
+  #end flt_egg
+#endif
 
 #define build_flt_eggs \
    $[SOURCES(flt_egg):%.flt=%.egg]
@@ -62,6 +79,21 @@
      $[build_lwo_eggs] \
      $[build_maya_eggs] \
      $[build_soft_eggs]]
+
+#if $[LANGUAGES]
+  #forscopes install_egg filter_egg
+    #if $[SOURCES]
+      #define default_langlist $[filter %_$[DEFAULT_LANGUAGE].egg,$[SOURCES]]
+      #define locallist $[filter %_$[LANGUAGE].egg,$[build_eggs] $[exlanguage_sources]]
+      #define havelist
+      #foreach file $[default_langlist]
+        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].egg=%_$[LANGUAGE].egg]
+        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
+      #end file
+      #set SOURCES $[sort $[SOURCES] $[havelist]]
+    #endif
+  #end install_egg filter_egg
+#endif
 
 // Get the list of egg files that are to be installed
 #define install_pal_eggs
@@ -171,6 +203,26 @@ $[TAB]rm -rf $[bam_dir]
 clean-pal : clean-bam
 #if $[pal_egg_targets]
 $[TAB]rm -rf $[pal_egg_dir]
+#endif
+
+clean-flt :
+#if $[build_flt_eggs]
+$[TAB]rm -f $[build_flt_eggs]
+#endif
+
+clean-lwo :
+#if $[build_lwo_eggs]
+$[TAB]rm -f $[build_lwo_eggs]
+#endif
+
+clean-maya :
+#if $[build_maya_eggs]
+$[TAB]rm -f $[build_maya_eggs]
+#endif
+
+clean-soft :
+#if $[build_soft_eggs]
+$[TAB]rm -f $[build_soft_eggs]
 #endif
 
 clean : clean-pal
@@ -589,7 +641,7 @@ all : egg pal repal $[subdirs]
 
 install : all $[subdirs:%=install-%]
 
-#define sub_targets egg flt lwo maya soft bam pal clean-bam clean-pal clean cleanall unpack-soft install-bam install-other uninstall-bam uninstall-other uninstall
+#define sub_targets egg flt lwo maya soft bam pal clean-bam clean-pal clean-flt clean-lwo clean-maya clean-soft clean cleanall unpack-soft install-bam install-other uninstall-bam uninstall-other uninstall
 
 // Define the rules to propogate these targets to the Makefile within
 // each directory.
