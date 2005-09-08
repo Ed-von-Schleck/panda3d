@@ -139,11 +139,12 @@ class AsyncRequest(DirectObject):
         assert self.notify.debugCall()
         assert not self.__deleted
         assert doId
-        object = self.air.doId2do.get(doId)
-        self.neededObjects[doId]=object
-        if object is not None:
-            self._checkCompletion(None, context, object)
-        else:
+        #object = self.air.doId2do.get(doId)
+        #self.neededObjects[doId]=object
+        #if object is not None:
+        #    self._checkCompletion(None, context, object)
+        #else:
+        if 1:
             if context is None:
                 context=self.air.allocateContext()
             self.acceptOnce(
