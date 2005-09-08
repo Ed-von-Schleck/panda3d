@@ -98,6 +98,9 @@ class Transitions:
                 self.transitionIval.append(finishIval)
             self.transitionIval.start()
 
+    def fadeOutActive(self):
+        return self.fade and self.fade.getColor()[3] > 0
+
     def fadeScreen(self, alpha=0.5):
         """
         Put a semitransparent screen over the camera plane
