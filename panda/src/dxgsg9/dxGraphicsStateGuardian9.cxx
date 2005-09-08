@@ -4289,7 +4289,7 @@ void DXGraphicsStateGuardian9::show_frame(bool bNoNewFrameDrawn) {
         CheckCooperativeLevel();
     } else {
       dxgsg9_cat.error() << "show_frame() - Present() failed" << D3DERRORSTRING(hr);
-      exit(1);
+      //      exit(1);
     }
   }
 }
