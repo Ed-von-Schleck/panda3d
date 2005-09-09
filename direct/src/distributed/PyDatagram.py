@@ -39,7 +39,7 @@ class PyDatagram(Datagram):
         self.addUint16(code)
     
     
-    def AddOldServerHeader(self, channel, sender, code):
+    def addOldServerHeader(self, channel, sender, code):
         self.addChannel(channel)
         self.addChannel(sender)
         self.addChannel('A')
@@ -52,7 +52,7 @@ class PyDatagram(Datagram):
         self.addUint16(code)
     
     
-    def AddOldServerControlHeader(self,   code):
+    def addOldServerControlHeader(self,   code):
         self.addChannel(CONTROL_MESSAGE)
         self.addUint16(code)
     
