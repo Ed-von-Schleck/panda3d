@@ -4300,7 +4300,7 @@ void DXGraphicsStateGuardian8::show_frame(bool bNoNewFrameDrawn) {
         CheckCooperativeLevel();
     } else {
       dxgsg8_cat.error() << "show_frame() - Present() failed" << D3DERRORSTRING(hr);
-      exit(1);
+      throw_event("panda3d-render-error");
     }
   }
 }
