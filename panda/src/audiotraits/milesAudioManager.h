@@ -48,6 +48,9 @@ public:
 
   void set_volume(float volume);
   float get_volume() const;
+
+  void set_play_rate(float play_rate);
+  float get_play_rate() const;
   
   void set_active(bool active);
   bool get_active() const;
@@ -94,6 +97,7 @@ private:
   LRU _lru;
   // State:
   float _volume;
+  float _play_rate;
   bool _active;
   int _cache_limit;
   // keep a count for startup and shutdown:

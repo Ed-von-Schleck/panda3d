@@ -7,6 +7,7 @@ import inspect
 import os
 import sys
 import random
+import time
 if __debug__:
     import traceback
 
@@ -52,7 +53,19 @@ def indent(stream, numIndents, str):
     stream.write('    ' * numIndents + str)
 
 
-
+def nonRepeatingRandomList(vals,max):
+    random.seed(time.time())
+    #first generate a set of random values
+    valueList=range(max)
+    finalVals=[]
+    for i in range(vals):
+        index=int(random.random()*len(valueList))
+        finalVals.append(valueList[index])
+        valueList.remove(valueList[index])
+    return finalVals
+
+
+
 def writeFsmTree(instance, indent = 0):
     if hasattr(instance, 'parentFSM'):
         writeFsmTree(instance.parentFSM, indent-2)
@@ -64,7 +77,7 @@ def writeFsmTree(instance, indent = 0):
         
 
 
-
+
 if __debug__:
     class StackTrace:
         def __init__(self, label="", start=0, limit=None):
@@ -716,6 +729,16 @@ def average(*args):
     for arg in args:
         val += arg
     return val / len(args)
+
+def addListsByValue(a, b):
+    """
+    returns a new array containing the sums of the two array arguments
+    (c[0] = a[0 + b[0], etc.)
+    """
+    c = []
+    for x, y in zip(a, b):
+        c.append(x + y)
+    return c
 
 def boolEqual(a, b):
     """

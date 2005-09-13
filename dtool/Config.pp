@@ -291,6 +291,12 @@
 // available, even if it is unused.
 #defer DO_MEMORY_USAGE $[<= $[OPTIMIZE], 3]
 
+// This option compiles in support for simulating network delay via
+// the min-lag and max-lag prc variables.  It adds a tiny bit of
+// overhead even when it is not activated, so it is typically enabled
+// only in a development build.
+#defer SIMULATE_NETWORK_DELAY $[<= $[OPTIMIZE], 3]
+
 // Do you want to compile in support for pipelining?  This enables
 // setting and accessing multiple different copies of frame-specific
 // data stored in nodes, etc.  At the moment, Panda cannot actually
