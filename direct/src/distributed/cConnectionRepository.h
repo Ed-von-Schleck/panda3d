@@ -69,7 +69,6 @@ PUBLISHED:
 
 #ifdef HAVE_SSL
   void set_connection_http(HTTPChannel *channel);
-  SocketStream *get_stream();
 #endif
 #ifdef HAVE_NSPR
   bool try_connect_nspr(const URLSpec &url);
@@ -77,11 +76,6 @@ PUBLISHED:
   INLINE QueuedConnectionManager &get_qcm();
   INLINE ConnectionWriter &get_cw();
   INLINE QueuedConnectionReader &get_qcr();
-#endif
-
-#ifdef SIMULATE_NETWORK_DELAY
-  void start_delay(double min_delay, double max_delay);
-  void stop_delay();
 #endif
 
   bool check_datagram();
