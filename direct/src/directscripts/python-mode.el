@@ -587,6 +587,7 @@ support for features needed by `python-mode'.")
   (define-key py-shell-map [return] 'comint-interrupt-subjob-or-maybe-return)
   (define-key py-shell-map "\C-c\C-r" 'python-resume)
   (define-key py-shell-map "\C-c\C-s" 'pyd-shell)
+  (define-key py-shell-map "\C-c\C-d" 'py-kill-shells)
   )
 
 (defvar py-mode-syntax-table nil
@@ -1248,6 +1249,21 @@ Programmatically, ARG can also be one of the symbols `cpython' or
      )
     (message "Using the %s shell" msg)
     (setq py-output-buffer (format "*%s Output*" py-which-bufname))))
+
+(defun py-kill-shells ()
+  (interactive)
+  (save-current-buffer
+    (for-all-py-procs
+     (lambda (proc)
+       (let ((procbuf (process-buffer proc)))
+	 (set-buffer procbuf)
+	 (comint-send-eof)
+	 (py-point-to-max proc)
+	 )
+       )
+     )
+    )
+  )
 
 ;;;###autoload
 (defun py-shell (&optional argprompt)
@@ -3392,10 +3408,14 @@ These are Python temporary files awaiting execution."
 (defun py-point-to-max (proc)
   ;; updates the cursor position of a buffer for all windows
   ;; into that buffer
-  (let ((procbuf (process-buffer proc)))
-    (mapcar (lambda (window)
-	      (set-window-point window (point-max)))
-	    (get-buffer-window-list procbuf))
+  (save-current-buffer
+    (let ((procbuf (process-buffer proc)))
+      (mapcar (lambda (window)
+		(set-window-point window (point-max)))
+	      (get-buffer-window-list procbuf))
+      (set-buffer procbuf)
+      (goto-char (point-max))
+      )
     )
   )
 
