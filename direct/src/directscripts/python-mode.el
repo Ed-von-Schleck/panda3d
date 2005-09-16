@@ -587,7 +587,7 @@ support for features needed by `python-mode'.")
   (define-key py-shell-map [return] 'comint-interrupt-subjob-or-maybe-return)
   (define-key py-shell-map "\C-c\C-r" 'python-resume)
   (define-key py-shell-map "\C-c\C-s" 'pyd-shell)
-  (define-key py-shell-map "\C-c\C-d" 'py-kill-shells)
+  (define-key py-shell-map "\C-c\C-f" 'py-kill-shells)
   )
 
 (defvar py-mode-syntax-table nil
