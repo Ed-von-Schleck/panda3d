@@ -1433,6 +1433,22 @@ filter."
     (use-local-map py-shell-map))
   )
 
+(defun py-start-process (name command)
+  (let ((bufname (format "*Python-%s*" name))
+	(macro (format "%s\r" command))
+	(curbuf (current-buffer))
+	(newbuf nil))
+    (py-shell-named name)
+    (switch-to-buffer bufname)
+    (setq newbuf (current-buffer))
+    (execute-kbd-macro macro)
+    (py-point-to-max (get-buffer-process (current-buffer)))
+    (switch-to-buffer curbuf)
+    ; make sure that the new buffer is visible
+    (display-buffer newbuf)
+    )
+  )
+
 (defun is-py-bufname (bufname)
   (and (eq (compare-strings py-which-bufname 0 (length py-which-bufname)
 			    bufname 0 (length py-which-bufname)) t)
