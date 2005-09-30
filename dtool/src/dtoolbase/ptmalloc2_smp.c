@@ -1,3 +1,12 @@
+/* drose: Note that this file is released under an unrestricted
+   license as well as the LGPL, in spite of the comments below.  See
+   http://www.malloc.de . */
+
+#include "dtoolbase.h"
+
+#if defined(USE_MEMORY_PTMALLOC2) && !defined(linux)
+#define USE_DL_PREFIX 1
+
 /* Malloc implementation for multiple threads without lock contention.
    Copyright (C) 1996,1997,1998,1999,2000,01,02 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
@@ -26,7 +35,7 @@
   plus Win32 support readded.
 
 * Version ptmalloc2-smp-20011215
-  $Id: ptmalloc2_smp.c,v 1.1 2005/09/29 18:27:26 joshyelon Exp $
+  $Id: ptmalloc2_smp.c,v 1.2 2005/09/30 19:49:25 drwr Exp $
   based on:
 * VERSION 2.7.2 Sat Aug 17 09:07:30 2002  Doug Lea  (dl at gee)
 
@@ -1848,7 +1857,7 @@ int      __posix_memalign(void **, size_t, size_t);
 #endif
 
 /*
-  $Id: ptmalloc2_smp.c,v 1.1 2005/09/29 18:27:26 joshyelon Exp $
+  $Id: ptmalloc2_smp.c,v 1.2 2005/09/30 19:49:25 drwr Exp $
   `ptmalloc2', a malloc implementation for multiple threads without
   lock contention, by Wolfram Gloger <wg@malloc.de>.
 
@@ -2239,7 +2248,7 @@ struct malloc_chunk {
 };
 
 
-typedef struct malloc_chunk* mchunkptr;
+/*typedef struct malloc_chunk* mchunkptr;*/
 
 /*
    malloc_chunk details:
@@ -2859,7 +2868,7 @@ struct malloc_par {
   char*            sbrk_base;
 };
 
-typedef struct malloc_state *mstate;
+/*typedef struct malloc_state *mstate;*/
 
 /* There are several instances of this struct ("arenas") in this
    malloc.  If you are adapting this malloc in a way that does NOT use
@@ -2950,7 +2959,7 @@ static Void_t** iALLOc();
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* $Id: ptmalloc2_smp.c,v 1.1 2005/09/29 18:27:26 joshyelon Exp $ */
+/* $Id: ptmalloc2_smp.c,v 1.2 2005/09/30 19:49:25 drwr Exp $ */
 
 /* Compile-time constants.  */
 
@@ -4067,7 +4076,7 @@ static void do_check_malloc_state(mstate av)
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* $Id: ptmalloc2_smp.c,v 1.1 2005/09/29 18:27:26 joshyelon Exp $ */
+/* $Id: ptmalloc2_smp.c,v 1.2 2005/09/30 19:49:25 drwr Exp $ */
 
 #ifndef weak_variable
 #define weak_variable /**/
@@ -5311,6 +5320,9 @@ mremap_chunk(p, new_size) mchunkptr p; size_t new_size;
   /* Note the extra SIZE_SZ overhead as in mmap_chunk(). */
   new_size = (new_size + offset + SIZE_SZ + page_mask) & ~page_mask;
 
+#ifndef MREMAP_MAYMOVE
+#define MREMAP_MAYMOVE 1  /* terrible hack--drose */
+#endif
   cp = (char *)mremap((char *)p - offset, size + offset, new_size,
                       MREMAP_MAYMOVE);
 
@@ -8207,3 +8219,6 @@ History:
          structure of old version,  but most details differ.)
 
 */
+
+#endif  // USE_MEMORY_PTMALLOC2
+
