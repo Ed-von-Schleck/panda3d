@@ -44,7 +44,7 @@ class DistributedLevel(DistributedObject.DistributedObject,
             shadow = (0,0,0,1),
             font = ToontownGlobals.getSuitFont(),
             pos = (0,-0.5),
-            scale = 0.16,
+            scale = 0.16 * self.getTitleTextScale(),
             drawOrder = 0,
             mayChange = 1,
             )
@@ -200,6 +200,9 @@ class DistributedLevel(DistributedObject.DistributedObject,
         # load stuff
         self.initVisibility()
         self.placeLocalToon()
+
+    def getTitleTextScale(self):
+        return 1.
 
     def announceLeaving(self):
         """call this just before leaving the level; this may result in
