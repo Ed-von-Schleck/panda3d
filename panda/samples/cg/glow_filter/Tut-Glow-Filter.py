@@ -98,9 +98,9 @@ class GlowDemo(DirectObject):
         # set up the pipeline: from glow scene to blur x to blur y to main window.
         blurXBuffer=makeFilterBuffer(glowBuffer,  "Blur X", -2, MYDIR+"/XBlurShader.sha")
         blurYBuffer=makeFilterBuffer(blurXBuffer, "Blur Y", -1, MYDIR+"/YBlurShader.sha")
-        finalcard = blurYBuffer.getTextureCard()
-        finalcard.reparentTo(render2d)
-        finalcard.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd))
+        self.finalcard = blurYBuffer.getTextureCard()
+        self.finalcard.reparentTo(render2d)
+        self.finalcard.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd))
         
         # event handling
         self.accept("space", self.toggleGlow)
@@ -110,9 +110,9 @@ class GlowDemo(DirectObject):
 
     def toggleGlow(self):
         if self.glowOn:
-            self.glowCard.reparentTo(hidden)
+            self.finalcard.reparentTo(hidden)
         else:
-            self.glowCard.reparentTo(render2d)
+            self.finalcard.reparentTo(render2d)
         self.glowOn= not(self.glowOn)
 
     def toggleDisplay(self):
