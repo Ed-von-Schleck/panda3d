@@ -105,6 +105,7 @@ class GlowDemo(DirectObject):
         # event handling
         self.accept("space", self.toggleGlow)
         self.accept("enter", self.toggleDisplay)
+        self.accept("escape", sys.exit, [0])
 
         self.glowOn=True;
 
