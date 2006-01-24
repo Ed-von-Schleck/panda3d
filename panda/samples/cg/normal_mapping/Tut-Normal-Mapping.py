@@ -118,14 +118,13 @@ class NormalMapDemo(DirectObject):
         self.heading = self.heading - offset*10
 
     def toggleShader(self):
-        global instr5
-        instr5.destroy()
+        self.inst5.destroy()
         if (self.shaderenable):
-            instr5 = addInstructions(0.75, "Enter: Turn normal maps On")
+            self.inst5 = addInstructions(0.75, "Enter: Turn normal maps On")
             self.shaderenable = 0
             self.room.setShaderOff()
         else:
-            instr5 = addInstructions(0.75, "Enter: Turn normal maps Off")
+            self.inst5 = addInstructions(0.75, "Enter: Turn normal maps Off")
             self.shaderenable = 1
             self.room.setShader(self.shader)
 
