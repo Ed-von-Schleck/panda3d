@@ -1,0 +1,48 @@
+//Cg
+//
+//Cg profile arbvp1 arbfp1
+
+void vshader(float3 vtx_position : POSITION,
+             float2 vtx_texcoord0 : TEXCOORD0,
+             float3 vtx_normal : NORMAL,
+             float3 vtx_tangent0 : TANGENT,
+             float3 vtx_binormal0 : BINORMAL,
+             uniform float4 mspos_light,
+             uniform float4x4 mat_modelproj,
+             out float4 l_position  : POSITION,
+             out float2 l_texcoord0,
+             out float3 l_lightvec,
+             out float3 l_pointpos)
+{
+  float3 lightvec = ((float3)mspos_light - vtx_position);
+  l_position = mul(mat_modelproj, float4(vtx_position,1));
+  l_texcoord0 = vtx_texcoord0;
+  l_lightvec.x = dot(vtx_tangent0, lightvec);
+  l_lightvec.y = -dot(vtx_binormal0, lightvec);
+  l_lightvec.z = dot(vtx_normal, lightvec);
+  l_pointpos = vtx_position;
+}
+
+
+void fshader(float4 l_position : POSITION,
+             float2 l_texcoord0,
+             float3 l_lightvec,
+             float3 l_pointpos,
+             uniform float4 mspos_light,
+             sampler2D tex_0,
+             sampler2D tex_0_n,
+             out float4 o_color : COLOR)
+{
+  float distance = length((float3)mspos_light - l_pointpos);
+  float attenuate = saturate(30.0 / (15.0 + distance));
+  float3 lightdir = normalize(l_lightvec);
+  float4 normalmap = tex2D(tex_0_n, l_texcoord0)*2.0-float4(1,1,1,1);
+  float4 albedo = tex2D(tex_0, l_texcoord0);
+  float lightprod = saturate(dot(lightdir, (float3)normalmap)+0.3);
+  
+  float4 temp;
+  
+  temp = lightprod * attenuate * albedo;
+  temp.a = 1.0;
+  o_color = temp;
+}

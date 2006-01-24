@@ -1,0 +1,23 @@
+//Cg
+//
+//Cg profile arbvp1 arbfp1
+
+void vshader(float4 vtx_position : POSITION,
+             float4 vtx_normal : NORMAL,
+            out float4 l_position : POSITION,
+            out float4 l_color : COLOR,   
+            uniform float4x4 mat_modelproj,
+            uniform float4x4 mat_modelview)
+{
+  l_position=mul(mat_modelproj, vtx_position);
+  l_color=mul(mat_modelview, vtx_normal);
+  l_color = l_color/2;
+  l_color += float4(0.5, 0.5, 0.5, 0.5);
+}
+
+void fshader(float4 l_color: COLOR,
+            out float4 o_color: COLOR)
+{
+  o_color = l_color;
+}
+

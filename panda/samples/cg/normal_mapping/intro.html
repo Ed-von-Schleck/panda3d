@@ -1,0 +1,71 @@
+<html>
+<head>
+<title>Panda3D Tutorial - Actors</title>
+<style type="text/css">
+body {
+	font-family:  Verdana, Arial, Helvetica, sans-serif;
+   	font-size: 11px;
+	background-image: url("w_images/bg.gif");
+	background-repeat: repeat;
+}
+
+a {
+	color: #808080;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #000;
+	text-decoration: underline;
+}
+
+.title {
+	font-size: 18px;
+	font-weight: bold;
+	text-decoration: underline;
+	color: #000;
+}
+
+.text {
+	font-size: 12px;
+	color: #000;
+}
+
+.code {
+	font-size: 12px;
+	color: FF0000;
+}
+
+.screenshot
+{
+float: none;
+margin: 0 0 10px 10px;
+border: 1px solid #000;
+}
+
+</style>
+</head>
+
+<body>
+<span class="title">Normal Mapping Tutorial</span>
+<br>
+<br>
+<span class="text">Normal Mapping is a technique to make textured surfaces appear more "lifelike" by having them respond to changing lights and viewing angles.  As the light moves around, it reflects off of simulated "bumps" on the surface (the bumps are not real, the polygons are flat, but they look real because of how they reflect the light). 
+<br>
+<br>
+This demo requires that your video card support full pixel shaders.  If not, the scene will look like any other scene.
+<br>
+<br>
+Normal mapping uses a vertex shader and a pixel shader that are both mathematically quite complex.  It is beyond the scope of this tutorial to explain the mathematics behind normal mapping.  We strongly suggest you go read an explanation elsewhere, and return to this tutorial only when you understand what a "tangent vector," a "binormal vector," and a "normal map" are in principle.
+<br>
+<br>
+The model was created in the usual way, but when using maya2egg, it was necessary to provide the command line option "-tbnall".  This generates the tangents and binormals.  If you look inside the egg file, you can see the tangents and the binormals. The normal maps were created by generating black-and-white elevation maps, and then running them through Nvidia's "photoshop normal map filter", which is available on developer.nvidia.com.
+<br>
+<br>
+The image below shows the tutorial in action.
+</span>
+<br>
+<br>
+<img class="screenshot" src="screenshot.jpg">
+</body>
+</html>

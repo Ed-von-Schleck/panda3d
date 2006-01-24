@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>Panda3D Tutorial - Glow Filter</title>
+<style type="text/css">
+body {
+	font-family:  Verdana, Arial, Helvetica, sans-serif;
+   	font-size: 11px;
+	background-image: url("w_images/bg.gif");
+	background-repeat: repeat;
+}
+
+a {
+	color: #808080;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #000;
+	text-decoration: underline;
+}
+
+.title {
+	font-size: 18px;
+	font-weight: bold;
+	text-decoration: underline;
+	color: #000;
+}
+
+.text {
+	font-size: 12px;
+	color: #000;
+}
+
+.code {
+	font-size: 12px;
+	color: FF0000;
+}
+
+.screenshot
+{
+float: none;
+margin: 0 0 10px 10px;
+border: 1px solid #000;
+}
+
+</style>
+</head>
+
+<body>
+<span class="title">Glow Filter Tutorial</span>
+<br>
+<br>
+<span class="text">This tutorial shows how to use Cg shaders to implement a "glow" postprocessing filter.  The demo will only work on video cards that support shaders.<br>
+<br>
+<br>
+If you examine the texture for this model in photoshop, you'll see that it has an alpha channel.  I'm not using the alpha channel to represent transparency.   Instead, the alpha channel is a "glow map."  Where the alpha is 1, the model glows, in places where the alpha is zero, it does not glow.
+<br>
+<br>
+The scene is rendered to the main window in the normal way.  It is also rendered to an offscreen buffer using a special shader that pays attention to the glow map (in the alpha channel).  Wherever the glow map is 1, it renders the model's normal color.  Wherever the glow map is 0, it renders black.  This offscreen buffer is called the "glow buffer".
+<br>
+<br>
+The contents of the glow buffer are then rendered into another offscreen buffer, the "blur x" buffer, using a shader that does a one-dimensional horizontal blur.  The contents of the "blur x" buffer are then rendered into a third offscreen buffer, the "blur y" buffer, using a shader that does a one-dimensional vertical blur.  Taken together, the two one-dimensional blurs add up to a two-dimensional blur.  The result is that the glowing lines that were rendered into the glow buffer are smeared outward, forming little halos.
+<br>
+<br>
+In a final step, the blurred texture is applied to the main window using additive blending - ie, the halos are added to the scene.
+<br>
+<br>
+The image below shows the tutorial in action.
+</span>
+<br>
+<br>
+<img class="screenshot" src="screenshot.jpg">
+</body>
+</html>
