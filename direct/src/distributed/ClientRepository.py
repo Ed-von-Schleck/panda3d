@@ -8,7 +8,6 @@ import CRCache
 from direct.distributed.ConnectionRepository import ConnectionRepository
 from direct.showbase import PythonUtil
 import ParentMgr
-import RelatedObjectMgr
 import time
 from ClockDelta import *
 from PyDatagram import PyDatagram
@@ -49,10 +48,6 @@ class ClientRepository(ConnectionRepository):
         # create a parentMgr to handle distributed reparents
         # this used to be 'token2nodePath'
         self.parentMgr = ParentMgr.ParentMgr()
-
-        # The RelatedObjectMgr helps distributed objects find each
-        # other.
-        self.relatedObjectMgr = RelatedObjectMgr.RelatedObjectMgr(self)
 
         # Keep track of how recently we last sent a heartbeat message.
         # We want to keep these coming at heartbeatInterval seconds.
@@ -255,16 +250,7 @@ class ClientRepository(ConnectionRepository):
         dclass.stopGenerate()
 
     def generateWithRequiredFields(self, dclass, doId, di, parentId, zoneId):
-        if self.doId2do.has_key(doId):
-            # ...it is in our dictionary.
-            # Just update it.
-            distObj = self.doId2do[doId]
-            assert distObj.dclass == dclass
-            distObj.generate()
-            distObj.setLocation(parentId, zoneId)
-            distObj.updateRequiredFields(dclass, di)
-            # updateRequiredFields calls announceGenerate
-        elif self.cache.contains(doId):
+        if self.cache.contains(doId):
             # ...it is in the cache.
             # Pull it out of the cache:
             distObj = self.cache.retrieve(doId)
@@ -272,10 +258,6 @@ class ClientRepository(ConnectionRepository):
             # put it in the dictionary:
             self.doId2do[doId] = distObj
             # and update it.
-            distObj.generate()
-            distObj.setLocation(parentId, zoneId)
-            distObj.updateRequiredFields(dclass, di)
-            # updateRequiredFields calls announceGenerate
         else:
             # ...it is not in the dictionary or the cache.
             # Construct a new one
@@ -290,52 +272,16 @@ class ClientRepository(ConnectionRepository):
             self.doId2do[doId] = distObj
             # Update the required fields
             distObj.generateInit()  # Only called when constructed
-            distObj.generate()
-            distObj.setLocation(parentId, zoneId)
-            distObj.updateRequiredFields(dclass, di)
-            # updateRequiredFields calls announceGenerate
             print "New DO:%s, dclass:%s"%(doId, dclass.getName())
+
+        distObj.doGenerate(parentId, zoneId)
+        distObj.updateRequiredFields(dclass, di)
+        # updateRequiredFields calls announceGenerate
         return distObj
 
-    ## def generateGlobalObject(self, doId, dcname):
-        ## # Look up the dclass
-        ## dclass = self.dclassesByName[dcname]
-        ## # Create a new distributed object, and put it in the dictionary
-        ## #distObj = self.generateWithRequiredFields(dclass, doId, di)
-
-        ## # Construct a new one
-        ## classDef = dclass.getClassDef()
-        ## if classDef == None:
-             ## self.notify.error("Could not create an undefined %s object."%(
-                ## dclass.getName()))
-        ## distObj = classDef(self)
-        ## distObj.dclass = dclass
-        ## # Assign it an Id
-        ## distObj.doId = doId
-        ## # Put the new do in the dictionary
-        ## self.doId2do[doId] = distObj
-        ## # Update the required fields
-        ## distObj.generateInit()  # Only called when constructed
-        ## distObj.generate()
-        ## # TODO: ROGER: where should we get parentId and zoneId?
-        ## parentId = None
-        ## zoneId = None
-        ## distObj.setLocation(parentId, zoneId)
-        ## # updateRequiredFields calls announceGenerate
-        ## return  distObj
-
     def generateWithRequiredOtherFields(self, dclass, doId, di,
-                                        parentId = None, zoneId = None):
-        if self.doId2do.has_key(doId):
-            # ...it is in our dictionary.
-            # Just update it.
-            distObj = self.doId2do[doId]
-            assert distObj.dclass == dclass
-            distObj.generate()
-            distObj.setLocation(parentId, zoneId)
-            distObj.updateRequiredOtherFields(dclass, di)
-            # updateRequiredOtherFields calls announceGenerate
-        elif self.cache.contains(doId):
+                                        parentId, zoneId):
+        if self.cache.contains(doId):
             # ...it is in the cache.
             # Pull it out of the cache:
             distObj = self.cache.retrieve(doId)
@@ -343,10 +289,6 @@ class ClientRepository(ConnectionRepository):
             # put it in the dictionary:
             self.doId2do[doId] = distObj
             # and update it.
-            distObj.generate()
-            distObj.setLocation(parentId, zoneId)
-            distObj.updateRequiredOtherFields(dclass, di)
-            # updateRequiredOtherFields calls announceGenerate
         else:
             # ...it is not in the dictionary or the cache.
             # Construct a new one
@@ -361,22 +303,14 @@ class ClientRepository(ConnectionRepository):
             self.doId2do[doId] = distObj
             # Update the required fields
             distObj.generateInit()  # Only called when constructed
-            distObj.generate()
-            distObj.setLocation(parentId, zoneId)
-            distObj.updateRequiredOtherFields(dclass, di)
-            # updateRequiredOtherFields calls announceGenerate
+
+        distObj.doGenerate(parentId, zoneId)
+        distObj.updateRequiredOtherFields(dclass, di)
+        # updateRequiredOtherFields calls announceGenerate
         return distObj
 
     def generateWithRequiredOtherFieldsOwner(self, dclass, doId, di):
-        if self.doId2ownerView.has_key(doId):
-            # ...it is in our dictionary.
-            # Just update it.
-            distObj = self.doId2ownerView[doId]
-            assert distObj.dclass == dclass
-            distObj.generate()
-            distObj.updateRequiredOtherFields(dclass, di)
-            # updateRequiredOtherFields calls announceGenerate
-        elif self.cacheOwner.contains(doId):
+        if self.cacheOwner.contains(doId):
             # ...it is in the cache.
             # Pull it out of the cache:
             distObj = self.cacheOwner.retrieve(doId)
@@ -384,9 +318,6 @@ class ClientRepository(ConnectionRepository):
             # put it in the dictionary:
             self.doId2ownerView[doId] = distObj
             # and update it.
-            distObj.generate()
-            distObj.updateRequiredOtherFields(dclass, di)
-            # updateRequiredOtherFields calls announceGenerate
         else:
             # ...it is not in the dictionary or the cache.
             # Construct a new one
@@ -401,9 +332,10 @@ class ClientRepository(ConnectionRepository):
             self.doId2ownerView[doId] = distObj
             # Update the required fields
             distObj.generateInit()  # Only called when constructed
-            distObj.generate()
-            distObj.updateRequiredOtherFields(dclass, di)
-            # updateRequiredOtherFields calls announceGenerate
+
+        distObj.generate()
+        distObj.updateRequiredOtherFields(dclass, di)
+        # updateRequiredOtherFields calls announceGenerate
         return distObj
 
 

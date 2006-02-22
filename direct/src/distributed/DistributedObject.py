@@ -183,6 +183,13 @@ class DistributedObject(DistributedObjectBase):
             #self.cr.deleteObjectLocation(self.doId, self.parentId, self.zoneId)
             self.setLocation(None, None)
             # TODO: disable my children
+            # TODO: this gets called multiple times via deleteOrDelay
+            if hasattr(self, '_childInterests'):
+                for handle in list(self._childInterests):
+                    self.closeChildInterest(handle)
+                del self._childInterests
+            else:
+                self.notify.warning('no _childInterests set in disable()')
 
     def isDisabled(self):
         """
@@ -219,6 +226,7 @@ class DistributedObject(DistributedObjectBase):
         self.activeState = ESGenerating
         # this has already been set at this point
         #self.cr.storeObjectLocation(self.doId, self.parentId, self.zoneId)
+        self._childInterests = set()
 
     def generateInit(self):
         """
@@ -367,8 +375,31 @@ class DistributedObject(DistributedObjectBase):
         else:
             assert self.notify.debug('doneBarrier(%s) ignored; no active barrier.' % (name))
 
+    def getOwningInterest(self):
+        # this is currently a Toontown-only hack, Roger doesn't send us this
+        # information
+        return self.getRepository().old_setzone_interest_handle
+
+    def openChildInterest(self, zoneIdList=None, event=None):
+        if zoneIdList is None:
+            zoneIdList = self.getRepository().DefChildZone
+        handle = self.getRepository().addInterest(
+            self.doId, zoneIdList,
+            '%s(%s)-openChildInterest(%s)' % (self.__class__.__name__,
+                                              self.doId, zoneIdList),
+            event=event,
+            parentInterest=self.getOwningInterest())
+        self._childInterests.add(handle)
+        return handle
+    def closeChildInterest(self, handle, event=None):
+        assert handle in self._childInterests
+        self._childInterests.remove(handle)
+        self.getRepository().removeInterest(handle, event)
+
     def addInterest(self, zoneId, note="", event=None):
-        self.cr.addInterest(self.getDoId(), zoneId, note, event)
+        self.cr.addInterest(self.getDoId(), zoneId, note,
+                            event=event,
+                            parentInterest=self.getOwningInterest())
 
     def b_setLocation(self, parentId, zoneId):
         self.d_setLocation(parentId, zoneId)

@@ -397,6 +397,11 @@ class FSM(DirectObject.DirectObject):
             assert self.notify.debug("%s continued queued request." % (self.name))
             request()
 
+        self._setStateCompleted()
+
+    def _postSetState(self):
+        pass
+
     def __callEnterFunc(self, name, *args):
         # Calls the appropriate enter function when transitioning into
         # a new state, if it exists.

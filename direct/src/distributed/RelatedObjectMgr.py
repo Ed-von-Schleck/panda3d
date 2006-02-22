@@ -28,9 +28,10 @@ class RelatedObjectMgr(DirectObject.DirectObject):
 
     doLaterSequence = 1
     
-    def __init__(self, cr):
+    def __init__(self, cr, ownerView=False):
         self.cr = cr
         self.pendingObjects = {}
+        self.doTable = self.cr.getDoTable(ownerView)
 
     def destroy(self):
         self.abortAllRequests()
@@ -244,7 +245,7 @@ class RelatedObjectMgr(DirectObject.DirectObject):
 
         for doId in doIdList:
             if doId:
-                object = self.cr.doId2do.get(doId)
+                object = self.doTable.get(doId)
                 objects.append(object)
                 if object == None:
                     doIdsPending.append(doId)

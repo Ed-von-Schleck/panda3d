@@ -31,6 +31,52 @@ class DistributedObjectBase(DirectObject):
                     self.doId, self.parentId, self.zoneId),
             except Exception, e: print "%serror printing status"%(spaces,), e
 
+    def doGenerate(self, parentId, zoneId):
+        # package generate() call with setLocation()
+        # set the location up but don't call the handler yet. The effect is
+        # that objects know their location in generate() and can reference their
+        # parent, but setLocation() doesn't get called until after generate()
+        self.cr.storeObjectLocation(self.doId, parentId, zoneId)
+        self.generate()
+        # now call the handler
+        self.setLocation(parentId, zoneId)
+
+    def getRepository(self):
+        return self.cr
+
+    def getDoTable(self):
+        return self.getRepository().doId2do
+
+    def getRelatedObjectMgr(self):
+        return self.getRepository().relatedObjectMgr
+
+    def _addToDoTables(self):
+        self.getRepository().addDOToTables(self)
+
+    def getObject(self, doIds, callback):
+        # calls callback when all objects have been found; may be called
+        # immediately or at some point in the future
+        # always returns None
+        return self.getRepository().getObject(doIds, callback)
+
+    def getOwnerView(self, doIds, callback):
+        # calls callback when all ownerViews have been found; may be
+        # called immediately or at some point in the future
+        # always returns None
+        return self.getRepository().getOwnerView(doIds, callback)
+
+    def getParentObject(self):
+        # immediately returns parent object
+        return self.getObjectNow(self.parentId)
+
+    def getObjectNow(self, doId):
+        # immediately returns DO or None
+        return self.getRepository().getObjectNow(doId)
+
+    def getOwnerViewNow(self, doId):
+        # immediately returns OV or None
+        return self.getRepository().getOwnerViewNow(doId)
+
     def getLocation(self):
         try:
             if self.parentId == 0 and self.zoneId == 0:

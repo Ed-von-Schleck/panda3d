@@ -1,8 +1,15 @@
+from direct.distributed import RelatedObjectMgr
+from direct.showbase.PythonUtil import makeTuple
+import types
+
 #hack:
 BAD_DO_ID = BAD_ZONE_ID = 0 # 0xFFFFFFFF
 BAD_CHANNEL_ID = 0 # 0xFFFFFFFFFFFFFFFF
 
 class DoCollectionManager:
+    # default zone for children under an object
+    DefChildZone = 2
+
     def __init__(self):
         # Dict of {DistributedObject ids: DistributedObjects}
         self.doId2do = {}
@@ -16,18 +23,38 @@ class DoCollectionManager:
         #   parent DistributedObject id: 
         #     { zoneIds: [child DistributedObject ids] }}
         self.__doHierarchy = {}
+        # The RelatedObjectMgr helps distributed objects find each
+        # other.
+        self.relatedObjectMgr = RelatedObjectMgr.RelatedObjectMgr(self)
+        if self.hasOwnerView():
+            self.relatedObjectMgrOwner = RelatedObjectMgr.RelatedObjectMgr(
+                self, ownerView=True)
 
-    def getDo(self, doId):
+    def getObject(self, doIds, callback):
+        # calls callback when all objects have been found; may be called
+        # immediately or at some point in the future
+        def splitObjs(*objects):
+            callback()
+        self.relatedObjectMgr.requestObjects(makeTuple(doIds),
+                                             allCallback=splitObjs)
+        return None
+
+    def getOwnerView(self, doIds, callback):
+        # calls callback when all ownerViews have been found; may be called
+        # immediately or at some point in the future
+        assert self.hasOwnerView()
+        def splitObjs(*objects):
+            callback()
+        self.relatedObjectMgrOwner.requestObjects(makeTuple(doIds),
+                                                  allCallback=splitObjs)
+        return None
+
+    def getObjectNow(self, doId):
+        # immediately returns DO or None
         return self.doId2do.get(doId)
 
-    def callbackWithDo(self, doId, callback):
-        do = self.doId2do.get(doId)
-        if do is not None:
-            callback(do)
-        else:
-            relatedObjectMgr(doId, allCallback=callback)
-    
-    def getOwnerView(self, doId):
+    def getOwnerViewNow(self, doId):
+        # immediately returns OV or None
         assert self.hasOwnerView()
         return self.doId2ownerView.get(doId)
 
@@ -311,8 +338,9 @@ class DoCollectionManager:
 
     def isValidLocationTuple(self, location):
         return (location is not None
-            and location != (0xffffffff, 0xffffffff)
-            and location != (0, 0))
+                and location != (0xffffffff, 0xffffffff)
+                and location != (0, 0)
+                and location != (None, None))
 
     if __debug__:
         def isInDoTables(self, doId):

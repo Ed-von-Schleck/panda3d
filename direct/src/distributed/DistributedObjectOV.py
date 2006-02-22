@@ -64,6 +64,15 @@ class DistributedObjectOV(DistributedObjectBase):
                 print
             except Exception, e: print "%serror printing status"%(spaces,), e
 
+    def getDoTable(self):
+        return self.getRepository().doId2ownerView
+
+    def getRelatedObjectMgr(self):
+        return self.getRepository().relatedObjectMgrOwner
+
+    def _addToDoTables(self):
+        self.getRepository().addDOToTables(self, ownerView=ownerView)
+
     def deleteOrDelay(self):
         if self.delayDeleteCount > 0:
             self.deleteImminent = 1

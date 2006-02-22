@@ -355,7 +355,7 @@ class DistributedObjectAI(DistributedObjectBase):
         self.generate()
         self.announceGenerate()
 
-    def generateOtpObject(self, parentId, zoneId, optionalFields=[], doId=None):
+    def generateOtpObject(self, parentId, zoneId=None, optionalFields=[], doId=None):
         assert self.notify.debugStateCall(self)
         # have we already allocated a doId?
         if self.__preallocDoId:
@@ -363,6 +363,8 @@ class DistributedObjectAI(DistributedObjectBase):
             doId=self.__preallocDoId
             self.__preallocDoId = 0
 
+        if zoneId is None:
+            zoneId = self.air.DefChildZone
         # Assign it an id
         if doId is None:
             self.doId = self.air.allocateChannel()
