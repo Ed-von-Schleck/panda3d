@@ -1700,6 +1700,16 @@ def randUint32(rng=random.random):
     rng must return float in [0..1]"""
     return long(rng() * 0xFFFFFFFFL)
 
+class SerialNum:
+    """generates serial numbers"""
+    def __init__(self, start=None):
+        if start is None:
+            start = 0
+        self.__counter = start-1
+    def next(self):
+        self.__counter += 1
+        return self.__counter
+
 class Enum:
     """Pass in list of strings or string of comma-separated strings.
     Items are accessible as instance.item, and are assigned unique,
@@ -1830,3 +1840,19 @@ class Singleton(type):
 class SingletonError(ValueError):
     """ Used to indicate an inappropriate value for a Singleton."""
 
+def printListEnum(l):
+    # log each individual item with a number in front of it
+    digits = 0
+    n = len(l)
+    while n > 0:
+        digits += 1
+        n /= 10
+    format = '%0' + '%s' % digits + 'i:%s'
+    for i in range(len(l)):
+        print format % (i, l[i])
+
+import __builtin__
+__builtin__.Functor = Functor
+__builtin__.Stack = Stack
+__builtin__.Queue = Queue
+__builtin__.SerialNum = SerialNum
