@@ -70,7 +70,7 @@ OPTIONS = ParseOptions(sys.argv[1:])
 
 PANDA=None
 for dir in sys.path:
-    if (dir != "") and os.path.exists(os.path.join(dir,"direct")) and os.path.exists(os.path.join(dir,"pandac")) and os.path.exists(os.path.join(dir,"python")):
+    if (dir != "") and os.path.exists(os.path.join(dir,"direct")) and os.path.exists(os.path.join(dir,"pandac")):
         PANDA=os.path.abspath(dir)
 if (PANDA is None):
   sys.exit("Cannot locate the panda root directory in the python path (cannot locate directory containing direct and pandac).")
@@ -140,6 +140,11 @@ if (os.path.isfile(LICENSE)==0):
 
 if (os.path.isfile(BITMAP)==0):
   BITMAP=os.path.join(NSIS,"Contrib","Graphics","Wizard","nsis.bmp")
+
+if (os.path.isfile(ICON)==0):
+  PPICON="bin\\ppython.exe"
+else:
+  PPICON="game\\icon.ico"
 
 ##############################################################################
 #
@@ -247,6 +252,7 @@ CMD=CMD+'/DPANDA="'+PANDA+'" '
 CMD=CMD+'/DPSOURCE="'+PSOURCE+'" '
 CMD=CMD+'/DPPGAME="'+TMPDIR+'" '
 CMD=CMD+'/DPPMAIN="'+MAIN+'" '
+CMD=CMD+'/DPPICON="'+PPICON+'" '
 CMD=CMD+'"'+PSOURCE+'\\direct\\src\\directscripts\\packpanda.nsi"'
 
 print ""
