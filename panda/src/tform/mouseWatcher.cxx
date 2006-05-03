@@ -157,6 +157,12 @@ add_group(MouseWatcherGroup *group) {
     return false;
   }
 
+#ifndef NDEBUG
+  if (!_show_regions_render2d.is_empty()) {
+    group->show_regions(_show_regions_render2d);
+  }
+#endif  // NDEBUG
+
   // Not in the set, add it and return true
   _groups.push_back(pt);
   return true;
@@ -186,6 +192,12 @@ remove_group(MouseWatcherGroup *group) {
   if (has_region_in(both, _preferred_button_down_region)) {
     _preferred_button_down_region = (MouseWatcherRegion *)NULL;
   }
+
+#ifndef NDEBUG
+  if (!_show_regions_render2d.is_empty()) {
+    group->do_hide_regions();
+  }
+#endif  // NDEBUG
 
   // See if the group is in the set/vector
   PT(MouseWatcherGroup) pt = group;
@@ -221,8 +233,16 @@ replace_group(MouseWatcherGroup *old_group, MouseWatcherGroup *new_group) {
   }
 
   MutexHolder holder(_lock);
+
   MutexHolder holder2(old_group->_lock);
   MutexHolder holder3(new_group->_lock);
+
+#ifndef NDEBUG
+  if (!_show_regions_render2d.is_empty()) {
+    old_group->do_hide_regions();
+    new_group->do_show_regions(_show_regions_render2d);
+  }
+#endif  // NDEBUG
 
   // Figure out the list of regions that change
   Regions remove, add, keep;
@@ -259,6 +279,12 @@ replace_group(MouseWatcherGroup *old_group, MouseWatcherGroup *new_group) {
   if (gi == _groups.end()) {
     _groups.push_back(new_group);
   }
+
+#ifndef NDEBUG
+  if (!_show_regions_render2d.is_empty()) {
+    new_group->do_update_regions();
+  }
+#endif  // NDEBUG
     
   // Remove the old group, if it is already there.
   pt = old_group;
@@ -271,7 +297,6 @@ replace_group(MouseWatcherGroup *old_group, MouseWatcherGroup *new_group) {
 
   // Did not find the group to erase
   return false;
-
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -563,6 +588,46 @@ clear_current_regions() {
     }
   }
 }
+
+#ifndef NDEBUG
+////////////////////////////////////////////////////////////////////
+//     Function: MouseWatcher::do_show_regions
+//       Access: Protected, Virtual
+//  Description: The protected implementation of show_regions().  This
+//               assumes the lock is already held.
+////////////////////////////////////////////////////////////////////
+void MouseWatcher::
+do_show_regions(const NodePath &render2d) {
+  MouseWatcherGroup::do_show_regions(render2d);
+  _show_regions_render2d = render2d;
+
+  Groups::const_iterator gi;
+  for (gi = _groups.begin(); gi != _groups.end(); ++gi) {
+    MouseWatcherGroup *group = (*gi);
+    group->show_regions(render2d);
+  }
+}
+#endif  // NDEBUG
+
+#ifndef NDEBUG
+////////////////////////////////////////////////////////////////////
+//     Function: MouseWatcher::do_hide_regions
+//       Access: Protected, Virtual
+//  Description: The protected implementation of hide_regions().  This
+//               assumes the lock is already held.
+////////////////////////////////////////////////////////////////////
+void MouseWatcher::
+do_hide_regions() {
+  MouseWatcherGroup::do_hide_regions();
+  _show_regions_render2d = NodePath();
+
+  Groups::const_iterator gi;
+  for (gi = _groups.begin(); gi != _groups.end(); ++gi) {
+    MouseWatcherGroup *group = (*gi);
+    group->hide_regions();
+  }
+}
+#endif  // NDEBUG
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MouseWatcher::intersect_regions
