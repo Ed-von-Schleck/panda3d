@@ -9,7 +9,8 @@ class DirectObject:
         pass
 
     def __del__(self):
-        self.ignoreAll()
+        if messenger:
+            self.ignoreAll()
         # This next line is useful for debugging leaks
         #print "Destructing: ", self.__class__.__name__
 
