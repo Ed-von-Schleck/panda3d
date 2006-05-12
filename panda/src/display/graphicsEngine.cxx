@@ -271,7 +271,7 @@ make_output(GraphicsPipe *pipe,
             int x_size, int y_size, int flags,
             GraphicsStateGuardian *gsg,
             GraphicsOutput *host) {
-  
+
   //  The code here is tricky because the gsg that is passed in
   //  might be in the uninitialized state.  As a result,
   //  pipe::make_output may not be able to tell which DirectX
@@ -351,7 +351,7 @@ make_output(GraphicsPipe *pipe,
       (prop.get_aux_float() == 0)) {
     can_use_parasite = true;
   }
-  
+
   // If parasite buffers are preferred, then try a parasite first.
   
   if ((prefer_parasite_buffer) &&
@@ -404,7 +404,7 @@ make_output(GraphicsPipe *pipe,
   }
 
   // Could not create a window to the user's specs.
-  
+
   return NULL;
 }
 
@@ -1003,7 +1003,10 @@ cull_and_draw_together(GraphicsOutput *win, DisplayRegion *dr) {
   gsg->prepare_display_region(dr, dr->get_stereo_channel());
 
   PT(SceneSetup) scene_setup = setup_scene(gsg, dr);
-  if (!gsg->set_scene(scene_setup)) {
+  if (scene_setup == (SceneSetup *)NULL) {
+    // Never mind.
+
+  } else if (!gsg->set_scene(scene_setup)) {
     // The scene or lens is inappropriate somehow.
     display_cat.error()
       << gsg->get_type() << " cannot render scene with specified lens.\n";
@@ -1100,13 +1103,12 @@ cull_to_bins(GraphicsOutput *win, DisplayRegion *dr) {
     BinCullHandler cull_handler(cull_result);
     do_cull(&cull_handler, scene_setup, gsg);
 
-    {
-      PStatTimer timer(_cull_sort_pcollector);
-      cull_result->finish_cull(scene_setup);
-      // Save the results for next frame.
-      dr->set_cull_result(cull_result, scene_setup);
-    }
+    PStatTimer timer(_cull_sort_pcollector);
+    cull_result->finish_cull(scene_setup);
   }
+  
+  // Save the results for next frame.
+  dr->set_cull_result(cull_result, scene_setup, current_thread);
 }
 
 ////////////////////////////////////////////////////////////////////
