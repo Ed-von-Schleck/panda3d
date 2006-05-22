@@ -1108,7 +1108,7 @@ cull_to_bins(GraphicsOutput *win, DisplayRegion *dr) {
   }
   
   // Save the results for next frame.
-  dr->set_cull_result(cull_result, scene_setup, current_thread);
+  dr->set_cull_result(cull_result, scene_setup);
 }
 
 ////////////////////////////////////////////////////////////////////
