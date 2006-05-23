@@ -1844,6 +1844,7 @@ if (sys.platform == "win32"):
         CopyFile('built/bin/python24.dll', 'thirdparty/win-python/python24.dll')
         CopyTree('built/bin/lib',  'thirdparty/win-python/lib')
         CopyTree('built/bin/dlls', 'thirdparty/win-python/dlls')
+        CopyTree('built/bin/tcl',  'thirdparty/win-python/tcl')
         ConditionalWriteFile('built/bin/panda.pth',"..\n")
 
 ########################################################################
