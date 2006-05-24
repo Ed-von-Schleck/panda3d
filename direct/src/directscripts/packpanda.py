@@ -142,7 +142,7 @@ if (os.path.isfile(BITMAP)==0):
   BITMAP=os.path.join(NSIS,"Contrib","Graphics","Wizard","nsis.bmp")
 
 if (os.path.isfile(ICON)==0):
-  PPICON="bin\\ppython.exe"
+  PPICON="bin\\pview.exe"
 else:
   PPICON="game\\icon.ico"
 
