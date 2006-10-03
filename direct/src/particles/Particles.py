@@ -1,5 +1,5 @@
 from pandac.PandaModules import *
-from ParticleManagerGlobal import *
+from direct.particles.ParticleManagerGlobal import *
 from direct.showbase.PhysicsManagerGlobal import *
 
 from pandac.PandaModules import ParticleSystem
@@ -396,7 +396,7 @@ class Particles(ParticleSystem):
                 file.write(targ + '.renderer.setAnimateFramesEnable(True)\n')
                 rate = self.renderer.getAnimateFramesRate()
                 if(rate):
-                    file.write(targ + '.renderer.setAnimationFrameRate(%.3f)\n'%rate)
+                    file.write(targ + '.renderer.setAnimateFramesRate(%.3f)\n'%rate)
             animCount = self.renderer.getNumAnims()
             for x in range(animCount):
                 anim = self.renderer.getAnim(x)
@@ -546,3 +546,39 @@ class Particles(ParticleSystem):
             file.write('# Tangent Ring parameters\n')
             file.write(targ + '.emitter.setRadius(%.4f)\n' % self.emitter.getRadius())
             file.write(targ + '.emitter.setRadiusSpread(%.4f)\n' % self.emitter.getRadiusSpread())
+            
+    def getPoolSizeRanges(self):
+        litterRange = [max(1,self.getLitterSize()-self.getLitterSpread()),
+                       self.getLitterSize(),
+                       self.getLitterSize()+self.getLitterSpread()]
+        lifespanRange = [self.factory.getLifespanBase()-self.factory.getLifespanSpread(),
+                         self.factory.getLifespanBase(),
+                         self.factory.getLifespanBase()+self.factory.getLifespanSpread()]
+        birthRateRange = [self.getBirthRate()] * 3
+
+        print 'Litter Ranges:    ',litterRange
+        print 'LifeSpan Ranges:  ',lifespanRange
+        print 'BirthRate Ranges: ',birthRateRange
+        
+        return dict(zip(('min','median','max'),[l*s/b for l,s,b in zip(litterRange,lifespanRange,birthRateRange)]))
+            
+
+    def accelerate(self,time,stepCount = 1,stepTime=0.0):
+        if time > 0.0:
+            if stepTime == 0.0:
+                stepTime = float(time)/stepCount
+                remainder = 0.0
+            else:
+                stepCount = int(float(time)/stepTime)
+                remainder = time-stepCount*stepTime
+                
+            for step in range(stepCount):
+                base.particleMgr.doParticles(stepTime,self,False)
+                base.physicsMgr.doPhysics(stepTime,self)
+                
+            if(remainder):
+                base.particleMgr.doParticles(remainder,self,False)
+                base.physicsMgr.doPhysics(remainder,self)
+                
+            self.render()
+        

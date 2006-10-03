@@ -128,6 +128,30 @@ do_particles(float dt) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//    Function : do_particles
+//      Access : public
+// Description : does an update and an optional render for a specific
+//               ps.  Since rendering is the expensive operation, multiple
+//               updates could be applied before calling the final render.
+////////////////////////////////////////////////////////////////////
+void ParticleSystemManager::
+do_particles(float dt, ParticleSystem *ps, bool do_render) {
+  if (ps->get_active_system_flag() == true) {
+    ps->update(dt);
+    // Handle age:
+    if (ps->get_system_grows_older_flag() == true) {
+      float age = ps->get_system_age() + dt;
+      ps->set_system_age(age);
+    }
+    
+    // handle render
+    if (do_render) {
+      ps->render();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function : output
 //       Access : Public
 //  Description : Write a string representation of this instance to
