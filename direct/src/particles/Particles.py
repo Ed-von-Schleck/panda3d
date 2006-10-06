@@ -546,3 +546,21 @@ class Particles(ParticleSystem):
             file.write('# Tangent Ring parameters\n')
             file.write(targ + '.emitter.setRadius(%.4f)\n' % self.emitter.getRadius())
             file.write(targ + '.emitter.setRadiusSpread(%.4f)\n' % self.emitter.getRadiusSpread())
+
+    def accelerate(self,time,stepCount = 1,stepTime=0.0):
+        if stepTime == 0.0:
+            stepTime = float(time)/stepCount
+            remainder = 0.0
+        else:
+            stepCount = int(float(time)/stepTime)
+            remainder = time-stepCount*stepTime
+
+        for step in range(stepCount):
+            self.update(stepTime)
+            base.physicsMgr.doPhysics(stepTime,self)
+
+        if(remainder):
+            self.update(remainder)
+            base.physicsMgr.doPhysics(remainder,self)
+
+        
