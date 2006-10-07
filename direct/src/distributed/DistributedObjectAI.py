@@ -41,6 +41,8 @@ class DistributedObjectAI(DistributedObjectBase):
 
             self.__generated = False
 
+            self._zoneData = None
+
     # Uncomment if you want to debug DO leaks
     #def __del__(self):
     #    """
