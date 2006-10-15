@@ -6,7 +6,6 @@ from pandac.PandaModules import *
 from direct.showbase.DirectObject import DirectObject
 from pandac.PandaModules import LODNode
 import types
-import copy as copy_module
 
 class Actor(DirectObject, NodePath):
     """
@@ -23,7 +22,8 @@ class Actor(DirectObject, NodePath):
                                        LoaderOptions.LFReportErrors |
                                        LoaderOptions.LFConvertAnim)
 
-    def __init__(self, models=None, anims=None, other=None, copy=1):
+    def __init__(self, models=None, anims=None, other=None, copy=1,
+                 lodNode = None):
         """__init__(self, string | string:string{}, string:string{} |
         string:(string:string{}){}, Actor=None)
         Actor constructor: can be used to create single or multipart
@@ -98,6 +98,8 @@ class Actor(DirectObject, NodePath):
         self.__animControlDict = {}
         self.__controlJoints = {}
 
+        self.__subpartsComplete = False
+
         self.__LODNode = None
         self.switches = None
 
@@ -128,7 +130,7 @@ class Actor(DirectObject, NodePath):
                     # if this is a dictionary of dictionaries
                     if (type(models[models.keys()[0]]) == type({})):
                         # then it must be a multipart actor w/LOD
-                        self.setLODNode()
+                        self.setLODNode(node = lodNode)
                         # preserve numerical order for lod's
                         # this will make it easier to set ranges
                         sortedKeys = models.keys()
@@ -149,7 +151,7 @@ class Actor(DirectObject, NodePath):
                             self.loadModel(models[partName], partName, copy = copy)
                     else:
                         # it is a single part actor w/LOD
-                        self.setLODNode()
+                        self.setLODNode(node = lodNode)
                         # preserve order of LOD's
                         sortedKeys = models.keys()
                         sortedKeys.sort()
@@ -235,7 +237,8 @@ class Actor(DirectObject, NodePath):
 
             # copy the part dictionary from other
             self.__copyPartBundles(other)
-            self.__subpartDict = copy_module.deepcopy(other.__subpartDict)
+            self.__copySubpartDict(other)
+            self.__subpartsComplete = other.__subpartsComplete
 
             # copy the anim dictionary from other
             self.__copyAnimControls(other)
@@ -458,10 +461,9 @@ class Actor(DirectObject, NodePath):
         If one is not supplied as an argument, make one
         """
         if (node == None):
-            lod = LODNode("lod")
-            self.__LODNode = self.__geomNode.attachNewNode(lod)
-        else:
-            self.__LODNode = self.__geomNode.attachNewNode(node)
+            node = LODNode("lod")
+
+        self.__LODNode = self.__geomNode.attachNewNode(node)
         self.__hasLOD = 1
         self.switches = {}
 
@@ -649,9 +651,9 @@ class Actor(DirectObject, NodePath):
             return None
         return controls[0].getNumFrames()
 
-    def getFrameTime(self, anim, frame):
-        numFrames = self.getNumFrames(anim)
-        animTime = self.getDuration(anim)
+    def getFrameTime(self, anim, frame, partName=None):
+        numFrames = self.getNumFrames(anim,partName)
+        animTime = self.getDuration(anim,partName)
         frameTime = animTime * float(frame) / numFrames
         return frameTime
 
@@ -1050,10 +1052,10 @@ class Actor(DirectObject, NodePath):
             numGeoms = thisGeomNode.node().getNumGeoms()
             for geomNum in range(0, numGeoms):
                 thisGeom = thisGeomNode.node().getGeom(geomNum)
-                thisGeom.markBoundStale()
+                thisGeom.markBoundsStale()
                 assert Actor.notify.debug("fixing bounds for node %s, geom %s" % \
                                           (nodeNum, geomNum))
-            thisGeomNode.node().markBoundStale()
+            thisGeomNode.node().markInternalBoundsStale()
 
     def showAllBounds(self):
         """
@@ -1147,6 +1149,67 @@ class Actor(DirectObject, NodePath):
         for control in self.getAnimControls(animName, partName, lodName):
             control.pose(frame)
 
+    def setBlend(self, animBlend = None, frameBlend = None,
+                 blendType = None, partName = None):
+        """
+        Changes the way the Actor handles blending of multiple
+        different animations, and/or interpolation between consecutive
+        frames.
+
+        The animBlend and frameBlend parameters are boolean flags.
+        You may set either or both to True or False.  If you do not
+        specify them, they do not change from the previous value.
+        
+        When animBlend is True, multiple different animations may
+        simultaneously be playing on the Actor.  This means you may
+        call play(), loop(), or pose() on multiple animations and have
+        all of them contribute to the final pose each frame.
+
+        In this mode (that is, when animBlend is True), starting a
+        particular animation with play(), loop(), or pose() does not
+        implicitly make the animation visible; you must also call
+        setControlEffect() for each animation you wish to use to
+        indicate how much each animation contributes to the final
+        pose.
+
+        The frameBlend flag is unrelated to playing multiple
+        animations.  It controls whether the Actor smoothly
+        interpolates between consecutive frames of its animation (when
+        the flag is True) or holds each frame until the next one is
+        ready (when the flag is False).  The default value of
+        frameBlend is controlled by the interpolate-frames Config.prc
+        variable.
+
+        In either case, you may also specify blendType, which controls
+        the precise algorithm used to blend two or more different
+        matrix values into a final result.  Different skeleton
+        hierarchies may benefit from different algorithms.  The
+        default blendType is controlled by the anim-blend-type
+        Config.prc variable.
+        """
+        bundles = []
+        
+        for lodName, bundleDict in self.__partBundleDict.items():
+            if partName == None:
+                for partBundle in bundleDict.values():
+                    bundles.append(partBundle.node().getBundle())
+
+            else:
+                truePartName = self.__subpartDict.get(partName, [partName])[0]
+                partBundle = bundleDict.get(truePartName)
+                if partBundle != None:
+                    bundles.append(partBundle.node().getBundle())
+                else:
+                    Actor.notify.warning("Couldn't find part: %s" % (partName))
+
+        for bundle in bundles:
+            if blendType != None:
+                bundle.setBlendType(blendType)
+            if animBlend != None:
+                bundle.setAnimBlendFlag(animBlend)
+            if frameBlend != None:
+                bundle.setFrameBlendFlag(frameBlend)
+
     def enableBlend(self, blendType = PartBundle.BTNormalizedLinear, partName = None):
         """
         Enables blending of multiple animations simultaneously.
@@ -1159,25 +1222,19 @@ class Actor(DirectObject, NodePath):
         animation visible; you must also call setControlEffect() for
         each animation you wish to use to indicate how much each
         animation contributes to the final pose.
+
+        This method is deprecated.  You should use setBlend() instead.
         """
-        for lodName, bundleDict in self.__partBundleDict.items():
-            if partName == None:
-                for partBundle in bundleDict.values():
-                    partBundle.node().getBundle().setBlendType(blendType)
-            else:
-                truePartName = self.__subpartDict.get(partName, [partName])[0]
-                partBundle = bundleDict.get(truePartName)
-                if partBundle != None:
-                    partBundle.node().getBundle().setBlendType(blendType)
-                else:
-                    Actor.notify.warning("Couldn't find part: %s" % (partName))
+        self.setBlend(animBlend = True, blendType = blendType, partName = partName)
 
     def disableBlend(self, partName = None):
         """
         Restores normal one-animation-at-a-time operation after a
         previous call to enableBlend().
+
+        This method is deprecated.  You should use setBlend() instead.
         """
-        self.enableBlend(PartBundle.BTSingle, partName)
+        self.setBlend(animBlend = False, partName = partName)
 
     def setControlEffect(self, animName, effect,
                          partName = None, lodName = None):
@@ -1185,7 +1242,7 @@ class Actor(DirectObject, NodePath):
         Sets the amount by which the named animation contributes to
         the overall pose.  This controls blending of multiple
         animations; it only makes sense to call this after a previous
-        call to enableBlend().
+        call to setBlend(animBlend = True).
         """        
         for control in self.getAnimControls(animName, partName, lodName):
             control.getPart().setControlEffect(control, effect)
@@ -1225,9 +1282,17 @@ class Actor(DirectObject, NodePath):
         animation for the given part and the given lod.  If animName
         is omitted, the currently-playing animation (or all
         currently-playing animations) is returned.  If partName is
-        omitted, all parts are returned.  If lodName is omitted, all
-        LOD's are returned.
+        omitted, all parts are returned (or possibly the one overall
+        Actor part, according to the subpartsComplete flag).  If
+        lodName is omitted, all LOD's are returned.
         """
+
+        if partName == None and self.__subpartsComplete:
+            # If we have the __subpartsComplete flag, and no partName
+            # is specified, it really means to play the animation on
+            # all subparts, not on the overall Actor.
+            partName = self.__subpartDict.keys()
+            
         controls = []
         # build list of lodNames and corresponding animControlDicts
         # requested.
@@ -1286,15 +1351,16 @@ class Actor(DirectObject, NodePath):
                 # get the named animation only.
                 for thisPart, animDict in animDictItems:
                     anim = animDict.get(animName)
-                    if anim == None:
-                        # Maybe it's a subpart that hasn't been bound yet.
-                        subpartDef = self.__subpartDict.get(partName)
-                        if subpartDef:
-                            truePartName = subpartDef[0]
-                            anim = partDict[truePartName].get(animName)
-                            if anim:
-                                anim = [anim[0], None]
-                                animDict[animName] = anim
+                    if anim == None and partName != None:
+                        for pName in partNameList:
+                            # Maybe it's a subpart that hasn't been bound yet.
+                            subpartDef = self.__subpartDict.get(pName)
+                            if subpartDef:
+                                truePartName = subpartDef[0]
+                                anim = partDict[truePartName].get(animName)
+                                if anim:
+                                    anim = [anim[0], None]
+                                    animDict[animName] = anim
 
                     if anim == None:
                         # anim was not present
@@ -1460,6 +1526,35 @@ class Actor(DirectObject, NodePath):
             subset.addExcludeJoint(GlobPattern(name))
 
         self.__subpartDict[partName] = (parent, subset)
+
+    def setSubpartsComplete(self, flag):
+
+        """Sets the subpartsComplete flag.  This affects the behavior
+        of play(), loop(), stop(), etc., when no explicit parts are
+        specified.
+
+        When this flag is False (the default), play() with no parts
+        means to play the animation on the overall Actor, which is a
+        separate part that overlaps each of the subparts.  If you then
+        play a different animation on a subpart, it may stop the
+        overall animation (in non-blend mode) or blend with it (in
+        blend mode).
+
+        When this flag is True, play() with no parts means to play the
+        animation on each of the subparts--instead of on the overall
+        Actor.  In this case, you may then play a different animation
+        on a subpart, which replaces only that subpart's animation.
+
+        It makes sense to set this True when the union of all of your
+        subparts completely defines the entire Actor.
+        """
+        
+        self.__subpartsComplete = flag
+
+    def getSubpartsComplete(self):
+        """See setSubpartsComplete()."""
+        
+        return self.__subpartsComplete
 
     def loadAnims(self, anims, partName="modelRoot", lodName="lodRoot"):
         """loadAnims(self, string:string{}, string='modelRoot',
@@ -1650,6 +1745,19 @@ class Actor(DirectObject, NodePath):
                     Actor.notify.error("lod: %s has no matching part: %s" %
                                        (lodName, partName))
 
+    def __copySubpartDict(self, other):
+        """Copies the subpartDict from another as this instance's own.
+        This makes a deep copy of the map and all of the names and
+        PartSubset objects within it.  We can't use copy.deepcopy()
+        because of the included C++ PartSubset objects."""
+
+        self.__subpartDict = {}
+        for partName, subpartDef in other.__subpartDict.items():
+            subpartDefCopy = subpartDef
+            if subpartDef:
+                truePartName, subset = subpartDef
+                subpartDefCopy = (truePartName, PartSubset(subset))
+            self.__subpartDict[partName] = subpartDef
 
     def __copyAnimControls(self, other):
         """__copyAnimControls(self, Actor)

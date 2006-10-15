@@ -27,14 +27,12 @@
 #include "config_express.h"
 #include "virtualFileSystem.h"
 #include "nullAudioSound.h"
-#include "mutexHolder.h"
 
 #include <algorithm>
 
 
 TypeHandle MilesAudioManager::_type_handle;
 
-Mutex *MilesAudioManager::_static_lock;
 int MilesAudioManager::_active_managers = 0;
 bool MilesAudioManager::_miles_active = false;
 HDLSFILEID MilesAudioManager::_dls_field = NULL;
@@ -61,23 +59,10 @@ MilesAudioManager::
 MilesAudioManager() {
   audio_debug("MilesAudioManager::MilesAudioManager(), this = " 
               << (void *)this);
-  if (_static_lock == NULL) {
-    Mutex *new_lock = new Mutex;
-    void *result = AtomicAdjust::compare_and_exchange_ptr((void * TVOLATILE &)_static_lock, (void *)NULL, (void *)new_lock);
-    if (result != NULL) {
-      // Someone else must have assigned the mutex first.  OK.
-      nassertv(_static_lock != new_lock);
-      delete new_lock;
-    }
-    nassertv((Mutex * TVOLATILE &)_static_lock != NULL);
-  }
-
-  MutexHolder st_holder(*(Mutex * TVOLATILE &)_static_lock);
   if (_managers == (Managers *)NULL) {
     _managers = new Managers;
   }
   _managers->insert(this);
-
   audio_debug("  audio_active="<<audio_active);
   audio_debug("  audio_volume="<<audio_volume);
   _cleanup_required = true;
@@ -91,16 +76,22 @@ MilesAudioManager() {
   if (_active_managers==0 || !_miles_active) {
     S32 use_digital=(audio_play_wave || audio_play_mp3)?1:0;
     S32 use_MIDI=(audio_play_midi)?1:0;
+
+#ifdef IS_OSX
+    audio_software_midi=true;
+#endif
+
     if (audio_play_midi && audio_software_midi) {
       use_MIDI=AIL_QUICK_DLS_ONLY;
     }
+
     audio_debug("  use_digital="<<use_digital);
     audio_debug("  use_MIDI="<<use_MIDI);
     audio_debug("  audio_output_rate="<<audio_output_rate);
     audio_debug("  audio_output_bits="<<audio_output_bits);
     audio_debug("  audio_output_channels="<<audio_output_channels);
     audio_debug("  audio_software_midi="<<audio_software_midi);
-    #ifndef NDEBUG //[
+    #if !defined(NDEBUG) && defined(AIL_MSS_version) //[
       char version[8];
       AIL_MSS_version(version, 8);
       audio_debug("  Mss32.dll Version: "<<version);
@@ -124,7 +115,6 @@ MilesAudioManager() {
           }
           
           audio_debug("  dls_file=\""<<dls_file<<"\"");
-          
           // note: if AIL_DLS_load_file is not done, midi fails to play on some machines.
           nassertv(_dls_field == NULL);
           audio_debug("  AIL_DLS_load_file(dls, " << dls_file << ", 0)");
@@ -145,7 +135,7 @@ MilesAudioManager() {
         audio_info("  using Miles hardware midi");
       }
     } else {
-      audio_debug("  AIL_quick_startup failed: "<<AIL_last_error());
+      audio_error("Unable to init MilesAudioManager.  AIL_quick_startup failed: "<<AIL_last_error());
       _is_valid = false;
     }
   }
@@ -179,21 +169,14 @@ MilesAudioManager() {
 ////////////////////////////////////////////////////////////////////
 MilesAudioManager::
 ~MilesAudioManager() {
-  {
-    MutexHolder st_holder(*_static_lock);
-    audio_debug("MilesAudioManager::~MilesAudioManager(), this = " 
-                << (void *)this);
-    nassertv(_managers != (Managers *)NULL);
-    Managers::iterator mi = _managers->find(this);
-    if (mi != _managers->end()) {
-      // The manager might already have been removed from the list, if
-      // the user has already called shutdown().
-      _managers->erase(mi);
-    }
-  }
+  audio_debug("MilesAudioManager::~MilesAudioManager(), this = " 
+              << (void *)this);
+  nassertv(_managers != (Managers *)NULL);
+  Managers::iterator mi = _managers->find(this);
+  nassertv(mi != _managers->end());
+  _managers->erase(mi);
 
   cleanup();
-
   audio_debug("MilesAudioManager::~MilesAudioManager() finished");
 }
 
@@ -208,60 +191,27 @@ MilesAudioManager::
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 shutdown() {
-  Managers old_managers;
-  {
-    MutexHolder st_holder(*_static_lock);
-    
-    audio_debug("shutdown(), _miles_active = " << _miles_active);
-    if (_managers != (Managers *)NULL) {
-      old_managers.swap(*_managers);
+  audio_debug("shutdown(), _miles_active = " << _miles_active);
+  if (_managers != (Managers *)NULL) {
+    Managers::iterator mi;
+    for (mi = _managers->begin(); mi != _managers->end(); ++mi) {
+      (*mi)->cleanup();
     }
   }
 
-  // We insist on cleaning up our manager pointers, rather than
-  // relying on their destructors, since there might be outstanding
-  // pointers to these somewhere that would otherwise prevent them
-  // from being cleaned up and therefore prevent Miles from being shut
-  // down properly.  In order for this to work, we must write
-  // cleanup() so that it is safe to call it twice.
-  Managers::iterator mi;
-  for (mi = old_managers.begin(); mi != old_managers.end(); ++mi) {
-    (*mi)->cleanup();
-  }
-
-  // Another thread might conceivably have started up a new manager
-  // after we called shutdown(), which is technically legal and would
-  // incorrectly trigger the following assertion.  However, presumably
-  // shutdown() will only be called as the application is shutting
-  // down anyway, and there won't be any other threads still out there
-  // creating audio managers (and if there were, it would defeat the
-  // purpose of shutdown() anyway).
   nassertv(_active_managers == 0);
-
   audio_debug("shutdown() finished");
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MilesAudioManager::is_valid
-//       Access: Public
+//       Access:
 //  Description: This is mostly for debugging, but it it could be
 //               used to detect errors in a release build if you
 //               don't mind the cpu cost.
 ////////////////////////////////////////////////////////////////////
 bool MilesAudioManager::
 is_valid() {
-  MutexHolder holder(_lock);
-
-  return do_is_valid();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MilesAudioManager::do_is_valid
-//       Access: Private
-//  Description: Assumes the lock is already held.
-////////////////////////////////////////////////////////////////////
-bool MilesAudioManager::
-do_is_valid() {
   bool check=true;
   if (_sounds.size() != _lru.size()) {
     audio_debug("-- Error _sounds.size() != _lru.size() --");
@@ -374,88 +324,59 @@ get_sound(const string& file_name, bool) {
      return get_null_sound();
   }
 
+  assert(is_valid());
   Filename path = file_name;
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
   vfs->resolve_filename(path, get_sound_path());
   audio_debug("  resolved file_name is '"<<path<<"'");
 
-  const string *cache_path = NULL;
   PT(SoundData) sd;
-
   // Get the sound, either from the cache or from a loader:
-  MutexHolder holder(_lock);
-
-  assert(do_is_valid());
-
-  SoundMap::const_iterator si = _sounds.find(path);
+  SoundMap::const_iterator si=_sounds.find(path);
   if (si != _sounds.end()) {
     // ...found the sound in the cache.
-    cache_path = &((*si).first);
     sd = (*si).second;
     audio_debug("  sound found in pool 0x" << (void*)sd);
-  }
-
-  if (sd == (SoundData *)NULL) {
+  } else {
     // ...the sound was not found in the cache/pool.
-
-    // Ideally, we should release the lock while we're performing the
-    // actual load, so multiple threads can be loading sounds in
-    // parallel.  However, it appears that Miles is internally not
-    // thread-safe, so we can't do that.
-
-    //_lock.release();
     sd = load(path);
-    //_lock.lock();
-
     if (sd != (SoundData *)NULL) {
-      SoundMap::const_iterator si = _sounds.find(path);
-      if (si != _sounds.end()) {
-        // Oops, someone else must have just put it in the cache.
-        // Throw away the sound object we just loaded.
-        cache_path = &((*si).first);
-        sd = (*si).second;
-        audio_debug("  sound found in pool 0x" << (void*)sd);
-        
-      } else {
-        // OK, put the sound object we just loaded into the cache.
-        while (_sounds.size() >= (unsigned int)_cache_limit) {
-          uncache_a_sound();
-        }
-
-        // The following is roughly like: _sounds[path] = sd;
-        // But, it gives us an iterator into the map.
-        pair<SoundMap::const_iterator, bool> ib =
-          _sounds.insert(SoundMap::value_type(path, sd));
-        if (!ib.second) {
-          // The insert failed.
-          audio_debug("  failed map insert of "<<path);
-          assert(do_is_valid());
-          return get_null_sound();
-        }
-        // Get a reference to the path for the MilesAudioSound.
-        SoundMap::const_iterator si = ib.first;
-        cache_path = &((*si).first);
+      while (_sounds.size() >= (unsigned int)_cache_limit) {
+        uncache_a_sound();
       }
+      // Put it in the pool:
+      // The following is roughly like: _sounds[path] = sd;
+      // But, it gives us an iterator into the map.
+      pair<SoundMap::const_iterator, bool> ib
+          =_sounds.insert(SoundMap::value_type(path, sd));
+      if (!ib.second) {
+        // The insert failed.
+        audio_debug("  failed map insert of "<<path);
+        assert(is_valid());
+        return get_null_sound();
+      }
+      // Set si, so that we can get a reference to the path
+      // for the MilesAudioSound.
+      si=ib.first;
     }
   }
-
   // Create an AudioSound from the sound:
-  PT(AudioSound) audioSound;
+  PT(AudioSound) audioSound = 0;
   if (sd != (SoundData *)NULL) {
-    nassertr(cache_path != NULL, NULL);
-    most_recently_used(cache_path);
-    PT(MilesAudioSound) milesAudioSound = new MilesAudioSound(this, sd, path);
-    nassertr(milesAudioSound, NULL);
+    most_recently_used((*si).first);
+    PT(MilesAudioSound) milesAudioSound
+        =new MilesAudioSound(this, sd, (*si).first);
+    nassertr(milesAudioSound, 0);
     milesAudioSound->set_active(_active);
     bool inserted = _sounds_on_loan.insert(milesAudioSound).second;
     nassertr(inserted, milesAudioSound.p());
-    audioSound = milesAudioSound;
+    audioSound=milesAudioSound;
   }
 
   _hasMidiSounds |= (file_name.find(".mid")!=string::npos);
   audio_debug("  returning 0x" << (void*)audioSound);
-  assert(do_is_valid());
+  assert(is_valid());
   return audioSound;
 }
 
@@ -465,19 +386,17 @@ get_sound(const string& file_name, bool) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
-uncache_sound(const string &file_name) {
-  MutexHolder holder(_lock);
-
+uncache_sound(const string& file_name) {
   audio_debug("MilesAudioManager::uncache_sound(file_name=\""
       <<file_name<<"\")");
-  assert(do_is_valid());
+  assert(is_valid());
   Filename path = file_name;
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
   vfs->resolve_filename(path, get_sound_path());
 
   audio_debug("  path=\""<<path<<"\"");
-  SoundMap::iterator i = _sounds.find(path);
+  SoundMap::iterator i=_sounds.find(path);
   if (i != _sounds.end()) {
     assert(_lru.size()>0);
     LRU::iterator lru_i=find(_lru.begin(), _lru.end(), &(i->first));
@@ -485,18 +404,18 @@ uncache_sound(const string &file_name) {
     _lru.erase(lru_i);
     _sounds.erase(i);
   }
-  assert(do_is_valid());
+  assert(is_valid());
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MilesAudioManager::uncache_a_sound
-//       Access: Private
-//  Description: Assumes the lock is already held.
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 uncache_a_sound() {
   audio_debug("MilesAudioManager::uncache_a_sound()");
-  assert(do_is_valid());
+  assert(is_valid());
   // uncache least recently used:
   assert(_lru.size()>0);
   LRU::reference path=_lru.front();
@@ -508,26 +427,26 @@ uncache_a_sound() {
     audio_debug("  uncaching \""<<i->first<<"\"");
     _sounds.erase(i);
   }
-  assert(do_is_valid());
+  assert(is_valid());
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MilesAudioManager::most_recently_used
-//       Access: Private
-//  Description: Assumes the lock is already held.
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
-most_recently_used(const string *path) {
+most_recently_used(const string& path) {
   audio_debug("MilesAudioManager::most_recently_used(path=\""
       <<path<<"\")");
-  LRU::iterator i=find(_lru.begin(), _lru.end(), path);
+  LRU::iterator i=find(_lru.begin(), _lru.end(), &path);
   if (i != _lru.end()) {
     _lru.erase(i);
   }
   // At this point, path should not exist in the _lru:
-  assert(find(_lru.begin(), _lru.end(), path) == _lru.end());
-  _lru.push_back(path);
-  assert(do_is_valid());
+  assert(find(_lru.begin(), _lru.end(), &path) == _lru.end());
+  _lru.push_back(&path);
+  assert(is_valid());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -537,22 +456,11 @@ most_recently_used(const string *path) {
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 clear_cache() {
-  MutexHolder holder(_lock);
-  do_clear_cache();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MilesAudioManager::do_clear_cache
-//       Access: Private
-//  Description: Assumes the lock is already held.
-////////////////////////////////////////////////////////////////////
-void MilesAudioManager::
-do_clear_cache() {
   audio_debug("MilesAudioManager::clear_cache()");
-  if (_is_valid) { assert(do_is_valid()); }
+  if (_is_valid) { assert(is_valid()); }
   _sounds.clear();
   _lru.clear();
-  if (_is_valid) { assert(do_is_valid()); }
+  if (_is_valid) { assert(is_valid()); }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -562,15 +470,13 @@ do_clear_cache() {
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 set_cache_limit(unsigned int count) {
-  MutexHolder holder(_lock);
-
   audio_debug("MilesAudioManager::set_cache_limit(count="<<count<<")");
-  assert(do_is_valid());
+  assert(is_valid());
   while (_lru.size() > count) {
     uncache_a_sound();
   }
   _cache_limit=count;
-  assert(do_is_valid());
+  assert(is_valid());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -580,8 +486,6 @@ set_cache_limit(unsigned int count) {
 ////////////////////////////////////////////////////////////////////
 unsigned int MilesAudioManager::
 get_cache_limit() const {
-  MutexHolder holder(_lock);
-
   audio_debug("MilesAudioManager::get_cache_limit() returning "
       <<_cache_limit);
   return _cache_limit;
@@ -594,8 +498,6 @@ get_cache_limit() const {
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 release_sound(MilesAudioSound* audioSound) {
-  MutexHolder holder(_lock);
-
   audio_debug("MilesAudioManager::release_sound(audioSound=\""
               <<audioSound->get_name()<<"\"), this = " << (void *)this);
   AudioSet::iterator ai = _sounds_on_loan.find(audioSound);
@@ -771,6 +673,8 @@ stop_all_sounds() {
   reduce_sounds_playing_to(0);
 }
 
+
+#ifdef WIN32
 ////////////////////////////////////////////////////////////////////
 //     Function: MilesAudioManager::get_registry_entry
 //       Access: private
@@ -816,7 +720,7 @@ get_registry_entry(HKEY base, const char* subKeyName,
 
   return (r==ERROR_SUCCESS);
 }
-
+#endif
 ////////////////////////////////////////////////////////////////////
 //     Function: MilesAudioManager::get_gm_file_path
 //       Access: private
@@ -824,12 +728,21 @@ get_registry_entry(HKEY base, const char* subKeyName,
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 get_gm_file_path(string& result) {
+#ifdef WIN32
   if(!get_registry_entry(HKEY_LOCAL_MACHINE,"SOFTWARE\\Microsoft\\DirectMusic", "GMFilePath", result)) {
           char sysdir[MAX_PATH+1];
           GetSystemDirectory(sysdir,MAX_PATH+1);
           result = sysdir;
           result.append("\\drivers\\gm.dls");
   }
+#endif
+
+#ifdef IS_OSX 
+result = 
+//"gs_instruments.dls";
+"/System/Library/Components/CoreAudio.component/Contents/Resources/gs_instruments.dls";
+#endif
+
 
   audio_debug("MilesAudioManager::get_gm_file_path() result out=\""<<result<<"\"");
 }
@@ -855,7 +768,9 @@ force_midi_reset() {
   AIL_quick_handles(0, &hMid, 0);
   if ((hMid!=NULL) && (hMid->deviceid != MIDI_NULL_DRIVER) && (hMid->hMidiOut != NULL)) {
     audio_debug("MilesAudioManager::calling midiOutReset");
+#ifdef WIN32
     midiOutReset(hMid->hMidiOut);
+#endif
   }
 }
 
@@ -868,40 +783,19 @@ force_midi_reset() {
 ////////////////////////////////////////////////////////////////////
 void MilesAudioManager::
 cleanup() {
-  {
-    MutexHolder holder(_lock);
-    
-    audio_debug("MilesAudioManager::cleanup(), this = " << (void *)this
-                << ", _cleanup_required = " << _cleanup_required);
-    if (!_cleanup_required) {
-      return;
-    }
-    
-    // Be sure to cleanup associated sounds before cleaning up the manager:
-    AudioSet::iterator ai;
-    for (ai = _sounds_on_loan.begin(); ai != _sounds_on_loan.end(); ++ai) {
-      (*ai)->cleanup();
-    }
-
-    do_clear_cache();
-
-    _cleanup_required = false;
+  audio_debug("MilesAudioManager::cleanup(), this = " << (void *)this
+              << ", _cleanup_required = " << _cleanup_required);
+  if (!_cleanup_required) {
+    return;
   }
 
-  deactivate();
+  // Be sure to cleanup associated sounds before cleaning up the manager:
+  AudioSet::iterator ai;
+  for (ai = _sounds_on_loan.begin(); ai != _sounds_on_loan.end(); ++ai) {
+    (*ai)->cleanup();
+  }
 
-  audio_debug("MilesAudioManager::cleanup() finished");
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MilesAudioManager::deactivate
-//       Access: Private, Static
-//  Description: Deactivates one manager.  Grabs the static lock.
-////////////////////////////////////////////////////////////////////
-void MilesAudioManager::
-deactivate() {
-  MutexHolder st_holder(*_static_lock);
-
+  clear_cache();
   nassertv(_active_managers > 0);
   --_active_managers;
   audio_debug("  _active_managers="<<_active_managers);
@@ -921,6 +815,8 @@ deactivate() {
       _miles_active = false;
     }
   }
+  _cleanup_required = false;
+  audio_debug("MilesAudioManager::cleanup() finished");
 }
 
 ////////////////////////////////////////////////////////////////////
