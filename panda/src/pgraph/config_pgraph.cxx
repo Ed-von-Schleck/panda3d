@@ -267,7 +267,7 @@ ConfigVariableList load_file_type
           "extensions, followed by the name of the module."));
 
 ConfigVariableString default_model_extension
-("default-model-extension", "",
+("default-model-extension", ".bam",
  PRC_DESC("This specifies the filename extension (with leading dot) that "
           "should be assumed if an attempt is made to load a filename that "
           "has no extension.  This is primarily designed to support legacy "
