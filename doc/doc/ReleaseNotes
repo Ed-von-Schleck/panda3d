@@ -1,3 +1,10 @@
+------------------------  RELEASE 1.3.1  ------------------------
+Bugfix release. This fixes a few problems in 1.3.0
+
+* Sound system won't initialize properly under linux - fixed.
+* Panda not compatible with SElinux - mostly fixed, except fmod.
+* Minor problem involving gsg handling in showbase - fixed.
+
 ------------------------  RELEASE 1.3.0  ------------------------
 
 This release contains several new features, and as such, it might be
