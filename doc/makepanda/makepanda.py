@@ -2635,6 +2635,7 @@ if (OMIT.count("VRPN")==0):
                 src='panda/src/vrpn',  module='panda', library='libpvrpn',
                 skip=[], also=["vrpn_composite.cxx"])
 
+
 #
 # DIRECTORY: panda/metalibs/panda/
 #
@@ -2644,8 +2645,7 @@ if (OMIT.count("VRPN")==0):
 # CopyAllHeaders('panda/src/physics')
 # CopyAllHeaders('panda/src/particlesystem')
 IPATH=['panda/metalibs/panda']
-OPTS=['BUILDING_PANDA', 'ZLIB', 'VRPN', 'JPEG', 'PNG', 'TIFF', 'NSPR', 'FREETYPE', 'FFTW',
-      'ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'FFMPEG']
+OPTS=['BUILDING_PANDA', 'ZLIB', 'VRPN', 'JPEG', 'PNG', 'TIFF', 'NSPR', 'FREETYPE', 'FFTW', 'ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'FFMPEG']
 INFILES=['librecorder.in', 'libpgraph.in', 'libcull.in', 'libgrutil.in', 'libchan.in', 'libpstatclient.in',
          'libchar.in', 'libcollide.in', 'libdevice.in', 'libdgraph.in', 'libdisplay.in', 'libpipeline.in', 'libevent.in',
          'libgobj.in', 'libgsgbase.in', 'liblinmath.in', 'libmathutil.in', 'libparametrics.in',
@@ -2986,6 +2986,48 @@ EnqueueLink(dll='libpandaegg.dll', opts=['ADVAPI', 'NSPR'], obj=[
              'egg_lexer.obj',
              'libegg_igate.obj',
              'libpanda.dll',
+             'libpandaexpress.dll',
+             'libdtoolconfig.dll',
+             'libdtool.dll',
+])
+
+#
+# DIRECTORY: panda/metalibs/panda/
+#
+
+IPATH=['panda/metalibs/pandaexpress']
+OPTS=['BUILDING_PANDA', 'NSPR', 'FFTW', 'PNG', 'JPEG', 'TIFF', 'ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM']
+OBJFILES=[
+          'pipeline_composite.obj',
+          'event_composite.obj',
+          'linmath_composite.obj',
+          'mathutil_composite.obj',
+          'putil_composite1.obj', 'putil_composite2.obj',
+          'pnmimagetypes_composite.obj', 'pnmimagetypes_pnmFileTypePNG.obj', 'pnmimagetypes_pnmFileTypeTIFF.obj',
+          'pnmimage_composite.obj',
+          'pandabase_pandabase.obj', 'libpandaexpress.dll', 'libdtoolconfig.dll', 'libdtool.dll']
+EnqueueLink(opts=OPTS, dll='libpandastripped.dll', obj=OBJFILES, xdep=[
+        'built/tmp/dtool_have_helix.dat',
+        'built/tmp/dtool_have_vrpn.dat',
+        'built/tmp/dtool_have_nspr.dat',
+        'built/tmp/dtool_have_freetype.dat',
+])
+
+#
+# DIRECTORY: panda/metalibs/pandaegg/
+#
+
+IPATH=['panda/metalibs/pandaegg', 'panda/src/egg']
+OPTS=['BUILDING_PANDAEGG', 'NSPR']
+EnqueueCxx(ipath=IPATH, opts=OPTS, src='pandaeggnopg.cxx', obj='pandaegg_pandaeggnopg.obj')
+EnqueueLink(dll='libpandaeggstripped.dll', opts=['ADVAPI', 'NSPR'], obj=[
+             'pandaegg_pandaeggnopg.obj',
+#             'egg2pg_composite.obj',
+             'egg_composite1.obj',
+             'egg_composite2.obj',
+             'egg_parser.obj',
+             'egg_lexer.obj',
+             'libpandastripped.dll',
              'libpandaexpress.dll',
              'libdtoolconfig.dll',
              'libdtool.dll',
@@ -3991,8 +4033,8 @@ for VER in MAXVERSIONS:
                 'libprogbase.lib',
                 'libpandatoolbase.lib',
                 'libconverter.lib',
-                'libpandaegg.dll',
-                'libpanda.dll',
+                'libpandaeggstripped.dll',
+                'libpandastripped.dll',
                 'libpandaexpress.dll',
                 'libdtoolconfig.dll',
                 'libdtool.dll',
@@ -4014,8 +4056,8 @@ for VER in MAXVERSIONS:
                 'maxegg'+VER+'_loader.obj',
                 'maxprogs'+VER+'_maxeggimport.obj',
                 'maxImportRes.obj',
-                'libpandaegg.dll',
-                'libpanda.dll',
+                'libpandaeggstripped.dll',
+                'libpandastripped.dll',
                 'libpandaexpress.dll',
                 'libdtoolconfig.dll',
                 'libdtool.dll',
