@@ -2,3 +2,5 @@
 Makefile
 *.pyc
 pp.dep
+NL*
+Nested*
