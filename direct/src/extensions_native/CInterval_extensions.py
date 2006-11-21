@@ -1,5 +1,5 @@
 from extension_native_helpers import *
-from libdirect import *
+from libp3direct import *
 
 #####################################################################
 

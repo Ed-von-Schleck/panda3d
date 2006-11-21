@@ -54,8 +54,8 @@ echo $WINTOOLS/sdk/python/Python-2.4.1/Lib/weakref.py
 echo $WINTOOLS/lib
 echo $WINTOOLS/sdk/rad/Miles6/redist/win32/Mss32.dll
 echo $WINTOOLS/sdk/rad/Miles6/redist/win32/Mp3dec.asi
-echo $DTOOL/built/lib/libdtool.dll
-echo $DTOOL/built/lib/libdtoolconfig.dll
+echo $DTOOL/built/lib/libp3dtool.dll
+echo $DTOOL/built/lib/libp3dtoolconfig.dll
 echo $PANDA/built/lib/libpandaexpress.dll
 echo $PANDA/built/lib/libpanda.dll
 echo $PANDA/built/lib/libpandaphysics.dll
@@ -65,9 +65,9 @@ echo $PANDA/built/lib/libpandadx8.dll
 echo $PANDA/built/lib/libpandagl.dll
 echo $PANDA/built/lib/libpandafx.dll
 echo $PANDA/built/lib/libpandaegg.dll
-echo $PANDA/built/lib/libmiles_audio.dll
-echo $DIRECT/built/lib/libdirect.dll
-echo $DIRECT/built/lib/libheapq.dll
+echo $PANDA/built/lib/libp3miles_audio.dll
+echo $DIRECT/built/lib/libp3direct.dll
+echo $DIRECT/built/lib/libp3heapq.dll
 echo $OTP/built/lib/libotp.dll
 echo $TOONTOWN/built/lib/libtoontown.dll
 
