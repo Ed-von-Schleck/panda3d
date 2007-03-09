@@ -1006,7 +1006,7 @@ def CompileCxxLINUX(wobj,fullsrc,ipath,opts):
     if (PkgSelected(opts,"VRPN")):     cmd = cmd + ' -I' + THIRDPARTYLIBS + 'vrpn/include'
     if (PkgSelected(opts,"FFTW")):     cmd = cmd + ' -I' + THIRDPARTYLIBS + 'fftw/include'
     if (PkgSelected(opts,"FMODEX")):   cmd = cmd + ' -I' + THIRDPARTYLIBS + 'fmodex/include'
-    if (PkgSelected(opts,"NVIDIACG")): cmd = cmd + ' -I' + THIRDPARTYLIBS + 'nvidiacg/include'
+    if (PkgSelected(opts,"NVIDIACG")):       cmd = cmd + ' -I' + THIRDPARTYLIBS + 'nvidiacg/include'
     if (PkgSelected(opts,"NSPR")):     cmd = cmd + ' -I' + THIRDPARTYLIBS + 'nspr/include'
     if (PkgSelected(opts,"FFMPEG")):   cmd = cmd + ' -I' + THIRDPARTYLIBS + 'ffmpeg/include'
     if (PkgSelected(opts,"FREETYPE")): cmd = cmd + ' -I/usr/include/freetype2'
@@ -1345,10 +1345,8 @@ def CompileLinkMSVC(wdll, wlib, wobj, opts, dll, ldef):
     if (PkgSelected(opts,"MILES")):
         cmd = cmd + ' ' + THIRDPARTYLIBS + 'miles/lib/mss32.lib'
     if (PkgSelected(opts,"NVIDIACG")):
-        if (opts.count("CGGL")):
-            cmd = cmd + ' ' + THIRDPARTYLIBS + 'nvidiacg/lib/cgGL.lib'
-        if (opts.count("CGDX9")):
-            cmd = cmd + ' ' + THIRDPARTYLIBS + 'nvidiacg/lib/cgD3D9.lib'
+        cmd = cmd + ' ' + THIRDPARTYLIBS + 'nvidiacg/lib/cgGL.lib'
+        cmd = cmd + ' ' + THIRDPARTYLIBS + 'nvidiacg/lib/cgD3D9.lib'
         cmd = cmd + ' ' + THIRDPARTYLIBS + 'nvidiacg/lib/cg.lib'
     if (PkgSelected(opts,"NSPR")):
         cmd = cmd + ' ' + THIRDPARTYLIBS + 'nspr/lib/nspr4.lib'
@@ -1397,8 +1395,7 @@ def CompileLinkLINUX(wdll, obj, wobj, opts, dll, ldef):
     if (PkgSelected(opts,"FMODEX")):   cmd = cmd + ' -L' + THIRDPARTYLIBS + 'fmodex/lib -lfmodex'
     if (PkgSelected(opts,"NVIDIACG")):
         cmd = cmd + ' -Lthirdparty/nvidiacg/lib '
-        if (opts.count("CGGL")):  cmd = cmd + " -lCgGL"
-        cmd = cmd + " -lCg"
+        cmd = cmd + " -lCgGL -lCg"
     if (PkgSelected(opts,"NSPR")):     cmd = cmd + ' -L' + THIRDPARTYLIBS + 'nspr/lib -lpandanspr4'
     if (PkgSelected(opts,"FFMPEG")):   cmd = cmd + ' -L' + THIRDPARTYLIBS + 'ffmpeg/lib -lavformat -lavcodec -lavformat -lavutil'
     if (PkgSelected(opts,"ZLIB")):     cmd = cmd + " -lz"
@@ -1670,15 +1667,12 @@ DEFAULT_SETTINGS=[
     ("HAVE_TIFF",                      'UNDEF',                  'UNDEF'),
     ("HAVE_VRPN",                      'UNDEF',                  'UNDEF'),
     ("HAVE_FMODEX",                    'UNDEF',                  'UNDEF'),
-    ("HAVE_NVIDIACG",                  'UNDEF',                  'UNDEF'),
+    ("HAVE_CG",                        'UNDEF',                  'UNDEF'),
     ("HAVE_NSPR",                      'UNDEF',                  'UNDEF'),
     ("HAVE_FREETYPE",                  'UNDEF',                  'UNDEF'),
     ("HAVE_FFTW",                      'UNDEF',                  'UNDEF'),
     ("HAVE_OPENSSL",                   'UNDEF',                  'UNDEF'),
     ("HAVE_NET",                       'UNDEF',                  'UNDEF'),
-    ("HAVE_CG",                        'UNDEF',                  'UNDEF'),
-    ("HAVE_CGGL",                      'UNDEF',                  'UNDEF'),
-    ("HAVE_CGDX9",                     'UNDEF',                  'UNDEF'),
     ("HAVE_FFMPEG",                    'UNDEF',                  'UNDEF'),
     ("DEFAULT_PRC_DIR",                '"<auto>etc"',            '"<auto>etc"'),
     ("PRC_DIR_ENVVARS",                '"PANDA_PRC_DIR"',        '"PANDA_PRC_DIR"'),
@@ -1709,12 +1703,10 @@ def WriteConfigSettings():
             if (settings.has_key("HAVE_"+x)):
                 settings["HAVE_"+x] = '1'
     
-    settings["HAVE_NET"] = settings["HAVE_NSPR"]
-    
     if (OMIT.count("NVIDIACG")==0):
         settings["HAVE_CG"] = '1'
-        settings["HAVE_CGGL"] = '1'
-        settings["HAVE_CGDX9"] = '1'
+
+    settings["HAVE_NET"] = settings["HAVE_NSPR"]
     
     if (OPTIMIZE <= 3):
         if (settings["HAVE_NET"] != 'UNDEF'):
@@ -2406,7 +2398,7 @@ EnqueueIgate(ipath=IPATH, opts=OPTS, outd='libpstatclient.in', obj='libpstatclie
 #
 
 IPATH=['panda/src/gobj']
-OPTS=['BUILDING_PANDA', 'NSPR', 'ZLIB']
+OPTS=['BUILDING_PANDA', 'NSPR', 'ZLIB', 'NVIDIACG']
 EnqueueCxx(ipath=IPATH, opts=OPTS, src='gobj_composite1.cxx', obj='gobj_composite1.obj')
 EnqueueCxx(ipath=IPATH, opts=OPTS, src='gobj_composite2.cxx', obj='gobj_composite2.obj')
 EnqueueIgate(ipath=IPATH, opts=OPTS, outd='libgobj.in', obj='libgobj_igate.obj',
@@ -2636,7 +2628,7 @@ if (OMIT.count("VRPN")==0):
 #
 
 IPATH=['panda/metalibs/panda']
-OPTS=['BUILDING_PANDA', 'ZLIB', 'VRPN', 'JPEG', 'PNG', 'TIFF', 'ZLIB', 'NSPR', 'FREETYPE', 'FFTW', 'ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'FFMPEG']
+OPTS=['BUILDING_PANDA', 'ZLIB', 'VRPN', 'JPEG', 'PNG', 'TIFF', 'ZLIB', 'NSPR', 'NVIDIACG', 'FREETYPE', 'FFTW', 'ADVAPI', 'WINSOCK2', 'WINUSER', 'WINMM', 'FFMPEG']
 INFILES=['librecorder.in', 'libpgraph.in', 'libcull.in', 'libgrutil.in', 'libchan.in', 'libpstatclient.in',
          'libchar.in', 'libcollide.in', 'libdevice.in', 'libdgraph.in', 'libdisplay.in', 'libpipeline.in', 'libevent.in',
          'libgobj.in', 'libgsgbase.in', 'liblinmath.in', 'libmathutil.in', 'libparametrics.in',
