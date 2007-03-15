@@ -1122,6 +1122,8 @@ cg_compile_for(const ShaderCaps &caps,
   _cg_vprogram = 0;
   _cg_fprogram = 0;
   _cg_last_caps.clear();
+
+  return true;
 }
 #endif HAVE_CG
 
@@ -1152,7 +1154,8 @@ ShaderExpansion(const string &name, const string &text,
       _error_flag = false;
     }
   } else {
-    gobj_cat.error("Shader is not in a supported shader-language.");
+    gobj_cat.error()
+      << "Shader is not in a supported shader-language.\n";
     _error_flag = true;
   }
 #endif
