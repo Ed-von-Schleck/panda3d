@@ -46,6 +46,8 @@
 #include "deletedChain.h"
 #include "pandaNodeChain.h"
 #include "pStatCollector.h"
+#include "copyOnWriteObject.h"
+#include "copyOnWritePointer.h"
 
 #ifdef HAVE_PYTHON
 
@@ -363,7 +365,7 @@ public:
   };
 
 private:
-  typedef RefCountObj< ov_multiset<DownConnection> > Down;
+  typedef CopyOnWriteObj< ov_multiset<DownConnection> > Down;
 
   class EXPCL_PANDA UpConnection {
   public:
@@ -376,7 +378,7 @@ private:
     // children do not circularly reference each other.
     PandaNode *_parent;
   };
-  typedef RefCountObj< ov_set<UpConnection> > Up;
+  typedef CopyOnWriteObj< ov_set<UpConnection> > Up;
 
   // We also maintain a set of NodePathComponents in the node.  This
   // represents the set of instances of this node that we have
@@ -387,8 +389,7 @@ private:
 
   // We don't cycle the set of Paths, since these are across all
   // threads.  A NodePathComponent, once created, is always associated
-  // with the same node.  We do, however, protect the Paths under a
-  // mutex.
+  // with the same node.  We do, however, protect the Paths under a mutex.
   Paths _paths;
   Mutex _paths_lock;
 
@@ -519,19 +520,19 @@ private:
     void fillin_down_list(Down &down_list,
                           DatagramIterator &scan, BamReader *manager);
 
-    INLINE const Down *get_down() const;
-    INLINE Down *modify_down();
-    INLINE const Down *get_stashed() const;
-    INLINE Down *modify_stashed();
-    INLINE const Up *get_up() const;
-    INLINE Up *modify_up();
+    INLINE CPT(Down) get_down() const;
+    INLINE PT(Down) modify_down();
+    INLINE CPT(Down) get_stashed() const;
+    INLINE PT(Down) modify_stashed();
+    INLINE CPT(Up) get_up() const;
+    INLINE PT(Up) modify_up();
 
   private:
     // We store the child lists by reference, so we can copy them
     // quickly.  We perform copy-on-write when necessary.
-    PT(Down) _down;
-    PT(Down) _stashed;
-    PT(Up) _up;
+    COWPT(Down) _down;
+    COWPT(Down) _stashed;
+    COWPT(Up) _up;
     
   public:
     static TypeHandle get_class_type() {

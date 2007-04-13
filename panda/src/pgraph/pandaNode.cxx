@@ -630,16 +630,16 @@ remove_child(int child_index, Thread *current_thread) {
   nassertv(pipeline_stage == 0);
 
   CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
-  Down &down = *cdata->modify_down();
-  nassertv(child_index >= 0 && child_index < (int)down.size());
+  PT(Down) down = cdata->modify_down();
+  nassertv(child_index >= 0 && child_index < (int)down->size());
   
-  PT(PandaNode) child_node = down[child_index].get_child();
+  PT(PandaNode) child_node = (*down)[child_index].get_child();
   CDStageWriter cdata_child(child_node->_cycler, pipeline_stage, 
                                  current_thread);
-  Up &up = *cdata_child->modify_up();
+  PT(Up) up = cdata_child->modify_up();
 
-  down.erase(down.begin() + child_index);
-  int num_erased = up.erase(UpConnection(this));
+  down->erase(down->begin() + child_index);
+  int num_erased = up->erase(UpConnection(this));
   nassertv(num_erased == 1);
 
   sever_connection(this, child_node, pipeline_stage, current_thread);
@@ -912,9 +912,9 @@ remove_all_children(Thread *current_thread) {
   // We have to do this for each upstream pipeline stage.
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
-    Down &down = *cdata->modify_down();
+    PT(Down) down = cdata->modify_down();
     Down::iterator di;
-    for (di = down.begin(); di != down.end(); ++di) {
+    for (di = down->begin(); di != down->end(); ++di) {
       PT(PandaNode) child_node = (*di).get_child();
       CDStageWriter cdata_child(child_node->_cycler, pipeline_stage,
                                      current_thread);
@@ -923,7 +923,7 @@ remove_all_children(Thread *current_thread) {
       sever_connection(this, child_node, pipeline_stage, current_thread);
       child_node->parents_changed();
     }
-    down.clear();
+    down->clear();
     
     Down &stashed = *cdata->modify_stashed();
     for (di = stashed.begin(); di != stashed.end(); ++di) {
@@ -2463,9 +2463,9 @@ void PandaNode::
 r_copy_children(const PandaNode *from, PandaNode::InstanceMap &inst_map,
                 Thread *current_thread) {
   CDReader from_cdata(from->_cycler, current_thread);
-  const Down &from_down = *from_cdata->get_down();
+  CPT(Down) from_down = from_cdata->get_down();
   Down::const_iterator di;
-  for (di = from_down.begin(); di != from_down.end(); ++di) {
+  for (di = from_down->begin(); di != from_down->end(); ++di) {
     int sort = (*di).get_sort();
     PandaNode *source_child = (*di).get_child();
     PT(PandaNode) dest_child;
@@ -2516,11 +2516,11 @@ do_find_child(PandaNode *node, const CData *cdata) const {
 
   // We have to search for the child by brute force, since we don't
   // know what sort index it was added as.
-  const Down &down = *cdata->get_down();
+  CPT(Down) down = cdata->get_down();
   Down::const_iterator di;
-  for (di = down.begin(); di != down.end(); ++di) {
+  for (di = down->begin(); di != down->end(); ++di) {
     if ((*di).get_child() == node) {
-      return di - down.begin();
+      return di - down->begin();
     }
   }
 
@@ -2538,11 +2538,11 @@ do_find_stashed(PandaNode *node, const CData *cdata) const {
 
   // We have to search for the child by brute force, since we don't
   // know what sort index it was added as.
-  const Down &stashed = *cdata->get_stashed();
+  CPT(Down) stashed = cdata->get_stashed();
   Down::const_iterator di;
-  for (di = stashed.begin(); di != stashed.end(); ++di) {
+  for (di = stashed->begin(); di != stashed->end(); ++di) {
     if ((*di).get_child() == node) {
-      return di - stashed.begin();
+      return di - stashed->begin();
     }
   }
 
@@ -2574,8 +2574,8 @@ stage_remove_child(PandaNode *child_node, int pipeline_stage,
   int child_index = do_find_child(child_node, cdata);
   if (child_index >= 0) {
     // The child exists; remove it.
-    Down &down = *cdata->modify_down();
-    down.erase(down.begin() + child_index);
+    PT(Down) down = cdata->modify_down();
+    down->erase(down->begin() + child_index);
     int num_erased = cdata_child->modify_up()->erase(UpConnection(this));
     nassertr(num_erased == 1, false);
     return true;
@@ -2584,8 +2584,8 @@ stage_remove_child(PandaNode *child_node, int pipeline_stage,
   int stashed_index = do_find_stashed(child_node, cdata);
   if (stashed_index >= 0) {
     // The child has been stashed; remove it.
-    Down &stashed = *cdata->modify_down();
-    stashed.erase(stashed.begin() + stashed_index);
+    PT(Down) stashed = cdata->modify_down();
+    stashed->erase(stashed->begin() + stashed_index);
     int num_erased = cdata_child->modify_up()->erase(UpConnection(this));
     nassertr(num_erased == 1, false);
     return true;
@@ -2636,17 +2636,19 @@ stage_replace_child(PandaNode *orig_child, PandaNode *new_child,
     int child_index = do_find_child(orig_child, cdata);
     if (child_index >= 0) {
       // The child exists; replace it.
-      DownConnection &down = (*cdata->modify_down())[child_index];
-      nassertr(down.get_child() == orig_child, false);
-      down.set_child(new_child);
+      PT(Down) down = cdata->modify_down();
+      DownConnection &dc = (*down)[child_index];
+      nassertr(dc.get_child() == orig_child, false);
+      dc.set_child(new_child);
       
     } else {
       int stashed_index = do_find_stashed(orig_child, cdata);
       if (stashed_index >= 0) {
 	// The child has been stashed; remove it.
-	DownConnection &down = (*cdata->modify_stashed())[stashed_index];
-	nassertr(down.get_child() == orig_child, false);
-	down.set_child(new_child);
+        PT(Down) down = cdata->modify_stashed();
+	DownConnection &dc = (*down)[stashed_index];
+	nassertr(dc.get_child() == orig_child, false);
+	dc.set_child(new_child);
 	
       } else {
 	// Never heard of this child.  This shouldn't be possible, because
@@ -2808,19 +2810,19 @@ detach_one_stage(NodePathComponent *child, int pipeline_stage,
     // has been stashed.
     Down::iterator di;
     bool found = false;
-    Down &down = *cdata_parent->modify_down();
-    for (di = down.begin(); di != down.end(); ++di) {
+    PT(Down) down = cdata_parent->modify_down();
+    for (di = down->begin(); di != down->end(); ++di) {
       if ((*di).get_child() == child_node) {
-	down.erase(di);
+	down->erase(di);
 	found = true;
         break;
       }
     }
     if (!found) {
-      Down &stashed = *cdata_parent->modify_stashed();
-      for (di = stashed.begin(); di != stashed.end(); ++di) {
+      PT(Down) stashed = cdata_parent->modify_stashed();
+      for (di = stashed->begin(); di != stashed->end(); ++di) {
         if ((*di).get_child() == child_node) {
-          stashed.erase(di);
+          stashed->erase(di);
           found = true;
           break;
         }
@@ -3102,8 +3104,8 @@ r_get_generic_component(bool accept_ambiguity, bool &ambiguity_detected,
         << " parents; choosing arbitrary path to root.\n";
     }
     ambiguity_detected = true;
-    const Up &up = *cdata->get_up();
-    parent_node = up[0].get_parent();
+    CPT(Up) up = cdata->get_up();
+    parent_node = (*up)[0].get_parent();
   }
 
   // Now that the lock is released, it's safe to recurse.
