@@ -81,7 +81,6 @@ get_write_pointer() {
     // No one else has it specifically read-locked, but there are
     // other CopyOnWritePointers holding the same object, so we should
     // make our own writable copy anyway.
-    nassertr(_object->get_ref_count() == _object->get_cache_ref_count(), NULL);
     if (util_cat.is_debug()) {
       util_cat.debug()
         << "Making copy of " << _object->get_type()
@@ -98,7 +97,10 @@ get_write_pointer() {
     // No other thread has the pointer locked, and we're the only
     // CopyOnWritePointer with this object.  We can safely write to it
     // without making a copy.
-    nassertr(_object->get_ref_count() == _object->get_cache_ref_count(), NULL);
+
+    // We can't assert that there are no outstanding ordinary
+    // references to it, though, since the creator of the object might
+    // have saved himself a reference.
   }
   _object->_lock_status = CopyOnWriteObject::LS_locked_write;
 
