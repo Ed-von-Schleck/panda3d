@@ -17,7 +17,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "pythonThread.h"
-#include "notify.h"
+#include "pnotify.h"
 
 #ifdef HAVE_PYTHON
 
