@@ -280,7 +280,7 @@ get_read_pointer() const {
 //  Description: See CopyOnWritePointer::get_write_pointer().
 ////////////////////////////////////////////////////////////////////
 template<class T>
-INLINE TYPENAME PT(CopyOnWritePointerTo<T>::To) CopyOnWritePointerTo<T>::
+INLINE PT(TYPENAME CopyOnWritePointerTo<T>::To) CopyOnWritePointerTo<T>::
 get_write_pointer() {
   return (To *)(CopyOnWritePointer::get_write_pointer().p());
 }
