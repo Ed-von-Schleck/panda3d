@@ -115,7 +115,7 @@ get_child_sort(int n, Thread *current_thread) const {
 INLINE int PandaNode::
 find_child(PandaNode *node, Thread *current_thread) const {
   CDReader cdata(_cycler, current_thread);
-  return do_find_child(node, cdata);
+  return do_find_child(node, cdata->get_down());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -224,7 +224,7 @@ get_stashed_sort(int n, Thread *current_thread) const {
 INLINE int PandaNode::
 find_stashed(PandaNode *node, Thread *current_thread) const {
   CDReader cdata(_cycler, current_thread);
-  return do_find_stashed(node, cdata);
+  return do_find_child(node, cdata->get_stashed());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1483,7 +1483,7 @@ get_child_sort(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE int PandaNodePipelineReader::
 find_child(PandaNode *node) const {
-  return _object->do_find_child(node, _cdata);
+  return _object->do_find_child(node, _cdata->get_down());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1536,7 +1536,7 @@ get_stashed_sort(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE int PandaNodePipelineReader::
 find_stashed(PandaNode *node) const {
-  return _object->do_find_stashed(node, _cdata);
+  return _object->do_find_child(node, _cdata->get_stashed());
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -300,8 +300,6 @@ private:
   class CData;
 
   INLINE int do_find_parent(PandaNode *node, const CData *cdata) const;
-  int do_find_child(PandaNode *node, const CData *cdata) const;
-  int do_find_stashed(PandaNode *node, const CData *cdata) const;
   bool stage_remove_child(PandaNode *child_node, int pipeline_stage,
                           Thread *current_thread);
   bool stage_replace_child(PandaNode *orig_child, PandaNode *new_child,
@@ -553,6 +551,7 @@ private:
   typedef CycleDataStageReader<CData> CDStageReader;
   typedef CycleDataStageWriter<CData> CDStageWriter;
 
+  int do_find_child(PandaNode *node, const Down *down) const;
   CDStageWriter update_bounds(int pipeline_stage, CDLockedStageReader &cdata);
 
   static DrawMask _overall_bit;

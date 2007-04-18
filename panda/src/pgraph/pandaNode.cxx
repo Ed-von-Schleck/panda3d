@@ -2506,51 +2506,6 @@ set_cull_callback() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PandaNode::do_find_child
-//       Access: Private
-//  Description: The private implementation of find_child().
-////////////////////////////////////////////////////////////////////
-int PandaNode::
-do_find_child(PandaNode *node, const CData *cdata) const {
-  nassertr(node != (PandaNode *)NULL, -1);
-
-  // We have to search for the child by brute force, since we don't
-  // know what sort index it was added as.
-  CPT(Down) down = cdata->get_down();
-  Down::const_iterator di;
-  for (di = down->begin(); di != down->end(); ++di) {
-    if ((*di).get_child() == node) {
-      return di - down->begin();
-    }
-  }
-
-  return -1;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PandaNode::do_find_stashed
-//       Access: Private
-//  Description: The private implementation of find_stashed().
-////////////////////////////////////////////////////////////////////
-int PandaNode::
-do_find_stashed(PandaNode *node, const CData *cdata) const {
-  nassertr(node != (PandaNode *)NULL, -1);
-
-  // We have to search for the child by brute force, since we don't
-  // know what sort index it was added as.
-  CPT(Down) stashed = cdata->get_stashed();
-  Down::const_iterator di;
-  for (di = stashed->begin(); di != stashed->end(); ++di) {
-    if ((*di).get_child() == node) {
-      return di - stashed->begin();
-    }
-  }
-
-  return -1;
-}
-
-
-////////////////////////////////////////////////////////////////////
 //     Function: PandaNode::stage_remove_child
 //       Access: Private
 //  Description: The private implementation of remove_child(), for a
@@ -2571,20 +2526,20 @@ stage_remove_child(PandaNode *child_node, int pipeline_stage,
     return false;
   }
 
-  int child_index = do_find_child(child_node, cdata);
+  PT(Down) down = cdata->modify_down();
+  int child_index = do_find_child(child_node, down);
   if (child_index >= 0) {
     // The child exists; remove it.
-    PT(Down) down = cdata->modify_down();
     down->erase(down->begin() + child_index);
     int num_erased = cdata_child->modify_up()->erase(UpConnection(this));
     nassertr(num_erased == 1, false);
     return true;
   }
 
-  int stashed_index = do_find_stashed(child_node, cdata);
+  PT(Down) stashed = cdata->modify_stashed();
+  int stashed_index = do_find_child(child_node, stashed);
   if (stashed_index >= 0) {
     // The child has been stashed; remove it.
-    PT(Down) stashed = cdata->modify_down();
     stashed->erase(stashed->begin() + stashed_index);
     int num_erased = cdata_child->modify_up()->erase(UpConnection(this));
     nassertr(num_erased == 1, false);
@@ -2633,20 +2588,20 @@ stage_replace_child(PandaNode *orig_child, PandaNode *new_child,
       sever_connection(this, new_child, pipeline_stage, current_thread);
     }
     
-    int child_index = do_find_child(orig_child, cdata);
+    PT(Down) down = cdata->modify_down();
+    int child_index = do_find_child(orig_child, down);
     if (child_index >= 0) {
       // The child exists; replace it.
-      PT(Down) down = cdata->modify_down();
       DownConnection &dc = (*down)[child_index];
       nassertr(dc.get_child() == orig_child, false);
       dc.set_child(new_child);
       
     } else {
-      int stashed_index = do_find_stashed(orig_child, cdata);
+      PT(Down) stashed = cdata->modify_stashed();
+      int stashed_index = do_find_child(orig_child, stashed);
       if (stashed_index >= 0) {
 	// The child has been stashed; remove it.
-        PT(Down) down = cdata->modify_stashed();
-	DownConnection &dc = (*down)[stashed_index];
+	DownConnection &dc = (*stashed)[stashed_index];
 	nassertr(dc.get_child() == orig_child, false);
 	dc.set_child(new_child);
 	
@@ -3267,6 +3222,27 @@ r_list_descendants(ostream &out, int indent_level) const {
   if (num_stashed != 0) {
     indent(out, indent_level) << "(" << num_stashed << " stashed)\n";
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::do_find_child
+//       Access: Private
+//  Description: The private implementation of find_child().
+////////////////////////////////////////////////////////////////////
+int PandaNode::
+do_find_child(PandaNode *node, const PandaNode::Down *down) const {
+  nassertr(node != (PandaNode *)NULL, -1);
+
+  // We have to search for the child by brute force, since we don't
+  // know what sort index it was added as.
+  Down::const_iterator di;
+  for (di = down->begin(); di != down->end(); ++di) {
+    if ((*di).get_child() == node) {
+      return di - down->begin();
+    }
+  }
+
+  return -1;
 }
 
 ////////////////////////////////////////////////////////////////////
