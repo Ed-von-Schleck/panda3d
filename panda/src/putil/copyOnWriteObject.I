@@ -26,11 +26,17 @@ TypeHandle CopyOnWriteObj<Base>::_type_handle;
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE CopyOnWriteObject::
-CopyOnWriteObject() : _lock_cvar(_lock_mutex) {
+CopyOnWriteObject() 
+#ifdef HAVE_THREADS
+  : _lock_cvar(_lock_mutex) 
+#endif
+{
 #ifdef DO_MEMORY_USAGE
   MemoryUsage::update_type(this, this);
 #endif
+#ifdef HAVE_THREADS
   _lock_status = LS_unlocked;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -40,13 +46,17 @@ CopyOnWriteObject() : _lock_cvar(_lock_mutex) {
 ////////////////////////////////////////////////////////////////////
 INLINE CopyOnWriteObject::
 CopyOnWriteObject(const CopyOnWriteObject &copy) :
-  CachedTypedWritableReferenceCount(copy),
-  _lock_cvar(_lock_mutex)
+  CachedTypedWritableReferenceCount(copy)
+#ifdef HAVE_THREADS
+  , _lock_cvar(_lock_mutex)
+#endif
 {
 #ifdef DO_MEMORY_USAGE
   MemoryUsage::update_type(this, this);
 #endif
+#ifdef HAVE_THREADS
   _lock_status = LS_unlocked;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -59,6 +69,7 @@ operator = (const CopyOnWriteObject &copy) {
   CachedTypedWritableReferenceCount::operator = (copy);
 }
 
+#ifdef HAVE_THREADS
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWriteObject::cache_ref
 //       Access: Published
@@ -69,6 +80,7 @@ cache_ref() const {
   MutexHolder holder(_lock_mutex);
   CachedTypedWritableReferenceCount::cache_ref();
 }
+#endif  // HAVE_THREADS
 
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWriteObj::Constructor

@@ -85,6 +85,52 @@ INLINE CopyOnWritePointer::
   }
 }
 
+#ifndef HAVE_THREADS
+////////////////////////////////////////////////////////////////////
+//     Function: CopyOnWritePointer::get_read_pointer
+//       Access: Public
+//  Description: Returns a pointer locked for read.  Until this
+//               pointer dereferences, calls to get_write_pointer()
+//               will force a copy.
+//
+//               This flavor of the method is written for the
+//               non-threaded case.
+////////////////////////////////////////////////////////////////////
+INLINE const CopyOnWriteObject *CopyOnWritePointer::
+get_read_pointer() const {
+  return _object;
+}
+#endif  // HAVE_THREADS
+
+#ifndef HAVE_THREADS
+////////////////////////////////////////////////////////////////////
+//     Function: CopyOnWritePointer::get_write_pointer
+//       Access: Public
+//  Description: Returns a pointer locked for write.  If another
+//               thread or threads already hold the pointer locked for
+//               read, then this will force a copy.
+//
+//               Until this pointer dereferences, calls to
+//               get_read_pointer() or get_write_pointer() will block.
+//
+//               This flavor of the method is written for the
+//               non-threaded case.
+////////////////////////////////////////////////////////////////////
+INLINE CopyOnWriteObject *CopyOnWritePointer::
+get_write_pointer() {
+  if (_object == (CopyOnWriteObject *)NULL) {
+    return NULL;
+  }
+  if (_object->get_ref_count() > 1) {
+    PT(CopyOnWriteObject) new_object = _object->make_cow_copy();
+    cache_unref_delete(_object);
+    _object = new_object;
+    _object->cache_ref();
+  }
+  return _object;
+}
+#endif  // HAVE_THREADS
+
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWritePointer::get_unsafe_pointer
 //       Access: Public
@@ -201,6 +247,7 @@ operator = (To *object) {
 #endif  // CPPPARSER
 
 #ifndef CPPPARSER
+#ifdef HAVE_THREADS
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWritePointerTo::get_read_pointer
 //       Access: Public
@@ -211,19 +258,44 @@ INLINE CPT(TYPENAME CopyOnWritePointerTo<T>::To) CopyOnWritePointerTo<T>::
 get_read_pointer() const {
   return (const To *)(CopyOnWritePointer::get_read_pointer().p());
 }
+#else  // HAVE_THREADS
+////////////////////////////////////////////////////////////////////
+//     Function: CopyOnWritePointerTo::get_read_pointer
+//       Access: Public
+//  Description: See CopyOnWritePointer::get_read_pointer().
+////////////////////////////////////////////////////////////////////
+template<class T>
+INLINE const TYPENAME CopyOnWritePointerTo<T>::To *CopyOnWritePointerTo<T>::
+get_read_pointer() const {
+  return (const To *)CopyOnWritePointer::get_read_pointer();
+}
+#endif  // HAVE_THREADS
 #endif  // CPPPARSER
 
 #ifndef CPPPARSER
+#ifdef HAVE_THREADS
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWritePointerTo::get_write_pointer
 //       Access: Public
 //  Description: See CopyOnWritePointer::get_write_pointer().
 ////////////////////////////////////////////////////////////////////
 template<class T>
-INLINE PT(TYPENAME CopyOnWritePointerTo<T>::To) CopyOnWritePointerTo<T>::
+INLINE TYPENAME PT(CopyOnWritePointerTo<T>::To) CopyOnWritePointerTo<T>::
 get_write_pointer() {
   return (To *)(CopyOnWritePointer::get_write_pointer().p());
 }
+#else  // HAVE_THREADS
+////////////////////////////////////////////////////////////////////
+//     Function: CopyOnWritePointerTo::get_write_pointer
+//       Access: Public
+//  Description: See CopyOnWritePointer::get_write_pointer().
+////////////////////////////////////////////////////////////////////
+template<class T>
+INLINE TYPENAME CopyOnWritePointerTo<T>::To *CopyOnWritePointerTo<T>::
+get_write_pointer() {
+  return (To *)CopyOnWritePointer::get_write_pointer();
+}
+#endif  // HAVE_THREADS
 #endif  // CPPPARSER
 
 #ifndef CPPPARSER

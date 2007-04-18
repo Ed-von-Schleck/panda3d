@@ -39,13 +39,16 @@ public:
   INLINE void operator = (const CopyOnWriteObject &copy);
 
 PUBLISHED:
+#ifdef HAVE_THREADS
   bool unref() const;
   INLINE void cache_ref() const;
+#endif  // HAVE_THREADS
 
 protected:
   virtual PT(CopyOnWriteObject) make_cow_copy()=0;
 
 private:
+#ifdef HAVE_THREADS
   enum LockStatus {
     LS_unlocked,
     LS_locked_read,
@@ -54,6 +57,7 @@ private:
   Mutex _lock_mutex;
   ConditionVar _lock_cvar;
   LockStatus _lock_status;
+#endif  // HAVE_THREADS
 
 public:
   virtual TypeHandle get_type() const {

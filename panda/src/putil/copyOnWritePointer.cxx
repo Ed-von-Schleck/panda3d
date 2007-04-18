@@ -20,12 +20,16 @@
 #include "mutexHolder.h"
 #include "config_util.h"
 
+#ifdef HAVE_THREADS
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWritePointer::get_read_pointer
 //       Access: Public
 //  Description: Returns a pointer locked for read.  Until this
 //               pointer dereferences, calls to get_write_pointer()
 //               will force a copy.
+//
+//               This flavor of the method is written for the threaded
+//               case.
 ////////////////////////////////////////////////////////////////////
 CPT(CopyOnWriteObject) CopyOnWritePointer::
 get_read_pointer() const {
@@ -41,7 +45,9 @@ get_read_pointer() const {
   _object->_lock_status = CopyOnWriteObject::LS_locked_read;
   return _object;
 }
+#endif  // HAVE_THREADS
 
+#ifdef HAVE_THREADS
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWritePointer::get_write_pointer
 //       Access: Public
@@ -51,6 +57,9 @@ get_read_pointer() const {
 //
 //               Until this pointer dereferences, calls to
 //               get_read_pointer() or get_write_pointer() will block.
+//
+//               This flavor of the method is written for the threaded
+//               case.
 ////////////////////////////////////////////////////////////////////
 PT(CopyOnWriteObject) CopyOnWritePointer::
 get_write_pointer() {
@@ -106,3 +115,4 @@ get_write_pointer() {
 
   return _object;
 }
+#endif  // HAVE_THREADS

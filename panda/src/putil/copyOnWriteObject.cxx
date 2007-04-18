@@ -22,6 +22,7 @@
 
 TypeHandle CopyOnWriteObject::_type_handle;
 
+#ifdef HAVE_THREADS
 ////////////////////////////////////////////////////////////////////
 //     Function: CopyOnWriteObject::unref
 //       Access: Public
@@ -42,3 +43,4 @@ unref() const {
   }
   return is_zero;
 }
+#endif  // HAVE_THREADS

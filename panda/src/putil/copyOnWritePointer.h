@@ -44,8 +44,14 @@ public:
   INLINE void operator = (CopyOnWriteObject *object);
   INLINE ~CopyOnWritePointer();
 
+#ifdef HAVE_THREADS
   CPT(CopyOnWriteObject) get_read_pointer() const;
   PT(CopyOnWriteObject) get_write_pointer();
+#else
+  INLINE const CopyOnWriteObject *get_read_pointer() const;
+  INLINE CopyOnWriteObject *get_write_pointer();
+#endif  // HAVE_THREADS
+
   INLINE CopyOnWriteObject *get_unsafe_pointer();
 
   INLINE bool is_null() const;
@@ -77,8 +83,14 @@ public:
   INLINE void operator = (const CopyOnWritePointerTo<T> &copy);
   INLINE void operator = (To *object);
 
+#ifdef HAVE_THREADS
   INLINE CPT(To) get_read_pointer() const;
   INLINE PT(To) get_write_pointer();
+#else
+  INLINE const To *get_read_pointer() const;
+  INLINE To *get_write_pointer();
+#endif  // HAVE_THREADS
+
   INLINE To *get_unsafe_pointer();
 #endif  // CPPPARSER
 };
