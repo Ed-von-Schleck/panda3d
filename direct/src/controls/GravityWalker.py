@@ -359,11 +359,12 @@ class GravityWalker(DirectObject.DirectObject):
                 self.cTrav.addCollider(self.cEventSphereNodePath, self.event)
                 self.cTrav.addCollider(self.cRayNodePath, self.lifter)
             else:
-                self.cTrav.removeCollider(self.cWallSphereNodePath)
-                if self.wantFloorSphere:
-                    self.cTrav.removeCollider(self.cFloorSphereNodePath)
-                self.cTrav.removeCollider(self.cEventSphereNodePath)
-                self.cTrav.removeCollider(self.cRayNodePath)
+                if hasattr(self, 'cTrav'):
+                    self.cTrav.removeCollider(self.cWallSphereNodePath)
+                    if self.wantFloorSphere:
+                        self.cTrav.removeCollider(self.cFloorSphereNodePath)
+                    self.cTrav.removeCollider(self.cEventSphereNodePath)
+                    self.cTrav.removeCollider(self.cRayNodePath)
 
     def getCollisionsActive(self):
         assert self.debugPrint("getCollisionsActive() returning=%s"%(
@@ -387,6 +388,8 @@ class GravityWalker(DirectObject.DirectObject):
         have been disabled.
         """
         assert self.notify.debugStateCall(self)
+        if not hasattr(self, 'cWallSphereNodePath'):
+            return
         self.isAirborne = 0
         self.mayJump = 1
         tempCTrav = CollisionTraverser("oneTimeCollide")

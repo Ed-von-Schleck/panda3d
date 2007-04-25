@@ -109,8 +109,6 @@ class DirectScrolledList(DirectFrame):
 
         self.initialiseoptions(DirectScrolledList)
         self.recordMaxHeight()
-        #if len(self["items"]) > 0:
-        #    self.scrollTo(0)
         self.scrollTo(0)
 
     def setForceHeight(self):
@@ -157,7 +155,7 @@ class DirectScrolledList(DirectFrame):
 
     def scrollBy(self, delta):
         assert self.notify.debugStateCall(self)
-        # print "scrollBy[", delta,"]"
+        #print "scrollBy[", delta,"]"
         return self.scrollTo(self.index + delta)
 
     def getItemIndexForItemID(self, itemID):
@@ -169,13 +167,13 @@ class DirectScrolledList(DirectFrame):
             return 0
 
         if(type(self["items"][0])!=types.InstanceType):
-            print "warning: getItemIndexForItemID: cant find itemID for non-class list items!"
+            self.notify.warning("getItemIndexForItemID: cant find itemID for non-class list items!")
             return 0
 
         for i in range(len(self["items"])):
             if(self["items"][i].itemID == itemID):
                 return i
-        print "warning: getItemIndexForItemID: item not found!"
+        self.notify.warning("getItemIndexForItemID: item not found!")
         return 0
 
     def scrollToItemID(self, itemID, centered=0):
@@ -185,7 +183,7 @@ class DirectScrolledList(DirectFrame):
     def scrollTo(self, index, centered=0):
         """ scrolls list so selected index is at top, or centered in box"""
         assert self.notify.debugStateCall(self)
-        # print "scrollTo[", index,"] called, len(self[items])=", len(self["items"])," self[numItemsVisible]=", self["numItemsVisible"]
+        #print "scrollTo[", index,"] called, len(self[items])=", len(self["items"])," self[numItemsVisible]=", self["numItemsVisible"]
         try:
             self["numItemsVisible"]
         except:
@@ -193,7 +191,7 @@ class DirectScrolledList(DirectFrame):
             self.notify.info('crash 27633 fixed!')
             return
 
-        numItemsVisible=self["numItemsVisible"]
+        numItemsVisible = self["numItemsVisible"]
         numItemsTotal = len(self["items"])
         if(centered):
             self.index = index - (numItemsVisible/2)
@@ -211,21 +209,26 @@ class DirectScrolledList(DirectFrame):
         else:
             if (self.index <= 0):
                 self.index = 0
+                #print "at list start, ", len(self["items"]),"  ", self["numItemsVisible"]
                 self.decButton['state'] = DGG.DISABLED
                 self.incButton['state'] = DGG.NORMAL
                 ret = 0
             elif (self.index >= (numItemsTotal - numItemsVisible)):
                 self.index = numItemsTotal - numItemsVisible
-                # print "at list end, ", len(self["items"]),"  ", self["numItemsVisible"]
+                #print "at list end, ", len(self["items"]),"  ", self["numItemsVisible"]
                 self.incButton['state'] = DGG.DISABLED
                 self.decButton['state'] = DGG.NORMAL
                 ret = 0
             else:
+                # deal with an edge condition - make sure any tasks are removed from the disabled arrows.
+                if (self.incButton['state'] == DGG.DISABLED) or (self.decButton['state'] == DGG.DISABLED):
+                    #print "leaving list start/end, ", len(self["items"]),"  ", self["numItemsVisible"]
+                    self.__buttonUp(0)
                 self.incButton['state'] = DGG.NORMAL
                 self.decButton['state'] = DGG.NORMAL
                 ret = 1
 
-        # print "self.index set to ", self.index
+        #print "self.index set to ", self.index
 
         # Hide them all
         for item in self["items"]:
@@ -270,7 +273,7 @@ class DirectScrolledList(DirectFrame):
             # If the item is a 'str', then it has not been created
             # Therefore, use the the function given to make it or
             # just make it a frame
-            print "Making " + str(item)
+            #print "Making " + str(item)
             if item.__class__.__name__ == 'str':
                 if self['itemMakeFunction']:
                     # If there is a function to create the item
@@ -304,23 +307,28 @@ class DirectScrolledList(DirectFrame):
         task.delayTime = (1.0 / self.scrollSpeed)
         task.prevTime = 0.0
         task.delta = 1
+        taskName = self.taskName("scroll")
+        #print "incButtonDown: adding ", taskName
+        taskMgr.add(task, taskName)
         self.scrollBy(task.delta)
-        taskMgr.add(task, self.taskName("scroll"))
-
-
+        
     def __decButtonDown(self, event):
         assert self.notify.debugStateCall(self)
         task = Task(self.__scrollByTask)
         task.delayTime = (1.0 / self.scrollSpeed)
         task.prevTime = 0.0
         task.delta = -1
+        taskName = self.taskName("scroll")
+        #print "decButtonDown: adding ", taskName
+        taskMgr.add(task, taskName)
         self.scrollBy(task.delta)
-        taskMgr.add(task, self.taskName("scroll"))
-
+       
     def __buttonUp(self, event):
         assert self.notify.debugStateCall(self)
-        taskMgr.remove(self.taskName("scroll"))
-
+        taskName = self.taskName("scroll")
+        #print "buttonUp: removing ", taskName
+        taskMgr.remove(taskName)
+        
     def addItem(self, item, refresh=1):
         """
         Add this string and extraArg to the list
