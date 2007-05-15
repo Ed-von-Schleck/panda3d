@@ -889,7 +889,6 @@ class Functor:
         del self.__doc__
     
     def __call__(self, *args, **kargs):
-        """call function"""
         _args = list(self._args)
         _args.extend(args)
         _kargs = self._kargs.copy()
@@ -1124,7 +1123,8 @@ del savedSettings
 
 class ParamObj:
     # abstract base for classes that want to support a formal parameter
-    # set whose values may be queried, changed, 'bulk' changed, and
+    # set whose values may be queried, changed, 'bulk' changed (defer reaction
+    # to changes until multiple changes have been performed), and
     # extracted/stored/applied all at once (see documentation above)
 
     # ParamSet subclass: container of parameter values. Derived class must
@@ -1231,46 +1231,12 @@ class ParamObj:
             params = self.ParamSet(**kwArgs)
 
         self._paramLockRefCount = 0
-        # this holds dictionaries of parameter values prior to the set that we
-        # are performing
-        self._priorValuesStack = Stack()
-        # this holds the name of the parameter that we are currently modifying
-        # at the top of the stack
-        self._curParamStack = Stack()
+        # these hold the current value of parameters while they are being set to
+        # a new value, to support getPriorValue()
+        self._curParamStack = []
+        self._priorValuesStack = []
 
-        def setterStub(param, setterFunc, self,
-                       value):
-            # should we apply the value now or should we wait?
-            # if this obj's params are locked, we track which values have
-            # been set, and on unlock, we'll call the applyers for those
-            # values
-            if self._paramLockRefCount > 0:
-                setterFunc(value)
-                priorValues = self._priorValuesStack.top()
-                if param not in priorValues:
-                    try:
-                        priorValue = getSetter(self, param, 'get')()
-                    except:
-                        priorValue = None
-                    priorValues[param] = priorValue
-                self._paramsSet[param] = None
-            else:
-                # prepare for call to getPriorValue
-                self._priorValuesStack.push({
-                    param: getSetter(self, param, 'get')()
-                    })
-                setterFunc(value)
-                # call the applier, if there is one
-                applier = getattr(self, getSetterName(param, 'apply'), None)
-                if applier is not None:
-                    self._curParamStack.push(param)
-                    applier()
-                    self._curParamStack.pop()
-                self._priorValuesStack.pop()
-                if hasattr(self, 'handleParamChange'):
-                    self.handleParamChange((param,))
-
-        # insert stub funcs for param setters
+        # insert stub funcs for param setters, to handle locked params
         for param in self.ParamSet.getParams():
             setterName = getSetterName(param)
             getterName = getSetterName(param, 'get')
@@ -1279,6 +1245,7 @@ class ParamObj:
             if not hasattr(self, setterName):
                 # no; provide the default
                 def defaultSetter(self, value, param=param):
+                    #print '%s=%s for %s' % (param, value, id(self))
                     setattr(self, param, value)
                 self.__class__.__dict__[setterName] = defaultSetter
 
@@ -1291,27 +1258,74 @@ class ParamObj:
                     return getattr(self, param, default)
                 self.__class__.__dict__[getterName] = defaultGetter
 
-            # grab a reference to the setter
-            setterFunc = getattr(self, setterName)
-            # if the setter is a direct member of this instance, move the setter
-            # aside
-            if setterName in self.__dict__:
-                self.__dict__[setterName + '_MOVED'] = self.__dict__[setterName]
-                setterFunc = self.__dict__[setterName]
-            # install a setter stub that will a) call the real setter and
-            # then the applier, or b) call the setter and queue the
-            # applier, depending on whether our params are locked
-            setattr(self, setterName, new.instancemethod(
-                Functor(setterStub, param, setterFunc), self, self.__class__))
+            # have we already installed a setter stub?
+            origSetterName = '%s_ORIG' % (setterName,)
+            if not hasattr(self, origSetterName):
+                # move the original setter aside
+                origSetterFunc = getattr(self.__class__, setterName)
+                setattr(self.__class__, origSetterName, origSetterFunc)
+                """
+                # if the setter is a direct member of this instance, move the setter
+                # aside
+                if setterName in self.__dict__:
+                    self.__dict__[setterName + '_MOVED'] = self.__dict__[setterName]
+                    setterFunc = self.__dict__[setterName]
+                    """
+                # install a setter stub that will a) call the real setter and
+                # then the applier, or b) call the setter and queue the
+                # applier, depending on whether our params are locked
+                """
+                setattr(self, setterName, new.instancemethod(
+                    Functor(setterStub, param, setterFunc), self, self.__class__))
+                    """
+                def setterStub(self, value, param=param, origSetterName=origSetterName):
+                    # should we apply the value now or should we wait?
+                    # if this obj's params are locked, we track which values have
+                    # been set, and on unlock, we'll call the applyers for those
+                    # values
+                    if self._paramLockRefCount > 0:
+                        priorValues = self._priorValuesStack[-1]
+                        if param not in priorValues:
+                            try:
+                                priorValue = getSetter(self, param, 'get')()
+                            except:
+                                priorValue = None
+                            priorValues[param] = priorValue
+                        self._paramsSet[param] = None
+                        getattr(self, origSetterName)(value)
+                    else:
+                        # prepare for call to getPriorValue
+                        try:
+                            priorValue = getSetter(self, param, 'get')()
+                        except:
+                            priorValue = None
+                        self._priorValuesStack.append({
+                            param: priorValue,
+                            })
+                        getattr(self, origSetterName)(value)
+                        # call the applier, if there is one
+                        applier = getattr(self, getSetterName(param, 'apply'), None)
+                        if applier is not None:
+                            self._curParamStack.append(param)
+                            applier()
+                            self._curParamStack.pop()
+                        self._priorValuesStack.pop()
+                        if hasattr(self, 'handleParamChange'):
+                            self.handleParamChange((param,))
+
+                setattr(self.__class__, setterName, setterStub)
 
         if params is not None:
             params.applyTo(self)
 
     def destroy(self):
+        """
         for param in self.ParamSet.getParams():
             setterName = getSetterName(param)
             self.__dict__[setterName].destroy()
             del self.__dict__[setterName]
+            """
+        pass
     
     def setDefaultParams(self):
         # set all the default parameters on ourself
@@ -1336,13 +1350,13 @@ class ParamObj:
         self._paramsSet = {}
         # this will store the values of modified params (from prior to
         # the lock).
-        self._priorValuesStack.push({})
+        self._priorValuesStack.append({})
     def _handleUnlockParams(self):
         for param in self._paramsSet:
             # call the applier, if there is one
             applier = getattr(self, getSetterName(param, 'apply'), None)
             if applier is not None:
-                self._curParamStack.push(param)
+                self._curParamStack.append(param)
                 applier()
                 self._curParamStack.pop()
         self._priorValuesStack.pop()
@@ -1354,14 +1368,39 @@ class ParamObj:
     def getPriorValue(self):
         # call this within an apply function to find out what the prior value
         # of the param was
-        return self._priorValuesStack.top()[self._curParamStack.top()]
+        return self._priorValuesStack[-1][self._curParamStack[-1]]
 
     def __repr__(self):
         argStr = ''
         for param in self.ParamSet.getParams():
-            argStr += '%s=%s,' % (param,
-                                  repr(getSetter(self, param, 'get')()))
+            try:
+                value = getSetter(self, param, 'get')()
+            except:
+                value = '<unknown>'
+            argStr += '%s=%s,' % (param, repr(value))
         return '%s(%s)' % (self.__class__.__name__, argStr)
+
+if __debug__:
+    class ParamObjTest(ParamObj):
+        class ParamSet(ParamObj.ParamSet):
+            Params = {
+                'num': 0,
+            }
+        def applyNum(self):
+            self.priorValue = self.getPriorValue()
+    pto = ParamObjTest()
+    assert pto.getNum() == 0
+    pto.setNum(1)
+    assert pto.priorValue == 0
+    assert pto.getNum() == 1
+    pto.lockParams()
+    pto.setNum(2)
+    # make sure applyNum is not called until we call unlockParams
+    assert pto.priorValue == 0
+    assert pto.getNum() == 2
+    pto.unlockParams()
+    assert pto.priorValue == 1
+    assert pto.getNum() == 2
 
 """
 POD (Plain Ol' Data)
@@ -1472,19 +1511,19 @@ class POD:
     def getValue(self, name):
         return getSetter(self, name, 'get')()
 
-    # CLASS METHODS
+    @classmethod
     def getDataNames(cls):
         # returns safely-mutable list of datum names
         cls._compileDefaultDataSet()
         return cls._DataSet.keys()
-    getDataNames = classmethod(getDataNames)
+    @classmethod
     def getDefaultValue(cls, name):
         cls._compileDefaultDataSet()
         dv = cls._DataSet[name]
         if callable(dv):
             dv = dv()
         return dv
-    getDefaultValue = classmethod(getDefaultValue)
+    @classmethod
     def _compileDefaultDataSet(cls):
         if cls.__dict__.has_key('_DataSet'):
             # we've already compiled the defaults for this class
@@ -1517,8 +1556,6 @@ class POD:
                 if c.__dict__.has_key('DataSet'):
                     # apply this class' default data values to our dict
                     cls._DataSet.update(c.DataSet)
-    _compileDefaultDataSet = classmethod(_compileDefaultDataSet)
-    # END CLASS METHODS
 
     def __repr__(self):
         argStr = ''
