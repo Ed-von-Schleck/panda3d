@@ -387,12 +387,12 @@ get_pointer() const {
 //  Description: Returns a pointer to the beginning of the actual data
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned char *GeomVertexArrayDataHandle::
-get_pointer() {
-  nassertr(_writable, NULL);
-  check_resident();
-  return &_cdata->_data[0];
-}
+//INLINE unsigned char *GeomVertexArrayDataHandle::
+//get_pointer() {
+//  nassertr(_writable, NULL);
+//  check_resident();
+//  return &_cdata->_data[0];
+//}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexArrayDataHandle::get_array_format

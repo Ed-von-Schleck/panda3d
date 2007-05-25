@@ -1046,3 +1046,16 @@ copy_subdata_from(size_t to_start, size_t to_size,
   }
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexArrayDataHandle::get_pointer
+//       Access: Public
+//  Description: Returns a pointer to the beginning of the actual data
+//               stream.
+////////////////////////////////////////////////////////////////////
+unsigned char *GeomVertexArrayDataHandle::
+get_pointer() {
+  nassertr(_writable, NULL);
+  check_resident();
+    _cdata->_modified = Geom::get_next_modified();
+  return &_cdata->_data[0];
+}
