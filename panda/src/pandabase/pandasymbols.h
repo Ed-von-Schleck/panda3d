@@ -132,14 +132,6 @@
   #define EXPTP_PANDAMESA extern
 #endif
 
-#ifdef BUILDING_PANDAODE
-  #define EXPCL_PANDAODE __declspec(dllexport)
-  #define EXPTP_PANDAODE
-#else
-  #define EXPCL_PANDAODE __declspec(dllimport)
-  #define EXPTP_PANDAODE extern
-#endif
-
 #ifdef BUILDING_PANDAPHYSICS
   #define EXPCL_PANDAPHYSICS __declspec(dllexport)
   #define EXPTP_PANDAPHYSICS
@@ -220,9 +212,6 @@
 
 #define EXPCL_PANDAMESA
 #define EXPTP_PANDAMESA
-
-#define EXPCL_PANDAODE
-#define EXPTP_PANDAODE
 
 #define EXPCL_PANDAPHYSICS
 #define EXPTP_PANDAPHYSICS

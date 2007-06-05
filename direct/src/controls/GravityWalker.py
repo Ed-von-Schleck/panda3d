@@ -359,11 +359,12 @@ class GravityWalker(DirectObject.DirectObject):
                 self.cTrav.addCollider(self.cEventSphereNodePath, self.event)
                 self.cTrav.addCollider(self.cRayNodePath, self.lifter)
             else:
-                self.cTrav.removeCollider(self.cWallSphereNodePath)
-                if self.wantFloorSphere:
-                    self.cTrav.removeCollider(self.cFloorSphereNodePath)
-                self.cTrav.removeCollider(self.cEventSphereNodePath)
-                self.cTrav.removeCollider(self.cRayNodePath)
+                if hasattr(self, 'cTrav'):
+                    self.cTrav.removeCollider(self.cWallSphereNodePath)
+                    if self.wantFloorSphere:
+                        self.cTrav.removeCollider(self.cFloorSphereNodePath)
+                    self.cTrav.removeCollider(self.cEventSphereNodePath)
+                    self.cTrav.removeCollider(self.cRayNodePath)
 
     def getCollisionsActive(self):
         assert self.debugPrint("getCollisionsActive() returning=%s"%(
@@ -387,6 +388,8 @@ class GravityWalker(DirectObject.DirectObject):
         have been disabled.
         """
         assert self.notify.debugStateCall(self)
+        if not hasattr(self, 'cWallSphereNodePath'):
+            return
         self.isAirborne = 0
         self.mayJump = 1
         tempCTrav = CollisionTraverser("oneTimeCollide")
@@ -563,7 +566,11 @@ class GravityWalker(DirectObject.DirectObject):
             onScreenDebug.add("__oldDt", "% 10.4f"%self.__oldDt)
             onScreenDebug.add("self.__oldPosDelta",
                               self.__oldPosDelta.pPrintValues())
-        velocity = self.__oldPosDelta*(1.0/self.__oldDt)
+        # avoid divide by zero crash - grw
+        if self.__oldDt == 0:
+            velocity = 0
+        else:
+            velocity = self.__oldPosDelta*(1.0/self.__oldDt)
         self.priorParent = Vec3(velocity)
         if __debug__:
             if self.wantDebugIndicator:
