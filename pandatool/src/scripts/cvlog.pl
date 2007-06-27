@@ -8,9 +8,9 @@ exec perl -w -x $0 ${1+"$@"} # -*- mode: perl; perl-indent-level: 2; -*-
 ###                                                        ###
 ##############################################################
 
-## $Revision: 1.2 $
-## $Date: 2001/06/15 01:45:42 $
-## $Author: cxgeorge $
+## $Revision: 1.3 $
+## $Date: 2007/06/27 22:26:06 $
+## $Author: joshyelon $
 ##
 ##   (C) 1999 Karl Fogel <kfogel@red-bean.com>, under the GNU GPL.
 ## 
@@ -78,7 +78,7 @@ use File::Basename;
 my $Log_Source_Command = "cvs log";
 
 # In case we have to print it out:
-my $VERSION = '$Revision: 1.2 $';
+my $VERSION = '$Revision: 1.3 $';
 $VERSION =~ s/\S+\s+(\S+)\s+\S+/$1/;
 
 ## Vars set by options:
@@ -1801,7 +1801,7 @@ Note about a bug-slash-opportunity:
 There's a bug in Text::Wrap, which affects cvs2cl.  This script
 reveals it:
 
-  #!/usr/bin/perl -w
+  #!perl -w
   
   use Text::Wrap;
   
