@@ -4,15 +4,15 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
 //
 // All use of this software is subject to the terms of the Panda 3d
 // Software license.  You should have received a copy of this license
 // along with this source code; you will also find a current copy of
-// the license at http://www.panda3d.org/license.txt .
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
 //
 // To contact the maintainers of this program write to
-// panda3d@yahoogroups.com .
+// panda3d-general@lists.sourceforge.net .
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -32,28 +32,34 @@
 //               and stores them in Unicode (and conversely reconverts
 //               them on retrieval).
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAEXPRESS WindowsRegistry {
+class EXPCL_PANDAEXPRESS WindowsRegistry
+{
 PUBLISHED:
+  enum RegLevel {
+      rl_machine = 0,
+      rl_user = 1
+  };
+
   static bool set_string_value(const string &key, const string &name,
-                               const string &value);
-  static bool set_int_value(const string &key, const string &name, int value);
+                               const string &value, RegLevel rl = rl_machine);
+  static bool set_int_value(const string &key, const string &name, int value, RegLevel rl = rl_machine);
 
   enum Type {
     T_none,
     T_int,
     T_string,
   };
-  static Type get_key_type(const string &key, const string &name);
+  static Type get_key_type(const string &key, const string &name, RegLevel rl = rl_machine);
   static string get_string_value(const string &key, const string &name,
-                                 const string &default_value);
+                                 const string &default_value, RegLevel rl = rl_machine);
   static int get_int_value(const string &key, const string &name,
-                           int default_value);
+                           int default_value, RegLevel rl = rl_machine);
 
 private:
   static bool do_set(const string &key, const string &name,
-                     int data_type, const void *data, int data_length);
+                     int data_type, const void *data, int data_length, const RegLevel rl);
   static bool do_get(const string &key, const string &name,
-                     int &data_type, string &data);
+                     int &data_type, string &data, const RegLevel rl);
   static string format_message(int error_code);
 };
 
