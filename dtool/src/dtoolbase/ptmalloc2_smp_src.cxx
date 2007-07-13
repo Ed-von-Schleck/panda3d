@@ -35,7 +35,7 @@
   plus Win32 support readded.
 
 * Version ptmalloc2-smp-20011215
-  $Id: ptmalloc2_smp_src.cxx,v 1.1 2007/06/29 15:53:27 drwr Exp $
+  $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $
   based on:
 * VERSION 2.7.2 Sat Aug 17 09:07:30 2002  Doug Lea  (dl at gee)
 
@@ -1849,7 +1849,7 @@ int      __posix_memalign(void **, size_t, size_t);
 #endif
 
 /*
-  $Id: ptmalloc2_smp_src.cxx,v 1.1 2007/06/29 15:53:27 drwr Exp $
+  $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $
   `ptmalloc2', a malloc implementation for multiple threads without
   lock contention, by Wolfram Gloger <wg@malloc.de>.
 
@@ -2951,7 +2951,7 @@ static Void_t** iALLOc();
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* $Id: ptmalloc2_smp_src.cxx,v 1.1 2007/06/29 15:53:27 drwr Exp $ */
+/* $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $ */
 
 /* Compile-time constants.  */
 
@@ -3492,14 +3492,13 @@ grow_heap(h, diff) heap_info *h; long diff;
 
   if(diff >= 0) {
     diff = (diff + page_mask) & ~page_mask;
-    memory_hook->inc_heap(diff);
     new_size = (long)h->size + diff;
     if(new_size > HEAP_MAX_SIZE)
       return -1;
     if(mprotect((char *)h + h->size, diff, PROT_READ|PROT_WRITE) != 0)
       return -2;
+    memory_hook->inc_heap(diff);
   } else {
-    memory_hook->dec_heap(-diff);
     new_size = (long)h->size + diff;
     if(new_size < (long)sizeof(*h))
       return -1;
@@ -3509,6 +3508,7 @@ grow_heap(h, diff) heap_info *h; long diff;
                     MAP_PRIVATE|MAP_FIXED) == (char *) MAP_FAILED)
       return -2;
     /*fprintf(stderr, "shrink %p %08lx\n", h, new_size);*/
+    memory_hook->dec_heap(-diff);
   }
   h->size = new_size;
   return 0;
@@ -3517,8 +3517,8 @@ grow_heap(h, diff) heap_info *h; long diff;
 /* Delete a heap. */
 
 #define delete_heap(heap) { \
-  munmap((char*)(heap), HEAP_MAX_SIZE); \
   memory_hook->dec_heap(heap->size); \
+  munmap((char*)(heap), HEAP_MAX_SIZE); \
 }
 
 static int
@@ -4074,7 +4074,7 @@ static void do_check_malloc_state(mstate av)
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* $Id: ptmalloc2_smp_src.cxx,v 1.1 2007/06/29 15:53:27 drwr Exp $ */
+/* $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $ */
 
 #ifndef weak_variable
 #define weak_variable /**/
@@ -4806,6 +4806,7 @@ static Void_t* sYSMALLOc(nb, av) INTERNAL_SIZE_T nb; mstate av;
           mp_.max_total_mem = sum;
 #endif
 
+        memory_hook->inc_heap(size);
         check_chunk(av, p);
 
         return chunk2mem(p);
@@ -5292,8 +5293,8 @@ munmap_chunk(p) mchunkptr p;
   mp_.n_mmaps--;
   mp_.mmapped_mem -= (size + p->prev_size);
 
-  ret = munmap((char *)p - p->prev_size, size + p->prev_size);
   memory_hook->dec_heap(size + p->prev_size);
+  ret = munmap((char *)p - p->prev_size, size + p->prev_size);
 
   /* munmap returns non-zero on failure */
   assert(ret == 0);
