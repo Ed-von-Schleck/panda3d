@@ -6,7 +6,7 @@
   #define COMMONFLAGS /Gi-
 
   // use "unsafe" QIfist flt->int rounding only if FAST_FLT_TO_INT is defined
-  #define OPTFLAGS /O2 /Ob1 /G6 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
+  #define OPTFLAGS /O2 /Ob1 /G7 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
   #define OPT1FLAGS /GZ
 
   // Note: Zi cannot be used on multiproc builds with precomp hdrs, Z7 must be used instead
@@ -92,7 +92,7 @@
   #define COMMONFLAGS /DHAVE_DINKUM /Zc:forScope
 
   // use "unsafe" QIfist flt->int rounding only if FAST_FLT_TO_INT is defined
-  #define REGULAR_OPTFLAGS /O2 /Ob2 /G6 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
+  #define REGULAR_OPTFLAGS /O2 /Ob2 /G7 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
 
   #defer OPTFLAGS $[if $[OPT_MINSIZE],/Ox /Og /Ob1 /Oi /Os /Oy /GL /G7,$[REGULAR_OPTFLAGS]]
 
