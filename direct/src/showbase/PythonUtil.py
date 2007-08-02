@@ -2736,14 +2736,7 @@ def superFlattenShip(ship):
     #PHASE 3: stop rocking task
     taskMgr.remove("shipRocking-%d"%(ship.getDoId()))
 
-    #PHASE 4: kill lamp effects
-    from pirates.shipparts.DistributedShipDecor import DistributedShipDecor
-    for DO in base.cr.doId2do.values():
-        if(type(DO) == DistributedShipDecor):
-            if (hasattr(DO.prop, 'lanternGlowEffect')):
-                DO.prop.lanternGlowEffect.destroy()
-            
-    #PHASE 5: flatten strong!
+    #PHASE 4: flatten strong!
     return ship.flattenStrong()
 
 def exceptionLogged(append=True):
