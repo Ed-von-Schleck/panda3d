@@ -80,7 +80,7 @@ dec_memory_usage(MemoryClass memory_class, int size) {
     assert(rnode != (TypeRegistryNode *)NULL);
     AtomicAdjust::add(rnode->_memory_usage[memory_class], -(PN_int32)size);
     if (rnode->_memory_usage[memory_class] < 0) {
-      cerr << *this << ".dec(" << memory_class << ", " << size << ") -> " << rnode->_memory_usage[memory_class] << "\n";
+    //  cerr << *this << ".dec(" << memory_class << ", " << size << ") -> " << rnode->_memory_usage[memory_class] << "\n";
     }
     // assert(rnode->_memory_usage[memory_class] >= 0);
   }
