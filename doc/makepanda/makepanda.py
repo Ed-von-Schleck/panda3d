@@ -1715,8 +1715,8 @@ def WriteConfigSettings():
     #if (OPTIMIZE <= 2):
     #    settings["TRACK_IN_INTERPRETER"] = '1'
     
-    if (OPTIMIZE <= 3):
-        settings["DO_MEMORY_USAGE"] = '1'
+    #if (OPTIMIZE <= 3):
+    #    settings["DO_MEMORY_USAGE"] = '1'
     
     #if (OPTIMIZE <= 1):
     #    settings["DO_PIPELINING"] = '1'
