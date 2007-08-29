@@ -290,4 +290,13 @@
 #define INLINE_GUI INLINE
 #define INLINE_AUDIO INLINE
 
+// Panda 1.4.0 preceeded the splitting of EXPCL_PANDA. This
+// is a little hack that lets me more easily backport code.
+#define EXPCL_PANDA_AUDIO EXPCL_PANDA
+#define EXPTP_PANDA_AUDIO EXPTP_PANDA
+#define EXPCL_PANDA_GRUTIL EXPCL_PANDA
+#define EXPTP_PANDA_GRUTIL EXPTP_PANDA
+#define EXPCL_PANDA_MOVIES EXPCL_PANDA
+#define EXPTP_PANDA_MOVIES EXPTP_PANDA
+
 #endif
