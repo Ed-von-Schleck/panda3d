@@ -36,7 +36,7 @@ VERSION=0
 VERBOSE=1
 COMPRESSOR="zlib"
 PACKAGES=["PYTHON","ZLIB","PNG","JPEG","TIFF","VRPN","FMODEX","NVIDIACG",
-          "OPENSSL","FREETYPE","FFTW","MILES",
+          "OPENSSL","FREETYPE","FFTW","MILES","OPENAL",
           "MAYA6","MAYA65","MAYA7","MAYA8","MAYA85","MAX6","MAX7","MAX8","MAX9",
           "FFMPEG","PANDATOOL","PANDAAPP","DX8","DX9"]
 OMIT=PACKAGES[:]
@@ -1078,6 +1078,7 @@ def CompileCxx(obj,src,ipath,opts):
         if (PkgSelected(opts,"VRPN")):     cmd = cmd + ' -I' + THIRDPARTYLIBS + 'vrpn/include'
         if (PkgSelected(opts,"FFTW")):     cmd = cmd + ' -I' + THIRDPARTYLIBS + 'fftw/include'
         if (PkgSelected(opts,"FMODEX")):   cmd = cmd + ' -I' + THIRDPARTYLIBS + 'fmodex/include'
+        if (PkgSelected(opts,"OPENAL")):   cmd = cmd + ' -I' + THIRDPARTYLIBS + 'openal/include'
         if (PkgSelected(opts,"NVIDIACG")): cmd = cmd + ' -I' + THIRDPARTYLIBS + 'nvidiacg/include'
         if (PkgSelected(opts,"FFMPEG")):   cmd = cmd + ' -I' + THIRDPARTYLIBS + 'ffmpeg/include'
         if (PkgSelected(opts,"FREETYPE")): cmd = cmd + ' -I/usr/include/freetype2'
@@ -1356,6 +1357,8 @@ def CompileLink(dll, obj, opts, ldef):
             cmd = cmd + ' ' + THIRDPARTYLIBS + 'vrpn/lib/quat.lib'
         if (PkgSelected(opts,"FMODEX")):
             cmd = cmd + ' ' + THIRDPARTYLIBS + 'fmodex/lib/fmodex_vc.lib'
+        if (PkgSelected(opts,"OPENAL")):
+            cmd = cmd + ' ' + THIRDPARTYLIBS + 'openal/lib/pandaopenal32.lib'
         if (PkgSelected(opts,"MILES")):
             cmd = cmd + ' ' + THIRDPARTYLIBS + 'miles/lib/mss32.lib'
         if (PkgSelected(opts,"NVIDIACG")):
@@ -1412,6 +1415,7 @@ def CompileLink(dll, obj, opts, ldef):
             if (opts.count("CGGL")):  cmd = cmd + " -lCgGL"
             cmd = cmd + " -lCg "
         if (PkgSelected(opts,"FFMPEG")):   cmd = cmd + ' -L' + THIRDPARTYLIBS + 'ffmpeg/lib -lavformat -lavcodec -lavformat -lavutil'
+        if (PkgSelected(opts,"OPENAL")):   cmd = cmd + ' -L' + THIRDPARTYLIBS + 'openal/lib -lopenal'
         if (PkgSelected(opts,"ZLIB")):     cmd = cmd + " -lz"
         if (PkgSelected(opts,"PNG")):      cmd = cmd + " -lpng"
         if (PkgSelected(opts,"JPEG")):     cmd = cmd + " -ljpeg"
@@ -1944,6 +1948,7 @@ CopyAllHeaders('panda/src/display')
 CopyAllHeaders('panda/src/device')
 CopyAllHeaders('panda/src/pnmtext')
 CopyAllHeaders('panda/src/text')
+CopyAllHeaders('panda/src/movies')
 CopyAllHeaders('panda/src/grutil')
 CopyAllHeaders('panda/src/tform')
 CopyAllHeaders('panda/src/collide')
@@ -2615,11 +2620,12 @@ EnqueueIgate(ipath=IPATH, opts=OPTS, outd='librecorder.in', obj='librecorder_iga
 #
 
 IPATH=['panda/src/movies']
-OPTS=['BUILDING_PANDA']
+OPTS=['BUILDING_PANDA', 'FFMPEG']
 EnqueueCxx(ipath=IPATH, opts=OPTS, src='movies_composite1.cxx', obj='movies_composite1.obj')
 EnqueueIgate(ipath=IPATH, opts=OPTS, outd='libmovies.in', obj='libmovies_igate.obj',
             src='panda/src/movies',  module='panda', library='libmovies',
             skip=[], also=["movies_composite.cxx"])
+
 
 #
 # DIRECTORY: panda/src/vrpn/
@@ -2747,6 +2753,19 @@ if OMIT.count("MILES") == 0:
                'libp3dtoolconfig.dll',
                'libp3dtool.dll',
   ])
+
+if OMIT.count("OPENAL") == 0:
+  IPATH=['panda/src/audiotraits']
+  OPTS=['BUILDING_OPENAL_AUDIO',  'OPENAL']
+  EnqueueCxx(ipath=IPATH, opts=OPTS, src='openal_audio_composite.cxx', obj='openal_audio_openal_audio_composite.obj')
+  EnqueueLink(opts=['ADVAPI', 'WINUSER', 'WINMM', 'OPENAL'], dll='libp3openal_audio.dll', obj=[
+               'openal_audio_openal_audio_composite.obj',
+               'libpanda.dll',
+               'libpandaexpress.dll',
+               'libp3dtoolconfig.dll',
+               'libp3dtool.dll',
+  ])
+
 
 #
 # DIRECTORY: panda/src/distort/
