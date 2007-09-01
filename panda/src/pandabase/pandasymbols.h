@@ -60,6 +60,14 @@
   #define EXPTP_FMOD_AUDIO extern
 #endif
 
+#ifdef BUILDING_OPENAL_AUDIO
+  #define EXPCL_OPENAL_AUDIO __declspec(dllexport)
+  #define EXPTP_OPENAL_AUDIO
+#else
+  #define EXPCL_OPENAL_AUDIO __declspec(dllimport)
+  #define EXPTP_OPENAL_AUDIO extern
+#endif
+
 #ifdef BUILDING_PANDA
   #define EXPCL_PANDA __declspec(dllexport)
   #define EXPTP_PANDA
@@ -194,6 +202,9 @@
 #define EXPCL_FMOD_AUDIO
 #define EXPTP_FMOD_AUDIO
 
+#define EXPCL_OPENAL_AUDIO
+#define EXPTP_OPENAL_AUDIO
+
 #define EXPCL_PANDA
 #define EXPTP_PANDA
 
@@ -298,7 +309,5 @@
 #define EXPTP_PANDA_GRUTIL EXPTP_PANDA
 #define EXPCL_PANDA_MOVIES EXPCL_PANDA
 #define EXPTP_PANDA_MOVIES EXPTP_PANDA
-#define EXPCL_OPENAL_AUDIO EXPCL_PANDA
-#define EXPTP_OPENAL_AUDIO EXPTP_PANDA
 
 #endif
