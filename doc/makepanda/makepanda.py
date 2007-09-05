@@ -1861,6 +1861,7 @@ if (sys.platform != "win32"):
     confautoprc = confautoprc.replace("aux-display pandadx9","")
     confautoprc = confautoprc.replace("aux-display pandadx8","")
     confautoprc = confautoprc.replace("aux-display pandadx7","")
+    configprc = configprc.replace("p3openal_audio", "p3fmod_audio")
 
 ConditionalWriteFile("built/etc/Config.prc", configprc)
 ConditionalWriteFile("built/etc/Confauto.prc", confautoprc)
