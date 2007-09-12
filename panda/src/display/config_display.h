@@ -88,6 +88,7 @@ extern EXPCL_PANDA ConfigVariableInt multisamples;
 
 extern EXPCL_PANDA ConfigVariableDouble background_color;
 extern EXPCL_PANDA ConfigVariableBool sync_video;
+extern EXPCL_PANDA ConfigVariableBool basic_shaders_only;
 
 extern EXPCL_PANDA void init_libdisplay();
 
