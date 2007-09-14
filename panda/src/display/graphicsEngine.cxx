@@ -655,6 +655,7 @@ render_frame() {
       }
     }
   }
+  _windows.swap(new_windows);
 
   // Now it's time to do any drawing from the main frame--after all of
   // the App code has executed, but before we begin the next frame.
