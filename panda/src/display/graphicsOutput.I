@@ -313,8 +313,8 @@ get_right_eye_color_mask() const {
 //       Access: Published
 //  Description: Returns the framebuffer properties of the window.
 ////////////////////////////////////////////////////////////////////
-INLINE const FrameBufferProperties &GraphicsOutput::
-get_fb_properties() const {
+INLINE FrameBufferProperties &GraphicsOutput::
+get_fb_properties() {
   return _fb_properties;
 }
 
