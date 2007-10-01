@@ -44,14 +44,10 @@ osxGraphicsWindow  * osxGraphicsWindow::FullScreenWindow = NULL;
 //  Description: How to find the active window for events  on osx..
 //
 ////////////////////////////////////////////////////////////////////
-osxGraphicsWindow * osxGraphicsWindow::GetCurrentOSxWindow (WindowRef window)
+osxGraphicsWindow* osxGraphicsWindow::GetCurrentOSxWindow(WindowRef window)
 {
 	if(FullScreenWindow != NULL)
-	{
-//	 cerr << " Full Screen \n";
 	   return FullScreenWindow;
-   }
-//	 cerr << "Not Full Screen \n";
 
 	if (NULL == window)  // HID use this path
 	{
@@ -63,7 +59,7 @@ osxGraphicsWindow * osxGraphicsWindow::GetCurrentOSxWindow (WindowRef window)
 	}
 		
 	if (window)
-		return (osxGraphicsWindow *) GetWRefCon (window);
+		return (osxGraphicsWindow *)GetWRefCon (window);
 	else
 		return NULL;
 }
@@ -74,7 +70,7 @@ osxGraphicsWindow * osxGraphicsWindow::GetCurrentOSxWindow (WindowRef window)
 //  Description: Helper function for AGL error message and Grabing error code if any
 //
 ////////////////////////////////////////////////////////////////////
-OSStatus aglReportError ( const std::string  &comment)
+OSStatus aglReportError(const std::string &comment)
 {
 	GLenum err = aglGetError();
 	if (err != AGL_NO_ERROR ) 
@@ -83,8 +79,9 @@ OSStatus aglReportError ( const std::string  &comment)
 	if (err == AGL_NO_ERROR)
 		return noErr;
 	else
-		return (OSStatus) err;
+		return (OSStatus)err;
 }
+
 ////////////////////////////////////////////////////////////////////
 //     Function: InvertGLImage
 //       Access: file scopre, static
@@ -95,14 +92,17 @@ static void InvertGLImage( char *imageData, size_t imageSize, size_t rowBytes )
 {
 	size_t i, j;
 	char *tBuffer = (char*) malloc (rowBytes);
-	if (NULL == tBuffer) return;
+	if (NULL == tBuffer)
+		return;
 		
 	// Copy by rows through temp buffer
-	for (i = 0, j = imageSize - rowBytes; i < imageSize >> 1; i += rowBytes, j -= rowBytes) {
+	for (i = 0, j = imageSize - rowBytes; i < imageSize >> 1; i += rowBytes, j -= rowBytes)
+	{
 		memcpy( tBuffer, &imageData[i], rowBytes );
 		memcpy( &imageData[i], &imageData[j], rowBytes );
 		memcpy( &imageData[j], tBuffer, rowBytes );
 	}
+
 	free(tBuffer);
 }
 
@@ -114,23 +114,26 @@ static void InvertGLImage( char *imageData, size_t imageSize, size_t rowBytes )
 ////////////////////////////////////////////////////////////////////
 static void CompositeGLBufferIntoWindow (AGLContext ctx, Rect *bufferRect, GrafPtr out_port)
 {
-	GWorldPtr pGWorld;
-	QDErr err;
+	GWorldPtr	pGWorld;
+	QDErr		err;
+	
 	// blit OpenGL content into window backing store
 	// allocate buffer to hold pane image
 	long width  = (bufferRect->right - bufferRect->left);
 	long height  = (bufferRect->bottom - bufferRect->top);
-	
 	
 	Rect src_rect = {0, 0, height, width};
 	Rect ddrc_rect = {0, 0, height, width};
 	long rowBytes = width * 4;
 	long imageSize = rowBytes * height;
 	char *image = (char *) NewPtr (imageSize);
-	if (!image) {
+
+	if (!image)
+	{
 		osxdisplay_cat.error() << "Out of memory in CompositeGLBufferIntoWindow()!\n";
 		return;		// no harm in continuing
 	}
+	
 	// pull GL content down to our image buffer
 	aglSetCurrentContext( ctx );
 	glReadPixels (0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image);
@@ -140,13 +143,14 @@ static void CompositeGLBufferIntoWindow (AGLContext ctx, Rect *bufferRect, GrafP
 
 	// create a GWorld containing our image
 	err = NewGWorldFromPtr (&pGWorld, k32ARGBPixelFormat, &src_rect, 0, 0, 0, image, rowBytes);
-	if (err != noErr) {
+	if (err != noErr)
+	{
 		osxdisplay_cat.error() << " error in NewGWorldFromPtr, called from CompositeGLBufferIntoWindow()\n";
-		free( image );
+		free(image);
 		return;
 	}
 
-	GrafPtr portSave 	= NULL;
+	GrafPtr portSave 	=	NULL;
 	Boolean	portChanged	=	QDSwapPort(out_port, &portSave);
 
 	CopyBits( GetPortBitMapForCopyBits (pGWorld), GetPortBitMapForCopyBits (out_port), &src_rect, &ddrc_rect, srcCopy, 0 );
@@ -166,74 +170,73 @@ static void CompositeGLBufferIntoWindow (AGLContext ctx, Rect *bufferRect, GrafP
 ////////////////////////////////////////////////////////////////////
 OSStatus osxGraphicsWindow::event_handler(EventHandlerCallRef myHandler, EventRef event)
 {
-  OSStatus result = eventNotHandledErr;
-  UInt32 the_class = GetEventClass(event);
-  UInt32 kind = GetEventKind(event);
+	OSStatus result = eventNotHandledErr;
+	UInt32 the_class = GetEventClass(event);
+	UInt32 kind = GetEventKind(event);
 
-  WindowRef window = NULL;		
-  GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL, sizeof(WindowRef), NULL, &window);
+	WindowRef window = NULL;		
+	GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL, sizeof(WindowRef), NULL, &window);
 
-  if (osxdisplay_cat.is_spam()) {
-    osxdisplay_cat.spam()
-      << ClockObject::get_global_clock()->get_real_time() 
-      << " event_handler: " << (void *)this << ", " << window << ", "
-      << the_class << ", " << kind << "\n";
-  }
+	if (osxdisplay_cat.is_spam())
+	{
+		osxdisplay_cat.spam() << ClockObject::get_global_clock()->get_real_time() << " event_handler: " << (void *)this << ", " << window << ", " << the_class << ", " << kind << "\n";
+	}
 
-  switch (the_class) {
-  case kEventClassMouse:
-    result  = handleWindowMouseEvents (myHandler, event);
-    break;
-	
-  case kEventClassWindow:	
-    switch (kind) {
-    case kEventWindowCollapsing:
-      /*
-      Rect r;
-      GetWindowPortBounds (window, &r);					
-      CompositeGLBufferIntoWindow( get_context(), &r, GetWindowPort (window));
-      UpdateCollapsedWindowDockTile (window);
-      */
-      SystemSetWindowForground(false);
-      break;
-    case kEventWindowActivated: // called on click activation and initially
-      SystemSetWindowForground(true);
-      DoResize();
-      break;
-    case kEventWindowDeactivated:
-      SystemSetWindowForground(false);
-      break;
-    case kEventWindowClose: // called when window is being closed (close box)
-      // This is a message from the window manager indicating that
-      // the user has requested to close the window.
-      user_close_request();
-      result = noErr;
-      break;
-    case kEventWindowShown: // called on initial show (not on un-minimize)
-      if (window == FrontWindow ())
-        SetUserFocusWindow (window);
-      break;
-    case kEventWindowBoundsChanged: // called for resize and moves (drag)
-      DoResize();
-      break;
-    case kEventWindowZoomed:
-      break;
-    case kEventWindowCollapsed:
-      {
-        WindowProperties properties;
-        properties.set_minimized(true);
-        system_changed_properties(properties);
-      }
-      break;
-    case kEventWindowExpanded:
-      {
-        WindowProperties properties;
-        properties.set_minimized(false);
-        system_changed_properties(properties);
-      }
-      break;
-    }
-    break;
+  switch (the_class)
+  {
+	  case kEventClassMouse:
+		result  = handleWindowMouseEvents (myHandler, event);
+		break;
+		
+	  case kEventClassWindow:	
+		switch (kind) {
+		case kEventWindowCollapsing:
+		  /*
+		  Rect r;
+		  GetWindowPortBounds (window, &r);					
+		  CompositeGLBufferIntoWindow( get_context(), &r, GetWindowPort (window));
+		  UpdateCollapsedWindowDockTile (window);
+		  */
+		  SystemSetWindowForground(false);
+		  break;
+		case kEventWindowActivated: // called on click activation and initially
+		  SystemSetWindowForground(true);
+		  DoResize();
+		  break;
+		case kEventWindowDeactivated:
+		  SystemSetWindowForground(false);
+		  break;
+		case kEventWindowClose: // called when window is being closed (close box)
+		  // This is a message from the window manager indicating that
+		  // the user has requested to close the window.
+		  user_close_request();
+		  result = noErr;
+		  break;
+		case kEventWindowShown: // called on initial show (not on un-minimize)
+		  if (window == FrontNonFloatingWindow ())
+			SetUserFocusWindow (window);
+		  break;
+		case kEventWindowBoundsChanged: // called for resize and moves (drag)
+		  DoResize();
+		  break;
+		case kEventWindowZoomed:
+		  break;
+		case kEventWindowCollapsed:
+		  {
+			WindowProperties properties;
+			properties.set_minimized(true);
+			system_changed_properties(properties);
+		  }
+		  break;
+		case kEventWindowExpanded:
+		  {
+			WindowProperties properties;
+			properties.set_minimized(false);
+			system_changed_properties(properties);
+		  }
+		  break;
+		}
+		break;
   }
 
   return result;
@@ -249,14 +252,14 @@ OSStatus osxGraphicsWindow::event_handler(EventHandlerCallRef myHandler, EventRe
 void osxGraphicsWindow::user_close_request()
 {
   string close_request_event = get_close_request_event();
-  if (!close_request_event.empty()) {
-    // In this case, the app has indicated a desire to intercept
-    // the request and process it directly.
+  if (!close_request_event.empty())
+  {
+    // In this case, the app has indicated a desire to intercept the request and process it directly.
     throw_event(close_request_event);
-    
-  } else {
-    // In this case, the default case, the app does not intend
-    // to service the request, so we do by closing the window.
+  }    
+  else
+  {
+    // In this case, the default case, the app does not intend to service the request, so we do by closing the window.
     close_window();
   }
 }
@@ -269,8 +272,8 @@ void osxGraphicsWindow::user_close_request()
 ////////////////////////////////////////////////////////////////////
 void osxGraphicsWindow::SystemCloseWindow()
 {	
- if (osxdisplay_cat.is_debug())	
-	osxdisplay_cat.debug() << "System Closing Window \n";
+	if (osxdisplay_cat.is_debug())	
+		osxdisplay_cat.debug() << "System Closing Window \n";
 	ReleaseSystemResources();	
 };
 
@@ -283,18 +286,19 @@ void osxGraphicsWindow::SystemCloseWindow()
 //  handle system window events..
 //        
 ////////////////////////////////////////////////////////////////////
-static pascal OSStatus 
-windowEvtHndlr(EventHandlerCallRef myHandler, EventRef event, void *userData) {
+
+static pascal OSStatus	windowEvtHndlr(EventHandlerCallRef myHandler, EventRef event, void *userData)
+{
 #pragma unused (userData)
  
   WindowRef window = NULL;		
   GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL, sizeof(WindowRef), NULL, &window);
 
-  if (window != NULL) {
+  if (window != NULL)
+  {
     osxGraphicsWindow *osx_win = osxGraphicsWindow::GetCurrentOSxWindow(window);
-    if (osx_win != (osxGraphicsWindow *)NULL) {
+    if (osx_win != (osxGraphicsWindow *)NULL)
       return osx_win->event_handler(myHandler, event);
-    }
   }
 
   return eventNotHandledErr;
@@ -308,9 +312,11 @@ windowEvtHndlr(EventHandlerCallRef myHandler, EventRef event, void *userData) {
 //   We only hook this up for none fullscreen window... so we only handle system window events..
 //        
 ////////////////////////////////////////////////////////////////////
+
 void     osxGraphicsWindow::DoResize(void)
 {
 	osxdisplay_cat.debug() << "In Resize Out....." << _properties << "\n";
+
     // only in window mode .. not full screen
     if(_osx_window != NULL && _is_fullscreen == false && _properties.has_size())
     {
@@ -345,11 +351,10 @@ void     osxGraphicsWindow::DoResize(void)
 //    Hooked  once for application
 //        
 ////////////////////////////////////////////////////////////////////
+
 static pascal OSStatus appEvtHndlr (EventHandlerCallRef myHandler, EventRef event, void* userData)
 {
 #pragma unused (myHandler)
-
-//	cerr << " In appEvtHandler \n";
 
     OSStatus result = eventNotHandledErr;
     osxGraphicsWindow *osx_win = NULL;
@@ -357,16 +362,15 @@ static pascal OSStatus appEvtHndlr (EventHandlerCallRef myHandler, EventRef even
     UInt32 the_class = GetEventClass (event);
     UInt32 kind = GetEventKind (event);
 
-	GetEventParameter(event, kEventParamWindowRef,
-                        typeWindowRef, NULL, sizeof(WindowRef),
-                        NULL, (void*) &window);
+	GetEventParameter(event, kEventParamWindowRef, typeWindowRef, NULL, sizeof(WindowRef), NULL, (void*) &window);
 
      osx_win = osxGraphicsWindow::GetCurrentOSxWindow(window);
 
     if(osx_win == NULL)
 	  return eventNotHandledErr;
 	  
-	switch (the_class) {
+	switch (the_class)
+	{
         case kEventClassTextInput:
 			  if(kind == kEventTextInputUnicodeForKeyEvent)
 				osx_win->handleTextInput(myHandler, event);
@@ -535,6 +539,7 @@ osxGraphicsWindow::osxGraphicsWindow(GraphicsPipe *pipe,
 	_input_devices.push_back(device);
 	_input_devices[0].set_pointer_in_window(0, 0);
 	_last_key_modifiers = 0;
+        _last_buttons = 0;
 	
 	if (osxdisplay_cat.is_debug())	
 		osxdisplay_cat.debug() << "osxGraphicsWindow::osxGraphicsWindow() -" <<_ID << "\n";
@@ -594,45 +599,40 @@ AGLContext  osxGraphicsWindow::get_ggs_context(void)
 //       Access: private..
 //  Description:  Code of the class.. used to control the GL context Allocation .. 
 ////////////////////////////////////////////////////////////////////
-OSStatus osxGraphicsWindow::buildGL (bool full_screen)
-{
-	// make sure the ggs is up and runnig..
-		osxGraphicsStateGuardian *osxgsg = NULL;
-		osxgsg = DCAST(osxGraphicsStateGuardian, _gsg);
-		OSStatus stat = osxgsg->buildGL(*this);
-		if(stat != noErr)
-		   return stat;
+OSStatus osxGraphicsWindow::
+buildGL(bool full_screen) {
+  // make sure the ggs is up and runnig..
+  osxGraphicsStateGuardian *osxgsg = NULL;
+  osxgsg = DCAST(osxGraphicsStateGuardian, _gsg);
+  OSStatus stat = osxgsg->buildGL(*this, full_screen, _fb_properties);
 
-	OSStatus err = noErr;
+  if(stat != noErr) {
+    return stat;
+  }
+  
+  OSStatus err = noErr;
 	
-//	if(!full_screen)
-	{
-		if (osxgsg->getAGlPixelFormat())
-		 {
-			_holder_aglcontext = aglCreateContext(osxgsg->getAGlPixelFormat(),NULL);
-			
-			err  = aglReportError ("aglCreateContext");
-			if(_holder_aglcontext == NULL)
-			{
-				osxdisplay_cat.error() << "osxGraphicsWindow::buildG Error aglCreateContext \n";
-				if(err ==noErr)
-				  err = -1;				
-			}
-			else
-			{			
-				aglSetInteger (_holder_aglcontext, AGL_BUFFER_NAME, &osxgsg->SharedBuffer); 	
-				err = aglReportError ("aglSetInteger AGL_BUFFER_NAME");
-			
-			}
-		}
-		else
-		{
-			osxdisplay_cat.error() << "osxGraphicsWindow::buildG Error Getting PixelFormat \n"; 	
-			if(err ==noErr)
-				err = -1;				
-		}
-	}
-    return err;
+  if (osxgsg->getAGlPixelFormat()) {
+    _holder_aglcontext = aglCreateContext(osxgsg->getAGlPixelFormat(),NULL);
+    
+    err  = aglReportError ("aglCreateContext");
+    if(_holder_aglcontext == NULL) {
+      osxdisplay_cat.error() << "osxGraphicsWindow::buildG Error aglCreateContext \n";
+      if(err ==noErr)
+        err = -1;				
+    } else {			
+      aglSetInteger (_holder_aglcontext, AGL_BUFFER_NAME, &osxgsg->SharedBuffer); 	
+      err = aglReportError ("aglSetInteger AGL_BUFFER_NAME");
+      
+    }
+  } else {
+    osxdisplay_cat.error()
+      << "osxGraphicsWindow::buildG Error Getting PixelFormat \n"; 	
+    if(err ==noErr) {
+      err = -1;
+    }
+  }
+  return err;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1096,13 +1096,13 @@ bool osxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
       
 			if(buildGL(false) != noErr)
 			{
-			osxdisplay_cat.error() << " Error In Generate GL \n";
-			  
-			HideWindow (_osx_window);
-			SetWRefCon (_osx_window, (long int) NULL);
-			DisposeWindow(_osx_window);
-			_osx_window = NULL;
-			return false;
+				osxdisplay_cat.error() << " Error In Generate GL \n";
+				  
+				HideWindow (_osx_window);
+				SetWRefCon (_osx_window, (long int) NULL);
+				DisposeWindow(_osx_window);
+				_osx_window = NULL;
+				return false;
 			}
 
 			//
@@ -1157,20 +1157,24 @@ bool osxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 void osxGraphicsWindow::process_events()
 {
     GraphicsWindow::process_events();
-    EventRef theEvent;
-    EventTargetRef theTarget;
-    theTarget = GetEventDispatcherTarget();
 
-    //    while  (ReceiveNextEvent(0, NULL,kEventDurationForever,true, &theEvent)== noErr)
-    while  (ReceiveNextEvent(0, NULL,kEventDurationNoWait,true, &theEvent)== noErr)
-    {
-//	   static int pass = 0;
-//	    cerr << "--------------------------------------------Dispatch Event " << pass++ << "\n";
-        SendEventToEventTarget (theEvent, theTarget);
-        ReleaseEvent(theEvent);
-//		cerr << "------------------------------------Done Dispatch \n";
+    if (!osx_disable_event_loop) {
+      EventRef theEvent;
+      EventTargetRef theTarget;
+      theTarget = GetEventDispatcherTarget();
+      
+      if (!_properties.has_parent_window())
+	{
+          //    while  (ReceiveNextEvent(0, NULL,kEventDurationForever,true, &theEvent)== noErr)
+          while  (ReceiveNextEvent(0, NULL,kEventDurationNoWait,true, &theEvent)== noErr)
+            {
+              //	    cerr << "--------------------------------------------Dispatch Event " << pass++ << "\n";
+              SendEventToEventTarget (theEvent, theTarget);
+              ReleaseEvent(theEvent);
+              //		cerr << "------------------------------------Done Dispatch \n";
+            }
+	}
     }
-
 };
 
 // handle display config changes meaing we need to update the GL context via the resize function and check for windwo dimension changes
@@ -1318,60 +1322,35 @@ void osxGraphicsWindow::SystemPointToLocalPoint(Point &qdGlobalPoint)
      if (eventNotHandledErr == result) 
      { // only handle events not already handled (prevents wierd resize interaction)
          switch (kind) {
-             // start trackball, pan, or dolly
+             // Whenever mouse button state changes, generate the
+             // appropriate Panda down/up events to represent the
+             // change.
+
             case kEventMouseDown:
-                {
-                    GetEventParameter(event, kEventParamMouseButton, typeMouseButton, NULL, sizeof(EventMouseButton), NULL, &button);
-                    GetEventParameter(event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modifiers);
-                    if(_properties.get_mouse_mode()==WindowProperties::M_relative)
-                    {
-                      GetEventParameter(event, kEventParamMouseDelta,typeQDPoint, NULL, sizeof(Point),NULL	, (void*) &qdGlobalPoint);
-                      MouseData currMouse=get_pointer(0);
-                      qdGlobalPoint.h+=currMouse.get_x();
-                      qdGlobalPoint.v+=currMouse.get_y();
-                    } 
-                    else
-                    {
-                      GetEventParameter(event, kEventParamMouseLocation,typeQDPoint, NULL, sizeof(Point),NULL	, (void*) &qdGlobalPoint);                    
-                      SystemPointToLocalPoint(qdGlobalPoint);
-                    }
-                    ButtonHandle button_h = MouseButton::one();
-                    if(kEventMouseButtonSecondary == button)
-                        button_h = MouseButton::three();
-                    if(kEventMouseButtonTertiary == button)
-                        button_h = MouseButton::two();
-                    _input_devices[0].set_pointer_in_window((int)qdGlobalPoint.h, (int)qdGlobalPoint.v);
-                    _input_devices[0].button_down(button_h);
-					result = noErr;
-                }
-                break;
-                // stop trackball, pan, or dolly
             case kEventMouseUp:
+              {
+                GetEventParameter(event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modifiers);
+                if (_properties.get_mouse_mode() == WindowProperties::M_relative)
                 {
-                    GetEventParameter(event, kEventParamMouseButton, typeMouseButton, NULL, sizeof(EventMouseButton), NULL, &button);
-                    //				GetEventParameter(event, kEventParamWindowMouseLocation, typeHIPoint, NULL, sizeof(HIPoint), NULL, &location);	// Mac OS X v10.1 and later
-                    if(_properties.get_mouse_mode()==WindowProperties::M_relative)
-                    {
-                      GetEventParameter(event, kEventParamMouseDelta,typeQDPoint, NULL, sizeof(Point),NULL	, (void*) &qdGlobalPoint);
-                      MouseData currMouse=get_pointer(0);
-                      qdGlobalPoint.h+=currMouse.get_x();
-                      qdGlobalPoint.v+=currMouse.get_y();
-                    }
-                    else
-                    {
-                      GetEventParameter(event, kEventParamMouseLocation,typeQDPoint, NULL, sizeof(Point),NULL	, (void*) &qdGlobalPoint);
-                      SystemPointToLocalPoint(qdGlobalPoint);
-                    }
-                    ButtonHandle button_h = MouseButton::one();
-                    if(kEventMouseButtonSecondary == button)
-                        button_h = MouseButton::three();
-                    if(kEventMouseButtonTertiary == button)
-                        button_h = MouseButton::two();
-                    _input_devices[0].set_pointer_in_window((int)qdGlobalPoint.h, (int)qdGlobalPoint.v);
-                    _input_devices[0].button_up(button_h);
-					result = noErr;					
+                  GetEventParameter(event, kEventParamMouseDelta,typeQDPoint, NULL, sizeof(Point),NULL	, (void*) &qdGlobalPoint);
+                  MouseData currMouse = get_pointer(0);
+                  qdGlobalPoint.h += currMouse.get_x();
+                  qdGlobalPoint.v += currMouse.get_y();
                 }
-                break;
+                else
+                {
+                  GetEventParameter(event, kEventParamMouseLocation,typeQDPoint, NULL, sizeof(Point),NULL	, (void*) &qdGlobalPoint);                    
+                  SystemPointToLocalPoint(qdGlobalPoint);
+                }
+
+                _input_devices[0].set_pointer_in_window((int)qdGlobalPoint.h, (int)qdGlobalPoint.v);
+
+                UInt32 new_buttons = GetCurrentEventButtonState();
+                HandleButtonDelta(new_buttons);
+              }
+              result = noErr;
+              break;
+
             case kEventMouseMoved:	
             case kEventMouseDragged:
                 if(_properties.get_mouse_mode()==WindowProperties::M_relative)
@@ -1388,7 +1367,7 @@ void osxGraphicsWindow::SystemPointToLocalPoint(Point &qdGlobalPoint)
                   SystemPointToLocalPoint(qdGlobalPoint);
                 }
                 _input_devices[0].set_pointer_in_window((int)qdGlobalPoint.h, (int)qdGlobalPoint.v);
-				result = noErr;
+                result = noErr;
 
                 break;
 				
@@ -1583,6 +1562,43 @@ void osxGraphicsWindow::SystemPointToLocalPoint(Point &qdGlobalPoint)
     _last_key_modifiers = newModifiers;						   
 								
  };
+
+////////////////////////////////////////////////////////////////////
+//     Function: osxGraphicsWindow::HandleButtonDelta
+//       Access: Private
+//  Description: Used to emulate buttons events/
+////////////////////////////////////////////////////////////////////
+void osxGraphicsWindow::
+HandleButtonDelta(UInt32 new_buttons) {
+  UInt32 changed = _last_buttons ^ new_buttons;
+
+  if (changed & 0x01) {
+    if (new_buttons & 0x01) {
+      _input_devices[0].button_down(MouseButton::one());
+    } else {
+      _input_devices[0].button_up(MouseButton::one());
+    }
+  }
+
+  if (changed & 0x04) {
+    if (new_buttons & 0x04) {
+      _input_devices[0].button_down(MouseButton::two());
+    } else {
+      _input_devices[0].button_up(MouseButton::two());
+    }
+  }
+
+  if (changed & 0x02) {
+    if (new_buttons & 0x02) {
+      _input_devices[0].button_down(MouseButton::three());
+    } else {
+      _input_devices[0].button_up(MouseButton::three());
+    }
+  }
+
+  _last_buttons = new_buttons;
+}
+
  ////////////////////////////////////////////////////////////////////
 //     Function: osxGraphicsWindow::move_pointer
 //       Access: Published, Virtual
