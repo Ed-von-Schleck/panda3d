@@ -95,7 +95,6 @@
 #include "bitArray.h"
 #include "thread.h"
 
-
 #include <ctype.h>
 #include <algorithm>
 
@@ -136,20 +135,6 @@ LODInstance(EggNode *egg_node) {
 ////////////////////////////////////////////////////////////////////
 EggLoader::
 EggLoader() {
-  printf ("testing out scenegraph stuff\n");
-  PT(PandaNode) a = new PandaNode("a");
-  PT(PandaNode) b = new PandaNode("b");
-  PT(PandaNode) c = new PandaNode("c");
-  PT(PandaNode) d = new PandaNode("d");
-  NodePath npa(a), npb(b), npc(c),npd(d);
-  npb.reparent_to(npa);
-  npc.reparent_to(npa);  
-  npd.reparent_to(npa);
-  Thread *current_thread = Thread::get_current_thread();
-  pmap<PandaNode *, PandaNode *> inst_map;
-  PT(PandaNode) e=a->r_copy_subgraph(inst_map, current_thread);
-  printf ("abcd copied, num children = %d\n",e->get_num_children());
-  
   // We need to enforce whatever coordinate system the user asked for.
   _data = new EggData;
   _data->set_coordinate_system(egg_coordinate_system);
@@ -1392,6 +1377,22 @@ make_texture_stage(const EggTexture *egg_tex) {
     
   case EggTexture::ET_blend_color_scale:
     stage->set_mode(TextureStage::M_blend_color_scale);
+    break;
+
+  case EggTexture::ET_normal_map:
+    stage->set_mode(TextureStage::M_normal_map);
+    break;
+
+  case EggTexture::ET_gloss_map:
+    stage->set_mode(TextureStage::M_gloss_map);
+    break;
+
+  case EggTexture::ET_normal_gloss_map:
+    stage->set_mode(TextureStage::M_normal_gloss_map);
+    break;
+
+  case EggTexture::ET_selector_map:
+    stage->set_mode(TextureStage::M_selector_map);
     break;
 
   case EggTexture::ET_unspecified:
@@ -3195,20 +3196,35 @@ create_collision_floor_mesh(CollisionNode *cnode,
   for (ci = group->begin(); ci != group->end(); ++ci) {
     EggPolygon *poly = DCAST(EggPolygon, *ci);
     if (poly->get_num_vertices() == 3) {
-      EggPolygon::const_iterator vi;
-      EggVertex p1,p2,p3;
-      vi = poly->begin();
       CollisionFloorMesh::TriangleIndices tri;
       
       //generate a shared vertex triangle from the vertex pool
       tri.p1=pool.create_unique_vertex(*poly->get_vertex(0))->get_index();
-      ++vi;
       tri.p2=pool.create_unique_vertex(*poly->get_vertex(1))->get_index();
-      ++vi;
       tri.p3=pool.create_unique_vertex(*poly->get_vertex(2))->get_index();
       
       triangles.push_back(tri);
-    }
+    } else if (poly->get_num_vertices() == 4) {
+      //this is a case that really shouldn't happen, but appears to be required
+      //-split up the quad int 2 tris. 
+      CollisionFloorMesh::TriangleIndices tri;
+      CollisionFloorMesh::TriangleIndices tri2;
+      
+      //generate a shared vertex triangle from the vertex pool
+      tri.p1=pool.create_unique_vertex(*poly->get_vertex(0))->get_index();
+      tri.p2=pool.create_unique_vertex(*poly->get_vertex(1))->get_index();
+      tri.p3=pool.create_unique_vertex(*poly->get_vertex(2))->get_index();
+      
+      triangles.push_back(tri);
+
+      //generate a shared vertex triangle from the vertex pool
+      tri2.p1=tri.p1;
+      tri2.p2=tri.p3;      
+      tri2.p3=pool.create_unique_vertex(*poly->get_vertex(3))->get_index();
+
+      
+      triangles.push_back(tri2);
+    }  
   }
   
   //Now we have a set of triangles, and a pool
