@@ -175,7 +175,7 @@ OSStatus osxGraphicsWindow::event_handler(EventHandlerCallRef myHandler, EventRe
 	UInt32 kind = GetEventKind(event);
 
 	WindowRef window = _osx_window;	//	NULL;		
-	GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL, sizeof(WindowRef), NULL, &window);
+//	GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL, sizeof(WindowRef), NULL, &window);
 
 	if (osxdisplay_cat.is_spam())
 	{
@@ -958,7 +958,7 @@ bool osxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 				
 //		err = CPSEnableForegroundOperation(&PSN);
 //		err = CPSSetFrontProcess(&PSN);
-
+    }
 	if (req_properties.has_fullscreen() && req_properties.get_fullscreen())
 	{
 		osxdisplay_cat.info() << "Creating full screen\n";
