@@ -1053,6 +1053,7 @@ bool osxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 			[childWindow orderFront:nil];
 			
 			_properties.set_fixed_size(true);
+			osxdisplay_cat.info() << "Child window created\n";
 		}
 		else
 		{
@@ -1104,7 +1105,8 @@ bool osxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 			gWinEvtHandler = NewEventHandlerUPP(windowEvtHndlr); 
 			InstallWindowEventHandler (_osx_window, gWinEvtHandler, GetEventTypeCount (list), list, (void*)this, NULL); // add event handler
 			ShowWindow (_osx_window);
-      
+
+			osxdisplay_cat.info() << "Event handler installed, now buildGL\n";
 			if(buildGL(false) != noErr)
 			{
 				osxdisplay_cat.error() << " Error In Generate GL \n";
@@ -1116,6 +1118,7 @@ bool osxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 				return false;
 			}
 
+			osxdisplay_cat.info() << "BuildGL complete, set properties\n";
 			//
 			// atach the holder context to the window..
 			//
