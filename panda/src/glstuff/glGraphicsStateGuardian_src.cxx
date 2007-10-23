@@ -57,8 +57,6 @@
 
 #include <algorithm>
 
-#define DEBUG_BUFFERS false
-
 TypeHandle CLP(GraphicsStateGuardian)::_type_handle;
 
 PStatCollector CLP(GraphicsStateGuardian)::_load_display_list_pcollector("Draw:Transfer data:Display lists");
@@ -250,6 +248,11 @@ CLP(GraphicsStateGuardian)(GraphicsPipe *pipe) :
   GraphicsStateGuardian(CS_yup_right, pipe)
 {
   _error_count = 0;
+
+  // Hack.  Turn on the flag that we turned off at a higher level,
+  // since we know this works properly in OpenGL, and we want the
+  // performance benefit it gives us.
+  _prepared_objects->_support_released_buffer_cache = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1644,8 +1647,8 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     // Before we compile or call a display list, make sure the current
     // buffers are unbound, or the nVidia drivers may crash.
     if (_current_vbuffer_index != 0) {
-      if (GLCAT.is_spam()) {
-        GLCAT.spam()
+      if (GLCAT.is_debug() && CLP(debug_buffers)) {
+        GLCAT.debug()
           << "unbinding vertex buffer\n";
       }
       _glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -2770,7 +2773,7 @@ prepare_vertex_buffer(GeomVertexArrayData *data) {
     CLP(VertexBufferContext) *gvbc = new CLP(VertexBufferContext)(_prepared_objects, data);
     _glGenBuffers(1, &gvbc->_index);
 
-    if (DEBUG_BUFFERS && GLCAT.is_debug()) {
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
       GLCAT.debug()
         << "creating vertex buffer " << gvbc->_index << ": "
         << data->get_num_rows() << " vertices "
@@ -2799,8 +2802,8 @@ apply_vertex_buffer(VertexBufferContext *vbc,
   CLP(VertexBufferContext) *gvbc = DCAST(CLP(VertexBufferContext), vbc);
 
   if (_current_vbuffer_index != gvbc->_index) {
-    if (GLCAT.is_spam()) {
-      GLCAT.spam()
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
+      GLCAT.debug()
         << "binding vertex buffer " << gvbc->_index << "\n";
     }
     _glBindBuffer(GL_ARRAY_BUFFER, gvbc->_index);
@@ -2810,8 +2813,8 @@ apply_vertex_buffer(VertexBufferContext *vbc,
 
   if (gvbc->was_modified(reader)) {
     int num_bytes = reader->get_data_size_bytes();
-    if (GLCAT.is_spam()) {
-      GLCAT.spam()
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
+      GLCAT.debug()
         << "copying " << num_bytes
         << " bytes into vertex buffer " << gvbc->_index << "\n";
     }
@@ -2853,7 +2856,7 @@ release_vertex_buffer(VertexBufferContext *vbc) {
 
   CLP(VertexBufferContext) *gvbc = DCAST(CLP(VertexBufferContext), vbc);
 
-  if (DEBUG_BUFFERS && GLCAT.is_debug()) {
+  if (GLCAT.is_debug() && CLP(debug_buffers)) {
     GLCAT.debug()
       << "deleting vertex buffer " << gvbc->_index << "\n";
   }
@@ -2863,8 +2866,8 @@ release_vertex_buffer(VertexBufferContext *vbc) {
   // help out a flaky driver, and we need to keep our internal state
   // consistent anyway.
   if (_current_vbuffer_index == gvbc->_index) {
-    if (GLCAT.is_spam()) {
-      GLCAT.spam()
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
+      GLCAT.debug()
         << "unbinding vertex buffer\n";
     }
     _glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -2907,12 +2910,12 @@ setup_array_data(const unsigned char *&client_pointer,
     return (client_pointer != NULL);
   }
   if (!vertex_buffers || _geom_display_list != 0 ||
-      array_reader->get_usage_hint() == Geom::UH_client) {
+      array_reader->get_usage_hint() < CLP(min_buffer_usage_hint)) {
     // The array specifies client rendering only, or buffer objects
     // are configured off.
     if (_current_vbuffer_index != 0) {
-      if (GLCAT.is_spam()) {
-        GLCAT.spam()
+      if (GLCAT.is_debug() && CLP(debug_buffers)) {
+        GLCAT.debug()
           << "unbinding vertex buffer\n";
       }
       _glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -2953,7 +2956,7 @@ prepare_index_buffer(GeomPrimitive *data) {
     CLP(IndexBufferContext) *gibc = new CLP(IndexBufferContext)(_prepared_objects, data);
     _glGenBuffers(1, &gibc->_index);
 
-    if (DEBUG_BUFFERS && GLCAT.is_debug()) {
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
       GLCAT.debug()
         << "creating index buffer " << gibc->_index << ": "
         << data->get_num_vertices() << " indices ("
@@ -3038,7 +3041,7 @@ release_index_buffer(IndexBufferContext *ibc) {
 
   CLP(IndexBufferContext) *gibc = DCAST(CLP(IndexBufferContext), ibc);
 
-  if (DEBUG_BUFFERS && GLCAT.is_debug()) {
+  if (GLCAT.is_debug() && CLP(debug_buffers)) {
     GLCAT.debug()
       << "deleting index buffer " << gibc->_index << "\n";
   }
