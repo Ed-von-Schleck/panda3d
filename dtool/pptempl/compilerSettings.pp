@@ -6,7 +6,7 @@
   #define COMMONFLAGS /Gi-
 
   // use "unsafe" QIfist flt->int rounding only if FAST_FLT_TO_INT is defined
-  #define OPTFLAGS /O2 /Ob1 /G6 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
+  #define OPTFLAGS /O2 /Ob1 /G7 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
   #define OPT1FLAGS /GZ
 
   // Note: Zi cannot be used on multiproc builds with precomp hdrs, Z7 must be used instead
@@ -18,8 +18,8 @@
   // NODEFAULTLIB ensures static libs linked in will connect to the correct msvcrt, so no debug/release mixing occurs
   #define LDFLAGS_OPT1 /NODEFAULTLIB:MSVCRT.LIB
   #define LDFLAGS_OPT2 /NODEFAULTLIB:MSVCRT.LIB
-  #define LDFLAGS_OPT3 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF
-  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF $[LDFLAGS_OPT4]
+  #define LDFLAGS_OPT3 /NODEFAULTLIB:MSVCRTD.LIB /NODEFAULTLIB:LIBCMT.LIB /OPT:REF
+  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /NODEFAULTLIB:LIBCMT.LIB /OPT:REF $[LDFLAGS_OPT4]
 
   #define MAPINFOFLAGS /MAPINFO:EXPORTS /MAPINFO:FIXUPS /MAPINFO:LINES
 
@@ -85,15 +85,16 @@
 
   #define LDFLAGS_OPT1 /NODEFAULTLIB:MSVCRT.LIB
   #define LDFLAGS_OPT2 /NODEFAULTLIB:MSVCRT.LIB
-  #define LDFLAGS_OPT3 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF
-  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF $[LDFLAGS_OPT4]
+  #define LDFLAGS_OPT3 /NODEFAULTLIB:MSVCRTD.LIB /NODEFAULTLIB:LIBCMT.LIB /OPT:REF
+  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /NODEFAULTLIB:LIBCMT.LIB /OPT:REF $[LDFLAGS_OPT4]
+//  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF $[LDFLAGS_OPT4]
 
   #define COMMONFLAGS /DHAVE_DINKUM /Zc:forScope
 
   // use "unsafe" QIfist flt->int rounding only if FAST_FLT_TO_INT is defined
-  #define REGULAR_OPTFLAGS /O2 /Ob2 /G6 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
+  #define REGULAR_OPTFLAGS /O2 /Ob2 /G7 $[if $[ne $[FAST_FLT_TO_INT],], /QIfist,]
 
-  #defer OPTFLAGS $[if $[OPT_MINSIZE],/Ox /Og /Ob1 /Oi /Os /Oy /GL /G6,$[REGULAR_OPTFLAGS]]
+  #defer OPTFLAGS $[if $[OPT_MINSIZE],/Ox /Og /Ob1 /Oi /Os /Oy /GL /G7,$[REGULAR_OPTFLAGS]]
 
   //  #define OPT1FLAGS /RTCsu /GS  removing /RTCu because it crashes in dxgsg with internal compiler bug
   #define OPT1FLAGS /RTCs /GS
@@ -128,6 +129,7 @@
 
   // Added to avoid old iostream reference problems
   #define LINKER_FLAGS $[LINKER_FLAGS] /NODEFAULTLIB:LIBCI.LIB
+//  #define LINKER_FLAGS $[LINKER_FLAGS] /NODEFAULTLIB:LIBCI.LIB /NODEFAULTLIB:msvcrt.lib /NODEFAULTLIB:msvcprt.lib
 
 // in case we have mixed intel/msvc build
 //  #define EXTRA_LIBPATH /ia32/lib
@@ -157,8 +159,8 @@
   // NODEFAULTLIB ensures static libs linked in will connect to the correct msvcrt, so no debug/release mixing occurs
   #define LDFLAGS_OPT1 /NODEFAULTLIB:MSVCRT.LIB
   #define LDFLAGS_OPT2 /NODEFAULTLIB:MSVCRT.LIB
-  #define LDFLAGS_OPT3 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF
-  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /OPT:REF $[LDFLAGS_OPT4]
+  #define LDFLAGS_OPT3 /NODEFAULTLIB:MSVCRTD.LIB /NODEFAULTLIB:LIBCMT.LIB /OPT:REF
+  #define LDFLAGS_OPT4 /NODEFAULTLIB:MSVCRTD.LIB /NODEFAULTLIB:LIBCMT.LIB /OPT:REF $[LDFLAGS_OPT4]
 
 //  #define OPTFLAGS /O3 /Qipo /QaxW /Qvec_report1
   #define OPTFLAGS /O3 /Qip
