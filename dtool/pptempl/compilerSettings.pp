@@ -12,7 +12,7 @@
   // Note: Zi cannot be used on multiproc builds with precomp hdrs, Z7 must be used instead
   #defer DEBUGPDBFLAGS /Zi /Fd"$[osfilename $[patsubst %.obj,%.pdb,$[target]]]"
   #defer DEBUGFLAGS /MDd $[BROWSEINFO_FLAG] $[DEBUGINFOFLAGS] $[DEBUGPDBFLAGS]
-  #define RELEASEFLAGS /MD
+  #defer RELEASEFLAGS $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],],/MT, /MD]
   #define WARNING_LEVEL_FLAG /Wall
 
   // NODEFAULTLIB ensures static libs linked in will connect to the correct msvcrt, so no debug/release mixing occurs
@@ -109,7 +109,7 @@
   // if LINK_FORCE_STATIC_C_RUNTIME is defined, it always links with static c runtime (release version
   // for both Opt1 and Opt4!) instead of the msvcrt dlls
 
-  #defer DEBUGFLAGS $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],],/MT, /MDd] $[BROWSEINFO_FLAG] $[DEBUGINFOFLAGS] $[DEBUGPDBFLAGS]
+  #defer DEBUGFLAGS $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],],/MTd, /MDd] $[BROWSEINFO_FLAG] $[DEBUGINFOFLAGS] $[DEBUGPDBFLAGS]
   #defer RELEASEFLAGS $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],],/MT, /MD]
 
   #define MAPINFOFLAGS /MAPINFO:EXPORTS /MAPINFO:LINES
@@ -148,7 +148,7 @@
   #defer DEBUGPDBFLAGS /Zi /Qinline_debug_info /Fd"$[osfilename $[patsubst %.obj,%.pdb,$[target]]]"
   // Oy- needed for MS debugger
   #defer DEBUGFLAGS /Oy- /MDd $[BROWSEINFO_FLAG] $[DEBUGINFOFLAGS] $[DEBUGPDBFLAGS]
-  #define RELEASEFLAGS /MD
+  #defer RELEASEFLAGS $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],],/MT, /MD]
   #define WARNING_LEVEL_FLAG /W3
 
   #if $[DO_CROSSOBJ_OPT]
