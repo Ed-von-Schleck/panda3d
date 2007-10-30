@@ -206,8 +206,7 @@
 #foreach composite_file $[composite_list]
 #output $[composite_file] notouch
 #format collapse
-/* Generated automatically by $[PPREMAKE] $[PPREMAKE_VERSION] from $[SOURCEFILE]
-. */
+/* Generated automatically by $[PPREMAKE] $[PPREMAKE_VERSION] from $[SOURCEFILE]. */
 /* ################################# DO NOT EDIT ########################### */
 
 #foreach file $[$[composite_file]_sources]

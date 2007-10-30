@@ -1058,7 +1058,6 @@ $[TAB] cp -f $[local] $[dest]/
 #sinclude $[TOPDIRPREFIX]LocalSetup.gmsvc.pp
 #sinclude $[TOPDIRPREFIX]LocalSetup.pp
 
-
 //////////////////////////////////////////////////////////////////////
 #elif $[or $[eq $[DIR_TYPE], models],$[eq $[DIR_TYPE], models_toplevel],$[eq $[DIR_TYPE], models_group]]
 //////////////////////////////////////////////////////////////////////
@@ -1067,4 +1066,3 @@ $[TAB] cp -f $[local] $[dest]/
 
 //////////////////////////////////////////////////////////////////////
 #endif // DIR_TYPE
-
