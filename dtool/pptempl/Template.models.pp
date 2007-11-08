@@ -37,23 +37,64 @@
 #defer phase_prefix $[if $[PHASE],phase_$[PHASE]/]
 
 #defer install_model_dir $[install_dir]/$[phase_prefix]$[INSTALL_TO]
-#define filter_dirs $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]
+#define filter_dirs $[sort $[TARGET_DIR(filter_egg filter_char_egg optchar_egg)]]
 
 #defer source_prefix $[SOURCE_DIR:%=%/]
 
+#if $[LANGUAGES]
+  #define exlanguage_sources $[notdir $[filter %.flt %.mb %.ma %.lwo %.LWO %.egg,$[wildcard $[TOPDIR]/$[DIRPREFIX]*_$[LANGUAGE].*]]]
+
+  #defun lang_add_files sources, src_ext, local_extra
+    #define default_filter
+    #define local_filter
+    #foreach ext $[src_ext]
+      #set default_filter $[default_filter] %_$[DEFAULT_LANGUAGE].$[ext]
+      #set local_filter $[local_filter] %_$[LANGUAGE].$[ext]
+    #end ext
+    #define default_langlist $[filter $[default_filter],$[sources]]
+    #define locallist $[filter $[local_filter],$[local_extra] $[exlanguage_sources]]
+    #define havelist
+    #foreach file $[default_langlist]
+      #foreach ext $[src_ext]
+        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].$[ext]=%_$[LANGUAGE].$[ext]]
+        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
+      #end ext
+    #end file
+    $[havelist]
+  #end lang_add_files
+
+  #forscopes flt_egg
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], flt, ]]
+    #endif
+  #end flt_egg
+
+  #forscopes lwo_egg
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], lwo LWO, ]]
+    #endif
+  #end lwo_egg
+
+  #forscopes maya_egg
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], lwo LWO, ]]
+    #endif
+  #end maya_egg
+#endif
+
 #define build_flt_eggs \
-   $[SOURCES(flt_egg):%.flt=%.egg]
+   $[forscopes flt_egg,$[patsubst %.flt,%$[EGG_SUFFIX].egg,$[SOURCES]]]
 
 #define build_lwo_eggs \
-   $[patsubst %.lwo %.LWO,%.egg,$[SOURCES(lwo_egg)]]
+   $[forscopes lwo_egg,$[patsubst %.lwo %.LWO,%$[EGG_SUFFIX].egg,$[SOURCES]]]
 
 #define build_maya_eggs \
-   $[patsubst %.ma %.mb,%.egg,$[SOURCES(maya_egg)]] \
-   $[forscopes maya_char_egg,$[POLY_MODEL:%=$[EGG_PREFIX]%.egg] $[NURBS_MODEL:%=$[EGG_PREFIX]%.egg]] \
+   $[forscopes maya_egg,$[patsubst %.ma %.mb,%$[EGG_SUFFIX].egg,$[SOURCES]]] \
+   $[forscopes maya_char_egg,$[POLY_MODEL:%=$[EGG_PREFIX]%$[EGG_SUFFIX].egg] $[NURBS_MODEL:%=$[EGG_PREFIX]%$[EGG_SUFFIX].egg]] \
    $[forscopes maya_char_egg,$[ANIMS:%=$[EGG_PREFIX]%$[CHAN_SUFFIX].egg]]
 
 #define build_soft_eggs \
-   $[forscopes soft_char_egg,$[POLY_MODEL:%=$[EGG_PREFIX]%.egg] $[NURBS_MODEL:%=$[EGG_PREFIX]%.egg]] \
+   $[forscopes soft_char_egg,$[POLY_MODEL:%=$[EGG_PREFIX]%$[EGG_SUFFIX].egg] $[NURBS_MODEL:%=$[EGG_PREFIX]%$[EGG_SUFFIX].egg]] \
    $[forscopes soft_char_egg,$[ANIMS:%=$[EGG_PREFIX]%$[CHAN_SUFFIX].egg]]
 
 #define build_eggs \
@@ -62,6 +103,14 @@
      $[build_lwo_eggs] \
      $[build_maya_eggs] \
      $[build_soft_eggs]]
+
+#if $[LANGUAGES]
+  #forscopes install_egg filter_egg
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], egg, $[build_eggs]]]
+    #endif
+  #end install_egg filter_egg
+#endif
 
 // Get the list of egg files that are to be installed
 #define install_pal_eggs
@@ -242,7 +291,7 @@ $[TAB]gunzip $[GUNZIP_OPTS] < $[source] > $[target]
 // Egg file generation from Flt files.
 #forscopes flt_egg
   #foreach flt $[SOURCES]
-    #define target $[flt:%.flt=%.egg]
+    #define target $[or $[TARGET],$[patsubst %.flt %.FLT,$[EGG_PREFIX]%$[EGG_SUFFIX].egg,$[flt]]]
     #define source $[flt]
 $[target] : $[source]
 $[TAB]flt2egg $[FLT2EGG_OPTS] -o $[target] $[source]
@@ -253,7 +302,7 @@ $[TAB]flt2egg $[FLT2EGG_OPTS] -o $[target] $[source]
 // Egg file generation from Lightwave files.
 #forscopes lwo_egg
   #foreach lwo $[SOURCES]
-    #define target $[patsubst %.lwo %.LWO,%.egg,$[lwo]]
+    #define target $[or $[TARGET],$[patsubst %.lwo %.LWO,$[EGG_PREFIX]%$[EGG_SUFFIX].egg,$[lwo]]]
     #define source $[lwo]
 $[target] : $[source]
 $[TAB]lwo2egg $[LWO2EGG_OPTS] -o $[target] $[source]
@@ -264,7 +313,7 @@ $[TAB]lwo2egg $[LWO2EGG_OPTS] -o $[target] $[source]
 // Egg file generation from Maya files (for unanimated models).
 #forscopes maya_egg
   #foreach maya $[SOURCES]
-    #define target $[patsubst %.ma %.mb,%.egg,$[maya]]
+    #define target $[or $[TARGET],$[patsubst %.ma %.mb,$[EGG_PREFIX]%$[EGG_SUFFIX].egg,$[maya]]]
     #define source $[maya]
 $[target] : $[source]
 $[TAB]maya2egg $[MAYA2EGG_OPTS] -o $[target] $[source]
@@ -348,6 +397,16 @@ $[target] : $[source]
 $[TAB]$[SOFT2EGG] $[SOFT2EGG_OPTS] $[if $[SOFTIMAGE_RSRC],-r "$[osfilename $[SOFTIMAGE_RSRC]]"] -a -A $[target] -N $[CHAR_NAME] -d $[DATABASE] -s $[scene] $[begin:%=-b%] $[end:%=-e%]
   #end anim
 #end soft_char_egg
+
+// Copying egg files from A to B.
+#forscopes copy_egg
+  #for i 1,$[words $[SOURCES]]
+    #define source $[word $[i],$[SOURCES]]
+    #define target $[word $[i],$[TARGETS]]
+$[target] : $[source]
+$[TAB]cp $[source] $[target]
+  #end i
+#end copy_egg
 
 
 // Generic egg filters.

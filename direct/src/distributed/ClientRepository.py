@@ -595,6 +595,8 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
             self.handleGoGetLost(di)
         elif msgType == CLIENT_HEARTBEAT:
             self.handleServerHeartbeat(di)
+        elif msgType == CLIENT_SYSTEM_MESSAGE:
+            self.handleSystemMessage(di)
         elif wantOtpServer:
             if msgType == CLIENT_CREATE_OBJECT_REQUIRED:
                 self.handleGenerateWithRequired(di)
@@ -606,8 +608,6 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
                 self.handleDisable(di)
             elif msgType == CLIENT_OBJECT_DELETE_RESP:
                 self.handleDelete(di)
-            elif msgType == CLIENT_SYSTEM_MESSAGE:
-                self.handleSystemMessage(di)
             elif msgType == CLIENT_CREATE_OBJECT_REQUIRED:
                 self.handleGenerateWithRequired(di)
             elif msgType == CLIENT_CREATE_OBJECT_REQUIRED_OTHER:
@@ -706,6 +706,25 @@ class ClientRepository(ConnectionRepository.ConnectionRepository):
         datagram.addUint32(shardId)
         # send the message
         self.send(datagram)
+
+    def getObjectsOfClass(self, objClass):
+        """ returns dict of doId:object, containing all objects
+        that inherit from 'class'. returned dict is safely mutable. """
+        doDict = {}
+        for doId, do in self.doId2do.items():
+            if isinstance(do, objClass):
+                doDict[doId] = do
+        return doDict
+
+    def getObjectsOfExactClass(self, objClass):
+        """ returns dict of doId:object, containing all objects that
+        are exactly of type 'class' (neglecting inheritance). returned
+        dict is safely mutable. """
+        doDict = {}
+        for doId, do in self.doId2do.items():
+            if do.__class__ == objClass:
+                doDict[doId] = do
+        return doDict
 
     if wantOtpServer:
         def sendSetZoneMsg(self, zoneId, visibleZoneList=None, parent=None):
