@@ -28,6 +28,18 @@
 #define dtool_ver_dir $[osfilename $[dtool_ver_dir_cyg]]
 #endif
 
+//
+// Correct LDFLAGS_OPT 3,4 here to get around early evaluation of, even
+// if deferred
+//
+#defer nodefaultlib_cstatic \
+  $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],], \
+     /NODEFAULTLIB:MSVCRT.LIB, \
+     /NODEFAULTLIB:LIBCMT.LIB \
+   ]
+#defer LDFLAGS_OPT3 $[LDFLAGS_OPT3] $[nodefaultlib_cstatic]
+#defer LDFLAGS_OPT4 $[LDFLAGS_OPT4] $[nodefaultlib_cstatic]
+
 //////////////////////////////////////////////////////////////////////
 #if $[or $[eq $[DIR_TYPE], src],$[eq $[DIR_TYPE], metalib]]
 //////////////////////////////////////////////////////////////////////
@@ -926,7 +938,6 @@ $[TAB] @ppremake -D $[DEPENDENCY_CACHE_FILENAME]
 // This is a group directory: a directory above a collection of source
 // directories, e.g. $DTOOL/src.  We don't need to output anything in
 // this directory.
-
 
 
 //////////////////////////////////////////////////////////////////////
