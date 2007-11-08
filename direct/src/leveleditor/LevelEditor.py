@@ -11,14 +11,16 @@ from direct.tkwidgets.SceneGraphExplorer import *
 from tkMessageBox import showinfo
 from tkFileDialog import *
 from Tkinter import *
-from whrandom import *
+#from whrandom import *
+from random import *
 from direct.tkwidgets import Floater
 from direct.tkwidgets import VectorWidgets
 import string
 import os
 import getopt
 import sys
-import whrandom
+#import whrandom
+import random
 import types
 from direct.task import Task
 import Pmw
@@ -270,6 +272,8 @@ except NameError:
     if 'GZ' in hoods:
         loadDNAFile(DNASTORE, 'phase_6/dna/storage_GZ.dna', CSDefault, 1)
         loadDNAFile(DNASTORE, 'phase_6/dna/storage_GZ_sz.dna', CSDefault, 1)
+    if 'CC' in hoods:
+        loadDNAFile(DNASTORE, 'phase_12/dna/storage_CC_sz.dna', CSDefault, 1)        
     __builtin__.dnaLoaded = 1
 
 # Precompute class types for type comparisons
@@ -1603,7 +1607,7 @@ class LevelEditor(NodePath, DirectObject):
             print "createDoor %s" % type
             if not (self.getCurrent('door_double_texture')):
                 doorStyles = self.styleManager.attributeDictionary['door_double_texture'].getList()[1:]
-                defaultDoorStyle = whrandom.choice(doorStyles)
+                defaultDoorStyle = random.choice(doorStyles)
                 self.setCurrent('door_double_texture', defaultDoorStyle)
             newDNADoor.setCode(self.getCurrent('door_double_texture'))
             print "doorcolor = %s" % self.getCurrent('door_color')
@@ -1612,7 +1616,7 @@ class LevelEditor(NodePath, DirectObject):
             newDNADoor = DNAFlatDoor('door')
             if not (self.getCurrent('door_single_texture')):
                 doorStyles = self.styleManager.attributeDictionary['door_single_texture'].getList()[1:]
-                defaultDoorStyle = whrandom.choice(doorStyles)
+                defaultDoorStyle = random.choice(doorStyles)
                 self.setCurrent('door_single_texture', defaultDoorStyle)
             newDNADoor.setCode(self.getCurrent('door_single_texture'))
             newDNADoor.setColor(self.getCurrent('door_color'))
@@ -3599,7 +3603,7 @@ class LevelEditor(NodePath, DirectObject):
                 colorList = self.getAttribute('door_color').getList()
                 colorList = colorList[1:3] + colorList[4:len(colorList)]
                 # Set a random door color
-                doorColor = whrandom.choice(colorList)
+                doorColor = random.choice(colorList)
                 self.setCurrent('door_color', doorColor)
                 self.addLandmark(oldDNANode.getCode(), oldDNANode.getBuildingType())
                 bldg = self.lastNodePath
@@ -3703,13 +3707,13 @@ class LevelEditor(NodePath, DirectObject):
                     elif curveType == 'trees':
                         curve.getPoint(currT, currPoint)
                         # trees are spaced anywhere from 40-80 ft apart
-                        treeWidth = whrandom.randint(40, 80)
+                        treeWidth = random.randint(40, 80)
                         curGroupWidth += treeWidth
                         # Adjust grid orientation based upon next point along curve
                         currT, currPoint = self.findBldgEndPoint(treeWidth, curve, currT, currPoint, rd = 0)
 
                         # Add some trees
-                        tree = whrandom.choice(["prop_tree_small_ul",
+                        tree = random.choice(["prop_tree_small_ul",
                                                 "prop_tree_small_ur",
                                                 "prop_tree_large_ur",
                                                 "prop_tree_large_ul"])
@@ -3717,7 +3721,7 @@ class LevelEditor(NodePath, DirectObject):
                         #use snow if necessaryy
 
                         if (useSnowTree):
-                            tree = whrandom.choice(["prop_snow_tree_small_ul",
+                            tree = random.choice(["prop_snow_tree_small_ul",
                                                     "prop_snow_tree_small_ur",
                                                     "prop_snow_tree_large_ur",
                                                     "prop_snow_tree_large_ul"])
@@ -3763,14 +3767,14 @@ class LevelEditor(NodePath, DirectObject):
                             #add a prop_tree to force it to be shown
                             curve.getPoint(currT, currPoint)
                             #trees are spaced anywhere from 40-80 ft apart
-                            #treeWidth = whrandom.randint(40, 80)
+                            #treeWidth = random.randint(40, 80)
                             treeWidth = barricadeWidth
                             curGroupWidth += treeWidth
                             # Adjust grid orientation based upon next point along curve
                             currT, currPoint = self.findBldgEndPoint(treeWidth, curve, currT, currPoint, rd = 0)
 
                             # Add some trees
-                            tree = whrandom.choice(["prop_snow_tree_small_ul",
+                            tree = random.choice(["prop_snow_tree_small_ul",
                                                 "prop_snow_tree_small_ur",
                                                 "prop_snow_tree_large_ur",
                                                 "prop_snow_tree_large_ul"])
@@ -3873,20 +3877,20 @@ class LevelEditor(NodePath, DirectObject):
                     elif curveType == 'trees':
                         curve.getPoint(currT, currPoint)
                         # trees are spaced anywhere from 40-80 ft apart
-                        treeWidth = whrandom.randint(40, 80)
+                        treeWidth = random.randint(40, 80)
                         curGroupWidth += treeWidth
                         # Adjust grid orientation based upon next point along curve
                         currT, currPoint = self.findBldgEndPoint(treeWidth, curve, currT, currPoint, rd = 0)
 
                         # Add some trees
-                        tree = whrandom.choice(["prop_tree_small_ul",
+                        tree = random.choice(["prop_tree_small_ul",
                                                 "prop_tree_small_ur",
                                                 "prop_tree_large_ur",
                                                 "prop_tree_large_ul"])
 
                         #use snow tree if necessary
                         if (useSnowTree):
-                            tree = whrandom.choice(["prop_snow_tree_small_ul",
+                            tree = random.choice(["prop_snow_tree_small_ul",
                                                     "prop_snow_tree_small_ur",
                                                     "prop_snow_tree_large_ur",
                                                     "prop_snow_tree_large_ul"])
@@ -3932,14 +3936,14 @@ class LevelEditor(NodePath, DirectObject):
                             #add a prop_tree to force it to be shown
                             curve.getPoint(currT, currPoint)
                             #trees are spaced anywhere from 40-80 ft apart
-                            #treeWidth = whrandom.randint(40, 80)
+                            #treeWidth = random.randint(40, 80)
                             treeWidth = barricadeWidth
                             curGroupWidth += treeWidth
                             # Adjust grid orientation based upon next point along curve
                             currT, currPoint = self.findBldgEndPoint(treeWidth, curve, currT, currPoint, rd = 0)
 
                             # Add some trees
-                            tree = whrandom.choice(["prop_snow_tree_small_ul",
+                            tree = random.choice(["prop_snow_tree_small_ul",
                                                 "prop_snow_tree_small_ur",
                                                 "prop_snow_tree_large_ur",
                                                 "prop_snow_tree_large_ul"])
