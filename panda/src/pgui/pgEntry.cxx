@@ -757,7 +757,9 @@ update_text() {
       display_wtext += _candidate_wtext.substr(_candidate_highlight_end);
       display_wtext += wstring(1, (wchar_t)text_pop_properties_key);
 
-      display_wtext += source_wtext.substr(_cursor_position);
+      if (_cursor_position < (int)source_wtext.length()) {
+        display_wtext += source_wtext.substr(_cursor_position);
+      }
     }
 
     // We need to regenerate.
