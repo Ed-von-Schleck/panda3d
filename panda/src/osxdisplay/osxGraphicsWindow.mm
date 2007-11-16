@@ -623,7 +623,7 @@ osxGraphicsWindow::osxGraphicsWindow(GraphicsPipe *pipe,
   _ID(id_seed++)
 {
   GraphicsWindowInputDevice device =
-    GraphicsWindowInputDevice::pointer_and_keyboard(this, "keyboard/mouse");
+    GraphicsWindowInputDevice::pointer_and_keyboard("keyboard/mouse");
   _input_devices.push_back(device);
   _input_devices[0].set_pointer_in_window(0, 0);
   _last_key_modifiers = 0;
