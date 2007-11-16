@@ -28,6 +28,18 @@
 #define dtool_ver_dir $[osfilename $[dtool_ver_dir_cyg]]
 #endif
 
+//
+// Correct LDFLAGS_OPT 3,4 here to get around early evaluation of, even
+// if deferred
+//
+#defer nodefaultlib_cstatic \
+  $[if $[ne $[LINK_FORCE_STATIC_RELEASE_C_RUNTIME],], \
+     /NODEFAULTLIB:MSVCRT.LIB, \
+     /NODEFAULTLIB:LIBCMT.LIB \
+   ]
+#defer LDFLAGS_OPT3 $[LDFLAGS_OPT3] $[nodefaultlib_cstatic]
+#defer LDFLAGS_OPT4 $[LDFLAGS_OPT4] $[nodefaultlib_cstatic]
+
 //////////////////////////////////////////////////////////////////////
 #if $[or $[eq $[DIR_TYPE], src],$[eq $[DIR_TYPE], metalib]]
 //////////////////////////////////////////////////////////////////////
@@ -200,9 +212,9 @@
 // NUMBER_OF_PROCESSORS, which should be set by NT.  Maybe this isn't
 // a good idea to do all the time, but you can always disable it by
 // explicitly unsetting NUMBER_OF_PROCESSORS, or by setting it to 1.
-//#if $[NUMBER_OF_PROCESSORS]
-//MAKEFLAGS := -j$[NUMBER_OF_PROCESSORS]
-//#endif
+#if $[NUMBER_OF_PROCESSORS]
+MAKEFLAGS := -j$[NUMBER_OF_PROCESSORS]
+#endif
 
 // The 'all' rule makes all the stuff in the directory except for the
 // test_bin_targets.  It doesn't do any installation, however.
