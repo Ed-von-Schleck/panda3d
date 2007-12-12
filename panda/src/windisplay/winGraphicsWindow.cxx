@@ -459,7 +459,7 @@ initialize_input_devices() {
   // Clear the handle array, and set up the system keyboard/mouse
   memset(_input_device_handle, 0, sizeof(_input_device_handle));
   GraphicsWindowInputDevice device =
-    GraphicsWindowInputDevice::pointer_and_keyboard("keyboard/mouse");
+    GraphicsWindowInputDevice::pointer_and_keyboard(this, "keyboard/mouse");
   _input_devices.push_back(device);
   
   // Try initializing the Raw Input function pointers.
