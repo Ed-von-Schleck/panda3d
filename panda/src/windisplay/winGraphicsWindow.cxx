@@ -517,7 +517,7 @@ initialize_input_devices() {
           }
           if (pound2) *pound2 = '.';
           _input_device_handle[_input_devices.size()] = pRawInputDeviceList[i].hDevice;
-          GraphicsWindowInputDevice device = GraphicsWindowInputDevice::pointer_only(psName);
+          GraphicsWindowInputDevice device = GraphicsWindowInputDevice::pointer_only(this, psName);
           device.set_pointer_in_window(0,0);
           _input_devices.push_back(device);
         }
