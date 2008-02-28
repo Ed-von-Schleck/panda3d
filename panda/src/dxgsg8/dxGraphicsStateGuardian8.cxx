@@ -2645,7 +2645,7 @@ do_issue_texture() {
     switch (mode) {
     case TexGenAttrib::M_off:
     case TexGenAttrib::M_light_vector:
-      _d3d_device->SetTextureStageState(i, D3DTSS_TEXCOORDINDEX, texcoord_index);
+      _d3d_device->SetTextureStageState(si, D3DTSS_TEXCOORDINDEX, texcoord_index);
       break;
 
     case TexGenAttrib::M_eye_sphere_map:
