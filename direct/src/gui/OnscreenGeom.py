@@ -1,7 +1,9 @@
 """OnscreenGeom module: contains the OnscreenGeom class"""
 
-from direct.showbase.DirectObject import *
+import string
 import types
+from pandac.PandaModules import *
+from direct.showbase.DirectObject import DirectObject
 
 class OnscreenGeom(DirectObject, NodePath):
     def __init__(self, geom = None,

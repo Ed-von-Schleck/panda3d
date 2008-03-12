@@ -1,7 +1,13 @@
 .cvsignore
 Makefile
 bams
+*.buildings
 *.pt
 *.egg
 optchar
 pal_egg
+prefixstrip
+topstrip
+retarget
+textures.boo
+game_options.txt

@@ -69,34 +69,34 @@ def writeFsmTree(instance, indent = 0):
 
 
 
-if __debug__:
-    class StackTrace:
-        def __init__(self, label="", start=0, limit=None):
-            """
-            label is a string (or anything that be be a string)
-                that is printed as part of the trace back.
-                This is just to make it easier to tell what the
-                stack trace is referring to.
-            start is an integer number of stack frames back
-                from the most recent.  (This is automatically
-                bumped up by one to skip the __init__ call
-                to the StackTrace).
-            limit is an integer number of stack frames
-                to record (or None for unlimited).
-            """
-            self.label = label
-            if limit is not None:
-                self.trace = traceback.extract_stack(sys._getframe(1+start),
-                                                     limit=limit)
-            else:
-                self.trace = traceback.extract_stack(sys._getframe(1+start))
-
-        def __str__(self):
-            r = "Debug stack trace of %s (back %s frames):\n"%(
-                self.label, len(self.trace),)
-            for i in traceback.format_list(self.trace):
-                r+=i
-            return r
+#if __debug__: #RAU accdg to Darren its's ok that StackTrace is not protected by __debug__
+class StackTrace:
+    def __init__(self, label="", start=0, limit=None):
+        """
+        label is a string (or anything that be be a string)
+        that is printed as part of the trace back.
+        This is just to make it easier to tell what the
+        stack trace is referring to.
+        start is an integer number of stack frames back
+        from the most recent.  (This is automatically
+        bumped up by one to skip the __init__ call
+        to the StackTrace).
+        limit is an integer number of stack frames
+        to record (or None for unlimited).
+        """
+        self.label = label
+        if limit is not None:
+            self.trace = traceback.extract_stack(sys._getframe(1+start),
+                                                 limit=limit)
+        else:
+            self.trace = traceback.extract_stack(sys._getframe(1+start))
+            
+    def __str__(self):
+        r = "Debug stack trace of %s (back %s frames):\n"%(
+            self.label, len(self.trace),)
+        for i in traceback.format_list(self.trace):
+            r+=i
+        return r
 
 #-----------------------------------------------------------------------------
 
@@ -1700,6 +1700,16 @@ def randUint32(rng=random.random):
     rng must return float in [0..1]"""
     return long(rng() * 0xFFFFFFFFL)
 
+class SerialNum:
+    """generates serial numbers"""
+    def __init__(self, start=None):
+        if start is None:
+            start = 0
+        self.__counter = start-1
+    def next(self):
+        self.__counter += 1
+        return self.__counter
+
 class Enum:
     """Pass in list of strings or string of comma-separated strings.
     Items are accessible as instance.item, and are assigned unique,
@@ -1830,3 +1840,23 @@ class Singleton(type):
 class SingletonError(ValueError):
     """ Used to indicate an inappropriate value for a Singleton."""
 
+def printListEnum(l):
+    # log each individual item with a number in front of it
+    digits = 0
+    n = len(l)
+    while n > 0:
+        digits += 1
+        n /= 10
+    format = '%0' + '%s' % digits + 'i:%s'
+    for i in range(len(l)):
+        print format % (i, l[i])
+
+def gcDebugOn():
+    import gc
+    return (gc.get_debug() & gc.DEBUG_LEAK) == gc.DEBUG_LEAK
+
+import __builtin__
+__builtin__.Functor = Functor
+__builtin__.Stack = Stack
+__builtin__.Queue = Queue
+__builtin__.SerialNum = SerialNum
