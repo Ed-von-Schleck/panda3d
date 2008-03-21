@@ -148,6 +148,13 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
     def deleteOrDelay(self):
         if len(self._token2delayDeleteName) > 0:
             self.deleteImminent = 1
+            # Object is delayDeleted. Clean up distributedObject state,
+            # remove from repository tables, so that we won't crash if
+            # another instance of the same object gets generated while
+            # this instance is still delayDeleted.
+            messenger.send(self.getDisableEvent())
+            self.activeState = ESDisabled
+            self._deactivate()
         else:
             self.disableAnnounceAndDelete()
 
@@ -181,7 +188,9 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
                 assert self.notify.debug(
                     "delayDelete count for doId %s -- deleteImminent" %
                     (self.doId))
-                self.disableAnnounceAndDelete()
+                self.disable()
+                self.delete()
+                self._destroyDO()
 
     def getDelayDeleteNames(self):
         return self._token2delayDeleteName.values()
@@ -189,6 +198,7 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
     def disableAnnounceAndDelete(self):
         self.disableAndAnnounce()
         self.delete()
+        self._destroyDO()
 
     def disableAndAnnounce(self):
         """
@@ -204,6 +214,8 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
             self.activeState = ESDisabling
             messenger.send(self.uniqueName("disable"))
             self.disable()
+            self.activeState = ESDisabled
+            self._deactivate()
 
     @calldownEnforced
     def announceGenerate(self):
@@ -214,19 +226,28 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
         assert self.notify.debug('announceGenerate(): %s' % (self.doId))
 
 
+    def _deactivate(self):
+        # after this is called, the object is no longer an active DistributedObject
+        # and it may be placed in the cache
+        self.__callbacks = {}
+        self.cr.closeAutoInterests(self)
+        self.setLocation(0,0)
+        self.cr.deleteObjectLocation(self, self.parentId, self.zoneId)
+
+    def _destroyDO(self):
+        # after this is called, the object is no longer a DistributedObject
+        # but may still be used as a DelayDeleted object
+        self.cr = None
+        self.dclass = None
+
+
     @calldownEnforced
     def disable(self):
         """
         Inheritors should redefine this to take appropriate action on disable
         """
         assert self.notify.debug('disable(): %s' % (self.doId))
-        if self.activeState != ESDisabled:
-            self.activeState = ESDisabled
-            self.__callbacks = {}
-            self.cr.closeAutoInterests(self)
-            self.setLocation(0,0)
-            self.cr.deleteObjectLocation(self, self.parentId, self.zoneId)
-            # TODO: disable my children
+        pass
 
     def isDisabled(self):
         """
@@ -253,8 +274,6 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
             self.DistributedObject_deleted
         except:
             self.DistributedObject_deleted = 1
-            self.cr = None
-            self.dclass = None
             EnforcesCalldowns.EC_destroy(self)
 
     @calldownEnforced
