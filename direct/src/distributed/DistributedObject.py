@@ -200,6 +200,9 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
         self.delete()
         self._destroyDO()
 
+    def getDisableEvent(self):
+        return self.uniqueName("disable")
+
     def disableAndAnnounce(self):
         """
         Inheritors should *not* redefine this function.
@@ -212,7 +215,7 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
         # hidden).
         if self.activeState != ESDisabled:
             self.activeState = ESDisabling
-            messenger.send(self.uniqueName("disable"))
+            messenger.send(self.getDisableEvent())
             self.disable()
             self.activeState = ESDisabled
             self._deactivate()
