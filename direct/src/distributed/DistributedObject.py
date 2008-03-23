@@ -151,6 +151,9 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
         else:
             self.disableAnnounceAndDelete()
 
+    def getDelayDeleteCount(self):
+        return self.delayDeleteCount
+
     def delayDelete(self, flag):
         # Flag should be 0 or 1, meaning increment or decrement count
         # Also see DelayDelete.py

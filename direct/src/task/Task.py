@@ -84,6 +84,10 @@ class Task:
         # Unique ID for each task
         self.id = Task.count
         Task.count += 1
+
+        #set to have the task managed
+        self.owner = None
+
         self.__call__ = callback
         self._priority = priority
         self._removed = 0
@@ -125,6 +129,8 @@ class Task:
 
     def remove(self):
         if not self._removed:
+            if(self.owner):
+                self.owner._clearTask(self)
             self._removed = 1
             # Remove any refs to real objects
             # In case we hang around the doLaterList for a while
@@ -365,15 +371,12 @@ class TaskManager:
         # small intervals.
         self.trueClock = TrueClock.getGlobalPtr()
 
-        """
-        base = getBase()
-        self.warnTaskDuration = base.config.GetBool('task-duration-warnings', 1)
-        self.taskDurationWarningThreshold = base.config.GetFloat('task-duration-warning-threshold', 2)
-        """
-        # we don't have a base object at this point, so set some defaults and read the real values
-        # every frame
-        self.warnTaskDuration = 0
-        self.taskDurationWarningThreshold = 2
+        # We don't have a base yet, but we can query the config
+        # variables directly.
+        self.warnTaskDuration = ConfigVariableBool('task-duration-warnings', 1).getValue()
+        self.taskDurationWarningThreshold = ConfigVariableDouble(
+            'task-duration-warning-threshold',
+            TaskManager.DefTaskDurationWarningThreshold).getValue()
 
         self.currentTime, self.currentFrame = self.__getTimeFrame()
         if (TaskManager.notify == None):
@@ -477,7 +480,7 @@ class TaskManager:
         return cont
 
     def doMethodLater(self, delayTime, funcOrTask, name, extraArgs=None,
-            priority=0, uponDeath=None, appendTask=False):
+            priority=0, uponDeath=None, appendTask=False, owner = None):
         if delayTime < 0:
             self.notify.warning('doMethodLater: added task: %s with negative delay: %s' % (name, delayTime))
         if isinstance(funcOrTask, Task):
@@ -488,6 +491,7 @@ class TaskManager:
             self.notify.error('doMethodLater: Tried to add a task that was not a Task or a func')
         task.setPriority(priority)
         task.name = name
+        task.owner = owner
         if extraArgs == None:
             extraArgs = []
             appendTask = True
@@ -521,7 +525,8 @@ class TaskManager:
         return task
 
     def add(self, funcOrTask, name, priority=0, extraArgs=None, uponDeath=None,
-            appendTask = False):
+            appendTask = False, owner = None):
+        
         """
         Add a new task to the taskMgr.
         You can add a Task object or a method that takes one argument.
@@ -536,6 +541,7 @@ class TaskManager:
                 'add: Tried to add a task that was not a Task or a func')
         task.setPriority(priority)
         task.name = name
+        task.owner = owner
         if extraArgs == None:
             extraArgs = []
             appendTask = True
@@ -843,7 +849,10 @@ class TaskManager:
     def step(self):
         # assert TaskManager.notify.debug('step: begin')
         self.currentTime, self.currentFrame = self.__getTimeFrame()
-        startFrameTime = self.globalClock.getRealTime()
+        startFrameTime = None
+        if self.globalClock:
+            startFrameTime = self.globalClock.getRealTime()
+            
         # Replace keyboard interrupt handler during task list processing
         # so we catch the keyboard interrupt but don't handle it until
         # after task list processing is complete.
@@ -887,10 +896,11 @@ class TaskManager:
 
         # Add new pending tasks
         self.__addPendingTasksToTaskList()
-
-        #this is the spot for a Internal Yield Function
-        nextTaskTime = self.__getNextDoLaterTime()                                    
-        self.doYield(startFrameTime,nextTaskTime)            
+        
+        if startFrameTime:
+            #this is the spot for a Internal Yield Function
+            nextTaskTime = self.__getNextDoLaterTime()
+            self.doYield(startFrameTime,nextTaskTime)            
         
         # Restore default interrupt handler
         signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -899,13 +909,6 @@ class TaskManager:
 
 
     def run(self):
-        base = getBase()
-        self.warnTaskDuration = base.config.GetBool('task-duration-warnings',
-                                                    1)
-        self.taskDurationWarningThreshold = base.config.GetFloat(
-            'task-duration-warning-threshold',
-            TaskManager.DefTaskDurationWarningThreshold)
-
         # Set the clock to have last frame's time in case we were
         # Paused at the prompt for a long time
         if self.globalClock:

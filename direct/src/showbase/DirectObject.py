@@ -43,3 +43,40 @@ class DirectObject:
 
     def classTree(self):
         return ClassTree(self)
+
+    #This function must be used if you want a managed task
+    def addTask(self, *args, **kwargs):
+        if(not hasattr(self,"_taskList")):
+            self._taskList = {}
+        kwargs['owner']=self
+        task = taskMgr.add(*args, **kwargs)
+        self._taskList[task.id] = task
+        return task
+    
+    def doMethodLater(self, *args, **kwargs):
+        if(not hasattr(self,"_taskList")):
+            self._taskList ={}
+        kwargs['owner']=self            
+        task = taskMgr.doMethodLater(*args, **kwargs)
+        self._taskList[task.id] = task
+        return task
+    
+    def removeTask(self, taskOrName):
+        if type(taskOrName) == type(''):
+            # we must use a copy, since task.remove will modify self._taskList
+            if hasattr(self, '_taskList'):
+                taskListValues = self._taskList.values()
+                for task in taskListValues:
+                    if task.name == taskOrName:
+                        task.remove()            
+        else:
+            taskOrName.remove()
+
+    def removeAllTasks(self):
+        if hasattr(self,'_taskList'):
+            for task in self._taskList.values():
+                task.remove()
+
+    def _clearTask(self, task):
+        del self._taskList[task.id]        
+        

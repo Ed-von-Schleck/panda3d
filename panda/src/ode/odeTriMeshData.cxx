@@ -57,14 +57,29 @@ print_data(const string &marker) {
 void OdeTriMeshData::
 remove_data(OdeTriMeshData *data) {
   odetrimeshdata_cat.debug() << get_class_type() << "::remove_data(" << data->get_id() << ")" << "\n";
-  TriMeshDataMap::iterator iter = _tri_mesh_data_map.begin();  
-  for (;iter != _tri_mesh_data_map.end(); ++iter) {
+  TriMeshDataMap::iterator iter;
+  
+  for (iter = _tri_mesh_data_map.begin();
+       iter != _tri_mesh_data_map.end();
+       ++iter) {
     if ( iter->second == data ) {
-      _tri_mesh_data_map.erase(iter);
-      iter = _tri_mesh_data_map.end();
+      break;
+    }
+  }
+  
+  while (iter != _tri_mesh_data_map.end()) {
+    _tri_mesh_data_map.erase(iter);
+    
+    for (iter = _tri_mesh_data_map.begin();
+         iter != _tri_mesh_data_map.end();
+         ++iter) {
+      if ( iter->second == data ) {
+        break;
+      }
     }
   }
 }
+
 
 ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////

@@ -46,6 +46,10 @@ import traceback
 
 from direct.directutil import Verify
 
+# Don't import libpandaexpressModules, which doesn't get built until
+# genPyCode.
+from libpandaexpress import ConfigVariableBool
+
 ScalarTypes = (types.FloatType, types.IntType, types.LongType)
 
 def enumerate(L):
@@ -807,11 +811,10 @@ def profiled(category=None, terse=False):
             # must do this in here because we don't have base/simbase
             # at the time that PythonUtil is loaded
             name = '(%s) %s from %s' % (category, f.func_name, f.__module__)
-            try:
-                _base = base
-            except:
-                _base = simbase
-            if (category is None) or _base.config.GetBool('want-profile-%s' % category, 0):
+
+            # showbase might not be loaded yet, so don't use
+            # base.config.  Instead, query the ConfigVariableBool.
+            if (category is None) or ConfigVariableBool('want-profile-%s' % category, 0).getValue():
                 return profile(Functor(f, *args, **kArgs), name, terse)
             else:
                 return f(*args, **kArgs)
@@ -2736,14 +2739,7 @@ def superFlattenShip(ship):
     #PHASE 3: stop rocking task
     taskMgr.remove("shipRocking-%d"%(ship.getDoId()))
 
-    #PHASE 4: kill lamp effects
-    from pirates.shipparts.DistributedShipDecor import DistributedShipDecor
-    for DO in base.cr.doId2do.values():
-        if(type(DO) == DistributedShipDecor):
-            if (hasattr(DO.prop, 'lanternGlowEffect')):
-                DO.prop.lanternGlowEffect.destroy()
-            
-    #PHASE 5: flatten strong!
+    #PHASE 4: flatten strong!
     return ship.flattenStrong()
 
 def exceptionLogged(append=True):

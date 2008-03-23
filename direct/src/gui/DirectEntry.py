@@ -7,6 +7,8 @@ import DirectGuiGlobals as DGG
 from DirectFrame import *
 from OnscreenText import OnscreenText
 import string,types
+# import this to make sure it gets pulled into the publish
+import encodings.utf_8
 
 # DirectEntry States:
 ENTRY_FOCUS_STATE    = PGEntry.SFocus      # 0
@@ -20,6 +22,11 @@ class DirectEntry(DirectFrame):
     """
 
     directWtext = ConfigVariableBool('direct-wtext', 1)
+
+    AllowCapNamePrefixes = ("Al", "Ap", "Ben", "De", "Del", "Della", "Delle", "Der", "Di", "Du",
+                            "El", "Fitz", "La", "Las", "Le", "Les", "Lo", "Los",
+                            "Mac", "St", "Te", "Ten", "Van", "Von", )
+    ForceCapNamePrefixes = ("D'", "DeLa", "Dell'", "L'", "M'", "Mc", "O'", )
 
     def __init__(self, parent = None, **kw):
         # Inherits from DirectFrame
@@ -61,6 +68,9 @@ class DirectEntry(DirectFrame):
             # Sounds to be used for button events
             ('rolloverSound',   DGG.getDefaultRolloverSound(), self.setRolloverSound),
             ('clickSound',      DGG.getDefaultClickSound(),    self.setClickSound),
+            ('autoCapitalize',  0,                self.autoCapitalizeFunc),
+            ('autoCapitalizeAllowPrefixes', DirectEntry.AllowCapNamePrefixes, None),
+            ('autoCapitalizeForcePrefixes', DirectEntry.ForceCapNamePrefixes, None),
             )
         # Merge keyword options with default options
         self.defineoptions(kw, optiondefs)
@@ -101,6 +111,11 @@ class DirectEntry(DirectFrame):
         # Call option initialization functions
         self.initialiseoptions(DirectEntry)
 
+        if not hasattr(self, 'autoCapitalizeAllowPrefixes'):
+            self.autoCapitalizeAllowPrefixes = DirectEntry.AllowCapNamePrefixes
+        if not hasattr(self, 'autoCapitalizeForcePrefixes'):
+            self.autoCapitalizeForcePrefixes = DirectEntry.ForceCapNamePrefixes
+
         # Update TextNodes for each state
         for i in range(self['numStates']):
             self.guiItem.setTextDef(i, self.onscreenText.textNode)
@@ -111,8 +126,7 @@ class DirectEntry(DirectFrame):
             self.set(self['initialText'])
 
     def destroy(self):
-        self.ignore(self.guiItem.getFocusInEvent())
-        self.ignore(self.guiItem.getFocusOutEvent())
+        self.ignoreAll()
         DirectFrame.destroy(self)
 
     def setup(self):
@@ -149,13 +163,74 @@ class DirectEntry(DirectFrame):
             # Pass any extra args to command
             apply(self['command'], [self.get()] + self['extraArgs'])
 
+    def autoCapitalizeFunc(self):
+        if self['autoCapitalize']:
+            self.accept(self.guiItem.getTypeEvent(), self._handleTyping)
+            self.accept(self.guiItem.getEraseEvent(), self._handleErasing)
+        else:
+            self.ignore(self.guiItem.getTypeEvent())
+            self.ignore(self.guiItem.getEraseEvent())
+
     def focusInCommandFunc(self):
         if self['focusInCommand']:
             apply(self['focusInCommand'], self['focusInExtraArgs'])
+        if self['autoCapitalize']:
+            self.accept(self.guiItem.getTypeEvent(), self._handleTyping)
+            self.accept(self.guiItem.getEraseEvent(), self._handleErasing)
+
+    def _handleTyping(self, guiEvent):
+        self._autoCapitalize()
+    def _handleErasing(self, guiEvent):
+        self._autoCapitalize()
+
+    def _autoCapitalize(self):
+        name = self.get().decode('utf-8')
+        # capitalize each word, allowing for things like McMutton
+        capName = ''
+        # track each individual word to detect prefixes like Mc
+        wordSoFar = ''
+        # track whether the previous character was part of a word or not
+        wasNonWordChar = True
+        for i in xrange(len(name)):
+            character = name[i]
+            # test to see if we are between words
+            # - Count characters that can't be capitalized as a break between words
+            #   This assumes that string.lower and string.upper will return different
+            #   values for all unicode letters.
+            # - Don't count apostrophes as a break between words
+            if ((string.lower(character) == string.upper(character)) and (character != "'")):
+                # we are between words
+                wordSoFar = ''
+                wasNonWordChar = True
+            else:
+                capitalize = False
+                if wasNonWordChar:
+                    # first letter of a word, capitalize it unconditionally;
+                    capitalize = True
+                elif (character == string.upper(character) and
+                      len(self.autoCapitalizeAllowPrefixes) and
+                      wordSoFar in self.autoCapitalizeAllowPrefixes):
+                    # first letter after one of the prefixes, allow it to be capitalized
+                    capitalize = True
+                elif (len(self.autoCapitalizeForcePrefixes) and
+                      wordSoFar in self.autoCapitalizeForcePrefixes):
+                    # first letter after one of the force prefixes, force it to be capitalized
+                    capitalize = True
+                if capitalize:
+                    # allow this letter to remain capitalized
+                    character = string.upper(character)
+                else:
+                    character = string.lower(character)
+                wordSoFar += character
+                wasNonWordChar = False
+            capName += character
+        self.enterText(capName.encode('utf-8'))
 
     def focusOutCommandFunc(self):
         if self['focusOutCommand']:
             apply(self['focusOutCommand'], self['focusOutExtraArgs'])
+        self.ignore(self.guiItem.getTypeEvent())
+        self.ignore(self.guiItem.getEraseEvent())
 
     def set(self, text):
         """ Changes the text currently showing in the typable region;

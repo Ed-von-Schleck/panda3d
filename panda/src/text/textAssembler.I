@@ -244,7 +244,7 @@ get_num_rows() const {
 INLINE int TextAssembler::
 get_num_cols(int r) const {
   nassertr(r >= 0 && r <= (int)_text_block.size(), 0);
-  if (r == _text_block.size()) {
+  if (r == (int)_text_block.size()) {
     return 0;
   }
   return _text_block[r]._string.size();
@@ -318,7 +318,7 @@ get_width(int r, int c) const {
 INLINE float TextAssembler::
 get_ypos(int r, int) const {
   nassertr(r >= 0 && r <= (int)_text_block.size(), 0.0f);
-  if (r == _text_block.size()) {
+  if (r == (int)_text_block.size()) {
     return _next_row_ypos;
   } else {
     return _text_block[r]._ypos;
@@ -419,7 +419,8 @@ TextRow(const TextAssembler::TextRow &copy) :
   _row_start(copy._row_start),
   _got_soft_hyphens(copy._got_soft_hyphens),
   _xpos(copy._xpos),
-  _ypos(copy._ypos)
+  _ypos(copy._ypos),
+  _eol_cprops(copy._eol_cprops)
 {
 }
 
@@ -435,6 +436,7 @@ operator = (const TextAssembler::TextRow &copy) {
   _got_soft_hyphens = copy._got_soft_hyphens;
   _xpos = copy._xpos;
   _ypos = copy._ypos;
+  _eol_cprops = copy._eol_cprops;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -280,13 +280,6 @@ class GravityWalker(DirectObject.DirectObject):
     def setFloorBitMask(self, bitMask):
         self.floorBitmask = bitMask
 
-    def swapFloorBitMask(self, oldMask, newMask):
-        self.floorBitmask = self.floorBitmask &~ oldMask
-        self.floorBitmask |= newMask
-
-        if self.cRayNodePath and not self.cRayNodePath.isEmpty():
-            self.cRayNodePath.node().setFromCollideMask(self.floorBitmask)
-
     def initializeCollisions(self, collisionTraverser, avatarNodePath,
             avatarRadius = 1.4, floorOffset = 1.0, reach = 1.0):
         """
@@ -460,13 +453,6 @@ class GravityWalker(DirectObject.DirectObject):
         slideLeft = inputState.isSet("slideLeft")
         slideRight = inputState.isSet("slideRight")
         jump = inputState.isSet("jump")
-
-        # Check for Auto-Run
-        if 'localAvatar' in __builtins__:
-            if base.localAvatar.getAutoRun():
-                forward = 1
-                reverse = 0
-
         # Determine what the speeds are based on the buttons:
         self.speed=(forward and self.avatarControlForwardSpeed or
                     reverse and -self.avatarControlReverseSpeed)

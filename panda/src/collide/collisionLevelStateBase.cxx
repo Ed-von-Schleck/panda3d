@@ -64,6 +64,10 @@ prepare_collider(const ColliderDef &def, const NodePath &root) {
   if (!bv->is_of_type(GeometricBoundingVolume::get_class_type())) {
     _local_bounds.push_back((GeometricBoundingVolume *)NULL);
   } else {
+    LPoint3f pos_delta = def._node_path.get_pos_delta(root);
+
+    // We can use a plain pointer, rather than a PT() here, because we
+    // know we are going to save the volume in the vector, below.
     GeometricBoundingVolume *gbv;
     DCAST_INTO_V(gbv, bv->make_copy());
 
@@ -71,20 +75,19 @@ prepare_collider(const ColliderDef &def, const NodePath &root) {
     // world.  The bounding volume should be extended by the object's
     // motion relative to each object it is considering a collision
     // with.  That makes things complicated!
-    /*
-    if (def._delta != LVector3f::zero()) {
+    if (bv->is_exact_type(BoundingSphere::get_class_type()) && 
+        pos_delta != LVector3f::zero()) {
       // If the node has a delta, we have to include the starting
-      // point in the volume as well.
-
-      // Strictly speaking, we should actually transform gbv backward
-      // by the delta(), and extend by *that* volume, instead of
-      // just extending by the single point at -get_velocity().
-      // However, assuming the solids within a moving CollisionNode
-      // tend to be near the origin, this will generally produce the
-      // same results, and is much easier to compute.
-      gbv->extend_by(LPoint3f(-def._delta));
+      // position in the volume as well.  We only do this for bounding
+      // spheres, since (a) other kinds of volumes may not extend so
+      // well, and (b) we've only implemented fluid-motion detection
+      // for CollisionSpheres anyway.
+      LMatrix4f inv_trans = LMatrix4f::translate_mat(-pos_delta);
+      PT(GeometricBoundingVolume) gbv_prev;
+      gbv_prev = DCAST(GeometricBoundingVolume, bv->make_copy());
+      gbv_prev->xform(inv_trans);
+      gbv->extend_by(gbv_prev);
     }
-    */
 
     CPT(TransformState) rel_transform = def._node_path.get_transform(root.get_parent());
     gbv->xform(rel_transform->get_mat());
