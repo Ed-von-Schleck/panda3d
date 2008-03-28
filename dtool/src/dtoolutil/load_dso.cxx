@@ -20,6 +20,8 @@
 
 static Filename resolve_dso(const DSearchPath &path, const Filename &filename) {
   if (filename.is_local()) {
+    // This logic is broken.  Consulting with Josh Yelon.
+    /*
     if (path.is_empty()||
         ((path.get_num_directories()==1)&&(path.get_directory(0)=="."))) {
       Filename dtoolpath = ExecutionEnvironment::get_dtool_name();
@@ -28,6 +30,8 @@ static Filename resolve_dso(const DSearchPath &path, const Filename &filename) {
     } else {
       return path.find_file(filename);
     }
+    */
+    return path.find_file(filename);
   } else {
     return filename;
   }
