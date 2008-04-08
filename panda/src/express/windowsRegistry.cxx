@@ -303,8 +303,9 @@ do_get(const string &key, const string &name, int &data_type, string &data,
     if (data_type == REG_SZ || 
         data_type == REG_MULTI_SZ || 
         data_type == REG_EXPAND_SZ) {
-      // Eliminate the trailing null character.
-      buffer_size--;
+      // Eliminate the trailing null character for non-zero lengths.
+      if (buffer_size > 0)              // if zero, leave it
+        buffer_size--;
     }
     data = string(init_buffer, buffer_size);
 
@@ -324,8 +325,9 @@ do_get(const string &key, const string &name, int &data_type, string &data,
       if (data_type == REG_SZ || 
           data_type == REG_MULTI_SZ || 
           data_type == REG_EXPAND_SZ) {
-        // Eliminate the trailing null character.
-        buffer_size--;
+        // Eliminate the trailing null character for non-zero lengths.
+        if (buffer_size > 0)            // if zero, leave it
+          buffer_size--;
       }
       data = string(new_buffer, buffer_size);
     }
