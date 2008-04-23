@@ -42,20 +42,44 @@
 #defer source_prefix $[SOURCE_DIR:%=%/]
 
 #if $[LANGUAGES]
-  #define exlanguage_sources $[notdir $[filter %.flt %.mb %.ma %.lwo %.LWO %.egg,$[wildcard $[TOPDIR]/$[DIRPREFIX]*_$[LANGUAGE].*]]]
+  #define exlanguage_sources $[notdir $[filter %.flt %.mb %.ma %.lwo %.LWO %.egg %.dna,$[wildcard $[TOPDIR]/$[DIRPREFIX]*_$[LANGUAGE].*]]]
+
+  #defun lang_add_files sources, src_ext, local_extra
+    #define default_filter
+    #define local_filter
+    #foreach ext $[src_ext]
+      #set default_filter $[default_filter] %_$[DEFAULT_LANGUAGE].$[ext]
+      #set local_filter $[local_filter] %_$[LANGUAGE].$[ext]
+    #end ext
+    #define default_langlist $[filter $[default_filter],$[sources]]
+    #define locallist $[filter $[local_filter],$[local_extra] $[exlanguage_sources]]
+    #define havelist
+    #foreach file $[default_langlist]
+      #foreach ext $[src_ext]
+        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].$[ext]=%_$[LANGUAGE].$[ext]]
+        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
+      #end ext
+    #end file
+    $[havelist]
+  #end lang_add_files
 
   #forscopes flt_egg
     #if $[SOURCES]
-      #define default_langlist $[filter %_$[DEFAULT_LANGUAGE].flt,$[SOURCES]]
-      #define locallist $[filter %.flt,$[exlanguage_sources]]
-      #define havelist
-      #foreach file $[default_langlist]
-        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].flt=%_$[LANGUAGE].flt]
-        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
-      #end file
-      #set SOURCES $[sort $[SOURCES] $[havelist]]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], flt, ]]
     #endif
   #end flt_egg
+
+  #forscopes lwo_egg
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], lwo LWO, ]]
+    #endif
+  #end lwo_egg
+
+  #forscopes maya_egg
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], lwo LWO, ]]
+    #endif
+  #end maya_egg
 #endif
 
 #define build_flt_eggs \
@@ -83,16 +107,15 @@
 #if $[LANGUAGES]
   #forscopes install_egg filter_egg
     #if $[SOURCES]
-      #define default_langlist $[filter %_$[DEFAULT_LANGUAGE].egg,$[SOURCES]]
-      #define locallist $[filter %_$[LANGUAGE].egg,$[build_eggs] $[exlanguage_sources]]
-      #define havelist
-      #foreach file $[default_langlist]
-        #define wantfile $[file:%_$[DEFAULT_LANGUAGE].egg=%_$[LANGUAGE].egg]
-        #set havelist $[havelist] $[filter $[wantfile],$[locallist]]
-      #end file
-      #set SOURCES $[sort $[SOURCES] $[havelist]]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], egg, $[build_eggs]]]
     #endif
   #end install_egg filter_egg
+
+  #forscopes install_dna
+    #if $[SOURCES]
+      #set SOURCES $[sort $[SOURCES] $[lang_add_files $[SOURCES], dna, ]]
+    #endif
+  #end install_dna
 #endif
 
 // Get the list of egg files that are to be installed
