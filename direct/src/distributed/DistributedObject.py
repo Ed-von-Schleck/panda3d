@@ -249,8 +249,7 @@ class DistributedObject(DistributedObjectBase, EnforcesCalldowns):
         self.__callbacks = {}
         if self.cr:
             self.cr.closeAutoInterests(self)
-        self.setLocation(0,0)
-        if self.cr:
+            self.setLocation(0,0)
             self.cr.deleteObjectLocation(self, self.parentId, self.zoneId)
 
     def _destroyDO(self):
