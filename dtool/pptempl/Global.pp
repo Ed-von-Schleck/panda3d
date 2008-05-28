@@ -160,6 +160,13 @@
   #define dx_libs $[DX_LIBS]
 #endif
 
+#if $[HAVE_CV]
+  #define cv_ipath $[wildcard $[CV_IPATH]]
+  #define cv_lpath $[wildcard $[CV_LPATH]]
+  #define cv_cflags $[CV_CFLAGS]
+  #define cv_libs $[CV_LIBS]
+#endif
+
 #if $[HAVE_JPEG]
   #define jpeg_ipath $[wildcard $[JPEG_IPATH]]
   #define jpeg_lpath $[wildcard $[JPEG_LPATH]]
@@ -463,6 +470,8 @@
 #defun get_libs
   #define alt_libs $[if $[IGNORE_LIB_DEFAULTS_HACK],,$[stl_libs] $[nspr_libs] $[python_libs]]
 
+  #define alt_libs $[alt_libs] $[EXTRA_LIBS]
+
   #if $[WINDOWS_PLATFORM]
     #set alt_libs $[alt_libs] $[WIN_SYS_LIBS] $[components $[WIN_SYS_LIBS],$[active_libs] $[transitive_link]]
   #elif $[OSX_PLATFORM]
@@ -640,13 +649,13 @@ Warning: Variable $[upcase $[tree]]_INSTALL is not set!
     $[CDEFINES_OPT$[OPTIMIZE]:%=-D%] \
     $[filter -D%,$[C++FLAGS]] \
     $[INTERROGATE_OPTIONS] \
-    $[if $[INTERROGATE_PYTHON_INTERFACE],-python] \
+    $[if $[INTERROGATE_PYTHON_INTERFACE],$[if $[PYTHON_NATIVE],-python-native,-python]] \
     $[if $[INTERROGATE_C_INTERFACE],-c] \
     $[if $[TRACK_IN_INTERPRETER],-track-interpreter] \
     $[if $[<= $[OPTIMIZE], 1],-spam]
 
 #defer interrogate_module_options \
-    $[if $[INTERROGATE_PYTHON_INTERFACE],-python] \
+    $[if $[INTERROGATE_PYTHON_INTERFACE],$[if $[PYTHON_NATIVE],-python-native,-python]] \
     $[if $[INTERROGATE_C_INTERFACE],-c] \
     $[if $[TRACK_IN_INTERPRETER],-track-interpreter]
 
