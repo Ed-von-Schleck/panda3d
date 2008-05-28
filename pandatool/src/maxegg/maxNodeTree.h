@@ -1,6 +1,0 @@
-// Filename: maxNodeTree.h
-// Created by: crevilla
-// from mayaNodeTree.h created by:  drose (06Jun03)
-//
-////////////////////////////////////////////////////////////////////
-//
