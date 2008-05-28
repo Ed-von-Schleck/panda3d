@@ -1,6 +1,0 @@
-// Filename: maxNodeDesc.cxx
-// Created by:  crevilla
-// from mayaNodeDesc.cxx created by:  drose (06Jun03)
-//
-////////////////////////////////////////////////////////////////////
-//

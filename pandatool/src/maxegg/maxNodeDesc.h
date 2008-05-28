@@ -1,6 +1,0 @@
-// Filename: maxNodeDesc.h
-// Created by: crevilla
-// from mayaNodeDesc.h created by:  drose (06Jun03)
-//
-////////////////////////////////////////////////////////////////////
-//

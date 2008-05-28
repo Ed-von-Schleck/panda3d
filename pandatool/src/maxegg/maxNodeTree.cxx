@@ -1,6 +1,0 @@
-// Filename: maxNodeTree.cxx
-// Created by: crevilla
-// from mayaNodeTree.cxx created by:  drose (06Jun03)
-//
-////////////////////////////////////////////////////////////////////
-//
