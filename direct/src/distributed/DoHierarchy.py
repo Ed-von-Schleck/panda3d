@@ -1,4 +1,4 @@
-from direct.directnotify.DirectNotifyGlobal import directNotify
+﻿from direct.directnotify.DirectNotifyGlobal import directNotify
 
 class DoHierarchy:
     """
@@ -60,7 +60,7 @@ class DoHierarchy:
 
     def storeObjectLocation(self, doId, parentId, zoneId):
         assert self.notify.debugCall()
-        assert doId not in self._allDoIds
+        #assert doId not in self._allDoIds
         parentZoneDict = self._table.setdefault(parentId, {})
         zoneDoSet = parentZoneDict.setdefault(zoneId, set())
         zoneDoSet.add(doId)
