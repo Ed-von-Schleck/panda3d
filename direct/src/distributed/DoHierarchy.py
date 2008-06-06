@@ -1,4 +1,4 @@
-﻿from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.directnotify.DirectNotifyGlobal import directNotify
 
 class DoHierarchy:
     """
