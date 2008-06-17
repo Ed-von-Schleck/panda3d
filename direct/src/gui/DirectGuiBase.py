@@ -865,7 +865,6 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
         if self['frameSize']:
             # Use user specified bounds
             self.bounds = self['frameSize']
-            #print "%s bounds = %s" % (self.getName(),self.bounds)            
         else:
             if fClearFrame and (frameType != PGFrameStyle.TNone):
                 self.frameStyle[0].setType(PGFrameStyle.TNone)
@@ -981,22 +980,31 @@ class DirectGuiWidget(DirectGuiBase, NodePath):
         self.updateFrameStyle()
 
     def destroy(self):
-        # Destroy children
-        for child in self.getChildrenAsList():
-            childGui = self.guiDict.get(child.getName())
-            if childGui: childGui.destroy()
-            # messenger.send(DESTROY + child.getName())
-        del self.guiDict[self.guiId]
-        del self.frameStyle
-        # Get rid of node path
-        self.removeNode()
-        for nodePath in self.stateNodePath:
-            nodePath.removeNode()
-        del self.stateNodePath
-        del self.guiItem
-        # Call superclass destruction method (clears out hooks)
-        DirectGuiBase.destroy(self)
-        
+        if hasattr(self, "frameStyle"):
+            # Destroy children
+            for child in self.getChildrenAsList():
+                childGui = self.guiDict.get(child.getName())
+                if childGui:
+                    childGui.destroy()
+                else:
+                    # RAU since we added the class to the name, try
+                    # it with the original name
+                    parts = child.getName().split('-')
+                    simpleChildGui = self.guiDict.get(parts[-1])
+                    if simpleChildGui:
+                        simpleChildGui.destroy()
+                # messenger.send(DESTROY + child.getName())
+            del self.guiDict[self.guiId]
+            del self.frameStyle
+            # Get rid of node path
+            self.removeNode()
+            for nodePath in self.stateNodePath:
+                nodePath.removeNode()
+            del self.stateNodePath
+            del self.guiItem
+            # Call superclass destruction method (clears out hooks)
+            DirectGuiBase.destroy(self)
+
     def printConfig(self, indent = 0):
         space = ' ' * indent
         print space + self.guiId
