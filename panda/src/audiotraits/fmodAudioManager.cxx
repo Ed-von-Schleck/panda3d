@@ -402,12 +402,12 @@ configure_filters(FilterProperties *config) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::get_sound
+//     Function: FmodAudioManager::get_sound()
 //       Access: Public
 //  Description: This is what creates a sound instance.
 ////////////////////////////////////////////////////////////////////
 PT(AudioSound) FmodAudioManager::
-get_sound(const string &file_name, bool positional, int) {
+get_sound(const string &file_name, bool positional) {
   //Needed so People use Panda's Generic UNIX Style Paths for Filename.
   //path.to_os_specific() converts it back to the proper OS version later on.
   
@@ -428,16 +428,6 @@ get_sound(const string &file_name, bool positional, int) {
   return audioSound;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::get_sound
-//       Access: Public
-//  Description: This is what creates a sound instance.
-////////////////////////////////////////////////////////////////////
-PT(AudioSound) FmodAudioManager::
-get_sound(MovieAudio *source, bool positional, int) {
-  nassert_raise("FMOD audio manager does not support MovieAudio sources");
-  return NULL;
-}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: FmodAudioManager::getSpeakerSetup()

@@ -3,6 +3,7 @@
 from pandac.PandaModules import *
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectBase import DistributedObjectBase
+from direct.showbase.PythonUtil import StackTrace
 #from PyDatagram import PyDatagram
 #from PyDatagramIterator import PyDatagramIterator
 
@@ -73,6 +74,8 @@ class DistributedObject(DistributedObjectBase):
 
             # This is used by doneBarrier().
             self.__barrierContext = None
+
+            self._delayDeleteForceAllow = False
 
             ## TODO: This should probably be move to a derived class for CMU
             ## #zone of the distributed object, default to 0
@@ -151,6 +154,35 @@ class DistributedObject(DistributedObjectBase):
     def getNeverDisable(self):
         return self.neverDisable
 
+    def _retrieveCachedData(self):
+        # once we know our doId, grab any data that might be stored in the data cache
+        # from the last time we were on the client
+        if self.cr.doDataCache.hasCachedData(self.doId):
+            self._cachedData = self.cr.doDataCache.popCachedData(self.doId)
+
+    def setCachedData(self, name, data):
+        assert type(name) == type('')
+        # ownership of the data passes to the repository data cache
+        self.cr.doDataCache.setCachedData(self.doId, name, data)
+
+    def hasCachedData(self, name):
+        assert type(name) == type('')
+        if not hasattr(self, '_cachedData'):
+            return False
+        return name in self._cachedData
+
+    def getCachedData(self, name):
+        assert type(name) == type('')
+        # ownership of the data passes to the caller of this method
+        data = self._cachedData[name]
+        del self._cachedData[name]
+        return data
+
+    def flushCachedData(self, name):
+        assert type(name) == type('')
+        # call this to throw out cached data from a previous instantiation
+        self._cachedData[name].flush()
+
     def setCacheable(self, bool):
         assert bool == 1 or bool == 0
         self.cacheable = bool
@@ -174,9 +206,16 @@ class DistributedObject(DistributedObjectBase):
     def getDelayDeleteCount(self):
         return len(self._token2delayDeleteName)
 
+    def forceAllowDelayDelete(self):
+        # Toontown has code that creates a DistributedObject manually and then
+        # DelayDeletes it. That code should call this method, otherwise the
+        # DelayDelete system will crash because the object is not generated
+        self._delayDeleteForceAllow = True
+
     def acquireDelayDelete(self, name):
         # Also see DelayDelete.py
-        if self.activeState not in (ESGenerating, ESGenerated):
+        if ((not self._delayDeleteForceAllow) and
+            (self.activeState not in (ESGenerating, ESGenerated))):
             self.notify.error(
                 'cannot acquire DelayDelete "%s" on %s because it is in state %s' % (
                 name, self.__class__.__name__, ESNum2Str[self.activeState]))
@@ -248,15 +287,27 @@ class DistributedObject(DistributedObjectBase):
     def _deactivate(self):
         # after this is called, the object is no longer an active DistributedObject
         # and it may be placed in the cache
+        if not self.cr:
+            # we are going to crash, output the destroyDo stacktrace
+            self.notify.warning('self.cr is none in _deactivate %d' % self.doId)
+            if hasattr(self, 'destroyDoStackTrace'):
+                print self.destroyDoStackTrace
         self.__callbacks = {}
-        if self.cr:
-            self.cr.closeAutoInterests(self)
-            self.setLocation(0,0)
-            self.cr.deleteObjectLocation(self, self.parentId, self.zoneId)
+        self.cr.closeAutoInterests(self)
+        self.setLocation(0,0)
+        self.cr.deleteObjectLocation(self, self.parentId, self.zoneId)
 
     def _destroyDO(self):
         # after this is called, the object is no longer a DistributedObject
         # but may still be used as a DelayDeleted object
+        self.destroyDoStackTrace = StackTrace()
+        # check for leftover cached data that was not retrieved or flushed by this object
+        # this will catch typos in the data name in calls to get/setCachedData
+        if hasattr(self, '_cachedData'):
+            for name, cachedData in self._cachedData.iteritems():
+                self.notify.warning('flushing unretrieved cached data: %s' % name)
+                cachedData.flush()
+            del self._cachedData
         self.cr = None
         self.dclass = None
 

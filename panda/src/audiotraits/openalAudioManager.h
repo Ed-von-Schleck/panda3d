@@ -53,8 +53,7 @@ class EXPCL_OPENAL_AUDIO OpenALAudioManager : public AudioManager {
 
   virtual bool is_valid();
           
-  virtual PT(AudioSound) get_sound(const string&,     bool positional = false, int mode=SM_heuristic);
-  virtual PT(AudioSound) get_sound(MovieAudio *sound, bool positional = false, int mode=SM_heuristic);
+  virtual PT(AudioSound) get_sound(const string&, bool positional = false);
   
   virtual void uncache_sound(const string&);
   virtual void clear_cache();
@@ -117,9 +116,9 @@ private:
   void make_current() const;
 
   bool can_use_audio(MovieAudioCursor *source);
-  bool should_load_audio(MovieAudioCursor *source, int mode);
+  bool can_load_audio(MovieAudioCursor *source);
   
-  SoundData *get_sound_data(MovieAudio *source, int mode);
+  SoundData *get_sound_data(MovieAudio *source);
 
   // Tell the manager that the sound dtor was called.
   void release_sound(OpenALAudioSound* audioSound);
@@ -129,7 +128,7 @@ private:
   
   void starting_sound(OpenALAudioSound* audio);
   void stopping_sound(OpenALAudioSound* audio);
-  
+
   void cleanup();
   
 private:
@@ -174,7 +173,7 @@ private:
   typedef phash_map<string, SoundData *> SampleCache;
   SampleCache _sample_cache;
   
-  typedef phash_set<PT(OpenALAudioSound)> SoundsPlaying;
+  typedef phash_set<OpenALAudioSound *> SoundsPlaying;
   SoundsPlaying _sounds_playing;
 
   typedef phash_set<OpenALAudioSound *> AllSounds;

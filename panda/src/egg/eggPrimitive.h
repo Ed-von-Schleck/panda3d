@@ -212,17 +212,6 @@ protected:
 private:
   void set_connected_shading(Shading shading, const EggAttributes *neighbor);
 
-  class ConnectedShadingNode {
-  public:
-    Shading _shading;
-    const EggAttributes *_neighbor;
-  };
-  typedef pvector<ConnectedShadingNode> ConnectedShadingNodes;
-
-  void r_set_connected_shading(int depth_count,
-                               Shading shading, const EggAttributes *neighbor,
-                               ConnectedShadingNodes &connected_nodes);
-
 private:
   typedef vector_PT_EggTexture Textures;
   Textures _textures;

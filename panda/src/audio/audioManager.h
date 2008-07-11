@@ -23,7 +23,6 @@
 #include "config_audio.h"
 #include "audioSound.h"
 #include "filterProperties.h"
-#include "movieAudio.h"
 
 typedef PT(AudioManager) Create_AudioManager_proc();
 
@@ -59,12 +58,6 @@ PUBLISHED:
     SPK_sideright,
     SPK_COUNT,
   };
-
-  enum StreamMode {
-    SM_heuristic,
-    SM_sample,
-    SM_stream,
-  };
   
   virtual int getSpeakerSetup();
   virtual void setSpeakerSetup(SpeakerModeCategory cat);
@@ -93,9 +86,8 @@ PUBLISHED:
   virtual bool is_valid() = 0;
   
   // Get a sound:
-  virtual PT(AudioSound) get_sound(const string& file_name, bool positional = false, int mode=SM_heuristic) = 0;
-  virtual PT(AudioSound) get_sound(MovieAudio *source, bool positional = false, int mode=SM_heuristic) = 0;
-
+  virtual PT(AudioSound) get_sound(const string& file_name, bool positional = false) = 0;
+  
   PT(AudioSound) get_null_sound();
 
   // Tell the AudioManager there is no need to keep this one cached.

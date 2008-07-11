@@ -46,8 +46,7 @@ TypeHandle OpenALAudioSound::_type_handle;
 OpenALAudioSound::
 OpenALAudioSound(OpenALAudioManager* manager,
                  MovieAudio *movie,
-                 bool positional,
-                 int mode) :
+                 bool positional) :
   _movie(movie),
   _sd(NULL),
   _loops_completed(0),
@@ -64,8 +63,7 @@ OpenALAudioSound(OpenALAudioManager* manager,
   _play_rate(1.0),
   _current_time(0.0),
   _active(true),
-  _paused(false),
-  _desired_mode(mode)
+  _paused(false)
 {
   _location[0] = 0;
   _location[1] = 0;
@@ -145,7 +143,7 @@ play() {
   require_sound_data();
   if (_manager == 0) return;
   _manager->starting_sound(this);
-
+  
   if (!_source) {
     return;
   }
@@ -318,7 +316,7 @@ restart_stalled_audio() {
 //  Description: Pushes a buffer into the source queue.
 ////////////////////////////////////////////////////////////////////
 void OpenALAudioSound::
-queue_buffer(ALuint buffer, int samples, int loop_index, double time_offset) {
+queue_buffer(ALuint buffer, int loop_index, double time_offset) {
   // Now push the buffer into the stream queue.
   alGetError();
   alSourceQueueBuffers(_source,1,&buffer);
@@ -330,10 +328,10 @@ queue_buffer(ALuint buffer, int samples, int loop_index, double time_offset) {
   }
   QueuedBuffer buf;
   buf._buffer = buffer;
-  buf._samples = samples;
   buf._loop_index = loop_index;
   buf._time_offset = time_offset;
   _stream_queued.push_back(buf);
+  //  audio_debug("Buffer queued " << loop_index << " " << time_offset);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -396,21 +394,12 @@ read_stream_data(int bytelen, unsigned char *buffer) {
       cursor->seek(0.0);
       continue;
     }
-    if (_sd->_stream->ready() == 0) {
-      if (_sd->_stream->aborted()) {
-        _loops_completed = _playing_loops;
-      }
-      return fill;
-    }
     if (samples > space) {
       samples = space;
     }
-    if (samples > _sd->_stream->ready()) {
-      samples = _sd->_stream->ready();
-    }
     cursor->read_samples(samples, (PN_int16 *)buffer);
     size_t hval = AddHash::add_hash(0, (PN_uint8*)buffer, samples*channels*2);
-    audio_debug("Streaming " << cursor->get_source()->get_name() << " at " << t << " hash " << hval);
+    audio_debug("Streaming " << cursor->get_source()->get_filename().get_basename() << " at " << t << " hash " << hval);
     fill += samples;
     space -= samples;
     buffer += (samples * channels * 2);
@@ -501,21 +490,23 @@ push_fresh_buffers() {
   if (_sd->_sample) {
     while ((_loops_completed < _playing_loops) &&
            (_stream_queued.size() < 100)) {
-      queue_buffer(_sd->_sample, 0,_loops_completed, 0.0);
+      queue_buffer(_sd->_sample, _loops_completed, 0.0);
       _loops_completed += 1;
     }
   } else {
     MovieAudioCursor *cursor = _sd->_stream;
     int channels = cursor->audio_channels();
     int rate = cursor->audio_rate();
+    double space = 65536 / (channels * 2);
     
-    int fill = 0;
-    for (int i=0; i<_stream_queued.size(); i++) {
-      fill += _stream_queued[i]._samples;
+    // Calculate how many buffers to keep in the queue.
+    int fill_to = (int)((audio_buffering_seconds * rate) / space) + 1;
+    if (fill_to < 3) {
+      fill_to = 3;
     }
     
     while ((_loops_completed < _playing_loops) &&
-           (fill < (int)(audio_buffering_seconds * rate * channels))) {
+           (((int)(_stream_queued.size())) < fill_to)) {
       int loop_index = _loops_completed;
       double time_offset = cursor->tell();
       int samples = read_stream_data(65536, data);
@@ -524,9 +515,8 @@ push_fresh_buffers() {
       }
       ALuint buffer = make_buffer(samples, channels, rate, data);
       if (_manager == 0) return;
-      queue_buffer(buffer, samples, loop_index, time_offset);
+      queue_buffer(buffer, loop_index, time_offset);
       if (_manager == 0) return;
-      fill += samples;
     }
   }
 }
@@ -876,14 +866,17 @@ get_name() const {
 //  Description: Get status of the sound.
 //
 //               This returns the status as of the
-//               last push_fresh_buffers
+//               last AudioManager::update.
 ////////////////////////////////////////////////////////////////////
 AudioSound::SoundStatus OpenALAudioSound::
 status() const {
   if (_source==0) {
     return AudioSound::READY;
   }
-  if ((_loops_completed >= _playing_loops)&&(_stream_queued.size()==0)) {
+  
+  _manager->make_current();
+  
+  if (_stream_queued.size() == 0) {
     return AudioSound::READY;
   } else {
     return AudioSound::PLAYING;

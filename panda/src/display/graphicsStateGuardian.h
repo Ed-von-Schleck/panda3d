@@ -98,12 +98,13 @@ PUBLISHED:
   INLINE GraphicsEngine *get_engine() const;
   INLINE const GraphicsThreadingModel &get_threading_model() const;
 
+  INLINE bool is_hardware() const;
   virtual INLINE bool prefers_triangle_strips() const;
   virtual INLINE int get_max_vertices_per_array() const;
   virtual INLINE int get_max_vertices_per_primitive() const;
 
   INLINE int get_max_texture_stages() const;
-  INLINE int get_max_texture_dimension() const;
+  virtual INLINE int get_max_texture_dimension() const;
   INLINE int get_max_3d_texture_dimension() const;
   INLINE int get_max_cube_map_dimension() const;
 
@@ -134,6 +135,8 @@ PUBLISHED:
   INLINE bool get_supports_basic_shaders() const;
   INLINE bool get_supports_two_sided_stencil() const;
 
+  INLINE int get_maximum_simultaneuous_render_targets() const;
+
   INLINE int get_shader_model() const;
   INLINE void set_shader_model(int shader_model);
 
@@ -142,6 +145,7 @@ PUBLISHED:
   INLINE bool get_color_scale_via_lighting() const;
   INLINE bool get_alpha_scale_via_texture() const;
   INLINE bool get_alpha_scale_via_texture(const TextureAttrib *tex_attrib) const;
+  INLINE bool get_runtime_color_scale() const;
 
   INLINE static TextureStage *get_alpha_scale_texture_stage();
 
@@ -250,7 +254,7 @@ public:
   void do_issue_clip_plane();
   void do_issue_color();
   void do_issue_color_scale();
-  void do_issue_light();
+  virtual void do_issue_light();
 
   virtual void bind_light(PointLight *light_obj, const NodePath &light,
                           int light_id);
@@ -353,6 +357,7 @@ protected:
 
   PT(PreparedGraphicsObjects) _prepared_objects;
 
+  bool _is_hardware;
   bool _prefers_triangle_strips;
   int _max_vertices_per_array;
   int _max_vertices_per_primitive;
@@ -394,9 +399,12 @@ protected:
   bool _supports_stencil_wrap;
   bool _supports_two_sided_stencil;
 
+  int _maximum_simultaneuous_render_targets;
+
   int  _supported_geom_rendering;
   bool _color_scale_via_lighting;
   bool _alpha_scale_via_texture;
+  bool _runtime_color_scale;
 
   int  _stereo_buffer_mask;
 

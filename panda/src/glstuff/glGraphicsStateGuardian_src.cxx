@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -253,6 +249,10 @@ CLP(GraphicsStateGuardian)(GraphicsPipe *pipe) :
   // since we know this works properly in OpenGL, and we want the
   // performance benefit it gives us.
   _prepared_objects->_support_released_buffer_cache = true;
+
+  // Assume that we will get a hardware-accelerated context, unless
+  // the window tells us otherwise.
+  _is_hardware = true;
 
 #ifdef DO_PSTATS
   if (CLP(finish)) {
@@ -840,6 +840,7 @@ reset() {
     GLint max_draw_buffers = 0;
     GLP(GetIntegerv)(GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
     _max_draw_buffers = max_draw_buffers;
+    _maximum_simultaneuous_render_targets = max_draw_buffers;
   }
 
   _supports_occlusion_query = false;
@@ -3552,18 +3553,22 @@ framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr,
   }
 
   Texture::TextureType texture_type;
+  int z_size;
   if (z >= 0) {
     texture_type = Texture::TT_cube_map;
+    z_size = 6;
   } else {
     texture_type = Texture::TT_2d_texture;
+    z_size = 1;
   }
 
   if (tex->get_x_size() != w || tex->get_y_size() != h ||
+      tex->get_z_size() != z_size ||
       tex->get_component_type() != component_type ||
       tex->get_format() != format ||
       tex->get_texture_type() != texture_type) {
     // Re-setup the texture; its properties have changed.
-    tex->setup_texture(texture_type, w, h, tex->get_z_size(),
+    tex->setup_texture(texture_type, w, h, z_size,
                        component_type, format);
   }
 
@@ -3613,8 +3618,8 @@ framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr,
       << ")" << endl;
   }
 
-  size_t image_size = tex->get_ram_image_size();
   unsigned char *image_ptr = tex->modify_ram_image();
+  size_t image_size = tex->get_ram_image_size();
   if (z >= 0) {
     nassertr(z < tex->get_z_size(), false);
     image_size = tex->get_expected_ram_page_size();
@@ -3933,14 +3938,18 @@ do_issue_depth_test() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_alpha_test() {
-  const AlphaTestAttrib *attrib = _target._alpha_test;
-  AlphaTestAttrib::PandaCompareFunc mode = attrib->get_mode();
-  if (mode == AlphaTestAttrib::M_none) {
+  if (_target._shader->get_flag(ShaderAttrib::F_subsume_alpha_test)) {
     enable_alpha_test(false);
   } else {
-    assert(GL_NEVER==(AlphaTestAttrib::M_never-1+0x200));
-    GLP(AlphaFunc)(PANDA_TO_GL_COMPAREFUNC(mode), attrib->get_reference_alpha());
-    enable_alpha_test(true);
+    const AlphaTestAttrib *attrib = _target._alpha_test;
+    AlphaTestAttrib::PandaCompareFunc mode = attrib->get_mode();
+    if (mode == AlphaTestAttrib::M_none) {
+      enable_alpha_test(false);
+    } else {
+      assert(GL_NEVER==(AlphaTestAttrib::M_never-1+0x200));
+      GLP(AlphaFunc)(PANDA_TO_GL_COMPAREFUNC(mode), attrib->get_reference_alpha());
+      enable_alpha_test(true);
+    }
   }
 }
 
@@ -4118,6 +4127,9 @@ do_issue_blending() {
   // to effectively disable color write.
   unsigned int color_channels =
     _target._color_write->get_channels() & _color_write_mask;
+  if (_target._shader->get_flag(ShaderAttrib::F_disable_alpha_write)) {
+    color_channels &= ~(ColorWriteAttrib::C_alpha);
+  }
   if (color_channels == ColorWriteAttrib::C_off) {
     if (_target._color_write != _state._color_write) {
       enable_multisample_alpha_one(false);
@@ -4133,7 +4145,9 @@ do_issue_blending() {
     }
     return;
   } else {
-    if (_target._color_write != _state._color_write) {
+    if ((_target._color_write != _state._color_write)||
+        (_target._shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
+         _state._shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
       if (CLP(color_mask)) {
         GLP(ColorMask)((color_channels & ColorWriteAttrib::C_red) != 0,
                        (color_channels & ColorWriteAttrib::C_green) != 0,
@@ -4142,6 +4156,7 @@ do_issue_blending() {
       }
     }
   }
+
 
   CPT(ColorBlendAttrib) color_blend = _target._color_blend;
   ColorBlendAttrib::Mode color_blend_mode = _target._color_blend->get_mode();
@@ -6060,7 +6075,9 @@ set_state_and_transform(const RenderState *target,
     _target._shader = _target_rs->get_generated_shader();
   }
   
-  if (_target._alpha_test != _state._alpha_test) {
+  if ((_target._alpha_test != _state._alpha_test)||
+      (_target._shader->get_flag(ShaderAttrib::F_subsume_alpha_test) != 
+       _state._shader->get_flag(ShaderAttrib::F_subsume_alpha_test))) {
     PStatTimer timer(_draw_set_state_alpha_test_pcollector);
     do_issue_alpha_test();
     _state._alpha_test = _target._alpha_test;
@@ -6134,7 +6151,9 @@ set_state_and_transform(const RenderState *target,
 
   if ((_target._transparency != _state._transparency)||
       (_target._color_write != _state._color_write)||
-      (_target._color_blend != _state._color_blend)) {
+      (_target._color_blend != _state._color_blend)||
+      (_target._shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
+       _state._shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
     PStatTimer timer(_draw_set_state_blending_pcollector);
     do_issue_blending();
     _state._transparency = _target._transparency;

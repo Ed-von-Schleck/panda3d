@@ -50,17 +50,14 @@ PUBLISHED:
   INLINE double length() const;
   INLINE bool can_seek() const;
   INLINE bool can_seek_fast() const;
+  INLINE bool aborted() const;
   INLINE double tell() const;
   INLINE void skip_samples(int n);
-  INLINE bool aborted() const;
-  virtual int ready() const;
   virtual void seek(double offset);
-  void read_samples(int n, Datagram *dg);
-  string read_samples(int n);
 
 public:
   virtual void read_samples(int n, PN_int16 *data);
-
+  
 protected:
   PT(MovieAudio) _source;
   int _audio_rate;

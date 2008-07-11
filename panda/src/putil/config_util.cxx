@@ -81,7 +81,7 @@ ConfigVariableSearchPath sound_path
 ("sound-path", 
  PRC_DESC("The directories to search for sound and music files to be loaded."));
 ConfigVariableSearchPath plugin_path
-("plugin-path", "<auto>",
+("plugin-path", 
  PRC_DESC("The directories to search for plugin shared libraries."));
 
 

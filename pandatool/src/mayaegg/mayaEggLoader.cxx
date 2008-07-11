@@ -65,6 +65,7 @@
 #include <maya/MTransformationMatrix.h>
 #include <maya/MFnIkJoint.h>
 #include <maya/MFnSkinCluster.h>
+#include <maya/MAnimControl.h>
 #include <maya/MFnAnimCurve.h>
 #include "post_maya_include.h"
 
@@ -132,50 +133,6 @@ MVector MakeMayaVector(const LVector3d &vec)
 MColor MakeMayaColor(const Colorf &vec)
 {
   return MColor(vec[0], vec[1], vec[2], vec[3]);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// MayaEggGroup
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MayaEggGroup
-{
-public:
-  string  _name;
-  MObject _parent;
-  MObject _group;
-};
-
-MayaEggGroup *MayaEggLoader::MakeGroup(EggGroup *group, EggGroup *context)
-{
-  MStatus status;
-  MayaEggGroup *pg = FindGroup(context);
-  MayaEggGroup *result = new MayaEggGroup;
-  MFnDagNode dgn;
-
-  MObject parent = MObject::kNullObj;
-  if (pg) {
-    parent = pg->_group;
-  }
-
-  result->_name = group->get_name();
-  result->_group = dgn.create("transform", MString(result->_name.c_str()), parent, &status);
-
-  if (status != MStatus::kSuccess) {
-    status.perror("MFnDagNode:create failed!");
-  }
-  _group_tab[group] = result;
-  return result;
-}
-
-MayaEggGroup *MayaEggLoader::FindGroup(EggGroup *group)
-{
-  if (group==0) {
-    return 0;
-  }
-  return _group_tab[group];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,6 +228,53 @@ MayaEggTex *MayaEggLoader::GetTex(const string &name, const string &fn)
   
   _tex_tab[fn] = res;
   return res;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// MayaEggGroup
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MayaEggGroup
+{
+public:
+  string  _name;
+  MObject _parent;
+  MObject _group;
+};
+
+MayaEggGroup *MayaEggLoader::MakeGroup(EggGroup *group, EggGroup *context)
+{
+  MStatus status;
+  MayaEggGroup *pg = FindGroup(context);
+  MayaEggGroup *result = new MayaEggGroup;
+  MFnDagNode dgn;
+
+  MObject parent = MObject::kNullObj;
+  if (pg) {
+    parent = pg->_group;
+    if (mayaloader_cat.is_spam()) {
+      mayaloader_cat.spam() << "parent (group) :" << ((MFnDagNode)parent).name() << endl;
+    }
+  }
+
+  result->_name = group->get_name();
+  result->_group = dgn.create("transform", MString(result->_name.c_str()), parent, &status);
+
+  if (status != MStatus::kSuccess) {
+    status.perror("MFnDagNode:create failed!");
+  }
+  _group_tab[group] = result;
+  return result;
+}
+
+MayaEggGroup *MayaEggLoader::FindGroup(EggGroup *group)
+{
+  if (group==0) {
+    return 0;
+  }
+  return _group_tab[group];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -951,7 +955,10 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
     for (ci = poly->begin(); ci != poly->end(); ++ci) {
       EggVertex *vtx = (*ci);
       EggVertexPool *pool = poly->get_pool();
-      TexCoordd uv = vtx->get_uv();
+      TexCoordd uv(0,0);
+      if (vtx->has_uv()) {
+        uv = vtx->get_uv();
+      }
       vertIndices.push_back(mesh->GetVert(vtx, context));
       tvertIndices.push_back(mesh->GetTVert(uv * uvtrans));
       cvertIndices.push_back(mesh->GetCVert(vtx->get_color()));
@@ -959,7 +966,9 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
     }
     for (unsigned int i=1; i<vertIndices.size()-1; i++) {
       if (poly->has_color()) {
-        mayaloader_cat.info() << "found a face color\n";
+        if (mayaloader_cat.is_spam()) {
+          mayaloader_cat.spam() << "found a face color\n";
+        }
         mesh->_faceIndices.append(mesh->_face_count);
         mesh->_faceColorArray.append(MakeMayaColor(poly->get_color()));
       }
@@ -1080,9 +1089,13 @@ bool MayaEggLoader::ConvertEggData(EggData *data, bool merge, bool model, bool a
     MObject parent = MObject::kNullObj;
     if (parentNode) {
       parent = parentNode->_group;
-    }
-    if (mayaloader_cat.is_debug()) {
-      mayaloader_cat.debug() << parentNode->_name << ":" << parent.apiTypeStr() << endl;
+      if (mayaloader_cat.is_debug()) {
+        mayaloader_cat.debug() << "mesh's parent (group) : " << parentNode->_name << endl;
+      }
+    } else {
+      if (mayaloader_cat.is_debug()) {
+        mayaloader_cat.debug() << "mesh's parent (null) : " << endl;
+      }
     }
     mesh->_transNode = mfn.create(mesh->_vert_count, mesh->_face_count,
                                   mesh->_vertexArray, mesh->_polygonCounts, mesh->_polygonConnects,
@@ -1167,6 +1180,9 @@ bool MayaEggLoader::ConvertEggData(EggData *data, bool merge, bool model, bool a
     mayaloader_cat.debug() << "-fri: " << _frame_rate << " -sf: " << _start_frame 
                            << " -ef: " << _end_frame << endl;
   }
+
+  // masad: keep track of maximum frames of animation on all these joints
+  MTime maxFrame(_start_frame - 1, _timeUnit);
 
   for (ei = _anim_tab.begin(); ei != _anim_tab.end(); ++ei) {
     MayaAnim *anim = (*ei).second;
@@ -1254,6 +1270,13 @@ bool MayaEggLoader::ConvertEggData(EggData *data, bool merge, bool model, bool a
       mfnAnimCurveSY.addKey(time, scale[1], tangent, tangent, NULL, &status);
       mfnAnimCurveSZ.addKey(time, scale[2], tangent, tangent, NULL, &status);
     }
+    if (maxFrame < time) {
+      maxFrame = time;
+    }
+  }
+  if (anim) {
+    // masad: set the control's max time with maxFrame
+    MAnimControl::setMaxTime(maxFrame);
   }
 
   for (ci = _mesh_tab.begin();  ci != _mesh_tab.end();  ++ci) {

@@ -50,24 +50,33 @@ audio_channels() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: MovieAudioCursor::length
 //       Access: Public
-//  Description: Returns the length of the movie.  Attempting to read
-//               audio samples beyond the specified length will produce 
-//               silent samples.
+//  Description: Returns the length of the movie.
 //
 //               Some kinds of Movie, such as internet TV station, 
 //               might not have a predictable length.  In that case,
 //               the length will be set to a very large number: 1.0E10.
+//               If the internet TV station goes offline, the video
+//               or audio stream will set its abort flag.  Reaching the
+//               end of the movie (ie, the specified length) normally
+//               does not cause the abort flag to be set.
+//
+//               The video and audio streams produced by get_video and
+//               get_audio are always of unlimited duration - you can
+//               always read another video frame or another audio
+//               sample.  This is true even if the specified length
+//               is reached, or an abort is flagged. If either stream
+//               runs out of data, it will synthesize blank video
+//               frames and silent audio samples as necessary to
+//               satisfy read requests.
 //
 //               Some AVI files have incorrect length values encoded
-//               into them - they may be a second or two long or
+//               into them - usually, they're a second or two long or
 //               short.  When playing such an AVI using the Movie class,
 //               you may see a slightly truncated video, or a slightly
 //               elongated video (padded with black frames).  There are
 //               utilities out there to fix the length values in AVI
 //               files.
 //
-//               An audio consumer needs to check the length, the
-//               ready status, and the aborted flag.
 ////////////////////////////////////////////////////////////////////
 INLINE double MovieAudioCursor::
 length() const {
@@ -104,9 +113,11 @@ can_seek_fast() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: MovieAudioCursor::aborted
 //       Access: Public
-//  Description: If aborted is true, it means that the "ready" samples
-//               are not being replenished.  See the method "ready"
-//               for an explanation.
+//  Description: Returns true if the audio has aborted prematurely.
+//               For example, this could occur if the Movie was actually
+//               an internet TV station, and the connection was lost.
+//               Reaching the normal end of the audio does not
+//               constitute an 'abort' condition.
 ////////////////////////////////////////////////////////////////////
 INLINE bool MovieAudioCursor::
 aborted() const {
@@ -131,6 +142,6 @@ tell() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void MovieAudioCursor::
 skip_samples(int n) {
-  read_samples(n, (PN_int16*)0);
+  read_samples(n, 0);
 }
  

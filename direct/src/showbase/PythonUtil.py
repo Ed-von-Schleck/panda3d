@@ -28,7 +28,8 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'superFlattenShip','HotkeyBreaker','logMethodCalls','GoldenRatio',
 'GoldenRectangle', 'pivotScalar', 'rad90', 'rad180', 'rad270', 'rad360',
 'nullGen', 'loopGen', 'makeFlywheelGen', 'flywheel', 'choice',
-'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index', ]
+'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index',
+'pandaBreak','pandaTrace','formatTimeCompact','DestructiveScratchPad']
 
 import types
 import string
@@ -828,6 +829,8 @@ def profiled(category=None, terse=False):
     """
     assert type(category) in (types.StringType, types.NoneType), "must provide a category name for @profiled"
 
+    # allow profiling in published versions
+    """
     try:
         null = not __dev__
     except:
@@ -839,6 +842,7 @@ def profiled(category=None, terse=False):
         def nullDecorator(f):
             return f
         return nullDecorator
+    """
 
     def profileDecorator(f):
         def _profiled(*args, **kArgs):
@@ -2363,12 +2367,29 @@ except:
 class ScratchPad:
     """empty class to stick values onto"""
     def __init__(self, **kArgs):
-        for key, value in kArgs.items():
+        for key, value in kArgs.iteritems():
             setattr(self, key, value)
-        self._keys = kArgs.keys()
+        self._keys = set(kArgs.keys())
+    def add(self, **kArgs):
+        for key, value in kArgs.iteritems():
+            setattr(self, key, value)
+        self._keys.update(kArgs.keys())
     def destroy(self):
         for key in self._keys:
             delattr(self, key)
+
+class DestructiveScratchPad(ScratchPad):
+    # automatically calls destroy() on elements passed to __init__
+    def add(self, **kArgs):
+        for key, value in kArgs.iteritems():
+            if hasattr(self, key):
+                getattr(self, key).destroy()
+            setattr(self, key, value)
+        self._keys.update(kArgs.keys())
+    def destroy(self):
+        for key in self._keys:
+            getattr(self, key).destroy()
+        ScratchPad.destroy(self)
 
 class Sync:
     _SeriesGen = SerialNumGen()
@@ -3314,6 +3335,78 @@ def recordFunctorCreationStacks():
             Functor._functorCreationStacksRecorded = True
             Functor.__call__ = Functor._exceptionLoggedCreationStack__call__
 
+def formatTimeCompact(seconds):
+    # returns string in format '1d3h22m43s'
+    result = ''
+    a = int(seconds)
+    seconds = a % 60
+    a /= 60
+    if a > 0:
+        minutes = a % 60
+        a /= 60
+        if a > 0:
+            hours = a % 24
+            a /= 24
+            if a > 0:
+                days = a
+                result += '%sd' % days
+            result += '%sh' % hours
+        result += '%sm' % minutes
+    result += '%ss' % seconds
+    return result
+
+globalPdb = None
+
+traceCalled = False
+
+def setupPdb():
+    import pdb;
+    class pandaPdb(pdb.Pdb):
+        def stop_here(self, frame):
+            global traceCalled
+            if(traceCalled):
+                result = pdb.Pdb.stop_here(self, frame)
+                if(result == True):
+                    traceCalled = False
+                return result
+            if frame is self.stopframe:
+                return True
+            return False
+    global globalPdb
+    globalPdb = pandaPdb()
+    globalPdb.reset()
+    sys.settrace(globalPdb.trace_dispatch)
+    
+def pandaTrace():
+    if __dev__:
+        if not globalPdb:
+            setupPdb()
+        global traceCalled
+        globalPdb.set_trace(sys._getframe().f_back)
+        traceCalled = True
+
+packageMap = {
+    "toontown":"$TOONTOWN",
+    "direct":"$DIRECT",
+    "otp":"$OTP",
+    "pirates":"$PIRATES",
+}
+    
+
+#assuming . dereferncing for nice linking to imports
+def pandaBreak(dotpath, linenum, temporary = 0, cond = None):
+    if __dev__:
+        from pandac.PandaModules import Filename
+        if not globalPdb:
+            setupPdb()
+        dirs = dotpath.split(".")
+        root = Filename.expandFrom(packageMap[dirs[0]]).toOsSpecific()
+        filename = root + "\\src"
+        for d in dirs[1:]:
+            filename="%s\\%s"%(filename,d)
+        globalPdb.set_break(filename+".py", linenum, temporary, cond)
+            
+
 import __builtin__
 __builtin__.Functor = Functor
 __builtin__.Stack = Stack
@@ -3321,6 +3414,7 @@ __builtin__.Queue = Queue
 __builtin__.Enum = Enum
 __builtin__.SerialNumGen = SerialNumGen
 __builtin__.ScratchPad = ScratchPad
+__builtin__.DestructiveScratchPad = DestructiveScratchPad
 __builtin__.uniqueName = uniqueName
 __builtin__.serialNum = serialNum
 __builtin__.profiled = profiled
