@@ -303,8 +303,9 @@ do_get(const string &key, const string &name, int &data_type, string &data,
     if (data_type == REG_SZ || 
         data_type == REG_MULTI_SZ || 
         data_type == REG_EXPAND_SZ) {
-      // Eliminate the trailing null character.
-      buffer_size--;
+      // Eliminate the trailing null character for non-zero lengths.
+      if (buffer_size > 0)              // if zero, leave it
+        buffer_size--;
     }
     data = string(init_buffer, buffer_size);
 
@@ -324,12 +325,13 @@ do_get(const string &key, const string &name, int &data_type, string &data,
       if (data_type == REG_SZ || 
           data_type == REG_MULTI_SZ || 
           data_type == REG_EXPAND_SZ) {
-        // Eliminate the trailing null character.
-        buffer_size--;
+        // Eliminate the trailing null character for non-zero lengths.
+        if (buffer_size > 0)            // if zero, leave it
+          buffer_size--;
       }
       data = string(new_buffer, buffer_size);
     }
-    delete new_buffer;
+    delete[] new_buffer;
   }
 
   if (error != ERROR_SUCCESS) {
@@ -350,10 +352,10 @@ do_get(const string &key, const string &name, int &data_type, string &data,
     if (data_type == REG_EXPAND_SZ) {
       // Expand the string.
       DWORD destSize=ExpandEnvironmentStrings(data.c_str(), 0, 0);
-      char *dest = (char *)PANDA_MALLOC_ARRAY(destSize);
+      char *dest = new char[destSize];
       ExpandEnvironmentStrings(data.c_str(), dest, destSize);
       data = dest;
-      PANDA_FREE_ARRAY(dest);
+      delete[] dest;
       data_type = REG_SZ;
     }
   }
