@@ -112,7 +112,6 @@ class MaxEggPlugin : public HelperObject
   // IO
   IOResult Save(ISave *isave);
   IOResult Load(ILoad *iload);
-
 };
 
 

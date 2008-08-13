@@ -23,28 +23,14 @@
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 MaxToEggConverter::
-MaxToEggConverter(const string &program_name) :
-  _program_name(program_name)
-{
-  _from_selection = false;
-  _polygon_output = false;
-  _polygon_tolerance = 0.01;
-  _transform_type = TT_model;
-  _cur_tref = 0;
-  _current_frame = 0;
-  _selection_list = NULL;
-  _selection_len = 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::Copy Constructor
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-MaxToEggConverter::
-MaxToEggConverter(const MaxToEggConverter &copy) :
-  maxInterface(copy.maxInterface)
-{
+MaxToEggConverter() {
+    _polygon_output = false;
+    _polygon_tolerance = 0.01;
+    _transform_type = TT_model;
+    _cur_tref = 0;
+    _current_frame = 0;
+    _selection_list = NULL;
+    _selection_len = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,70 +44,6 @@ MaxToEggConverter::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::make_copy
-//       Access: Public, Virtual
-//  Description: Allocates and returns a new copy of the converter.
-////////////////////////////////////////////////////////////////////
-SomethingToEggConverter *MaxToEggConverter::
-make_copy() 
-{
-  return new MaxToEggConverter(*this);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::get_name
-//       Access: Public, Virtual
-//  Description: Returns the English name of the file type this
-//               converter supports.
-////////////////////////////////////////////////////////////////////
-string MaxToEggConverter::
-get_name() const 
-{
-  return "Max";
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::get_extension
-//       Access: Public, Virtual
-//  Description: Returns the common extension of the file type this
-//               converter supports.
-////////////////////////////////////////////////////////////////////
-string MaxToEggConverter::
-get_extension() const 
-{
-  return "max";
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::convert_file
-//       Access: Public, Virtual
-//  Description: Handles the reading of the input file and converting
-//               it to egg.  Returns true if successful, false
-//               otherwise.
-//
-//               This is designed to be as generic as possible,
-//               generally in support of run-time loading.
-//               Also see convert_max().
-////////////////////////////////////////////////////////////////////
-bool MaxToEggConverter::
-convert_file(const Filename &filename) 
-{
-
-  //If there is no Max interface to speak of, we log an error and exit.
-  if ( !maxInterface ) {
-    Logger::Log( MTEC, Logger::SAT_NULL_ERROR, "pMaxInterface is null!" );
-    //    Logger::FunctionExit();
-    return false;
-  }
-  
-  if (_character_name.empty()) {
-    _character_name = Filename(maxInterface->GetCurFileName()).get_basename_wo_extension();
-  }
-
-  return convert_max(false);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: MaxToEggConverter::convert_max
 //       Access: Public
 //  Description: Fills up the egg_data structure according to the
@@ -130,10 +52,12 @@ convert_file(const Filename &filename)
 //               true, the converted geometry is based on that which
 //               is selected; otherwise, it is the entire Max scene.
 ////////////////////////////////////////////////////////////////////
-bool MaxToEggConverter::
-convert_max(bool from_selection) {
+PT(EggData) MaxToEggConverter::convert() {
 
-  _from_selection = from_selection;
+    //  if (_character_name.empty()) {
+    //    _character_name = Filename(maxInterface->GetCurFileName()).get_basename_wo_extension();
+    //  }
+
   _textures.clear();
   // *** I don't know if we're going to handle shaders in Max
   //_shaders.clear();
@@ -162,35 +86,35 @@ convert_max(bool from_selection) {
   end_frame = anim_range.End()/GetTicksPerFrame();
   frame_inc = 1;
   input_frame_rate = GetFrameRate();
-
+  
   if (has_start_frame() && get_start_frame() > start_frame) {
-    start_frame = get_start_frame();
+      start_frame = get_start_frame();
   } 
 
   if (has_end_frame() && get_end_frame() < end_frame) {
-    end_frame = get_end_frame();
+      end_frame = get_end_frame();
   } 
 
   if (has_frame_inc()) {
-    frame_inc = get_frame_inc();
+      frame_inc = get_frame_inc();
   } 
 
   if (has_input_frame_rate()) {
-    input_frame_rate = get_input_frame_rate();
+      input_frame_rate = get_input_frame_rate();
   } 
 
   if (has_output_frame_rate()) {
-    output_frame_rate = get_output_frame_rate();
+      output_frame_rate = get_output_frame_rate();
   } else {
-    output_frame_rate = input_frame_rate;
+      output_frame_rate = input_frame_rate;
   }
 
   bool all_ok = true;
 
-  if (_from_selection) {
-    all_ok = _tree.build_selected_hierarchy(maxInterface->GetRootNode());
+  if (_selection_list == 0) {
+      all_ok = _tree.build_selected_hierarchy(maxInterface->GetRootNode());
   } else {
-    all_ok = _tree.build_complete_hierarchy(maxInterface->GetRootNode(), _selection_list, _selection_len);
+      all_ok = _tree.build_complete_hierarchy(maxInterface->GetRootNode(), _selection_list, _selection_len);
   }
 
   if (all_ok) {
@@ -206,7 +130,7 @@ convert_max(bool from_selection) {
     case AC_none:
       // none: just get out a static model, no animation.
       Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, "Converting static model." );
-      all_ok = convert_hierarchy(get_egg_data());
+      all_ok = convert_hierarchy(_egg_data);
       break;
       
     case AC_flip:
@@ -243,7 +167,7 @@ convert_max(bool from_selection) {
       break;
     };
 
-    reparent_decals(get_egg_data());
+    reparent_decals(_egg_data);
   }
 
   if (all_ok) {
@@ -290,7 +214,7 @@ convert_flip(double start_frame, double end_frame, double frame_inc,
   bool all_ok = true;
 
   EggGroup *sequence_node = new EggGroup(_character_name);
-  get_egg_data()->add_child(sequence_node);
+  _egg_data->add_child(sequence_node);
   if (_animation_convert == AC_flip) { 
     sequence_node->set_switch_flag(true);
     sequence_node->set_switch_fps(output_frame_rate / frame_inc);
@@ -332,7 +256,7 @@ convert_char_model() {
   }
 
   EggGroup *char_node = new EggGroup(_character_name);
-  get_egg_data()->add_child(char_node);
+  _egg_data->add_child(char_node);
   char_node->set_dart_type(EggGroup::DT_default);
 
   return convert_hierarchy(char_node);
@@ -350,7 +274,7 @@ convert_char_chan(double start_frame, double end_frame, double frame_inc,
                   double output_frame_rate) {
 
   EggTable *root_table_node = new EggTable();
-  get_egg_data()->add_child(root_table_node);
+  _egg_data->add_child(root_table_node);
   EggTable *bundle_node = new EggTable(_character_name);
   bundle_node->set_table_type(EggTable::TT_bundle);
   root_table_node->add_child(bundle_node);
@@ -360,7 +284,7 @@ convert_char_chan(double start_frame, double end_frame, double frame_inc,
   // Set the frame rate before we start asking for anim tables to be
   // created.
   _tree._fps = output_frame_rate / frame_inc;
-  _tree.clear_egg(get_egg_data(), NULL, skeleton_node);
+  _tree.clear_egg(_egg_data, NULL, skeleton_node);
 
   // Now we can get the animation data by walking through all of the
   // frames, one at a time, and getting the joint angles at each
@@ -439,7 +363,7 @@ bool MaxToEggConverter::
 convert_hierarchy(EggGroupNode *egg_root) {
   //int num_nodes = _tree.get_num_nodes();
 
-  _tree.clear_egg(get_egg_data(), egg_root, NULL);
+  _tree.clear_egg(_egg_data, egg_root, NULL);
   for (int i = 0; i < _tree.get_num_nodes(); i++) {
     if (!process_model_node(_tree.get_node(i))) {
       return false;
@@ -956,319 +880,6 @@ if (parent_node) {
   Logger::FunctionExit();
 }
 
-// *** I am skipping all NURBS stuff until I figure if Max can/needs to support
-//     it 
-/*
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::make_nurbs_surface
-//       Access: Private
-//  Description: Converts the indicated Maya NURBS surface to a
-//               corresponding egg structure, and attaches it to the
-//               indicated egg group.
-////////////////////////////////////////////////////////////////////
-void MaxToEggConverter::
-make_nurbs_surface(const MDagPath &dag_path, MFnNurbsSurface &surface,
-                   EggGroup *egg_group) {
-  MStatus status;
-  string name = surface.name().asChar();
-
-  if (mayaegg_cat.is_spam()) {
-    mayaegg_cat.spam()
-      << "  numCVs: "
-      << surface.numCVsInU()
-      << " * "
-      << surface.numCVsInV()
-      << "\n";
-    mayaegg_cat.spam()
-      << "  numKnots: "
-      << surface.numKnotsInU()
-      << " * "
-      << surface.numKnotsInV()
-      << "\n";
-    mayaegg_cat.spam()
-      << "  numSpans: "
-      << surface.numSpansInU()
-      << " * "
-      << surface.numSpansInV()
-      << "\n";
-  }
-
-  MayaShader *shader = _shaders.find_shader_for_node(surface.object());
-
-  if (_polygon_output) {
-    // If we want polygon output only, tesselate the NURBS and output
-    // that.
-    MTesselationParams params;
-    params.setFormatType(MTesselationParams::kStandardFitFormat);
-    params.setOutputType(MTesselationParams::kQuads);
-    params.setStdFractionalTolerance(_polygon_tolerance);
-
-    // We'll create the tesselation as a sibling of the NURBS surface.
-    // That way we inherit all of the transformations.
-    MDagPath polyset_path = dag_path;
-    MObject polyset_parent = polyset_path.node();
-    MObject polyset =
-      surface.tesselate(params, polyset_parent, &status);
-    if (!status) {
-      status.perror("MFnNurbsSurface::tesselate");
-      return;
-    }
-
-    status = polyset_path.push(polyset);
-    if (!status) {
-      status.perror("MDagPath::push");
-    }
-
-    MFnMesh polyset_fn(polyset, &status);
-    if (!status) {
-      status.perror("MFnMesh constructor");
-      return;
-    }
-    make_polyset(polyset_path, polyset_fn, egg_group, shader);
-
-    // Now remove the polyset we created.
-    MFnDagNode parent_node(polyset_parent, &status);
-    if (!status) {
-      status.perror("MFnDagNode constructor");
-      return;
-    }
-    status = parent_node.removeChild(polyset);
-    if (!status) {
-      status.perror("MFnDagNode::removeChild");
-    }
-
-    return;
-  }
-
-  MPointArray cv_array;
-  status = surface.getCVs(cv_array, MSpace::kWorld);
-  if (!status) {
-    status.perror("MFnNurbsSurface::getCVs");
-    return;
-  }
-  MDoubleArray u_knot_array, v_knot_array;
-  status = surface.getKnotsInU(u_knot_array);
-  if (!status) {
-    status.perror("MFnNurbsSurface::getKnotsInU");
-    return;
-  }
-  status = surface.getKnotsInV(v_knot_array);
-  if (!status) {
-    status.perror("MFnNurbsSurface::getKnotsInV");
-    return;
-  }
-
-  
-  //  We don't use these variables currently.
-  //MFnNurbsSurface::Form u_form = surface.formInU();
-  //MFnNurbsSurface::Form v_form = surface.formInV();
- 
-
-  int u_degree = surface.degreeU();
-  int v_degree = surface.degreeV();
-
-  int u_cvs = surface.numCVsInU();
-  int v_cvs = surface.numCVsInV();
-
-  int u_knots = surface.numKnotsInU();
-  int v_knots = surface.numKnotsInV();
-
-  assert(u_knots == u_cvs + u_degree - 1);
-  assert(v_knots == v_cvs + v_degree - 1);
-
-  string vpool_name = name + ".cvs";
-  EggVertexPool *vpool = new EggVertexPool(vpool_name);
-  egg_group->add_child(vpool);
-
-  EggNurbsSurface *egg_nurbs = new EggNurbsSurface(name);
-  egg_nurbs->setup(u_degree + 1, v_degree + 1,
-                   u_knots + 2, v_knots + 2);
-
-  int i;
-
-  egg_nurbs->set_u_knot(0, u_knot_array[0]);
-  for (i = 0; i < u_knots; i++) {
-    egg_nurbs->set_u_knot(i + 1, u_knot_array[i]);
-  }
-  egg_nurbs->set_u_knot(u_knots + 1, u_knot_array[u_knots - 1]);
-
-  egg_nurbs->set_v_knot(0, v_knot_array[0]);
-  for (i = 0; i < v_knots; i++) {
-    egg_nurbs->set_v_knot(i + 1, v_knot_array[i]);
-  }
-  egg_nurbs->set_v_knot(v_knots + 1, v_knot_array[v_knots - 1]);
-
-  LMatrix4d vertex_frame_inv = egg_group->get_vertex_frame_inv();
-
-  for (i = 0; i < egg_nurbs->get_num_cvs(); i++) {
-    int ui = egg_nurbs->get_u_index(i);
-    int vi = egg_nurbs->get_v_index(i);
-
-    double v[4];
-    MStatus status = cv_array[v_cvs * ui + vi].get(v);
-    if (!status) {
-      status.perror("MPoint::get");
-    } else {
-      EggVertex vert;
-      LPoint4d p4d(v[0], v[1], v[2], v[3]);
-      p4d = p4d * vertex_frame_inv;
-      vert.set_pos(p4d);
-      egg_nurbs->add_vertex(vpool->create_unique_vertex(vert));
-    }
-  }
-
-  // Now consider the trim curves, if any.
-  unsigned num_trims = surface.numRegions();
-  int trim_curve_index = 0;
-  for (unsigned ti = 0; ti < num_trims; ti++) {
-    unsigned num_loops = surface.numBoundaries(ti);
-
-    if (num_loops > 0) {
-      egg_nurbs->_trims.push_back(EggNurbsSurface::Trim());
-      EggNurbsSurface::Trim &egg_trim = egg_nurbs->_trims.back();
-
-      for (unsigned li = 0; li < num_loops; li++) {
-        egg_trim.push_back(EggNurbsSurface::Loop());
-        EggNurbsSurface::Loop &egg_loop = egg_trim.back();
-        
-        MFnNurbsSurface::BoundaryType type =
-          surface.boundaryType(ti, li, &status);
-        bool keep_loop = false;
-        
-        if (!status) {
-          status.perror("MFnNurbsSurface::BoundaryType");
-        } else {
-          keep_loop = (type == MFnNurbsSurface::kInner ||
-                       type == MFnNurbsSurface::kOuter);
-        }
-        
-        if (keep_loop) {
-          unsigned num_edges = surface.numEdges(ti, li);
-          for (unsigned ei = 0; ei < num_edges; ei++) {
-            MObjectArray edge = surface.edge(ti, li, ei, true, &status);
-            if (!status) {
-              status.perror("MFnNurbsSurface::edge");
-            } else {
-              unsigned num_segs = edge.length();
-              for (unsigned si = 0; si < num_segs; si++) {
-                MObject segment = edge[si];
-                if (segment.hasFn(MFn::kNurbsCurve)) {
-                  MFnNurbsCurve curve(segment, &status);
-                  if (!status) {
-                    mayaegg_cat.error()
-                      << "Trim curve appears to be a nurbs curve, but isn't.\n";
-                  } else {
-                    // Finally, we have a valid curve!
-                    EggNurbsCurve *egg_curve =
-                      make_trim_curve(curve, name, egg_group, trim_curve_index);
-                    trim_curve_index++;
-                    if (egg_curve != (EggNurbsCurve *)NULL) {
-                      egg_loop.push_back(egg_curve);
-                    }
-                  }
-                } else {
-                  mayaegg_cat.error()
-                    << "Trim curve segment is not a nurbs curve.\n";
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // We add the NURBS to the group down here, after all of the vpools
-  // for the trim curves have been added.
-  egg_group->add_child(egg_nurbs);
-
-  if (shader != (MayaShader *)NULL) {
-    set_shader_attributes(*egg_nurbs, *shader);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::make_trim_curve
-//       Access: Private
-//  Description: Converts the indicated Maya NURBS trim curve to a
-//               corresponding egg structure, and returns it, or NULL
-//               if there is a problem.
-////////////////////////////////////////////////////////////////////
-EggNurbsCurve *MaxToEggConverter::
-make_trim_curve(const MFnNurbsCurve &curve, const string &nurbs_name,
-                EggGroupNode *egg_group, int trim_curve_index) {
-  if (mayaegg_cat.is_spam()) {
-    mayaegg_cat.spam()
-      << "Trim curve:\n";
-    mayaegg_cat.spam()
-      << "  numCVs: "
-      << curve.numCVs()
-      << "\n";
-    mayaegg_cat.spam()
-      << "  numKnots: "
-      << curve.numKnots()
-      << "\n";
-    mayaegg_cat.spam()
-      << "  numSpans: "
-      << curve.numSpans()
-      << "\n";
-  }
-
-  MStatus status;
-
-  MPointArray cv_array;
-  status = curve.getCVs(cv_array, MSpace::kWorld);
-  if (!status) {
-    status.perror("MFnNurbsCurve::getCVs");
-    return (EggNurbsCurve *)NULL;
-  }
-  MDoubleArray knot_array;
-  status = curve.getKnots(knot_array);
-  if (!status) {
-    status.perror("MFnNurbsCurve::getKnots");
-    return (EggNurbsCurve *)NULL;
-  }
-
-  //  MFnNurbsCurve::Form form = curve.form();
-
-  int degree = curve.degree();
-  int cvs = curve.numCVs();
-  int knots = curve.numKnots();
-
-  assert(knots == cvs + degree - 1);
-
-  string trim_name = "trim" + format_string(trim_curve_index);
-
-  string vpool_name = nurbs_name + "." + trim_name;
-  EggVertexPool *vpool = new EggVertexPool(vpool_name);
-  egg_group->add_child(vpool);
-
-  EggNurbsCurve *egg_curve = new EggNurbsCurve(trim_name);
-  egg_curve->setup(degree + 1, knots + 2);
-
-  int i;
-
-  egg_curve->set_knot(0, knot_array[0]);
-  for (i = 0; i < knots; i++) {
-    egg_curve->set_knot(i + 1, knot_array[i]);
-  }
-  egg_curve->set_knot(knots + 1, knot_array[knots - 1]);
-
-  for (i = 0; i < egg_curve->get_num_cvs(); i++) {
-    double v[4];
-    MStatus status = cv_array[i].get(v);
-    if (!status) {
-      status.perror("MPoint::get");
-    } else {
-      EggVertex vert;
-      vert.set_pos(LPoint3d(v[0], v[1], v[3]));
-      egg_curve->add_vertex(vpool->create_unique_vertex(vert));
-    }
-  }
-
-  return egg_curve;
-} */
-
 ////////////////////////////////////////////////////////////////////
 //     Function: MaxToEggConverter::make_nurbs_curve
 //       Access: Private
@@ -1280,41 +891,6 @@ bool MaxToEggConverter::
 make_nurbs_curve(NURBSCVCurve *curve, const string &name,
                  TimeValue time, EggGroup *egg_group) 
 {
-                   
-/*  MStatus status;
-  string name = curve.name().asChar();
-
-  if (mayaegg_cat.is_spam()) {
-    mayaegg_cat.spam()
-      << "  numCVs: "
-      << curve.numCVs()
-      << "\n";
-    mayaegg_cat.spam()
-      << "  numKnots: "
-      << curve.numKnots()
-      << "\n";
-    mayaegg_cat.spam()
-      << "  numSpans: "
-      << curve.numSpans()
-      << "\n";
-  }
-
-  MPointArray cv_array;
-  status = curve.getCVs(cv_array, MSpace::kWorld);
-  if (!status) {
-    status.perror("MFnNurbsCurve::getCVs");
-    return;
-  }
-  MDoubleArray knot_array;
-  status = curve.getKnots(knot_array);
-  if (!status) {
-    status.perror("MFnNurbsCurve::getKnots");
-    return;
-  }
-
-  //  MFnNurbsCurve::Form form = curve.form();
-*/
-
   int degree = curve->GetOrder();
   int cvs = curve->GetNumCVs();
   int knots = curve->GetNumKnots();
