@@ -45,38 +45,49 @@ char *ChunkLoadString(ILoad *iload, char *buffer, int maxBytes);
 int ChunkLoadInt(ILoad *iload);
 bool ChunkLoadBool(ILoad *iload);
 void SetICustEdit(HWND wnd, int nIDDlgItem, char *text);
-BOOL CALLBACK MaxEggExpOptionsProc( HWND hWnd, UINT message, 
-                                    WPARAM wParam, LPARAM lParam );
+BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, 
+                                  WPARAM wParam, LPARAM lParam );
 
 struct MaxEggOptions
 {
+    MaxEggOptions();
+
+    enum Anim_Type {
+        AT_none,
+        AT_model,
+        AT_chan,
+        AT_pose,
+        AT_strobe,
+        AT_both
+    };
+
     IObjParam *_max_interface;
-    AnimationConvert _anim_convert;
+    Anim_Type _anim_type;
     int _start_frame;
     int _end_frame;
     bool _double_sided;
     bool _export_whole_scene;
-    std::string _file_name;
-    std::string _short_name;
+    char _file_name[2048];
+    char _short_name[256];
+    PT(PathReplace) _path_replace;
     std::vector<ULONG> _node_list;
 };
 
-class MaxEggExporter
+class MaxEggExporter : public MaxEggOptions
 {
     friend class MaxEggPlugin;
     
- protected:
-    MaxEggOptions _options;
-    
- public:
+  public:
     int _min_frame, _max_frame;
     bool _checked;
     bool _choosing_nodes;
-    AnimationConvert _prev_convert;
+    bool _successful;
+    MaxEggOptions::Anim_Type _prev_type;
+
+    MaxEggExporter();
+    ~MaxEggExporter();
     
-    MaxEggExpOptions();
-    virtual ~MaxEggExpOptions() { delete [] nodeList;}
-    
+    void set_max_interface(IObjParam *ip) { _max_interface = ip; }
     bool DoExport(IObjParam *ip, bool autoOverwrite, bool saveLog);
     
     void UpdateUI(HWND hWnd);
@@ -91,7 +102,7 @@ class MaxEggExporter
     void ClearNodeList(HWND hWnd);
     void CullBadNodes();
     
-    ULONG GetNode(int i) { return (i >= 0 && i < maxNodes) ? nodeList[i] : ULONG_MAX; }
+    ULONG GetNode(int i) { return (i >= 0 && i < _node_list.size()) ? _node_list[i] : ULONG_MAX; }
     
     IOResult Load(ILoad *iload);
     IOResult Save(ISave *isave);

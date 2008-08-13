@@ -23,14 +23,9 @@
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 MaxToEggConverter::
-MaxToEggConverter() {
-    _polygon_output = false;
-    _polygon_tolerance = 0.01;
-    _transform_type = TT_model;
-    _cur_tref = 0;
-    _current_frame = 0;
-    _selection_list = NULL;
-    _selection_len = 0;
+MaxToEggConverter()
+{
+    reset();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -44,7 +39,18 @@ MaxToEggConverter::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::convert_max
+//     Function: MaxToEggConverter::reset
+////////////////////////////////////////////////////////////////////
+void MaxToEggConverter::reset() {
+    _transform_type = TT_model;
+    _cur_tref = 0;
+    _current_frame = 0;
+    _textures.clear();
+    _egg_data = new EggData;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MaxToEggConverter::convert
 //       Access: Public
 //  Description: Fills up the egg_data structure according to the
 //               global Max model data.  Returns true if successful,
@@ -52,195 +58,85 @@ MaxToEggConverter::
 //               true, the converted geometry is based on that which
 //               is selected; otherwise, it is the entire Max scene.
 ////////////////////////////////////////////////////////////////////
-PT(EggData) MaxToEggConverter::convert() {
+PT(EggData) MaxToEggConverter::convert(MaxEggOptions *options) {
 
-    //  if (_character_name.empty()) {
-    //    _character_name = Filename(maxInterface->GetCurFileName()).get_basename_wo_extension();
-    //  }
+    _options = options;
 
-  _textures.clear();
-  // *** I don't know if we're going to handle shaders in Max
-  //_shaders.clear();
+    if (_egg_data->get_coordinate_system() == CS_default) {
+        _egg_data->set_coordinate_system(CS_zup_right);
+    }
+    
+    // Figure out the animation parameters.
+    
+    // Get the start and end frames and the animation frame rate from Max
+    
+    Interval anim_range = _options->_max_interface->GetAnimRange();
+    int start_frame = anim_range.Start()/GetTicksPerFrame();
+    int end_frame = anim_range.End()/GetTicksPerFrame();
+    
+    if (_options->_start_frame < start_frame) _options->_start_frame = start_frame;
+    if (_options->_start_frame > end_frame)   _options->_start_frame = end_frame;
+    if (_options->_end_frame < start_frame)   _options->_end_frame = start_frame;
+    if (_options->_end_frame > end_frame)     _options->_end_frame = end_frame;
+    if (_options->_end_frame < _options->_start_frame)  _options->_end_frame = _options->_start_frame;
+    
+    int frame_inc = 1;
+    int output_frame_rate = GetFrameRate();
 
-  if ( !maxInterface ) {
-    Logger::Log( MTEC, Logger::SAT_NULL_ERROR, "pMaxInterface is null!" );
-    //    Logger::FunctionExit();
-    return false;
-  }
-  // *** Should probably figure out how to use the progress bar effectively 
-  //     and also figure out why it is having linkage errors
-  //maxInterface->ProgressStart( "Exporting", TRUE, ProgressBarFunction, NULL );
+    bool all_ok = true;
 
-  // *** May want to make this something that is calculated as apposed to 
-  //     set explicitly, but it's not a priority
-  if (_egg_data->get_coordinate_system() == CS_default) {
-    _egg_data->set_coordinate_system(CS_zup_right);
-  }
-
-  // Figure out the animation parameters.
-  double start_frame, end_frame, frame_inc, input_frame_rate, output_frame_rate;
-
-  // Get the start and end frames and the animation frame rate from Max
-  Interval anim_range = maxInterface->GetAnimRange();
-  start_frame = anim_range.Start()/GetTicksPerFrame();
-  end_frame = anim_range.End()/GetTicksPerFrame();
-  frame_inc = 1;
-  input_frame_rate = GetFrameRate();
-  
-  if (has_start_frame() && get_start_frame() > start_frame) {
-      start_frame = get_start_frame();
-  } 
-
-  if (has_end_frame() && get_end_frame() < end_frame) {
-      end_frame = get_end_frame();
-  } 
-
-  if (has_frame_inc()) {
-      frame_inc = get_frame_inc();
-  } 
-
-  if (has_input_frame_rate()) {
-      input_frame_rate = get_input_frame_rate();
-  } 
-
-  if (has_output_frame_rate()) {
-      output_frame_rate = get_output_frame_rate();
-  } else {
-      output_frame_rate = input_frame_rate;
-  }
-
-  bool all_ok = true;
-
-  if (_selection_list == 0) {
-      all_ok = _tree.build_selected_hierarchy(maxInterface->GetRootNode());
-  } else {
-      all_ok = _tree.build_complete_hierarchy(maxInterface->GetRootNode(), _selection_list, _selection_len);
-  }
-
-  if (all_ok) {
-    switch (get_animation_convert()) {
-    case AC_pose:
-      // pose: set to a specific frame, then get out the static geometry.
-      sprintf(Logger::GetLogString(), "Extracting geometry from frame #%d.",
-              start_frame); 
-      Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, Logger::GetLogString() );
-          _current_frame = start_frame;
-      // fall through
-      
-    case AC_none:
-      // none: just get out a static model, no animation.
-      Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, "Converting static model." );
-      all_ok = convert_hierarchy(_egg_data);
-      break;
-      
-    case AC_flip:
-    case AC_strobe:
-      // flip or strobe: get out a series of static models, one per
-      // frame, under a sequence node for AC_flip.
-      all_ok = convert_flip(start_frame, end_frame, frame_inc,
-                            output_frame_rate);
-      break;
-
-    case AC_model:
-      // model: get out an animatable model with joints and vertex
-      // membership.
-      all_ok = convert_char_model();
-      break;
-
-    case AC_chan:
-      // chan: get out a series of animation tables.
-      all_ok = convert_char_chan(start_frame, end_frame, frame_inc,
-                                 output_frame_rate);
-      break;
-      
-    case AC_both:
-      // both: Put a model and its animation into the same egg file.
-      _animation_convert = AC_model;
-      if (!convert_char_model()) {
-        all_ok = false;
-      }
-      _animation_convert = AC_chan;
-      if (!convert_char_chan(start_frame, end_frame, frame_inc,
-                             output_frame_rate)) {
-        all_ok = false;
-      }
-      break;
-    };
-
-    reparent_decals(_egg_data);
-  }
-
-  if (all_ok) {
-    Logger::Log(MTEC, Logger::SAT_MEDIUM_LEVEL, "Converted, no errors." );
-  } else {
-    Logger::Log(MTEC, Logger::SAT_MEDIUM_LEVEL,
-                "Errors encountered in conversion." );
-  }
-
-  maxInterface->ProgressEnd();
-
-  //  Logger::FunctionExit();
-  return all_ok;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::setMaxInterface
-//       Access: Public
-//  Description: Sets the interface to 3D Studio Max through
-//               which the scene graph is read.
-////////////////////////////////////////////////////////////////////
-/* setMaxInterface(Interface *) - Sets the interface to 3D Studio Max through 
- * which the scene graph is read.
- */
-void MaxToEggConverter::setMaxInterface(Interface *pInterface) 
-{
-  maxInterface = pInterface;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: MaxToEggConverter::convert_flip
-//       Access: Private
-//  Description: Converts the animation as a series of models that
-//               cycle (flip) from one to the next at the appropriate
-//               frame rate.  This is the most likely to convert
-//               precisely (since we ask Maya to tell us the vertex
-//               position each time) but it is the most wasteful in
-//               terms of memory utilization (since a complete of the
-//               model is stored for each frame).
-////////////////////////////////////////////////////////////////////
-bool MaxToEggConverter::
-convert_flip(double start_frame, double end_frame, double frame_inc,
-             double output_frame_rate) {
-  bool all_ok = true;
-
-  EggGroup *sequence_node = new EggGroup(_character_name);
-  _egg_data->add_child(sequence_node);
-  if (_animation_convert == AC_flip) { 
-    sequence_node->set_switch_flag(true);
-    sequence_node->set_switch_fps(output_frame_rate / frame_inc);
-  }
-
-  double frame = start_frame;
-  double frame_stop = end_frame;
-  while (frame <= frame_stop) {
-    sprintf(Logger::GetLogString(), "Extracting geometry from frame #%lf.",
-            frame); 
-    Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, Logger::GetLogString() );
-    ostringstream name_strm;
-    name_strm << "frame" << frame;
-    EggGroup *frame_root = new EggGroup(name_strm.str());
-    sequence_node->add_child(frame_root);
-
-    // Set the frame and then export that frame
-    _current_frame = frame;
-    if (!convert_hierarchy(frame_root)) {
-      all_ok = false;
+    if (_options->_export_whole_scene) {
+        all_ok = _tree.build_selected_hierarchy(_options->_max_interface->GetRootNode());
+    } else {
+        all_ok = _tree.build_complete_hierarchy(_options->_max_interface->GetRootNode(), &_options->_node_list.front(), _options->_node_list.size());
     }
 
-    frame += frame_inc;
-  }
-
-  return all_ok;
+    if (all_ok) {
+        switch (_options->_anim_type) {
+        case MaxEggOptions::AT_pose:
+            // pose: set to a specific frame, then get out the static geometry.
+            sprintf(Logger::GetLogString(), "Extracting geometry from frame #%d.",
+                    start_frame); 
+            Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, Logger::GetLogString() );
+            _current_frame = start_frame;
+            Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, "Converting static model." );
+            all_ok = convert_hierarchy(_egg_data);
+            break;
+            
+        case MaxEggOptions::AT_model:
+            // model: get out an animatable model with joints and vertex
+            // membership.
+            all_ok = convert_char_model();
+            break;
+            
+        case MaxEggOptions::AT_chan:
+            // chan: get out a series of animation tables.
+            all_ok = convert_char_chan(start_frame, end_frame, frame_inc,
+                                       output_frame_rate);
+            break;
+            
+        case AC_both:
+            
+            _options->_anim_type = MaxEggOptions::AT_model;
+            if (!convert_char_model()) {
+                all_ok = false;
+            }
+            _options->_anim_type = MaxEggOptions::AT_chan;
+            if (!convert_char_chan(start_frame, end_frame, frame_inc,
+                                   output_frame_rate)) {
+                all_ok = false;
+            }
+            break;
+        };
+        
+        reparent_decals(_egg_data);
+    }
+    
+    if (all_ok) {
+        return _egg_data;
+    } else {
+        return (EggData*)NULL;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -251,15 +147,14 @@ convert_flip(double start_frame, double end_frame, double frame_inc,
 ////////////////////////////////////////////////////////////////////
 bool MaxToEggConverter::
 convert_char_model() {
-  if (has_neutral_frame()) {
-    _current_frame = get_neutral_frame();
-  }
+    std::string character_name = "MaxChar";
+    _current_frame = _options->_start_frame;
 
-  EggGroup *char_node = new EggGroup(_character_name);
-  _egg_data->add_child(char_node);
-  char_node->set_dart_type(EggGroup::DT_default);
-
-  return convert_hierarchy(char_node);
+    EggGroup *char_node = new EggGroup(character_name);
+    _egg_data->add_child(char_node);
+    char_node->set_dart_type(EggGroup::DT_default);
+    
+    return convert_hierarchy(char_node);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -272,85 +167,86 @@ convert_char_model() {
 bool MaxToEggConverter::
 convert_char_chan(double start_frame, double end_frame, double frame_inc,
                   double output_frame_rate) {
+    std::string character_name = "MaxChar";
 
-  EggTable *root_table_node = new EggTable();
-  _egg_data->add_child(root_table_node);
-  EggTable *bundle_node = new EggTable(_character_name);
-  bundle_node->set_table_type(EggTable::TT_bundle);
-  root_table_node->add_child(bundle_node);
-  EggTable *skeleton_node = new EggTable("<skeleton>");
-  bundle_node->add_child(skeleton_node);
+    EggTable *root_table_node = new EggTable();
+    _egg_data->add_child(root_table_node);
+    EggTable *bundle_node = new EggTable(character_name);
+    bundle_node->set_table_type(EggTable::TT_bundle);
+    root_table_node->add_child(bundle_node);
+    EggTable *skeleton_node = new EggTable("<skeleton>");
+    bundle_node->add_child(skeleton_node);
 
-  // Set the frame rate before we start asking for anim tables to be
-  // created.
-  _tree._fps = output_frame_rate / frame_inc;
-  _tree.clear_egg(_egg_data, NULL, skeleton_node);
-
-  // Now we can get the animation data by walking through all of the
-  // frames, one at a time, and getting the joint angles at each
-  // frame.
-
-  // This is just a temporary EggGroup to receive the transform for
-  // each joint each frame.
-  EggGroup* tgroup;
-
-  int num_nodes = _tree.get_num_nodes();
-  int i;
-
-  sprintf(Logger::GetLogString(), 
-          "sf %lf ef %lf inc %lf ofr %lf.", 
-          start_frame, end_frame, frame_inc, output_frame_rate );
-  Logger::Log(MNEG_GEOMETRY_GENERATION, Logger::SAT_LOW_LEVEL, 
-              Logger::GetLogString() );
-
-  TimeValue frame = start_frame;
-  TimeValue frame_stop = end_frame;
-  while (frame <= frame_stop) {
-    _current_frame = frame;
+    // Set the frame rate before we start asking for anim tables to be
+    // created.
+    _tree._fps = output_frame_rate / frame_inc;
+    _tree.clear_egg(_egg_data, NULL, skeleton_node);
+    
+    // Now we can get the animation data by walking through all of the
+    // frames, one at a time, and getting the joint angles at each
+    // frame.
+    
+    // This is just a temporary EggGroup to receive the transform for
+    // each joint each frame.
+    EggGroup* tgroup;
+    
+    int num_nodes = _tree.get_num_nodes();
+    int i;
+    
     sprintf(Logger::GetLogString(), 
-            "Current frame: %lf.", 
-            _current_frame );
+            "sf %lf ef %lf inc %lf ofr %lf.", 
+            start_frame, end_frame, frame_inc, output_frame_rate );
     Logger::Log(MNEG_GEOMETRY_GENERATION, Logger::SAT_LOW_LEVEL, 
                 Logger::GetLogString() );
-
-    for (i = 0; i < num_nodes; i++) {
-      // Find all joints in the hierarchy
-      MaxNodeDesc *node_desc = _tree.get_node(i);
-      if (node_desc->is_joint()) {
-              tgroup = new EggGroup();
-              INode *max_node = node_desc->get_max_node();
-
-              if (node_desc->_parent && node_desc->_parent->is_joint()) {
-              // If this joint also has a joint as a parent, the parent's 
-              // transformation has to be divided out of this joint's TM
-              get_joint_transform(max_node, node_desc->_parent->get_max_node(), 
-                                              tgroup);
-              } else {
-                get_joint_transform(max_node, NULL, tgroup);
-              }
+    
+    TimeValue frame = start_frame;
+    TimeValue frame_stop = end_frame;
+    while (frame <= frame_stop) {
+        _current_frame = frame;
+        sprintf(Logger::GetLogString(), 
+                "Current frame: %lf.", 
+                _current_frame );
+        Logger::Log(MNEG_GEOMETRY_GENERATION, Logger::SAT_LOW_LEVEL, 
+                    Logger::GetLogString() );
         
-        EggXfmSAnim *anim = _tree.get_egg_anim(node_desc);
-        if (!anim->add_data(tgroup->get_transform3d())) {
-                // *** log an error
-              }
-              delete tgroup;
-      }
+        for (i = 0; i < num_nodes; i++) {
+            // Find all joints in the hierarchy
+            MaxNodeDesc *node_desc = _tree.get_node(i);
+            if (node_desc->is_joint()) {
+                tgroup = new EggGroup();
+                INode *max_node = node_desc->get_max_node();
+                
+                if (node_desc->_parent && node_desc->_parent->is_joint()) {
+                    // If this joint also has a joint as a parent, the parent's 
+                    // transformation has to be divided out of this joint's TM
+                    get_joint_transform(max_node, node_desc->_parent->get_max_node(), 
+                                        tgroup);
+                } else {
+                    get_joint_transform(max_node, NULL, tgroup);
+                }
+                
+                EggXfmSAnim *anim = _tree.get_egg_anim(node_desc);
+                if (!anim->add_data(tgroup->get_transform3d())) {
+                    // *** log an error
+                }
+                delete tgroup;
+            }
+        }
+        
+        frame += frame_inc;
     }
     
-    frame += frame_inc;
-  }
-
-  // Now optimize all of the tables we just filled up, for no real
-  // good reason, except that it makes the resulting egg file a little
-  // easier to read.
-  for (i = 0; i < num_nodes; i++) {
-    MaxNodeDesc *node_desc = _tree.get_node(i);
-    if (node_desc->is_joint()) {
-      _tree.get_egg_anim(node_desc)->optimize();
+    // Now optimize all of the tables we just filled up, for no real
+    // good reason, except that it makes the resulting egg file a little
+    // easier to read.
+    for (i = 0; i < num_nodes; i++) {
+        MaxNodeDesc *node_desc = _tree.get_node(i);
+        if (node_desc->is_joint()) {
+            _tree.get_egg_anim(node_desc)->optimize();
+        }
     }
-  }
-
-  return true;
+    
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -361,16 +257,16 @@ convert_char_chan(double start_frame, double end_frame, double frame_inc,
 ////////////////////////////////////////////////////////////////////
 bool MaxToEggConverter::
 convert_hierarchy(EggGroupNode *egg_root) {
-  //int num_nodes = _tree.get_num_nodes();
-
-  _tree.clear_egg(_egg_data, egg_root, NULL);
-  for (int i = 0; i < _tree.get_num_nodes(); i++) {
-    if (!process_model_node(_tree.get_node(i))) {
-      return false;
+    //int num_nodes = _tree.get_num_nodes();
+    
+    _tree.clear_egg(_egg_data, egg_root, NULL);
+    for (int i = 0; i < _tree.get_num_nodes(); i++) {
+        if (!process_model_node(_tree.get_node(i))) {
+            return false;
+        }
     }
-  }
-
-  return true;
+    
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -403,8 +299,8 @@ process_model_node(MaxNodeDesc *node_desc) {
     EggGroup *egg_group = _tree.get_egg_group(node_desc);
     // Don't bother with joints unless we're getting an animatable
     // model.
-    if (_animation_convert == AC_model) { 
-      get_joint_transform(max_node, egg_group);
+    if (_options->_anim_type == MaxEggOptions::AT_model) { 
+        get_joint_transform(max_node, egg_group);
     }
   } else {
     if (state.obj) {
@@ -521,7 +417,7 @@ process_model_node(MaxNodeDesc *node_desc) {
     // Only convert NurbsCurves if we aren't making an animated model.
     // Animated models, as a general rule, don't want these sorts of
     // things in them.
-    if (_animation_convert != AC_model) {
+    if (_options->_anim_type != MaxEggOptions::AT_model) {
       EggGroup *egg_group = _tree.get_egg_group(node_desc);
       get_transform(dag_path, egg_group);
       
@@ -559,7 +455,7 @@ process_model_node(MaxNodeDesc *node_desc) {
     // Presumably, the locator's position has some meaning to the
     // end-user, so we will implicitly tag it with the DCS flag so it
     // won't get flattened out.
-    if (_animation_convert != AC_model) {
+    if (_options->_anim_type != MaxEggOptions::AT_model) {
       // For now, don't set the DCS flag on locators within
       // character models, since egg-optchar doesn't understand
       // this.  Perhaps there's no reason to ever change this, since
@@ -586,7 +482,7 @@ process_model_node(MaxNodeDesc *node_desc) {
 ////////////////////////////////////////////////////////////////////
 void MaxToEggConverter::
 get_transform(INode *max_node, EggGroup *egg_group) {
-  if (_animation_convert == AC_model) {
+  if (_options->_anim_type == MaxEggOptions::AT_model) {
     // When we're getting an animated model, we only get transforms
     // for joints.
     return;
@@ -948,8 +844,6 @@ make_polyset(INode *max_node, Mesh *mesh,
              EggGroup *egg_group, Shader *default_shader) {
         Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, "Entered make_poly_set." );
 
-  //bool double_sided = false;
-
   // *** I think this needs to have a plugin written to support
   /*
   MObject mesh_object = mesh.object();
@@ -1021,7 +915,7 @@ make_polyset(INode *max_node, Mesh *mesh,
    EggPolygon *egg_poly = new EggPolygon;
     egg_group->add_child(egg_poly);
 
-    egg_poly->set_bface_flag(double_sided);
+    egg_poly->set_bface_flag(_options->_double_sided);
 
     Face face = mesh->faces[iFace];
 
@@ -1194,7 +1088,7 @@ make_polyset(INode *max_node, Mesh *mesh,
   // vertices), go back through the vertex pool and set up the
   // appropriate joint membership for each of the vertices.
 
-  if (_animation_convert == AC_model) {
+  if (_options->_anim_type == MaxEggOptions::AT_model) {
       get_vertex_weights(max_node, vpool);
   }
 
@@ -1435,8 +1329,8 @@ set_shader_attributes(EggPrimitive &primitive, const MayaShader &shader) {
       // If we have a texture on color, apply it as the filename.
       Filename filename = Filename::from_os_specific(color_def._texture);
       Filename fullpath,outpath;
-      _path_replace->full_convert_path(filename, get_texture_path(),
-                                       fullpath, outpath);
+      _options->_path_replace->full_convert_path(filename, get_texture_path(),
+                                                  fullpath, outpath);
       tex.set_filename(outpath);
       tex.set_fullpath(fullpath);
       apply_texture_properties(tex, color_def);
@@ -1720,8 +1614,8 @@ set_material_attributes(EggPrimitive &primitive, Mtl *maxMaterial, Face *face) {
         // It is! 
         Filename filename = Filename::from_os_specific(diffuseBitmapTex->GetMapName());
         Filename fullpath, outpath;
-        _path_replace->full_convert_path(filename, get_texture_path(),
-                                         fullpath, outpath);
+        _options->_path_replace->full_convert_path(filename, get_texture_path(),
+                                                   fullpath, outpath);
         tex.set_filename(outpath);
         tex.set_fullpath(fullpath);
         apply_texture_properties(tex, maxStandardMaterial);
@@ -1735,8 +1629,8 @@ set_material_attributes(EggPrimitive &primitive, Mtl *maxMaterial, Face *face) {
             // nothing more needs to be done
           } else {
             filename = Filename::from_os_specific(transBitmapTex->GetMapName());
-            _path_replace->full_convert_path(filename, get_texture_path(),
-                                             fullpath, outpath);
+            _options->_path_replace->full_convert_path(filename, get_texture_path(),
+                                                       fullpath, outpath);
             tex.set_alpha_filename(outpath);
             tex.set_alpha_fullpath(fullpath);
           }
@@ -1752,8 +1646,8 @@ set_material_attributes(EggPrimitive &primitive, Mtl *maxMaterial, Face *face) {
         // primary filename, and set the format accordingly.
         Filename filename = Filename::from_os_specific(transBitmapTex->GetMapName());
         Filename fullpath, outpath;
-        _path_replace->full_convert_path(filename, get_texture_path(),
-                                         fullpath, outpath);
+        _options->_path_replace->full_convert_path(filename, get_texture_path(),
+                                                   fullpath, outpath);
         tex.set_filename(outpath);
         tex.set_fullpath(fullpath);
         tex.set_format(EggTexture::F_alpha);

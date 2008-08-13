@@ -42,24 +42,15 @@ class MaxToEggConverter {
     MaxToEggConverter();
     ~MaxToEggConverter();
 
-    PT(EggData) convert();
+    PT(EggData) convert(MaxEggOptions *options);
     
-    void setMaxInterface(Interface *pInterface);
-    void set_selection_list(ULONG *list, int len) { _selection_list = list; _selection_len = len; }
-    void set_double_sided(bool flag) { _double_sided = flag;}
-    void set_animation_convert(AnimationConvert ac) { _animation_convert = ac; }
-
  private:
-    ULONG            *_selection_list;
-    int               _selection_len;
-    bool              _double_sided;
-    AnimationConvert  _animation_convert;
+    MaxEggOptions    *_options;
     int               _current_frame;
     PT(EggData)       _egg_data;
     
-    bool convert_flip(double start_frame, double end_frame, 
-                      double frame_inc, double output_frame_rate);
-    
+    void reset();
+
     bool convert_char_model();
     bool convert_char_chan(double start_frame, double end_frame, 
                            double frame_inc, double output_frame_rate);
@@ -100,9 +91,6 @@ class MaxToEggConverter {
     
  public:
     EggTextureCollection _textures;
-    Interface *maxInterface;
-    bool _polygon_output;
-    double _polygon_tolerance;
     
   enum TransformType {
       TT_invalid,

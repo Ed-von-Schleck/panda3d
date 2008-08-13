@@ -45,7 +45,7 @@ extern TCHAR *GetString(int id);
 
 class MaxEggPlugin : public HelperObject 
 {
-  MaxEggExpOptions **eggList;
+  MaxEggExporter **eggList;
   int numEggs;
   int maxEggs;
 
@@ -70,9 +70,9 @@ class MaxEggPlugin : public HelperObject
   void SaveCheckState();
   void BuildMesh();
 
-  void AddEgg(MaxEggExpOptions *newEgg);
+  void AddEgg(MaxEggExporter *newEgg);
   void RemoveEgg(int i);
-  MaxEggExpOptions *GetEgg(int i) { return (i >= 0 && i < numEggs) ? eggList[i] : NULL; }
+  MaxEggExporter *GetEgg(int i) { return (i >= 0 && i < numEggs) ? eggList[i] : NULL; }
 
   // Required implimented virtual methods:
   // inherited virtual methods for Reference-management

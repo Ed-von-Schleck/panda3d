@@ -225,18 +225,26 @@ void RemoveNodeCB::proc(INodeTab &nodeTab) {
     ph->RefreshNodeList(hWnd);
 }
 
-MaxEggExporter::MaxEggExporter ()
-{
-    _options._anim_convert = AC_model;
-    _options._start_frame = INT_MIN;
-    _options._end_frame = INT_MIN;
-    _options._double_sided = false;
-    _options._export_whole_scene = true;
+MaxEggOptions::MaxEggOptions() {
+    _max_interface = NULL;
+    _anim_type = MaxEggOptions::AT_model;
+    _start_frame = INT_MIN;
+    _end_frame = INT_MIN;
+    _double_sided = false;
+    _file_name[0]=0;
+    _short_name[0]=0;
+    _path_replace = new PathReplace;
+    _export_whole_scene = true;
+}
 
+MaxEggExporter::MaxEggExporter () {
     _checked = true;
     _choosing_nodes = false;
-    _prev_type = AC_model;
-    _filename = "";
+    _successful = false;
+}
+
+MaxEggExporter::~MaxEggExporter ()
+{
 }
 
 BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam ) 
@@ -268,8 +276,8 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 enableAnimRadios(hWnd, ANIM_RAD_NONE);
                 showAnimControls(hWnd, TRUE);
                 enableAnimControls(hWnd, FALSE);
-                if (imp->prev_type == MaxEggExporter::AT_chan) imp->ClearNodeList(hWnd);
-                imp->prev_type = MaxEggExporter::AT_model;
+                if (imp->_prev_type == MaxEggOptions::AT_chan) imp->ClearNodeList(hWnd);
+                imp->_prev_type = MaxEggOptions::AT_model;
                 return TRUE;
             }
             break;
@@ -281,8 +289,8 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 enableAnimRadios(hWnd, ANIM_RAD_ALL);
                 showAnimControls(hWnd, TRUE);
                 enableAnimControls(hWnd, IsDlgButtonChecked(hWnd, IDC_EXP_SEL_FRAMES));
-                if (imp->prev_type != MaxEggExporter::AT_chan) imp->ClearNodeList(hWnd);
-                imp->prev_type = MaxEggExporter::AT_chan;
+                if (imp->_prev_type != MaxEggOptions::AT_chan) imp->ClearNodeList(hWnd);
+                imp->_prev_type = MaxEggOptions::AT_chan;
                 return TRUE;
             }
             break;
@@ -293,8 +301,8 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 enableAnimRadios(hWnd, ANIM_RAD_ALL);
                 showAnimControls(hWnd, TRUE);
                 enableAnimControls(hWnd, IsDlgButtonChecked(hWnd, IDC_EXP_SEL_FRAMES));
-                if (imp->prev_type == MaxEggExporter::AT_chan) imp->ClearNodeList(hWnd);
-                imp->prev_type = MaxEggExporter::AT_both;
+                if (imp->_prev_type == MaxEggOptions::AT_chan) imp->ClearNodeList(hWnd);
+                imp->_prev_type = MaxEggOptions::AT_both;
                 return TRUE;
             }
             break;
@@ -306,8 +314,8 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 showAnimControls(hWnd, FALSE);
                 enableAnimControls(hWnd, TRUE);
                 CheckRadioButton(hWnd, IDC_EXP_ALL_FRAMES, IDC_EXP_SEL_FRAMES, IDC_EXP_SEL_FRAMES);
-                if (imp->prev_type == MaxEggExporter::AT_chan) imp->ClearNodeList(hWnd);
-                imp->prev_type = MaxEggExporter::AT_pose;
+                if (imp->_prev_type == MaxEggOptions::AT_chan) imp->ClearNodeList(hWnd);
+                imp->_prev_type = MaxEggOptions::AT_pose;
                 return TRUE;
             }
             break;
@@ -341,22 +349,22 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
 
         case IDC_ADD_EXPORT:
             {
-                if (!imp->choosingNodes) {
+                if (!imp->_choosing_nodes) {
                     AddNodeCB PickCB(imp, hWnd);
-                    imp->choosingNodes = true;
-                    imp->maxInterface->DoHitByNameDialog(&PickCB);
-                    imp->choosingNodes = false;
+                    imp->_choosing_nodes = true;
+                    imp->_max_interface->DoHitByNameDialog(&PickCB);
+                    imp->_choosing_nodes = false;
                 }
             }
             return TRUE; break;
 
         case IDC_REMOVE_EXPORT:
             {
-                if (!imp->choosingNodes) {
-                    imp->choosingNodes = true;
+                if (!imp->_choosing_nodes) {
+                    imp->_choosing_nodes = true;
                     RemoveNodeCB PickCB(imp, hWnd);
-                    imp->maxInterface->DoHitByNameDialog(&PickCB);
-                    imp->choosingNodes = false;
+                    imp->_max_interface->DoHitByNameDialog(&PickCB);
+                    imp->_choosing_nodes = false;
                 }
             }
             return TRUE; break;
@@ -408,24 +416,25 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
 
 void MaxEggExporter::SetAnimRange() {
     // Get the start and end frames and the animation frame rate from Max
-    Interval anim_range = maxInterface->GetAnimRange();
+    Interval anim_range = _max_interface->GetAnimRange();
     _min_frame = anim_range.Start()/GetTicksPerFrame();
     _max_frame = anim_range.End()/GetTicksPerFrame();
 }
 
 void MaxEggExporter::UpdateUI(HWND hWnd) {
     int typeButton = IDC_MODEL;
-    int anim_exp = _options._start_frame == INT_MIN ? IDC_EXP_ALL_FRAMES : IDC_EXP_SEL_FRAMES;
-    int model_exp = _options._export_whole_scene ? IDC_EXPORT_ALL : IDC_EXPORT_SELECTED;
+    int anim_exp = _start_frame == INT_MIN ? IDC_EXP_ALL_FRAMES : IDC_EXP_SEL_FRAMES;
+    int model_exp = _export_whole_scene ? IDC_EXPORT_ALL : IDC_EXPORT_SELECTED;
     
-    switch (anim_type) {
-    case AT_chan: typeButton = IDC_ANIMATION; break;
-    case AT_both: typeButton = IDC_BOTH; break;
-    case AT_pose: typeButton = IDC_POSE; break;
+    switch (_anim_type) {
+    case MaxEggOptions::AT_chan:  typeButton = IDC_ANIMATION; break;
+    case MaxEggOptions::AT_both:  typeButton = IDC_BOTH; break;
+    case MaxEggOptions::AT_pose:  typeButton = IDC_POSE; break;
+    case MaxEggOptions::AT_model: typeButton = IDC_MODEL; break;
     }
     
-    _prev_convert = _options._anim_convert;
-    
+    _prev_type = _anim_type;
+
     CheckRadioButton(hWnd, IDC_MODEL, IDC_POSE, typeButton);
     SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(typeButton, BN_CLICKED), 0);
     CheckRadioButton(hWnd, IDC_EXPORT_ALL, IDC_EXPORT_SELECTED, model_exp);
@@ -434,12 +443,12 @@ void MaxEggExporter::UpdateUI(HWND hWnd) {
     SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(anim_exp, BN_CLICKED), 0);
     
     CheckDlgButton(hWnd, IDC_CHECK1,
-                   dblSided ? BST_CHECKED : BST_UNCHECKED);
+                   _double_sided ? BST_CHECKED : BST_UNCHECKED);
     
-    SetICustEdit(hWnd, IDC_FILENAME, filename);
-    if (_options._start_frame != INT_MIN) {
-        SetICustEdit(hWnd, IDC_SF, _options._start_frame);
-        SetICustEdit(hWnd, IDC_EF, _options._end_frame);
+    SetICustEdit(hWnd, IDC_FILENAME, _file_name);
+    if (_start_frame != INT_MIN) {
+        SetICustEdit(hWnd, IDC_SF, _start_frame);
+        SetICustEdit(hWnd, IDC_EF, _end_frame);
     } else {
         SetICustEdit(hWnd, IDC_SF, _min_frame);
         SetICustEdit(hWnd, IDC_EF, _max_frame);
@@ -449,7 +458,7 @@ void MaxEggExporter::UpdateUI(HWND hWnd) {
 }
 
 void MaxEggExporter::ClearNodeList(HWND hWnd) {
-    numNodes = 0;
+    _node_list.clear();
     RefreshNodeList(hWnd);
 }
 
@@ -457,8 +466,8 @@ void MaxEggExporter::RefreshNodeList(HWND hWnd) {
   //Clear and repopulate the node box
   HWND nodeLB = GetDlgItem(hWnd, IDC_LIST_EXPORT);
   SendMessage(nodeLB, LB_RESETCONTENT, 0, 0);
-  for (int i = 0; i < numNodes; i++) {
-      INode *temp = maxInterface->GetINodeByHandle(GetNode(i));
+  for (int i = 0; i < _node_list.size(); i++) {
+      INode *temp = _max_interface->GetINodeByHandle(_node_list[i]);
       TCHAR *name = _T("Unknown Node");
       if (temp) name = temp->GetName();
       SendMessage(nodeLB, LB_ADDSTRING, 0, (LPARAM)name);
@@ -467,39 +476,39 @@ void MaxEggExporter::RefreshNodeList(HWND hWnd) {
 
 bool MaxEggExporter::UpdateFromUI(HWND hWnd) {
   BOOL valid;
-  AnimationConvert newAnimType;
+  Anim_Type newAnimType;
   int newSF = INT_MIN, newEF = INT_MIN;
   char msg[1024];
 
-  if (IsDlgButtonChecked(hWnd, IDC_MODEL))          newAnimType = AC_model;
-  else if (IsDlgButtonChecked(hWnd, IDC_ANIMATION)) newAnimType = AC_chan;
-  else if (IsDlgButtonChecked(hWnd, IDC_BOTH))      newAnimType = AC_both;
-  else                                              newAnimType = AC_pose;
+  if (IsDlgButtonChecked(hWnd, IDC_MODEL))          newAnimType = MaxEggOptions::AT_model;
+  else if (IsDlgButtonChecked(hWnd, IDC_ANIMATION)) newAnimType = MaxEggOptions::AT_chan;
+  else if (IsDlgButtonChecked(hWnd, IDC_BOTH))      newAnimType = MaxEggOptions::AT_both;
+  else                                              newAnimType = MaxEggOptions::AT_pose;
 
-  if (newAnimType != AT_model && IsDlgButtonChecked(hWnd, IDC_EXP_SEL_FRAMES)) {
+  if (newAnimType != MaxEggOptions::AT_model && IsDlgButtonChecked(hWnd, IDC_EXP_SEL_FRAMES)) {
       newSF = GetICustEditI(GetDlgItem(hWnd, IDC_SF), &valid);
       if (!valid) {
           MessageBox(hWnd, "Start Frame must be an integer", "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
           return false;
       }
-      if (newSF < minFrame) {
-          sprintf(msg, "Start Frame must be at least %d", minFrame);
+      if (newSF < _min_frame) {
+          sprintf(msg, "Start Frame must be at least %d", _min_frame);
           MessageBox(hWnd, msg, "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
           return false;
       }
-      if (newSF > maxFrame) {
-          sprintf(msg, "Start Frame must be at most %d", maxFrame);
+      if (newSF > _max_frame) {
+          sprintf(msg, "Start Frame must be at most %d", _max_frame);
           MessageBox(hWnd, msg, "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
           return false;
       }
-      if (newAnimType != AT_pose) {
+      if (newAnimType != MaxEggOptions::AT_pose) {
           newEF = GetICustEditI(GetDlgItem(hWnd, IDC_EF), &valid);
           if (!valid) {
               MessageBox(hWnd, "End Frame must be an integer", "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
               return false;
           }
-          if (newEF > maxFrame) {
-              sprintf(msg, "End Frame must be at most %d", maxFrame);
+          if (newEF > _max_frame) {
+              sprintf(msg, "End Frame must be at most %d", _max_frame);
               MessageBox(hWnd, msg, "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
               return false;
           }
@@ -512,65 +521,67 @@ bool MaxEggExporter::UpdateFromUI(HWND hWnd) {
 
   char *temp = GetICustEditT(GetDlgItem(hWnd, IDC_FILENAME));
   if (!strlen(temp)) {
-      MessageBox(hWnd, "The filename cannot be empty", "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
-      return false;
+    MessageBox(hWnd, "The filename cannot be empty", "Invalid Value", MB_OK | MB_ICONEXCLAMATION);
+    return false;
   }
-  _options._file_name = temp;
-  if ((options._file_name.size() < 4) || (_options._file_name.compare(options._file_name.size()-4, 4, ".egg"))) {
-      _options._file_name += ".egg";
+
+  if (strlen(temp) < 4 || strncmp(".egg", temp+(strlen(temp) - 4), 4))
+      sprintf(_file_name, "%s.egg", temp);
+  else strcpy(_file_name, temp);
+
+  temp = strrchr(_file_name, '\\');
+  if (!temp) temp = _file_name;
+  else temp++;
+
+  if (strlen(temp) > sizeof(_short_name))
+    sprintf(_short_name, "%.*s...", sizeof(_short_name)-4, temp);
+  else {
+    strcpy(_short_name, temp);
+    _short_name[strlen(_short_name) - 4] = NULL; //Cut off the .egg
   }
   
-  int slash = _options._file_name.rfind('\\');
-  if (slash == _options._file_name.npos) {
-      slash = 0;
-  } else {
-      slash += 1;
-  }
-
-  _options._short_name = _options._file_name.substr(slash, _options._file_name.size() - 4 - slash);
-
-  _options._start_frame = newSF;
-  _options._end_frame = newEF;
-  _options._anim_convert = newAnimType;
-  _options._double_sided = IsDlgButtonChecked(hWnd, IDC_CHECK1);
-  _options._export_whole_scene = IsDlgButtonChecked(hWnd, IDC_EXPORT_ALL);
+  _start_frame = newSF;
+  _end_frame = newEF;
+  _anim_type = newAnimType;
+  _double_sided = IsDlgButtonChecked(hWnd, IDC_CHECK1);
+  _export_whole_scene = IsDlgButtonChecked(hWnd, IDC_EXPORT_ALL);
   return true;
 }
 
 bool MaxEggExporter::FindNode(ULONG INodeHandle) {
-    for (int i = 0; i < _options._node_list.size(); i++) 
-        if (_options._node_list[i] == INodeHandle) return true;
+    for (int i = 0; i < _node_list.size(); i++) 
+        if (_node_list[i] == INodeHandle) return true;
     return false;
 }
 
 void MaxEggExporter::AddNode(ULONG INodeHandle) {
   if (FindNode(INodeHandle)) return; 
-  _options._node_list.push_back(INodeHandle);
+  _node_list.push_back(INodeHandle);
 }
 
 void MaxEggExporter::CullBadNodes() {
-  if (!_options._max_interface) return;
+  if (!_max_interface) return;
   std::vector<ULONG> good;
-  for (int i=0; i<_options._node_list.size(); i++) {
-      ULONG handle = _options._node_list[i];
-      if (maxInterface->GetINodeByHandle(handle)) {
+  for (int i=0; i<_node_list.size(); i++) {
+      ULONG handle = _node_list[i];
+      if (_max_interface->GetINodeByHandle(handle)) {
           good.push_back(handle);
       }
   }
-  _options._node_list = good;
+  _node_list = good;
 }
 
 void MaxEggExporter::RemoveNode(int i) {
-    if (i >= 0 && i < _options._node_list.size()) {
-        for (int j = i+1; j < _options._node_list.size())
-            _options._node_list[i++] = _options._node_list[j++];
-        _options._node_list.pop_back();
+    if (i >= 0 && i < _node_list.size()) {
+        for (int j = i+1; j < _node_list.size(); j++)
+            _node_list[i++] = _node_list[j++];
+        _node_list.pop_back();
     }
 }
 
 void MaxEggExporter::RemoveNodeByHandle(ULONG INodeHandle) {
-    for (int i = 0; i < _options._node_list.size(); i++) {
-        if (_options._node_list[i] == INodeHandle) {
+    for (int i = 0; i < _node_list.size(); i++) {
+        if (_node_list[i] == INodeHandle) {
             RemoveNode(i);
             return;
         }
@@ -579,17 +590,17 @@ void MaxEggExporter::RemoveNodeByHandle(ULONG INodeHandle) {
 
 IOResult MaxEggExporter::Save(ISave *isave) {
     isave->BeginChunk(CHUNK_EGG_EXP_OPTIONS);
-    ChunkSave(isave, CHUNK_ANIM_TYPE, _options._anim_convert);
-    ChunkSave(isave, CHUNK_FILENAME, _options._file_name.c_str());
-    ChunkSave(isave, CHUNK_SHORTNAME, _options._short_name.c_str());
-    ChunkSave(isave, CHUNK_SF, _options._start_frame);
-    ChunkSave(isave, CHUNK_EF, _options._end_frame);
-    ChunkSave(isave, CHUNK_DBL_SIDED, _options._double_sided);
+    ChunkSave(isave, CHUNK_ANIM_TYPE, _anim_type);
+    ChunkSave(isave, CHUNK_FILENAME, _file_name);
+    ChunkSave(isave, CHUNK_SHORTNAME, _short_name);
+    ChunkSave(isave, CHUNK_SF, _start_frame);
+    ChunkSave(isave, CHUNK_EF, _end_frame);
+    ChunkSave(isave, CHUNK_DBL_SIDED, _double_sided);
     ChunkSave(isave, CHUNK_EGG_CHECKED, _checked);
-    ChunkSave(isave, CHUNK_EXPORT_FULL, _options._export_whole_scene);
+    ChunkSave(isave, CHUNK_EXPORT_FULL, _export_whole_scene);
     isave->BeginChunk(CHUNK_NODE_LIST);
-    for (int i = 0; i < _options._node_list.size(); i++)
-        ChunkSave(isave, CHUNK_NODE_HANDLE, _options._node_list[i]);
+    for (int i = 0; i < _node_list.size(); i++)
+        ChunkSave(isave, CHUNK_NODE_HANDLE, _node_list[i]);
     isave->EndChunk();
     isave->EndChunk();
     return IO_OK;
@@ -600,14 +611,14 @@ IOResult MaxEggExporter::Load(ILoad *iload) {
     
     while (res == IO_OK) {
         switch(iload->CurChunkID()) {
-        case CHUNK_ANIM_TYPE: _options._anim_convert = (AnimationConvert)ChunkLoadInt(iload); break;
-        case CHUNK_FILENAME: ChunkLoadString(iload, filename, sizeof(filename)); break;
-        case CHUNK_SHORTNAME: ChunkLoadString(iload, shortName, sizeof(shortName)); break;
-        case CHUNK_SF: _options._start_frame = ChunkLoadInt(iload); break;
-        case CHUNK_EF: _options._end_frame = ChunkLoadInt(iload); break;
-        case CHUNK_DBL_SIDED: _options._double_sided = ChunkLoadBool(iload); break;
+        case CHUNK_ANIM_TYPE: _anim_type = (Anim_Type)ChunkLoadInt(iload); break;
+        case CHUNK_FILENAME: ChunkLoadString(iload, _file_name, sizeof(_file_name)); break;
+        case CHUNK_SHORTNAME: ChunkLoadString(iload, _short_name, sizeof(_short_name)); break;
+        case CHUNK_SF: _start_frame = ChunkLoadInt(iload); break;
+        case CHUNK_EF: _end_frame = ChunkLoadInt(iload); break;
+        case CHUNK_DBL_SIDED: _double_sided = ChunkLoadBool(iload); break;
         case CHUNK_EGG_CHECKED: _checked = ChunkLoadBool(iload); break;
-        case CHUNK_EXPORT_FULL: _options._export_whole_scene = ChunkLoadBool(iload); break;
+        case CHUNK_EXPORT_FULL: _export_whole_scene = ChunkLoadBool(iload); break;
         case CHUNK_NODE_LIST:
             res = iload->OpenChunk();
             while (res == IO_OK) {
@@ -627,34 +638,9 @@ IOResult MaxEggExporter::Load(ILoad *iload) {
 
 bool MaxEggExporter::DoExport(IObjParam *ip, bool autoOverwrite, bool saveLog) 
 {
+    _max_interface = ip;
     MaxToEggConverter converter;
-    
-    // Now, we fill out the necessary fields of the converter, which does all
-    // the necessary work.
-    converter.setMaxInterface( (Interface*)ip );
-    // converter.set_path_replace( new PathReplace() );
-    // converter.set_character_name("max character");
-    // converter.set_start_frame(_options._start_frame);
-    // converter.set_end_frame(_options._end_frame);
-    // converter.set_frame_inc(_frame_inc);
-    // converter.set_neutral_frame(_neutral_frame);
-    // converter.set_input_frame_rate(_input_frame_rate);
-    // converter.set_output_frame_rate(_output_frame_rate);
-    // converter.set_double_sided(false);
-    
-    switch (anim_type) {
-    case AT_chan:  converter.set_animation_convert(AC_chan); break;
-    case AT_pose:  converter.set_animation_convert(AC_pose); break;
-    case AT_both:  converter.set_animation_convert(AC_both); break;
-    case AT_model: converter.set_animation_convert(AC_model); break;
-    default:       converter.set_animation_convert(AC_model); break;
-    }
-    
-    if (expWholeScene) converter.set_selection_list(NULL, 0);
-    else converter.set_selection_list(nodeList, numNodes);
-    
-    // Now, do the actual file conversion.
-    PT(EggData) data = converter.convert();
+    PT(EggData) data = converter.convert((MaxEggOptions*)this);
     if (data != (EggData*)NULL) {
         // write_egg_file();
         Logger::Log( MTEC, Logger::SAT_DEBUG_SPAM_LEVEL, "Egg file written!" );

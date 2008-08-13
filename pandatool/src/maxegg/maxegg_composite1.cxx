@@ -48,11 +48,10 @@
 #include "maxNodeDesc.h"
 #include "maxNodeTree.h"
 #include "maxLogger.h"
-#include "maxToEggConverter.h"
 #include "maxToEgg.h"
 #include "maxEggExpOptions.h"
+#include "maxToEggConverter.h"
 #include "maxEgg.h"
-#include "maxEggExpOptions.h"
 
 #include "maxDllEntry.cxx"
 #include "maxLogger.cxx"
