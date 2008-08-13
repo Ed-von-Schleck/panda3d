@@ -16,12 +16,6 @@
 #ifndef MAXNODEDESC_H
 #define MAXNODEDESC_H
 
-#pragma conform(forScope, off)
-
-class EggGroup;
-class EggTable;
-class EggXfmSAnim;
-
 ////////////////////////////////////////////////////////////////////
 //       Class : MaxNodeDesc
 // Description : Describes a single instance of a node in the Max
