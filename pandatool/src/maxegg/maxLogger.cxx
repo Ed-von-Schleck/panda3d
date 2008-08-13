@@ -1,5 +1,3 @@
-#include "maxLogger.h"
-
 /*      Globals & Static Members
  */
 

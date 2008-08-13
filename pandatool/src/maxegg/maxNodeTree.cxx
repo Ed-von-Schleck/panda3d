@@ -13,24 +13,6 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "maxNodeTree.h"
-#include "eggGroup.h"
-#include "eggTable.h"
-#include "eggXfmSAnim.h"
-#include "eggData.h"
-
-#ifdef MAX5
-//Disable the "Too many actual parameters in istdplug.h" warning in Max5
-#pragma warning(push)
-#pragma warning(disable: 4002)
-#include "max_pre_include.h"
-#endif
-#include "Max.h"
-#ifdef MAX5
-#include "max_post_include.h"
-#pragma warning(pop)
-#endif
-#include "maxToEggConverter.h"
 
 
 ////////////////////////////////////////////////////////////////////

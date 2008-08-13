@@ -13,9 +13,6 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "maxToEggConverter.h"
-#include "modstack.h"
-#include "eggtable.h"
 
 #define MNEG Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM2
 #define MNEG_GEOMETRY_GENERATION Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM3

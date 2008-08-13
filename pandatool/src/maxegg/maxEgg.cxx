@@ -8,16 +8,6 @@
   exporter for 3D Studio Max.
 */
 
-//Includes & Defines
-#include "maxEgg.h"
-//Types and structures from windows system-level calls
-#include <sys/types.h>
-#include <sys/stat.h>
-//Controls used in fopen
-#include <fcntl.h>
-//C Debugging
-#include <crtdbg.h>
-
 // Discreet-Generated ID for this app.
 #define MNEG Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM2
 #define MNEG_GEOMETRY_GENERATION Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM3

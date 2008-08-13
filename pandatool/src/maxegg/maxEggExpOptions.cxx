@@ -7,7 +7,6 @@
   what to export from 3D Studio max
 */
 
-#include "maxEggExpOptions.h"
 
 //Disable the forcing int to true or false performance warning
 #pragma warning(disable: 4800)
