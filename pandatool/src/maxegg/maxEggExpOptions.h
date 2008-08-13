@@ -13,11 +13,7 @@
 #pragma conform(forScope, off)
 
 //Includes & Definitions
-#include "maxToEgg.h"
-#include "windef.h"
 
-/* Error-Reporting Includes */
-#include "maxLogger.h"
 #define ME Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM6
 #define MNEG Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM2
 #define MNEG_GEOMETRY_GENERATION Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM3

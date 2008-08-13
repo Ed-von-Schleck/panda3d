@@ -5,16 +5,10 @@
  */
 
 //For file IO and cmd line output
-#include <iostream>
-#include <fstream>
-
-//For MessageBox
-#include "windows.h"
 
 #define MY_MAX_NUM_SYSTEMS 8
 #define LOGGER_STRING_BUFFER_SIZE 128
 
-#include <vector>
 using namespace std;
 
 /*      Vector definitions

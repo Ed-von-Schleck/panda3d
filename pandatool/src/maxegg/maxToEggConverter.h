@@ -18,54 +18,8 @@
 
 #pragma conform(forScope, off)
 
-#include "pandatoolbase.h"
-
-/* 3ds Max Includes, with bonus(!) memory protection
- */
-
-#ifdef MAX5
-//Disable the "Too many actual parameters in istdplug.h" warning in Max5
-#pragma warning(push)
-#pragma warning(disable: 4002)
-#include "max_pre_include.h"
-#endif
-#include "Max.h"
-#include "iparamb2.h"
-#include "iparamm2.h"
-#include "istdplug.h"
-#include "iskin.h"
-#include "maxResource.h"
-#include "stdmat.h"
-#include "phyexp.h"
-#include "surf_api.h"
-#ifdef MAX5
-#include "max_post_include.h"
-#pragma warning(pop)
-#endif
-
-
-/* Panda Includes
- */
-#include "eggCoordinateSystem.h"
-#include "eggGroup.h"
-#include "eggPolygon.h"
-#include "eggTextureCollection.h"
-#include "eggTexture.h"
-#include "eggVertex.h"
-#include "eggVertexPool.h"
-#include "eggNurbsCurve.h"
-#include "pandatoolbase.h"
-#include "somethingToEgg.h"
-#include "somethingToEggConverter.h"
-#include "eggXfmSAnim.h"
-
-/* Local Includes
- */
-#include "maxNodeTree.h"
-
 /* Error-Reporting Includes
  */
-#include "maxLogger.h"
 #define MTEC Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM4
 
 /* Helpful Defintions and Casts

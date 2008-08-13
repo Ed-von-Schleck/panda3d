@@ -18,25 +18,6 @@
 
 #pragma conform(forScope, off)
 
-#include "pandatoolbase.h"
-
-#include "referenceCount.h"
-#include "pointerTo.h"
-#include "namable.h"
-
-#ifdef MAX5
-//Disable the "Too many actual parameters in istdplug.h" warning in Max5
-#pragma warning(push)
-#pragma warning(disable: 4002)
-#include "max_pre_include.h"
-#endif
-#include <Max.h>
-#include "bipexp.h"
-#ifdef MAX5
-#include "max_post_include.h"
-#pragma warning(pop)
-#endif
-
 class EggGroup;
 class EggTable;
 class EggXfmSAnim;

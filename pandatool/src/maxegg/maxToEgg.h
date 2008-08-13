@@ -17,13 +17,8 @@
 
 #pragma conform(forScope, off)
 
-#include "pandatoolbase.h"
-
-#include "maxToEggConverter.h"
-
 /* Error-Reporting Includes
  */
-#include "maxLogger.h"
 #define MTE Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM5
 
 /**

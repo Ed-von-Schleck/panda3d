@@ -16,10 +16,6 @@
 #ifndef MAXNODETREE_H
 #define MAXNODETREE_H
 
-#include "pandatoolbase.h"
-
-#include "maxNodeDesc.h"
-
 class EggData;
 class EggGroupNode;
 
