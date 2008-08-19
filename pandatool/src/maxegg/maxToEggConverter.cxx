@@ -46,7 +46,7 @@ void MaxToEggConverter::reset() {
     _cur_tref = 0;
     _current_frame = 0;
     _textures.clear();
-    _egg_data = new EggData;
+    _egg_data = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,10 +58,11 @@ void MaxToEggConverter::reset() {
 //               true, the converted geometry is based on that which
 //               is selected; otherwise, it is the entire Max scene.
 ////////////////////////////////////////////////////////////////////
-PT(EggData) MaxToEggConverter::convert(MaxEggOptions *options) {
+bool MaxToEggConverter::convert(MaxEggOptions *options) {
 
     _options = options;
 
+    _egg_data = new EggData;
     if (_egg_data->get_coordinate_system() == CS_default) {
         _egg_data->set_coordinate_system(CS_zup_right);
     }
@@ -86,7 +87,7 @@ PT(EggData) MaxToEggConverter::convert(MaxEggOptions *options) {
     bool all_ok = true;
 
     if (_options->_export_whole_scene) {
-        all_ok = _tree.build_selected_hierarchy(_options->_max_interface->GetRootNode());
+        all_ok = _tree.build_complete_hierarchy(_options->_max_interface->GetRootNode(), NULL, 0);
     } else {
         all_ok = _tree.build_complete_hierarchy(_options->_max_interface->GetRootNode(), &_options->_node_list.front(), _options->_node_list.size());
     }
@@ -133,9 +134,10 @@ PT(EggData) MaxToEggConverter::convert(MaxEggOptions *options) {
     }
     
     if (all_ok) {
-        return _egg_data;
+        Filename fn = Filename::from_os_specific(_options->_file_name);
+        return _egg_data->write_egg(fn);
     } else {
-        return (EggData*)NULL;
+        return false;
     }
 }
 

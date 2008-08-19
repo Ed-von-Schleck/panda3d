@@ -45,8 +45,8 @@ char *ChunkLoadString(ILoad *iload, char *buffer, int maxBytes);
 int ChunkLoadInt(ILoad *iload);
 bool ChunkLoadBool(ILoad *iload);
 void SetICustEdit(HWND wnd, int nIDDlgItem, char *text);
-BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, 
-                                  WPARAM wParam, LPARAM lParam );
+BOOL CALLBACK MaxOptionsDialogProc( HWND hWnd, UINT message, 
+                                    WPARAM wParam, LPARAM lParam );
 
 struct MaxEggOptions
 {
@@ -73,7 +73,7 @@ struct MaxEggOptions
     std::vector<ULONG> _node_list;
 };
 
-class MaxEggExporter : public MaxEggOptions
+class MaxOptionsDialog : public MaxEggOptions
 {
     friend class MaxEggPlugin;
     
@@ -84,12 +84,10 @@ class MaxEggExporter : public MaxEggOptions
     bool _successful;
     MaxEggOptions::Anim_Type _prev_type;
 
-    MaxEggExporter();
-    ~MaxEggExporter();
+    MaxOptionsDialog();
+    ~MaxOptionsDialog();
     
-    void set_max_interface(IObjParam *ip) { _max_interface = ip; }
-    bool DoExport(IObjParam *ip, bool autoOverwrite, bool saveLog);
-    
+    void SetMaxInterface(IObjParam *iface) { _max_interface = iface; }
     void UpdateUI(HWND hWnd);
     bool UpdateFromUI(HWND hWnd);
     void RefreshNodeList(HWND hWnd);

@@ -153,10 +153,10 @@ void enableAnimRadios(HWND hWnd, int mask) {
 class AddNodeCB : public HitByNameDlgCallback
 {
 public:
-  MaxEggExporter *ph; //Pointer to the parent class
+  MaxOptionsDialog *ph; //Pointer to the parent class
   HWND hWnd;            //Handle to the parent dialog
 
-  AddNodeCB (MaxEggExporter *instance, HWND wnd) : 
+  AddNodeCB (MaxOptionsDialog *instance, HWND wnd) : 
     ph(instance), hWnd(wnd) {}
 
   virtual TCHAR *dialogTitle() {return _T("Objects to Export");}
@@ -205,10 +205,10 @@ void AddNodeCB::proc(INodeTab &nodeTab) {
 class RemoveNodeCB : public HitByNameDlgCallback
 {
 public:
-    MaxEggExporter *ph; //Pointer to the parent class
+    MaxOptionsDialog *ph; //Pointer to the parent class
     HWND hWnd;            //Handle to the parent dialog
     
-    RemoveNodeCB (MaxEggExporter *instance, HWND wnd) : 
+    RemoveNodeCB (MaxOptionsDialog *instance, HWND wnd) : 
         ph(instance), hWnd(wnd) {}
     
     virtual TCHAR *dialogTitle() {return _T("Objects to Remove");}
@@ -237,21 +237,11 @@ MaxEggOptions::MaxEggOptions() {
     _export_whole_scene = true;
 }
 
-MaxEggExporter::MaxEggExporter () {
-    _checked = true;
-    _choosing_nodes = false;
-    _successful = false;
-}
-
-MaxEggExporter::~MaxEggExporter ()
-{
-}
-
-BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam ) 
+BOOL CALLBACK MaxOptionsDialogProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam ) 
 {
     char tempFilename[2048];
     //We pass in our plugin through the lParam variable. Let's convert it back.
-    MaxEggExporter *imp = (MaxEggExporter*)GetWindowLongPtr(hWnd,GWLP_USERDATA); 
+    MaxOptionsDialog *imp = (MaxOptionsDialog*)GetWindowLongPtr(hWnd,GWLP_USERDATA); 
     if ( !imp && message != WM_INITDIALOG ) return FALSE;
 
     switch(message) {
@@ -259,7 +249,7 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
     case WM_INITDIALOG:
         // this line is very necessary to pass the plugin as the lParam
         SetWindowLongPtr(hWnd,GWLP_USERDATA,lParam); 
-        ((MaxEggExporter*)lParam)->UpdateUI(hWnd);
+        ((MaxOptionsDialog*)lParam)->UpdateUI(hWnd);
         return TRUE; break;
         
     case WM_CLOSE:
@@ -414,14 +404,30 @@ BOOL CALLBACK MaxEggExporterProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM
     return FALSE;
 }
 
-void MaxEggExporter::SetAnimRange() {
+void MaxOptionsDialog::SetAnimRange() {
     // Get the start and end frames and the animation frame rate from Max
     Interval anim_range = _max_interface->GetAnimRange();
     _min_frame = anim_range.Start()/GetTicksPerFrame();
     _max_frame = anim_range.End()/GetTicksPerFrame();
 }
 
-void MaxEggExporter::UpdateUI(HWND hWnd) {
+MaxOptionsDialog::MaxOptionsDialog() :
+    MaxEggOptions(),
+    _min_frame(0),
+    _max_frame(0),
+    _checked(true),
+    _choosing_nodes(false),
+    _successful(false),
+    _prev_type(AT_model)
+{
+}
+
+MaxOptionsDialog::~MaxOptionsDialog ()
+{
+}
+
+
+void MaxOptionsDialog::UpdateUI(HWND hWnd) {
     int typeButton = IDC_MODEL;
     int anim_exp = _start_frame == INT_MIN ? IDC_EXP_ALL_FRAMES : IDC_EXP_SEL_FRAMES;
     int model_exp = _export_whole_scene ? IDC_EXPORT_ALL : IDC_EXPORT_SELECTED;
@@ -457,12 +463,12 @@ void MaxEggExporter::UpdateUI(HWND hWnd) {
     RefreshNodeList(hWnd);
 }
 
-void MaxEggExporter::ClearNodeList(HWND hWnd) {
+void MaxOptionsDialog::ClearNodeList(HWND hWnd) {
     _node_list.clear();
     RefreshNodeList(hWnd);
 }
 
-void MaxEggExporter::RefreshNodeList(HWND hWnd) {
+void MaxOptionsDialog::RefreshNodeList(HWND hWnd) {
   //Clear and repopulate the node box
   HWND nodeLB = GetDlgItem(hWnd, IDC_LIST_EXPORT);
   SendMessage(nodeLB, LB_RESETCONTENT, 0, 0);
@@ -474,7 +480,7 @@ void MaxEggExporter::RefreshNodeList(HWND hWnd) {
   }
 }
 
-bool MaxEggExporter::UpdateFromUI(HWND hWnd) {
+bool MaxOptionsDialog::UpdateFromUI(HWND hWnd) {
   BOOL valid;
   Anim_Type newAnimType;
   int newSF = INT_MIN, newEF = INT_MIN;
@@ -548,18 +554,18 @@ bool MaxEggExporter::UpdateFromUI(HWND hWnd) {
   return true;
 }
 
-bool MaxEggExporter::FindNode(ULONG INodeHandle) {
+bool MaxOptionsDialog::FindNode(ULONG INodeHandle) {
     for (int i = 0; i < _node_list.size(); i++) 
         if (_node_list[i] == INodeHandle) return true;
     return false;
 }
 
-void MaxEggExporter::AddNode(ULONG INodeHandle) {
+void MaxOptionsDialog::AddNode(ULONG INodeHandle) {
   if (FindNode(INodeHandle)) return; 
   _node_list.push_back(INodeHandle);
 }
 
-void MaxEggExporter::CullBadNodes() {
+void MaxOptionsDialog::CullBadNodes() {
   if (!_max_interface) return;
   std::vector<ULONG> good;
   for (int i=0; i<_node_list.size(); i++) {
@@ -571,7 +577,7 @@ void MaxEggExporter::CullBadNodes() {
   _node_list = good;
 }
 
-void MaxEggExporter::RemoveNode(int i) {
+void MaxOptionsDialog::RemoveNode(int i) {
     if (i >= 0 && i < _node_list.size()) {
         for (int j = i+1; j < _node_list.size(); j++)
             _node_list[i++] = _node_list[j++];
@@ -579,7 +585,7 @@ void MaxEggExporter::RemoveNode(int i) {
     }
 }
 
-void MaxEggExporter::RemoveNodeByHandle(ULONG INodeHandle) {
+void MaxOptionsDialog::RemoveNodeByHandle(ULONG INodeHandle) {
     for (int i = 0; i < _node_list.size(); i++) {
         if (_node_list[i] == INodeHandle) {
             RemoveNode(i);
@@ -588,7 +594,7 @@ void MaxEggExporter::RemoveNodeByHandle(ULONG INodeHandle) {
     }
 }
 
-IOResult MaxEggExporter::Save(ISave *isave) {
+IOResult MaxOptionsDialog::Save(ISave *isave) {
     isave->BeginChunk(CHUNK_EGG_EXP_OPTIONS);
     ChunkSave(isave, CHUNK_ANIM_TYPE, _anim_type);
     ChunkSave(isave, CHUNK_FILENAME, _file_name);
@@ -606,7 +612,7 @@ IOResult MaxEggExporter::Save(ISave *isave) {
     return IO_OK;
 } 
 
-IOResult MaxEggExporter::Load(ILoad *iload) {
+IOResult MaxOptionsDialog::Load(ILoad *iload) {
     IOResult res = iload->OpenChunk();
     
     while (res == IO_OK) {
@@ -636,16 +642,3 @@ IOResult MaxEggExporter::Load(ILoad *iload) {
     return IO_ERROR;
 }
 
-bool MaxEggExporter::DoExport(IObjParam *ip, bool autoOverwrite, bool saveLog) 
-{
-    _max_interface = ip;
-    MaxToEggConverter converter;
-    PT(EggData) data = converter.convert((MaxEggOptions*)this);
-    if (data != (EggData*)NULL) {
-        // write_egg_file();
-        Logger::Log( MTEC, Logger::SAT_DEBUG_SPAM_LEVEL, "Egg file written!" );
-    } else {
-        Logger::Log( MTEC, Logger::SAT_DEBUG_SPAM_LEVEL, "Conversion failed!" );
-    }
-    return true;
-}

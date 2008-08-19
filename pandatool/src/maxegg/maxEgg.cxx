@@ -50,7 +50,7 @@ IObjParam *MaxEggPlugin::iObjParams;
 BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message, 
                                           WPARAM wParam, LPARAM lParam ) 
 {
-  MaxEggExporter *tempEgg;
+  MaxOptionsDialog *tempEgg;
   int sel, res;
 
   //We pass in our plugin through the lParam variable. Let's convert it back.
@@ -94,12 +94,11 @@ BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message,
             (IsDlgButtonChecked(hWnd, IDC_LOGGING) == BST_CHECKED);
           return TRUE; break;
         case IDC_ADD_EGG:
-          tempEgg = new MaxEggExporter();
-          tempEgg->set_max_interface(imp->iObjParams);
+          tempEgg = new MaxOptionsDialog();
+          tempEgg->SetMaxInterface(imp->iObjParams);
           tempEgg->SetAnimRange();
           res = DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_EGG_DETAILS), 
-                               hWnd, MaxEggExporterProc, (LPARAM)tempEgg);
-          tempEgg->set_max_interface(NULL);
+                               hWnd, MaxOptionsDialogProc, (LPARAM)tempEgg);
           if (res == TRUE) {
             imp->SaveCheckState();
             imp->AddEgg(tempEgg);
@@ -110,14 +109,12 @@ BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message,
         case IDC_EDIT_EGG:
           sel = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_LIST_EGGS));
           if (sel != -1) {
-            MaxEggExporter *tempEgg = imp->GetEgg(sel);
+            MaxOptionsDialog *tempEgg = imp->GetEgg(sel);
             if (tempEgg) {
-                tempEgg->set_max_interface(imp->iObjParams);
                 tempEgg->SetAnimRange();
                 tempEgg->CullBadNodes();
                 DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_EGG_DETAILS), 
-                               hWnd, MaxEggExporterProc, (LPARAM)tempEgg);
-                tempEgg->set_max_interface(NULL);
+                               hWnd, MaxOptionsDialogProc, (LPARAM)tempEgg);
             }
             imp->SaveCheckState();
             imp->UpdateUI();
@@ -142,7 +139,7 @@ BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message,
 MaxEggPlugin::MaxEggPlugin() :
 autoOverwrite(false), pview(true), logOutput(false), numEggs(0), maxEggs(5)
 {
-    eggList = new MaxEggExporter*[maxEggs];
+    eggList = new MaxOptionsDialog*[maxEggs];
     BuildMesh();
 }
 
@@ -151,11 +148,11 @@ MaxEggPlugin::~MaxEggPlugin() {
     delete [] eggList;
 }
 
-void MaxEggPlugin::AddEgg(MaxEggExporter *newEgg) {
+void MaxEggPlugin::AddEgg(MaxOptionsDialog *newEgg) {
     if (numEggs >= maxEggs) {
-        MaxEggExporter **newList;
+        MaxOptionsDialog **newList;
         maxEggs *= 2;
-        newList = new MaxEggExporter*[maxEggs];
+        newList = new MaxOptionsDialog*[maxEggs];
         for (int i = 0; i < numEggs; i++) newList[i] = eggList[i];
         delete [] eggList;
         eggList = newList;
@@ -175,6 +172,10 @@ void MaxEggPlugin::RemoveEgg(int i) {
 void MaxEggPlugin::BeginEditParams( IObjParam *ip, ULONG flags,Animatable *prev )
 {
     iObjParams = ip;
+    for (int i=0; i<numEggs; i++) {
+        eggList[i]->SetMaxInterface(ip);
+    }
+    
     if ( !hMaxEggParams ) {
         hMaxEggParams = ip->AddRollupPage(hInstance, 
                                           MAKEINTRESOURCE(IDD_PANEL),
@@ -199,7 +200,6 @@ void MaxEggPlugin::EndEditParams( IObjParam *ip, ULONG flags,Animatable *prev)
     } else {
         SetWindowLongPtr( hMaxEggParams, GWLP_USERDATA, NULL );
     }
-    iObjParams = NULL;
 }
 
 void MaxEggPlugin::SaveCheckState() {
@@ -263,39 +263,34 @@ void MaxEggPlugin::UpdateUI() {
 
 void MaxEggPlugin::DoExport() {
     int good = 0, bad = 0;
-    char msg[2048];
-    strcpy(msg, "The following exports failed:\n");
+    
+    std::stringstream status;
     
     SaveCheckState();
     
     for (int i = 0; i < numEggs; i++) {
         if (eggList[i]->_checked) {
-            if (!eggList[i]->DoExport(iObjParams, autoOverwrite, logOutput)) {
-                ++bad;
-                strcat(msg, eggList[i]->_short_name);
-                strcat(msg, ".egg\n");
+            MaxToEggConverter converter;
+            if (converter.convert((MaxEggOptions*)eggList[i])) {
+                good += 1;
+                status << "Successfully created " << eggList[i]->_short_name << ".egg\n";
+            } else {
+                bad += 1;
+                status << "Could not export " << eggList[i]->_short_name << ".egg\n";
             }
-            else ++good;
         }
     }
-    
-    if (bad == 0)
-        strcpy(msg, "All eggs exported successfully");
-    else
-        strcat(msg, "\nAll other eggs exported successfully");
     
     UINT mask = MB_OK;
     if (bad > 0) mask |= MB_ICONEXCLAMATION;
     else mask |= MB_ICONINFORMATION;
     
-    MessageBox(hMaxEggParams, msg, "Panda3D Export results", mask);
+    MessageBox(hMaxEggParams, status.str().c_str(), "Panda3D Export results", mask);
     
+    int pviewed = 0;
     if (pview && good > 0) {
-        char pviewMsg[2048];
-        int pviewSkipped = 0;
-        strcpy(pviewMsg, "The following eggs were skipped since animations cannot be pviewed:\n");
-        for (i = 0; i < numEggs; i++)
-            if (eggList[i]->_checked && eggList[i]->_successful)
+        for (i = 0; i < numEggs; i++) {
+            if (eggList[i]->_checked && eggList[i]->_successful) {
                 if (eggList[i]->_anim_type != MaxEggOptions::AT_chan) {
                     char buf[1024];
                     PROCESS_INFORMATION pi;
@@ -304,23 +299,14 @@ void MaxEggPlugin::DoExport() {
                     memset(&si,0,sizeof(si));
                     si.cb= sizeof(si);
                     
-                    sprintf(buf, "Pview %s.egg?", eggList[i]->_short_name);
-                    if (MessageBox(hMaxEggParams, buf, "Panda3D exporter", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-                        char cmdLine[2048];
-                        sprintf(cmdLine, "pview \"%s\"", eggList[i]->_file_name);
-                        CreateProcess(NULL, cmdLine, NULL, NULL, FALSE, CREATE_NEW_CONSOLE,
-                                      NULL, NULL, &si, &pi);
-                    }
+                    sprintf(buf, "pview %s.egg?", eggList[i]->_short_name);
+                    char cmdLine[2048];
+                    sprintf(cmdLine, "pview \"%s\"", eggList[i]->_file_name);
+                    CreateProcess(NULL, cmdLine, NULL, NULL, FALSE, CREATE_NEW_CONSOLE,
+                                  NULL, NULL, &si, &pi);
+                    pviewed += 1;
                 }
-                else {
-                    pviewSkipped++;    
-                    strcat(pviewMsg, eggList[i]->_short_name);
-                    strcat(pviewMsg, ".egg\n");
-                }
-        
-        if (pviewSkipped > 0) {
-            strcat(pviewMsg, "\nExport animations using the \"both\" option to pview them.");
-            MessageBox(hMaxEggParams, pviewMsg, "Panda3D exporter", MB_OK | MB_ICONINFORMATION);
+            }
         }
     }
 }
@@ -497,7 +483,7 @@ IOResult MaxEggPlugin::Save(ISave *isave) {
 
 IOResult MaxEggPlugin::Load(ILoad *iload) {
     IOResult res = iload->OpenChunk();
-    MaxEggExporter *temp;
+    MaxOptionsDialog *temp;
     
     while (res == IO_OK) {
         switch(iload->CurChunkID()) {
@@ -505,7 +491,8 @@ IOResult MaxEggPlugin::Load(ILoad *iload) {
         case CHUNK_PVIEW_FLAG:     pview = ChunkLoadBool(iload); break;
         case CHUNK_LOG_OUTPUT:     logOutput = ChunkLoadBool(iload); break;
         case CHUNK_EGG_EXP_OPTIONS:
-            temp = new MaxEggExporter();
+            temp = new MaxOptionsDialog();
+            temp->SetMaxInterface(iObjParams);
             temp->Load(iload);
             AddEgg(temp);
             break;

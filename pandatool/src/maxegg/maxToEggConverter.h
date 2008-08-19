@@ -42,12 +42,15 @@ class MaxToEggConverter {
     MaxToEggConverter();
     ~MaxToEggConverter();
 
-    PT(EggData) convert(MaxEggOptions *options);
+    bool convert(MaxEggOptions *options);
     
  private:
     MaxEggOptions    *_options;
     int               _current_frame;
     PT(EggData)       _egg_data;
+    string            _program_name;
+    MaxNodeTree       _tree;
+    int               _cur_tref;
     
     void reset();
 
@@ -82,12 +85,6 @@ class MaxToEggConverter {
     void apply_texture_properties(EggTexture &tex, 
                                   StdMat *maxMaterial);
     bool reparent_decals(EggGroupNode *egg_parent);
-    
-    string _program_name;
-    
-    MaxNodeTree _tree;
-    
-    int _cur_tref;
     
  public:
     EggTextureCollection _textures;
