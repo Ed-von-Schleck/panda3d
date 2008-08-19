@@ -149,7 +149,7 @@ bool MaxToEggConverter::convert(MaxEggOptions *options) {
 ////////////////////////////////////////////////////////////////////
 bool MaxToEggConverter::
 convert_char_model() {
-    std::string character_name = "MaxChar";
+    std::string character_name = "character";
     _current_frame = _options->_start_frame;
 
     EggGroup *char_node = new EggGroup(character_name);
@@ -169,7 +169,7 @@ convert_char_model() {
 bool MaxToEggConverter::
 convert_char_chan(double start_frame, double end_frame, double frame_inc,
                   double output_frame_rate) {
-    std::string character_name = "MaxChar";
+    std::string character_name = "character";
 
     EggTable *root_table_node = new EggTable();
     _egg_data->add_child(root_table_node);
