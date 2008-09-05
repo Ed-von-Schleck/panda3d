@@ -224,7 +224,7 @@ heap_free_single(void *ptr) {
   void *alloc = ptr_to_alloc(ptr, size);
 
 #ifdef DO_MEMORY_USAGE
-  assert((int)size <= _total_heap_single_size);
+  // assert((int)size <= _total_heap_single_size);
   AtomicAdjust::add(_total_heap_single_size, -(AtomicAdjust::Integer)size);
 #endif  // DO_MEMORY_USAGE
 
