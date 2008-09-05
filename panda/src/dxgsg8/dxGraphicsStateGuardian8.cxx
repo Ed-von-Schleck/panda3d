@@ -1415,7 +1415,7 @@ end_draw_primitives() {
 //               If z > -1, it is the cube map index into which to
 //               copy.
 ////////////////////////////////////////////////////////////////////
-void DXGraphicsStateGuardian8::
+bool DXGraphicsStateGuardian8::
 framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
                             const RenderBuffer &rb) {
   set_read_buffer(rb);
@@ -1430,23 +1430,22 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   
   TextureContext *tc = tex->prepare_now(get_prepared_objects(), this);
   if (tc == (TextureContext *)NULL) {
-    return;
+    return false;
   }
   DXTextureContext8 *dtc = DCAST(DXTextureContext8, tc);
 
   if (tex->get_texture_type() != Texture::TT_2d_texture) {
     // For a specialty texture like a cube map, go the slow route
     // through RAM for now.
-    framebuffer_copy_to_ram(tex, z, dr, rb);
-    return;
+    return do_framebuffer_copy_to_ram(tex, z, dr, rb, true);
   }
-  nassertv(dtc->get_d3d_2d_texture() != NULL);
+  nassertr(dtc->get_d3d_2d_texture() != NULL, false);
 
   IDirect3DSurface8 *tex_level_0;
   hr = dtc->get_d3d_2d_texture()->GetSurfaceLevel(0, &tex_level_0);
   if (FAILED(hr)) {
     dxgsg8_cat.error() << "GetSurfaceLev failed in copy_texture" << D3DERRORSTRING(hr);
-    return;
+    return false;
   }
 
   // If the texture is the wrong size, we need to do something about it.
@@ -1455,7 +1454,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   if (FAILED(hr)) {
     dxgsg8_cat.error() << "GetDesc failed in copy_texture" << D3DERRORSTRING(hr);
     SAFE_RELEASE(tex_level_0);
-    return;
+    return false;
   }
   if ((texdesc.Width != tex->get_x_size())||(texdesc.Height != tex->get_y_size())) {
     if ((orig_x != tex->get_x_size()) || (orig_y != tex->get_y_size())) {
@@ -1465,18 +1464,18 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
         // Oops, we can't re-create the texture for some reason.
         dxgsg8_cat.error()
           << "Unable to re-create texture " << *dtc->get_texture() << endl;
-        return;
+        return false;
       }
       hr = dtc->get_d3d_2d_texture()->GetSurfaceLevel(0, &tex_level_0);
       if (FAILED(hr)) {
         dxgsg8_cat.error() << "GetSurfaceLev failed in copy_texture" << D3DERRORSTRING(hr);
-        return;
+        return false;
       }
       hr = tex_level_0->GetDesc(&texdesc);
       if (FAILED(hr)) {
         dxgsg8_cat.error() << "GetDesc 2 failed in copy_texture" << D3DERRORSTRING(hr);
         SAFE_RELEASE(tex_level_0);
-        return;
+        return false;
       }
     }
     if ((texdesc.Width != tex->get_x_size())||(texdesc.Height != tex->get_y_size())) {
@@ -1485,7 +1484,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
       dxgsg8_cat.error()
         << "Unable to copy to texture, texture is wrong size: " << *dtc->get_texture() << endl;
       SAFE_RELEASE(tex_level_0);
-      return;
+      return false;
     }
   }
 
@@ -1494,7 +1493,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   if (FAILED(hr)) {
     dxgsg8_cat.error() << "GetRenderTgt failed in copy_texture" << D3DERRORSTRING(hr);
     SAFE_RELEASE(tex_level_0);
-    return;
+    return false;
   }
 
   RECT src_rect;
@@ -1505,14 +1504,24 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   src_rect.bottom = yo+h;
 
   // now copy from fb to tex
+  bool okflag = true;
   hr = _d3d_device->CopyRects(render_target, &src_rect, 1, tex_level_0, 0);
   if (FAILED(hr)) {
-    dxgsg8_cat.error()
-      << "CopyRects failed in copy_texture" << D3DERRORSTRING(hr);
+    dxgsg8_cat.info()
+      << "CopyRects failed in copy_texture " << D3DERRORSTRING(hr);
+    okflag = framebuffer_copy_to_ram(tex, z, dr, rb);
   }
 
   SAFE_RELEASE(render_target);
   SAFE_RELEASE(tex_level_0);
+
+  if (!okflag) {
+    // The copy failed.  Fall back to copying it to RAM and back.
+    // Terribly slow, but what are you going to do?
+    return do_framebuffer_copy_to_ram(tex, z, dr, rb, true);
+  }
+
+  return true;
 }
 
 
@@ -1528,6 +1537,21 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr, const RenderBuffer &rb) {
+  return do_framebuffer_copy_to_ram(tex, z, dr, rb, false);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DXGraphicsStateGuardian8::do_framebuffer_copy_to_ram
+//       Access: Public
+//  Description: This is the implementation of
+//               framebuffer_copy_to_ram(); it adds one additional
+//               parameter, which should be true if the framebuffer is
+//               to be inverted during the copy (as in the same way it
+//               copies to texture memory).
+////////////////////////////////////////////////////////////////////
+bool DXGraphicsStateGuardian8::
+do_framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr, 
+                           const RenderBuffer &rb, bool inverted) {
   set_read_buffer(rb);
 
   RECT rect;
@@ -1655,8 +1679,6 @@ framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr, const Rend
       return false;
     }
 
-    // For some reason the front buffer comes out inverted, but the
-    // back buffer does not.
     copy_inverted = true;
 
   } else {
@@ -1666,6 +1688,9 @@ framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr, const Rend
     return false;
   }
 
+  if (inverted) {
+    copy_inverted = !copy_inverted;
+  }
   DXTextureContext8::d3d_surface_to_texture(rect, temp_surface,
                                             copy_inverted, tex, z);
 

@@ -98,10 +98,12 @@ public:
                            bool force);
   virtual void end_draw_primitives();
 
-  virtual void framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
+  virtual bool framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
                                            const RenderBuffer &rb);
   virtual bool framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr,
                                        const RenderBuffer &rb);
+  bool do_framebuffer_copy_to_ram(Texture *tex, int z, const DisplayRegion *dr,
+                                  const RenderBuffer &rb, bool inverted);
 
   virtual void reset();
 
