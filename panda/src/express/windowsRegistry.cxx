@@ -21,7 +21,7 @@
 #include "textEncoder.h"
 
 #ifdef WIN32_VC
-
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 ////////////////////////////////////////////////////////////////////
@@ -35,7 +35,8 @@
 //               prior to calling this function.
 ////////////////////////////////////////////////////////////////////
 bool WindowsRegistry::
-set_string_value(const string &key, const string &name, const string &value) {
+set_string_value(const string &key, const string &name, const string &value, WindowsRegistry::RegLevel rl)
+{
   TextEncoder encoder;
   wstring wvalue = encoder.decode_text(value);
 
@@ -72,7 +73,7 @@ set_string_value(const string &key, const string &name, const string &value) {
       << "' for storing in registry.\n";
   }
 
-  return do_set(key, name, REG_SZ, mb_result, mb_result_len);
+  return do_set(key, name, REG_SZ, mb_result, mb_result_len, rl);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -83,9 +84,11 @@ set_string_value(const string &key, const string &name, const string &value) {
 //               to calling this function.
 ////////////////////////////////////////////////////////////////////
 bool WindowsRegistry::
-set_int_value(const string &key, const string &name, int value) {
+set_int_value(const string &key, const string &name, int value,
+        WindowsRegistry::RegLevel rl)
+{
   DWORD dw = value;
-  return do_set(key, name, REG_DWORD, &dw, sizeof(dw));
+  return do_set(key, name, REG_DWORD, &dw, sizeof(dw), rl);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -95,10 +98,12 @@ set_int_value(const string &key, const string &name, int value) {
 //               the key is not known or is some unsupported type.
 ////////////////////////////////////////////////////////////////////
 WindowsRegistry::Type WindowsRegistry::
-get_key_type(const string &key, const string &name) {
+get_key_type(const string &key, const string &name,
+        WindowsRegistry::RegLevel rl)
+{
   int data_type;
   string data;
-  if (!do_get(key, name, data_type, data)) {
+  if (!do_get(key, name, data_type, data, rl)) {
     return T_none;
   }
 
@@ -126,10 +131,12 @@ get_key_type(const string &key, const string &name) {
 ////////////////////////////////////////////////////////////////////
 string WindowsRegistry::
 get_string_value(const string &key, const string &name,
-                 const string &default_value) {
+                 const string &default_value,
+                 WindowsRegistry::RegLevel rl)
+{
   int data_type;
   string data;
-  if (!do_get(key, name, data_type, data)) {
+  if (!do_get(key, name, data_type, data, rl)) {
     return default_value;
   }
 
@@ -184,10 +191,12 @@ get_string_value(const string &key, const string &name,
 //               value, default_value is returned instead.
 ////////////////////////////////////////////////////////////////////
 int WindowsRegistry::
-get_int_value(const string &key, const string &name, int default_value) {
+get_int_value(const string &key, const string &name, int default_value,
+        WindowsRegistry::RegLevel rl)
+{
   int data_type;
   string data;
-  if (!do_get(key, name, data_type, data)) {
+  if (!do_get(key, name, data_type, data, rl)) {
     return default_value;
   }
 
@@ -211,12 +220,17 @@ get_int_value(const string &key, const string &name, int default_value) {
 ////////////////////////////////////////////////////////////////////
 bool WindowsRegistry::
 do_set(const string &key, const string &name,
-       int data_type, const void *data, int data_length) {
-  HKEY hkey;
+       int data_type, const void *data, int data_length,
+       const WindowsRegistry::RegLevel rl)
+{
+  HKEY hkey, regkey = HKEY_LOCAL_MACHINE;
   LONG error;
 
+  if (rl == rl_user)    // switch to user local settings
+      regkey = HKEY_CURRENT_USER;
+
   error =
-    RegOpenKeyEx(HKEY_LOCAL_MACHINE, key.c_str(), 0, KEY_SET_VALUE, &hkey);
+    RegOpenKeyEx(regkey, key.c_str(), 0, KEY_SET_VALUE, &hkey);
   if (error != ERROR_SUCCESS) {
     express_cat.error()
       << "Unable to open registry key " << key
@@ -254,12 +268,17 @@ do_set(const string &key, const string &name,
 //               value.
 ////////////////////////////////////////////////////////////////////
 bool WindowsRegistry::
-do_get(const string &key, const string &name, int &data_type, string &data) {
-  HKEY hkey;
+do_get(const string &key, const string &name, int &data_type, string &data,
+       const WindowsRegistry::RegLevel rl)
+{
+  HKEY hkey, regkey = HKEY_LOCAL_MACHINE;
   LONG error;
 
+  if (rl == rl_user)    // switch to user local settings
+      regkey = HKEY_CURRENT_USER;
+
   error =
-    RegOpenKeyEx(HKEY_LOCAL_MACHINE, key.c_str(), 0, KEY_QUERY_VALUE, &hkey);
+    RegOpenKeyEx(regkey, key.c_str(), 0, KEY_QUERY_VALUE, &hkey);
   if (error != ERROR_SUCCESS) {
     express_cat.debug()
       << "Unable to open registry key " << key
@@ -284,8 +303,9 @@ do_get(const string &key, const string &name, int &data_type, string &data) {
     if (data_type == REG_SZ || 
         data_type == REG_MULTI_SZ || 
         data_type == REG_EXPAND_SZ) {
-      // Eliminate the trailing null character.
-      buffer_size--;
+      // Eliminate the trailing null character for non-zero lengths.
+      if (buffer_size > 0)              // if zero, leave it
+        buffer_size--;
     }
     data = string(init_buffer, buffer_size);
 
@@ -296,7 +316,7 @@ do_get(const string &key, const string &name, int &data_type, string &data) {
     // guessing bigger and bigger until we got it.  Since we're
     // querying static data for now, we can just use the size Windows
     // tells us.
-    char *new_buffer = new char[buffer_size];
+    char *new_buffer = (char *)PANDA_MALLOC_ARRAY(buffer_size);
     error =
       RegQueryValueEx(hkey, name.c_str(), 0, &dw_data_type, 
                       (BYTE *)new_buffer, &buffer_size);
@@ -305,12 +325,13 @@ do_get(const string &key, const string &name, int &data_type, string &data) {
       if (data_type == REG_SZ || 
           data_type == REG_MULTI_SZ || 
           data_type == REG_EXPAND_SZ) {
-        // Eliminate the trailing null character.
-        buffer_size--;
+        // Eliminate the trailing null character for non-zero lengths.
+        if (buffer_size > 0)            // if zero, leave it
+          buffer_size--;
       }
       data = string(new_buffer, buffer_size);
     }
-    delete new_buffer;
+    PANDA_FREE_ARRAY(new_buffer);
   }
 
   if (error != ERROR_SUCCESS) {
@@ -331,10 +352,10 @@ do_get(const string &key, const string &name, int &data_type, string &data) {
     if (data_type == REG_EXPAND_SZ) {
       // Expand the string.
       DWORD destSize=ExpandEnvironmentStrings(data.c_str(), 0, 0);
-      char *dest = new char[destSize];
+      char *dest = (char *)PANDA_MALLOC_ARRAY(destSize);
       ExpandEnvironmentStrings(data.c_str(), dest, destSize);
       data = dest;
-      delete[] dest;
+      PANDA_FREE_ARRAY(dest);
       data_type = REG_SZ;
     }
   }
