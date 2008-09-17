@@ -64,10 +64,10 @@ class Messenger:
         # on this particular object.
         # assert not acceptorDict.has_key(object)), \
         #    "object already accepting %s" % (event)
-        if acceptorDict.has_key(object):
-            self.notify.warning(
-                "object: %s already accepting: %s" %
-                (object.__class__.__name__, event))
+        #if acceptorDict.has_key(object):
+            #self.notify.warning(
+            #    "object: %s already accepting: %s" %
+            #    (object.__class__.__name__, event))
         
         acceptorDict[object] = [method, extraArgs, persistent]
 
