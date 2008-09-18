@@ -316,7 +316,7 @@ do_get(const string &key, const string &name, int &data_type, string &data,
     // guessing bigger and bigger until we got it.  Since we're
     // querying static data for now, we can just use the size Windows
     // tells us.
-    char *new_buffer = (char *)PANDA_MALLOC_ARRAY(buffer_size);
+    char *new_buffer = new char[buffer_size];
     error =
       RegQueryValueEx(hkey, name.c_str(), 0, &dw_data_type, 
                       (BYTE *)new_buffer, &buffer_size);
@@ -331,7 +331,7 @@ do_get(const string &key, const string &name, int &data_type, string &data,
       }
       data = string(new_buffer, buffer_size);
     }
-    PANDA_FREE_ARRAY(new_buffer);
+    delete[] new_buffer;
   }
 
   if (error != ERROR_SUCCESS) {
@@ -352,10 +352,10 @@ do_get(const string &key, const string &name, int &data_type, string &data,
     if (data_type == REG_EXPAND_SZ) {
       // Expand the string.
       DWORD destSize=ExpandEnvironmentStrings(data.c_str(), 0, 0);
-      char *dest = (char *)PANDA_MALLOC_ARRAY(destSize);
+      char *dest = new char[destSize];
       ExpandEnvironmentStrings(data.c_str(), dest, destSize);
       data = dest;
-      PANDA_FREE_ARRAY(dest);
+      delete[] dest;
       data_type = REG_SZ;
     }
   }
