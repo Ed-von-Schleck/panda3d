@@ -1,8 +1,0 @@
-#include "maxDllEntry.cxx"
-#include "maxLogger.cxx"
-#include "maxEgg.cxx"
-#include "maxEggExpOptions.cxx"
-#include "maxNodeDesc.cxx"
-#include "maxNodeTree.cxx"
-#include "maxToEgg.cxx"
-#include "maxToEggConverter.cxx"
