@@ -213,7 +213,7 @@ class Task:
                 self.pstatCollector = PStatCollector("Tasks:" + name)
             self.pstatCollector.addLevelNow(1)
 
-    def finishTask(self, verbose):
+    def finishTask(self):
         if hasattr(self, "uponDeath"):
             self.uponDeath(self)
             del self.uponDeath
