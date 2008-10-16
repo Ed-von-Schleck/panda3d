@@ -28,7 +28,6 @@ except:
     Dtool_PreloadDLL("libheapq")
     from libheapq import heappush, heappop, heapify
 import types
-import gc
 
 if __debug__:
     # For pstats
@@ -155,6 +154,12 @@ class Task:
     def setPriority(self, pri):
         self._priority = pri
 
+    def getName(self):
+        return self.name
+
+    def setName(self, name):
+        self.name = name
+
     def setStartTimeFrame(self, startTime, startFrame):
         self.starttime = startTime
         self.startframe = startFrame
@@ -170,6 +175,25 @@ class Task:
         if taskName is None:
             taskName = self.name
         return ''.join([c for c in taskName if c not in digits])
+
+    def getNamePrefix(self):
+        # get a version of the task name, omitting a hyphen or
+        # underscore followed by a string of digits at the end of the
+        # name.
+        name = self.name
+        trimmed = len(name)
+        p = trimmed
+        while True:
+            while p > 0 and name[p - 1] in string.digits:
+                p -= 1
+            if p > 0 and name[p - 1] in '-_':
+                p -= 1
+                trimmed = p
+            else:
+                p = trimmed
+                break
+
+        return name[:trimmed]
 
     def setupPStats(self):
         if __debug__ and TaskManager.taskTimerVerbose and not self.pstats:
@@ -192,10 +216,9 @@ class Task:
     def finishTask(self, verbose):
         if hasattr(self, "uponDeath"):
             self.uponDeath(self)
-            if verbose:
-                # We regret to announce...
-                messenger.send('TaskManager-removeTask', sentArgs = [self, self.name])
             del self.uponDeath
+        # We regret to announce...
+        messenger.send('TaskManager-removeTask', sentArgs = [self])
 
     def __repr__(self):
         if hasattr(self, 'name'):
@@ -348,10 +371,6 @@ class TaskPriorityList(list):
             self[self.__emptyIndex-1] = None
             self.__emptyIndex -= 1
 
-class GCTrigger:
-    # used to trigger garbage collection
-    pass
-
 class TaskManager:
 
     # These class vars are generally overwritten by Config variables which
@@ -368,8 +387,6 @@ class TaskManager:
     doLaterCleanupCounter = 2000
 
     OsdPrefix = 'task.'
-
-    GarbageCollectTaskName = "allowGarbageCollect"
 
     # multiple of average frame duration
     DefTaskDurationWarningThreshold = 40.
@@ -422,20 +439,18 @@ class TaskManager:
         self.fKeyboardInterrupt = 0
         self.interruptCount = 0
         self.resumeFunc = None
-        self.fVerbose = 0
         # Dictionary of task name to list of tasks with that name
         self.nameDict = {}
 
         # A default task.
         self._doLaterTask = self.add(self.__doLaterProcessor, "doLaterProcessor", -10)
 
-        # start this when config is available
-        self._gcTask = None
-        self._wantGcTask = None
+    def finalInit(self):
+        # This function should be called once during startup, after
+        # most things are imported.
+        pass
 
     def destroy(self):
-        if self._gcTask:
-            self._gcTask.remove()
         if self._doLaterTask:
             self._doLaterTask.remove()
         if self._taskProfiler:
@@ -449,10 +464,6 @@ class TaskManager:
 
     def setStepping(self, value):
         self.stepping = value
-
-    def setVerbose(self, value):
-        self.fVerbose = value
-        messenger.send('TaskManager-setVerbose', sentArgs = [value])
 
     def getTaskDurationWarningThreshold(self):
         return self.taskDurationWarningThreshold
@@ -552,15 +563,6 @@ class TaskManager:
             # TaskManager.notify.debug("filtered %s removed doLaters" % numRemoved)
         return cont
 
-    def _garbageCollect(self, task=None):
-        # enable automatic garbage collection
-        gc.enable()
-        # creating an object with gc enabled causes garbage collection to trigger if appropriate
-        gct = GCTrigger()
-        # disable the automatic garbage collect during the rest of the frame
-        gc.disable()
-        return cont
-
     def doMethodLater(self, delayTime, funcOrTask, name, extraArgs=None,
                       priority=0, uponDeath=None, appendTask=False, owner = None):
         if delayTime < 0:
@@ -601,10 +603,6 @@ class TaskManager:
         task.wakeTime = currentTime + delayTime
         # Push this onto the doLaterList. The heap maintains the sorting.
         heappush(self.__doLaterList, task)
-        if self.fVerbose:
-            # Alert the world, a new task is born!
-            messenger.send('TaskManager-spawnDoLater',
-                           sentArgs = [task, task.name, task.id])
         return task
 
     def add(self, funcOrTask, name, priority=0, extraArgs=None, uponDeath=None,
@@ -693,10 +691,9 @@ class TaskManager:
         if __debug__:
             if self.pStatsTasks and task.name != "igLoop":                
                 task.setupPStats()
-        if self.fVerbose:
-            # Alert the world, a new task is born!
-            messenger.send(
-                'TaskManager-spawnTask', sentArgs = [task, task.name, index])
+
+        # Alert the world, a new task is born!
+        messenger.send('TaskManager-spawnTask', sentArgs = [task])
         return task
 
     def remove(self, taskOrName):
@@ -729,7 +726,7 @@ class TaskManager:
             #    '__removeTasksEqual: removing task: %s' % (task))
             # Flag the task for removal from the real list
             task.remove()
-            task.finishTask(self.fVerbose)
+            task.finishTask()
             return 1
         else:
             return 0
@@ -743,7 +740,7 @@ class TaskManager:
         for task in tasks:
             # Flag for removal
             task.remove()
-            task.finishTask(self.fVerbose)
+            task.finishTask()
         # Record the number of tasks removed
         num = len(tasks)
         # Blow away the nameDict entry completely
@@ -859,10 +856,6 @@ class TaskManager:
             task.wakeTime = currentTime + task.delayTime
             # Push this onto the doLaterList. The heap maintains the sorting.
             heappush(self.__doLaterList, task)
-            if self.fVerbose:
-                # Alert the world, a new task is born!
-                messenger.send('TaskManager-againDoLater',
-                               sentArgs = [task, task.name, task.id])
 
     def __stepThroughList(self, taskPriList):
         # Traverse the taskPriList with an iterator
@@ -879,7 +872,7 @@ class TaskManager:
                 # If it was removed in show code, it will need finishTask run
                 # If it was removed by the taskMgr, it will not, but that is ok
                 # because finishTask is safe to call twice
-                task.finishTask(self.fVerbose)
+                task.finishTask()
                 taskPriList.remove(i)
                 self.__removeTaskFromNameDict(task)
                 # Do not increment the iterator
@@ -905,7 +898,7 @@ class TaskManager:
                     task.remove()
                     # Note: Should not need to remove from doLaterList here
                     # because this task is not in the doLaterList
-                    task.finishTask(self.fVerbose)
+                    task.finishTask()
                     self.__removeTaskFromNameDict(task)
                 else:
                     # assert TaskManager.notify.debug(
@@ -1104,13 +1097,6 @@ class TaskManager:
         if (not TaskManager._DidTests) and __debug__:
             TaskManager._DidTests = True
             self._runTests()
-
-        if not self._gcTask:
-            if self._wantGcTask is None:
-                self._wantGcTask = config.GetBool('want-garbage-collect-task', 1)
-            if self._wantGcTask:
-                # manual garbage-collect task
-                self._gcTask = self.add(self._garbageCollect, TaskManager.GarbageCollectTaskName, 200)
 
         if not self._profileTasks:
             from direct.fsm.StatePush import StateVar
