@@ -33,6 +33,7 @@ import EventManager
 import math,sys,os
 import Loader
 import time
+import gc
 from direct.fsm import ClassicFSM
 from direct.fsm import State
 import DirectObject
@@ -67,6 +68,8 @@ if want_fifothreads:
 class ShowBase(DirectObject.DirectObject):
 
     notify = directNotify.newCategory("ShowBase")
+
+    GarbageCollectTaskName = "allowGarbageCollect"
 
     def __init__(self):
 
@@ -375,6 +378,12 @@ class ShowBase(DirectObject.DirectObject):
         if self.windowType != 'none':
             self.__doStartDirect()
 
+        self._wantGcTask = config.GetBool('want-garbage-collect-task', 1)
+        self._gcTask = None
+        if self._wantGcTask:
+            # manual garbage-collect task
+            self._gcTask = taskMgr.add(self._garbageCollect, self.GarbageCollectTaskName, 200)
+
         # Start IGLOOP
         self.restart()
         
@@ -417,6 +426,10 @@ class ShowBase(DirectObject.DirectObject):
         automatically.
 
         This function is designed to be safe to call multiple times."""
+
+        if self._gcTask:
+            self._gcTask.remove()
+            self._gcTask = None
 
         if getattr(self, 'musicManager', None):
             self.musicManager.shutdown()
@@ -2260,6 +2273,19 @@ class ShowBase(DirectObject.DirectObject):
 
     def run(self):
         self.taskMgr.run()
+
+    def _garbageCollect(self, task=None):
+        # enable automatic garbage collection
+        gc.enable()
+        # creating an object with gc enabled causes garbage collection to trigger if appropriate
+        gct = GCTrigger()
+        # disable the automatic garbage collect during the rest of the frame
+        gc.disable()
+        return Task.cont
+
+class GCTrigger:
+    # used to trigger garbage collection
+    pass
 
 
 # A class to encapsulate information necessary for multiwindow support.
