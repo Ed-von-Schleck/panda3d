@@ -33,6 +33,7 @@ import EventManager
 import math,sys,os
 import Loader
 import time
+import gc
 from direct.fsm import ClassicFSM
 from direct.fsm import State
 import DirectObject
@@ -67,6 +68,8 @@ if want_fifothreads:
 class ShowBase(DirectObject.DirectObject):
 
     notify = directNotify.newCategory("ShowBase")
+
+    GarbageCollectTaskName = "allowGarbageCollect"
 
     def __init__(self):
 
@@ -375,6 +378,12 @@ class ShowBase(DirectObject.DirectObject):
         if self.windowType != 'none':
             self.__doStartDirect()
 
+        self._wantGcTask = config.GetBool('want-garbage-collect-task', 1)
+        self._gcTask = None
+        if self._wantGcTask:
+            # manual garbage-collect task
+            self._gcTask = taskMgr.add(self._garbageCollect, self.GarbageCollectTaskName, 200)
+
         # Start IGLOOP
         self.restart()
         
@@ -417,6 +426,10 @@ class ShowBase(DirectObject.DirectObject):
         automatically.
 
         This function is designed to be safe to call multiple times."""
+
+        if self._gcTask:
+            self._gcTask.remove()
+            self._gcTask = None
 
         if getattr(self, 'musicManager', None):
             self.musicManager.shutdown()
@@ -2215,6 +2228,14 @@ class ShowBase(DirectObject.DirectObject):
     def finalizeExit(self):
         sys.exit()
 
+    # [gjeon] start wxPyhton
+    def startWx(self, fWantWx = 1):
+        self.wantWx = fWantWx
+        if self.wantWx:
+            import WxGlobal
+            taskMgr.remove('wxLoop')
+            WxGlobal.spawnWxLoop()
+
     def startTk(self, fWantTk = 1):
         self.wantTk = fWantTk
         if self.wantTk:
@@ -2222,8 +2243,9 @@ class ShowBase(DirectObject.DirectObject):
             taskMgr.remove('tkLoop')
             TkGlobal.spawnTkLoop()
 
-    def startDirect(self, fWantDirect = 1, fWantTk = 1):
+    def startDirect(self, fWantDirect = 1, fWantTk = 1, fWantWx = 0):
         self.startTk(fWantTk)
+        self.startWx(fWantWx)
         self.wantDirect = fWantDirect
         if self.wantDirect:
             from direct.directtools import DirectSession
@@ -2236,13 +2258,14 @@ class ShowBase(DirectObject.DirectObject):
             return
         self.__directStarted = False
         
-        # Start Tk and DIRECT if specified by Config.prc
+        # Start Tk, Wx and DIRECT if specified by Config.prc
         fTk = self.config.GetBool('want-tk', 0)
+        fWx = self.config.GetBool('want-wx', 0)
         # Start DIRECT if specified in Config.prc or in cluster mode
         fDirect = (self.config.GetBool('want-directtools', 0) or
                    (self.config.GetString("cluster-mode", '') != ''))
         # Set fWantTk to 0 to avoid starting Tk with this call
-        self.startDirect(fWantDirect = fDirect, fWantTk = fTk)
+        self.startDirect(fWantDirect = fDirect, fWantTk = fTk, fWantWx = fWx)
 
     def profileFrames(self, num=1):
         # profile the next 'num' frames and log the results
@@ -2250,6 +2273,19 @@ class ShowBase(DirectObject.DirectObject):
 
     def run(self):
         self.taskMgr.run()
+
+    def _garbageCollect(self, task=None):
+        # enable automatic garbage collection
+        gc.enable()
+        # creating an object with gc enabled causes garbage collection to trigger if appropriate
+        gct = GCTrigger()
+        # disable the automatic garbage collect during the rest of the frame
+        gc.disable()
+        return Task.cont
+
+class GCTrigger:
+    # used to trigger garbage collection
+    pass
 
 
 # A class to encapsulate information necessary for multiwindow support.

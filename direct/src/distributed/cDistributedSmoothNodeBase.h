@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -58,6 +54,9 @@ PUBLISHED:
   void broadcast_pos_hpr_xyh();
   void broadcast_pos_hpr_xy();
 
+  void set_curr_l(PN_uint64 l);
+  void print_curr_l();
+
 private:
   INLINE static bool only_changed(int flags, int compare);
 
@@ -71,6 +70,7 @@ private:
   INLINE void d_setSmXYH(float x, float y, float h);
   INLINE void d_setSmXYZH(float x, float y, float z, float h);
   INLINE void d_setSmPosHpr(float x, float y, float z, float h, float p, float r);
+  INLINE void d_setSmPosHprL(float x, float y, float z, float h, float p, float r, PN_uint64 l);
 
   void begin_send_update(DCPacker &packer, const string &field_name);
   void finish_send_update(DCPacker &packer);
@@ -98,6 +98,9 @@ private:
   LPoint3f _store_xyz;
   LVecBase3f _store_hpr;
   bool _store_stop;
+  // contains most recently sent location info as
+  // index 0, index 1 contains most recently set location info
+  PN_uint64 _currL[2];
 };
 
 #include "cDistributedSmoothNodeBase.I"

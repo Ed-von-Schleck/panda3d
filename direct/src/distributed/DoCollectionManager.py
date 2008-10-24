@@ -193,6 +193,10 @@ class DoCollectionManager:
         return self._doHierarchy.getDoIds(self.getDo,
                                           parentId, zoneId, classType)
 
+    def hasOwnerViewDoId(self, doId):
+        assert self.hasOwnerView()
+        return doId in self.doId2ownerView
+    
     def getOwnerViewDoList(self, classType):
         assert self.hasOwnerView()
         l = []

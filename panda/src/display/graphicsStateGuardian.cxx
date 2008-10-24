@@ -136,6 +136,7 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   _prepared_objects = new PreparedGraphicsObjects;
   _stereo_buffer_mask = ~0;
 
+  _is_hardware = false;
   _prefers_triangle_strips = false;
   _max_vertices_per_array = INT_MAX;
   _max_vertices_per_primitive = INT_MAX;
@@ -190,6 +191,8 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   _supports_stencil_wrap = false;
   _supports_two_sided_stencil = false;
 
+  _maximum_simultaneuous_render_targets = 1;
+
   _supported_geom_rendering = 0;
 
   // If this is true, then we can apply a color and/or color scale by
@@ -200,6 +203,10 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   // Similarly for applying a texture to achieve uniform alpha
   // scaling.
   _alpha_scale_via_texture = alpha_scale_via_texture;
+
+  // Few GSG's can do this, since it requires touching each vertex as
+  // it is rendered.
+  _runtime_color_scale = false;
 
   _stencil_render_states = 0;
 
@@ -335,6 +342,7 @@ reset() {
   _color_write_mask = ColorWriteAttrib::C_all;
 
   _has_scene_graph_color = false;
+  _scene_graph_color.set(1.0f, 1.0f, 1.0f, 1.0f);
   _transform_stale = true;
   _color_blend_involves_color_scale = false;
   _texture_involves_color_scale = false;
@@ -688,7 +696,7 @@ get_geom_munger(const RenderState *state, Thread *current_thread) {
 
   // Nothing in the map; create a new entry.
   PT(GeomMunger) munger = make_geom_munger(nc_state, current_thread);
-  nassertr(munger->is_registered(), munger);
+  nassertr(munger != (GeomMunger *)NULL && munger->is_registered(), munger);
 
   mi = nc_state->_mungers.insert(RenderState::Mungers::value_type(this, munger)).first;
   nc_state->_last_mi = mi;
@@ -1556,6 +1564,7 @@ do_issue_color() {
   case ColorAttrib::T_off:
     // Color attribute off: it specifies that no scene graph color is
     // in effect, and vertex color is not important either.
+    _scene_graph_color.set(1.0f, 1.0f, 1.0f, 1.0f);
     _has_scene_graph_color = false;
     _vertex_colors_enabled = false;
     break;
@@ -1563,6 +1572,7 @@ do_issue_color() {
   case ColorAttrib::T_vertex:
     // Color attribute vertex: it specifies that vertex color should
     // be revealed.
+    _scene_graph_color.set(1.0f, 1.0f, 1.0f, 1.0f);
     _has_scene_graph_color = false;
     _vertex_colors_enabled = true;
     break;
@@ -1624,7 +1634,7 @@ do_issue_color_scale() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::do_issue_light
-//       Access: Protected
+//       Access: Protected, Virtual
 //  Description: This implementation of do_issue_light() assumes
 //               we have a limited number of hardware lights
 //               available.  This function assigns each light to a

@@ -159,7 +159,7 @@ move_pointer(int device, int x, int y) {
     return true;
   } else {
     // Move a raw mouse.
-    if ((device < 1)||(device >= _input_devices.size())) {
+    if ((device < 1)||(device >= (int)_input_devices.size())) {
       return false;
     }
     _input_devices[device].set_pointer_in_window(x, y);
@@ -2043,8 +2043,7 @@ find_acceptable_display_mode(DWORD dwWidth, DWORD dwHeight, DWORD bpp,
     }
     
     if ((dm.dmPelsWidth == dwWidth) && (dm.dmPelsHeight == dwHeight) &&
-        (dm.dmBitsPerPel == bpp) && 
-        ACCEPTABLE_REFRESH_RATE(dm.dmDisplayFrequency)) {
+        (dm.dmBitsPerPel == bpp)) {
       return true;
     }
     modenum++;

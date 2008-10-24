@@ -14,10 +14,13 @@ from pandac.libpandaexpressModules import *
 from direct.directnotify.DirectNotifyGlobal import *
 from direct.showbase.PythonUtil import *
 from direct.showbase.MessengerGlobal import *
+from direct.showbase import ExceptionVarDump
+from direct.showbase.ProfileSession import ProfileSession
 import time
 import fnmatch
 import string
 import signal
+import random
 try:
     Dtool_PreloadDLL("libp3heapq")
     from libp3heapq import heappush, heappop, heapify
@@ -151,6 +154,12 @@ class Task:
     def setPriority(self, pri):
         self._priority = pri
 
+    def getName(self):
+        return self.name
+
+    def setName(self, name):
+        self.name = name
+
     def setStartTimeFrame(self, startTime, startFrame):
         self.starttime = startTime
         self.startframe = startFrame
@@ -159,6 +168,32 @@ class Task:
         # Calculate and store this task's time (relative to when it started)
         self.time = currentTime - self.starttime
         self.frame = currentFrame - self.startframe
+
+    def getNamePattern(self, taskName=None):
+        # get a version of the task name that doesn't contain any numbers
+        digits = '0123456789'
+        if taskName is None:
+            taskName = self.name
+        return ''.join([c for c in taskName if c not in digits])
+
+    def getNamePrefix(self):
+        # get a version of the task name, omitting a hyphen or
+        # underscore followed by a string of digits at the end of the
+        # name.
+        name = self.name
+        trimmed = len(name)
+        p = trimmed
+        while True:
+            while p > 0 and name[p - 1] in string.digits:
+                p -= 1
+            if p > 0 and name[p - 1] in '-_':
+                p -= 1
+                trimmed = p
+            else:
+                p = trimmed
+                break
+
+        return name[:trimmed]
 
     def setupPStats(self):
         if __debug__ and TaskManager.taskTimerVerbose and not self.pstats:
@@ -178,13 +213,12 @@ class Task:
                 self.pstatCollector = PStatCollector("Tasks:" + name)
             self.pstatCollector.addLevelNow(1)
 
-    def finishTask(self, verbose):
+    def finishTask(self):
         if hasattr(self, "uponDeath"):
             self.uponDeath(self)
-            if verbose:
-                # We regret to announce...
-                messenger.send('TaskManager-removeTask', sentArgs = [self, self.name])
             del self.uponDeath
+        # We regret to announce...
+        messenger.send('TaskManager-removeTask', sentArgs = [self])
 
     def __repr__(self):
         if hasattr(self, 'name'):
@@ -354,7 +388,10 @@ class TaskManager:
 
     OsdPrefix = 'task.'
 
-    DefTaskDurationWarningThreshold = 3.
+    # multiple of average frame duration
+    DefTaskDurationWarningThreshold = 40.
+
+    _DidTests = False
 
     def __init__(self):
         self.running = 0
@@ -368,6 +405,14 @@ class TaskManager:
         self._profileFrames = False
         self.MaxEpockSpeed = 1.0/30.0;   
 
+        # this will be set when it's safe to import StateVar
+        self._profileTasks = None
+        self._taskProfiler = None
+        self._profileInfo = ScratchPad(
+            taskId = None,
+            profiled = False,
+            session = None,
+            )
 
         # We copy this value in from __builtins__ when it gets set.
         # But since the TaskManager might have to run before it gets
@@ -383,7 +428,7 @@ class TaskManager:
 
         # We don't have a base yet, but we can query the config
         # variables directly.
-        self.warnTaskDuration = ConfigVariableBool('task-duration-warnings', 1).getValue()
+        self.warnTaskDuration = ConfigVariableBool('want-task-duration-warnings', 1).getValue()
         self.taskDurationWarningThreshold = ConfigVariableDouble(
             'task-duration-warning-threshold',
             TaskManager.DefTaskDurationWarningThreshold).getValue()
@@ -394,28 +439,55 @@ class TaskManager:
         self.fKeyboardInterrupt = 0
         self.interruptCount = 0
         self.resumeFunc = None
-        self.fVerbose = 0
         # Dictionary of task name to list of tasks with that name
         self.nameDict = {}
 
         # A default task.
-        self.add(self.__doLaterProcessor, "doLaterProcessor", -10)
+        self._doLaterTask = self.add(self.__doLaterProcessor, "doLaterProcessor", -10)
 
+    def finalInit(self):
+        # This function should be called once during startup, after
+        # most things are imported.
+        pass
 
-    def stepping(self, value):
+    def destroy(self):
+        if self._doLaterTask:
+            self._doLaterTask.remove()
+        if self._taskProfiler:
+            self._taskProfiler.destroy()
+        del self.nameDict
+        del self.trueClock
+        del self.globalClock
+        del self.__doLaterList
+        del self.pendingTaskDict
+        del self.taskList
+
+    def setStepping(self, value):
         self.stepping = value
 
-    def setVerbose(self, value):
-        self.fVerbose = value
-        messenger.send('TaskManager-setVerbose', sentArgs = [value])
+    def getTaskDurationWarningThreshold(self):
+        return self.taskDurationWarningThreshold
+
+    def setTaskDurationWarningThreshold(self, threshold):
+        self.taskDurationWarningThreshold = threshold
+
+    def invokeDefaultHandler(self, signalNumber, stackFrame):
+        print '*** allowing mid-frame keyboard interrupt.'
+        # Restore default interrupt handler
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        # and invoke it
+        raise KeyboardInterrupt
 
     def keyboardInterruptHandler(self, signalNumber, stackFrame):
         self.fKeyboardInterrupt = 1
         self.interruptCount += 1
-        if self.interruptCount == 2:
+        if self.interruptCount == 1:
+            print '* interrupt by keyboard'
+        elif self.interruptCount == 2:
+            print '** waiting for end of frame before interrupting...'
             # The user must really want to interrupt this process
-            # Next time around use the default interrupt handler
-            signal.signal(signal.SIGINT, signal.default_int_handler)
+            # Next time around invoke the default handler
+            signal.signal(signal.SIGINT, self.invokeDefaultHandler)
 
     def hasTaskNamed(self, taskName):
         # TODO: check pending task list
@@ -438,8 +510,14 @@ class TaskManager:
         # sweep garbage collector. Returns the number of tasks that have
         # been removed Warning: this creates an entirely new doLaterList.
         oldLen = len(self.__doLaterList)
+        # grab all the tasks being removed so we can remove them from the nameDict
+        # TODO: would be more efficient to remove from nameDict in task.remove()
+        removedTasks = [task for task in self.__doLaterList
+                        if task._removed]
         self.__doLaterList = [task for task in self.__doLaterList #grab all tasks with name
                               if not task._removed] #filter removed tasks
+        for task in removedTasks:
+            self.__removeTaskFromNameDict(task)
         # Re heapify to maintain ordering after filter
         heapify(self.__doLaterList)
         newLen = len(self.__doLaterList)
@@ -486,15 +564,16 @@ class TaskManager:
         return cont
 
     def doMethodLater(self, delayTime, funcOrTask, name, extraArgs=None,
-            priority=0, uponDeath=None, appendTask=False, owner = None):
+                      priority=0, uponDeath=None, appendTask=False, owner = None):
         if delayTime < 0:
-            self.notify.warning('doMethodLater: added task: %s with negative delay: %s' % (name, delayTime))
+            assert self.notify.warning('doMethodLater: added task: %s with negative delay: %s' % (name, delayTime))
         if isinstance(funcOrTask, Task):
             task = funcOrTask
         elif callable(funcOrTask):
             task = Task(funcOrTask, priority)
         else:
             self.notify.error('doMethodLater: Tried to add a task that was not a Task or a func')
+        assert isinstance(name, str), 'Name must be a string type'
         task.setPriority(priority)
         task.name = name
         task.owner = owner
@@ -524,10 +603,6 @@ class TaskManager:
         task.wakeTime = currentTime + delayTime
         # Push this onto the doLaterList. The heap maintains the sorting.
         heappush(self.__doLaterList, task)
-        if self.fVerbose:
-            # Alert the world, a new task is born!
-            messenger.send('TaskManager-spawnDoLater',
-                           sentArgs = [task, task.name, task.id])
         return task
 
     def add(self, funcOrTask, name, priority=0, extraArgs=None, uponDeath=None,
@@ -545,6 +620,7 @@ class TaskManager:
         else:
             self.notify.error(
                 'add: Tried to add a task that was not a Task or a func')
+        assert isinstance(name, str), 'Name must be a string type'
         task.setPriority(priority)
         task.name = name
         task.owner = owner
@@ -615,10 +691,9 @@ class TaskManager:
         if __debug__:
             if self.pStatsTasks and task.name != "igLoop":                
                 task.setupPStats()
-        if self.fVerbose:
-            # Alert the world, a new task is born!
-            messenger.send(
-                'TaskManager-spawnTask', sentArgs = [task, task.name, index])
+
+        # Alert the world, a new task is born!
+        messenger.send('TaskManager-spawnTask', sentArgs = [task])
         return task
 
     def remove(self, taskOrName):
@@ -651,7 +726,7 @@ class TaskManager:
             #    '__removeTasksEqual: removing task: %s' % (task))
             # Flag the task for removal from the real list
             task.remove()
-            task.finishTask(self.fVerbose)
+            task.finishTask()
             return 1
         else:
             return 0
@@ -665,7 +740,7 @@ class TaskManager:
         for task in tasks:
             # Flag for removal
             task.remove()
-            task.finishTask(self.fVerbose)
+            task.finishTask()
         # Record the number of tasks removed
         num = len(tasks)
         # Blow away the nameDict entry completely
@@ -689,15 +764,34 @@ class TaskManager:
 
     def __executeTask(self, task):
         task.setCurrentTimeFrame(self.currentTime, self.currentFrame)
+        
+        # cache reference to profile info here, self._profileInfo might get swapped out
+        # by the task when it runs
+        profileInfo = self._profileInfo
+        doProfile = (task.id == profileInfo.taskId)
+        # don't profile the same task twice in a row
+        doProfile = doProfile and (not profileInfo.profiled)
+        
         if not self.taskTimerVerbose:
             startTime = self.trueClock.getShortTime()
             
             # don't record timing info
-            ret = task(*task.extraArgs)
+            if doProfile:
+                profileSession = ProfileSession(Functor(task, *task.extraArgs),
+                                                'TASK_PROFILE:%s' % task.name)
+                ret = profileSession.run()
+                # set these values *after* profiling in case we're profiling the TaskProfiler
+                profileInfo.session = profileSession
+                profileInfo.profiled = True
+            else:
+                ret = task(*task.extraArgs)
             endTime = self.trueClock.getShortTime()
             
             # Record the dt
             dt = endTime - startTime
+            if doProfile:
+                # if we profiled, don't pollute the task's recorded duration
+                dt = task.avgDt
             task.dt = dt
 
         else:
@@ -705,13 +799,24 @@ class TaskManager:
             if task.pstats:
                 task.pstats.start()
             startTime = self.trueClock.getShortTime()
-            ret = task(*task.extraArgs)
+            if doProfile:
+                profileSession = ProfileSession(Functor(task, *task.extraArgs),
+                                                'profiled-task-%s' % task.name)
+                ret = profileSession.run()
+                # set these values *after* profiling in case we're profiling the TaskProfiler
+                profileInfo.session = profileSession
+                profileInfo.profiled = True
+            else:
+                ret = task(*task.extraArgs)
             endTime = self.trueClock.getShortTime()
             if task.pstats:
                 task.pstats.stop()
 
             # Record the dt
             dt = endTime - startTime
+            if doProfile:
+                # if we profiled, don't pollute the task's recorded duration
+                dt = task.avgDt
             task.dt = dt
 
             # See if this is the new max
@@ -726,10 +831,13 @@ class TaskManager:
                 task.avgDt = 0
 
         # warn if the task took too long
-        if self.warnTaskDuration:
-            if dt >= self.taskDurationWarningThreshold:
-                TaskManager.notify.warning('task %s ran for %.2f seconds' % (
-                    task.name, dt))
+        if self.warnTaskDuration and self.globalClock:
+            avgFrameRate = self.globalClock.getAverageFrameRate()
+            if avgFrameRate > .00001:
+                avgFrameDur = (1. / avgFrameRate)
+                if dt >= (self.taskDurationWarningThreshold * avgFrameDur):
+                    assert TaskManager.notify.warning('frame %s: task %s ran for %.2f seconds, avg frame duration=%.2f seconds' % (
+                        globalClock.getFrameCount(), task.name, dt, avgFrameDur))
             
         return ret
 
@@ -748,10 +856,6 @@ class TaskManager:
             task.wakeTime = currentTime + task.delayTime
             # Push this onto the doLaterList. The heap maintains the sorting.
             heappush(self.__doLaterList, task)
-            if self.fVerbose:
-                # Alert the world, a new task is born!
-                messenger.send('TaskManager-againDoLater',
-                               sentArgs = [task, task.name, task.id])
 
     def __stepThroughList(self, taskPriList):
         # Traverse the taskPriList with an iterator
@@ -768,8 +872,9 @@ class TaskManager:
                 # If it was removed in show code, it will need finishTask run
                 # If it was removed by the taskMgr, it will not, but that is ok
                 # because finishTask is safe to call twice
-                task.finishTask(self.fVerbose)
+                task.finishTask()
                 taskPriList.remove(i)
+                self.__removeTaskFromNameDict(task)
                 # Do not increment the iterator
                 continue
             # Now actually execute the task
@@ -793,7 +898,7 @@ class TaskManager:
                     task.remove()
                     # Note: Should not need to remove from doLaterList here
                     # because this task is not in the doLaterList
-                    task.finishTask(self.fVerbose)
+                    task.finishTask()
                     self.__removeTaskFromNameDict(task)
                 else:
                     # assert TaskManager.notify.debug(
@@ -851,6 +956,79 @@ class TaskManager:
         for i in xrange(self._profileFrameCount):
             result = self.step(*args, **kArgs)
         return result
+
+    def getProfileTasks(self):
+        return self._profileTasks.get()
+
+    def getProfileTasksSV(self):
+        return self._profileTasks
+
+    def setProfileTasks(self, profileTasks):
+        self._profileTasks.set(profileTasks)
+        if (not self._taskProfiler) and profileTasks:
+            # import here due to import dependencies
+            from direct.task.TaskProfiler import TaskProfiler
+            self._taskProfiler = TaskProfiler()
+
+    def logTaskProfiles(self, name=None):
+        if self._taskProfiler:
+            self._taskProfiler.logProfiles(name)
+
+    def flushTaskProfiles(self, name=None):
+        if self._taskProfiler:
+            self._taskProfiler.flush(name)
+
+    def _setProfileTask(self, task):
+        if self._profileInfo.session:
+            self._profileInfo.session.release()
+            self._profileInfo.session = None
+        self._profileInfo = ScratchPad(
+            taskId = task.id,
+            profiled = False,
+            session = None,
+            )
+
+    def _hasProfiledDesignatedTask(self):
+        # have we run a profile of the designated task yet?
+        return self._profileInfo.profiled
+
+    def _getLastProfileSession(self):
+        return self._profileInfo.session
+
+    def _getRandomTask(self):
+        numTasks = 0
+        for name in self.nameDict.iterkeys():
+            numTasks += len(self.nameDict[name])
+        numDoLaters = len(self.__doLaterList)
+        if random.random() < (numDoLaters / float(numTasks + numDoLaters)):
+            # grab a doLater that will most likely trigger in the next frame
+            tNow = globalClock.getFrameTime()
+            avgFrameRate = globalClock.getAverageFrameRate()
+            if avgFrameRate < .00001:
+                avgFrameDur = 0.
+            else:
+                avgFrameDur = (1. / globalClock.getAverageFrameRate())
+            tNext = tNow + avgFrameDur
+            # binary search to find doLaters that are likely to trigger on the next frame
+            curIndex = int(numDoLaters / 2)
+            rangeStart = 0
+            rangeEnd = numDoLaters
+            while True:
+                if tNext < self.__doLaterList[curIndex].wakeTime:
+                    rangeEnd = curIndex
+                else:
+                    rangeStart = curIndex
+                prevIndex = curIndex
+                curIndex = int((rangeStart + rangeEnd) / 2)
+                if curIndex == prevIndex:
+                    break
+            index = curIndex
+            task = self.__doLaterList[random.randrange(index+1)]
+        else:
+            # grab a task
+            name = random.choice(self.nameDict.keys())
+            task = random.choice(self.nameDict[name])
+        return task
 
     def step(self):
         # assert TaskManager.notify.debug('step: begin')
@@ -915,6 +1093,16 @@ class TaskManager:
 
 
     def run(self):
+        # do things that couldn't be done earlier because of import dependencies
+        if (not TaskManager._DidTests) and __debug__:
+            TaskManager._DidTests = True
+            self._runTests()
+
+        if not self._profileTasks:
+            from direct.fsm.StatePush import StateVar
+            self._profileTasks = StateVar(False)
+            self.setProfileTasks(getBase().config.GetBool('profile-task-spikes', 0))
+
         # Set the clock to have last frame's time in case we were
         # Paused at the prompt for a long time
         if self.globalClock:
@@ -950,6 +1138,15 @@ class TaskManager:
                     if code == 4:
                         self.stop()
                     else:
+                        raise
+                except Exception, e:
+                    if self.extendedExceptions:
+                        self.stop()
+                        print_exc_plus()
+                    else:
+                        if (ExceptionVarDump.wantVariableDump and
+                            ExceptionVarDump.dumpOnExceptionInit):
+                            ExceptionVarDump._varDump__print(e)
                         raise
                 except:
                     if self.extendedExceptions:
@@ -1105,6 +1302,24 @@ class TaskManager:
         str += "End of taskMgr info\n"
         return str
 
+    def getTasks(self):
+        # returns list of all tasks in arbitrary order
+        tasks = []
+        for taskPriList in self.taskList:
+            for task in taskPriList:
+                if task is not None and not task._removed:
+                    tasks.append(task)
+        for pri, taskList in self.pendingTaskDict.iteritems():
+            for task in taskList:
+                if not task._removed:
+                    tasks.append(task)
+        return tasks
+
+    def getDoLaters(self):
+        # returns list of all doLaters in arbitrary order
+        return [doLater for doLater in self.__doLaterList
+                if not doLater._removed]
+
     def resetStats(self):
         # WARNING: this screws up your do-later timings
         if self.taskTimerVerbose:
@@ -1133,6 +1348,34 @@ class TaskManager:
         if self.globalClock:
             return self.globalClock.getFrameTime()
         return self.trueClock.getShortTime()
+
+    if __debug__:
+        # to catch memory leaks during the tests at the bottom of the file
+        def _startTrackingMemLeaks(self):
+            self._memUsage = ScratchPad()
+            mu = self._memUsage
+            mu.lenTaskList = len(self.taskList)
+            mu.lenPendingTaskDict = len(self.pendingTaskDict)
+            mu.lenDoLaterList = len(self.__doLaterList)
+            mu.lenNameDict = len(self.nameDict)
+
+        def _stopTrackingMemLeaks(self):
+            self._memUsage.destroy()
+            del self._memUsage
+
+        def _checkMemLeaks(self):
+            # flush removed doLaters
+            self.__doLaterFilter()
+            # give the mgr a chance to clear out removed tasks
+            self.step()
+            mu = self._memUsage
+            # the task list looks like it grows and never shrinks, replacing finished
+            # tasks with 'None' in the TaskPriorityLists.
+            # TODO: look at reducing memory usage here--clear out excess at the end of every frame?
+            #assert mu.lenTaskList == len(self.taskList)
+            assert mu.lenPendingTaskDict == len(self.pendingTaskDict)
+            assert mu.lenDoLaterList == len(self.__doLaterList)
+            assert mu.lenNameDict == len(self.nameDict)
 
     def startOsd(self):
         self.add(self.doOsd, 'taskMgr.doOsd')
@@ -1187,6 +1430,492 @@ class TaskManager:
             dtfmt % (totalAvgDt*1000),))
         return cont
 
+    def _runTests(self):
+        if __debug__:
+            tm = TaskManager()
+            # looks like nothing runs on the first frame...?
+            # step to get past the first frame
+            tm.step()
+
+            # check for memory leaks after every test
+            tm._startTrackingMemLeaks()
+            tm._checkMemLeaks()
+
+            # run-once task
+            l = []
+            def _testDone(task, l=l):
+                l.append(None)
+                return task.done
+            tm.add(_testDone, 'testDone')
+            tm.step()
+            assert len(l) == 1
+            tm.step()
+            assert len(l) == 1
+            _testDone = None
+            tm._checkMemLeaks()
+
+            # remove by name
+            def _testRemoveByName(task):
+                return task.done
+            tm.add(_testRemoveByName, 'testRemoveByName')
+            assert tm.remove('testRemoveByName') == 1
+            assert tm.remove('testRemoveByName') == 0
+            _testRemoveByName = None
+            tm._checkMemLeaks()
+
+            # duplicate named tasks
+            def _testDupNamedTasks(task):
+                return task.done
+            tm.add(_testDupNamedTasks, 'testDupNamedTasks')
+            tm.add(_testDupNamedTasks, 'testDupNamedTasks')
+            assert tm.remove('testRemoveByName') == 0
+            _testDupNamedTasks = None
+            tm._checkMemLeaks()
+
+            # continued task
+            l = []
+            def _testCont(task, l = l):
+                l.append(None)
+                return task.cont
+            tm.add(_testCont, 'testCont')
+            tm.step()
+            assert len(l) == 1
+            tm.step()
+            assert len(l) == 2
+            tm.remove('testCont')
+            _testCont = None
+            tm._checkMemLeaks()
+
+            # continue until done task
+            l = []
+            def _testContDone(task, l = l):
+                l.append(None)
+                if len(l) >= 2:
+                    return task.done
+                else:
+                    return task.cont
+            tm.add(_testContDone, 'testContDone')
+            tm.step()
+            assert len(l) == 1
+            tm.step()
+            assert len(l) == 2
+            tm.step()
+            assert len(l) == 2
+            assert not tm.hasTaskNamed('testContDone')
+            _testContDone = None
+            tm._checkMemLeaks()
+
+            # hasTaskNamed
+            def _testHasTaskNamed(task):
+                return task.done
+            tm.add(_testHasTaskNamed, 'testHasTaskNamed')
+            assert tm.hasTaskNamed('testHasTaskNamed')
+            tm.step()
+            assert not tm.hasTaskNamed('testHasTaskNamed')
+            _testHasTaskNamed = None
+            tm._checkMemLeaks()
+
+            # task priority
+            l = []
+            def _testPri1(task, l = l):
+                l.append(1)
+                return task.cont
+            def _testPri2(task, l = l):
+                l.append(2)
+                return task.cont
+            tm.add(_testPri1, 'testPri1', priority = 1)
+            tm.add(_testPri2, 'testPri2', priority = 2)
+            tm.step()
+            assert len(l) == 2
+            assert l == [1, 2,]
+            tm.step()
+            assert len(l) == 4
+            assert l == [1, 2, 1, 2,]
+            tm.remove('testPri1')
+            tm.remove('testPri2')
+            _testPri1 = None
+            _testPri2 = None
+            tm._checkMemLeaks()
+
+            # task extraArgs
+            l = []
+            def _testExtraArgs(arg1, arg2, l=l):
+                l.extend([arg1, arg2,])
+                return done
+            tm.add(_testExtraArgs, 'testExtraArgs', extraArgs=[4,5])
+            tm.step()
+            assert len(l) == 2
+            assert l == [4, 5,]
+            _testExtraArgs = None
+            tm._checkMemLeaks()
+
+            # task appendTask
+            l = []
+            def _testAppendTask(arg1, arg2, task, l=l):
+                l.extend([arg1, arg2,])
+                return task.done
+            tm.add(_testAppendTask, '_testAppendTask', extraArgs=[4,5], appendTask=True)
+            tm.step()
+            assert len(l) == 2
+            assert l == [4, 5,]
+            _testAppendTask = None
+            tm._checkMemLeaks()
+
+            # task uponDeath
+            l = []
+            def _uponDeathFunc(task, l=l):
+                l.append(task.name)
+            def _testUponDeath(task):
+                return done
+            tm.add(_testUponDeath, 'testUponDeath', uponDeath=_uponDeathFunc)
+            tm.step()
+            assert len(l) == 1
+            assert l == ['testUponDeath']
+            _testUponDeath = None
+            _uponDeathFunc = None
+            tm._checkMemLeaks()
+
+            # task owner
+            class _TaskOwner:
+                def _clearTask(self, task):
+                    self.clearedTaskName = task.name
+            to = _TaskOwner()
+            l = []
+            def _testOwner(task):
+                return done
+            tm.add(_testOwner, 'testOwner', owner=to)
+            tm.step()
+            assert hasattr(to, 'clearedTaskName')
+            assert to.clearedTaskName == 'testOwner'
+            _testOwner = None
+            del to
+            _TaskOwner = None
+            tm._checkMemLeaks()
+
+
+            doLaterTests = [0,]
+
+            # doLater
+            l = []
+            def _testDoLater1(task, l=l):
+                l.append(1)
+            def _testDoLater2(task, l=l):
+                l.append(2)
+            def _monitorDoLater(task, tm=tm, l=l, doLaterTests=doLaterTests):
+                if task.time > .03:
+                    assert l == [1, 2,]
+                    doLaterTests[0] -= 1
+                    return task.done
+                return task.cont
+            tm.doMethodLater(.01, _testDoLater1, 'testDoLater1')
+            tm.doMethodLater(.02, _testDoLater2, 'testDoLater2')
+            doLaterTests[0] += 1
+            # make sure we run this task after the doLaters if they all occur on the same frame
+            tm.add(_monitorDoLater, 'monitorDoLater', priority=10)
+            _testDoLater1 = None
+            _testDoLater2 = None
+            _monitorDoLater = None
+            # don't check until all the doLaters are finished
+            #tm._checkMemLeaks()
+
+            # doLater priority
+            l = []
+            def _testDoLaterPri1(task, l=l):
+                l.append(1)
+            def _testDoLaterPri2(task, l=l):
+                l.append(2)
+            def _monitorDoLaterPri(task, tm=tm, l=l, doLaterTests=doLaterTests):
+                if task.time > .02:
+                    assert l == [1, 2,]
+                    doLaterTests[0] -= 1
+                    return task.done
+                return task.cont
+            tm.doMethodLater(.01, _testDoLaterPri1, 'testDoLaterPri1', priority=1)
+            tm.doMethodLater(.01, _testDoLaterPri2, 'testDoLaterPri2', priority=2)
+            doLaterTests[0] += 1
+            # make sure we run this task after the doLaters if they all occur on the same frame
+            tm.add(_monitorDoLaterPri, 'monitorDoLaterPri', priority=10)
+            _testDoLaterPri1 = None
+            _testDoLaterPri2 = None
+            _monitorDoLaterPri = None
+            # don't check until all the doLaters are finished
+            #tm._checkMemLeaks()
+
+            # doLater extraArgs
+            l = []
+            def _testDoLaterExtraArgs(arg1, l=l):
+                l.append(arg1)
+            def _monitorDoLaterExtraArgs(task, tm=tm, l=l, doLaterTests=doLaterTests):
+                if task.time > .02:
+                    assert l == [3,]
+                    doLaterTests[0] -= 1
+                    return task.done
+                return task.cont
+            tm.doMethodLater(.01, _testDoLaterExtraArgs, 'testDoLaterExtraArgs', extraArgs=[3,])
+            doLaterTests[0] += 1
+            # make sure we run this task after the doLaters if they all occur on the same frame
+            tm.add(_monitorDoLaterExtraArgs, 'monitorDoLaterExtraArgs', priority=10)
+            _testDoLaterExtraArgs = None
+            _monitorDoLaterExtraArgs = None
+            # don't check until all the doLaters are finished
+            #tm._checkMemLeaks()
+
+            # doLater appendTask
+            l = []
+            def _testDoLaterAppendTask(arg1, task, l=l):
+                assert task.name == 'testDoLaterAppendTask'
+                l.append(arg1)
+            def _monitorDoLaterAppendTask(task, tm=tm, l=l, doLaterTests=doLaterTests):
+                if task.time > .02:
+                    assert l == [4,]
+                    doLaterTests[0] -= 1
+                    return task.done
+                return task.cont
+            tm.doMethodLater(.01, _testDoLaterAppendTask, 'testDoLaterAppendTask',
+                             extraArgs=[4,], appendTask=True)
+            doLaterTests[0] += 1
+            # make sure we run this task after the doLaters if they all occur on the same frame
+            tm.add(_monitorDoLaterAppendTask, 'monitorDoLaterAppendTask', priority=10)
+            _testDoLaterAppendTask = None
+            _monitorDoLaterAppendTask = None
+            # don't check until all the doLaters are finished
+            #tm._checkMemLeaks()
+
+            # doLater uponDeath
+            l = []
+            def _testUponDeathFunc(task, l=l):
+                assert task.name == 'testDoLaterUponDeath'
+                l.append(10)
+            def _testDoLaterUponDeath(arg1, l=l):
+                return done
+            def _monitorDoLaterUponDeath(task, tm=tm, l=l, doLaterTests=doLaterTests):
+                if task.time > .02:
+                    assert l == [10,]
+                    doLaterTests[0] -= 1
+                    return task.done
+                return task.cont
+            tm.doMethodLater(.01, _testDoLaterUponDeath, 'testDoLaterUponDeath',
+                             uponDeath=_testUponDeathFunc)
+            doLaterTests[0] += 1
+            # make sure we run this task after the doLaters if they all occur on the same frame
+            tm.add(_monitorDoLaterUponDeath, 'monitorDoLaterUponDeath', priority=10)
+            _testUponDeathFunc = None
+            _testDoLaterUponDeath = None
+            _monitorDoLaterUponDeath = None
+            # don't check until all the doLaters are finished
+            #tm._checkMemLeaks()
+
+            # doLater owner
+            class _DoLaterOwner:
+                def _clearTask(self, task):
+                    self.clearedTaskName = task.name
+            doLaterOwner = _DoLaterOwner()
+            l = []
+            def _testDoLaterOwner(l=l):
+                pass
+            def _monitorDoLaterOwner(task, tm=tm, l=l, doLaterOwner=doLaterOwner,
+                                     doLaterTests=doLaterTests):
+                if task.time > .02:
+                    assert hasattr(doLaterOwner, 'clearedTaskName')
+                    assert doLaterOwner.clearedTaskName == 'testDoLaterOwner'
+                    doLaterTests[0] -= 1
+                    return task.done
+                return task.cont
+            tm.doMethodLater(.01, _testDoLaterOwner, 'testDoLaterOwner',
+                             owner=doLaterOwner)
+            doLaterTests[0] += 1
+            # make sure we run this task after the doLaters if they all occur on the same frame
+            tm.add(_monitorDoLaterOwner, 'monitorDoLaterOwner', priority=10)
+            _testDoLaterOwner = None
+            _monitorDoLaterOwner = None
+            del doLaterOwner
+            _DoLaterOwner = None
+            # don't check until all the doLaters are finished
+            #tm._checkMemLeaks()
+
+            # run the doLater tests
+            while doLaterTests[0] > 0:
+                tm.step()
+            del doLaterTests
+            tm._checkMemLeaks()
+
+            # getTasks
+            def _testGetTasks(task):
+                return task.cont
+            # the doLaterProcessor is always running
+            assert len(tm.getTasks()) == 1
+            tm.add(_testGetTasks, 'testGetTasks1')
+            assert len(tm.getTasks()) == 2
+            assert (tm.getTasks()[0].name == 'testGetTasks1' or
+                    tm.getTasks()[1].name == 'testGetTasks1')
+            tm.add(_testGetTasks, 'testGetTasks2')
+            tm.add(_testGetTasks, 'testGetTasks3')
+            assert len(tm.getTasks()) == 4
+            tm.remove('testGetTasks2')
+            assert len(tm.getTasks()) == 3
+            tm.remove('testGetTasks1')
+            tm.remove('testGetTasks3')
+            assert len(tm.getTasks()) == 1
+            _testGetTasks = None
+            tm._checkMemLeaks()
+
+            # getDoLaters
+            def _testGetDoLaters():
+                pass
+            # the doLaterProcessor is always running
+            assert len(tm.getDoLaters()) == 0
+            tm.doMethodLater(.1, _testGetDoLaters, 'testDoLater1')
+            assert len(tm.getDoLaters()) == 1
+            assert tm.getDoLaters()[0].name == 'testDoLater1'
+            tm.doMethodLater(.1, _testGetDoLaters, 'testDoLater2')
+            tm.doMethodLater(.1, _testGetDoLaters, 'testDoLater3')
+            assert len(tm.getDoLaters()) == 3
+            tm.remove('testDoLater2')
+            assert len(tm.getDoLaters()) == 2
+            tm.remove('testDoLater1')
+            tm.remove('testDoLater3')
+            assert len(tm.getDoLaters()) == 0
+            _testGetDoLaters = None
+            tm._checkMemLeaks()
+
+            # duplicate named doLaters removed via taskMgr.remove
+            def _testDupNameDoLaters():
+                pass
+            # the doLaterProcessor is always running
+            tm.doMethodLater(.1, _testDupNameDoLaters, 'testDupNameDoLater')
+            tm.doMethodLater(.1, _testDupNameDoLaters, 'testDupNameDoLater')
+            assert len(tm.getDoLaters()) == 2
+            tm.remove('testDupNameDoLater')
+            assert len(tm.getDoLaters()) == 0
+            _testDupNameDoLaters = None
+            tm._checkMemLeaks()
+
+            # duplicate named doLaters removed via remove()
+            def _testDupNameDoLatersRemove():
+                pass
+            # the doLaterProcessor is always running
+            dl1 = tm.doMethodLater(.1, _testDupNameDoLatersRemove, 'testDupNameDoLaterRemove')
+            dl2 = tm.doMethodLater(.1, _testDupNameDoLatersRemove, 'testDupNameDoLaterRemove')
+            assert len(tm.getDoLaters()) == 2
+            dl2.remove()
+            assert len(tm.getDoLaters()) == 1
+            dl1.remove()
+            assert len(tm.getDoLaters()) == 0
+            _testDupNameDoLatersRemove = None
+            # nameDict etc. isn't cleared out right away with task.remove()
+            tm._checkMemLeaks()
+
+            # getTasksNamed
+            def _testGetTasksNamed(task):
+                return task.cont
+            assert len(tm.getTasksNamed('testGetTasksNamed')) == 0
+            tm.add(_testGetTasksNamed, 'testGetTasksNamed')
+            assert len(tm.getTasksNamed('testGetTasksNamed')) == 1
+            assert tm.getTasksNamed('testGetTasksNamed')[0].name == 'testGetTasksNamed'
+            tm.add(_testGetTasksNamed, 'testGetTasksNamed')
+            tm.add(_testGetTasksNamed, 'testGetTasksNamed')
+            assert len(tm.getTasksNamed('testGetTasksNamed')) == 3
+            tm.remove('testGetTasksNamed')
+            assert len(tm.getTasksNamed('testGetTasksNamed')) == 0
+            _testGetTasksNamed = None
+            tm._checkMemLeaks()
+
+            # removeTasksMatching
+            def _testRemoveTasksMatching(task):
+                return task.cont
+            tm.add(_testRemoveTasksMatching, 'testRemoveTasksMatching')
+            assert len(tm.getTasksNamed('testRemoveTasksMatching')) == 1
+            tm.removeTasksMatching('testRemoveTasksMatching')
+            assert len(tm.getTasksNamed('testRemoveTasksMatching')) == 0
+            tm.add(_testRemoveTasksMatching, 'testRemoveTasksMatching1')
+            tm.add(_testRemoveTasksMatching, 'testRemoveTasksMatching2')
+            assert len(tm.getTasksNamed('testRemoveTasksMatching1')) == 1
+            assert len(tm.getTasksNamed('testRemoveTasksMatching2')) == 1
+            tm.removeTasksMatching('testRemoveTasksMatching*')
+            assert len(tm.getTasksNamed('testRemoveTasksMatching1')) == 0
+            assert len(tm.getTasksNamed('testRemoveTasksMatching2')) == 0
+            tm.add(_testRemoveTasksMatching, 'testRemoveTasksMatching1a')
+            tm.add(_testRemoveTasksMatching, 'testRemoveTasksMatching2a')
+            assert len(tm.getTasksNamed('testRemoveTasksMatching1a')) == 1
+            assert len(tm.getTasksNamed('testRemoveTasksMatching2a')) == 1
+            tm.removeTasksMatching('testRemoveTasksMatching?a')
+            assert len(tm.getTasksNamed('testRemoveTasksMatching1a')) == 0
+            assert len(tm.getTasksNamed('testRemoveTasksMatching2a')) == 0
+            _testRemoveTasksMatching = None
+            tm._checkMemLeaks()
+
+            # create Task object and add to mgr
+            l = []
+            def _testTaskObj(task, l=l):
+                l.append(None)
+                return task.cont
+            t = Task(_testTaskObj)
+            tm.add(t, 'testTaskObj')
+            tm.step()
+            assert len(l) == 1
+            tm.step()
+            assert len(l) == 2
+            tm.remove('testTaskObj')
+            tm.step()
+            assert len(l) == 2
+            _testTaskObj = None
+            tm._checkMemLeaks()
+
+            # remove Task via task.remove()
+            l = []
+            def _testTaskObjRemove(task, l=l):
+                l.append(None)
+                return task.cont
+            t = Task(_testTaskObjRemove)
+            tm.add(t, 'testTaskObjRemove')
+            tm.step()
+            assert len(l) == 1
+            tm.step()
+            assert len(l) == 2
+            t.remove()
+            tm.step()
+            assert len(l) == 2
+            del t
+            _testTaskObjRemove = None
+            tm._checkMemLeaks()
+
+            """
+            # this test fails, and it's not clear what the correct behavior should be.
+            # priority passed to Task.__init__ is always overridden by taskMgr.add()
+            # even if no priority is specified, and calling Task.setPriority() has no
+            # effect on the taskMgr's behavior.
+            # set/get Task priority
+            l = []
+            def _testTaskObjPriority(arg, task, l=l):
+                l.append(arg)
+                return task.cont
+            t1 = Task(_testTaskObjPriority, priority=1)
+            t2 = Task(_testTaskObjPriority, priority=2)
+            tm.add(t1, 'testTaskObjPriority1', extraArgs=['a',], appendTask=True)
+            tm.add(t2, 'testTaskObjPriority2', extraArgs=['b',], appendTask=True)
+            tm.step()
+            assert len(l) == 2
+            assert l == ['a', 'b']
+            assert t1.getPriority() == 1
+            assert t2.getPriority() == 2
+            t1.setPriority(3)
+            assert t1.getPriority() == 3
+            tm.step()
+            assert len(l) == 4
+            assert l == ['a', 'b', 'b', 'a',]
+            t1.remove()
+            t2.remove()
+            tm.step()
+            assert len(l) == 4
+            del t1
+            del t2
+            _testTaskObjPriority = None
+            tm._checkMemLeaks()
+            """
+
+            del l
+            tm.destroy()
+            del tm
 
 
 # These constants are moved to the top level of the module,
@@ -1198,6 +1927,9 @@ done  = Task.done
 cont  = Task.cont
 again = Task.again
 
+
+if __debug__:
+    pass # 'if __debug__' is hint for CVS diff output
 
 """
 

@@ -116,6 +116,21 @@
 #else
 #print - Did not find DirectX9
 #endif
+#if $[HAVE_TINYDISPLAY]
+#print + Tinydisplay
+#else
+#print - Not building Tinydisplay
+#endif
+#if $[HAVE_SDL]
+#print + SDL
+#else
+#print - Did not find SDL
+#endif
+#if $[HAVE_MESA]
+#print + Mesa
+#else
+#print - Did not find Mesa
+#endif
 #if $[HAVE_OPENCV]
 #print + OpenCV
 #else
@@ -280,6 +295,12 @@ $[cdefine HAVE_DX8]
 
 /* Define if we have DirectX installed and want to build for DX.  */
 $[cdefine HAVE_DX9]
+
+/* Define if we want to build tinydisplay. */
+$[cdefine HAVE_TINYDISPLAY]
+
+/* Define if we have the SDL library. */
+$[cdefine HAVE_SDL]
 
 /* Define if we have Chromium installed and want to use it.  */
 $[cdefine HAVE_CHROMIUM]
@@ -458,6 +479,15 @@ $[cdefine HAVE_ALLOCA_H]
 /* Define if you have the <locale.h> header file.  */
 $[cdefine HAVE_LOCALE_H]
 
+/* Define if you have the <string.h> header file.  */
+$[cdefine HAVE_STRING_H]
+
+/* Define if you have the <stdlib.h> header file.  */
+$[cdefine HAVE_STDLIB_H]
+
+/* Define if you have the <limits.h> header file.  */
+$[cdefine HAVE_LIMITS_H]
+
 /* Define if you have the <minmax.h> header file.  */
 $[cdefine HAVE_MINMAX_H]
 
@@ -484,6 +514,9 @@ $[cdefine HAVE_GLOB_H]
 
 /* Define if you have the <dirent.h> header file.  */
 $[cdefine HAVE_DIRENT_H]
+
+/* Define if you have the <drfftw.h> header file.  */
+$[cdefine HAVE_DRFFTW_H]
 
 /* Do we have <sys/soundcard.h> (and presumably a Linux-style audio
    interface)? */

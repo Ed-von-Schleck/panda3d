@@ -8,7 +8,7 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'sameElements', 'makeList', 'makeTuple', 'list2dict', 'invertDict',
 'invertDictLossless', 'uniqueElements', 'disjoint', 'contains',
 'replace', 'reduceAngle', 'fitSrcAngle2Dest', 'fitDestAngle2Src',
-'closestDestAngle2', 'closestDestAngle', 'binaryRepr', 'profile',
+'closestDestAngle2', 'closestDestAngle', 'binaryRepr', 'profileFunc',
 'profiled', 'startProfile', 'printProfile', 'getSetterName',
 'getSetter', 'Functor', 'Stack', 'Queue', 'ParamObj', 
 'POD', 'bound', 'lerp', 'average', 'addListsByValue',
@@ -28,7 +28,10 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'superFlattenShip','HotkeyBreaker','logMethodCalls','GoldenRatio',
 'GoldenRectangle', 'pivotScalar', 'rad90', 'rad180', 'rad270', 'rad360',
 'nullGen', 'loopGen', 'makeFlywheelGen', 'flywheel', 'choice',
-'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index', ]
+'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index',
+'pandaBreak','pandaTrace','formatTimeCompact','DestructiveScratchPad',
+'deeptype','getProfileResultString','StdoutCapture','StdoutPassthrough',
+'Averager',]
 
 import types
 import string
@@ -44,6 +47,11 @@ import new
 import gc
 #if __debug__:
 import traceback
+import __builtin__
+import profile
+import pstats
+from StringIO import StringIO
+import marshal
 
 from direct.directutil import Verify
 # Don't import libpandaexpressModules, which doesn't get built until
@@ -70,6 +78,128 @@ if not hasattr(__builtin__, 'enumerate'):
     __builtin__.enumerate = enumerate
 else:
     enumerate = __builtin__.enumerate
+
+"""
+# with one integer positional arg, this uses about 4/5 of the memory of the Functor class below
+def Functor(function, *args, **kArgs):
+    argsCopy = args[:]
+    def functor(*cArgs, **ckArgs):
+        kArgs.update(ckArgs)
+        return function(*(argsCopy + cArgs), **kArgs)
+    return functor
+"""
+
+class Functor:
+    def __init__(self, function, *args, **kargs):
+        assert callable(function), "function should be a callable obj"
+        self._function = function
+        self._args = args
+        self._kargs = kargs
+        if hasattr(self._function, '__name__'):
+            self.__name__ = self._function.__name__
+        else:
+            self.__name__ = str(itype(self._function))
+        if hasattr(self._function, '__doc__'):
+            self.__doc__ = self._function.__doc__
+        else:
+            self.__doc__ = self.__name__
+
+    def destroy(self):
+        del self._function
+        del self._args
+        del self._kargs
+        del self.__name__
+        del self.__doc__
+    
+    def _do__call__(self, *args, **kargs):
+        _kargs = self._kargs.copy()
+        _kargs.update(kargs)
+        return self._function(*(self._args + args), **_kargs)
+
+    # this method is used in place of __call__ if we are recording creation stacks
+    def _exceptionLoggedCreationStack__call__(self, *args, **kargs):
+        try:
+            return self._do__call__(*args, **kargs)
+        except Exception, e:
+            print '-->Functor creation stack (%s): %s' % (
+                self.__name__, self.getCreationStackTraceCompactStr())
+            raise
+
+    __call__ = _do__call__
+
+    def __repr__(self):
+        s = 'Functor(%s' % self._function.__name__
+        for arg in self._args:
+            try:
+                argStr = repr(arg)
+            except:
+                argStr = 'bad repr: %s' % arg.__class__
+            s += ', %s' % argStr
+        for karg, value in self._kargs.items():
+            s += ', %s=%s' % (karg, repr(value))
+        s += ')'
+        return s
+
+class Stack:
+    def __init__(self):
+        self.__list = []
+    def push(self, item):
+        self.__list.append(item)
+    def top(self):
+        # return the item on the top of the stack without popping it off
+        return self.__list[-1]
+    def pop(self):
+        return self.__list.pop()
+    def clear(self):
+        self.__list = []
+    def isEmpty(self):
+        return len(self.__list) == 0
+    def __len__(self):
+        return len(self.__list)
+
+class Queue:
+    # FIFO queue
+    # interface is intentionally identical to Stack (LIFO)
+    def __init__(self):
+        self.__list = []
+    def push(self, item):
+        self.__list.append(item)
+    def top(self):
+        # return the next item at the front of the queue without popping it off
+        return self.__list[0]
+    def front(self):
+        return self.__list[0]
+    def back(self):
+        return self.__list[-1]
+    def pop(self):
+        return self.__list.pop(0)
+    def clear(self):
+        self.__list = []
+    def isEmpty(self):
+        return len(self.__list) == 0
+    def __len__(self):
+        return len(self.__list)
+
+if __debug__:
+    q = Queue()
+    assert q.isEmpty()
+    q.clear()
+    assert q.isEmpty()
+    q.push(10)
+    assert not q.isEmpty()
+    q.push(20)
+    assert not q.isEmpty()
+    assert len(q) == 2
+    assert q.front() == 10
+    assert q.back() == 20
+    assert q.top() == 10
+    assert q.top() == 10
+    assert q.pop() == 10
+    assert len(q) == 1
+    assert not q.isEmpty()
+    assert q.pop() == 20
+    assert len(q) == 0
+    assert q.isEmpty()
 
 def unique(L1, L2):
     """Return a list containing all items in 'L1' that are not in 'L2'"""
@@ -792,13 +922,47 @@ def binaryRepr(number, max_length = 32):
     digits = digits [digits.index (1):]
     return string.join (map (repr, digits), '')
 
+class StdoutCapture:
+    # redirects stdout to a string
+    def __init__(self):
+        self._oldStdout = sys.stdout
+        sys.stdout = self
+        self._string = ''
+    def destroy(self):
+        sys.stdout = self._oldStdout
+        del self._oldStdout
+
+    def getString(self):
+        return self._string
+
+    # internal
+    def write(self, string):
+        self._string = ''.join([self._string, string])
+
+class StdoutPassthrough(StdoutCapture):
+    # like StdoutCapture but also allows output to go through to the OS as normal
+
+    # internal
+    def write(self, string):
+        self._string = ''.join([self._string, string])
+        self._oldStdout.write(string)
+
 # constant profile defaults
 PyUtilProfileDefaultFilename = 'profiledata'
 PyUtilProfileDefaultLines = 80
 PyUtilProfileDefaultSorts = ['cumulative', 'time', 'calls']
 
-def profile(callback, name, terse):
-    import __builtin__
+_ProfileResultStr = ''
+
+def getProfileResultString():
+    # if you called profile with 'log' not set to True,
+    # you can call this function to get the results as
+    # a string
+    global _ProfileResultStr
+    return _ProfileResultStr
+
+def profileFunc(callback, name, terse, log=True):
+    global _ProfileResultStr
     if 'globalProfileFunc' in __builtin__.__dict__:
         # rats. Python profiler is not re-entrant...
         base.notify.warning(
@@ -809,10 +973,20 @@ def profile(callback, name, terse):
             ))
         return
     __builtin__.globalProfileFunc = callback
-    print '***** START PROFILE: %s *****' % name
-    startProfile(cmd='globalProfileFunc()', callInfo=(not terse))
-    print '***** END PROFILE: %s *****' % name
+    __builtin__.globalProfileResult = [None]
+    prefix = '***** START PROFILE: %s *****' % name
+    if log:
+        print prefix
+    startProfile(cmd='globalProfileResult[0]=globalProfileFunc()', callInfo=(not terse), silent=not log)
+    suffix = '***** END PROFILE: %s *****' % name
+    if log:
+        print suffix
+    else:
+        _ProfileResultStr = '%s\n%s\n%s' % (prefix, _ProfileResultStr, suffix)
+    result = globalProfileResult[0]
     del __builtin__.__dict__['globalProfileFunc']
+    del __builtin__.__dict__['globalProfileResult']
+    return result
 
 def profiled(category=None, terse=False):
     """ decorator for profiling functions
@@ -828,6 +1002,8 @@ def profiled(category=None, terse=False):
     """
     assert type(category) in (types.StringType, types.NoneType), "must provide a category name for @profiled"
 
+    # allow profiling in published versions
+    """
     try:
         null = not __dev__
     except:
@@ -839,6 +1015,7 @@ def profiled(category=None, terse=False):
         def nullDecorator(f):
             return f
         return nullDecorator
+    """
 
     def profileDecorator(f):
         def _profiled(*args, **kArgs):
@@ -847,12 +1024,94 @@ def profiled(category=None, terse=False):
             # showbase might not be loaded yet, so don't use
             # base.config.  Instead, query the ConfigVariableBool.
             if (category is None) or ConfigVariableBool('want-profile-%s' % category, 0).getValue():
-                return profile(Functor(f, *args, **kArgs), name, terse)
+                return profileFunc(Functor(f, *args, **kArgs), name, terse)
             else:
                 return f(*args, **kArgs)
         _profiled.__doc__ = f.__doc__
         return _profiled
     return profileDecorator
+
+# intercept profile-related file operations to avoid disk access
+movedOpenFuncs = []
+movedDumpFuncs = []
+movedLoadFuncs = []
+profileFilenames = set()
+profileFilenameList = Stack()
+profileFilename2file = {}
+profileFilename2marshalData = {}
+
+def _profileOpen(filename, *args, **kArgs):
+    # this is a replacement for the file open() builtin function
+    # for use during profiling, to intercept the file open
+    # operation used by the Python profiler and profile stats
+    # systems
+    if filename in profileFilenames:
+        # if this is a file related to profiling, create an
+        # in-RAM file object
+        if filename not in profileFilename2file:
+            file = StringIO()
+            file._profFilename = filename
+            profileFilename2file[filename] = file
+        else:
+            file = profileFilename2file[filename]
+    else:
+        file = movedOpenFuncs[-1](filename, *args, **kArgs)
+    return file
+
+def _profileMarshalDump(data, file):
+    # marshal.dump doesn't work with StringIO objects
+    # simulate it
+    if isinstance(file, StringIO) and hasattr(file, '_profFilename'):
+        if file._profFilename in profileFilenames:
+            profileFilename2marshalData[file._profFilename] = data
+            return None
+    return movedDumpFuncs[-1](data, file)
+
+def _profileMarshalLoad(file):
+    # marshal.load doesn't work with StringIO objects
+    # simulate it
+    if isinstance(file, StringIO) and hasattr(file, '_profFilename'):
+        if file._profFilename in profileFilenames:
+            return profileFilename2marshalData[file._profFilename]
+    return movedLoadFuncs[-1](file)
+
+def _installProfileCustomFuncs(filename):
+    assert filename not in profileFilenames
+    profileFilenames.add(filename)
+    profileFilenameList.push(filename)
+    movedOpenFuncs.append(__builtin__.open)
+    __builtin__.open = _profileOpen
+    movedDumpFuncs.append(marshal.dump)
+    marshal.dump = _profileMarshalDump
+    movedLoadFuncs.append(marshal.load)
+    marshal.load = _profileMarshalLoad
+
+def _getProfileResultFileInfo(filename):
+    return (profileFilename2file.get(filename, None),
+            profileFilename2marshalData.get(filename, None))
+
+def _setProfileResultsFileInfo(filename, info):
+    f, m = info
+    if f:
+        profileFilename2file[filename] = f
+    if m:
+        profileFilename2marshalData[filename] = m
+
+def _clearProfileResultFileInfo(filename):
+    profileFilename2file.pop(filename, None)
+    profileFilename2marshalData.pop(filename, None)
+
+def _removeProfileCustomFuncs(filename):
+    assert profileFilenameList.top() == filename
+    marshal.load = movedLoadFuncs.pop()
+    marshal.dump = movedDumpFuncs.pop()
+    __builtin__.open = movedOpenFuncs.pop()
+    profileFilenames.remove(filename)
+    profileFilenameList.pop()
+    profileFilename2file.pop(filename, None)
+    # don't let marshalled data pile up
+    profileFilename2marshalData.pop(filename, None)
+
 
 # call this from the prompt, and break back out to the prompt
 # to stop profiling
@@ -868,27 +1127,56 @@ def profiled(category=None, terse=False):
 #        PythonUtil.startProfile(cmd='func()', filename='profileData')
 #        del __builtin__.func
 #
+def _profileWithoutGarbageLeak(cmd, filename):
+    # this is necessary because the profile module creates a memory leak
+    Profile = profile.Profile
+    statement = cmd
+    sort = -1
+    retVal = None
+    #### COPIED FROM profile.run ####
+    prof = Profile()
+    try:
+        prof = prof.run(statement)
+    except SystemExit:
+        pass
+    if filename is not None:
+        prof.dump_stats(filename)
+    else:
+        #return prof.print_stats(sort)  #DCR
+        retVal = prof.print_stats(sort) #DCR
+    #################################
+    # eliminate the garbage leak
+    del prof.dispatcher
+    return retVal
+    
 def startProfile(filename=PyUtilProfileDefaultFilename,
                  lines=PyUtilProfileDefaultLines,
                  sorts=PyUtilProfileDefaultSorts,
                  silent=0,
                  callInfo=1,
+                 useDisk=False,
                  cmd='run()'):
     # uniquify the filename to allow multiple processes to profile simultaneously
-    filename = '%s.%s' % (filename, randUint31())
-    import profile
-    profile.run(cmd, filename)
-    if not silent:
+    filename = '%s.%s%s' % (filename, randUint31(), randUint31())
+    if not useDisk:
+        # use a RAM file
+        _installProfileCustomFuncs(filename)
+    _profileWithoutGarbageLeak(cmd, filename)
+    if silent:
+        extractProfile(filename, lines, sorts, callInfo)
+    else:
         printProfile(filename, lines, sorts, callInfo)
-    import os
-    os.remove(filename)
+    if not useDisk:
+        # discard the RAM file
+        _removeProfileCustomFuncs(filename)
+    else:
+        os.remove(filename)
 
-# call this to see the results again
+# call these to see the results again, as a string or in the log
 def printProfile(filename=PyUtilProfileDefaultFilename,
                  lines=PyUtilProfileDefaultLines,
                  sorts=PyUtilProfileDefaultSorts,
                  callInfo=1):
-    import pstats
     s = pstats.Stats(filename)
     s.strip_dirs()
     for sort in sorts:
@@ -898,6 +1186,18 @@ def printProfile(filename=PyUtilProfileDefaultFilename,
             s.print_callees(lines)
             s.print_callers(lines)
 
+# same args as printProfile
+def extractProfile(*args, **kArgs):
+    global _ProfileResultStr
+    # capture print output
+    sc = StdoutCapture()
+    # print the profile output, redirected to the result string
+    printProfile(*args, **kArgs)
+    # make a copy of the print output
+    _ProfileResultStr = sc.getString()
+    # restore stdout to what it was before
+    sc.destroy()
+
 def getSetterName(valueName, prefix='set'):
     # getSetterName('color') -> 'setColor'
     # getSetterName('color', 'get') -> 'getColor'
@@ -905,122 +1205,6 @@ def getSetterName(valueName, prefix='set'):
 def getSetter(targetObj, valueName, prefix='set'):
     # getSetter(smiley, 'pos') -> smiley.setPos
     return getattr(targetObj, getSetterName(valueName, prefix))
-
-"""
-# with one integer positional arg, this uses about 4/5 of the memory of the Functor class below
-def Functor(function, *args, **kArgs):
-    argsCopy = args[:]
-    def functor(*cArgs, **ckArgs):
-        kArgs.update(ckArgs)
-        return function(*(argsCopy + cArgs), **kArgs)
-    return functor
-"""
-
-class Functor:
-    def __init__(self, function, *args, **kargs):
-        assert callable(function), "function should be a callable obj"
-        self._function = function
-        self._args = args
-        self._kargs = kargs
-        self.__name__ = self._function.__name__
-        self.__doc__ = self._function.__doc__
-
-    def destroy(self):
-        del self._function
-        del self._args
-        del self._kargs
-        del self.__name__
-        del self.__doc__
-    
-    def _do__call__(self, *args, **kargs):
-        _kargs = self._kargs.copy()
-        _kargs.update(kargs)
-        return self._function(*(self._args + args), **_kargs)
-
-    # this method is used in place of __call__ if we are recording creation stacks
-    def _exceptionLoggedCreationStack__call__(self, *args, **kargs):
-        try:
-            return self._do__call__(*args, **kargs)
-        except Exception, e:
-            print '-->Functor creation stack (%s): %s' % (
-                self.__name__, self.getCreationStackTraceCompactStr())
-            raise
-
-    __call__ = _do__call__
-
-    def __repr__(self):
-        s = 'Functor(%s' % self._function.__name__
-        for arg in self._args:
-            try:
-                argStr = repr(arg)
-            except:
-                argStr = 'bad repr: %s' % arg.__class__
-            s += ', %s' % argStr
-        for karg, value in self._kargs.items():
-            s += ', %s=%s' % (karg, repr(value))
-        s += ')'
-        return s
-
-class Stack:
-    def __init__(self):
-        self.__list = []
-    def push(self, item):
-        self.__list.append(item)
-    def top(self):
-        # return the item on the top of the stack without popping it off
-        return self.__list[-1]
-    def pop(self):
-        return self.__list.pop()
-    def clear(self):
-        self.__list = []
-    def isEmpty(self):
-        return len(self.__list) == 0
-    def __len__(self):
-        return len(self.__list)
-
-class Queue:
-    # FIFO queue
-    # interface is intentionally identical to Stack (LIFO)
-    def __init__(self):
-        self.__list = []
-    def push(self, item):
-        self.__list.append(item)
-    def top(self):
-        # return the next item at the front of the queue without popping it off
-        return self.__list[0]
-    def front(self):
-        return self.__list[0]
-    def back(self):
-        return self.__list[-1]
-    def pop(self):
-        return self.__list.pop(0)
-    def clear(self):
-        self.__list = []
-    def isEmpty(self):
-        return len(self.__list) == 0
-    def __len__(self):
-        return len(self.__list)
-
-if __debug__:
-    q = Queue()
-    assert q.isEmpty()
-    q.clear()
-    assert q.isEmpty()
-    q.push(10)
-    assert not q.isEmpty()
-    q.push(20)
-    assert not q.isEmpty()
-    assert len(q) == 2
-    assert q.front() == 10
-    assert q.back() == 20
-    assert q.top() == 10
-    assert q.top() == 10
-    assert q.pop() == 10
-    assert len(q) == 1
-    assert not q.isEmpty()
-    assert q.pop() == 20
-    assert len(q) == 0
-    assert q.isEmpty()
 
 def mostDerivedLast(classList):
     """pass in list of classes. sorts list in-place, with derived classes
@@ -1709,6 +1893,21 @@ def average(*args):
         val += arg
     return val / len(args)
 
+class Averager:
+    def __init__(self, name):
+        self._name = name
+        self.reset()
+    def reset(self):
+        self._total = 0.
+        self._count = 0
+    def addValue(self, value):
+        self._total += value
+        self._count += 1
+    def getAverage(self):
+        return self._total / self._count
+    def getCount(self):
+        return self._count
+
 def addListsByValue(a, b):
     """
     returns a new array containing the sums of the two array arguments
@@ -2239,11 +2438,41 @@ def gcDebugOn():
     import gc
     return (gc.get_debug() & gc.DEBUG_SAVEALL) == gc.DEBUG_SAVEALL
 
+# base class for all Panda C++ objects
+# libdtoolconfig doesn't seem to have this, grab it off of PandaNode
+dtoolSuperBase = None
+
+def _getDtoolSuperBase(): 
+    global dtoolSuperBase
+    from pandac.PandaModules import PandaNode
+    dtoolSuperBase = PandaNode('').__class__.__bases__[0].__bases__[0].__bases__[0]
+
+safeReprNotify = None
+
+def _getSafeReprNotify():
+    global safeReprNotify
+    from direct.directnotify.DirectNotifyGlobal import directNotify
+    safeReprNotify = directNotify.newCategory("safeRepr")
+
 def safeRepr(obj):
+    global dtoolSuperBase
+    if dtoolSuperBase is None:
+        _getDtoolSuperBase()
+
+    global safeReprNotify
+    if safeReprNotify is None:
+        _getSafeReprNotify()
+
+    if isinstance(obj, dtoolSuperBase):
+        # repr of C++ object could crash, particularly if the object has been deleted
+        # log that we're calling repr
+        safeReprNotify.info('calling repr on instance of %s.%s' % (obj.__class__.__module__, obj.__class__.__name__))
+        sys.stdout.flush()
+
     try:
         return repr(obj)
     except:
-        return '<** FAILED REPR OF %s **>' % obj.__class__.__name__
+        return '<** FAILED REPR OF %s instance at %s **>' % (obj.__class__.__name__, hex(id(obj)))
 
 def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
     """ caps the length of iterable types, so very large objects will print faster.
@@ -2257,7 +2486,7 @@ def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
             s = ''
             s += {types.TupleType: '(',
                   types.ListType:  '[',}[type(obj)]
-            if len(obj) > maxLen:
+            if maxLen is not None and len(obj) > maxLen:
                 o = obj[:maxLen]
                 ellips = '...'
             else:
@@ -2274,7 +2503,7 @@ def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
             return s
         elif type(obj) is types.DictType:
             s = '{'
-            if len(obj) > maxLen:
+            if maxLen is not None and len(obj) > maxLen:
                 o = obj.keys()[:maxLen]
                 ellips = '...'
             else:
@@ -2290,13 +2519,18 @@ def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
             s += '}'
             return s
         elif type(obj) is types.StringType:
-            maxLen *= strFactor
-            if len(obj) > maxLen:
+            if maxLen is not None:
+                maxLen *= strFactor
+            if maxLen is not None and len(obj) > maxLen:
                 return safeRepr(obj[:maxLen])
             else:
                 return safeRepr(obj)
         else:
-            return safeRepr(obj)
+            r = safeRepr(obj)
+            maxLen *= strFactor
+            if len(r) > maxLen:
+                r = r[:maxLen]
+            return r
     except:
         return '<** FAILED REPR OF %s **>' % obj.__class__.__name__
 
@@ -2363,12 +2597,29 @@ except:
 class ScratchPad:
     """empty class to stick values onto"""
     def __init__(self, **kArgs):
-        for key, value in kArgs.items():
+        for key, value in kArgs.iteritems():
             setattr(self, key, value)
-        self._keys = kArgs.keys()
+        self._keys = set(kArgs.keys())
+    def add(self, **kArgs):
+        for key, value in kArgs.iteritems():
+            setattr(self, key, value)
+        self._keys.update(kArgs.keys())
     def destroy(self):
         for key in self._keys:
             delattr(self, key)
+
+class DestructiveScratchPad(ScratchPad):
+    # automatically calls destroy() on elements passed to __init__
+    def add(self, **kArgs):
+        for key, value in kArgs.iteritems():
+            if hasattr(self, key):
+                getattr(self, key).destroy()
+            setattr(self, key, value)
+        self._keys.update(kArgs.keys())
+    def destroy(self):
+        for key in self._keys:
+            getattr(self, key).destroy()
+        ScratchPad.destroy(self)
 
 class Sync:
     _SeriesGen = SerialNumGen()
@@ -2422,12 +2673,66 @@ class RefCounter:
         return result
 
 def itype(obj):
+    # version of type that gives more complete information about instance types
+    global dtoolSuperBase
     t = type(obj)
     if t is types.InstanceType:
-        return '%s of <class %s>' % (repr(types.InstanceType),
-                                     str(obj.__class__))
+        return '%s of <class %s>>' % (repr(types.InstanceType)[:-1],
+                                      str(obj.__class__))
     else:
+        # C++ object instances appear to be types via type()
+        # check if this is a C++ object
+        if dtoolSuperBase is None:
+            _getDtoolSuperBase()
+        if isinstance(obj, dtoolSuperBase):
+            return '%s of %s>' % (repr(types.InstanceType)[:-1],
+                                  str(obj.__class__))
         return t
+
+def deeptype(obj, maxLen=100, _visitedIds=None):
+    if _visitedIds is None:
+        _visitedIds = set()
+    if id(obj) in _visitedIds:
+        return '<ALREADY-VISITED %s>' % itype(obj)
+    t = type(obj)
+    if t in (types.TupleType, types.ListType):
+        s = ''
+        s += {types.TupleType: '(',
+              types.ListType:  '[',}[type(obj)]
+        if maxLen is not None and len(obj) > maxLen:
+            o = obj[:maxLen]
+            ellips = '...'
+        else:
+            o = obj
+            ellips = ''
+        _visitedIds.add(id(obj))
+        for item in o:
+            s += deeptype(item, maxLen, _visitedIds=_visitedIds)
+            s += ', '
+        _visitedIds.remove(id(obj))
+        s += ellips
+        s += {types.TupleType: ')',
+              types.ListType:  ']',}[type(obj)]
+        return s
+    elif type(obj) is types.DictType:
+        s = '{'
+        if maxLen is not None and len(obj) > maxLen:
+            o = obj.keys()[:maxLen]
+            ellips = '...'
+        else:
+            o = obj.keys()
+            ellips = ''
+        _visitedIds.add(id(obj))
+        for key in o:
+            value = obj[key]
+            s += '%s: %s, ' % (deeptype(key, maxLen, _visitedIds=_visitedIds),
+                               deeptype(value, maxLen, _visitedIds=_visitedIds))
+        _visitedIds.remove(id(obj))
+        s += ellips
+        s += '}'
+        return s
+    else:
+        return str(itype(obj))
 
 def getNumberedTypedString(items, maxLen=5000, numPrefix=''):
     """get a string that has each item of the list on its own line,
@@ -2911,6 +3216,8 @@ def superFlattenShip(ship):
     #PHASE 5: flatten strong!
     return ship.flattenStrong()
 
+exceptionLoggedNotify = None
+
 def exceptionLogged(append=True):
     """decorator that outputs the function name and all arguments
     if an exception passes back through the stack frame
@@ -2933,12 +3240,16 @@ def exceptionLogged(append=True):
         return nullDecorator
     
     def _decoratorFunc(f, append=append):
+        global exceptionLoggedNotify
+        if exceptionLoggedNotify is None:
+            from direct.directnotify.DirectNotifyGlobal import directNotify
+            exceptionLoggedNotify = directNotify.newCategory("ExceptionLogged")
         def _exceptionLogged(*args, **kArgs):
             try:
                 return f(*args, **kArgs)
             except Exception, e:
                 try:
-                    s = 'STACK UNWIND: %s(' % f.func_name
+                    s = '%s(' % f.func_name
                     for arg in args:
                         s += '%s, ' % arg
                     for key, value in kArgs.items():
@@ -2949,9 +3260,10 @@ def exceptionLogged(append=True):
                     if append:
                         appendStr(e, '\n%s' % s)
                     else:
-                        print s
+                        exceptionLoggedNotify.info(s)
                 except:
-                    print 'exceptionLogged(%s): ERROR IN PRINTING' % f.func_name
+                    exceptionLoggedNotify.info(
+                        '%s: ERROR IN PRINTING' % f.func_name)
                 raise
         _exceptionLogged.__doc__ = f.__doc__
         return _exceptionLogged
@@ -3314,6 +3626,126 @@ def recordFunctorCreationStacks():
             Functor._functorCreationStacksRecorded = True
             Functor.__call__ = Functor._exceptionLoggedCreationStack__call__
 
+def formatTimeCompact(seconds):
+    # returns string in format '1d3h22m43s'
+    result = ''
+    a = int(seconds)
+    seconds = a % 60
+    a /= 60
+    if a > 0:
+        minutes = a % 60
+        a /= 60
+        if a > 0:
+            hours = a % 24
+            a /= 24
+            if a > 0:
+                days = a
+                result += '%sd' % days
+            result += '%sh' % hours
+        result += '%sm' % minutes
+    result += '%ss' % seconds
+    return result
+
+class AlphabetCounter:
+    # object that produces 'A', 'B', 'C', ... 'AA', 'AB', etc.
+    def __init__(self):
+        self._curCounter = ['A']
+    def next(self):
+        result = ''.join([c for c in self._curCounter])
+        index = -1
+        while True:
+            curChar = self._curCounter[index]
+            if curChar is 'Z':
+                nextChar = 'A'
+                carry = True
+            else:
+                nextChar = chr(ord(self._curCounter[index])+1)
+                carry = False
+            self._curCounter[index] = nextChar
+            if carry:
+                if (-index) == len(self._curCounter):
+                    self._curCounter = ['A',] + self._curCounter
+                    break
+                else:
+                    index -= 1
+                carry = False
+            else:
+                break
+        return result
+
+if __debug__:
+    def testAlphabetCounter():
+        tempList = []
+        ac = AlphabetCounter()
+        for i in xrange(26*3):
+            tempList.append(ac.next())
+        assert tempList == [ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                            'AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ',
+                            'BA','BB','BC','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BN','BO','BP','BQ','BR','BS','BT','BU','BV','BW','BX','BY','BZ',]
+        ac = AlphabetCounter()
+        num  = 26 # A-Z
+        num += (26*26) # AA-ZZ
+        num += 26 # AAZ
+        num += 1 # ABA
+        num += 2 # ABC
+        for i in xrange(num):
+            x = ac.next()
+        assert x == 'ABC'
+    testAlphabetCounter()
+    del testAlphabetCounter
+
+globalPdb = None
+
+traceCalled = False
+
+def setupPdb():
+    import pdb;
+    class pandaPdb(pdb.Pdb):
+        def stop_here(self, frame):
+            global traceCalled
+            if(traceCalled):
+                result = pdb.Pdb.stop_here(self, frame)
+                if(result == True):
+                    traceCalled = False
+                return result
+            if frame is self.stopframe:
+                return True
+            return False
+    global globalPdb
+    globalPdb = pandaPdb()
+    globalPdb.reset()
+    sys.settrace(globalPdb.trace_dispatch)
+    
+def pandaTrace():
+    if __dev__:
+        if not globalPdb:
+            setupPdb()
+        global traceCalled
+        globalPdb.set_trace(sys._getframe().f_back)
+        traceCalled = True
+
+packageMap = {
+    "toontown":"$TOONTOWN",
+    "direct":"$DIRECT",
+    "otp":"$OTP",
+    "pirates":"$PIRATES",
+}
+    
+
+#assuming . dereferncing for nice linking to imports
+def pandaBreak(dotpath, linenum, temporary = 0, cond = None):
+    if __dev__:
+        from pandac.PandaModules import Filename
+        if not globalPdb:
+            setupPdb()
+        dirs = dotpath.split(".")
+        root = Filename.expandFrom(packageMap[dirs[0]]).toOsSpecific()
+        filename = root + "\\src"
+        for d in dirs[1:]:
+            filename="%s\\%s"%(filename,d)
+        globalPdb.set_break(filename+".py", linenum, temporary, cond)
+            
+
 import __builtin__
 __builtin__.Functor = Functor
 __builtin__.Stack = Stack
@@ -3321,6 +3753,7 @@ __builtin__.Queue = Queue
 __builtin__.Enum = Enum
 __builtin__.SerialNumGen = SerialNumGen
 __builtin__.ScratchPad = ScratchPad
+__builtin__.DestructiveScratchPad = DestructiveScratchPad
 __builtin__.uniqueName = uniqueName
 __builtin__.serialNum = serialNum
 __builtin__.profiled = profiled
@@ -3361,3 +3794,4 @@ __builtin__.MiniLogSentry = MiniLogSentry
 __builtin__.logBlock = logBlock
 __builtin__.HierarchyException = HierarchyException
 __builtin__.pdir = pdir
+__builtin__.deeptype = deeptype

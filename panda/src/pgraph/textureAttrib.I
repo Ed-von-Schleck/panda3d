@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -25,8 +21,10 @@
 ////////////////////////////////////////////////////////////////////
 INLINE TextureAttrib::
 TextureAttrib() {
+  _next_implicit_sort = 0;
   _off_all_stages = false;
   _sort_seq = UpdateSeq::old();
+  _filtered_seq = UpdateSeq::old();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -39,10 +37,15 @@ TextureAttrib() {
 INLINE TextureAttrib::
 TextureAttrib(const TextureAttrib &copy) :
   _on_stages(copy._on_stages),
+  _on_ptr_stages(copy._on_ptr_stages),
+  _on_ff_stages(copy._on_ff_stages),
+  _ff_tc_index(copy._ff_tc_index),
+  _next_implicit_sort(copy._next_implicit_sort),
   _off_stages(copy._off_stages),
   _off_all_stages(copy._off_all_stages),
   _on_textures(copy._on_textures),
-  _sort_seq(copy._sort_seq)
+  _sort_seq(copy._sort_seq),
+  _filtered_seq(UpdateSeq::old())
 {
 }
 
@@ -101,7 +104,7 @@ get_num_on_stages() const {
 INLINE TextureStage *TextureAttrib::
 get_on_stage(int n) const {
   nassertr(n >= 0 && n < (int)_on_stages.size(), (TextureStage *)NULL);
-  return _on_stages[n];
+  return _on_stages[n]._stage;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -128,7 +131,7 @@ get_num_on_ff_stages() const {
 INLINE TextureStage *TextureAttrib::
 get_on_ff_stage(int n) const {
   nassertr(n >= 0 && n < (int)_on_ff_stages.size(), (TextureStage *)NULL);
-  return _on_ff_stages[n];
+  return _on_ff_stages[n]._stage;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -232,32 +235,6 @@ is_identity() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_on_stages
-//       Access: Public
-//  Description: Returns the complete list of stages defined within
-//               this TextureAttrib, suitable for passing to
-//               Geom::setup_multitexcoord_iterator().
-////////////////////////////////////////////////////////////////////
-INLINE const Geom::ActiveTextureStages &TextureAttrib::
-get_on_stages() const {
-  return _on_stages;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::get_on_ff_stages
-//       Access: Public
-//  Description: Returns the complete list of stages defined within
-//               this TextureAttrib, including only those which are
-//               relevant to the classic fixed-function pipeline.
-//               The result is suitable for passing to
-//               Geom::setup_multitexcoord_iterator().
-////////////////////////////////////////////////////////////////////
-INLINE const Geom::ActiveTextureStages &TextureAttrib::
-get_on_ff_stages() const {
-  return _on_ff_stages;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::check_sorted
 //       Access: Private
 //  Description: Confirms whether the _on_stages list is still sorted.
@@ -272,4 +249,63 @@ check_sorted() const {
   if (_sort_seq != TextureStage::get_sort_seq()) {
     ((TextureAttrib *)this)->sort_on_stages();
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::OnStageNode::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE TextureAttrib::OnStageNode::
+OnStageNode(TextureStage *stage, unsigned int implicit_sort) :
+  _stage(stage),
+  _implicit_sort(implicit_sort)
+{
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::CompareTextureStagePriorities::operator ()
+//       Access: Public
+//  Description: This STL function object is used to sort a list of
+//               texture stages in reverse order by priority, and
+//               within priority, within order by sort.
+////////////////////////////////////////////////////////////////////
+INLINE bool TextureAttrib::CompareTextureStagePriorities::
+operator () (const TextureAttrib::OnStageNode &a, 
+             const TextureAttrib::OnStageNode &b) const {
+  if (a._stage->get_priority() != b._stage->get_priority()) {
+    return a._stage->get_priority() > b._stage->get_priority();
+  }
+  if (a._stage->get_sort() != b._stage->get_sort()) {
+    return a._stage->get_sort() < b._stage->get_sort();
+  }
+  return a._implicit_sort < b._implicit_sort;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::CompareTextureStageSort::operator ()
+//       Access: Public
+//  Description: This STL function object is used to sort a list of
+//               texture stages in order by sort.
+////////////////////////////////////////////////////////////////////
+INLINE bool TextureAttrib::CompareTextureStageSort::
+operator () (const TextureAttrib::OnStageNode &a, 
+             const TextureAttrib::OnStageNode &b) const {
+  if (a._stage->get_sort() != b._stage->get_sort()) {
+    return a._stage->get_sort() < b._stage->get_sort();
+  }
+  return a._implicit_sort < b._implicit_sort;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::CompareTextureStagePointer::operator ()
+//       Access: Public
+//  Description: This STL function object is used to sort a list of
+//               texture stages in order by pointer.
+////////////////////////////////////////////////////////////////////
+INLINE bool TextureAttrib::CompareTextureStagePointer::
+operator () (const TextureAttrib::OnStageNode &a, 
+             const TextureAttrib::OnStageNode &b) const {
+  return a._stage < b._stage;
 }

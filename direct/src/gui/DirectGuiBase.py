@@ -182,9 +182,9 @@ class DirectGuiBase(DirectObject.DirectObject):
             self._dynamicGroups = ()
         self._dynamicGroups = self._dynamicGroups + tuple(dynamicGroups)
         # Reconcile command line and default options
-        self.addoptions(optionDefs)
+        self.addoptions(optionDefs, keywords)
 
-    def addoptions(self, optionDefs):
+    def addoptions(self, optionDefs, optionkeywords):
         """ addoptions(optionDefs) - add option def to option info """
         # Add additional options, providing the default value and the
         # method to call when the value is changed.  See
@@ -199,6 +199,7 @@ class DirectGuiBase(DirectObject.DirectObject):
 
         for name, default, function in optionDefs:
             if '_' not in name:
+                default = optionkeywords.get(name, default)
                 # The option will already exist if it has been defined
                 # in a derived class.  In this case, do not override the
                 # default value of the option or the callback function
@@ -656,7 +657,7 @@ def setGuiGridSpacing(spacing):
 # production AI doesn't create any GUI.
 if config.GetBool('record-gui-creation-stack', __debug__):
     # this will help track down the code that created DirectGui objects
-    # call obj.getCreationStackTrace() to figure out what code created it
+    # call obj.printCreationStackTrace() to figure out what code created it
     DirectGuiBase = recordCreationStackStr(DirectGuiBase)
 
 class DirectGuiWidget(DirectGuiBase, NodePath):

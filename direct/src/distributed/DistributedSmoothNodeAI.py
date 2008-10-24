@@ -61,6 +61,9 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
     def setSmPosHpr(self, x, y, z, h, p, r, t=None):
         self.setPosHpr(x, y, z, h, p, r)
 
+    def setSmPosHprL(self, l, x, y, z, h, p, r, t=None):
+        self.setPosHpr(x, y, z, h, p, r)
+
     def clearSmoothing(self, bogus = None):
         pass
 
@@ -78,6 +81,8 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
         self.setP(p)
     def setComponentR(self, r):
         self.setR(r)
+    def setComponentL(self, l):
+        pass
     def setComponentT(self, t):
         pass
 
@@ -93,5 +98,12 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
         return self.getP()
     def getComponentR(self):
         return self.getR()
+    def getComponentL(self):
+        if (self.zoneId):
+            return self.zoneId
+        else:
+            # we can't send None over the wire which self.zoneId can sometimes be
+            return 0
     def getComponentT(self):
-        pass
+        return 0
+

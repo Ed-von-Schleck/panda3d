@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -40,6 +36,8 @@ PyObject *CDistributedSmoothNodeBase::_clock_delta = NULL;
 ////////////////////////////////////////////////////////////////////
 CDistributedSmoothNodeBase::
 CDistributedSmoothNodeBase() {
+  _currL[0] = 0;
+  _currL[1] = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,8 +78,9 @@ initialize(const NodePath &node_path, DCClass *dclass, CHANNEL_TYPE do_id) {
 ////////////////////////////////////////////////////////////////////
 void CDistributedSmoothNodeBase::
 send_everything() {
-  d_setSmPosHpr(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
-                _store_hpr[0], _store_hpr[1], _store_hpr[2]);
+  _currL[0] = _currL[1];
+  d_setSmPosHprL(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
+                 _store_hpr[0], _store_hpr[1], _store_hpr[2], _currL[0]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -128,7 +127,16 @@ broadcast_pos_hpr_full() {
     flags |= F_new_r;
   }
 
-  if (flags == 0) {
+  if (_currL[0] != _currL[1]) {
+    // location (zoneId) has changed, send out all info
+    // copy over 'set' location over to 'sent' location
+    _currL[0] = _currL[1];
+    // Any other change
+    _store_stop = false;
+    d_setSmPosHprL(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
+                   _store_hpr[0], _store_hpr[1], _store_hpr[2], _currL[0]);
+
+  } else if (flags == 0) {
     // No change.  Send one and only one "stop" message.
     if (!_store_stop) {
       _store_stop = true;
@@ -339,7 +347,8 @@ finish_send_update(DCPacker &packer) {
       ostringstream error;
       error << "Node position out of range for DC file: "
             << _node_path << " pos = " << _store_xyz
-            << " hpr = " << _store_hpr;
+            << " hpr = " << _store_hpr
+            << " zoneId = " << _currL[0];
       nassert_raise(error.str());
 
     } else {
@@ -347,5 +356,23 @@ finish_send_update(DCPacker &packer) {
     }
 #endif
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CDistributedSmoothNodeBase::set_curr_l
+//                 published function to set current location for
+//                 this object, this location is then sent out along
+//                 with the next position broadcast
+//       Access: Private
+//  Description: Appends the timestamp and sends the update.
+////////////////////////////////////////////////////////////////////
+void CDistributedSmoothNodeBase::
+set_curr_l(PN_uint64 l) {
+  _currL[1] = l;
+}
+
+void CDistributedSmoothNodeBase::
+print_curr_l() {
+  cout << "printCurrL: sent l: " << _currL[1] << " last set l: " << _currL[0] << "\n";
 }
 

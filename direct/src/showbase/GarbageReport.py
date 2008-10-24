@@ -6,6 +6,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase.PythonUtil import gcDebugOn, safeRepr, fastRepr, printListEnumGen, printNumberedTypesGen
 from direct.showbase.Job import Job
 import gc
+import types
 
 class FakeObject:
     pass
@@ -56,7 +57,7 @@ class GarbageReport(Job):
             yield None
         # don't repr the garbage list if we don't have to
         if self.notify.getDebug():
-            self.notify.debug('self.garbage == %s' % safeRepr(self.garbage))
+            self.notify.debug('self.garbage == %s' % fastRepr(self.garbage))
         del gc.garbage[:]
         if not wasOn:
             gc.set_debug(oldFlags)
@@ -79,6 +80,9 @@ class GarbageReport(Job):
                 yield None
                 """
 
+        # Py obj id -> garbage list index
+        self._id2index = {}
+
         self.referrersByReference = {}
         self.referrersByNumber = {}
 
@@ -86,8 +90,15 @@ class GarbageReport(Job):
         self.referentsByNumber = {}
 
         self.cycles = []
-        self.cycleSets = []
+        self.cyclesBySyntax = []
+        self.uniqueCycleSets = set()
         self.cycleIds = set()
+
+        # make the id->index table to speed up the next steps
+        for i in xrange(self.numGarbage):
+            self._id2index[id(self.garbage[i])] = i
+            if not (i % 20):
+                yield None
 
         # grab the referrers (pointing to garbage)
         if self._args.fullReport and (self.numGarbage != 0):
@@ -119,9 +130,88 @@ class GarbageReport(Job):
                 self.notify.info('detecting cycles...')
             for i in xrange(self.numGarbage):
                 yield None
-                for newCycles in self._getCycles(i, self.cycleSets):
+                for newCycles in self._getCycles(i, self.uniqueCycleSets):
                     yield None
                 self.cycles.extend(newCycles)
+                # create a representation of the cycle in human-readable form
+                newCyclesBySyntax = []
+                for cycle in newCycles:
+                    cycleBySyntax = ''
+                    objs = []
+                    # leave off the last index, it's a repeat of the first index
+                    for index in cycle[:-1]:
+                        objs.append(self.garbage[index])
+                        yield None
+                    # make the list repeat so we can safely iterate off the end
+                    numObjs = len(objs) - 1
+                    objs.extend(objs)
+
+                    # state variables for our loop below
+                    numToSkip = 0
+                    objAlreadyRepresented = False
+
+                    # if cycle starts off with an instance dict, start with the instance instead
+                    startIndex = 0
+                    endIndex = numObjs
+                    if type(objs[-1]) is types.InstanceType:
+                        startIndex = -1
+                        endIndex = numObjs - 1
+
+                    for index in xrange(startIndex, endIndex):
+                        if numToSkip:
+                            numToSkip -= 1
+                            continue
+                        obj = objs[index]
+                        if type(obj) is types.InstanceType:
+                            if not objAlreadyRepresented:
+                                cycleBySyntax += '%s' % obj.__class__.__name__
+                            cycleBySyntax += '.'
+                            # skip past the instance dict and get the member obj
+                            numToSkip += 1
+                            member = objs[index+2]
+                            for key, value in obj.__dict__.iteritems():
+                                if value is member:
+                                    break
+                                yield None
+                            else:
+                                key = '<unknown member name>'
+                            cycleBySyntax += '%s' % key
+                            objAlreadyRepresented = True
+                        elif type(obj) is types.DictType:
+                            cycleBySyntax += '{'
+                            # get object referred to by dict
+                            val = objs[index+1]
+                            for key, value in obj.iteritems():
+                                if value is val:
+                                    break
+                                yield None
+                            else:
+                                key = '<unknown key>'
+                            cycleBySyntax += '%s}' % fastRepr(key)
+                            objAlreadyRepresented = True
+                        elif type(obj) in (types.TupleType, types.ListType):
+                            brackets = {
+                                types.TupleType: '()',
+                                types.ListType: '[]',
+                                }[type(obj)]
+                            # get object being referenced by container
+                            nextObj = objs[index+1]
+                            cycleBySyntax += brackets[0]
+                            for index in xrange(len(obj)):
+                                if obj[index] is nextObj:
+                                    index = str(index)
+                                    break
+                                yield None
+                            else:
+                                index = '<unknown index>'
+                            cycleBySyntax += '%s%s' % (index, brackets[1])
+                            objAlreadyRepresented = True
+                        else:
+                            cycleBySyntax += '%s->' % itype(obj)
+                            objAlreadyRepresented = False
+                    newCyclesBySyntax.append(cycleBySyntax)
+                    yield None
+                self.cyclesBySyntax.extend(newCyclesBySyntax)
                 # if we're not doing a full report, add this cycle's IDs to the master set
                 if not self._args.fullReport:
                     for cycle in newCycles:
@@ -137,11 +227,11 @@ class GarbageReport(Job):
         if self.numGarbage > 0:
             # make a list of the ids we will actually be printing
             if self._args.fullReport:
-                garbageIds = range(self.numGarbage)
+                garbageIndices = range(self.numGarbage)
             else:
-                garbageIds = list(self.cycleIds)
-                garbageIds.sort()
-            numGarbage = len(garbageIds)
+                garbageIndices = list(self.cycleIds)
+                garbageIndices.sort()
+            numGarbage = len(garbageIndices)
 
             # log each individual item with a number in front of it
             if not self._args.fullReport:
@@ -160,23 +250,41 @@ class GarbageReport(Job):
 
             for i in xrange(numGarbage):
                 yield None
-                id = garbageIds[i]
+                idx = garbageIndices[i]
                 if self._args.safeMode:
                     # in safe mode, don't try to repr any of the objects
-                    objStr = repr(itype(self.garbage[id]))
+                    objStr = repr(itype(self.garbage[idx]))
                 else:
-                    objStr = safeRepr(self.garbage[id])
+                    objStr = fastRepr(self.garbage[idx])
                 maxLen = 5000
                 if len(objStr) > maxLen:
                     snip = '<SNIP>'
                     objStr = '%s%s' % (objStr[:(maxLen-len(snip))], snip)
-                s.append(format % (id, itype(self.garbage[id]), objStr))
+                s.append(format % (idx, itype(self.garbage[idx]), objStr))
+
+            # also log the types of the objects
+            s.append('===== Garbage Item Types %s=====' % abbrev)
+            for i in xrange(numGarbage):
+                yield None
+                idx = garbageIndices[i]
+                objStr = str(deeptype(self.garbage[idx]))
+                maxLen = 5000
+                if len(objStr) > maxLen:
+                    snip = '<SNIP>'
+                    objStr = '%s%s' % (objStr[:(maxLen-len(snip))], snip)
+                s.append(format % (idx, itype(self.garbage[idx]), objStr))
 
             if self._args.findCycles:
-                s.append('===== Garbage Cycles =====')
+                s.append('===== Garbage Cycles By Index =====')
                 for i in xrange(len(self.cycles)):
                     yield None
                     s.append('%s' % self.cycles[i])
+
+            if self._args.findCycles:
+                s.append('===== Garbage Cycles By Python Syntax =====')
+                for i in xrange(len(self.cyclesBySyntax)):
+                    yield None
+                    s.append('%s' % self.cyclesBySyntax[i])
 
             if self._args.fullReport:
                 format = '%0' + '%s' % digits + 'i:%s'
@@ -255,14 +363,12 @@ class GarbageReport(Job):
         yield None
         # look to see if each referrer is another garbage item
         byNum = []
-        for referrer in byRef:
-            yield None
-            try:
-                num = self.garbage.index(referrer)
-                byNum.append(num)
-            except:
-                #num = GarbageReport.NotGarbage
-                pass
+        for i in xrange(len(byRef)):
+            if not (i % 20):
+                yield None
+            referrer = byRef[i]
+            num = self._id2index.get(id(referrer), None)
+            byNum.append(num)
         yield byNum, byRef
 
     def _getReferents(self, obj):
@@ -274,24 +380,38 @@ class GarbageReport(Job):
         yield None
         # look to see if each referent is another garbage item
         byNum = []
-        for referent in byRef:
-            yield None
-            try:
-                num = self.garbage.index(referent)
-                byNum.append(num)
-            except:
-                #num = GarbageReport.NotGarbage
-                pass
+        for i in xrange(len(byRef)):
+            if not (i % 20):
+                yield None
+            referent = byRef[i]
+            num = self._id2index.get(id(referent), None)
+            byNum.append(num)
         yield byNum, byRef
 
-    def _getCycles(self, index, cycleSets=None):
+    def _getNormalizedCycle(self, cycle):
+        # returns a representation of a cycle (list of indices) that will be
+        # reliably derived from a unique cycle regardless of ordering
+        # this lets us detect duplicate cycles that appear different because of
+        # which element appears first
+        if len(cycle) == 0:
+            return cycle
+        min = 1<<30
+        minIndex = None
+        for i in xrange(len(cycle)):
+            elem = cycle[i]
+            if elem < min:
+                min = elem
+                minIndex = i
+        return cycle[minIndex:] + cycle[:minIndex]
+
+    def _getCycles(self, index, uniqueCycleSets=None):
         # detect garbage cycles for a particular item of garbage
         assert self.notify.debugCall()
         # returns list of lists, sublists are garbage reference cycles
         cycles = []
-        # sets of cycle members, to avoid duplicates
-        if cycleSets is None:
-            cycleSets = []
+        # this lets us eliminate duplicate cycles
+        if uniqueCycleSets is None:
+            uniqueCycleSets = set()
         stateStack = Stack()
         rootId = index
         stateStack.push(([rootId], rootId, 0))
@@ -310,14 +430,16 @@ class GarbageReport(Job):
                     print '       : %s -> %s' % (curId, refId)
                 if refId == rootId:
                     # we found a cycle! mark it down and move on to the next refId
-                    if not set(candidateCycle) in cycleSets:
+                    normCandidateCycle = self._getNormalizedCycle(candidateCycle)
+                    normCandidateCycleTuple = tuple(normCandidateCycle)
+                    if not normCandidateCycleTuple in uniqueCycleSets:
                         if self.notify.getDebug():
-                            print '  FOUND: ', list(candidateCycle) + [refId]
-                        cycles.append(list(candidateCycle) + [refId])
-                        cycleSets.append(set(candidateCycle))
+                            print '  FOUND: ', normCandidateCycle + [normCandidateCycle[0],]
+                        cycles.append(normCandidateCycle + [normCandidateCycle[0],])
+                        uniqueCycleSets.add(normCandidateCycleTuple)
                 elif refId in candidateCycle:
                     pass
-                else:
+                elif refId is not None:
                     # this refId does not complete a cycle. Mark down
                     # where we are in this list of referents, then
                     # start looking through the referents of the new refId

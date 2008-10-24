@@ -3,6 +3,7 @@
 from pandac.PandaModules import *
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectBase import DistributedObjectBase
+from direct.showbase.PythonUtil import StackTrace
 #from PyDatagram import PyDatagram
 #from PyDatagramIterator import PyDatagramIterator
 
@@ -14,6 +15,16 @@ ESDisabling    = 3
 ESDisabled     = 4  # values here and lower are considered "disabled"
 ESGenerating   = 5  # values here and greater are considered "generated"
 ESGenerated    = 6
+
+# update this table if the values above change
+ESNum2Str = {
+    ESNew: 'ESNew',
+    ESDeleted: 'ESDeleted',
+    ESDisabling: 'ESDisabling',
+    ESDisabled: 'ESDisabed',
+    ESGenerating: 'ESGenerating',
+    ESGenerated: 'ESGenerated',
+    }
 
 class DistributedObject(DistributedObjectBase):
     """
@@ -28,8 +39,6 @@ class DistributedObject(DistributedObjectBase):
     # keeps them from being disabled when you change zones,
     # even to the quiet zone.
     neverDisable = 0
-
-    DelayDeleteSerialGen = SerialNumGen()
 
     def __init__(self, cr):
         assert self.notify.debugStateCall(self)
@@ -47,10 +56,10 @@ class DistributedObject(DistributedObjectBase):
             # it needs to be optimized in this way.
             self.setCacheable(0)
 
+            # this is for Toontown only, see toontown.distributed.DelayDeletable
             self._token2delayDeleteName = {}
-            # This flag tells whether a delete has been requested on this
-            # object.
-            self.deleteImminent = 0
+            self._delayDeleteForceAllow = False
+            self._delayDeleted = 0
 
             # Keep track of our state as a distributed object.  This
             # is only trustworthy if the inheriting class properly
@@ -63,10 +72,6 @@ class DistributedObject(DistributedObjectBase):
 
             # This is used by doneBarrier().
             self.__barrierContext = None
-
-            ## TODO: This should probably be move to a derived class for CMU
-            ## #zone of the distributed object, default to 0
-            ## self.zone = 0
 
     if __debug__:
         def status(self, indent=0):
@@ -141,6 +146,35 @@ class DistributedObject(DistributedObjectBase):
     def getNeverDisable(self):
         return self.neverDisable
 
+    def _retrieveCachedData(self):
+        # once we know our doId, grab any data that might be stored in the data cache
+        # from the last time we were on the client
+        if self.cr.doDataCache.hasCachedData(self.doId):
+            self._cachedData = self.cr.doDataCache.popCachedData(self.doId)
+
+    def setCachedData(self, name, data):
+        assert type(name) == type('')
+        # ownership of the data passes to the repository data cache
+        self.cr.doDataCache.setCachedData(self.doId, name, data)
+
+    def hasCachedData(self, name):
+        assert type(name) == type('')
+        if not hasattr(self, '_cachedData'):
+            return False
+        return name in self._cachedData
+
+    def getCachedData(self, name):
+        assert type(name) == type('')
+        # ownership of the data passes to the caller of this method
+        data = self._cachedData[name]
+        del self._cachedData[name]
+        return data
+
+    def flushCachedData(self, name):
+        assert type(name) == type('')
+        # call this to throw out cached data from a previous instantiation
+        self._cachedData[name].flush()
+
     def setCacheable(self, bool):
         assert bool == 1 or bool == 0
         self.cacheable = bool
@@ -150,58 +184,28 @@ class DistributedObject(DistributedObjectBase):
 
     def deleteOrDelay(self):
         if len(self._token2delayDeleteName) > 0:
-            self.deleteImminent = 1
-            # Object is delayDeleted. Clean up distributedObject state,
-            # remove from repository tables, so that we won't crash if
-            # another instance of the same object gets generated while
-            # this instance is still delayDeleted.
-            messenger.send(self.getDisableEvent())
-            self.activeState = ESDisabled
-            self._deactivate()
+            if not self._delayDeleted:
+                self._delayDeleted = 1
+                # Object is delayDeleted. Clean up DistributedObject state,
+                # remove from repository tables, so that we won't crash if
+                # another instance of the same object gets generated while
+                # this instance is still delayDeleted.
+                messenger.send(self.getDelayDeleteEvent())
+                self.delayDelete()
+                self._deactivateDO()
         else:
             self.disableAnnounceAndDelete()
-
-    def getDelayDeleteCount(self):
-        return len(self._token2delayDeleteName)
-
-    def acquireDelayDelete(self, name):
-        # Also see DelayDelete.py
-
-        if self.getDelayDeleteCount() == 0:
-            self.cr._addDelayDeletedDO(self)
-
-        token = DistributedObject.DelayDeleteSerialGen.next()
-        self._token2delayDeleteName[token] = name
-
-        assert self.notify.debug(
-            "delayDelete count for doId %s now %s" %
-            (self.doId, len(self._token2delayDeleteName)))
-
-        # Return the token, user must pass token to releaseDelayDelete
-        return token
-
-    def releaseDelayDelete(self, token):
-        name = self._token2delayDeleteName.pop(token)
-        assert self.notify.debug("releasing delayDelete '%s'" % name)
-        if len(self._token2delayDeleteName) == 0:
-            assert self.notify.debug(
-                "delayDelete count for doId %s now 0" % (self.doId))
-            self.cr._removeDelayDeletedDO(self)
-            if self.deleteImminent:
-                assert self.notify.debug(
-                    "delayDelete count for doId %s -- deleteImminent" %
-                    (self.doId))
-                self.disable()
-                self.delete()
-                self._destroyDO()
-
-    def getDelayDeleteNames(self):
-        return self._token2delayDeleteName.values()
 
     def disableAnnounceAndDelete(self):
         self.disableAndAnnounce()
         self.delete()
         self._destroyDO()
+
+    def getDelayDeleteCount(self):
+        return len(self._token2delayDeleteName)
+
+    def getDelayDeleteEvent(self):
+        return self.uniqueName("delayDelete")
 
     def getDisableEvent(self):
         return self.uniqueName("disable")
@@ -221,7 +225,10 @@ class DistributedObject(DistributedObjectBase):
             messenger.send(self.getDisableEvent())
             self.disable()
             self.activeState = ESDisabled
-            self._deactivate()
+            if not self._delayDeleted:
+                # if the object is DelayDeleted, _deactivateDO has
+                # already been called
+                self._deactivateDO()
 
     def announceGenerate(self):
         """
@@ -231,9 +238,14 @@ class DistributedObject(DistributedObjectBase):
         assert self.notify.debug('announceGenerate(): %s' % (self.doId))
 
 
-    def _deactivate(self):
+    def _deactivateDO(self):
         # after this is called, the object is no longer an active DistributedObject
         # and it may be placed in the cache
+        if not self.cr:
+            # we are going to crash, output the destroyDo stacktrace
+            self.notify.warning('self.cr is none in _deactivateDO %d' % self.doId)
+            if hasattr(self, 'destroyDoStackTrace'):
+                print self.destroyDoStackTrace
         self.__callbacks = {}
         self.cr.closeAutoInterests(self)
         self.setLocation(0,0)
@@ -242,6 +254,14 @@ class DistributedObject(DistributedObjectBase):
     def _destroyDO(self):
         # after this is called, the object is no longer a DistributedObject
         # but may still be used as a DelayDeleted object
+        self.destroyDoStackTrace = StackTrace()
+        # check for leftover cached data that was not retrieved or flushed by this object
+        # this will catch typos in the data name in calls to get/setCachedData
+        if hasattr(self, '_cachedData'):
+            for name, cachedData in self._cachedData.iteritems():
+                self.notify.warning('flushing unretrieved cached data: %s' % name)
+                cachedData.flush()
+            del self._cachedData
         self.cr = None
         self.dclass = None
 

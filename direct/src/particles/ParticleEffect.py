@@ -28,16 +28,19 @@ class ParticleEffect(NodePath):
     def cleanup(self):
         self.removeNode()
         self.disable()
-        if hasattr(self, 'forceGroupDict'):
+        if self.__isValid():
             for f in self.forceGroupDict.values():
                 f.cleanup()
-            del self.forceGroupDict
-        if hasattr(self, 'particlesDict'):
             for p in self.particlesDict.values():
                 p.cleanup()
+            del self.forceGroupDict
             del self.particlesDict
         del self.renderParent
 
+    def getName(self):
+        # override NodePath.getName()
+        return self.name
+    
     def reset(self):
         self.removeAllForces()
         self.removeAllParticles()
@@ -53,7 +56,7 @@ class ParticleEffect(NodePath):
 
     def enable(self):
         # band-aid added for client crash - grw
-        if hasattr(self, 'forceGroupDict') and hasattr(self, 'particlesDict'):
+        if self.__isValid():
             if (self.renderParent != None):
                 for p in self.particlesDict.values():
                     p.setRenderParent(self.renderParent.node())
@@ -66,7 +69,7 @@ class ParticleEffect(NodePath):
     def disable(self):
         self.detachNode()
         # band-aid added for client crash - grw
-        if hasattr(self, 'forceGroupDict') and hasattr(self, 'particlesDict'):
+        if self.__isValid():
             for p in self.particlesDict.values():
                 p.setRenderParent(p.node)
             for f in self.forceGroupDict.values():
@@ -101,7 +104,7 @@ class ParticleEffect(NodePath):
 
         forceGroup.nodePath.removeNode()
         forceGroup.particleEffect = None
-        del self.forceGroupDict[forceGroup.getName()]
+        self.forceGroupDict.pop(forceGroup.getName(), None)
 
     def removeForce(self, force):
         for p in self.particlesDict.values():
@@ -125,7 +128,7 @@ class ParticleEffect(NodePath):
             self.notify.warning('removeParticles() - particles == None!')
             return
         particles.nodePath.detachNode()
-        del self.particlesDict[particles.getName()]
+        self.particlesDict.pop(particles.getName(), None)
 
         # Remove all forces from the particles
         for fg in self.forceGroupDict.values():
@@ -216,5 +219,14 @@ class ParticleEffect(NodePath):
             particles.softStop()
 
     def softStart(self):
-        for particles in self.getParticlesList():
-            particles.softStart()
+        if self.__isValid():
+            for particles in self.getParticlesList():
+                particles.softStart()
+        else:
+            # Not asserting here since we want to crash live clients for more expedient bugfix
+            # (Sorry, live clients)
+            self.notify.error('Trying to start effect(%s) after cleanup.' % (self.getName(),))
+
+    def __isValid(self):
+        return hasattr(self, 'forceGroupDict') and \
+               hasattr(self, 'particlesDict')

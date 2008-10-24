@@ -144,33 +144,49 @@ void ShaderGenerator::
 analyze_renderstate(const RenderState *rs) {
   clear_analysis();
 
+  //  verify_enforce_attrib_lock();
+
   rs->store_into_slots(&_attribs);
+  int outputs = _attribs._aux_bitplane->get_outputs();
 
-  // Check if there's an alpha test, color blend, or transparency.
-
+  // Decide whether or not we need alpha testing or alpha blending.
+  
   if ((_attribs._alpha_test->get_mode() != RenderAttrib::M_none)&&
       (_attribs._alpha_test->get_mode() != RenderAttrib::M_always)) {
     _have_alpha_test = true;
   }
   if (_attribs._color_blend->get_mode() != ColorBlendAttrib::M_none) {
-    _have_color_blend = true;
+    _have_alpha_blend = true;
   }
-  if (_attribs._transparency->get_mode() != TransparencyAttrib::M_none) {
-    _have_transparency = true;
+  if ((_attribs._transparency->get_mode() == TransparencyAttrib::M_alpha)||
+      (_attribs._transparency->get_mode() == TransparencyAttrib::M_dual)) {
+    _have_alpha_blend = true;
   }
   
-  // Determine what output values are desired.
+  // Decide what to send to the framebuffer alpha, if anything.
   
-  int outputs = _attribs._aux_bitplane->get_outputs();
-  if (_have_alpha_test || _have_color_blend || _have_transparency) {
-    _out_primary_alpha = true;
+  if (outputs & AuxBitplaneAttrib::ABO_glow) {
+    if (_have_alpha_blend) {
+      _calc_primary_alpha = true;
+      _out_primary_glow = false;
+      _disable_alpha_write = true;
+    } else if (_have_alpha_test) {
+      _calc_primary_alpha = true;
+      _out_primary_glow = true;
+      _subsume_alpha_test = true;
+    }
   } else {
-    _out_primary_glow = (outputs & AuxBitplaneAttrib::ABO_glow) ? true:false;
+    if (_have_alpha_blend || _have_alpha_test) {
+      _calc_primary_alpha = true;
+    }
   }
+  
+  // Determine what to put into the aux bitplane.
+
   _out_aux_normal = (outputs & AuxBitplaneAttrib::ABO_aux_normal) ? true:false;
   _out_aux_glow = (outputs & AuxBitplaneAttrib::ABO_aux_glow) ? true:false;
   _out_aux_any = (_out_aux_normal || _out_aux_glow);
-
+  
   // Count number of textures.
 
   _num_textures = 0;
@@ -358,10 +374,11 @@ clear_analysis() {
   _map_index_height = -1;
   _map_index_glow = -1;
   _map_index_gloss = -1;
+  _calc_primary_alpha = false;
   _have_alpha_test = false;
-  _have_color_blend = false;
-  _have_transparency = false;
-  _out_primary_alpha = false;
+  _have_alpha_blend = false;
+  _subsume_alpha_test = false;
+  _disable_alpha_write = false;
   _out_primary_glow  = false;
   _out_aux_normal = false;
   _out_aux_glow   = false;
@@ -369,7 +386,6 @@ clear_analysis() {
   _attribs.clear_to_defaults();
   _material = (Material*)NULL;
   _need_material_props = false;
-  _need_clipspace_pos = false;
   _alights.clear();
   _dlights.clear();
   _plights.clear();
@@ -454,7 +470,6 @@ synthesize_shader(const RenderState *rs) {
   char *tangent_freg = 0;
   char *binormal_vreg = 0;
   char *binormal_freg = 0;
-  char *csnormal_freg = 0;
   char *clip_freg = 0;
   pvector<char *> texcoord_vreg;
   pvector<char *> texcoord_freg;
@@ -486,6 +501,8 @@ synthesize_shader(const RenderState *rs) {
     pos_freg = alloc_freg();
     normal_vreg = alloc_vreg();
     normal_freg = alloc_freg();
+    text << "\t uniform float4x4 trans_model_to_view,\n";
+    text << "\t uniform float4x4 tpose_view_to_model,\n";
     text << "\t in float4 vtx_normal : " << normal_vreg << ",\n";
     text << "\t out float4 l_normal : " << normal_freg << ",\n";
     text << "\t out float4 l_pos : " << pos_freg << ",\n";
@@ -499,19 +516,12 @@ synthesize_shader(const RenderState *rs) {
       text << "\t out float4 l_tangent : " << tangent_freg << ",\n";
       text << "\t out float4 l_binormal : " << binormal_freg << ",\n";
     }
-  }
-  if (_need_clipspace_pos) {
-    clip_freg = alloc_freg();
-    text << "\t out float4 l_clip : " << clip_freg << ",\n";
-  }
-  if (_out_aux_normal) {
-    if (normal_vreg == 0) {
-      normal_vreg = alloc_vreg();
-      text << "\t in float4 vtx_normal : " << normal_vreg << ",\n";
-    }
-    csnormal_freg = alloc_freg();
-    text << "\t uniform float4x4 itp_modelview,\n";
-    text << "\t out float4 l_csnormal : " << csnormal_freg << ",\n";
+  } else if (_out_aux_normal) {
+    normal_vreg = alloc_vreg();
+    normal_freg = alloc_freg();
+    text << "\t uniform float4x4 tpose_view_to_model,\n";
+    text << "\t in float4 vtx_normal : " << normal_vreg << ",\n";
+    text << "\t out float4 l_normal : " << normal_freg << ",\n";
   }
   
   text << "\t float4 vtx_position : POSITION,\n";
@@ -520,9 +530,6 @@ synthesize_shader(const RenderState *rs) {
   text << ") {\n";
   
   text << "\t l_position = mul(mat_modelproj, vtx_position);\n";
-  if (_need_clipspace_pos) {
-    text << "\t l_clip = l_position;\n";
-  }
   for (int i=0; i<_num_textures; i++) {
     text << "\t l_texcoord" << i << " = vtx_texcoord" << i << ";\n";
   }
@@ -530,16 +537,17 @@ synthesize_shader(const RenderState *rs) {
     text << "\t l_color = vtx_color;\n";
   }
   if (_lighting) {
-    text << "\t l_pos = vtx_position;\n";
-    text << "\t l_normal = vtx_normal;\n";
-    if (_map_index_normal >= 0) {
-      text << "\t l_tangent = vtx_tangent" << _map_index_normal << ";\n";
-      text << "\t l_binormal = -vtx_binormal" << _map_index_normal << ";\n";
-    }
+    text << "\t l_pos = mul(trans_model_to_view, vtx_position);\n";
   }
-  if (_out_aux_normal) {
-    text << "\t l_csnormal.xyz = mul(itp_modelview, vtx_normal);\n";
-    text << "\t l_csnormal.w = 0;\n";
+  if (_lighting || _out_aux_normal) {
+    text << "\t l_normal.xyz = mul((float3x3)tpose_view_to_model, vtx_normal.xyz);\n";
+    text << "\t l_normal.w = 0;\n";
+  }
+  if (_lighting && (_map_index_normal >= 0)) {
+    text << "\t l_tangent.xyz = mul((float3x3)tpose_view_to_model, vtx_tangent" << _map_index_normal << ".xyz);\n";
+    text << "\t l_tangent.w = 0;\n";
+    text << "\t l_binormal.xyz = mul((float3x3)tpose_view_to_model, -vtx_binormal" << _map_index_normal << ".xyz);\n";
+    text << "\t l_binormal.w = 0;\n";
   }
   text << "}\n\n";
   
@@ -549,12 +557,12 @@ synthesize_shader(const RenderState *rs) {
     text << "\t in float4 l_texcoord" << i << " : " << texcoord_freg[i] << ",\n";
     text << "\t uniform sampler2D tex_" << i << ",\n";
   }
-  if (_lighting) {
+  if (_lighting || _out_aux_normal) {
     text << "\t in float3 l_normal : " << normal_freg << ",\n";
-    if (_map_index_normal >= 0) {
-      text << "\t in float3 l_tangent : " << tangent_freg << ",\n";
-      text << "\t in float3 l_binormal : " << binormal_freg << ",\n";
-    }
+  }
+  if (_lighting && (_map_index_normal >= 0)) {
+    text << "\t in float3 l_tangent : " << tangent_freg << ",\n";
+    text << "\t in float3 l_binormal : " << binormal_freg << ",\n";
   }
   if (_lighting) {
     text << "\t in float4 l_pos : " << pos_freg << ",\n";
@@ -562,13 +570,13 @@ synthesize_shader(const RenderState *rs) {
       text << "\t uniform float4 alight_alight" << i << ",\n";
     }
     for (int i=0; i<(int)_dlights.size(); i++) {
-      text << "\t uniform float4x4 dlight_dlight" << i << "_rel_model,\n";
+      text << "\t uniform float4x4 dlight_dlight" << i << "_rel_view,\n";
     }
     for (int i=0; i<(int)_plights.size(); i++) {
-      text << "\t uniform float4x4 plight_plight" << i << "_rel_model,\n";
+      text << "\t uniform float4x4 plight_plight" << i << "_rel_view,\n";
     }
     for (int i=0; i<(int)_slights.size(); i++) {
-      text << "\t uniform float4x4 slight_slight" << i << "_rel_model,\n";
+      text << "\t uniform float4x4 slight_slight" << i << "_rel_view,\n";
       text << "\t uniform float4   satten_slight" << i << ",\n";
     }
     if (_need_material_props) {
@@ -581,12 +589,6 @@ synthesize_shader(const RenderState *rs) {
         text << "\t uniform float4 row1_view_to_model,\n";
       }
     }
-  }
-  if (_out_aux_normal) {
-    text << "\t in float4 l_csnormal : " << csnormal_freg << ",\n";
-  }
-  if (_need_clipspace_pos) {
-    text << "\t in float4 l_clip : " << clip_freg << ",\n";
   }
   if (_out_aux_any) {
     text << "\t out float4 o_aux : COLOR1,\n";
@@ -608,7 +610,7 @@ synthesize_shader(const RenderState *rs) {
   }
   if (_lighting) {
     if (_map_index_normal >= 0) {
-      text << "\t // Translate tangent-space normal in map to model-space.\n";
+      text << "\t // Translate tangent-space normal in map to view-space.\n";
       text << "\t float3 tsnormal = ((float3)tex" << _map_index_normal << " * 2) - 1;\n";
       text << "\t l_normal = l_normal * tsnormal.z;\n";
       text << "\t l_normal+= l_tangent * tsnormal.x;\n";
@@ -621,10 +623,10 @@ synthesize_shader(const RenderState *rs) {
   }
   if (_out_aux_normal) {
     text << "\t // Output the camera-space surface normal\n";
-    text << "\t o_aux.rg = ((normalize(l_csnormal)*0.5) + float4(0.5,0.5,0.5,0)).rg;\n";
+    text << "\t o_aux.rgb = (l_normal*0.5) + float4(0.5,0.5,0.5,0)).rgb;\n";
   }
   if (_lighting) {
-    text << "\t // Begin model-space light calculations\n";
+    text << "\t // Begin view-space light calculations\n";
     text << "\t float ldist,lattenv,langle;\n";
     text << "\t float4 lcolor,lspec,lvec,lpoint,latten,ldir,leye,lhalf;\n";
     if (_separate_ambient_diffuse) {
@@ -658,16 +660,16 @@ synthesize_shader(const RenderState *rs) {
     }
     for (int i=0; i<(int)_dlights.size(); i++) {
       text << "\t // Directional Light " << i << "\n";
-      text << "\t lcolor = dlight_dlight" << i << "_rel_model[0];\n";
-      text << "\t lspec  = dlight_dlight" << i << "_rel_model[1];\n";
-      text << "\t lvec   = dlight_dlight" << i << "_rel_model[2];\n";
+      text << "\t lcolor = dlight_dlight" << i << "_rel_view[0];\n";
+      text << "\t lspec  = dlight_dlight" << i << "_rel_view[1];\n";
+      text << "\t lvec   = dlight_dlight" << i << "_rel_view[2];\n";
       text << "\t lcolor *= saturate(dot(l_normal, lvec.xyz));\n";
       text << "\t tot_diffuse += lcolor;\n";
       if (_have_specular) {
         if (_material->get_local()) {
-          text << "\t lhalf  = normalize(normalize(mspos_view - l_pos) + lvec);\n";
+          text << "\t lhalf  = normalize(lvec - normalize(l_pos));\n";
         } else {
-          text << "\t lhalf = dlight_dlight" << i << "_rel_model[3];\n";
+          text << "\t lhalf = dlight_dlight" << i << "_rel_view[3];\n";
         }
         text << "\t lspec *= pow(saturate(dot(l_normal, lhalf.xyz)), shininess);\n";
         text << "\t tot_specular += lspec;\n";
@@ -675,21 +677,21 @@ synthesize_shader(const RenderState *rs) {
     }
     for (int i=0; i<(int)_plights.size(); i++) {
       text << "\t // Point Light " << i << "\n";
-      text << "\t lcolor = plight_plight" << i << "_rel_model[0];\n";
-      text << "\t lspec  = plight_plight" << i << "_rel_model[1];\n";
-      text << "\t lpoint = plight_plight" << i << "_rel_model[2];\n";
-      text << "\t latten = plight_plight" << i << "_rel_model[3];\n";
+      text << "\t lcolor = plight_plight" << i << "_rel_view[0];\n";
+      text << "\t lspec  = plight_plight" << i << "_rel_view[1];\n";
+      text << "\t lpoint = plight_plight" << i << "_rel_view[2];\n";
+      text << "\t latten = plight_plight" << i << "_rel_view[3];\n";
       text << "\t lvec   = lpoint - l_pos;\n";
-      text << "\t ldist = length(lvec);\n";
+      text << "\t ldist = length(float3(lvec));\n";
       text << "\t lvec /= ldist;\n";
       text << "\t lattenv = 1/(latten.x + latten.y*ldist + latten.z*ldist*ldist);\n";
       text << "\t lcolor *= lattenv * saturate(dot(l_normal, lvec.xyz));\n";
       text << "\t tot_diffuse += lcolor;\n";
       if (_have_specular) {
         if (_material->get_local()) {
-          text << "\t lhalf  = normalize(normalize(mspos_view - l_pos) + lvec);\n";
+          text << "\t lhalf  = normalize(lvec - normalize(l_pos));\n";
         } else {
-          text << "\t lhalf = normalize(lvec - row1_view_to_model);\n";
+          text << "\t lhalf = normalize(lvec - float4(0,1,0,0));\n";
         }
         text << "\t lspec *= lattenv;\n";
         text << "\t lspec *= pow(saturate(dot(l_normal, lhalf.xyz)), shininess);\n";
@@ -698,13 +700,13 @@ synthesize_shader(const RenderState *rs) {
     }
     for (int i=0; i<(int)_slights.size(); i++) {
       text << "\t // Spot Light " << i << "\n";
-      text << "\t lcolor = slight_slight" << i << "_rel_model[0];\n";
-      text << "\t lspec  = slight_slight" << i << "_rel_model[1];\n";
-      text << "\t lpoint = slight_slight" << i << "_rel_model[2];\n";
-      text << "\t ldir   = slight_slight" << i << "_rel_model[3];\n";
+      text << "\t lcolor = slight_slight" << i << "_rel_view[0];\n";
+      text << "\t lspec  = slight_slight" << i << "_rel_view[1];\n";
+      text << "\t lpoint = slight_slight" << i << "_rel_view[2];\n";
+      text << "\t ldir   = slight_slight" << i << "_rel_view[3];\n";
       text << "\t latten = satten_slight" << i << ";\n";
       text << "\t lvec   = lpoint - l_pos;\n";
-      text << "\t ldist  = length(lvec);\n";
+      text << "\t ldist  = length(float3(lvec));\n";
       text << "\t lvec /= ldist;\n";
       text << "\t langle = saturate(dot(ldir.xyz, lvec.xyz));\n";
       text << "\t lattenv = 1/(latten.x + latten.y*ldist + latten.z*ldist*ldist);\n";
@@ -714,9 +716,9 @@ synthesize_shader(const RenderState *rs) {
       text << "\t tot_diffuse += lcolor;\n";
       if (_have_specular) {
         if (_material->get_local()) {
-          text << "\t lhalf  = normalize(normalize(mspos_view - l_pos) + lvec);\n";
+          text << "\t lhalf  = normalize(lvec - normalize(l_pos));\n";
         } else {
-          text << "\t lhalf = normalize(lvec - row1_view_to_model);\n";
+          text << "\t lhalf = normalize(lvec - float4(0,1,0,0));\n";
         }
         text << "\t lspec *= lattenv;\n";
         text << "\t lspec *= pow(saturate(dot(l_normal, lhalf.xyz)), shininess);\n";
@@ -750,16 +752,16 @@ synthesize_shader(const RenderState *rs) {
         break;
       }
     }
-    text << "\t // Begin model-space light summation\n";
+    text << "\t // Begin view-space light summation\n";
     if (_have_emission) {
       if (_map_index_glow >= 0) {
-        text << "\t result = attr_material[2] * tex" << _map_index_glow << ".a;\n";
+        text << "\t result = attr_material[2] * saturate(2 * (tex" << _map_index_glow << ".a - 0.5));\n";
       } else {
         text << "\t result = attr_material[2];\n";
       }
     } else {
       if (_map_index_glow >= 0) {
-        text << "\t result = tex" << _map_index_glow << ".aaaa;\n";
+        text << "\t result = saturate(2 * (tex" << _map_index_glow << ".a - 0.5));\n";
       } else {
         text << "\t result = float4(0,0,0,0);\n";
       }
@@ -789,11 +791,11 @@ synthesize_shader(const RenderState *rs) {
     if (_attribs._light_ramp->get_mode() == LightRampAttrib::LRT_default) {
       text << "\t result = saturate(result);\n";
     }
-    text << "\t // End model-space light calculations\n";
+    text << "\t // End view-space light calculations\n";
 
     // Combine in alpha, which bypasses lighting calculations.
     // Use of lerp here is a workaround for a radeon driver bug.
-    if (_out_primary_alpha) {
+    if (_calc_primary_alpha) {
       if (_vertex_colors) {
         text << "\t result.a = l_color.a;\n";
       } else if (_flat_colors) {
@@ -831,7 +833,7 @@ synthesize_shader(const RenderState *rs) {
       break;
     case TextureStage::M_add:
       text << "\t result.rbg = result.rgb + tex" << i << ".rgb;\n";
-      if (_out_primary_alpha) {
+      if (_calc_primary_alpha) {
         text << "\t result.a   = result.a * tex" << i << ".a;\n";
       }
       break;
@@ -846,18 +848,32 @@ synthesize_shader(const RenderState *rs) {
     }
   }
 
+  if (_subsume_alpha_test) {
+    text << "\t // Shader includes alpha test:\n";
+    double ref = _attribs._alpha_test->get_reference_alpha();
+    switch (_attribs._alpha_test->get_mode()) {
+    case RenderAttrib::M_never:          text<<"\t discard;\n";
+    case RenderAttrib::M_less:           text<<"\t if (result.a >= "<<ref<<") discard;\n";
+    case RenderAttrib::M_equal:          text<<"\t if (result.a != "<<ref<<") discard;\n";
+    case RenderAttrib::M_less_equal:     text<<"\t if (result.a >  "<<ref<<") discard;\n";
+    case RenderAttrib::M_greater:        text<<"\t if (result.a <= "<<ref<<") discard;\n";
+    case RenderAttrib::M_not_equal:      text<<"\t if (result.a == "<<ref<<") discard;\n";
+    case RenderAttrib::M_greater_equal:  text<<"\t if (result.a <  "<<ref<<") discard;\n";
+    }
+  }
+  
   if (_out_primary_glow) {
     if (_map_index_glow >= 0) {
       text << "\t result.a = tex" << _map_index_glow << ".a;\n";
     } else {
-      text << "\t result.a = 0;\n";
+      text << "\t result.a = 0.5;\n";
     }
   }
   if (_out_aux_glow) {
     if (_map_index_glow >= 0) {
       text << "\t o_aux.a = tex" << _map_index_glow << ".a;\n";
     } else {
-      text << "\t o_aux.a = 0;\n";
+      text << "\t o_aux.a = 0.5;\n";
     }
   }
   
@@ -889,10 +905,22 @@ synthesize_shader(const RenderState *rs) {
   // The multiply is a workaround for a radeon driver bug.
   // It's annoying as heck, since it produces an extra instruction.
   text << "\t o_color = result * 1.000001;\n"; 
+  if (_subsume_alpha_test) {
+    text << "\t // Shader subsumes normal alpha test.\n";
+  }
+  if (_disable_alpha_write) {
+    text << "\t // Shader disables alpha write.\n";
+  }
   text << "}\n";
   
   // Insert the shader into the shader attrib.
   CPT(RenderAttrib) shattr = create_shader_attrib(text.str());
+  if (_subsume_alpha_test) {
+    shattr=DCAST(ShaderAttrib, shattr)->set_flag(ShaderAttrib::F_subsume_alpha_test, true);
+  }
+  if (_disable_alpha_write) {
+    shattr=DCAST(ShaderAttrib, shattr)->set_flag(ShaderAttrib::F_disable_alpha_write, true);
+  }
   clear_analysis();
   reset_register_allocator();
   return shattr;

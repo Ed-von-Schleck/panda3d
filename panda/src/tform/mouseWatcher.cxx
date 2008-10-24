@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -206,7 +202,7 @@ remove_group(MouseWatcherGroup *group) {
   Regions only_a, only_b, both;
   intersect_regions(only_a, only_b, both,
                     _current_regions, group->_regions);
-  _current_regions.swap(only_a);
+  set_current_regions(only_a);
 
   if (has_region_in(both, _preferred_region)) {
     if (_preferred_region != (MouseWatcherRegion *)NULL) {
@@ -275,12 +271,16 @@ replace_group(MouseWatcherGroup *old_group, MouseWatcherGroup *new_group) {
   intersect_regions(remove, add, keep,
                     old_group->_regions, new_group->_regions);
 
+  Regions new_current_regions;
+  bool any_new_current_regions = false;
+
   // Remove the old regions
   if (!remove.empty()) {
     Regions only_a, only_b, both;
     intersect_regions(only_a, only_b, both,
                       _current_regions, remove);
-    _current_regions.swap(only_a);
+    new_current_regions.swap(only_a);
+    any_new_current_regions = true;
 
     if (has_region_in(both, _preferred_region)) {
       if (_preferred_region != (MouseWatcherRegion *)NULL) {
@@ -296,9 +296,19 @@ replace_group(MouseWatcherGroup *old_group, MouseWatcherGroup *new_group) {
   // And add the new regions
   if (!add.empty()) {
     Regions new_list;
-    intersect_regions(new_list, new_list, new_list,
-                      _current_regions, add);
-    _current_regions.swap(new_list);
+    if (any_new_current_regions) {
+      intersect_regions(new_list, new_list, new_list,
+                        new_current_regions, add);
+    } else {
+      intersect_regions(new_list, new_list, new_list,
+                        _current_regions, add);
+    }
+    new_current_regions.swap(new_list);
+    any_new_current_regions = true;
+  }
+
+  if (any_new_current_regions) {
+    set_current_regions(new_current_regions);
   }
 
   // Add the new group, if it's not already there.
@@ -1402,12 +1412,16 @@ do_transmit_data(DataGraphTraverser *trav, const DataNodeTransmit &input,
 
     if (_display_region != (DisplayRegion *)NULL) {
       // If we've got a display region, constrain the mouse to it.
-      int xo, yo, width, height;
       DisplayRegionPipelineReader dr_reader(_display_region, current_thread);
-      dr_reader.get_region_pixels_i(xo, yo, width, height);
+      float left, right, bottom, top;
+      dr_reader.get_dimensions(left, right, bottom, top);
 
-      if (p[0] < xo || p[0] >= xo + width || 
-          p[1] < yo || p[1] >= yo + height) {
+      // Need to translate this into DisplayRegion [0, 1] space
+      float x = (f[0] + 1.0f) / 2.0f;
+      float y = (f[1] + 1.0f) / 2.0f;
+      
+      if (x < left || x >= right || 
+          y < bottom || y >= top) {
         // The mouse is outside the display region, even though it's
         // within the window.  This is considered not having a mouse.
         set_no_mouse();
@@ -1417,22 +1431,20 @@ do_transmit_data(DataGraphTraverser *trav, const DataNodeTransmit &input,
 
       } else {
         // The mouse is within the display region; rescale it.
-        float left, right, bottom, top;
-        dr_reader.get_dimensions(left, right, bottom, top);
 
-        // Need to translate this into DisplayRegion [0, 1] space
-        float x = (f[0] + 1.0f) / 2.0f;
         // Scale in DR space
         float xp = (x - left) / (right - left);
         // Translate back into [-1, 1] space
         float xpp = (xp * 2.0f) - 1.0f;
 
-        float y = (f[1] + 1.0f) / 2.0f;
         float yp = (y - bottom) / (top - bottom);
         float ypp = (yp * 2.0f) - 1.0f;
 
+        int xo, yo, w, h;
+        dr_reader.get_region_pixels_i(xo, yo, w, h);
+
         LVecBase2f new_f(xpp, ypp);
-        LVecBase2f new_p(p[0] - xo, p[1] - xo);
+        LVecBase2f new_p(p[0] - xo, p[1] - yo);
 
         set_mouse(new_f, new_p);
       }

@@ -2,6 +2,8 @@ import direct
 from pandac.PandaModules import HttpRequest
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.task.TaskManagerGlobal import taskMgr
+from direct.task import Task
+from LandingPage import LandingPage
 
 notify = directNotify.newCategory('WebRequestDispatcher')
 
@@ -37,9 +39,25 @@ class WebRequest(object):
     def respond(self,body):
         self.respondHTTP("200 OK",body)
 
+    def respondXML(self,body):
+        msg = "HTTP/1.0 200 OK\r\nContent-Type: text/xml\r\n\r\n%s" % body
+        self.connection.SendThisResponse(msg)
+
+    def respondCustom(self,contentType,body):
+        msg = "HTTP/1.0 200 OK\r\nContent-Type: %s\n" % contentType
+
+        if contentType in ["text/css",]:
+            msg += "Cache-Control: max-age=313977290\nExpires: Tue, 02 May 2017 04:08:44 GMT\n"
+
+        msg += "\r\n\r\n%s" % (body)
+        self.connection.SendThisResponse(msg)
+
     def timeout(self):
         resp = "<html><body>Error 504: Request timed out</body></html>\r\n"
         self.respondHTTP("504 Gateway Timeout",resp)
+
+    def getSourceAddress(self):
+        return self.connection.GetSourceAddress()
 
 
 # --------------------------------------------------------------------------------
@@ -82,8 +100,8 @@ class WebRequestDispatcher(object):
         obj.__dict__ = self._shared_state
         return obj
 
-    def __init__(self):
-        pass
+    def __init__(self, wantLandingPage = True):
+        self.enableLandingPage(wantLandingPage)
 
     def listenOnPort(self,listenPort):
         """
@@ -91,14 +109,16 @@ class WebRequestDispatcher(object):
         Singleton server, so ignore multiple listen requests.
         """
         if self.listenPort is None:
+            self.listenPort = listenPort
             HttpRequest.HttpManagerInitialize(listenPort)
-            self.notify.info("Web server is listening on port %d" % listenPort)
+            self.notify.info("Listening on port %d" % listenPort)
         else:
-            self.notify.warning("Web server is already listening on port %d.  Ignoring request to listen on port %d." % (self.listenPort,listenPort))
+            self.notify.warning("Already listening on port %d.  Ignoring request to listen on port %d." % (self.listenPort,listenPort))
 
     def invalidURI(self,replyTo,**kw):
         resp = "<html><body>Error 404</body></html>\r\n"
         replyTo.respondHTTP("404 Not Found",resp)
+        self.notify.warning("%s - %s - 404" % (replyTo.getSourceAddress(),replyTo.getURI()))
 
     def handleGET(self,req):
         """
@@ -106,12 +126,23 @@ class WebRequestDispatcher(object):
         Expects to receive a WebRequest object.
         """
         assert req.getRequestType() == "GET"
+
+        self.landingPage.incrementQuickStat("Pages Served")
+        
         uri = req.getURI()
         args = req.dictFromGET()
-        callable,returnsResponse = self.uriToHandler.get(uri,[self.invalidURI,False])
+        
+        callable,returnsResponse,autoSkin = self.uriToHandler.get(uri, [self.invalidURI,False,False])
+
+        if callable != self.invalidURI:
+            self.notify.info("%s - %s - %s - 200" % (req.getSourceAddress(), uri, args))
+        
         if returnsResponse:
             result = apply(callable,(),args)
-            req.respond(result)
+            if autoSkin:
+                req.respond(self.landingPage.skin(result,uri))
+            else:
+                req.respond(result)
         else:
             args["replyTo"] = req
             apply(callable,(),args)
@@ -129,12 +160,13 @@ class WebRequestDispatcher(object):
             if wreq.getRequestType() == "GET":
                 self.handleGET(wreq)
             else:
-                self.notify.warning("Ignoring a non-GET request: %s" % request.GetRawRequest())
+                self.notify.warning("Ignoring a non-GET request from %s: %s" % (request.GetSourceAddress(),request.GetRawRequest()))
+                self.invalidURI(wreq)
 
             request = HttpRequest.HttpManagerGetARequest()
 
 
-    def registerGETHandler(self,uri,handler,returnsResponse=False):
+    def registerGETHandler(self,uri,handler,returnsResponse=False, autoSkin=False):
         """
         Call this function to register a handler function to
         be called in response to a query to the given URI.
@@ -160,7 +192,7 @@ class WebRequestDispatcher(object):
 
         if self.uriToHandler.get(uri,None) is None:
             self.notify.info("Registered handler %s for URI %s." % (handler,uri))
-            self.uriToHandler[uri] = [handler,returnsResponse]
+            self.uriToHandler[uri] = [handler, returnsResponse, autoSkin]
         else:
             self.notify.warning("Attempting to register a duplicate handler for URI %s.  Ignoring." % uri)
 
@@ -168,4 +200,49 @@ class WebRequestDispatcher(object):
         if uri[0] != "/":
             uri = "/" + uri
         self.uriToHandler.pop(uri,None)
+        
+
+    # -- Poll task wrappers --
+
+    def pollHTTPTask(self,task):
+        self.poll()
+        return Task.again
+        
+    def startCheckingIncomingHTTP(self, interval=0.3):
+        taskMgr.remove('pollHTTPTask')
+        taskMgr.doMethodLater(interval,self.pollHTTPTask,'pollHTTPTask')
+
+    def stopCheckingIncomingHTTP(self):
+        taskMgr.remove('pollHTTPTask')
+
+
+    # -- Landing page convenience functions --
+
+    def enableLandingPage(self, enable):
+        if enable:
+            if not self.__dict__.has_key("landingPage"):
+                self.landingPage = LandingPage()
+                self.registerGETHandler("/", self._main, returnsResponse = True, autoSkin = True)
+                self.registerGETHandler("/services", self._services, returnsResponse = True, autoSkin = True)
+                self.registerGETHandler("/default.css", self._stylesheet)
+                self.landingPage.addTab("Main", "/")
+                self.landingPage.addTab("Services", "/services")
+        else:
+            self.landingPage = None
+            self.unregisterGETHandler("/")
+            self.unregisterGETHandler("/services")
+
+        
+    def _main(self):
+        return self.landingPage.getMainPage()
+
+    def _services(self):
+        return self.landingPage.getServicesPage(self.uriToHandler)
+
+    def _stylesheet(self,**kw):
+        replyTo = kw.get("replyTo",None)
+        assert replyTo is not None
+        body = self.landingPage.getStyleSheet()
+        replyTo.respondCustom("text/css",body)
+
         

@@ -70,6 +70,11 @@ MayaShader(MObject engine) {
         if (found_shader) {
           _legacy_mode = true;
         }
+      } else if (shader.hasFn(MFn::kSurfaceShader)) {
+        found_shader = find_textures_legacy(shader);
+        if (found_shader) {
+          _legacy_mode = true;
+        }
       } else {
         maya_cat.warning() <<
           "Unrecognized shader type: only lambert and phong supported (lambert deprecated).\n";
@@ -299,19 +304,13 @@ calculate_pairings() {
     _all_maps[i]->_opposite = 0;
   }
   
-  bool using_color_alpha = (_trans_maps.size() > 0);
-  for (size_t i=0; i<_color_maps.size(); i++) {
-    if ((_color_maps[i]->_blend_type != MayaShaderColorDef::BT_modulate)&&
-        (_color_maps[i]->_blend_type != MayaShaderColorDef::BT_unspecified)) {
-      using_color_alpha = true;
-    }
-  }
+  bool using_transparency = (_trans_maps.size() > 0);
   
   for (int retry=0; retry<2; retry++) {
     bool perfect=(retry==0);
     for (size_t i=0; i<_color_maps.size(); i++) {
-      if ((_color_maps[i]->_blend_type != MayaShaderColorDef::BT_modulate)&&
-          (_color_maps[i]->_blend_type != MayaShaderColorDef::BT_unspecified)) {
+      if ((_color_maps[i]->_blend_type == MayaShaderColorDef::BT_modulate)||
+          (_color_maps[i]->_blend_type == MayaShaderColorDef::BT_unspecified)) {
         for (size_t j=0; j<_trans_maps.size(); j++) {
           try_pair(_color_maps[i], _trans_maps[j], perfect);
         }
@@ -319,7 +318,7 @@ calculate_pairings() {
     }
   }
   
-  if (!using_color_alpha) {
+  if (!using_transparency) {
     for (int retry=0; retry<2; retry++) {
       bool perfect=(retry==0);
       for (size_t i=0; i<_color_maps.size(); i++) {

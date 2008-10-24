@@ -4,15 +4,11 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *
  * PANDA 3D SOFTWARE
- * Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+ * Copyright (c) Carnegie Mellon University.  All rights reserved.
  *
- * All use of this software is subject to the terms of the Panda 3d
- * Software license.  You should have received a copy of this license
- * along with this source code; you will also find a current copy of
- * the license at http://etc.cmu.edu/panda3d/docs/license/ .
- *
- * To contact the maintainers of this program write to
- * panda3d-general@lists.sourceforge.net .
+ * All use of this software is subject to the terms of the revised BSD
+ * license.  You should have received a copy of this license along
+ * with this source code in a file named "LICENSE."
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -110,11 +106,9 @@
 #include <malloc.h>
 #endif
 
-/*
 #ifdef HAVE_SYS_MALLOC_H
 #include <sys/malloc.h>
 #endif
-*/
 
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
@@ -130,6 +124,18 @@
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
 #endif
 
 #ifdef HAVE_MINMAX_H

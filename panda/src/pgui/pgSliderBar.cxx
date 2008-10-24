@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -693,7 +689,17 @@ reposition() {
   float t = get_ratio();
   
   if (_thumb_button != (PGButton *)NULL) {
-    _thumb_button->set_transform(TransformState::make_pos((t * _range_x) * _axis + _thumb_start));
+    LPoint3f pos = (t * _range_x) * _axis + _thumb_start;
+    CPT(TransformState) transform = TransformState::make_pos(pos);
+    CPT(TransformState) orig_transform = _thumb_button->get_transform();
+
+    // It's important not to update the transform frivolously, or
+    // we'll get caught in an update loop.
+    if (transform == orig_transform) {
+      // No change.
+    } else if (*transform < *orig_transform || *orig_transform < *transform) {
+      _thumb_button->set_transform(transform);
+    }
   }
 }
 

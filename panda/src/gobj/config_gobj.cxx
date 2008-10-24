@@ -73,7 +73,9 @@ ConfigVariableInt max_texture_dimension
           "texture sizes for limited graphics cards.  When this is greater "
           "than zero, each texture image loaded from a file (but only those "
           "loaded from a file) will be automatically scaled down, if "
-          "necessary, so that neither dimension is larger than this value."));
+          "necessary, so that neither dimension is larger than this value.  "
+          "If this is less than zero, the size limit is taken from the "
+          "primary GSG.  If this is exactly zero, there is no limit."));
 
 ConfigVariableDouble texture_scale
 ("texture-scale", 1.0,
@@ -218,6 +220,18 @@ ConfigVariableBool dump_generated_shaders
  PRC_DESC("Set this true to cause all generated shaders to be written "
           "to disk.  This is useful for debugging broken shader "
           "generators."));
+
+ConfigVariableBool enforce_attrib_lock
+("enforce-attrib-lock", true,
+ PRC_DESC("When a MaterialAttrib, TextureAttrib, or LightAttrib is "
+          "constructed, the corresponding Material, Texture, or Light "
+          "is 'attrib locked.'  The attrib lock prevents qualitative "
+          "changes to the object.  This makes it possible to hardwire "
+          "information about material, light, and texture properties "
+          "into generated shaders.  This config variable can disable "
+          "the attrib lock.  Disabling the lock will break the shader "
+          "generator, but doing so may be necessary for backward "
+          "compatibility with old code."));
 
 ConfigVariableEnum<AutoTextureScale> textures_power_2
 ("textures-power-2", ATS_down,

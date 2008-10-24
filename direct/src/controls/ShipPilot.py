@@ -372,6 +372,8 @@ class ShipPilot(PhysicsWalker):
         if self.ship.getIsAutoSailing():
             forward = 1
             reverse = 0
+        else:
+            forward = 0
             
         # How far did we move based on the amount of time elapsed?
         dt = ClockObject.getGlobalClock().getDt()
@@ -413,7 +415,7 @@ class ShipPilot(PhysicsWalker):
         
         # Enable debug turbo modec
         debugRunning = inputState.isSet("debugRunning")
-        if(debugRunning and __dev__):
+        if(debugRunning):
             self.__speed*=base.debugRunningMultiplier
             self.__slideSpeed*=base.debugRunningMultiplier
             self.__rotationSpeed*=1.25

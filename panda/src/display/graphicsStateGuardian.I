@@ -142,6 +142,18 @@ get_threading_model() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::is_hardware
+//       Access: Published
+//  Description: Returns true if this GSG appears to be
+//               hardware-accelerated, or false if it is known to be
+//               software only.
+////////////////////////////////////////////////////////////////////
+INLINE bool GraphicsStateGuardian::
+is_hardware() const {
+  return _is_hardware;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::prefers_triangle_strips
 //       Access: Published, Virtual
 //  Description: Returns true if this GSG strongly prefers triangle
@@ -530,6 +542,17 @@ get_supports_two_sided_stencil() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::get_maximum_simultaneuous_render_targets
+//       Access: Published
+//  Description: Returns the maximum simultaneuous render targets 
+//               supported.
+////////////////////////////////////////////////////////////////////
+INLINE int GraphicsStateGuardian::
+get_maximum_simultaneuous_render_targets() const {
+  return _maximum_simultaneuous_render_targets;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::get_shader_model
 //       Access: Published
 //  Description: Returns the ShaderModel
@@ -610,6 +633,19 @@ get_alpha_scale_texture_stage() {
     _alpha_scale_texture_stage->set_sort(1000000000);
   }
   return _alpha_scale_texture_stage;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::get_runtime_color_scale
+//       Access: Published
+//  Description: Returns true if this particular GSG can implement (or
+//               would prefer to implement) set color and/or color
+//               scale directly, without requiring any munging of
+//               vertices or tricks with lighting.
+////////////////////////////////////////////////////////////////////
+INLINE bool GraphicsStateGuardian::
+get_runtime_color_scale() const {
+  return _runtime_color_scale;
 }
 
 ////////////////////////////////////////////////////////////////////
