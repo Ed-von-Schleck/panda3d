@@ -598,7 +598,12 @@ assemble_text() {
     // vertices.
     if (properties->has_shadow()) {
       placement->assign_copy_to(shadow_geom_node, shadow_state, shadow_xform);
-      placement->copy_graphic_to(shadow_node, shadow_state, shadow_xform);
+
+      // Don't shadow the graphics.  That can result in duplication of
+      // button objects, plus it looks weird.  If you want a shadowed
+      // graphic, you can shadow it yourself before you add it.
+      //placement->copy_graphic_to(shadow_node, shadow_state, shadow_xform);
+
       any_shadow = true;
     }
     placement->assign_to(text_geom_node, text_state);
@@ -1432,7 +1437,7 @@ get_character_glyphs(int character, const TextProperties *properties,
                      int &additional_flags,
                      float &glyph_scale, float &advance_scale) {
   TextFont *font = properties->get_font();
-  nassertv(font != (TextFont *)NULL);
+  nassertv_always(font != (TextFont *)NULL);
 
   got_glyph = false;
   glyph = NULL;

@@ -5,10 +5,9 @@ from DirectUtil import *
 from DirectGeometry import *
 
 class DirectGrid(NodePath, DirectObject):
-    def __init__(self,gridSize=100.0,gridSpacing=5.0,planeColor=(0.5,0.5,0.5,0.5)):
+    def __init__(self,gridSize=100.0,gridSpacing=5.0,planeColor=(0.5,0.5,0.5,0.5),parent = None):
         # Initialize superclass
-        NodePath.__init__(self)
-        self.assign(hidden.attachNewNode('DirectGrid'))
+        NodePath.__init__(self, 'DirectGrid')
         # Don't wireframe or light
         useDirectRenderStyle(self)
 
@@ -49,15 +48,19 @@ class DirectGrid(NodePath, DirectObject):
         self.gridSize = gridSize
         self.gridSpacing = gridSpacing
         self.snapAngle = 15.0
-        self.enable()
+        self.enable(parent = parent)
 
-    def enable(self):
-        self.reparentTo(base.direct.group)
+    def enable(self, parent = None):
+        if parent:
+            self.reparentTo(parent)
+        else:
+            self.reparentTo(base.direct.group)
+            
         self.updateGrid()
         self.fEnabled = 1
 
     def disable(self):
-        self.reparentTo(hidden)
+        self.detachNode()
         self.fEnabled = 0
 
     def toggleGrid(self):

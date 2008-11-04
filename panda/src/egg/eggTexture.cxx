@@ -151,7 +151,7 @@ write(ostream &out, int indent_level) const {
 
   if (get_texture_type() != TT_unspecified) {
     indent(out, indent_level + 2)
-      << "<Scalar> texture_type { " << get_texture_type() << " }\n";
+      << "<Scalar> type { " << get_texture_type() << " }\n";
   }
 
   if (get_format() != F_unspecified) {
@@ -802,9 +802,9 @@ string_wrap_mode(const string &string) {
   } else if (cmp_nocase_uh(string, "clamp") == 0) {
     return WM_clamp;
   } else if (cmp_nocase_uh(string, "mirror") == 0) {
-    return WM_clamp;
+    return WM_mirror;
   } else if (cmp_nocase_uh(string, "mirror_once") == 0) {
-    return WM_clamp;
+    return WM_mirror_once;
   } else if (cmp_nocase_uh(string, "border_color") == 0) {
     return WM_border_color;
   } else {

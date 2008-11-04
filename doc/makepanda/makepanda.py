@@ -289,6 +289,9 @@ if (COMPILER=="LINUX"):
     IncDirectory("GTK2", "/usr/include/pango-1.0")
     IncDirectory("GTK2", "/usr/lib/gtk-2.0/include")
     IncDirectory("GTK2", "/usr/include/atk-1.0")
+    if (platform.architecture()[0] == "64bit"):
+        IncDirectory("GTK2", "/usr/lib64/glib-2.0/include")
+        IncDirectory("GTK2", "/usr/lib64/gtk-2.0/include")
     LibName("GTK2", "-lgtk-x11-2.0")
 
     for pkg in ["VRPN", "FFTW", "FMOD", "FMODEX", "OPENAL", "NVIDIACG", "FFMPEG", "ARTOOLKIT", "ODE"]:
@@ -716,6 +719,9 @@ DTOOL_CONFIG=[
     ("GLOBAL_ARGC",                    '__argc',                 'UNDEF'),
     ("HAVE_IO_H",                      '1',                      'UNDEF'),
     ("HAVE_IOSTREAM",                  '1',                      '1'),
+    ("HAVE_STRING_H",                  'UNDEF',                  '1'),
+    ("HAVE_LIMITS_H",                  'UNDEF',                  '1'),
+    ("HAVE_STDLIB_H",                  'UNDEF',                  '1'),
     ("HAVE_MALLOC_H",                  '1',                      '1'),
     ("HAVE_SYS_MALLOC_H",              'UNDEF',                  'UNDEF'),
     ("HAVE_ALLOCA_H",                  'UNDEF',                  '1'),
@@ -941,6 +947,11 @@ if (sys.platform != "win32"):
     confautoprc = confautoprc.replace("aux-display pandadx9","")
     confautoprc = confautoprc.replace("aux-display pandadx8","")
     confautoprc = confautoprc.replace("aux-display pandadx7","")
+
+if (sys.platform != "win32" and sys.platform != "darwin"):
+    # OpenAL is not yet reliable on Linux.
+    confautoprc = confautoprc.replace("p3openal","p3fmod")
+    confautoprc = confautoprc.replace("OpenAL","FMOD")
 
 ConditionalWriteFile("built/etc/Config.prc", configprc)
 ConditionalWriteFile("built/etc/Confauto.prc", confautoprc)
@@ -3460,10 +3471,10 @@ def MakeInstallerLinux():
     oscmd("cp --recursive built/include linuxroot/usr/include/panda3d")
     oscmd("cp --recursive direct        linuxroot/usr/share/panda3d/direct")
     oscmd("cp --recursive built/pandac  linuxroot/usr/share/panda3d/pandac")
-    oscmd("cp --recursive built/Pmw     linuxroot/usr/share/panda3d/Pmw")
     oscmd("cp built/direct/__init__.py  linuxroot/usr/share/panda3d/direct/__init__.py")
     oscmd("cp --recursive built/models  linuxroot/usr/share/panda3d/models")
-    oscmd("cp --recursive samples       linuxroot/usr/share/panda3d/samples")
+    if os.path.isdir("built/Pmw"): oscmd("cp --recursive built/Pmw     linuxroot/usr/share/panda3d/Pmw")
+    if os.path.isdir("samples"):   oscmd("cp --recursive samples       linuxroot/usr/share/panda3d/samples")
     oscmd("cp doc/LICENSE               linuxroot/usr/share/panda3d/LICENSE")
     oscmd("cp doc/LICENSE               linuxroot/usr/include/panda3d/LICENSE")
     oscmd("cp doc/ReleaseNotes          linuxroot/usr/share/panda3d/ReleaseNotes")
@@ -3487,9 +3498,9 @@ def MakeInstallerLinux():
         oscmd("cd linuxroot ; (find etc -type f -exec md5sum {} \;) >> DEBIAN/md5sums")
         WriteFile("linuxroot/DEBIAN/conffiles","/etc/Config.prc\n")
         WriteFile("linuxroot/DEBIAN/control",txt)
-	WriteFile("linuxroot/DEBIAN/postinst","#!/bin/sh\necho running ldconfig\nldconfig\n")
-	oscmd("chmod 755 linuxroot/DEBIAN/postinst")
-	oscmd("cp linuxroot/DEBIAN/postinst linuxroot/DEBIAN/postrm")
+        WriteFile("linuxroot/DEBIAN/postinst","#!/bin/sh\necho running ldconfig\nldconfig\n")
+        oscmd("chmod 755 linuxroot/DEBIAN/postinst")
+        oscmd("cp linuxroot/DEBIAN/postinst linuxroot/DEBIAN/postrm")
         oscmd("dpkg-deb -b linuxroot panda3d_"+VERSION+"_"+ARCH+".deb")
         oscmd("chmod -R 755 linuxroot")
 
@@ -3499,7 +3510,10 @@ def MakeInstallerLinux():
         WriteFile("panda3d.spec", txt)
         oscmd("rpmbuild --define '_rpmdir "+pandasource+"' -bb panda3d.spec")
         oscmd("mv "+ARCH+"/panda3d-"+VERSION+"-1."+ARCH+".rpm .")
-
+    
+    if not(os.path.exists("/usr/bin/rpmbuild") or os.path.exists("/usr/bin/dpkg-deb")):
+        exit("To build an installer, either rpmbuild or dpkg-deb must be present on your system!")
+    
 #    oscmd("chmod -R 755 linuxroot")
 #    oscmd("rm -rf linuxroot data.tar.gz control.tar.gz panda3d.spec "+ARCH)
     

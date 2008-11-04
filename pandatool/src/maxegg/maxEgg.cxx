@@ -8,19 +8,264 @@
   exporter for 3D Studio Max.
 */
 
-//Includes & Defines
 #include "maxEgg.h"
-//Types and structures from windows system-level calls
-#include <sys/types.h>
-#include <sys/stat.h>
-//Controls used in fopen
-#include <fcntl.h>
-//C Debugging
-#include <crtdbg.h>
 
-// Discreet-Generated ID for this app.
-#define MNEG Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM2
-#define MNEG_GEOMETRY_GENERATION Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM3
+
+const double meshVerts[252][3] = {
+    {0.729464, -0.919852, 0.714986},
+    {0.466137, -0.594656, 0.160201},
+    {-0.265897, -1.14704, 0.714986},
+    {0.466137, -0.594656, 0.160201},
+    {-0.177333, -0.741523, 0.160201},
+    {-0.265897, -1.14704, 0.714986},
+    {-0.265897, -1.14704, 0.714986},
+    {-0.177333, -0.741523, 0.160201},
+    {-1.06411, -0.510479, 0.714986},
+    {-0.177333, -0.741523, 0.160201},
+    {-0.693356, -0.330009, 0.160201},
+    {-1.06411, -0.510479, 0.714986},
+    {-1.06411, 0.510479, 0.714986},
+    {-1.06411, -0.510479, 0.714986},
+    {-0.693356, 0.330009, 0.160201},
+    {-0.693356, -0.330009, 0.160201},
+    {-0.693356, 0.330009, 0.160201},
+    {-1.06411, -0.510479, 0.714986},
+    {-0.265897, 1.14704, 0.714986},
+    {-1.06411, 0.510479, 0.714986},
+    {-0.177333, 0.741523, 0.160201},
+    {-0.693356, 0.330009, 0.160201},
+    {-0.177333, 0.741523, 0.160201},
+    {-1.06411, 0.510479, 0.714986},
+    {0.729464, 0.919852, 0.714986},
+    {-0.265897, 1.14704, 0.714986},
+    {0.466137, 0.594656, 0.160201},
+    {-0.177333, 0.741523, 0.160201},
+    {0.466137, 0.594656, 0.160201},
+    {-0.265897, 1.14704, 0.714986},
+    {1.17244, 0.0, 0.714986},
+    {0.729464, 0.919852, 0.714986},
+    {0.752508, 0.0, 0.160201},
+    {0.466137, 0.594656, 0.160201},
+    {0.752508, 0.0, 0.160201},
+    {0.729464, 0.919852, 0.714986},
+    {0.729464, -0.919852, 0.714986},
+    {1.17244, 0.0, 0.714986},
+    {0.466137, -0.594656, 0.160201},
+    {0.752508, 0.0, 0.160201},
+    {0.466137, -0.594656, 0.160201},
+    {1.17244, 0.0, 0.714986},
+    {-0.286334, -1.26822, 1.44995},
+    {0.814187, -1.01703, 1.44995},
+    {-0.265897, -1.14704, 0.714986},
+    {0.729464, -0.919852, 0.714986},
+    {-0.265897, -1.14704, 0.714986},
+    {0.814187, -1.01703, 1.44995},
+    {-1.16888, -0.564412, 1.44995},
+    {-0.286334, -1.26822, 1.44995},
+    {-1.06411, -0.510479, 0.714986},
+    {-0.265897, -1.14704, 0.714986},
+    {-1.06411, -0.510479, 0.714986},
+    {-0.286334, -1.26822, 1.44995},
+    {-1.16888, 0.564411, 1.44995},
+    {-1.16888, -0.564412, 1.44995},
+    {-1.06411, 0.510479, 0.714986},
+    {-1.06411, -0.510479, 0.714986},
+    {-1.06411, 0.510479, 0.714986},
+    {-1.16888, -0.564412, 1.44995},
+    {-1.16888, 0.564411, 1.44995},
+    {-1.06411, 0.510479, 0.714986},
+    {-0.286334, 1.26822, 1.44995},
+    {-1.06411, 0.510479, 0.714986},
+    {-0.265897, 1.14704, 0.714986},
+    {-0.286334, 1.26822, 1.44995},
+    {-0.286334, 1.26822, 1.44995},
+    {-0.265897, 1.14704, 0.714986},
+    {0.814187, 1.01703, 1.44995},
+    {-0.265897, 1.14704, 0.714986},
+    {0.729464, 0.919852, 0.714986},
+    {0.814187, 1.01703, 1.44995},
+    {1.30396, 0.0, 1.44995},
+    {0.814187, 1.01703, 1.44995},
+    {1.17244, 0.0, 0.714986},
+    {0.729464, 0.919852, 0.714986},
+    {1.17244, 0.0, 0.714986},
+    {0.814187, 1.01703, 1.44995},
+    {1.30396, 0.0, 1.44995},
+    {1.17244, 0.0, 0.714986},
+    {0.814187, -1.01703, 1.44995},
+    {1.17244, 0.0, 0.714986},
+    {0.729464, -0.919852, 0.714986},
+    {0.814187, -1.01703, 1.44995},
+    {-0.286334, -1.26822, 1.44995},
+    {-0.227573, -1.05763, 2.16723},
+    {0.814187, -1.01703, 1.44995},
+    {0.814187, -1.01703, 1.44995},
+    {-0.227573, -1.05763, 2.16723},
+    {0.690208, -0.848157, 2.16723},
+    {-1.16888, -0.564412, 1.44995},
+    {-0.963577, -0.470692, 2.16723},
+    {-0.286334, -1.26822, 1.44995},
+    {-0.286334, -1.26822, 1.44995},
+    {-0.963577, -0.470692, 2.16723},
+    {-0.227573, -1.05763, 2.16723},
+    {-1.16888, -0.564412, 1.44995},
+    {-1.16888, 0.564411, 1.44995},
+    {-0.963577, -0.470692, 2.16723},
+    {-1.16888, 0.564411, 1.44995},
+    {-0.963577, 0.470692, 2.16723},
+    {-0.963577, -0.470692, 2.16723},
+    {-1.16888, 0.564411, 1.44995},
+    {-0.286334, 1.26822, 1.44995},
+    {-0.963577, 0.470692, 2.16723},
+    {-0.286334, 1.26822, 1.44995},
+    {-0.227574, 1.05763, 2.16723},
+    {-0.963577, 0.470692, 2.16723},
+    {-0.286334, 1.26822, 1.44995},
+    {0.814187, 1.01703, 1.44995},
+    {-0.227574, 1.05763, 2.16723},
+    {0.814187, 1.01703, 1.44995},
+    {0.690208, 0.848157, 2.16723},
+    {-0.227574, 1.05763, 2.16723},
+    {0.814187, 1.01703, 1.44995},
+    {1.30396, 0.0, 1.44995},
+    {0.690208, 0.848157, 2.16723},
+    {1.30396, 0.0, 1.44995},
+    {1.09866, 0.0, 2.16723},
+    {0.690208, 0.848157, 2.16723},
+    {0.814187, -1.01703, 1.44995},
+    {0.690208, -0.848157, 2.16723},
+    {1.30396, 0.0, 1.44995},
+    {1.30396, 0.0, 1.44995},
+    {0.690208, -0.848157, 2.16723},
+    {1.09866, 0.0, 2.16723},
+    {-0.227573, -1.05763, 2.16723},
+    {-0.154893, -0.759032, 2.72566},
+    {0.690208, -0.848157, 2.16723},
+    {0.690208, -0.848157, 2.16723},
+    {-0.154893, -0.759032, 2.72566},
+    {0.50377, -0.608696, 2.72566},
+    {-0.963577, -0.470692, 2.16723},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.227573, -1.05763, 2.16723},
+    {-0.227573, -1.05763, 2.16723},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.154893, -0.759032, 2.72566},
+    {-0.963577, -0.470692, 2.16723},
+    {-0.963577, 0.470692, 2.16723},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.963577, 0.470692, 2.16723},
+    {-0.683099, 0.337801, 2.72566},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.963577, 0.470692, 2.16723},
+    {-0.227574, 1.05763, 2.16723},
+    {-0.683099, 0.337801, 2.72566},
+    {-0.227574, 1.05763, 2.16723},
+    {-0.154893, 0.759032, 2.72566},
+    {-0.683099, 0.337801, 2.72566},
+    {-0.227574, 1.05763, 2.16723},
+    {0.690208, 0.848157, 2.16723},
+    {-0.154893, 0.759032, 2.72566},
+    {0.690208, 0.848157, 2.16723},
+    {0.50377, 0.608696, 2.72566},
+    {-0.154893, 0.759032, 2.72566},
+    {0.690208, 0.848157, 2.16723},
+    {1.09866, 0.0, 2.16723},
+    {0.50377, 0.608696, 2.72566},
+    {1.09866, 0.0, 2.16723},
+    {0.796903, 0.0, 2.72566},
+    {0.50377, 0.608696, 2.72566},
+    {1.09866, 0.0, 2.16723},
+    {0.690208, -0.848157, 2.16723},
+    {0.796903, 0.0, 2.72566},
+    {0.690208, -0.848157, 2.16723},
+    {0.50377, -0.608696, 2.72566},
+    {0.796903, 0.0, 2.72566},
+    {0.50377, -0.608696, 2.72566},
+    {-0.154893, -0.759032, 2.72566},
+    {0.259722, -0.299638, 3.11175},
+    {-0.154893, -0.759032, 2.72566},
+    {-0.0645132, -0.373643, 3.11175},
+    {0.259722, -0.299638, 3.11175},
+    {-0.154893, -0.759032, 2.72566},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.0645132, -0.373643, 3.11175},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.324529, -0.166287, 3.11175},
+    {-0.0645132, -0.373643, 3.11175},
+    {-0.683099, -0.337801, 2.72566},
+    {-0.683099, 0.337801, 2.72566},
+    {-0.324529, -0.166287, 3.11175},
+    {-0.683099, 0.337801, 2.72566},
+    {-0.324529, 0.166287, 3.11175},
+    {-0.324529, -0.166287, 3.11175},
+    {-0.683099, 0.337801, 2.72566},
+    {-0.154893, 0.759032, 2.72566},
+    {-0.324529, 0.166287, 3.11175},
+    {-0.154893, 0.759032, 2.72566},
+    {-0.0645132, 0.373642, 3.11175},
+    {-0.324529, 0.166287, 3.11175},
+    {-0.154893, 0.759032, 2.72566},
+    {0.50377, 0.608696, 2.72566},
+    {-0.0645132, 0.373642, 3.11175},
+    {0.50377, 0.608696, 2.72566},
+    {0.259722, 0.299638, 3.11175},
+    {-0.0645132, 0.373642, 3.11175},
+    {0.50377, 0.608696, 2.72566},
+    {0.796903, 0.0, 2.72566},
+    {0.259722, 0.299638, 3.11175},
+    {0.796903, 0.0, 2.72566},
+    {0.40402, 0.0, 3.11175},
+    {0.259722, 0.299638, 3.11175},
+    {0.796903, 0.0, 2.72566},
+    {0.50377, -0.608696, 2.72566},
+    {0.40402, 0.0, 3.11175},
+    {0.50377, -0.608696, 2.72566},
+    {0.259722, -0.299638, 3.11175},
+    {0.40402, 0.0, 3.11175},
+    {-0.177333, -0.741523, 0.160201},
+    {0.466137, -0.594656, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {-0.693356, -0.330009, 0.160201},
+    {-0.177333, -0.741523, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {-0.693356, 0.330009, 0.160201},
+    {-0.693356, -0.330009, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {-0.177333, 0.741523, 0.160201},
+    {-0.693356, 0.330009, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {0.466137, 0.594656, 0.160201},
+    {-0.177333, 0.741523, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {0.752508, 0.0, 0.160201},
+    {0.466137, 0.594656, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {0.466137, -0.594656, 0.160201},
+    {0.752508, 0.0, 0.160201},
+    {-0.00334214, 0.0, 0.00443203},
+    {0.259722, -0.299638, 3.11175},
+    {-0.0645132, -0.373643, 3.11175},
+    {0.0207683, 0.0, 3.20912},
+    {-0.0645132, -0.373643, 3.11175},
+    {-0.324529, -0.166287, 3.11175},
+    {0.0207683, 0.0, 3.20912},
+    {-0.324529, -0.166287, 3.11175},
+    {-0.324529, 0.166287, 3.11175},
+    {0.0207683, 0.0, 3.20912},
+    {-0.324529, 0.166287, 3.11175},
+    {-0.0645132, 0.373642, 3.11175},
+    {0.0207683, 0.0, 3.20912},
+    {-0.0645132, 0.373642, 3.11175},
+    {0.259722, 0.299638, 3.11175},
+    {0.0207683, 0.0, 3.20912},
+    {0.259722, 0.299638, 3.11175},
+    {0.40402, 0.0, 3.11175},
+    {0.0207683, 0.0, 3.20912},
+    {0.40402, 0.0, 3.11175},
+    {0.259722, -0.299638, 3.11175},
+    {0.0207683, 0.0, 3.20912}
+};
+  
 
 //Disable the forcing int to true or false performance warning
 #pragma warning(disable: 4800)
@@ -28,6 +273,7 @@
 /* MaxEggPluginClassDesc - A class that describes 3DS Plugin support.
    This basically says "Yes, I am a helper object!"
 */
+
 class MaxEggPluginClassDesc : public ClassDesc 
 {
 public:
@@ -60,7 +306,7 @@ IObjParam *MaxEggPlugin::iObjParams;
 BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message, 
                                           WPARAM wParam, LPARAM lParam ) 
 {
-  MaxEggExpOptions *tempEgg;
+  MaxOptionsDialog *tempEgg;
   int sel, res;
 
   //We pass in our plugin through the lParam variable. Let's convert it back.
@@ -104,12 +350,11 @@ BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message,
             (IsDlgButtonChecked(hWnd, IDC_LOGGING) == BST_CHECKED);
           return TRUE; break;
         case IDC_ADD_EGG:
-          tempEgg = new MaxEggExpOptions();
-          tempEgg->maxInterface = imp->iObjParams;
+          tempEgg = new MaxOptionsDialog();
+          tempEgg->SetMaxInterface(imp->iObjParams);
           tempEgg->SetAnimRange();
           res = DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_EGG_DETAILS), 
-                               hWnd, MaxEggExpOptionsProc, (LPARAM)tempEgg);
-          tempEgg->maxInterface = NULL;
+                               hWnd, MaxOptionsDialogProc, (LPARAM)tempEgg);
           if (res == TRUE) {
             imp->SaveCheckState();
             imp->AddEgg(tempEgg);
@@ -120,14 +365,12 @@ BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message,
         case IDC_EDIT_EGG:
           sel = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_LIST_EGGS));
           if (sel != -1) {
-            MaxEggExpOptions *tempEgg = imp->GetEgg(sel);
+            MaxOptionsDialog *tempEgg = imp->GetEgg(sel);
             if (tempEgg) {
-              tempEgg->maxInterface = imp->iObjParams;
-              tempEgg->SetAnimRange();
-              tempEgg->CullBadNodes();
-              DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_EGG_DETAILS), 
-                             hWnd, MaxEggExpOptionsProc, (LPARAM)tempEgg);
-              tempEgg->maxInterface = NULL;
+                tempEgg->SetAnimRange();
+                tempEgg->CullBadNodes();
+                DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_EGG_DETAILS), 
+                               hWnd, MaxOptionsDialogProc, (LPARAM)tempEgg);
             }
             imp->SaveCheckState();
             imp->UpdateUI();
@@ -149,219 +392,228 @@ BOOL CALLBACK MaxEggPluginOptionsDlgProc( HWND hWnd, UINT message,
   return FALSE;
 }
 
-/* MaxEggPlugin() - Uninteresting constructor.
- */
 MaxEggPlugin::MaxEggPlugin() :
 autoOverwrite(false), pview(true), logOutput(false), numEggs(0), maxEggs(5)
 {
-  eggList = new MaxEggExpOptions*[maxEggs];
-  BuildMesh();
+    eggList = new MaxOptionsDialog*[maxEggs];
+    BuildMesh();
 }
 
 MaxEggPlugin::~MaxEggPlugin() {
-  for (int i = 0; i < numEggs; i++) delete eggList[i];
-  delete [] eggList;
+    for (int i = 0; i < numEggs; i++) delete eggList[i];
+    delete [] eggList;
 }
 
-void MaxEggPlugin::AddEgg(MaxEggExpOptions *newEgg) {
-  if (numEggs >= maxEggs) {
-    MaxEggExpOptions **newList;
-    maxEggs *= 2;
-    newList = new MaxEggExpOptions*[maxEggs];
-    for (int i = 0; i < numEggs; i++) newList[i] = eggList[i];
-    delete [] eggList;
-    eggList = newList;
-  }
-
-  eggList[numEggs++] = newEgg;
+void MaxEggPlugin::AddEgg(MaxOptionsDialog *newEgg) {
+    if (numEggs >= maxEggs) {
+        MaxOptionsDialog **newList;
+        maxEggs *= 2;
+        newList = new MaxOptionsDialog*[maxEggs];
+        for (int i = 0; i < numEggs; i++) newList[i] = eggList[i];
+        delete [] eggList;
+        eggList = newList;
+    }
+    
+    eggList[numEggs++] = newEgg;
 }
 
 void MaxEggPlugin::RemoveEgg(int i) {
-  if (i >= 0 && i < numEggs) {
-    delete eggList[i];
-    for (int j = i+1; j < numEggs;) eggList[i++] = eggList[j++];
-    --numEggs;
-  }
+    if (i >= 0 && i < numEggs) {
+        delete eggList[i];
+        for (int j = i+1; j < numEggs;) eggList[i++] = eggList[j++];
+        --numEggs;
+    }
 }
 
 void MaxEggPlugin::BeginEditParams( IObjParam *ip, ULONG flags,Animatable *prev )
 {
-  iObjParams = ip;
-  if ( !hMaxEggParams ) {
-    hMaxEggParams = ip->AddRollupPage(hInstance, 
-                                                  MAKEINTRESOURCE(IDD_PANEL),
-                                                        MaxEggPluginOptionsDlgProc, 
-                                                        GetString(IDS_PARAMS), 
-                                                        (LPARAM)this );
-    ip->RegisterDlgWnd(hMaxEggParams);
-  } else {
-    SetWindowLongPtr( hMaxEggParams, GWLP_USERDATA, (LPARAM)this );
-  }
-
-  UpdateUI();
+    iObjParams = ip;
+    for (int i=0; i<numEggs; i++) {
+        eggList[i]->SetMaxInterface(ip);
+    }
+    
+    if ( !hMaxEggParams ) {
+        hMaxEggParams = ip->AddRollupPage(hInstance, 
+                                          MAKEINTRESOURCE(IDD_PANEL),
+                                          MaxEggPluginOptionsDlgProc, 
+                                          GetString(IDS_PARAMS), 
+                                          (LPARAM)this );
+        ip->RegisterDlgWnd(hMaxEggParams);
+    } else {
+        SetWindowLongPtr( hMaxEggParams, GWLP_USERDATA, (LPARAM)this );
+    }
+    
+    UpdateUI();
 }
 
 void MaxEggPlugin::EndEditParams( IObjParam *ip, ULONG flags,Animatable *prev)
 {
-  SaveCheckState();
-  if ( flags&END_EDIT_REMOVEUI ) {
-    ip->UnRegisterDlgWnd(hMaxEggParams);
-    ip->DeleteRollupPage(hMaxEggParams);
-    hMaxEggParams = NULL;
-  } else {
-    SetWindowLongPtr( hMaxEggParams, GWLP_USERDATA, NULL );
-  }
-  iObjParams = NULL;
+    SaveCheckState();
+    if ( flags&END_EDIT_REMOVEUI ) {
+        ip->UnRegisterDlgWnd(hMaxEggParams);
+        ip->DeleteRollupPage(hMaxEggParams);
+        hMaxEggParams = NULL;
+    } else {
+        SetWindowLongPtr( hMaxEggParams, GWLP_USERDATA, NULL );
+    }
 }
 
 void MaxEggPlugin::SaveCheckState() {
-  if (!hMaxEggParams) return;
-  HWND lv = GetDlgItem(hMaxEggParams, IDC_LIST_EGGS);
-  for (int i = 0; i < numEggs; i++)
-    eggList[i]->checked = ListView_GetCheckState(lv, i);
+    if (!hMaxEggParams) return;
+    HWND lv = GetDlgItem(hMaxEggParams, IDC_LIST_EGGS);
+    for (int i = 0; i < numEggs; i++)
+        eggList[i]->_checked = ListView_GetCheckState(lv, i);
 }
 
 void MaxEggPlugin::UpdateUI() {
-  HWND lv = GetDlgItem(hMaxEggParams, IDC_LIST_EGGS);
-  LV_COLUMN pCol;
-
-  if (ListView_GetColumnWidth(lv, 1) <= 0 || ListView_GetColumnWidth(lv, 1) > 10000) {
-    //Columns have not been setup, so initialize the control
-    ListView_SetExtendedListViewStyleEx(lv, LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT, 
+    HWND lv = GetDlgItem(hMaxEggParams, IDC_LIST_EGGS);
+    LV_COLUMN pCol;
+    
+    if (ListView_GetColumnWidth(lv, 1) <= 0 || ListView_GetColumnWidth(lv, 1) > 10000) {
+        //Columns have not been setup, so initialize the control
+        ListView_SetExtendedListViewStyleEx(lv, LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT, 
                                             LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT);
-
-    pCol.fmt = LVCFMT_LEFT;
-    pCol.cx = 96;
-    pCol.pszText = "Filename";
-    pCol.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-    pCol.iSubItem = 0;
-    ListView_InsertColumn(lv, 0, &pCol);
-
-    pCol.cx = 44;
-    pCol.pszText = "Type";
-    ListView_InsertColumn(lv, 1, &pCol);
-  }
-
-  //Add the eggs to the list
-  ListView_DeleteAllItems(lv);
-  LV_ITEM Item;
-  Item.mask = LVIF_TEXT;
-
-  for (int i = 0; i < numEggs; i++) {
-    Item.iItem = i;
-    Item.iSubItem = 0;
-    Item.pszText = eggList[i]->shortName;
-    ListView_InsertItem(lv, &Item);
-    Item.iSubItem = 1;
-    switch(eggList[i]->anim_type) {
-      case MaxEggExpOptions::Anim_Type::AT_chan: Item.pszText = "Animation"; break;
-      case MaxEggExpOptions::Anim_Type::AT_both: Item.pszText = "Both"; break;
-      case MaxEggExpOptions::Anim_Type::AT_pose: Item.pszText = "Pose"; break;
-      case MaxEggExpOptions::Anim_Type::AT_model:
-      default:                                   Item.pszText = "Model"; break;
+        
+        pCol.fmt = LVCFMT_LEFT;
+        pCol.cx = 96;
+        pCol.pszText = "Filename";
+        pCol.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+        pCol.iSubItem = 0;
+        ListView_InsertColumn(lv, 0, &pCol);
+        
+        pCol.cx = 44;
+        pCol.pszText = "Type";
+        ListView_InsertColumn(lv, 1, &pCol);
     }
-    ListView_SetItem(lv, &Item);
-    ListView_SetCheckState(lv, i, eggList[i]->checked);
-  }
-
-  // Set the "Overwrite Existing Files" and "Pview" checkboxes
-  CheckDlgButton(hMaxEggParams, IDC_OVERWRITE_CHECK, 
-                 autoOverwrite ? BST_CHECKED : BST_UNCHECKED);
-  CheckDlgButton(hMaxEggParams, IDC_PVIEW_CHECK, 
-                 pview ? BST_CHECKED : BST_UNCHECKED);
-  CheckDlgButton(hMaxEggParams, IDC_LOGGING, 
-                 logOutput ? BST_CHECKED : BST_UNCHECKED);
+    
+    //Add the eggs to the list
+    ListView_DeleteAllItems(lv);
+    LV_ITEM Item;
+    Item.mask = LVIF_TEXT;
+    
+    for (int i = 0; i < numEggs; i++) {
+        Item.iItem = i;
+        Item.iSubItem = 0;
+        Item.pszText = eggList[i]->_short_name;
+        ListView_InsertItem(lv, &Item);
+        Item.iSubItem = 1;
+        switch(eggList[i]->_anim_type) {
+        case MaxEggOptions::AT_chan:  Item.pszText = "Animation"; break;
+        case MaxEggOptions::AT_both:  Item.pszText = "Both"; break;
+        case MaxEggOptions::AT_pose:  Item.pszText = "Pose"; break;
+        case MaxEggOptions::AT_model: Item.pszText = "Model"; break;
+        default:                      Item.pszText = "Model"; break;
+        }
+        ListView_SetItem(lv, &Item);
+        ListView_SetCheckState(lv, i, eggList[i]->_checked);
+    }
+    
+    // Set the "Overwrite Existing Files" and "Pview" checkboxes
+    CheckDlgButton(hMaxEggParams, IDC_OVERWRITE_CHECK, 
+                   autoOverwrite ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hMaxEggParams, IDC_PVIEW_CHECK, 
+                   pview ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hMaxEggParams, IDC_LOGGING, 
+                   logOutput ? BST_CHECKED : BST_UNCHECKED);
 }
 
 void MaxEggPlugin::DoExport() {
-  int good = 0, bad = 0;
-  char msg[2048];
-  strcpy(msg, "The following exports failed:\n");
-
-  SaveCheckState();
-
-  for (int i = 0; i < numEggs; i++) {
-    if (eggList[i]->checked) {
-      if (!eggList[i]->DoExport(iObjParams, autoOverwrite, logOutput)) {
-        ++bad;
-        strcat(msg, eggList[i]->shortName);
-        strcat(msg, ".egg\n");
-      }
-      else ++good;
-    }
-  }
-
-  if (bad == 0)
-    strcpy(msg, "All eggs exported successfully");
-  else
-    strcat(msg, "\nAll other eggs exported successfully");
-
-  UINT mask = MB_OK;
-  if (bad > 0) mask |= MB_ICONEXCLAMATION;
-  else mask |= MB_ICONINFORMATION;
-
-  MessageBox(hMaxEggParams, msg, "Panda3D Export results", mask);
-
-  if (pview && good > 0) {
-    char pviewMsg[2048];
-    int pviewSkipped = 0;
-    strcpy(pviewMsg, "The following eggs were skipped since animations cannot be pviewed:\n");
-    for (i = 0; i < numEggs; i++)
-      if (eggList[i]->checked && eggList[i]->successful)
-        if (eggList[i]->anim_type != MaxEggExpOptions::AT_chan) {
-          char buf[1024];
-          PROCESS_INFORMATION pi;
-          STARTUPINFO si;
-
-          memset(&si,0,sizeof(si));
-          si.cb= sizeof(si);
-
-          sprintf(buf, "Pview %s.egg?", eggList[i]->shortName);
-          if (MessageBox(hMaxEggParams, buf, "Panda3D exporter", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-            char cmdLine[2048];
-            sprintf(cmdLine, "pview \"%s\"", eggList[i]->filename);
-            CreateProcess(NULL, cmdLine, NULL, NULL, FALSE, CREATE_NEW_CONSOLE,
-                          NULL, NULL, &si, &pi);
-          }
-        }
-        else {
-          pviewSkipped++;    
-          strcat(pviewMsg, eggList[i]->shortName);
-          strcat(pviewMsg, ".egg\n");
-        }
+    int good = 0, bad = 0;
     
-    if (pviewSkipped > 0) {
-      strcat(pviewMsg, "\nExport animations using the \"both\" option to pview them.");
-      MessageBox(hMaxEggParams, pviewMsg, "Panda3D exporter", MB_OK | MB_ICONINFORMATION);
+    std::stringstream status;
+    
+    SaveCheckState();
+    
+    for (int i = 0; i < numEggs; i++) {
+        if (eggList[i]->_checked) {
+            // If "auto overwrite" was not checked and the file exists,
+            // ask if the user wishes to overwrite the file
+            bool do_write = true;
+            if (!autoOverwrite && Filename::from_os_specific(eggList[i]->_file_name).exists()) {
+                char msg[1024];
+                sprintf(msg, "Overwrite file \"%s.egg\"?", eggList[i]->_short_name);
+                do_write = (MessageBox(hMaxEggParams, msg, "Panda3D Exporter", MB_YESNO | MB_ICONQUESTION) == IDYES);
+            }
+            if (do_write) {
+                MaxToEggConverter converter;
+                if (converter.convert((MaxEggOptions*)eggList[i])) {
+                    good += 1;
+                    status << "Successfully created " << eggList[i]->_short_name << ".egg\n";
+                } else {
+                    bad += 1;
+                    status << "Could not export " << eggList[i]->_short_name << ".egg\n";
+                }
+            } else {
+                bad += 1;
+                status << "Skipped file " << eggList[i]->_short_name << ".egg\n";
+            }
+        }
     }
-  }
-
+    
+    UINT mask = MB_OK;
+    
+    if (good == 0 && bad == 0) {
+        mask |= MB_ICONEXCLAMATION;
+        MessageBox(hMaxEggParams, "Nothing to export!", "Panda3D Export results", mask);
+    } else {
+        if (bad > 0) mask |= MB_ICONEXCLAMATION;
+        else mask |= MB_ICONINFORMATION;        
+        MessageBox(hMaxEggParams, status.str().c_str(), "Panda3D Export results", mask);
+    }
+    
+    int pviewed = 0;
+    if (pview && good > 0) {
+        for (i = 0; i < numEggs; i++) {
+            if (eggList[i]->_checked && eggList[i]->_successful) {
+                if (eggList[i]->_anim_type != MaxEggOptions::AT_chan) {
+                    PROCESS_INFORMATION pi;
+                    STARTUPINFO si;
+                    
+                    memset(&si,0,sizeof(si));
+                    si.cb= sizeof(si);
+                    
+                    char cmdLine[2048];
+                    // If we have just one model and animation file, pview them both
+                    if (numEggs == 2 && eggList[i]->_anim_type == MaxEggOptions::AT_model &&
+                        eggList[1-i]->_checked && eggList[1-i]->_successful &&
+                        eggList[1-i]->_anim_type == MaxEggOptions::AT_chan) {
+                        sprintf(cmdLine, "pview \"%s\" \"%s\"", eggList[i]->_file_name, eggList[1-i]->_file_name);
+                    } else {
+                        sprintf(cmdLine, "pview \"%s\"", eggList[i]->_file_name);
+                    }
+                    CreateProcess(NULL, cmdLine, NULL, NULL, FALSE, CREATE_NEW_CONSOLE,
+                                  NULL, NULL, &si, &pi);
+                    pviewed += 1;
+                }
+            }
+        }
+    }
 }
 
 
 void MaxEggPlugin::BuildMesh()
 {
-  int i;
-  if(meshBuilt) return;
-  
-  mesh.setNumVerts(252);
-  mesh.setNumFaces(84);
-  mesh.setSmoothFlags(0);
-  mesh.setNumTVerts (0);
-  mesh.setNumTVFaces (0);
-  
-  for (i=0; i<252; i++) 
-    mesh.setVert(i, meshVerts[i][0]*10, meshVerts[i][1]*10, meshVerts[i][2]*10);
-  for (i=0; i<84; i++) {
-    mesh.faces[i].setEdgeVisFlags(1, 1, 0);
-    mesh.faces[i].setSmGroup(0);
-    mesh.faces[i].setVerts(i*3, i*3+1, i*3+2);
-  }
-
-  mesh.InvalidateGeomCache();
-  mesh.BuildStripsAndEdges();
-  
-  meshBuilt = TRUE;
+    int i;
+    if(meshBuilt) return;
+    
+    mesh.setNumVerts(252);
+    mesh.setNumFaces(84);
+    mesh.setSmoothFlags(0);
+    mesh.setNumTVerts (0);
+    mesh.setNumTVFaces (0);
+    
+    for (i=0; i<252; i++) 
+        mesh.setVert(i, meshVerts[i][0]*10, meshVerts[i][1]*10, meshVerts[i][2]*10);
+    for (i=0; i<84; i++) {
+        mesh.faces[i].setEdgeVisFlags(1, 1, 0);
+        mesh.faces[i].setSmGroup(0);
+        mesh.faces[i].setVerts(i*3, i*3+1, i*3+2);
+    }
+    
+    mesh.InvalidateGeomCache();
+    mesh.BuildStripsAndEdges();
+    
+    meshBuilt = TRUE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -371,25 +623,25 @@ void MaxEggPlugin::BuildMesh()
 class MaxEggPluginCreateMouseCallBack: public CreateMouseCallBack 
 {
 public:
-  int proc( ViewExp *vpt,int msg, int point, int flags, IPoint2 m, Matrix3& mat );
+    int proc( ViewExp *vpt,int msg, int point, int flags, IPoint2 m, Matrix3& mat );
 };
 
 int MaxEggPluginCreateMouseCallBack::proc(ViewExp *vpt,int msg, int point, int flags, IPoint2 m, Matrix3& mat ) 
 {
-  if (msg==MOUSE_POINT||msg==MOUSE_MOVE) {
-    switch(point) {
-    case 0:
-      mat.SetTrans(vpt->SnapPoint(m,m,NULL,SNAP_IN_PLANE));
-      break;
-    case 1:
-      mat.SetTrans(vpt->SnapPoint(m,m,NULL,SNAP_IN_PLANE));
-      if (msg==MOUSE_POINT) return CREATE_STOP;
-      break;
+    if (msg==MOUSE_POINT||msg==MOUSE_MOVE) {
+        switch(point) {
+        case 0:
+            mat.SetTrans(vpt->SnapPoint(m,m,NULL,SNAP_IN_PLANE));
+            break;
+        case 1:
+            mat.SetTrans(vpt->SnapPoint(m,m,NULL,SNAP_IN_PLANE));
+            if (msg==MOUSE_POINT) return CREATE_STOP;
+            break;
+        }
+    } else if (msg == MOUSE_ABORT) {
+        return CREATE_ABORT; 
     }
-  } else if (msg == MOUSE_ABORT) {
-    return CREATE_ABORT; 
-  }
-  return CREATE_CONTINUE;
+    return CREATE_CONTINUE;
 }
 
 static MaxEggPluginCreateMouseCallBack MaxEggCreateMouseCB;
@@ -403,94 +655,94 @@ CreateMouseCallBack* MaxEggPlugin::GetCreateMouseCallBack()
 
 void MaxEggPlugin::GetMat(TimeValue t, INode* inode, ViewExp* vpt, Matrix3& tm) 
 {
-  tm = inode->GetObjectTM(t);
-  tm.NoScale();
-  float scaleFactor = vpt->NonScalingObjectSize()*vpt->GetVPWorldWidth(tm.GetTrans())/(float)360.0;
-  tm.Scale(Point3(scaleFactor,scaleFactor,scaleFactor));
+    tm = inode->GetObjectTM(t);
+    tm.NoScale();
+    float scaleFactor = vpt->NonScalingObjectSize()*vpt->GetVPWorldWidth(tm.GetTrans())/(float)360.0;
+    tm.Scale(Point3(scaleFactor,scaleFactor,scaleFactor));
 }
 
 void MaxEggPlugin::GetDeformBBox(TimeValue t, Box3& box, Matrix3 *tm, BOOL useSel )
 {
-  box = mesh.getBoundingBox(tm);
+    box = mesh.getBoundingBox(tm);
 }
 
 void MaxEggPlugin::GetLocalBoundBox(TimeValue t, INode* inode, ViewExp* vpt, Box3& box ) 
 {
-  Matrix3 m = inode->GetObjectTM(t);
-  Point3 pt;
-  Point3 q[4];
-  float scaleFactor = vpt->GetVPWorldWidth(m.GetTrans())/360.0f;
-  box = mesh.getBoundingBox();
-  box.Scale(scaleFactor);
+    Matrix3 m = inode->GetObjectTM(t);
+    Point3 pt;
+    Point3 q[4];
+    float scaleFactor = vpt->GetVPWorldWidth(m.GetTrans())/360.0f;
+    box = mesh.getBoundingBox();
+    box.Scale(scaleFactor);
 }
 
 void MaxEggPlugin::GetWorldBoundBox(TimeValue t, INode* inode, ViewExp* vpt, Box3& box )
 {
-  int i, nv; Matrix3 tm; Point3 pt;
-  GetMat(t,inode,vpt,tm);
-  nv = mesh.getNumVerts();
-  box.Init();
-  for (i=0; i<nv; i++) 
-    box += tm*mesh.getVert(i);
+    int i, nv; Matrix3 tm; Point3 pt;
+    GetMat(t,inode,vpt,tm);
+    nv = mesh.getNumVerts();
+    box.Init();
+    for (i=0; i<nv; i++) 
+        box += tm*mesh.getVert(i);
 }
 
 int MaxEggPlugin::HitTest(TimeValue t, INode *inode, int type, int crossing, int flags, IPoint2 *p, ViewExp *vpt) 
 {
-  HitRegion hitRegion;
-  DWORD savedLimits;
-  Matrix3 m;
-  GraphicsWindow *gw = vpt->getGW();
-  Material *mtl = gw->getMaterial();
-  MakeHitRegion(hitRegion,type,crossing,4,p);
-  gw->setRndLimits(((savedLimits = gw->getRndLimits()) | GW_PICK) & ~GW_ILLUM);
-  GetMat(t,inode,vpt,m);
-  gw->setTransform(m);
-  gw->clearHitCode();
-  if (mesh.select( gw, mtl, &hitRegion, flags & HIT_ABORTONHIT )) 
-    return TRUE;
-  return FALSE;
+    HitRegion hitRegion;
+    DWORD savedLimits;
+    Matrix3 m;
+    GraphicsWindow *gw = vpt->getGW();
+    Material *mtl = gw->getMaterial();
+    MakeHitRegion(hitRegion,type,crossing,4,p);
+    gw->setRndLimits(((savedLimits = gw->getRndLimits()) | GW_PICK) & ~GW_ILLUM);
+    GetMat(t,inode,vpt,m);
+    gw->setTransform(m);
+    gw->clearHitCode();
+    if (mesh.select( gw, mtl, &hitRegion, flags & HIT_ABORTONHIT )) 
+        return TRUE;
+    return FALSE;
 }
 
 int MaxEggPlugin::Display(TimeValue t, INode* inode, ViewExp *vpt, int flags) 
 {
-  Matrix3 m;
-  GraphicsWindow *gw = vpt->getGW();
-  Material *mtl = gw->getMaterial();
-  
-  GetMat(t,inode,vpt,m);
-  gw->setTransform(m);
-  DWORD rlim = gw->getRndLimits();
-  gw->setRndLimits(GW_WIREFRAME|GW_BACKCULL);
-  if (inode->Selected()) 
-    gw->setColor( LINE_COLOR, GetSelColor());
-  else if(!inode->IsFrozen())
-    gw->setColor( LINE_COLOR, GetUIColor(COLOR_TAPE_OBJ));
-  mesh.render( gw, mtl, NULL, COMP_ALL);
-  return 0;
+    Matrix3 m;
+    GraphicsWindow *gw = vpt->getGW();
+    Material *mtl = gw->getMaterial();
+    
+    GetMat(t,inode,vpt,m);
+    gw->setTransform(m);
+    DWORD rlim = gw->getRndLimits();
+    gw->setRndLimits(GW_WIREFRAME|GW_BACKCULL);
+    if (inode->Selected()) 
+        gw->setColor( LINE_COLOR, GetSelColor());
+    else if(!inode->IsFrozen())
+        gw->setColor( LINE_COLOR, GetUIColor(COLOR_TAPE_OBJ));
+    mesh.render( gw, mtl, NULL, COMP_ALL);
+    return 0;
 }
 
 RefResult MaxEggPlugin::NotifyRefChanged(Interval changeInt, RefTargetHandle hTarget, PartID& partID, RefMessage message ) 
 {
-  UpdateUI();
-  return REF_SUCCEED;
+    UpdateUI();
+    return REF_SUCCEED;
 }
 
 ObjectState MaxEggPlugin::Eval(TimeValue time)
 {
-  return ObjectState(this);
+    return ObjectState(this);
 }
 
 Interval MaxEggPlugin::ObjectValidity(TimeValue t) 
 {
-  Interval ivalid;
-  ivalid.SetInfinite();
-  return ivalid;
+    Interval ivalid;
+    ivalid.SetInfinite();
+    return ivalid;
 }
 
 RefTargetHandle MaxEggPlugin::Clone(RemapDir& remap) 
 {
-  MaxEggPlugin* newob = new MaxEggPlugin();
-  return(newob);
+    MaxEggPlugin* newob = new MaxEggPlugin();
+    return(newob);
 }
 
 ///////////////////////////////////////////////////////////
@@ -498,34 +750,106 @@ RefTargetHandle MaxEggPlugin::Clone(RemapDir& remap)
 ///////////////////////////////////////////////////////////
 
 IOResult MaxEggPlugin::Save(ISave *isave) {
-  SaveCheckState();
-  for (int i = 0; i < numEggs; i++)
-    eggList[i]->Save(isave);
-  ChunkSave(isave,   CHUNK_OVERWRITE_FLAG,  autoOverwrite);
-  ChunkSave(isave,   CHUNK_PVIEW_FLAG,      pview);
-  ChunkSave(isave,   CHUNK_LOG_OUTPUT,      logOutput);
-
-  return IO_OK;
+    SaveCheckState();
+    for (int i = 0; i < numEggs; i++)
+        eggList[i]->Save(isave);
+    ChunkSave(isave,   CHUNK_OVERWRITE_FLAG,  autoOverwrite);
+    ChunkSave(isave,   CHUNK_PVIEW_FLAG,      pview);
+    ChunkSave(isave,   CHUNK_LOG_OUTPUT,      logOutput);
+    
+    return IO_OK;
 }
 
 IOResult MaxEggPlugin::Load(ILoad *iload) {
-  IOResult res = iload->OpenChunk();
-  MaxEggExpOptions *temp;
-  
-  while (res == IO_OK) {
-    switch(iload->CurChunkID()) {
-    case CHUNK_OVERWRITE_FLAG: autoOverwrite = ChunkLoadBool(iload); break;
-    case CHUNK_PVIEW_FLAG:     pview = ChunkLoadBool(iload); break;
-    case CHUNK_LOG_OUTPUT:     logOutput = ChunkLoadBool(iload); break;
-    case CHUNK_EGG_EXP_OPTIONS:
-      temp = new MaxEggExpOptions();
-      temp->Load(iload);
-      AddEgg(temp);
-      break;
+    IOResult res = iload->OpenChunk();
+    MaxOptionsDialog *temp;
+    
+    while (res == IO_OK) {
+        switch(iload->CurChunkID()) {
+        case CHUNK_OVERWRITE_FLAG: autoOverwrite = ChunkLoadBool(iload); break;
+        case CHUNK_PVIEW_FLAG:     pview = ChunkLoadBool(iload); break;
+        case CHUNK_LOG_OUTPUT:     logOutput = ChunkLoadBool(iload); break;
+        case CHUNK_EGG_EXP_OPTIONS:
+            temp = new MaxOptionsDialog();
+            temp->SetMaxInterface(iObjParams);
+            temp->Load(iload);
+            AddEgg(temp);
+            break;
+        }
+        iload->CloseChunk();
+        res = iload->OpenChunk();
     }
-    iload->CloseChunk();
-    res = iload->OpenChunk();
-  }
- 
-  return IO_OK;
+    
+    return IO_OK;
 }
+
+/**********************************************************************
+ *
+ * DLL Initialization
+ *
+ **********************************************************************/
+
+extern ClassDesc* GetMaxEggPluginDesc();
+
+HINSTANCE hInstance;
+int controlsInit = FALSE;
+
+// This function is called by Windows when the DLL is loaded.  This 
+// function may also be called many times during time critical operations
+// like rendering.  Therefore developers need to be careful what they
+// do inside this function.  In the code below, note how after the DLL is
+// loaded the first time only a few statements are executed.
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL,ULONG fdwReason,LPVOID lpvReserved)
+{
+        hInstance = hinstDLL;                           // Hang on to this DLL's instance handle.
+
+        if (!controlsInit) {
+                controlsInit = TRUE;
+                InitCustomControls(hInstance);  // Initialize MAX's custom controls
+                InitCommonControls();                   // Initialize Win95 controls
+        }
+
+        return (TRUE);
+}
+
+// This function returns a string that describes the DLL and where the user
+// could purchase the DLL if they don't have it.
+__declspec( dllexport ) const TCHAR* LibDescription()
+{
+        return GetString(IDS_LIBDESCRIPTION);
+}
+
+// This function returns the number of plug-in classes this DLL operates on.
+//TODO: Must change this number when adding a new class
+__declspec( dllexport ) int LibNumberClasses()
+{
+        return 1;
+}
+
+// This function returns the descriptions of the plug-in classes this DLL operates on.
+__declspec( dllexport ) ClassDesc* LibClassDesc(int i)
+{
+        switch(i) {
+                case 0: return GetMaxEggPluginDesc();
+                default: return NULL;
+        }
+}
+
+// This function returns a pre-defined constant indicating the version of 
+// the system under which it was compiled.  It is used to allow the system
+// to catch obsolete DLLs.
+__declspec( dllexport ) ULONG LibVersion()
+{
+        return VERSION_3DSMAX;
+}
+
+TCHAR *GetString(int id)
+{
+        static TCHAR buf[256];
+
+        if (hInstance)
+                return LoadString(hInstance, id, buf, sizeof(buf)) ? buf : NULL;
+        return NULL;
+}
+

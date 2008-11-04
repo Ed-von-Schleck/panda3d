@@ -13,9 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "maxNodeDesc.h"
-#include "maxLogger.h"
-#define MTEC Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM4
+#include "maxEgg.h"
 
 TypeHandle MaxNodeDesc::_type_handle;
 
@@ -75,7 +73,6 @@ from_INode(INode *max_node) {
         ((c->ClassID() == BIPSLAVE_CONTROL_CLASS_ID) ||
          (c->ClassID() == BIPBODY_CONTROL_CLASS_ID) ||
          (c->ClassID() == FOOTPRINT_CLASS_ID)))) {
-      Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, "Found a joint." );
       
       // This node is a joint.
       _joint_type = JT_node_joint;

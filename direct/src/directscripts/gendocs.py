@@ -60,6 +60,20 @@ SECHEADER = re.compile("^[A-Z][a-z]+\s*:")
 JUNKHEADER = re.compile("^((Function)|(Access))\s*:")
 IMPORTSTAR = re.compile("^from\s+([a-zA-Z0-9_.]+)\s+import\s+[*]\s*$")
 IDENTIFIER = re.compile("[a-zA-Z0-9_]+")
+FILEHEADER = re.compile(
+r"""^// Filename: [a-zA-Z.]+
+// Created by:  [a-zA-Z. ()0-9]+(
+//)?
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright \(c\) Carnegie Mellon University.  All rights reserved.
+//
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
+//
+////////////////////////////////////////////////////////////////////""")
 
 def readFile(fn):
     try:
@@ -150,6 +164,10 @@ def convertToPythonFn(fn):
                 result = result + c
         lastc = c
     return result
+
+def removeFileLicense(content):
+    # Removes the license part at the top of a file.
+    return re.sub(FILEHEADER, "", content).strip()
 
 ########################################################################
 #
@@ -351,20 +369,21 @@ DOCSTRING_STMT_PATTERN = (
       (symbol.expr_stmt,
        (symbol.testlist,
         (symbol.test,
-         (symbol.and_test,
-          (symbol.not_test,
-           (symbol.comparison,
-            (symbol.expr,
-             (symbol.xor_expr,
-              (symbol.and_expr,
-               (symbol.shift_expr,
-                (symbol.arith_expr,
-                 (symbol.term,
-                  (symbol.factor,
-                   (symbol.power,
-                    (symbol.atom,
-                     (token.STRING, ['docstring'])
-                     )))))))))))))))),
+         (symbol.or_test,
+           (symbol.and_test,
+            (symbol.not_test,
+             (symbol.comparison,
+              (symbol.expr,
+               (symbol.xor_expr,
+                (symbol.and_expr,
+                 (symbol.shift_expr,
+                  (symbol.arith_expr,
+                   (symbol.term,
+                    (symbol.factor,
+                     (symbol.power,
+                      (symbol.atom,
+                       (token.STRING, ['docstring'])
+                       ))))))))))))))))),
      (token.NEWLINE, '')
      ))
 
@@ -392,20 +411,21 @@ ASSIGNMENT_STMT_PATTERN = (
       (symbol.expr_stmt,
        (symbol.testlist,
         (symbol.test,
-         (symbol.and_test,
-          (symbol.not_test,
-           (symbol.comparison,
-            (symbol.expr,
-             (symbol.xor_expr,
-              (symbol.and_expr,
-               (symbol.shift_expr,
-                (symbol.arith_expr,
-                 (symbol.term,
-                  (symbol.factor,
-                   (symbol.power,
-                    (symbol.atom,
-                     (token.NAME, ['varname']),
-       )))))))))))))),
+         (symbol.or_test,
+           (symbol.and_test,
+            (symbol.not_test,
+             (symbol.comparison,
+              (symbol.expr,
+               (symbol.xor_expr,
+                (symbol.and_expr,
+                 (symbol.shift_expr,
+                  (symbol.arith_expr,
+                   (symbol.term,
+                    (symbol.factor,
+                     (symbol.power,
+                      (symbol.atom,
+                       (token.NAME, ['varname']),
+       ))))))))))))))),
        (token.EQUAL, '='),
        (symbol.testlist, ['rhs']))),
      (token.NEWLINE, ''),
@@ -634,6 +654,18 @@ class CodeDatabase:
         else:
             return pathToModule(type.file)
 
+    def getClassConstructors(self, cn):
+        # Only detects C++ constructors, not Python constructors, since
+        # those are treated as ordinary methods.
+        type = self.types.get(cn)
+        result = []
+        if (isinstance(type, InterrogateType)):
+            for constructor in type.constructors:
+                func = type.db.functions[constructor]
+                if (func.classindex == type.index):
+                    result.append(type.scopedname+"."+func.pyname)
+        return result
+
     def getClassMethods(self, cn):
         type = self.types.get(cn)
         result = []
@@ -678,7 +710,7 @@ class CodeDatabase:
     def getFunctionComment(self, fn):
         func = self.funcs.get(fn)
         if (isinstance(func, InterrogateFunction)):
-            return textToHTML(func.comment, "/", JUNKHEADER)
+            return textToHTML(removeFileLicense(func.comment), "/", JUNKHEADER)
         elif (isinstance(func, ParseTreeInfo)):
             return textToHTML(func.docstring, "#")
         return fn
@@ -811,8 +843,12 @@ def generate(pversion, indirlist, directdirlist, docdir, header, footer, urlpref
         for sclass in inheritance:
             methods = code.getClassMethods(sclass)[:]
             methods.sort(None, str.lower)
-            if (len(methods) > 0):
+            constructors = code.getClassConstructors(sclass)
+            if (len(methods) > 0 or len(constructors) > 0):
                 body = body + "<h2>Methods of "+sclass+":</h2>\n<ul>\n"
+                if len(constructors) > 0:
+                    fn = code.getFunctionName(constructors[0])
+                    body = body + '<a href="#' + fn + '">' + fn + " (Constructor)</a><br>\n"
                 for method in methods:
                     fn = code.getFunctionName(method)
                     body = body + '<a href="#' + fn + '">' + fn + "</a><br>\n"
@@ -825,6 +861,9 @@ def generate(pversion, indirlist, directdirlist, docdir, header, footer, urlpref
                     body = body + "<tr><td>" + value + "</td><td>" + comment + "</td></tr>\n"
                 body = body + "</table></ul>"
         for sclass in inheritance:
+            constructors = code.getClassConstructors(sclass)
+            for constructor in constructors:
+                body = body + generateFunctionDocs(code, constructor)
             methods = code.getClassMethods(sclass)[:]
             methods.sort(None, str.lower)
             for method in methods:

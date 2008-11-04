@@ -145,6 +145,7 @@ add_on_stage(TextureStage *stage, Texture *tex) const {
 
   // In either case, we now need to re-sort the attrib list.
   attrib->_sort_seq = UpdateSeq::old();
+  attrib->_filtered_seq = UpdateSeq::old();
 
   return return_new(attrib);
 }
@@ -173,6 +174,7 @@ remove_on_stage(TextureStage *stage) const {
     }
 
     attrib->_sort_seq = UpdateSeq::old();
+    attrib->_filtered_seq = UpdateSeq::old();
   }
 
   return return_new(attrib);
@@ -204,6 +206,7 @@ add_off_stage(TextureStage *stage) const {
         }
       }
       attrib->_sort_seq = UpdateSeq::old();
+      attrib->_filtered_seq = UpdateSeq::old();
     }
   }
   return return_new(attrib);
@@ -297,9 +300,10 @@ filter_to_max(int max_texture_stages) const {
     return this;
   }
 
-  // Since check_sorted() will clear the _filtered list if we are out
-  // of date, we should call it first.
-  check_sorted();
+  if (_filtered_seq != TextureStage::get_sort_seq()) {
+    ((TextureAttrib *)this)->_filtered.clear();
+    ((TextureAttrib *)this)->_filtered_seq = TextureStage::get_sort_seq();
+  }
 
   Filtered::const_iterator fi;
   fi = _filtered.find(max_texture_stages);
@@ -312,6 +316,8 @@ filter_to_max(int max_texture_stages) const {
   // Harder case: we have to compute it now.  We must choose the n
   // stages with the highest priority in our list of stages.  In the
   // case of equal priority, we prefer the stage with the lower sort.
+  check_sorted();
+
   OnStages priority_stages = _on_stages;
 
   // This sort function uses the STL function object defined above.
@@ -481,6 +487,7 @@ compare_to_impl(const RenderAttrib *other) const {
 
     Texture *tex = (*li).second;
     Texture *other_tex = (*oli).second;
+
     if (tex != other_tex) {
       return tex < other_tex ? -1 : 1;
     }
@@ -504,10 +511,13 @@ compare_to_impl(const RenderAttrib *other) const {
   check_sorted();
   ta->check_sorted();
 
-  OnStages::const_iterator si = _on_stages.begin();
-  OnStages::const_iterator osi = ta->_on_stages.begin();
+  nassertr(_on_ptr_stages.size() == _on_stages.size() &&
+           ta->_on_ptr_stages.size() == ta->_on_stages.size(), 0)
 
-  while (si != _on_stages.end() && osi != ta->_on_stages.end()) {
+  OnStages::const_iterator si = _on_ptr_stages.begin();
+  OnStages::const_iterator osi = ta->_on_ptr_stages.begin();
+
+  while (si != _on_ptr_stages.end() && osi != ta->_on_ptr_stages.end()) {
     TextureStage *stage = (*si)._stage;
     TextureStage *other_stage = (*osi)._stage;
 
@@ -517,6 +527,7 @@ compare_to_impl(const RenderAttrib *other) const {
 
     int implicit_sort = (*si)._implicit_sort;
     int other_implicit_sort = (*osi)._implicit_sort;
+
     if (implicit_sort != other_implicit_sort) {
       return implicit_sort < other_implicit_sort ? -1 : 1;
     }
@@ -525,10 +536,10 @@ compare_to_impl(const RenderAttrib *other) const {
     ++osi;
   }
 
-  if (si != _on_stages.end()) {
+  if (si != _on_ptr_stages.end()) {
     return 1;
   }
-  if (osi != ta->_on_stages.end()) {
+  if (osi != ta->_on_ptr_stages.end()) {
     return -1;
   }
 
@@ -855,6 +866,7 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
     }
   }
   _sort_seq = UpdateSeq::old();
+  _filtered_seq = UpdateSeq::old();
 
   return pi;
 }
@@ -941,7 +953,8 @@ sort_on_stages() {
   // It's important that this assignment not be based on the whims of
   // render order--it mustn't change arbitrarily--so we must first
   // sort the on_stages list into pointer order for this purpose.
-  sort(_on_stages.begin(), _on_stages.end(), CompareTextureStagePointer());
+  _on_ptr_stages = _on_stages;
+  sort(_on_ptr_stages.begin(), _on_ptr_stages.end(), CompareTextureStagePointer());
 
   typedef pmap<const InternalName *, int> UsedTexcoordIndex;
   UsedTexcoordIndex used_texcoord_index;
@@ -950,7 +963,7 @@ sort_on_stages() {
   TexcoordMap tc_map;
 
   OnStages::const_iterator si;
-  for (si = _on_stages.begin(); si != _on_stages.end(); ++si) {
+  for (si = _on_ptr_stages.begin(); si != _on_ptr_stages.end(); ++si) {
     TextureStage *stage = (*si)._stage;
     if (stage->is_fixed_function()) {
       const InternalName *name = stage->get_texcoord_name();
@@ -966,10 +979,8 @@ sort_on_stages() {
     }
   }
 
-  // Now we can sort the on_stages map into render order.
+  // Now we can sort the on_stages list into render order.
   sort(_on_stages.begin(), _on_stages.end(), CompareTextureStageSort());
-
-  _sort_seq = TextureStage::get_sort_seq();
 
   _on_ff_stages.clear();
   _ff_tc_index.clear();
@@ -982,8 +993,12 @@ sort_on_stages() {
       _ff_tc_index.push_back(texcoord_index);
     }
   }
-  
-  // Also clear the _filtered map, so we'll have to recompute those
-  // (in case the priority orders have changed as well).
-  _filtered.clear();
+
+  // We'd like to clear the _filtered map, in case the priority orders
+  // have changed as well, but we can't do that here: too dangerous.
+  // Clearing _filtered might cause TextureAttribs to be deleted, and
+  // hence removed from the map that we might be in the middle of
+  // traversing!
+
+  _sort_seq = TextureStage::get_sort_seq();
 }
