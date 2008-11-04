@@ -326,6 +326,10 @@ get_normal(int x, int y) {
 ////////////////////////////////////////////////////////////////////
 void GeoMipTerrain::
 generate() {
+  if (_xsize < 3 || _ysize < 3) {
+    grutil_cat.error() << "No valid heightfield image has been set!\n";
+    return;
+  }
   calc_levels();
   _root.node()->remove_all_children();
   _blocks.clear();
@@ -367,6 +371,10 @@ generate() {
 ////////////////////////////////////////////////////////////////////
 bool GeoMipTerrain::
 update() {
+  if (_xsize < 3 || _ysize < 3) {
+    grutil_cat.error() << "No valid heightfield image has been set!\n";
+    return;
+  }
   if (_is_dirty) {
     generate();
     return true;
@@ -497,6 +505,7 @@ auto_flatten() {
 ////////////////////////////////////////////////////////////////////
 void GeoMipTerrain::
 calc_levels() {
+  nassertv(_xsize >= 3 && _ysize >= 3);
   _levels.clear();
   for (unsigned int mx = 0; mx < (_xsize - 1) / _block_size; mx++) {
     pvector<unsigned short> tvector; //create temporary row
