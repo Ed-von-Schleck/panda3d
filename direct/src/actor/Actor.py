@@ -55,13 +55,14 @@ class Actor(DirectObject, NodePath):
         There is a different AnimDef for each different part or
         sub-part, times each different animation in the AnimDict. """
         
-        def __init__(self, filename):
+        def __init__(self, filename = None, animBundle = None):
             self.filename = filename
+            self.animBundle = None
             self.animModel = None
             self.animControl = None
 
         def makeCopy(self):
-            return Actor.AnimDef(self.filename)
+            return Actor.AnimDef(self.filename, self.animBundle)
 
         def __repr__(self):
             return 'Actor.AnimDef(%s)' % (repr(self.filename))
@@ -1759,10 +1760,7 @@ class Actor(DirectObject, NodePath):
                     animControl = acc.getAnim(i)
                     animName = acc.getAnimName(i)
 
-                    # Now we've already bound the animation, but we
-                    # have no associated filename.  So store the
-                    # animControl, but put None in for the filename.
-                    animDef = Actor.AnimDef(None)
+                    animDef = Actor.AnimDef()
                     animDef.animControl = animControl
                     self.__animControlDict[lodName][partName][animName] = animDef
 
@@ -1908,12 +1906,25 @@ class Actor(DirectObject, NodePath):
         for animName, filename in anims.items():
             # make sure this lod is in anim control dict
             for lName in lodNames:
-                # store the file path only; we will bind it (and produce
-                # an AnimControl) when it is played
-                if not firstLoad:
-                    self.__animControlDict[lName][partName][animName].filename = filename
+                if firstLoad:
+                    self.__animControlDict[lName][partName][animName] = Actor.AnimDef()
+
+                if isinstance(filename, NodePath):
+                    # We were given a pre-load anim bundle, not a filename.
+                    assert not filename.isEmpty()
+                    if filename.node().isOfType(AnimBundleNode.getClassType()):
+                        animBundleNP = filename
+                    else:
+                        animBundleNP = filename.find('**/+AnimBundleNode')
+                    assert not animBundleNP.isEmpty()
+                    self.__animControlDict[lName][partName][animName].animBundle = animBundleNP.node().getBundle()
+
                 else:
-                    self.__animControlDict[lName][partName][animName] = Actor.AnimDef(filename)
+                    # We were given a filename that must be loaded.
+                    # Store the filename only; we will load and bind
+                    # it (and produce an AnimControl) when it is
+                    # played.
+                    self.__animControlDict[lName][partName][animName].filename = filename
 
     def initAnimsOnAllLODs(self,partNames):
         if self.mergeLODBundles:
@@ -2113,20 +2124,26 @@ class Actor(DirectObject, NodePath):
         else:
             bundle = self.__partBundleDict[lodName][subpartDef.truePartName].getBundle()
 
-        # fetch a copy from the modelPool, or if we weren't careful
-        # enough to preload, fetch from disk
-        animPath = anim.filename
-        loaderOptions = self.animLoaderOptions
-        if not self.__autoCopy:
-            # If copy = 0, then we should always hit the disk.
-            loaderOptions = LoaderOptions(loaderOptions)
-            loaderOptions.setFlags(loaderOptions.getFlags() & ~LoaderOptions.LFNoRamCache)
+        if anim.animBundle:
+            # We already have a bundle; just use that one.
+            animBundle = anim.animBundle
+            animModel = anim.animModel
 
-        animNode = loader.loadModel(animPath, loaderOptions = loaderOptions)
-        if animNode == None:
-            return None
-        animBundle = (animNode.find("**/+AnimBundleNode").node()).getBundle()
-        animModel = animNode.node()
+        else:
+            # fetch a copy from the modelPool, or if we weren't careful
+            # enough to preload, fetch from disk
+            animPath = anim.filename
+            loaderOptions = self.animLoaderOptions
+            if not self.__autoCopy:
+                # If copy = 0, then we should always hit the disk.
+                loaderOptions = LoaderOptions(loaderOptions)
+                loaderOptions.setFlags(loaderOptions.getFlags() & ~LoaderOptions.LFNoRamCache)
+
+            animNode = loader.loadModel(animPath, loaderOptions = loaderOptions)
+            if animNode == None:
+                return None
+            animBundle = (animNode.find("**/+AnimBundleNode").node()).getBundle()
+            animModel = animNode.node()
 
         # bind anim
         animControl = bundle.bindAnim(animBundle, -1, subpartDef.subset)
