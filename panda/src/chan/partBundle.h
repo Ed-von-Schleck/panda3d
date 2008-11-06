@@ -53,11 +53,9 @@ protected:
   // The copy constructor is protected; use make_copy() or copy_subgraph().
   PartBundle(const PartBundle &copy);
 
-public:
+PUBLISHED:
   PartBundle(const string &name = "");
   virtual PartGroup *make_copy() const;
-
-PUBLISHED:
 
   // This is the parameter to set_blend_type() and specifies the kind
   // of blending operation to be performed when multiple controls are
