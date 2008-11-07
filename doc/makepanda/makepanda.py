@@ -3453,12 +3453,7 @@ def MakeInstallerLinux():
     import compileall
     PYTHONV=SDK["PYTHONVERSION"]
     if (os.path.isdir("linuxroot")): oscmd("chmod -R 755 linuxroot")
-    if (os.path.exists("/usr/bin/dpkg-deb")):
-        oscmd("dpkg --print-architecture > built/tmp/architecture.txt")
-    if (os.path.exists("/usr/bin/rpmbuild")):
-        oscmd("rpm -E '%_target_cpu' > built/tmp/architecture.txt")
-    ARCH=ReadFile("built/tmp/architecture.txt").strip()
-    oscmd("rm -rf linuxroot data.tar.gz control.tar.gz panda3d.spec "+ARCH)
+    oscmd("rm -rf linuxroot data.tar.gz control.tar.gz panda3d.spec `dpkg --print-architecture` `rpm -E '%_target_cpu'`")
     oscmd("mkdir -p linuxroot/usr/bin")
     oscmd("mkdir -p linuxroot/usr/include")
     oscmd("mkdir -p linuxroot/usr/share/panda3d")
@@ -3473,8 +3468,9 @@ def MakeInstallerLinux():
     oscmd("cp --recursive built/pandac  linuxroot/usr/share/panda3d/pandac")
     oscmd("cp built/direct/__init__.py  linuxroot/usr/share/panda3d/direct/__init__.py")
     oscmd("cp --recursive built/models  linuxroot/usr/share/panda3d/models")
-    if os.path.isdir("built/Pmw"): oscmd("cp --recursive built/Pmw     linuxroot/usr/share/panda3d/Pmw")
-    if os.path.isdir("samples"):   oscmd("cp --recursive samples       linuxroot/usr/share/panda3d/samples")
+    if os.path.isdir("samples"):        oscmd("cp --recursive samples       linuxroot/usr/share/panda3d/samples")
+    if os.path.isdir("built/Pmw"):      oscmd("cp --recursive built/Pmw     linuxroot/usr/share/panda3d/Pmw")
+    if os.path.isdir("built/plugins"):  oscmd("cp --recursive built/plugins linuxroot/usr/share/panda3d/plugins")
     oscmd("cp doc/LICENSE               linuxroot/usr/share/panda3d/LICENSE")
     oscmd("cp doc/LICENSE               linuxroot/usr/include/panda3d/LICENSE")
     oscmd("cp doc/ReleaseNotes          linuxroot/usr/share/panda3d/ReleaseNotes")
@@ -3490,8 +3486,20 @@ def MakeInstallerLinux():
     compileall.compile_dir("linuxroot/usr/share/panda3d/Pmw")
     DeleteCVS("linuxroot")
     oscmd("chmod -R 555 linuxroot/usr/share/panda3d")
-
+    
+    if (os.path.exists("/usr/bin/rpmbuild")):
+        oscmd("rm -rf linuxroot/DEBIAN")
+        oscmd("rpm -E '%_target_cpu' > built/tmp/architecture.txt")
+        ARCH=ReadFile("built/tmp/architecture.txt").strip()
+        pandasource = os.path.abspath(os.getcwd())
+        txt = INSTALLER_SPEC_FILE[1:].replace("VERSION",VERSION).replace("PANDASOURCE",pandasource)
+        WriteFile("panda3d.spec", txt)
+        oscmd("rpmbuild --define '_rpmdir "+pandasource+"' -bb panda3d.spec")
+        oscmd("mv "+ARCH+"/panda3d-"+VERSION+"-1."+ARCH+".rpm .")
+    
     if (os.path.exists("/usr/bin/dpkg-deb")):
+        oscmd("dpkg --print-architecture > built/tmp/architecture.txt")
+        ARCH=ReadFile("built/tmp/architecture.txt").strip()
         txt = INSTALLER_DEB_FILE[1:].replace("VERSION",str(VERSION)).replace("PYTHONV",PYTHONV).replace("ARCH",ARCH)
         oscmd("mkdir -p linuxroot/DEBIAN")
         oscmd("cd linuxroot ; (find usr -type f -exec md5sum {} \;) >  DEBIAN/md5sums")
@@ -3503,13 +3511,6 @@ def MakeInstallerLinux():
         oscmd("cp linuxroot/DEBIAN/postinst linuxroot/DEBIAN/postrm")
         oscmd("dpkg-deb -b linuxroot panda3d_"+VERSION+"_"+ARCH+".deb")
         oscmd("chmod -R 755 linuxroot")
-
-    if (os.path.exists("/usr/bin/rpmbuild")):
-        pandasource = os.path.abspath(os.getcwd())
-        txt = INSTALLER_SPEC_FILE[1:].replace("VERSION",VERSION).replace("PANDASOURCE",pandasource)
-        WriteFile("panda3d.spec", txt)
-        oscmd("rpmbuild --define '_rpmdir "+pandasource+"' -bb panda3d.spec")
-        oscmd("mv "+ARCH+"/panda3d-"+VERSION+"-1."+ARCH+".rpm .")
     
     if not(os.path.exists("/usr/bin/rpmbuild") or os.path.exists("/usr/bin/dpkg-deb")):
         exit("To build an installer, either rpmbuild or dpkg-deb must be present on your system!")
