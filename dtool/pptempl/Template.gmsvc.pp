@@ -560,7 +560,7 @@ $[TAB] $[VERHEADER_GENERATOR_RULE]
 $[VERHEADER_DEPENDENTS] : $[verhdr_to_gen]
 #endif
 
-#define MIDL_COMMAND $[COMPILE_IDL] /out $[ODIR] $[ODIR]/$[IDL_BASENAME].idl
+#define MIDL_COMMAND $[COMPILE_IDL] /out $[ODIR] $[ODIR]/$[IDL_BASENAME].idl $[IDL_CDEFS:%=/D%]
 
 #define idl_to_gen $[filter %.idl, $[GENERATED_SOURCES]]
 #if $[idl_to_gen]
