@@ -1,6 +1,0 @@
-#include "openCVTexture.cxx"
-#include "ffmpegTexture.cxx"
-#include "movieTexture.cxx"
-#include "nodeVertexTransform.cxx"
-#include "pipeOcclusionCullTraverser.cxx"
-#include "rigidBodyCombiner.cxx"
