@@ -26,6 +26,7 @@
 CPT(RenderAttrib) ClipPlaneAttrib::_empty_attrib;
 CPT(RenderAttrib) ClipPlaneAttrib::_all_off_attrib;
 TypeHandle ClipPlaneAttrib::_type_handle;
+int ClipPlaneAttrib::_attrib_slot;
 
 // This STL Function object is used in filter_to_max(), below, to sort
 // a list of PlaneNodes in reverse order by priority.
@@ -207,6 +208,18 @@ make(ClipPlaneAttrib::Operation op, PlaneNode *plane1, PlaneNode *plane2,
 
   nassertr(false, make());
   return make();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ClipPlaneAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) ClipPlaneAttrib::
+make_default() {
+  return return_new(new ClipPlaneAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -861,22 +874,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   // needs a bit more thought.  It's hard to imagine that it's even
   // important to compute this properly.
   return other;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ClipPlaneAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived ClipPlaneAttrib
-//               types to specify what the default property for a
-//               ClipPlaneAttrib of this type should be.
-//
-//               This should return a newly-allocated ClipPlaneAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of ClipPlaneAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *ClipPlaneAttrib::
-make_default_impl() const {
-  return new ClipPlaneAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

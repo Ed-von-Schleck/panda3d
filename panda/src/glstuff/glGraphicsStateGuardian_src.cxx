@@ -1754,13 +1754,20 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     case GeomPrimitive::PT_none:
       break;
     }
-    if ((_target._transparency != _state._transparency)||
-        (_target._color_write != _state._color_write)||
-        (_target._color_blend != _state._color_blend)) {
+
+    int transparency_slot = TransparencyAttrib::get_class_slot();
+    int color_write_slot = ColorWriteAttrib::get_class_slot();
+    int color_blend_slot = ColorBlendAttrib::get_class_slot();
+    if (_target_rs->get_attrib(transparency_slot) != _state_rs->get_attrib(transparency_slot) ||
+        _target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
+        _target_rs->get_attrib(color_blend_slot) != _state_rs->get_attrib(color_blend_slot) ||
+        !_state_mask.get_bit(transparency_slot) ||
+        !_state_mask.get_bit(color_write_slot) ||
+        !_state_mask.get_bit(color_blend_slot)) {
       do_issue_blending();
-      _state._transparency = _target._transparency;
-      _state._color_write = _target._color_write;
-      _state._color_blend = _target._color_blend;
+      _state_mask.set_bit(transparency_slot);
+      _state_mask.set_bit(color_write_slot);
+      _state_mask.set_bit(color_blend_slot);
     }
   }
 
@@ -2011,11 +2018,11 @@ update_standard_vertex_arrays(bool force) {
     // Now set up each of the active texture coordinate stages--or at
     // least those for which we're not generating texture coordinates
     // automatically.
-    int max_stage_index = _effective_texture->get_num_on_ff_stages();
+    int max_stage_index = _target_texture->get_num_on_ff_stages();
     int stage_index = 0;
     while (stage_index < max_stage_index) {
-      TextureStage *stage = _effective_texture->get_on_ff_stage(stage_index);
-      if (!_effective_tex_gen->has_gen_texcoord_stage(stage)) {
+      TextureStage *stage = _target_texture->get_on_ff_stage(stage_index);
+      if (!_target_tex_gen->has_gen_texcoord_stage(stage)) {
         // This stage is not one of the stages that doesn't need
         // texcoords issued for it.
         const InternalName *name = stage->get_texcoord_name();
@@ -2107,12 +2114,12 @@ update_standard_vertex_arrays(bool force) {
     // Now set up each of the active texture coordinate stages--or at
     // least those for which we're not generating texture coordinates
     // automatically.
-    int max_stage_index = _effective_texture->get_num_on_ff_stages();
+    int max_stage_index = _target_texture->get_num_on_ff_stages();
     int stage_index = 0;
     while (stage_index < max_stage_index) {
       _glClientActiveTexture(GL_TEXTURE0 + stage_index);
-      TextureStage *stage = _effective_texture->get_on_ff_stage(stage_index);
-      if (!_effective_tex_gen->has_gen_texcoord_stage(stage)) {
+      TextureStage *stage = _target_texture->get_on_ff_stage(stage_index);
+      if (!_target_tex_gen->has_gen_texcoord_stage(stage)) {
         // This stage is not one of the stages that doesn't need
         // texcoords issued for it.
         const InternalName *name = stage->get_texcoord_name();
@@ -3366,8 +3373,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   report_my_gl_errors();
 
   // Force reload of texture state, since we've just monkeyed with it.
-  _state_rs = 0;
-  _state._texture = 0;
+  _state_mask.clear_bit(TextureAttrib::get_class_slot());
 
   return true;
 }
@@ -3585,8 +3591,8 @@ do_issue_transform() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_shade_model() {
-  const ShadeModelAttrib *attrib = _target._shade_model;
-  switch (attrib->get_mode()) {
+  const ShadeModelAttrib *target_shade_model = DCAST(ShadeModelAttrib, _target_rs->get_attrib_def(ShadeModelAttrib::get_class_slot()));
+  switch (target_shade_model->get_mode()) {
   case ShadeModelAttrib::M_smooth:
     GLP(ShadeModel)(GL_SMOOTH);
     _flat_shade_model = false;
@@ -3607,10 +3613,7 @@ do_issue_shade_model() {
 void CLP(GraphicsStateGuardian)::
 do_issue_shader() {
   CLP(ShaderContext) *context = 0;
-  Shader *shader = 0;
-  if (_target._shader) {
-    shader = (Shader *)(_target._shader->get_shader());
-  }
+  Shader *shader = (Shader *)(_target_shader->get_shader());
   if (shader) {
     context = (CLP(ShaderContext) *)(shader->prepare_now(get_prepared_objects(), this));
   }
@@ -3647,10 +3650,10 @@ do_issue_shader() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_render_mode() {
-  const RenderModeAttrib *attrib = _target._render_mode;
-  _render_mode = attrib->get_mode();
-  _point_size = attrib->get_thickness();
-  _point_perspective = attrib->get_perspective();
+  const RenderModeAttrib *target_render_mode = DCAST(RenderModeAttrib, _target_rs->get_attrib_def(RenderModeAttrib::get_class_slot()));
+  _render_mode = target_render_mode->get_mode();
+  _point_size = target_render_mode->get_thickness();
+  _point_perspective = target_render_mode->get_perspective();
 
   switch (_render_mode) {
   case RenderModeAttrib::M_unchanged:
@@ -3687,8 +3690,8 @@ do_issue_render_mode() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_antialias() {
-  const AntialiasAttrib *attrib = _target._antialias;
-  if (attrib->get_mode_type() == AntialiasAttrib::M_auto) {
+  const AntialiasAttrib *target_antialias = DCAST(AntialiasAttrib, _target_rs->get_attrib_def(AntialiasAttrib::get_class_slot()));
+  if (target_antialias->get_mode_type() == AntialiasAttrib::M_auto) {
     // In this special mode, we must enable antialiasing on a
     // case-by-case basis, because we enable it differently for
     // polygons and for points and lines.
@@ -3700,7 +3703,7 @@ do_issue_antialias() {
     // don't use the other bits at all (they will be ignored by GL
     // anyway).
     _auto_antialias_mode = false;
-    unsigned short mode = attrib->get_mode();
+    unsigned short mode = target_antialias->get_mode();
 
     if (_supports_multisample &&
         (mode & AntialiasAttrib::M_multisample) != 0) {
@@ -3714,7 +3717,7 @@ do_issue_antialias() {
     }
   }
 
-  switch (attrib->get_mode_quality()) {
+  switch (target_antialias->get_mode_quality()) {
   case AntialiasAttrib::M_faster:
     GLP(Hint)(GL_LINE_SMOOTH_HINT, GL_FASTEST);
     GLP(Hint)(GL_POINT_SMOOTH_HINT, GL_FASTEST);
@@ -3744,8 +3747,8 @@ do_issue_antialias() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_rescale_normal() {
-  const RescaleNormalAttrib *attrib = _target._rescale_normal;
-  RescaleNormalAttrib::Mode mode = attrib->get_mode();
+  const RescaleNormalAttrib *target_rescale_normal = DCAST(RescaleNormalAttrib, _target_rs->get_attrib_def(RescaleNormalAttrib::get_class_slot()));
+  RescaleNormalAttrib::Mode mode = target_rescale_normal->get_mode();
 
   _auto_rescale_normal = false;
 
@@ -3795,8 +3798,8 @@ do_issue_rescale_normal() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_depth_test() {
-  const DepthTestAttrib *attrib = _target._depth_test;
-  DepthTestAttrib::PandaCompareFunc mode = attrib->get_mode();
+  const DepthTestAttrib *target_depth_test = DCAST(DepthTestAttrib, _target_rs->get_attrib_def(DepthTestAttrib::get_class_slot()));
+  DepthTestAttrib::PandaCompareFunc mode = target_depth_test->get_mode();
   if (mode == DepthTestAttrib::M_none) {
     enable_depth_test(false);
   } else {
@@ -3813,16 +3816,16 @@ do_issue_depth_test() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_alpha_test() {
-  if (_target._shader->get_flag(ShaderAttrib::F_subsume_alpha_test)) {
+  if (_target_shader->get_flag(ShaderAttrib::F_subsume_alpha_test)) {
     enable_alpha_test(false);
   } else {
-    const AlphaTestAttrib *attrib = _target._alpha_test;
-    AlphaTestAttrib::PandaCompareFunc mode = attrib->get_mode();
+    const AlphaTestAttrib *target_alpha_test = DCAST(AlphaTestAttrib, _target_rs->get_attrib_def(AlphaTestAttrib::get_class_slot()));
+    AlphaTestAttrib::PandaCompareFunc mode = target_alpha_test->get_mode();
     if (mode == AlphaTestAttrib::M_none) {
       enable_alpha_test(false);
     } else {
-      assert(GL_NEVER==(AlphaTestAttrib::M_never-1+0x200));
-      GLP(AlphaFunc)(PANDA_TO_GL_COMPAREFUNC(mode), attrib->get_reference_alpha());
+      nassertv(GL_NEVER == (AlphaTestAttrib::M_never-1+0x200));
+      GLP(AlphaFunc)(PANDA_TO_GL_COMPAREFUNC(mode), target_alpha_test->get_reference_alpha());
       enable_alpha_test(true);
     }
   }
@@ -3835,8 +3838,8 @@ do_issue_alpha_test() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_depth_write() {
-  const DepthWriteAttrib *attrib = _target._depth_write;
-  DepthWriteAttrib::Mode mode = attrib->get_mode();
+  const DepthWriteAttrib *target_depth_write = DCAST(DepthWriteAttrib, _target_rs->get_attrib_def(DepthWriteAttrib::get_class_slot()));
+  DepthWriteAttrib::Mode mode = target_depth_write->get_mode();
   if (mode == DepthWriteAttrib::M_off) {
     GLP(DepthMask)(GL_FALSE);
   } else {
@@ -3852,8 +3855,8 @@ do_issue_depth_write() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_cull_face() {
-  const CullFaceAttrib *attrib = _target._cull_face;
-  CullFaceAttrib::Mode mode = attrib->get_effective_mode();
+  const CullFaceAttrib *target_cull_face = DCAST(CullFaceAttrib, _target_rs->get_attrib_def(CullFaceAttrib::get_class_slot()));
+  CullFaceAttrib::Mode mode = target_cull_face->get_effective_mode();
 
   switch (mode) {
   case CullFaceAttrib::M_cull_none:
@@ -3882,10 +3885,10 @@ do_issue_cull_face() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_fog() {
-  const FogAttrib *attrib = _target._fog;
-  if (!attrib->is_off()) {
+  const FogAttrib *target_fog = DCAST(FogAttrib, _target_rs->get_attrib_def(FogAttrib::get_class_slot()));
+  if (!target_fog->is_off()) {
     enable_fog(true);
-    Fog *fog = attrib->get_fog();
+    Fog *fog = target_fog->get_fog();
     nassertv(fog != (Fog *)NULL);
     apply_fog(fog);
   } else {
@@ -3901,8 +3904,8 @@ do_issue_fog() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_depth_offset() {
-  const DepthOffsetAttrib *attrib = _target._depth_offset;
-  int offset = attrib->get_offset();
+  const DepthOffsetAttrib *target_depth_offset = DCAST(DepthOffsetAttrib, _target_rs->get_attrib_def(DepthOffsetAttrib::get_class_slot()));
+  int offset = target_depth_offset->get_offset();
 
   if (offset != 0) {
     // The relationship between these two parameters is a little
@@ -3926,11 +3929,14 @@ void CLP(GraphicsStateGuardian)::
 do_issue_material() {
   static Material empty;
   const Material *material;
-  if (_target._material == (MaterialAttrib *)NULL ||
-      _target._material->is_off()) {
+
+  const MaterialAttrib *target_material = DCAST(MaterialAttrib, _target_rs->get_attrib_def(MaterialAttrib::get_class_slot()));
+
+  if (target_material == (MaterialAttrib *)NULL ||
+      target_material->is_off()) {
     material = &empty;
   } else {
-    material = _target._material->get_material();
+    material = target_material->get_material();
   }
 
   GLenum face = material->get_twoside() ? GL_FRONT_AND_BACK : GL_FRONT;
@@ -3995,18 +4001,21 @@ do_issue_material() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_blending() {
-
   // Handle the color_write attrib.  If color_write is off, then
   // all the other blending-related stuff doesn't matter.  If the
   // device doesn't support color-write, we use blending tricks
   // to effectively disable color write.
+  const ColorWriteAttrib *target_color_write = DCAST(ColorWriteAttrib, _target_rs->get_attrib_def(ColorWriteAttrib::get_class_slot()));
+
   unsigned int color_channels =
-    _target._color_write->get_channels() & _color_write_mask;
-  if (_target._shader->get_flag(ShaderAttrib::F_disable_alpha_write)) {
+    target_color_write->get_channels() & _color_write_mask;
+  if (_target_shader->get_flag(ShaderAttrib::F_disable_alpha_write)) {
     color_channels &= ~(ColorWriteAttrib::C_alpha);
   }
   if (color_channels == ColorWriteAttrib::C_off) {
-    if (_target._color_write != _state._color_write) {
+    int color_write_slot = ColorWriteAttrib::get_class_slot();
+    if (_target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
+        !_state_mask.get_bit(color_write_slot)) {
       enable_multisample_alpha_one(false);
       enable_multisample_alpha_mask(false);
       if (CLP(color_mask)) {
@@ -4020,9 +4029,14 @@ do_issue_blending() {
     }
     return;
   } else {
-    if ((_target._color_write != _state._color_write)||
-        (_target._shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
-         _state._shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
+    int color_write_slot = ColorWriteAttrib::get_class_slot();
+    const ShaderAttrib *target_shader = DCAST(ShaderAttrib, _target_rs->get_attrib_def(ShaderAttrib::get_class_slot()));
+    const ShaderAttrib *state_shader = DCAST(ShaderAttrib, _state_rs->get_attrib_def(ShaderAttrib::get_class_slot()));
+
+    if (_target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
+        !_state_mask.get_bit(color_write_slot) ||
+        (target_shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
+         state_shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
       if (CLP(color_mask)) {
         GLP(ColorMask)((color_channels & ColorWriteAttrib::C_red) != 0,
                        (color_channels & ColorWriteAttrib::C_green) != 0,
@@ -4033,9 +4047,12 @@ do_issue_blending() {
   }
 
 
-  CPT(ColorBlendAttrib) color_blend = _target._color_blend;
-  ColorBlendAttrib::Mode color_blend_mode = _target._color_blend->get_mode();
-  TransparencyAttrib::Mode transparency_mode = _target._transparency->get_mode();
+  const ColorBlendAttrib *target_color_blend = DCAST(ColorBlendAttrib, _target_rs->get_attrib_def(ColorBlendAttrib::get_class_slot()));
+  CPT(ColorBlendAttrib) color_blend = target_color_blend;
+  ColorBlendAttrib::Mode color_blend_mode = target_color_blend->get_mode();
+
+  const TransparencyAttrib *target_transparency = DCAST(TransparencyAttrib, _target_rs->get_attrib_def(TransparencyAttrib::get_class_slot()));
+  TransparencyAttrib::Mode transparency_mode = target_transparency->get_mode();
 
   _color_blend_involves_color_scale = color_blend->involves_color_scale();
 
@@ -5948,177 +5965,225 @@ set_state_and_transform(const RenderState *target,
     return;
   }
   _target_rs = target;
-  _target.clear_to_defaults();
-  target->store_into_slots(&_target);
-  _state_rs = 0;
 
-  if (_target._shader && (_target._shader->auto_shader())) {
-    _target._shader = _target_rs->get_generated_shader();
+  _target_shader = DCAST(ShaderAttrib, _target_rs->get_attrib_def(ShaderAttrib::get_class_slot()));
+  if (_target_shader->auto_shader()) {
+    _target_shader = _target_rs->get_generated_shader();
   }
-  
-  if ((_target._alpha_test != _state._alpha_test)||
-      (_target._shader->get_flag(ShaderAttrib::F_subsume_alpha_test) != 
-       _state._shader->get_flag(ShaderAttrib::F_subsume_alpha_test))) {
+
+  int alpha_test_slot = AlphaTestAttrib::get_class_slot();
+  if (_target_rs->get_attrib(alpha_test_slot) != _state_rs->get_attrib(alpha_test_slot) ||
+      !_state_mask.get_bit(alpha_test_slot) ||
+      (_target_shader->get_flag(ShaderAttrib::F_subsume_alpha_test) != 
+       _state_shader->get_flag(ShaderAttrib::F_subsume_alpha_test))) {
     PStatTimer timer(_draw_set_state_alpha_test_pcollector);
     do_issue_alpha_test();
-    _state._alpha_test = _target._alpha_test;
+    _state_mask.set_bit(alpha_test_slot);
   }
 
-  if (_target._antialias != _state._antialias) {
+  int antialias_slot = AntialiasAttrib::get_class_slot();
+  if (_target_rs->get_attrib(antialias_slot) != _state_rs->get_attrib(antialias_slot) ||
+      !_state_mask.get_bit(antialias_slot)) {
     PStatTimer timer(_draw_set_state_antialias_pcollector);
     do_issue_antialias();
-    _state._antialias = _target._antialias;
+    _state_mask.set_bit(antialias_slot);
   }
 
-  if (_target._clip_plane != _state._clip_plane) {
+  int clip_plane_slot = ClipPlaneAttrib::get_class_slot();
+  if (_target_rs->get_attrib(clip_plane_slot) != _state_rs->get_attrib(clip_plane_slot) ||
+      !_state_mask.get_bit(clip_plane_slot)) {
     PStatTimer timer(_draw_set_state_clip_plane_pcollector);
     do_issue_clip_plane();
-    _state._clip_plane = _target._clip_plane;
+    _state_mask.set_bit(clip_plane_slot);
   }
 
-  if (_target._color != _state._color ||
-      _target._color_scale != _state._color_scale) {
+  int color_slot = ColorAttrib::get_class_slot();
+  int color_scale_slot = ColorScaleAttrib::get_class_slot();
+  if (_target_rs->get_attrib(color_slot) != _state_rs->get_attrib(color_slot) ||
+      _target_rs->get_attrib(color_scale_slot) != _state_rs->get_attrib(color_scale_slot) ||
+      !_state_mask.get_bit(color_slot) ||
+      !_state_mask.get_bit(color_scale_slot)) {
     PStatTimer timer(_draw_set_state_color_pcollector);
     do_issue_color();
     do_issue_color_scale();
-    _state._color = _target._color;
-    _state._color_scale = _target._color_scale;
-    if (_current_shader_context) {
-      _current_shader_context->issue_parameters(this, Shader::SSD_color);
-    }
+    _state_mask.set_bit(color_slot);
+    _state_mask.set_bit(color_scale_slot);
   }
 
-  if (_target._cull_face != _state._cull_face) {
+  int cull_face_slot = CullFaceAttrib::get_class_slot();
+  if (_target_rs->get_attrib(cull_face_slot) != _state_rs->get_attrib(cull_face_slot) ||
+      !_state_mask.get_bit(cull_face_slot)) {
     PStatTimer timer(_draw_set_state_cull_face_pcollector);
     do_issue_cull_face();
-    _state._cull_face = _target._cull_face;
+    _state_mask.set_bit(cull_face_slot);
   }
 
-  if (_target._depth_offset != _state._depth_offset) {
+  int depth_offset_slot = DepthOffsetAttrib::get_class_slot();
+  if (_target_rs->get_attrib(depth_offset_slot) != _state_rs->get_attrib(depth_offset_slot) ||
+      !_state_mask.get_bit(depth_offset_slot)) {
     PStatTimer timer(_draw_set_state_depth_offset_pcollector);
     do_issue_depth_offset();
-    _state._depth_offset = _target._depth_offset;
+    _state_mask.set_bit(depth_offset_slot);
   }
 
-  if (_target._depth_test != _state._depth_test) {
+  int depth_test_slot = DepthTestAttrib::get_class_slot();
+  if (_target_rs->get_attrib(depth_test_slot) != _state_rs->get_attrib(depth_test_slot) ||
+      !_state_mask.get_bit(depth_test_slot)) {
     PStatTimer timer(_draw_set_state_depth_test_pcollector);
     do_issue_depth_test();
-    _state._depth_test = _target._depth_test;
+    _state_mask.set_bit(depth_test_slot);
   }
 
-  if (_target._depth_write != _state._depth_write) {
+  int depth_write_slot = DepthWriteAttrib::get_class_slot();
+  if (_target_rs->get_attrib(depth_write_slot) != _state_rs->get_attrib(depth_write_slot) ||
+      !_state_mask.get_bit(depth_write_slot)) {
     PStatTimer timer(_draw_set_state_depth_write_pcollector);
     do_issue_depth_write();
-    _state._depth_write = _target._depth_write;
+    _state_mask.set_bit(depth_write_slot);
   }
 
-  if (_target._render_mode != _state._render_mode) {
+  int render_mode_slot = RenderModeAttrib::get_class_slot();
+  if (_target_rs->get_attrib(render_mode_slot) != _state_rs->get_attrib(render_mode_slot) ||
+      !_state_mask.get_bit(render_mode_slot)) {
     PStatTimer timer(_draw_set_state_render_mode_pcollector);
     do_issue_render_mode();
-    _state._render_mode = _target._render_mode;
+    _state_mask.set_bit(render_mode_slot);
   }
-  
-  if (_target._rescale_normal != _state._rescale_normal) {
+
+  int rescale_normal_slot = RescaleNormalAttrib::get_class_slot();
+  if (_target_rs->get_attrib(rescale_normal_slot) != _state_rs->get_attrib(rescale_normal_slot) ||
+      !_state_mask.get_bit(rescale_normal_slot)) {
     PStatTimer timer(_draw_set_state_rescale_normal_pcollector);
     do_issue_rescale_normal();
-    _state._rescale_normal = _target._rescale_normal;
+    _state_mask.set_bit(rescale_normal_slot);
   }
 
-  if (_target._shade_model != _state._shade_model) {
+  int shade_model_slot = ShadeModelAttrib::get_class_slot();
+  if (_target_rs->get_attrib(shade_model_slot) != _state_rs->get_attrib(shade_model_slot) ||
+      !_state_mask.get_bit(shade_model_slot)) {
     PStatTimer timer(_draw_set_state_shade_model_pcollector);
     do_issue_shade_model();
-    _state._shade_model = _target._shade_model;
+    _state_mask.set_bit(shade_model_slot);
   }
 
-  if ((_target._transparency != _state._transparency)||
-      (_target._color_write != _state._color_write)||
-      (_target._color_blend != _state._color_blend)||
-      (_target._shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
-       _state._shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
+  int transparency_slot = TransparencyAttrib::get_class_slot();
+  int color_write_slot = ColorWriteAttrib::get_class_slot();
+  int color_blend_slot = ColorBlendAttrib::get_class_slot();
+  if (_target_rs->get_attrib(transparency_slot) != _state_rs->get_attrib(transparency_slot) ||
+      _target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
+      _target_rs->get_attrib(color_blend_slot) != _state_rs->get_attrib(color_blend_slot) ||
+      !_state_mask.get_bit(transparency_slot) ||
+      !_state_mask.get_bit(color_write_slot) ||
+      !_state_mask.get_bit(color_blend_slot) ||
+      (_target_shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
+       _state_shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
     PStatTimer timer(_draw_set_state_blending_pcollector);
     do_issue_blending();
-    _state._transparency = _target._transparency;
-    _state._color_write = _target._color_write;
-    _state._color_blend = _target._color_blend;
+    _state_mask.set_bit(transparency_slot);
+    _state_mask.set_bit(color_write_slot);
+    _state_mask.set_bit(color_blend_slot);
   }
 
-  if (_target._shader != _state._shader) {
+  if (_target_shader != _state_shader) {
     PStatTimer timer(_draw_set_state_shader_pcollector);
     do_issue_shader();
-    _state._shader = _target._shader;
-    _state._texture = 0;
+    _state_shader = _target_shader;
+    _state_mask.clear_bit(TextureAttrib::get_class_slot());
   }
 
-  if (_target._texture != _state._texture) {
+  int texture_slot = TextureAttrib::get_class_slot();
+  if (_target_rs->get_attrib(texture_slot) != _state_rs->get_attrib(texture_slot) ||
+      !_state_mask.get_bit(texture_slot)) {
     PStatTimer timer(_draw_set_state_texture_pcollector);
-    determine_effective_texture();
+    determine_target_texture();
     int prev_active = _num_active_texture_stages;
     do_issue_texture();
 
     // Since the TexGen and TexMatrix states depend partly on the
     // particular set of textures in use, we should force both of
     // those to be reissued every time we change the texture state.
-    _state._tex_gen = 0;
-    _state._tex_matrix = 0;
+    _state_mask.clear_bit(TexGenAttrib::get_class_slot());
+    _state_mask.clear_bit(TexMatrixAttrib::get_class_slot());
 
-    _state._texture = _target._texture;
+    _state_texture = _target_texture;
+    _state_mask.set_bit(texture_slot);
   }
   
   // If one of the previously-loaded TexGen modes modified the texture
   // matrix, then if either state changed, we have to change both of
   // them now.
   if (_tex_gen_modifies_mat) {
-    if ((_target._tex_gen != _state._tex_gen) ||
-        (_target._tex_matrix != _state._tex_matrix)) {
-      _state._tex_matrix = 0;
-      _state._tex_gen = 0;
+    int tex_gen_slot = TexGenAttrib::get_class_slot();
+    int tex_matrix_slot = TexMatrixAttrib::get_class_slot();
+    if (_target_rs->get_attrib(tex_gen_slot) != _state_rs->get_attrib(tex_gen_slot) ||
+        _target_rs->get_attrib(tex_matrix_slot) != _state_rs->get_attrib(tex_matrix_slot) ||
+        !_state_mask.get_bit(tex_gen_slot) ||
+        !_state_mask.get_bit(tex_matrix_slot)) {
+      _state_mask.clear_bit(tex_gen_slot);
+      _state_mask.clear_bit(tex_matrix_slot);
     }
   }
-  
-  if (_target._tex_matrix != _state._tex_matrix) {
+
+  int tex_matrix_slot = TexMatrixAttrib::get_class_slot();
+  if (_target_rs->get_attrib(tex_matrix_slot) != _state_rs->get_attrib(tex_matrix_slot) ||
+      !_state_mask.get_bit(tex_matrix_slot)) {
     PStatTimer timer(_draw_set_state_tex_matrix_pcollector);
     do_issue_tex_matrix();
-    _state._tex_matrix = _target._tex_matrix;
+    _state_mask.set_bit(tex_matrix_slot);
   }
 
-  if (_effective_tex_gen != _state._tex_gen) {
+  int tex_gen_slot = TexGenAttrib::get_class_slot();
+  if (_target_tex_gen != _state_tex_gen ||
+      !_state_mask.get_bit(tex_gen_slot)) {
     PStatTimer timer(_draw_set_state_tex_gen_pcollector);
     do_issue_tex_gen();
-    _state._tex_gen = _effective_tex_gen;
+    _state_tex_gen = _target_tex_gen;
+    _state_mask.set_bit(tex_gen_slot);
   }
-  
-  if (_target._material != _state._material) {
+
+  int material_slot = MaterialAttrib::get_class_slot();
+  if (_target_rs->get_attrib(material_slot) != _state_rs->get_attrib(material_slot) ||
+      !_state_mask.get_bit(material_slot)) {
     PStatTimer timer(_draw_set_state_material_pcollector);
     do_issue_material();
-    _state._material = _target._material;
+    _state_mask.set_bit(material_slot);
     if (_current_shader_context) {
       _current_shader_context->issue_parameters(this, Shader::SSD_material);
     }
   }
 
-  if (_target._light != _state._light) {
+  int light_slot = LightAttrib::get_class_slot();
+  if (_target_rs->get_attrib(light_slot) != _state_rs->get_attrib(light_slot) ||
+      !_state_mask.get_bit(light_slot)) {
     PStatTimer timer(_draw_set_state_light_pcollector);
     do_issue_light();
-    _state._light = _target._light;
+    _state_mask.set_bit(light_slot);
   }
 
-  if (_target._stencil != _state._stencil) {
+  int stencil_slot = StencilAttrib::get_class_slot();
+  if (_target_rs->get_attrib(stencil_slot) != _state_rs->get_attrib(stencil_slot) ||
+      !_state_mask.get_bit(stencil_slot)) {
     PStatTimer timer(_draw_set_state_stencil_pcollector);
     do_issue_stencil();
-    _state._stencil = _target._stencil;
+    _state_mask.set_bit(stencil_slot);
   }
      
   if (_current_shader_context == 0) {
-    if (_target._fog != _state._fog) {
+    int fog_slot = FogAttrib::get_class_slot();
+    if (_target_rs->get_attrib(fog_slot) != _state_rs->get_attrib(fog_slot) ||
+        !_state_mask.get_bit(fog_slot)) {
       PStatTimer timer(_draw_set_state_fog_pcollector);
       do_issue_fog();
-      _state._fog = _target._fog;
+      _state_mask.set_bit(fog_slot);
     }
   }
 
-  if (_target._scissor != _state._scissor) {
+  int scissor_slot = ScissorAttrib::get_class_slot();
+  if (_target_rs->get_attrib(scissor_slot) != _state_rs->get_attrib(scissor_slot) ||
+      !_state_mask.get_bit(scissor_slot)) {
+    PStatTimer timer(_draw_set_state_scissor_pcollector);
     do_issue_scissor();
-    _state._scissor = _target._scissor;
+    _state_mask.set_bit(scissor_slot);
   }
 
   _state_rs = _target_rs;
@@ -6226,7 +6291,7 @@ do_issue_texture() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 update_standard_texture_bindings() {
-  int num_stages = _effective_texture->get_num_on_ff_stages();
+  int num_stages = _target_texture->get_num_on_ff_stages();
 
   nassertv(num_stages <= _max_texture_stages &&
            _num_active_texture_stages <= _max_texture_stages);
@@ -6237,8 +6302,8 @@ update_standard_texture_bindings() {
   int last_stage = -1;
   int i;
   for (i = 0; i < num_stages; i++) {
-    TextureStage *stage = _effective_texture->get_on_ff_stage(i);
-    Texture *texture = _effective_texture->get_on_texture(stage);
+    TextureStage *stage = _target_texture->get_on_ff_stage(i);
+    Texture *texture = _target_texture->get_on_texture(stage);
     nassertv(texture != (Texture *)NULL);
 
     // Issue the texture on stage i.
@@ -6450,12 +6515,14 @@ do_issue_tex_matrix() {
   nassertv(_num_active_texture_stages <= _max_texture_stages);
 
   for (int i = 0; i < _num_active_texture_stages; i++) {
-    TextureStage *stage = _effective_texture->get_on_ff_stage(i);
+    TextureStage *stage = _target_texture->get_on_ff_stage(i);
     _glActiveTexture(GL_TEXTURE0 + i);
 
     GLP(MatrixMode)(GL_TEXTURE);
-    if (_target._tex_matrix->has_stage(stage)) {
-      GLP(LoadMatrixf)(_target._tex_matrix->get_mat(stage).get_data());
+
+    const TexMatrixAttrib *target_tex_matrix = DCAST(TexMatrixAttrib, _target_rs->get_attrib_def(TexMatrixAttrib::get_class_slot()));
+    if (target_tex_matrix->has_stage(stage)) {
+      GLP(LoadMatrixf)(target_tex_matrix->get_mat(stage).get_data());
     } else {
       GLP(LoadIdentity)();
 
@@ -6497,7 +6564,7 @@ do_issue_tex_gen() {
   bool got_point_sprites = false;
 
   for (int i = 0; i < _num_active_texture_stages; i++) {
-    TextureStage *stage = _effective_texture->get_on_ff_stage(i);
+    TextureStage *stage = _target_texture->get_on_ff_stage(i);
     _glActiveTexture(GL_TEXTURE0 + i);
     GLP(Disable)(GL_TEXTURE_GEN_S);
     GLP(Disable)(GL_TEXTURE_GEN_T);
@@ -6507,7 +6574,7 @@ do_issue_tex_gen() {
       GLP(TexEnvi)(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_FALSE);
     }
 
-    TexGenAttrib::Mode mode = _effective_tex_gen->get_mode(stage);
+    TexGenAttrib::Mode mode = _target_tex_gen->get_mode(stage);
     switch (mode) {
     case TexGenAttrib::M_off:
     case TexGenAttrib::M_light_vector:
@@ -6695,7 +6762,7 @@ do_issue_tex_gen() {
       // flattens the vertex position to zero and then adds our
       // desired value.
       {
-        const TexCoord3f &v = _effective_tex_gen->get_constant_value(stage);
+        const TexCoord3f &v = _target_tex_gen->get_constant_value(stage);
 
         GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
         GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -8149,10 +8216,9 @@ void gl_set_stencil_functions (StencilRenderStates *stencil_render_states) {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_stencil() {
-  const StencilAttrib *stencil;
-  StencilRenderStates *stencil_render_states;
+  const StencilAttrib *stencil = DCAST(StencilAttrib, _target_rs->get_attrib_def(StencilAttrib::get_class_slot()));
 
-  stencil = _target._stencil;
+  StencilRenderStates *stencil_render_states;
   stencil_render_states = this -> _stencil_render_states;
   if (stencil && stencil_render_states) {
 
@@ -8226,7 +8292,8 @@ do_issue_stencil() {
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
 do_issue_scissor() {
-  const LVecBase4f &frame = _target._scissor->get_frame();
+  const ScissorAttrib *target_scissor = DCAST(ScissorAttrib, _target_rs->get_attrib_def(ScissorAttrib::get_class_slot()));
+  const LVecBase4f &frame = target_scissor->get_frame();
 
   int x = (int)(_viewport_x + _viewport_width * frame[0] + 0.5f);
   int y = (int)(_viewport_y + _viewport_height * frame[2] + 0.5f);

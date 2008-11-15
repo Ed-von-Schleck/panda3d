@@ -47,7 +47,6 @@
     depthOffsetAttrib.I depthOffsetAttrib.h \
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
-    drawMaskAttrib.I drawMaskAttrib.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     fadeLodNode.I fadeLodNode.h \
     fadeLodNodeData.h \
@@ -87,6 +86,7 @@
     portalNode.I portalNode.h \
     portalClipper.I portalClipper.h \
     renderAttrib.I renderAttrib.h \
+    renderAttribRegistry.I renderAttribRegistry.h \
     renderEffect.I renderEffect.h \
     renderEffects.I renderEffects.h \
     renderModeAttrib.I renderModeAttrib.h \
@@ -152,7 +152,6 @@
     depthOffsetAttrib.cxx \
     depthTestAttrib.cxx \
     depthWriteAttrib.cxx \
-    drawMaskAttrib.cxx \
     eventStorePandaNode.cxx \
     fadeLodNode.cxx \
     fadeLodNodeData.cxx \
@@ -191,6 +190,7 @@
     portalNode.cxx \
     portalClipper.cxx \
     renderAttrib.cxx \
+    renderAttribRegistry.cxx \
     renderEffect.cxx \
     renderEffects.cxx \
     renderModeAttrib.cxx \
@@ -255,7 +255,6 @@
     depthOffsetAttrib.I depthOffsetAttrib.h \
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
-    drawMaskAttrib.I drawMaskAttrib.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     fadeLodNode.I fadeLodNode.h \
     fadeLodNodeData.h \
@@ -293,6 +292,7 @@
     portalNode.I portalNode.h \
     portalClipper.I portalClipper.h \
     renderAttrib.I renderAttrib.h \
+    renderAttribRegistry.I renderAttribRegistry.h \
     renderEffect.I renderEffect.h \
     renderEffects.I renderEffects.h \
     renderModeAttrib.I renderModeAttrib.h \

@@ -24,6 +24,7 @@
 #include "configVariableEnum.h"
 
 TypeHandle RescaleNormalAttrib::_type_handle;
+int RescaleNormalAttrib::_attrib_slot;
 
 // This variable is defined here instead of in config_pgraph.cxx,
 // because it depends on rescaleNormalAttrib.h having already been
@@ -94,22 +95,6 @@ compare_to_impl(const RenderAttrib *other) const {
   const RescaleNormalAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   return (int)_mode - (int)ta->_mode;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: RescaleNormalAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived RescaleNormalAttrib
-//               types to specify what the default property for a
-//               RescaleNormalAttrib of this type should be.
-//
-//               This should return a newly-allocated RescaleNormalAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of RescaleNormalAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *RescaleNormalAttrib::
-make_default_impl() const {
-  return new RescaleNormalAttrib(M_none);
 }
 
 ////////////////////////////////////////////////////////////////////

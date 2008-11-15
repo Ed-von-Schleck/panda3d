@@ -24,6 +24,7 @@
 
 CPT(RenderAttrib) TexGenAttrib::_empty_attrib;
 TypeHandle TexGenAttrib::_type_handle;
+int TexGenAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexGenAttrib::Destructor
@@ -60,6 +61,18 @@ make() {
 CPT(RenderAttrib) TexGenAttrib::
 make(TextureStage *stage, TexGenAttrib::Mode mode) {
   return DCAST(TexGenAttrib, make())->add_stage(stage, mode);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexGenAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexGenAttrib::
+make_default() {
+  return return_new(new TexGenAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -521,22 +534,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   attrib->filled_stages();
 
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexGenAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived TexGenAttrib
-//               types to specify what the default property for a
-//               TexGenAttrib of this type should be.
-//
-//               This should return a newly-allocated TexGenAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of TexGenAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *TexGenAttrib::
-make_default_impl() const {
-  return new TexGenAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

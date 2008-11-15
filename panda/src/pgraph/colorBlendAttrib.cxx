@@ -22,6 +22,7 @@
 #include "datagramIterator.h"
 
 TypeHandle ColorBlendAttrib::_type_handle;
+int ColorBlendAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColorBlendAttrib::make_off
@@ -63,6 +64,18 @@ make(ColorBlendAttrib::Mode mode,
      const Colorf &color) {
   ColorBlendAttrib *attrib = new ColorBlendAttrib(mode, a, b, color);
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColorBlendAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) ColorBlendAttrib::
+make_default() {
+  return return_new(new ColorBlendAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -117,22 +130,6 @@ compare_to_impl(const RenderAttrib *other) const {
   }
 
   return _color.compare_to(ta->_color);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColorBlendAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived ColorBlendAttrib
-//               types to specify what the default property for a
-//               ColorBlendAttrib of this type should be.
-//
-//               This should return a newly-allocated ColorBlendAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of ColorBlendAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *ColorBlendAttrib::
-make_default_impl() const {
-  return new ColorBlendAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

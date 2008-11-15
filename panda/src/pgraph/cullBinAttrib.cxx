@@ -20,6 +20,7 @@
 #include "datagramIterator.h"
 
 TypeHandle CullBinAttrib::_type_handle;
+int CullBinAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: CullBinAttrib::make
@@ -38,6 +39,18 @@ make(const string &bin_name, int draw_order) {
   attrib->_bin_name = bin_name;
   attrib->_draw_order = draw_order;
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CullBinAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) CullBinAttrib::
+make_default() {
+  return return_new(new CullBinAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,22 +91,6 @@ compare_to_impl(const RenderAttrib *other) const {
     return _draw_order - ta->_draw_order;
   }
   return strcmp(_bin_name.c_str(), ta->_bin_name.c_str());
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CullBinAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived CullBinAttrib
-//               types to specify what the default property for a
-//               CullBinAttrib of this type should be.
-//
-//               This should return a newly-allocated CullBinAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of CullBinAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *CullBinAttrib::
-make_default_impl() const {
-  return new CullBinAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

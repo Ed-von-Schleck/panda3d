@@ -37,6 +37,7 @@ private:
 
 PUBLISHED:
   static CPT(RenderAttrib) make(Mode mode);
+  static CPT(RenderAttrib) make_default();
 
   INLINE Mode get_mode() const;
 
@@ -46,10 +47,17 @@ public:
 
 protected:
   virtual int compare_to_impl(const RenderAttrib *other) const;
-  virtual RenderAttrib *make_default_impl() const;
 
 private:
   Mode _mode;
+
+PUBLISHED:
+  static int get_class_slot() {
+    return _attrib_slot;
+  }
+  virtual int get_slot() const {
+    return get_class_slot();
+  }
 
 public:
   static void register_with_read_factory();
@@ -67,6 +75,7 @@ public:
     RenderAttrib::init_type();
     register_type(_type_handle, "DepthWriteAttrib",
                   RenderAttrib::get_class_type());
+    _attrib_slot = register_slot(_type_handle, 100, make_default);
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -75,6 +84,7 @@ public:
 
 private:
   static TypeHandle _type_handle;
+  static int _attrib_slot;
 };
 
 #include "depthWriteAttrib.I"

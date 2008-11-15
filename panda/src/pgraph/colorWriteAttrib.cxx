@@ -22,6 +22,7 @@
 #include "datagramIterator.h"
 
 TypeHandle ColorWriteAttrib::_type_handle;
+int ColorWriteAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColorWriteAttrib::make
@@ -32,6 +33,18 @@ CPT(RenderAttrib) ColorWriteAttrib::
 make(unsigned int channels) {
   ColorWriteAttrib *attrib = new ColorWriteAttrib(channels);
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColorWriteAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) ColorWriteAttrib::
+make_default() {
+  return return_new(new ColorWriteAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,22 +93,6 @@ compare_to_impl(const RenderAttrib *other) const {
   const ColorWriteAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   return (int)_channels - (int)ta->_channels;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColorWriteAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived ColorWriteAttrib
-//               types to specify what the default property for a
-//               ColorWriteAttrib of this type should be.
-//
-//               This should return a newly-allocated ColorWriteAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of ColorWriteAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *ColorWriteAttrib::
-make_default_impl() const {
-  return new ColorWriteAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

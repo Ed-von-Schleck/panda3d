@@ -22,6 +22,7 @@
 #include "datagramIterator.h"
 
 TypeHandle DepthOffsetAttrib::_type_handle;
+int DepthOffsetAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: DepthOffsetAttrib::make
@@ -34,6 +35,18 @@ CPT(RenderAttrib) DepthOffsetAttrib::
 make(int offset) {
   DepthOffsetAttrib *attrib = new DepthOffsetAttrib(offset);
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DepthOffsetAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) DepthOffsetAttrib::
+make_default() {
+  return return_new(new DepthOffsetAttrib(0));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -112,22 +125,6 @@ invert_compose_impl(const RenderAttrib *other) const {
 
   DepthOffsetAttrib *attrib = new DepthOffsetAttrib(new_offset);
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: DepthOffsetAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived DepthOffsetAttrib
-//               types to specify what the default property for a
-//               DepthOffsetAttrib of this type should be.
-//
-//               This should return a newly-allocated DepthOffsetAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of DepthOffsetAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *DepthOffsetAttrib::
-make_default_impl() const {
-  return new DepthOffsetAttrib(0);
 }
 
 ////////////////////////////////////////////////////////////////////

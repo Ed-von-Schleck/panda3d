@@ -23,6 +23,7 @@
 
 CPT(RenderAttrib) TexMatrixAttrib::_empty_attrib;
 TypeHandle TexMatrixAttrib::_type_handle;
+int TexMatrixAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: TexMatrixAttrib::Destructor
@@ -82,6 +83,18 @@ make(TextureStage *stage, const TransformState *transform) {
   TexMatrixAttrib *attrib = new TexMatrixAttrib;
   attrib->_stages.insert(Stages::value_type(stage, transform));
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+make_default() {
+  return return_new(new TexMatrixAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -404,22 +417,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   }
 
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexMatrixAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived TexMatrixAttrib
-//               types to specify what the default property for a
-//               TexMatrixAttrib of this type should be.
-//
-//               This should return a newly-allocated TexMatrixAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of TexMatrixAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *TexMatrixAttrib::
-make_default_impl() const {
-  return new TexMatrixAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

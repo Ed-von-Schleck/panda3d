@@ -25,6 +25,7 @@
 #include "attribNodeRegistry.h"
 
 CPT(RenderAttrib) LightAttrib::_empty_attrib;
+int LightAttrib::_attrib_slot;
 CPT(RenderAttrib) LightAttrib::_all_off_attrib;
 TypeHandle LightAttrib::_type_handle;
 
@@ -212,6 +213,18 @@ make(LightAttrib::Operation op, Light *light1, Light *light2,
 
   nassertr(false, make());
   return make();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LightAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) LightAttrib::
+make_default() {
+  return return_new(new LightAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -841,22 +854,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   // needs a bit more thought.  It's hard to imagine that it's even
   // important to compute this properly.
   return other;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: LightAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived LightAttrib
-//               types to specify what the default property for a
-//               LightAttrib of this type should be.
-//
-//               This should return a newly-allocated LightAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of LightAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *LightAttrib::
-make_default_impl() const {
-  return new LightAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

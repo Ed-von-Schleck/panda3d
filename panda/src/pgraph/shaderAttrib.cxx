@@ -22,6 +22,7 @@
 #include "datagramIterator.h"
 
 TypeHandle ShaderAttrib::_type_handle;
+int ShaderAttrib::_attrib_slot;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ShaderAttrib::make_off
@@ -56,6 +57,18 @@ make() {
     _null_attrib = return_new(attrib);
   }
   return _null_attrib;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ShaderAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) ShaderAttrib::
+make_default() {
+  return return_new(new ShaderAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -392,22 +405,6 @@ get_shader_input_texture(InternalName *id) const {
 const Shader *ShaderAttrib::
 get_shader() const {
   return _shader;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ShaderAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived ShaderAttrib
-//               types to specify what the default property for a
-//               ShaderAttrib of this type should be.
-//
-//               This should return a newly-allocated ShaderAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of ShaderAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *ShaderAttrib::
-make_default_impl() const {
-  return new ShaderAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

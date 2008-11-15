@@ -24,7 +24,6 @@ AttribSlots AttribSlots::_defvals;
 ////////////////////////////////////////////////////////////////////
 void AttribSlots::
 initialize_defvals() {
-
   // Step one. Fill slots with any object of right type.
   // the actual value is totally irrelevant.
 

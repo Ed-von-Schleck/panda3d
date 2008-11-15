@@ -22,6 +22,7 @@
 #include "datagramIterator.h"
 
 TypeHandle StencilAttrib::_type_handle;
+int StencilAttrib::_attrib_slot;
 
 char *StencilAttrib::
 stencil_render_state_name_array [StencilAttrib::SRS_total] =
@@ -89,6 +90,18 @@ make_off()
   StencilAttrib *attrib = new StencilAttrib;
 
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: StencilAttrib::make_default
+//       Access: Published, Static
+//  Description: Returns a RenderAttrib that corresponds to whatever
+//               the standard default properties for render attributes
+//               of this type ought to be.
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) StencilAttrib::
+make_default() {
+  return return_new(new StencilAttrib);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -314,22 +327,6 @@ compare_to_impl(const RenderAttrib *other) const {
   }
 
   return compare_result;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: StencilAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived StencilAttrib
-//               types to specify what the default property for a
-//               StencilAttrib of this type should be.
-//
-//               This should return a newly-allocated StencilAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of StencilAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *StencilAttrib::
-make_default_impl() const {
-  return new StencilAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

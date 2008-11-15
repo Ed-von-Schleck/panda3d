@@ -22,6 +22,7 @@
 #include "datagramIterator.h"
 
 TypeHandle LightRampAttrib::_type_handle;
+int LightRampAttrib::_attrib_slot;
 CPT(RenderAttrib) LightRampAttrib::_default;
 
 ////////////////////////////////////////////////////////////////////
@@ -246,22 +247,6 @@ compare_to_impl(const RenderAttrib *other) const {
     }
   }
   return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: LightRampAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived LightRampAttrib
-//               types to specify what the default property for a
-//               LightRampAttrib of this type should be.
-//
-//               This should return a newly-allocated LightRampAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of LightRampAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *LightRampAttrib::
-make_default_impl() const {
-  return new LightRampAttrib;
 }
 
 ////////////////////////////////////////////////////////////////////

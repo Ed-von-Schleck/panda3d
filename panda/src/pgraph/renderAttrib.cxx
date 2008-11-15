@@ -462,22 +462,6 @@ release_new() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: RenderAttrib::make_default_impl
-//       Access: Protected, Virtual
-//  Description: Intended to be overridden by derived RenderAttrib
-//               types to specify what the default property for a
-//               RenderAttrib of this type should be.
-//
-//               This should return a newly-allocated RenderAttrib of
-//               the same type that corresponds to whatever the
-//               standard default for this kind of RenderAttrib is.
-////////////////////////////////////////////////////////////////////
-RenderAttrib *RenderAttrib::
-make_default_impl() const {
-  return (RenderAttrib *)NULL;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: RenderAttrib::init_attribs
 //       Access: Public, Static
 //  Description: Make sure the global _attribs map is allocated.  This
