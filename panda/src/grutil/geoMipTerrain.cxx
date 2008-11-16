@@ -373,7 +373,7 @@ bool GeoMipTerrain::
 update() {
   if (_xsize < 3 || _ysize < 3) {
     grutil_cat.error() << "No valid heightfield image has been set!\n";
-    return;
+    return false;
   }
   if (_is_dirty) {
     generate();
