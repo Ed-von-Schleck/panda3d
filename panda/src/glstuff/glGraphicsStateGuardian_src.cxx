@@ -1400,16 +1400,20 @@ clear(DrawableRegion *clearable) {
       GLP(Clear)(GL_COLOR_BUFFER_BIT);
     }
   }
-  
+
   if (clearable->get_clear_color_active()) {
     Colorf v = clearable->get_clear_color();
     GLP(ClearColor)(v[0],v[1],v[2],v[3]);
+    GLP(ColorMask)(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    _state_mask.clear_bit(ColorWriteAttrib::get_class_slot());
     mask |= GL_COLOR_BUFFER_BIT;
     set_draw_buffer(clearable->get_draw_buffer_type());
   }
   
   if (clearable->get_clear_depth_active()) {
     GLP(ClearDepth)(clearable->get_clear_depth());
+    GLP(DepthMask)(GL_TRUE);
+    _state_mask.clear_bit(DepthWriteAttrib::get_class_slot());
     mask |= GL_DEPTH_BUFFER_BIT;
   }
 
@@ -1426,7 +1430,7 @@ clear(DrawableRegion *clearable) {
   // change the draw buffer.  In time, I think there will need
   // to be a draw buffer attrib.  Until then, this little hack
   // to put things back the way they were after
-  // prepare_display_region will bdo.
+  // prepare_display_region will do.
   
   set_draw_buffer(_draw_buffer_type);
 
