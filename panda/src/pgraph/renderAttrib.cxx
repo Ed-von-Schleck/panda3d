@@ -543,7 +543,6 @@ finalize(BamReader *) {
   // we do get to zero, it's a memory leak; the way to avoid this is
   // to call unref_delete() above instead of unref(), but this is
   // dangerous to do from within a virtual function.
-  cerr << "finalize " << *this << ": " << get_ref_count() << "\n";
   nassertv(get_ref_count() != 0);
 }
 
