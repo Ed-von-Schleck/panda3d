@@ -14,6 +14,8 @@
 
 #include "renderAttribRegistry.h"
 #include "renderAttrib.h"
+#include "renderState.h"
+#include "deletedChain.h"
 
 RenderAttribRegistry *RenderAttribRegistry::_global_ptr;
 
@@ -43,6 +45,11 @@ RenderAttribRegistry() {
       
     _max_slots = SlotMask::get_max_num_bits();
   }
+
+  // Get a DeletedBufferChain to manage the arrays of RenderAttribs that are
+  // allocated within each RenderState object.
+  init_memory_hook();
+  _array_chain = memory_hook->get_deleted_chain(_max_slots * sizeof(RenderState::Attribute));
 
   // Reserve slot 0 for TypeHandle::none(), and for types that exceed
   // max_slots.

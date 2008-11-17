@@ -29,6 +29,7 @@
 #include "colorAttrib.h"
 #include "colorScaleAttrib.h"
 #include "colorBlendAttrib.h"
+#include "alphaTestAttrib.h"
 #include "textureAttrib.h"
 #include "config_grutil.h"
 #include "config_gobj.h"

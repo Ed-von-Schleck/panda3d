@@ -70,7 +70,6 @@ public:
   virtual bool lower_attrib_can_override() const;
 
   INLINE bool always_reissue() const;
-  virtual void store_into_slot(AttribSlots *slots) const=0;
 
   virtual bool has_cull_callback() const;
   virtual bool cull_callback(CullTraverser *trav, const CullTraverserData &data) const;

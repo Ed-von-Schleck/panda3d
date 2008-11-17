@@ -35,18 +35,8 @@
 #include "renderAttribRegistry.h"
 
 class GraphicsStateGuardianBase;
-class FogAttrib;
-class CullBinAttrib;
-class TransparencyAttrib;
-class ColorAttrib;
-class ColorScaleAttrib;
-class TextureAttrib;
-class TexGenAttrib;
-class ClipPlaneAttrib;
-class ScissorAttrib;
-class ShaderAttrib;
 class FactoryParams;
-class AudioVolumeAttrib;
+class ShaderAttrib;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : RenderState
@@ -98,7 +88,6 @@ PUBLISHED:
                                const RenderAttrib *attrib4, int override = 0);
   static CPT(RenderState) make(const RenderAttrib * const *attrib,
                                int num_attribs, int override = 0);
-  static CPT(RenderState) make(const AttribSlots *slots, int override = 0);
   
   CPT(RenderState) compose(const RenderState *other) const;
   CPT(RenderState) invert_compose(const RenderState *other) const;
@@ -148,14 +137,13 @@ PUBLISHED:
   const ShaderAttrib *get_generated_shader() const;
   
 public:
-  void store_into_slots(AttribSlots *slots) const;
-  
   static void bin_removed(int bin_index);
   
   INLINE static void flush_level();
 
 private:
-  int count_num_attribs() const;
+  void determine_filled_slots();
+  bool validate_filled_slots() const;
   INLINE bool do_cache_unref() const;
   INLINE bool do_node_unref() const;
 
@@ -269,8 +257,11 @@ private:
     CPT(RenderAttrib) _attrib;
     int _override;
   };
-  typedef pvector<Attribute> Attributes;
-  Attributes _attributes;
+  Attribute *_attributes;
+
+  // We also store a bitmask of the non-NULL attributes in the above
+  // array.  This is redundant, but it is a useful cache.
+  SlotMask _filled_slots;
 
   // We cache the index to the associated CullBin, if there happens to
   // be a CullBinAttrib in the state.
@@ -284,11 +275,10 @@ private:
   CPT(RenderAttrib) _generated_shader;
 
   enum Flags {
-    F_is_empty              = 0x000001,
-    F_checked_bin_index     = 0x000002,
-    F_checked_cull_callback = 0x000004,
-    F_has_cull_callback     = 0x000008,
-    F_is_destructing        = 0x000010,
+    F_checked_bin_index     = 0x000001,
+    F_checked_cull_callback = 0x000002,
+    F_has_cull_callback     = 0x000004,
+    F_is_destructing        = 0x000008,
   };
   unsigned int _flags;
 
@@ -328,6 +318,7 @@ private:
   static TypeHandle _type_handle;
 
   friend class GraphicsStateGuardian;
+  friend class RenderAttribRegistry;
 };
 
 INLINE ostream &operator << (ostream &out, const RenderState &state) {

@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "depthWriteAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -85,17 +84,6 @@ compare_to_impl(const RenderAttrib *other) const {
   const DepthWriteAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   return (int)_mode - (int)ta->_mode;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: DepthWriteAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void DepthWriteAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_depth_write = this;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "alphaTestAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -85,17 +84,6 @@ compare_to_impl(const RenderAttrib *other) const {
   } else {
     return (int) (255.0f*(_reference_alpha - ta->_reference_alpha));
   }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: AlphaTestAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void AlphaTestAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_alpha_test = this;
 }
 
 ////////////////////////////////////////////////////////////////////

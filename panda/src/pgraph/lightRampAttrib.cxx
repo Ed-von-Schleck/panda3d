@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "lightRampAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -247,17 +246,6 @@ compare_to_impl(const RenderAttrib *other) const {
     }
   }
   return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: LightRampAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void LightRampAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_light_ramp = this;
 }
 
 ////////////////////////////////////////////////////////////////////

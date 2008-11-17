@@ -18,7 +18,6 @@
 #include "vertexBufferContext.h"
 #include "indexBufferContext.h"
 #include "renderBuffer.h"
-#include "attribSlots.h"
 #include "light.h"
 #include "planeNode.h"
 #include "ambientLight.h"
@@ -41,6 +40,11 @@
 #include "pointLight.h"
 #include "spotlight.h"
 #include "textureReloadRequest.h"
+#include "shaderAttrib.h"
+#include "materialAttrib.h"
+#include "depthWriteAttrib.h"
+#include "lightAttrib.h"
+#include "texGenAttrib.h"
 
 #include <algorithm>
 #include <limits.h>

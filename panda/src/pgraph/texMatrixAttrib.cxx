@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "texMatrixAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -417,17 +416,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   }
 
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexMatrixAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void TexMatrixAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_tex_matrix = this;
 }
 
 ////////////////////////////////////////////////////////////////////

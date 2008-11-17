@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "renderModeAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -159,17 +158,6 @@ compose_impl(const RenderAttrib *other) const {
   }
 
   return make(mode, ta->get_thickness(), ta->get_perspective());
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: RenderModeAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void RenderModeAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_render_mode = this;
 }
 
 ////////////////////////////////////////////////////////////////////

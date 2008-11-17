@@ -82,7 +82,6 @@ public:
   CPT(TextureAttrib) filter_to_max(int max_texture_stages) const;
 
   virtual void output(ostream &out) const;
-  virtual void store_into_slot(AttribSlots *slots) const;
 
   virtual bool has_cull_callback() const;
   virtual bool cull_callback(CullTraverser *trav, const CullTraverserData &data) const;

@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "shadeModelAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -114,17 +113,6 @@ compose_impl(const RenderAttrib *other) const {
 
   Mode mode = ta->get_mode();
   return make(mode);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ShadeModelAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void ShadeModelAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_shade_model = this;
 }
 
 ////////////////////////////////////////////////////////////////////

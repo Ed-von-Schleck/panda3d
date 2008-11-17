@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "lightAttrib.h"
-#include "attribSlots.h"
 #include "pandaNode.h"
 #include "nodePath.h"
 #include "graphicsStateGuardianBase.h"
@@ -854,17 +853,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   // needs a bit more thought.  It's hard to imagine that it's even
   // important to compute this properly.
   return other;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: LightAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void LightAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_light = this;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "textureAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "internalName.h"
 #include "bamReader.h"
@@ -771,17 +770,6 @@ invert_compose_impl(const RenderAttrib *other) const {
   // needs a bit more thought.  It's hard to imagine that it's even
   // important to compute this properly.
   return other;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TextureAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void TextureAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_texture = this;
 }
 
 ////////////////////////////////////////////////////////////////////

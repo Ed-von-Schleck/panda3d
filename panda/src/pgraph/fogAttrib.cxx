@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "fogAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "bamReader.h"
 #include "bamWriter.h"
@@ -102,17 +101,6 @@ compare_to_impl(const RenderAttrib *other) const {
     return _fog < ta->_fog ? -1 : 1;
   }
   return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: FogAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void FogAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_fog = this;
 }
 
 ////////////////////////////////////////////////////////////////////

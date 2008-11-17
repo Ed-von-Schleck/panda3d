@@ -14,7 +14,6 @@
 
 #include "pandabase.h"
 #include "shaderAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "bamReader.h"
 #include "bamWriter.h"
@@ -405,17 +404,6 @@ get_shader_input_texture(InternalName *id) const {
 const Shader *ShaderAttrib::
 get_shader() const {
   return _shader;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ShaderAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void ShaderAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_shader = this;
 }
 
 ////////////////////////////////////////////////////////////////////

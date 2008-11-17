@@ -38,13 +38,13 @@
 #include "geomVertexData.h"
 #include "pnotify.h"
 #include "pvector.h"
-#include "attribSlots.h"
 #include "shaderContext.h"
 #include "bitMask.h"
 #include "texture.h"
 #include "occlusionQueryContext.h"
 #include "stencilRenderStates.h"
 #include "loader.h"
+#include "textureAttrib.h"
 
 class DrawableRegion;
 class GraphicsEngine;

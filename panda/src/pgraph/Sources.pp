@@ -17,7 +17,6 @@
     alphaTestAttrib.I alphaTestAttrib.h \  
     antialiasAttrib.I antialiasAttrib.h \
     attribNodeRegistry.I attribNodeRegistry.h \
-    attribSlots.h attribSlots.I \
     audioVolumeAttrib.I audioVolumeAttrib.h \
     auxSceneData.I auxSceneData.h \
     auxBitplaneAttrib.I auxBitplaneAttrib.h \
@@ -124,7 +123,6 @@
     alphaTestAttrib.cxx \  
     antialiasAttrib.cxx \
     attribNodeRegistry.cxx \
-    attribSlots.cxx \
     audioVolumeAttrib.cxx \
     auxSceneData.cxx \
     bamFile.cxx \
@@ -225,7 +223,6 @@
     alphaTestAttrib.I alphaTestAttrib.h \  
     antialiasAttrib.I antialiasAttrib.h \
     attribNodeRegistry.I attribNodeRegistry.h \
-    attribSlots.h attribSlots.I \
     audioVolumeAttrib.I audioVolumeAttrib.h \
     auxSceneData.I auxSceneData.h \
     auxBitplaneAttrib.I auxBitplaneAttrib.h \

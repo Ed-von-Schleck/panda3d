@@ -105,6 +105,18 @@ get_sorted_slot(int n) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: RenderAttribRegistry::get_array_chain
+//       Access: Published
+//  Description: Returns the DeletedBufferChain object that may be
+//               used to allocated appropriately-sized arrays of
+//               RenderState::Attribute objects.
+////////////////////////////////////////////////////////////////////
+INLINE DeletedBufferChain *RenderAttribRegistry::
+get_array_chain() const {
+  return _array_chain;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: RenderAttribRegistry::get_global_ptr
 //       Access: Published, Static
 //  Description:

@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "cullFaceAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -232,17 +231,6 @@ invert_compose_impl(const RenderAttrib *other) const {
 
   CullFaceAttrib *attrib = new CullFaceAttrib(mode, reverse);
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CullFaceAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void CullFaceAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_cull_face = this;
 }
 
 ////////////////////////////////////////////////////////////////////

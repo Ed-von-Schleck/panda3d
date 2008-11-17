@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "cullBinAttrib.h"
-#include "attribSlots.h"
 #include "bamReader.h"
 #include "bamWriter.h"
 #include "datagram.h"
@@ -91,17 +90,6 @@ compare_to_impl(const RenderAttrib *other) const {
     return _draw_order - ta->_draw_order;
   }
   return strcmp(_bin_name.c_str(), ta->_bin_name.c_str());
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CullBinAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void CullBinAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_cull_bin = this;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "colorWriteAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -93,17 +92,6 @@ compare_to_impl(const RenderAttrib *other) const {
   const ColorWriteAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   return (int)_channels - (int)ta->_channels;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColorWriteAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void ColorWriteAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_color_write = this;
 }
 
 ////////////////////////////////////////////////////////////////////

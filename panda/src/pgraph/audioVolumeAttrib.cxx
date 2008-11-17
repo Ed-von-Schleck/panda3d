@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "audioVolumeAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -221,17 +220,6 @@ invert_compose_impl(const RenderAttrib *other) const {
 
   AudioVolumeAttrib *attrib = new AudioVolumeAttrib(false, new_volume);
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: AudioVolumeAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void AudioVolumeAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_audio_volume = this;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -22,6 +22,7 @@
 #include "bitMask.h"
 
 class RenderAttrib;
+class DeletedBufferChain;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : RenderAttribRegistry
@@ -63,6 +64,8 @@ PUBLISHED:
   INLINE int get_num_sorted_slots() const;
   INLINE int get_sorted_slot(int n) const;
 
+  INLINE DeletedBufferChain *get_array_chain() const;
+
   INLINE static RenderAttribRegistry *get_global_ptr();
 
 public:
@@ -92,6 +95,8 @@ private:
 
   vector_int _slots_by_type;
   vector_int _sorted_slots;
+
+  DeletedBufferChain *_array_chain;
 
   static RenderAttribRegistry *_global_ptr;
 };

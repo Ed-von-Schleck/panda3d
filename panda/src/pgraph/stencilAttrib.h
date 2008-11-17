@@ -156,7 +156,6 @@ public:
   static char *stencil_render_state_name_array [SRS_total];
   
   virtual void output(ostream &out) const;
-  virtual void store_into_slot(AttribSlots *slots) const;
 
 protected:
   virtual int compare_to_impl(const RenderAttrib *other) const;

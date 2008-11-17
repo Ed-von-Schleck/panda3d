@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "texGenAttrib.h"
-#include "attribSlots.h"
 #include "texturePool.h"
 #include "graphicsStateGuardianBase.h"
 #include "bamReader.h"
@@ -597,17 +596,6 @@ record_stage(TextureStage *stage, TexGenAttrib::ModeDef &mode_def) {
   default:
     _no_texcoords.insert(stage);
   }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexGenAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void TexGenAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_tex_gen = this;
 }
 
 ////////////////////////////////////////////////////////////////////

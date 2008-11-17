@@ -35,7 +35,6 @@
 #include "lightReMutexHolder.h"
 #include "lightMutexHolder.h"
 #include "thread.h"
-#include "attribSlots.h"
 #include "shaderGeneratorBase.h"
 #include "renderAttribRegistry.h"
   
@@ -66,9 +65,17 @@ TypeHandle RenderState::_type_handle;
 RenderState::
 RenderState() : 
   _lock("RenderState"),
-  _attributes(RenderAttribRegistry::get_global_ptr()->get_max_slots(), Attribute()),
   _flags(0)
 {
+  // Allocate the _attributes array.
+  RenderAttribRegistry *reg = RenderAttribRegistry::get_global_ptr();
+  _attributes = (Attribute *)reg->get_array_chain()->allocate(reg->get_max_slots() * sizeof(Attribute), get_class_type());
+
+  // Also make sure each element gets initialized.
+  for (int i = 0; i < reg->get_max_slots(); ++i) {
+    new(&_attributes[i]) Attribute();
+  }
+
   if (_states == (States *)NULL) {
     init_states();
   }
@@ -86,9 +93,18 @@ RenderState() :
 RenderState::
 RenderState(const RenderState &copy) :
   _lock("RenderState"),
-  _attributes(copy._attributes),
+  _filled_slots(copy._filled_slots),
   _flags(copy._flags)
 {
+  // Allocate the _attributes array.
+  RenderAttribRegistry *reg = RenderAttribRegistry::get_global_ptr();
+  _attributes = (Attribute *)reg->get_array_chain()->allocate(reg->get_max_slots() * sizeof(Attribute), get_class_type());
+
+  // Also make sure each element gets initialized, as a copy.
+  for (int i = 0; i < reg->get_max_slots(); ++i) {
+    new(&_attributes[i]) Attribute(copy._attributes[i]);
+  }
+
   _saved_entry = _states->end();
   _last_mi = _mungers.end();
   _cache_stats.add_num_states(1);
@@ -127,6 +143,14 @@ RenderState::
   // longer true now, probably we've been double-deleted.
   nassertv(get_ref_count() == 0);
   _cache_stats.add_num_states(-1);
+
+  // Free the _attributes array.
+  RenderAttribRegistry *reg = RenderAttribRegistry::get_global_ptr();
+  for (int i = 0; i < reg->get_max_slots(); ++i) {
+    _attributes[i].~Attribute();
+  }
+  reg->get_array_chain()->deallocate(_attributes, get_class_type());
+  _attributes = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -144,13 +168,18 @@ RenderState::
 bool RenderState::
 operator < (const RenderState &other) const {
   RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int num_slots = reg->get_num_slots();
-  for (int slot = 1; slot < num_slots; ++slot) {
+  SlotMask mask = _filled_slots | other._filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     int result = _attributes[slot].compare_to(other._attributes[slot]);
     if (result != 0) {
       return result < 0;
     }
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
+
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -174,6 +203,7 @@ compare_sort(const RenderState &other) const {
   int num_sorted_slots = reg->get_num_sorted_slots();
   for (int n = 0; n < num_sorted_slots; ++n) {
     int slot = reg->get_sorted_slot(n);
+    nassertr((_attributes[slot]._attrib != NULL) == _filled_slots.get_bit(slot), 0);
 
     const RenderAttrib *a = _attributes[slot]._attrib;
     const RenderAttrib *b = other._attributes[slot]._attrib;
@@ -194,14 +224,16 @@ size_t RenderState::
 get_hash() const {
   size_t hash = 0;
 
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int num_slots = reg->get_num_slots();
-  for (int slot = 1; slot < num_slots; ++slot) {
+  SlotMask mask = _filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     const Attribute &attrib = _attributes[slot];
     if (attrib._attrib != (RenderAttrib *)NULL) {
       hash = pointer_hash::add_hash(hash, attrib._attrib);
       hash = int_hash::add_hash(hash, attrib._override);
     }
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 
   return hash;
@@ -217,14 +249,17 @@ get_hash() const {
 ////////////////////////////////////////////////////////////////////
 bool RenderState::
 cull_callback(CullTraverser *trav, const CullTraverserData &data) const {
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int max_slots = reg->get_max_slots();
-  for (int slot = 1; slot < max_slots; ++slot) {
+  SlotMask mask = _filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     const Attribute &attrib = _attributes[slot];
-    if (attrib._attrib != NULL &&
-        !attrib._attrib->cull_callback(trav, data)) {
+    nassertr(attrib._attrib != NULL, false);
+    if (!attrib._attrib->cull_callback(trav, data)) {
       return false;
     }
+
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 
   return true;
@@ -241,7 +276,6 @@ make_empty() {
   // and store a pointer forever once we find it the first time.
   if (_empty_state == (RenderState *)NULL) {
     RenderState *state = new RenderState;
-    state->_flags |= F_is_empty;
     _empty_state = return_new(state);
   }
 
@@ -275,7 +309,9 @@ make_full_default() {
 CPT(RenderState) RenderState::
 make(const RenderAttrib *attrib, int override) {
   RenderState *state = new RenderState;
-  state->_attributes[attrib->get_slot()].set(attrib, override);
+  int slot = attrib->get_slot();
+  state->_attributes[slot].set(attrib, override);
+  state->_filled_slots.set_bit(slot);
   return return_new(state);
 }
 
@@ -290,6 +326,8 @@ make(const RenderAttrib *attrib1,
   RenderState *state = new RenderState;
   state->_attributes[attrib1->get_slot()].set(attrib1, override);
   state->_attributes[attrib2->get_slot()].set(attrib2, override);
+  state->_filled_slots.set_bit(attrib1->get_slot());
+  state->_filled_slots.set_bit(attrib2->get_slot());
   return return_new(state);
 }
 
@@ -306,6 +344,9 @@ make(const RenderAttrib *attrib1,
   state->_attributes[attrib1->get_slot()].set(attrib1, override);
   state->_attributes[attrib2->get_slot()].set(attrib2, override);
   state->_attributes[attrib3->get_slot()].set(attrib3, override);
+  state->_filled_slots.set_bit(attrib1->get_slot());
+  state->_filled_slots.set_bit(attrib2->get_slot());
+  state->_filled_slots.set_bit(attrib3->get_slot());
   return return_new(state);
 }
 
@@ -324,6 +365,10 @@ make(const RenderAttrib *attrib1,
   state->_attributes[attrib2->get_slot()].set(attrib2, override);
   state->_attributes[attrib3->get_slot()].set(attrib3, override);
   state->_attributes[attrib4->get_slot()].set(attrib4, override);
+  state->_filled_slots.set_bit(attrib1->get_slot());
+  state->_filled_slots.set_bit(attrib2->get_slot());
+  state->_filled_slots.set_bit(attrib3->get_slot());
+  state->_filled_slots.set_bit(attrib4->get_slot());
   return return_new(state);
 }
 
@@ -339,32 +384,10 @@ make(const RenderAttrib * const *attrib, int num_attribs, int override) {
   }
   RenderState *state = new RenderState;
   for (int i = 0; i < num_attribs; i++) {
-    state->_attributes[attrib[i]->get_slot()].set(attrib[i], override);
+    int slot = attrib[i]->get_slot();
+    state->_attributes[slot].set(attrib[i], override);
+    state->_filled_slots.set_bit(slot);
   }
-  return return_new(state);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: RenderState::make
-//       Access: Published, Static
-//  Description: Returns a RenderState made from the specified slots.
-////////////////////////////////////////////////////////////////////
-CPT(RenderState) RenderState::
-make(const AttribSlots *slots, int override) {
-  RenderState *state = new RenderState;
-  bool any_attribs = false;
-  for (int i = 0; i < AttribSlots::slot_count; i++) {
-    const RenderAttrib *attrib = slots->get_slot(i);
-    if (attrib != 0) {
-      state->_attributes[attrib->get_slot()].set(attrib, override);
-      any_attribs = true;
-    }
-  }
-  if (!any_attribs) {
-    delete state;
-    return make_empty();
-  }
-
   return return_new(state);
 }
 
@@ -578,7 +601,7 @@ add_attrib(const RenderAttrib *attrib, int override) const {
   // The new attribute replaces.
   RenderState *new_state = new RenderState(*this);
   new_state->_attributes[slot].set(attrib, override);
-  new_state->_flags &= ~F_is_empty;
+  new_state->_filled_slots.set_bit(slot);
   return return_new(new_state);
 }
 
@@ -594,8 +617,9 @@ add_attrib(const RenderAttrib *attrib, int override) const {
 CPT(RenderState) RenderState::
 set_attrib(const RenderAttrib *attrib) const {
   RenderState *new_state = new RenderState(*this);
-  new_state->_attributes[attrib->get_slot()]._attrib = attrib;
-  new_state->_flags &= ~F_is_empty;
+  int slot = attrib->get_slot();
+  new_state->_attributes[slot]._attrib = attrib;
+  new_state->_filled_slots.set_bit(slot);
   return return_new(new_state);
 }
 
@@ -611,8 +635,9 @@ set_attrib(const RenderAttrib *attrib) const {
 CPT(RenderState) RenderState::
 set_attrib(const RenderAttrib *attrib, int override) const {
   RenderState *new_state = new RenderState(*this);
-  new_state->_attributes[attrib->get_slot()].set(attrib, override);
-  new_state->_flags &= ~F_is_empty;
+  int slot = attrib->get_slot();
+  new_state->_attributes[slot].set(attrib, override);
+  new_state->_filled_slots.set_bit(slot);
   return return_new(new_state);
 }
 
@@ -631,12 +656,13 @@ remove_attrib(int slot) const {
   }
 
   // Will this bring us down to the empty state?
-  if (count_num_attribs() == 1) {
+  if (_filled_slots.get_num_on_bits() == 1) {
     return make_empty();
   }
 
   RenderState *new_state = new RenderState(*this);
   new_state->_attributes[slot].set(NULL, 0);
+  new_state->_filled_slots.clear_bit(slot);
   return return_new(new_state);
 }
 
@@ -652,15 +678,17 @@ remove_attrib(int slot) const {
 CPT(RenderState) RenderState::
 adjust_all_priorities(int adjustment) const {
   RenderState *new_state = new RenderState;
-  new_state->_attributes.reserve(_attributes.size());
 
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int max_slots = reg->get_max_slots();
-  for (int slot = 1; slot < max_slots; ++slot) {
+  SlotMask mask = _filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     Attribute &attrib = new_state->_attributes[slot];
     if (attrib._attrib != (RenderAttrib *)NULL) {
       attrib._override = max(attrib._override + adjustment, 0);
     }
+
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 
   return return_new(new_state);
@@ -739,14 +767,17 @@ output(ostream &out) const {
   } else {
     out << "(";
     const char *sep = "";
-    RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-    int max_slots = reg->get_max_slots();
-    for (int slot = 1; slot < max_slots; ++slot) {
-      const Attribute &attribute = _attributes[slot];
-      if (attribute._attrib != (RenderAttrib *)NULL) {
-        out << sep << attribute._attrib->get_type();
-        sep = " ";
-      }
+
+    SlotMask mask = _filled_slots;
+    int slot = mask.get_lowest_on_bit();
+    while (slot >= 0) {
+      const Attribute &attrib = _attributes[slot];
+      nassertv(attrib._attrib != (RenderAttrib *)NULL);
+      out << sep << attrib._attrib->get_type();
+      sep = " ";
+
+      mask.clear_bit(slot);
+      slot = mask.get_lowest_on_bit();
     }
     out << ")";
   }
@@ -763,13 +794,16 @@ write(ostream &out, int indent_level) const {
     indent(out, indent_level) 
       << "(empty)\n";
   }
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int max_slots = reg->get_max_slots();
-  for (int slot = 1; slot < max_slots; ++slot) {
-    const Attribute &attribute = _attributes[slot];
-    if (attribute._attrib != (RenderAttrib *)NULL) {
-      attribute._attrib->write(out, indent_level);
-    }
+
+  SlotMask mask = _filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
+    const Attribute &attrib = _attributes[slot];
+    nassertv(attrib._attrib != (RenderAttrib *)NULL);
+    attrib._attrib->write(out, indent_level);
+    
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 }
 
@@ -1199,21 +1233,6 @@ get_generated_shader() const {
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: RenderState::store_into_slots
-//       Access: Public
-//  Description: Convert the attribute list into an AttribSlots.
-////////////////////////////////////////////////////////////////////
-void RenderState::
-store_into_slots(AttribSlots *output) const {
-  Attributes::const_iterator ai;
-  for (ai = _attributes.begin(); ai != _attributes.end(); ai++) {
-    if ((*ai)._attrib != (RenderAttrib *)NULL) {
-      (*ai)._attrib->store_into_slot(output);
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: RenderState::bin_removed
 //       Access: Public, Static
 //  Description: Intended to be called by
@@ -1228,23 +1247,45 @@ bin_removed(int bin_index) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: RenderState::count_num_attribs
+//     Function: RenderState::determine_filled_slots
 //       Access: Private
-//  Description: Returns the number of non-NULL attribs stored within
-//               the state.
+//  Description: Examines all of the slots to determine the
+//               appropriate bitmask to put in _filled_slots.
 ////////////////////////////////////////////////////////////////////
-int RenderState::
-count_num_attribs() const {
-  int num_attribs = 0;
+void RenderState::
+determine_filled_slots() {
+  _filled_slots.clear();
   RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
   int max_slots = reg->get_max_slots();
   for (int slot = 1; slot < max_slots; ++slot) {
     const Attribute &attribute = _attributes[slot];
     if (attribute._attrib != (RenderAttrib *)NULL) {
-      ++num_attribs;
+      _filled_slots.set_bit(slot);
     }
   }
-  return num_attribs;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RenderState::validate_filled_slots
+//       Access: Private
+//  Description: Returns true if the _filled_slots bitmask is
+//               consistent with the table of RenderAttrib pointers,
+//               false otherwise.
+////////////////////////////////////////////////////////////////////
+bool RenderState::
+validate_filled_slots() const {
+  SlotMask mask;
+
+  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
+  int max_slots = reg->get_max_slots();
+  for (int slot = 1; slot < max_slots; ++slot) {
+    const Attribute &attribute = _attributes[slot];
+    if (attribute._attrib != (RenderAttrib *)NULL) {
+      mask.set_bit(slot);
+    }
+  }
+
+  return (mask == _filled_slots);
 }
 
   
@@ -1285,9 +1326,13 @@ return_new(RenderState *state) {
   }
 #endif
   state->_attributes[0]._attrib = NULL;
+  state->_filled_slots.clear_bit(0);
 
-  // Make sure the is_empty flag is accurately set.
-  nassertr((state->count_num_attribs() == 0) == ((state->_flags & F_is_empty) != 0), state);
+#ifndef NDEBUG
+  nassertd(state->validate_filled_slots()) {
+    state->determine_filled_slots();
+  }
+#endif
 
   static ConfigVariableBool uniquify_states("uniquify-states", true);
   if (!uniquify_states && !state->is_empty()) {
@@ -1342,14 +1387,18 @@ do_compose(const RenderState *other) const {
   PStatTimer timer(_state_compose_pcollector);
 
   RenderState *new_state = new RenderState;
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int num_slots = reg->get_num_slots();
-  for (int slot = 1; slot < num_slots; ++slot) {
+
+  SlotMask mask = _filled_slots | other->_filled_slots;
+  new_state->_filled_slots = mask;
+
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     const Attribute &a = _attributes[slot];
     const Attribute &b = other->_attributes[slot];
     Attribute &result = new_state->_attributes[slot];
 
     if (a._attrib == NULL) {
+      nassertr(b._attrib != NULL, this);
       // B wins.
       result = b;
 
@@ -1369,6 +1418,9 @@ do_compose(const RenderState *other) const {
       // Both attribs compose.
       result.set(a._attrib->compose(b._attrib), a._override);
     }
+    
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 
   return return_new(new_state);
@@ -1384,14 +1436,18 @@ do_invert_compose(const RenderState *other) const {
   PStatTimer timer(_state_invert_pcollector);
 
   RenderState *new_state = new RenderState;
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int num_slots = reg->get_num_slots();
-  for (int slot = 1; slot < num_slots; ++slot) {
+
+  SlotMask mask = _filled_slots | other->_filled_slots;
+  new_state->_filled_slots = mask;
+
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     const Attribute &a = _attributes[slot];
     const Attribute &b = other->_attributes[slot];
     Attribute &result = new_state->_attributes[slot];
 
     if (a._attrib == NULL) {
+      nassertr(b._attrib != NULL, this);
       // B wins.
       result = b;
 
@@ -1406,6 +1462,9 @@ do_invert_compose(const RenderState *other) const {
       // Compose.
       result.set(a._attrib->invert_compose(b._attrib), 0);
     }
+    
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
   return return_new(new_state);
 }
@@ -1696,15 +1755,18 @@ determine_cull_callback() {
     return;
   }
 
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int max_slots = reg->get_max_slots();
-  for (int slot = 1; slot < max_slots; ++slot) {
+  SlotMask mask = _filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
     const Attribute &attrib = _attributes[slot];
     if (attrib._attrib != (RenderAttrib *)NULL &&
         attrib._attrib->has_cull_callback()) {
       _flags |= F_has_cull_callback;
       break;
     }
+    
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 
   _flags |= F_checked_cull_callback;
@@ -1721,7 +1783,8 @@ fill_default() {
   int num_slots = reg->get_num_slots();
   for (int slot = 1; slot < num_slots; ++slot) {
     _attributes[slot].set(reg->get_slot_default(slot), 0);
-  }    
+    _filled_slots.set_bit(slot);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1794,20 +1857,22 @@ void RenderState::
 write_datagram(BamWriter *manager, Datagram &dg) {
   TypedWritable::write_datagram(manager, dg);
 
-  int num_attribs = count_num_attribs();
+  int num_attribs = _filled_slots.get_num_on_bits();
   nassertv(num_attribs == (int)(PN_uint16)num_attribs);
   dg.add_uint16(num_attribs);
 
   // **** We should smarten up the writing of the override
   // number--most of the time these will all be zero.
-  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
-  int max_slots = reg->get_max_slots();
-  for (int slot = 1; slot < max_slots; ++slot) {
-    const Attribute &attribute = _attributes[slot];
-    if (attribute._attrib != (RenderAttrib *)NULL) {
-      manager->write_pointer(dg, attribute._attrib);
-      dg.add_int32(attribute._override);
-    }
+  SlotMask mask = _filled_slots;
+  int slot = mask.get_lowest_on_bit();
+  while (slot >= 0) {
+    const Attribute &attrib = _attributes[slot];
+    nassertv(attrib._attrib != (RenderAttrib *)NULL);
+    manager->write_pointer(dg, attrib._attrib);
+    dg.add_int32(attrib._override);
+    
+    mask.clear_bit(slot);
+    slot = mask.get_lowest_on_bit();
   }
 }
 
@@ -1824,14 +1889,16 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
 
   int num_attribs = 0;
 
+  RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
   for (size_t i = 0; i < (*_read_overrides).size(); ++i) {
     int override = (*_read_overrides)[i];
 
     RenderAttrib *attrib = DCAST(RenderAttrib, p_list[pi++]);
     if (attrib != (RenderAttrib *)NULL) {
       int slot = attrib->get_slot();
-      if (slot > 0 && slot < _attributes.size()) {
+      if (slot > 0 && slot < reg->get_max_slots()) {
         _attributes[slot].set(attrib, override);
+        _filled_slots.set_bit(slot);
         ++num_attribs;
       }
     }
@@ -1839,13 +1906,6 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
 
   delete _read_overrides;
   _read_overrides = NULL;
-
-  // Enforce the is_empty flag.
-  if (num_attribs == 0) {
-    _flags |= F_is_empty;
-  } else {
-    _flags &= ~F_is_empty;
-  }
 
   return pi;
 }
@@ -1937,10 +1997,6 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   int num_attribs = scan.get_uint16();
   _read_overrides = new vector_int;
   (*_read_overrides).reserve(num_attribs);
-
-  if (num_attribs == 0) {
-    _flags |= F_is_empty;
-  }
 
   for (int i = 0; i < num_attribs; ++i) {
     manager->read_pointer(scan);

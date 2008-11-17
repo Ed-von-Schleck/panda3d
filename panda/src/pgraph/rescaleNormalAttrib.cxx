@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "rescaleNormalAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "string_utils.h"
 #include "dcast.h"
@@ -95,17 +94,6 @@ compare_to_impl(const RenderAttrib *other) const {
   const RescaleNormalAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   return (int)_mode - (int)ta->_mode;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: RescaleNormalAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void RescaleNormalAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_rescale_normal = this;
 }
 
 ////////////////////////////////////////////////////////////////////

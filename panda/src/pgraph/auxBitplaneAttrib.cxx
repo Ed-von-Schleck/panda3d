@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "auxBitplaneAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -96,17 +95,6 @@ compare_to_impl(const RenderAttrib *other) const {
     return compare_result;
   }
   return 0;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: AuxBitplaneAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void AuxBitplaneAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_aux_bitplane = this;
 }
 
 ////////////////////////////////////////////////////////////////////

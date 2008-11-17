@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "depthOffsetAttrib.h"
-#include "attribSlots.h"
 #include "graphicsStateGuardianBase.h"
 #include "dcast.h"
 #include "bamReader.h"
@@ -125,17 +124,6 @@ invert_compose_impl(const RenderAttrib *other) const {
 
   DepthOffsetAttrib *attrib = new DepthOffsetAttrib(new_offset);
   return return_new(attrib);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: DepthOffsetAttrib::store_into_slot
-//       Access: Public, Virtual
-//  Description: Stores this attrib into the appropriate slot of
-//               an object of class AttribSlots.
-////////////////////////////////////////////////////////////////////
-void DepthOffsetAttrib::
-store_into_slot(AttribSlots *slots) const {
-  slots->_depth_offset = this;
 }
 
 ////////////////////////////////////////////////////////////////////
