@@ -1773,10 +1773,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     int transparency_slot = TransparencyAttrib::get_class_slot();
     int color_write_slot = ColorWriteAttrib::get_class_slot();
     int color_blend_slot = ColorBlendAttrib::get_class_slot();
-    if (_target_rs->get_attrib(transparency_slot) != _state_rs->get_attrib(transparency_slot) ||
-        _target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
-        _target_rs->get_attrib(color_blend_slot) != _state_rs->get_attrib(color_blend_slot) ||
-        !_state_mask.get_bit(transparency_slot) ||
+    if (!_state_mask.get_bit(transparency_slot) ||
         !_state_mask.get_bit(color_write_slot) ||
         !_state_mask.get_bit(color_blend_slot)) {
       do_issue_blending();

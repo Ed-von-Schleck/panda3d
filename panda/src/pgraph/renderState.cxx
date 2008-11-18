@@ -94,7 +94,7 @@ RenderState::
 RenderState(const RenderState &copy) :
   _lock("RenderState"),
   _filled_slots(copy._filled_slots),
-  _flags(copy._flags)
+  _flags(0)
 {
   // Allocate the _attributes array.
   RenderAttribRegistry *reg = RenderAttribRegistry::get_global_ptr();
@@ -1155,6 +1155,7 @@ validate_states() {
   States::const_iterator snext = si;
   ++snext;
   nassertr((*si)->get_ref_count() > 0, false);
+  nassertr((*si)->validate_filled_slots(), false);
   while (snext != _states->end()) {
     if (!(*(*si) < *(*snext))) {
       pgraph_cat.error()
@@ -1177,6 +1178,7 @@ validate_states() {
     si = snext;
     ++snext;
     nassertr((*si)->get_ref_count() > 0, false);
+    nassertr((*si)->validate_filled_slots(), false);
   }
 
   return true;
