@@ -45,6 +45,8 @@
 #include "stencilRenderStates.h"
 #include "loader.h"
 #include "textureAttrib.h"
+#include "texGenAttrib.h"
+#include "shaderAttrib.h"
 
 class DrawableRegion;
 class GraphicsEngine;

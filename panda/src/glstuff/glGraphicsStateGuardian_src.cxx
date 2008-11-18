@@ -4029,35 +4029,23 @@ do_issue_blending() {
   }
   if (color_channels == ColorWriteAttrib::C_off) {
     int color_write_slot = ColorWriteAttrib::get_class_slot();
-    if (_target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
-        !_state_mask.get_bit(color_write_slot)) {
-      enable_multisample_alpha_one(false);
-      enable_multisample_alpha_mask(false);
-      if (CLP(color_mask)) {
-        enable_blend(false);
-        GLP(ColorMask)(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-      } else {
-        enable_blend(true);
-        _glBlendEquation(GL_FUNC_ADD);
-        GLP(BlendFunc)(GL_ZERO, GL_ONE);
-      }
+    enable_multisample_alpha_one(false);
+    enable_multisample_alpha_mask(false);
+    if (CLP(color_mask)) {
+      enable_blend(false);
+      GLP(ColorMask)(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    } else {
+      enable_blend(true);
+      _glBlendEquation(GL_FUNC_ADD);
+      GLP(BlendFunc)(GL_ZERO, GL_ONE);
     }
     return;
   } else {
-    int color_write_slot = ColorWriteAttrib::get_class_slot();
-    const ShaderAttrib *target_shader = DCAST(ShaderAttrib, _target_rs->get_attrib_def(ShaderAttrib::get_class_slot()));
-    const ShaderAttrib *state_shader = DCAST(ShaderAttrib, _state_rs->get_attrib_def(ShaderAttrib::get_class_slot()));
-
-    if (_target_rs->get_attrib(color_write_slot) != _state_rs->get_attrib(color_write_slot) ||
-        !_state_mask.get_bit(color_write_slot) ||
-        (target_shader->get_flag(ShaderAttrib::F_disable_alpha_write) != 
-         state_shader->get_flag(ShaderAttrib::F_disable_alpha_write))) {
-      if (CLP(color_mask)) {
-        GLP(ColorMask)((color_channels & ColorWriteAttrib::C_red) != 0,
-                       (color_channels & ColorWriteAttrib::C_green) != 0,
-                       (color_channels & ColorWriteAttrib::C_blue) != 0,
-                       (color_channels & ColorWriteAttrib::C_alpha) != 0);
-      }
+    if (CLP(color_mask)) {
+      GLP(ColorMask)((color_channels & ColorWriteAttrib::C_red) != 0,
+                     (color_channels & ColorWriteAttrib::C_green) != 0,
+                     (color_channels & ColorWriteAttrib::C_blue) != 0,
+                     (color_channels & ColorWriteAttrib::C_alpha) != 0);
     }
   }
 
