@@ -3454,7 +3454,7 @@ def MakeInstallerLinux():
     PYTHONV=SDK["PYTHONVERSION"]
     if (os.path.isdir("linuxroot")): oscmd("chmod -R 755 linuxroot")
     oscmd("rm -rf linuxroot data.tar.gz control.tar.gz panda3d.spec")
-    if os.path.exists("/usr/bin/rpmbuild")):
+    if (os.path.exists("/usr/bin/rpmbuild")):
         oscmd("rm -rf `rpm -E '%_target_cpu'`")
     if (os.path.exists("/usr/bin/dpkg-deb")):
         oscmd("rm -rf `dpkg --print-architecture`")
