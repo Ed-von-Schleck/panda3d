@@ -973,7 +973,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 draw_triangles(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatTimer timer(_draw_primitive_pcollector);
+  //PStatTimer timer(_draw_primitive_pcollector);
   _vertices_tri_pcollector.add_level(reader->get_num_vertices());
   _primitive_batches_tri_pcollector.add_level(1);
   if (reader->is_indexed()) {
@@ -1042,7 +1042,7 @@ draw_triangles(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 draw_tristrips(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatTimer timer(_draw_primitive_pcollector);
+  //PStatTimer timer(_draw_primitive_pcollector);
   if (connect_triangle_strips && _current_fill_mode != RenderModeAttrib::M_wireframe) {
     // One long triangle strip, connected by the degenerate vertices
     // that have already been set up within the primitive.
@@ -1217,7 +1217,7 @@ draw_tristrips(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 draw_trifans(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatTimer timer(_draw_primitive_pcollector);
+  //PStatTimer timer(_draw_primitive_pcollector);
   CPTA_int ends = reader->get_ends();
   _primitive_batches_trifan_pcollector.add_level(ends.size());
 
@@ -1328,7 +1328,7 @@ draw_trifans(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 draw_lines(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatTimer timer(_draw_primitive_pcollector);
+  //PStatTimer timer(_draw_primitive_pcollector);
   _vertices_other_pcollector.add_level(reader->get_num_vertices());
   _primitive_batches_other_pcollector.add_level(1);
 
@@ -1409,7 +1409,7 @@ draw_linestrips(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 draw_points(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatTimer timer(_draw_primitive_pcollector);
+  //PStatTimer timer(_draw_primitive_pcollector);
   _vertices_other_pcollector.add_level(reader->get_num_vertices());
   _primitive_batches_other_pcollector.add_level(1);
 
@@ -2340,8 +2340,10 @@ set_state_and_transform(const RenderState *target,
   }
 #endif
   _state_pcollector.add_level(1);
+  PStatTimer timer1(_draw_set_state_pcollector);
 
   if (transform != _internal_transform) {
+    //PStatTimer timer(_draw_set_state_transform_pcollector);
     _state_pcollector.add_level(1);
     _internal_transform = transform;
     do_issue_transform();
@@ -2355,7 +2357,7 @@ set_state_and_transform(const RenderState *target,
   int alpha_test_slot = AlphaTestAttrib::get_class_slot();
   if (_target_rs->get_attrib(alpha_test_slot) != _state_rs->get_attrib(alpha_test_slot) ||
       !_state_mask.get_bit(alpha_test_slot)) {
-    PStatTimer timer(_draw_set_state_alpha_test_pcollector);
+    //PStatTimer timer(_draw_set_state_alpha_test_pcollector);
     do_issue_alpha_test();
     _state_mask.set_bit(alpha_test_slot);
   }
@@ -2363,7 +2365,7 @@ set_state_and_transform(const RenderState *target,
   int clip_plane_slot = ClipPlaneAttrib::get_class_slot();
   if (_target_rs->get_attrib(clip_plane_slot) != _state_rs->get_attrib(clip_plane_slot) ||
       !_state_mask.get_bit(clip_plane_slot)) {
-    PStatTimer timer(_draw_set_state_clip_plane_pcollector);
+    //PStatTimer timer(_draw_set_state_clip_plane_pcollector);
     do_issue_clip_plane();
     _state_mask.set_bit(clip_plane_slot);
   }
@@ -2374,7 +2376,7 @@ set_state_and_transform(const RenderState *target,
       _target_rs->get_attrib(color_scale_slot) != _state_rs->get_attrib(color_scale_slot) ||
       !_state_mask.get_bit(color_slot) ||
       !_state_mask.get_bit(color_scale_slot)) {
-    PStatTimer timer(_draw_set_state_color_pcollector);
+    //PStatTimer timer(_draw_set_state_color_pcollector);
     do_issue_color();
     do_issue_color_scale();
     _state_mask.set_bit(color_slot);
@@ -2384,7 +2386,7 @@ set_state_and_transform(const RenderState *target,
   int cull_face_slot = CullFaceAttrib::get_class_slot();
   if (_target_rs->get_attrib(cull_face_slot) != _state_rs->get_attrib(cull_face_slot) ||
       !_state_mask.get_bit(cull_face_slot)) {
-    PStatTimer timer(_draw_set_state_cull_face_pcollector);
+    //PStatTimer timer(_draw_set_state_cull_face_pcollector);
     do_issue_cull_face();
     _state_mask.set_bit(cull_face_slot);
   }
@@ -2392,7 +2394,7 @@ set_state_and_transform(const RenderState *target,
   int depth_offset_slot = DepthOffsetAttrib::get_class_slot();
   if (_target_rs->get_attrib(depth_offset_slot) != _state_rs->get_attrib(depth_offset_slot) ||
       !_state_mask.get_bit(depth_offset_slot)) {
-    PStatTimer timer(_draw_set_state_depth_offset_pcollector);
+    //PStatTimer timer(_draw_set_state_depth_offset_pcollector);
     do_issue_depth_offset();
     _state_mask.set_bit(depth_offset_slot);
   }
@@ -2400,7 +2402,7 @@ set_state_and_transform(const RenderState *target,
   int depth_test_slot = DepthTestAttrib::get_class_slot();
   if (_target_rs->get_attrib(depth_test_slot) != _state_rs->get_attrib(depth_test_slot) ||
       !_state_mask.get_bit(depth_test_slot)) {
-    PStatTimer timer(_draw_set_state_depth_test_pcollector);
+    //PStatTimer timer(_draw_set_state_depth_test_pcollector);
     do_issue_depth_test();
     _state_mask.set_bit(depth_test_slot);
   }
@@ -2408,7 +2410,7 @@ set_state_and_transform(const RenderState *target,
   int depth_write_slot = DepthWriteAttrib::get_class_slot();
   if (_target_rs->get_attrib(depth_write_slot) != _state_rs->get_attrib(depth_write_slot) ||
       !_state_mask.get_bit(depth_write_slot)) {
-    PStatTimer timer(_draw_set_state_depth_write_pcollector);
+    //PStatTimer timer(_draw_set_state_depth_write_pcollector);
     do_issue_depth_write();
     _state_mask.set_bit(depth_write_slot);
   }
@@ -2416,7 +2418,7 @@ set_state_and_transform(const RenderState *target,
   int fog_slot = FogAttrib::get_class_slot();
   if (_target_rs->get_attrib(fog_slot) != _state_rs->get_attrib(fog_slot) ||
       !_state_mask.get_bit(fog_slot)) {
-    PStatTimer timer(_draw_set_state_fog_pcollector);
+    //PStatTimer timer(_draw_set_state_fog_pcollector);
     do_issue_fog();
     _state_mask.set_bit(fog_slot);
   }
@@ -2424,7 +2426,7 @@ set_state_and_transform(const RenderState *target,
   int render_mode_slot = RenderModeAttrib::get_class_slot();
   if (_target_rs->get_attrib(render_mode_slot) != _state_rs->get_attrib(render_mode_slot) ||
       !_state_mask.get_bit(render_mode_slot)) {
-    PStatTimer timer(_draw_set_state_render_mode_pcollector);
+    //PStatTimer timer(_draw_set_state_render_mode_pcollector);
     do_issue_render_mode();
     _state_mask.set_bit(render_mode_slot);
   }
@@ -2432,7 +2434,7 @@ set_state_and_transform(const RenderState *target,
   int rescale_normal_slot = RescaleNormalAttrib::get_class_slot();
   if (_target_rs->get_attrib(rescale_normal_slot) != _state_rs->get_attrib(rescale_normal_slot) ||
       !_state_mask.get_bit(rescale_normal_slot)) {
-    PStatTimer timer(_draw_set_state_rescale_normal_pcollector);
+    //PStatTimer timer(_draw_set_state_rescale_normal_pcollector);
     do_issue_rescale_normal();
     _state_mask.set_bit(rescale_normal_slot);
   }
@@ -2440,7 +2442,7 @@ set_state_and_transform(const RenderState *target,
   int shade_model_slot = ShadeModelAttrib::get_class_slot();
   if (_target_rs->get_attrib(shade_model_slot) != _state_rs->get_attrib(shade_model_slot) ||
       !_state_mask.get_bit(shade_model_slot)) {
-    PStatTimer timer(_draw_set_state_shade_model_pcollector);
+    //PStatTimer timer(_draw_set_state_shade_model_pcollector);
     do_issue_shade_model();
     _state_mask.set_bit(shade_model_slot);
   }
@@ -2454,7 +2456,7 @@ set_state_and_transform(const RenderState *target,
       !_state_mask.get_bit(transparency_slot) ||
       !_state_mask.get_bit(color_write_slot) ||
       !_state_mask.get_bit(color_blend_slot)) {
-    PStatTimer timer(_draw_set_state_blending_pcollector);
+    //PStatTimer timer(_draw_set_state_blending_pcollector);
     do_issue_blending();
     _state_mask.set_bit(transparency_slot);
     _state_mask.set_bit(color_write_slot);
@@ -2470,7 +2472,7 @@ set_state_and_transform(const RenderState *target,
       !_state_mask.get_bit(texture_slot) ||
       !_state_mask.get_bit(tex_matrix_slot) ||
       !_state_mask.get_bit(tex_gen_slot)) {
-    PStatTimer timer(_draw_set_state_texture_pcollector);
+    //PStatTimer timer(_draw_set_state_texture_pcollector);
     determine_target_texture();
 
     // For some mysterious and disturbing reason, making this call
@@ -2492,7 +2494,7 @@ set_state_and_transform(const RenderState *target,
   int material_slot = MaterialAttrib::get_class_slot();
   if (_target_rs->get_attrib(material_slot) != _state_rs->get_attrib(material_slot) ||
       !_state_mask.get_bit(material_slot)) {
-    PStatTimer timer(_draw_set_state_material_pcollector);
+    //PStatTimer timer(_draw_set_state_material_pcollector);
     do_issue_material();
     _state_mask.set_bit(material_slot);
   }
@@ -2500,7 +2502,7 @@ set_state_and_transform(const RenderState *target,
   int light_slot = LightAttrib::get_class_slot();
   if (_target_rs->get_attrib(light_slot) != _state_rs->get_attrib(light_slot) ||
       !_state_mask.get_bit(light_slot)) {
-    PStatTimer timer(_draw_set_state_light_pcollector);
+    //PStatTimer timer(_draw_set_state_light_pcollector);
     do_issue_light();
     _state_mask.set_bit(light_slot);
   }
@@ -2508,7 +2510,7 @@ set_state_and_transform(const RenderState *target,
   int stencil_slot = StencilAttrib::get_class_slot();
   if (_target_rs->get_attrib(stencil_slot) != _state_rs->get_attrib(stencil_slot) ||
       !_state_mask.get_bit(stencil_slot)) {
-    PStatTimer timer(_draw_set_state_stencil_pcollector);
+    //PStatTimer timer(_draw_set_state_stencil_pcollector);
     do_issue_stencil();
     _state_mask.set_bit(stencil_slot);
   }
@@ -2516,7 +2518,7 @@ set_state_and_transform(const RenderState *target,
   int scissor_slot = ScissorAttrib::get_class_slot();
   if (_target_rs->get_attrib(scissor_slot) != _state_rs->get_attrib(scissor_slot) ||
       !_state_mask.get_bit(scissor_slot)) {
-    PStatTimer timer(_draw_set_state_scissor_pcollector);
+    //PStatTimer timer(_draw_set_state_scissor_pcollector);
     do_issue_scissor();
     _state_mask.set_bit(scissor_slot);
   }
@@ -2581,7 +2583,7 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
 void DXGraphicsStateGuardian8::
 bind_light(DirectionalLight *light_obj, const NodePath &light, int light_id) {
   static PStatCollector _draw_set_state_light_bind_directional_pcollector("Draw:Set State:Light:Bind:Directional");
-  PStatTimer timer(_draw_set_state_light_bind_directional_pcollector);
+  //PStatTimer timer(_draw_set_state_light_bind_directional_pcollector);
 
   pair<DirectionalLights::iterator, bool> lookup = _dlights.insert(DirectionalLights::value_type(light, D3DLIGHT8()));
   D3DLIGHT8 &fdata = (*lookup.first).second;
