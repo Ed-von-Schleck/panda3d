@@ -4260,8 +4260,7 @@ void dx_stencil_function (StencilRenderStates::StencilRenderState stencil_render
 
   render_state_value = stencil_render_states -> get_stencil_render_state (stencil_render_state);
 
-  // DEBUG
-  if (false) {
+  if (dxgsg8_cat.is_debug()) {
     dxgsg8_cat.debug()
       << "SRS: " <<  StencilAttrib::stencil_render_state_name_array [stencil_render_state] << ", " << render_state_value << "\n";
   }
@@ -4341,8 +4340,7 @@ do_issue_stencil() {
   stencil_render_states = this -> _stencil_render_states;
   if (stencil && stencil_render_states) {
 
-    // DEBUG
-    if (false) {
+    if (dxgsg8_cat.is_debug()) {
       dxgsg8_cat.debug() << "STENCIL STATE CHANGE\n";
       dxgsg8_cat.debug() << "\n"
         << "SRS_front_enable " << stencil -> get_render_state (StencilAttrib::SRS_front_enable) << "\n"
@@ -4369,8 +4367,7 @@ do_issue_stencil() {
   }
   else {
 
-    // DEBUG
-    if (false) {
+    if (dxgsg8_cat.is_debug()) {
       dxgsg8_cat.debug() << "STENCIL STATE CHANGE TO OFF \n";
     }
 
