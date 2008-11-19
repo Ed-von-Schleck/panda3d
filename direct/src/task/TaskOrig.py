@@ -399,13 +399,13 @@ class TaskManager:
         # List of tasks scheduled to execute in the future
         self.__doLaterList = []
 
-        self._profileFrames = False
+        self._frameProfileQueue = Queue()
         self.MaxEpockSpeed = 1.0/30.0;   
 
         # this will be set when it's safe to import StateVar
         self._profileTasks = None
         self._taskProfiler = None
-        self._profileInfo = ScratchPad(
+        self._taskProfileInfo = ScratchPad(
             taskId = None,
             profiled = False,
             session = None,
@@ -450,6 +450,7 @@ class TaskManager:
     def destroy(self):
         if self._gcTask:
             self._gcTask.remove()
+        self._frameProfileQueue.clear()
         if self._doLaterTask:
             self._doLaterTask.remove()
         if self._taskProfiler:
@@ -806,9 +807,9 @@ class TaskManager:
     def __executeTask(self, task):
         task.setCurrentTimeFrame(self.currentTime, self.currentFrame)
         
-        # cache reference to profile info here, self._profileInfo might get swapped out
+        # cache reference to profile info here, self._taskProfileInfo might get swapped out
         # by the task when it runs
-        profileInfo = self._profileInfo
+        profileInfo = self._taskProfileInfo
         doProfile = (task.id == profileInfo.taskId)
         # don't profile the same task twice in a row
         doProfile = doProfile and (not profileInfo.profiled)
@@ -818,8 +819,8 @@ class TaskManager:
             
             # don't record timing info
             if doProfile:
-                profileSession = ProfileSession(Functor(task, *task.extraArgs),
-                                                'TASK_PROFILE:%s' % task.name)
+                profileSession = ProfileSession('TASK_PROFILE:%s' % task.name,
+                                                Functor(task, *task.extraArgs))
                 ret = profileSession.run()
                 # set these values *after* profiling in case we're profiling the TaskProfiler
                 profileInfo.session = profileSession
@@ -841,8 +842,8 @@ class TaskManager:
                 task.pstats.start()
             startTime = self.trueClock.getShortTime()
             if doProfile:
-                profileSession = ProfileSession(Functor(task, *task.extraArgs),
-                                                'profiled-task-%s' % task.name)
+                profileSession = ProfileSession('profiled-task-%s' % task.name,
+                                                Functor(task, *task.extraArgs))
                 ret = profileSession.run()
                 # set these values *after* profiling in case we're profiling the TaskProfiler
                 profileInfo.session = profileSession
@@ -971,11 +972,18 @@ class TaskManager:
                     self.__addNewTask(task)
         self.pendingTaskDict.clear()
 
-    def profileFrames(self, num=None):
-        self._profileFrames = True
+    def getProfileSession(self, name=None):
+        # call to get a profile session that you can modify before passing to profileFrames()
+        if name is None:
+            name = 'taskMgrFrameProfile'
+        return ProfileSession(name)
+
+    def profileFrames(self, num=None, session=None):
         if num is None:
             num = 1
-        self._profileFrameCount = num
+        if session is None:
+            session = self.getProfileSession()
+        self._frameProfileQueue.push((num, session))
     
 
     # in the event we want to do frame time managment.. this is the function to 
@@ -995,11 +1003,9 @@ class TaskManager:
             delta = minFinTime - self.globalClock.getRealTime();
     
 
-    @profiled()
-    def _doProfiledFrames(self, *args, **kArgs):
-        print '** profiling %s frames' % self._profileFrameCount
-        for i in xrange(self._profileFrameCount):
-            result = self.step(*args, **kArgs)
+    def _doProfiledFrames(self, numFrames):
+        for i in xrange(numFrames):
+            result = self.step()
         return result
 
     def getProfileTasks(self):
@@ -1024,10 +1030,10 @@ class TaskManager:
             self._taskProfiler.flush(name)
 
     def _setProfileTask(self, task):
-        if self._profileInfo.session:
-            self._profileInfo.session.release()
-            self._profileInfo.session = None
-        self._profileInfo = ScratchPad(
+        if self._taskProfileInfo.session:
+            self._taskProfileInfo.session.release()
+            self._taskProfileInfo.session = None
+        self._taskProfileInfo = ScratchPad(
             taskId = task.id,
             profiled = False,
             session = None,
@@ -1035,10 +1041,10 @@ class TaskManager:
 
     def _hasProfiledDesignatedTask(self):
         # have we run a profile of the designated task yet?
-        return self._profileInfo.profiled
+        return self._taskProfileInfo.profiled
 
-    def _getLastProfileSession(self):
-        return self._profileInfo.session
+    def _getLastTaskProfileSession(self):
+        return self._taskProfileInfo.session
 
     def _getRandomTask(self):
         numTasks = 0
@@ -1174,9 +1180,14 @@ class TaskManager:
             self.running = 1
             while self.running:
                 try:
-                    if self._profileFrames:
-                        self._profileFrames = False
-                        self._doProfiledFrames()
+                    if len(self._frameProfileQueue):
+                        numFrames, session = self._frameProfileQueue.pop()
+                        def _profileFunc(numFrames=numFrames):
+                            self._doProfiledFrames(numFrames)
+                        session.setFunc(_profileFunc)
+                        print '** profiling %s frames' % numFrames
+                        session.run()
+                        _profileFunc = None
                     else:
                         self.step()
                 except KeyboardInterrupt:

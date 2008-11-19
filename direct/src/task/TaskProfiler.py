@@ -15,7 +15,7 @@ class TaskTracker:
             # number of samples required before spikes start getting identified
             TaskTracker.MinSamples = config.GetInt('profile-task-spike-min-samples', 30)
             # defines spike as longer than this multiple of avg task duration
-            TaskTracker.SpikeThreshold = config.GetFloat('profile-task-spike-threshold', 10.)
+            TaskTracker.SpikeThreshold = TaskProfiler.GetDefaultSpikeThreshold()
     def destroy(self):
         self.flush()
         del self._namePrefix
@@ -65,8 +65,7 @@ class TaskTracker:
         if storeAvg:
             if self._avgSession:
                 self._avgSession.release()
-            session.acquire()
-            self._avgSession = session
+            self._avgSession = session.getReference()
 
     def getAvgDuration(self):
         return self._durationAverager.getAverage()
@@ -104,6 +103,17 @@ class TaskProfiler:
             tracker.destroy()
         del self._namePrefix2tracker
         del self._task
+        
+    @staticmethod
+    def GetDefaultSpikeThreshold():
+        return config.GetFloat('profile-task-spike-threshold', 10.)
+
+    @staticmethod
+    def SetSpikeThreshold(spikeThreshold):
+        TaskTracker.SpikeThreshold = spikeThreshold
+    @staticmethod
+    def GetSpikeThreshold():
+        return TaskTracker.SpikeThreshold
 
     def logProfiles(self, name=None):
         if name:
@@ -124,17 +134,19 @@ class TaskProfiler:
 
     def _setEnabled(self, enabled):
         if enabled:
+            self.notify.info('task profiler started')
             self._taskName = 'profile-tasks-%s' % id(self)
             taskMgr.add(self._doProfileTasks, self._taskName, priority=-200)
         else:
             taskMgr.remove(self._taskName)
             del self._taskName
+            self.notify.info('task profiler stopped')
         
     def _doProfileTasks(self, task=None):
         # gather data from the previous frame
         # set up for the next frame
         if (self._task is not None) and taskMgr._hasProfiledDesignatedTask():
-            session = taskMgr._getLastProfileSession()
+            session = taskMgr._getLastTaskProfileSession()
             # if we couldn't profile, throw this result out
             if session.profileSucceeded():
                 namePrefix = self._task.getNamePrefix()

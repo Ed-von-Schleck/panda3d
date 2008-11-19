@@ -1,4 +1,5 @@
 from pandac.libpandaexpressModules import TrueClock
+from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase.PythonUtil import (
     StdoutCapture, _installProfileCustomFuncs,_removeProfileCustomFuncs,
     _profileWithoutGarbageLeak, _getProfileResultFileInfo, _setProfileResultsFileInfo,
@@ -16,6 +17,11 @@ class PercentStats(pstats.Stats):
         # use this to set 'total time' to base time percentages on
         # allows profiles to show timing based on percentages of duration of another profile
         self._totalTime = tt
+
+    def add(self, *args, **kArgs):
+        pstats.Stats.add(self, *args, **kArgs)
+        # DCR -- don't need to record filenames
+        self.files = []
 
     def print_stats(self, *amount):
         for filename in self.files:
@@ -84,19 +90,31 @@ class ProfileSession:
     # 
     # implementation sidesteps memory leak in Python profile module,
     # and redirects file output to RAM file for efficiency
-    DefaultFilename = 'profilesession'
-    DefaultLines = 80
-    DefaultSorts = ['cumulative', 'time', 'calls']
-
     TrueClock = TrueClock.getGlobalPtr()
     
-    def __init__(self, func, name):
+    notify = directNotify.newCategory("ProfileSession")
+
+    def __init__(self, name, func=None, logAfterProfile=False):
         self._func = func
         self._name = name
+        self._logAfterProfile = logAfterProfile
         self._filenameBase = 'profileData-%s-%s' % (self._name, id(self))
         self._refCount = 0
+        # if true, accumulate profile results every time we run
+        # if false, throw out old results every time we run
+        self._aggregate = False
+        self._lines = 500
+        self._sorts = ['cumulative', 'time', 'calls']
+        self._callInfo = True
+        self._totalTime = None
         self._reset()
         self.acquire()
+
+    def getReference(self):
+        # call this when you want to store a new reference to this session that will
+        # manage its acquire/release reference count independently of an existing reference
+        self.acquire()
+        return self
 
     def acquire(self):
         self._refCount += 1
@@ -132,22 +150,24 @@ class ProfileSession:
         self._filenameCounter += 1
         return filename
 
-    def run(self, aggregate=True):
+    def run(self):
         # make sure this instance doesn't get destroyed inside self._func
         self.acquire()
 
-        if not aggregate:
+        if not self._aggregate:
             self._reset()
 
         # if we're already profiling, just run the func and don't profile
-        if 'globalProfileFunc' in __builtin__.__dict__:
+        if 'globalProfileSessionFunc' in __builtin__.__dict__:
+            self.notify.warning('could not profile %s' % self._func)
             result = self._func()
             if self._duration is None:
                 self._duration = 0.
         else:
             # put the function in the global namespace so that profile can find it
-            __builtin__.globalProfileFunc = self._func
-            __builtin__.globalProfileResult = [None]
+            assert callable(self._func)
+            __builtin__.globalProfileSessionFunc = self._func
+            __builtin__.globalProfileSessionResult = [None]
 
             # set up the RAM file
             self._filenames.append(self._getNextFilename())
@@ -156,7 +176,7 @@ class ProfileSession:
 
             # do the profiling
             Profile = profile.Profile
-            statement = 'globalProfileResult[0]=globalProfileFunc()'
+            statement = 'globalProfileSessionResult[0]=globalProfileSessionFunc()'
             sort = -1
             retVal = None
 
@@ -188,12 +208,15 @@ class ProfileSession:
             _removeProfileCustomFuncs(filename)
 
             # clean up the globals
-            result = globalProfileResult[0]
-            del __builtin__.__dict__['globalProfileFunc']
-            del __builtin__.__dict__['globalProfileResult']
+            result = globalProfileSessionResult[0]
+            del __builtin__.__dict__['globalProfileSessionFunc']
+            del __builtin__.__dict__['globalProfileSessionResult']
 
             self._successfulProfiles += 1
             
+            if self._logAfterProfile:
+                self.notify.info(self.getResults())
+
         self.release()
         return result
 
@@ -214,36 +237,98 @@ class ProfileSession:
         _removeProfileCustomFuncs(filename)
         # and discard it
         del self._filename2ramFile[filename]
+
+    def setName(self, name):
+        self._name = name
+    def getName(self):
+        return self._name
+
+    def setFunc(self, func):
+        self._func = func
+    def getFunc(self):
+        return self._func
+
+    def setAggregate(self, aggregate):
+        self._aggregate = aggregate
+    def getAggregate(self):
+        return self._aggregate
+
+    def setLogAfterProfile(self, logAfterProfile):
+        self._logAfterProfile = logAfterProfile
+    def getLogAfterProfile(self):
+        return self._logAfterProfile
     
+    def setLines(self, lines):
+        self._lines = lines
+    def getLines(self):
+        return self._lines
+
+    def setSorts(self, sorts):
+        self._sorts = sorts
+    def getSorts(self):
+        return self._sorts
+
+    def setShowCallInfo(self, showCallInfo):
+        self._showCallInfo = showCallInfo
+    def getShowCallInfo(self):
+        return self._showCallInfo
+
+    def setTotalTime(self, totalTime=None):
+        self._totalTime = totalTime
+    def resetTotalTime(self):
+        self._totalTime = None
+    def getTotalTime(self):
+        return self._totalTime
+
+    def aggregate(self, other):
+        # pull in stats from another ProfileSession
+        other._compileStats()
+        self._compileStats()
+        self._stats.add(other._stats)
+
+    def _compileStats(self):
+        # make sure our stats object exists and is up-to-date
+        statsChanged = (self._statFileCounter < len(self._filenames))
+
+        if self._stats is None:
+            for filename in self._filenames:
+                self._restoreRamFile(filename)
+            self._stats = PercentStats(*self._filenames)
+            self._statFileCounter = len(self._filenames)
+            for filename in self._filenames:
+                self._discardRamFile(filename)
+        else:
+            while self._statFileCounter < len(self._filenames):
+                filename = self._filenames[self._statFileCounter]
+                self._restoreRamFile(filename)
+                self._stats.add(filename)
+                self._discardRamFile(filename)
+        
+        if statsChanged:
+            self._stats.strip_dirs()
+            # throw out any cached result strings
+            self._resultCache = {}
+
+        return statsChanged
+
     def getResults(self,
-                   lines=200,
-                   sorts=['cumulative', 'time', 'calls'],
-                   callInfo=False,
-                   totalTime=None):
+                   lines=Default,
+                   sorts=Default,
+                   callInfo=Default,
+                   totalTime=Default):
         if not self.profileSucceeded():
             output = '%s: profiler already running, could not profile' % self._name
         else:
-            # make sure our stats object exists and is up-to-date
-            statsChanged = (self._statFileCounter < len(self._filenames))
-
-            if self._stats is None:
-                for filename in self._filenames:
-                    self._restoreRamFile(filename)
-                self._stats = PercentStats(*self._filenames)
-                self._statFileCounter = len(self._filenames)
-                for filename in self._filenames:
-                    self._discardRamFile(filename)
-            else:
-                while self._statFileCounter < len(self._filenames):
-                    filename = self._filenames[self._statFileCounter]
-                    self._restoreRamFile(filename)
-                    self._stats.add(filename)
-                    self._discardRamFile(filename)
-
-            if statsChanged:
-                self._stats.strip_dirs()
-                # throw out any cached result strings
-                self._resultCache = {}
+            if lines is Default:
+                lines = self._lines
+            if sorts is Default:
+                sorts = self._sorts
+            if callInfo is Default:
+                callInfo = self._callInfo
+            if totalTime is Default:
+                totalTime = self._totalTime
+            
+            self._compileStats()
 
             if totalTime is None:
                 totalTime = self._stats.total_tt
