@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -288,6 +284,17 @@ tag() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: MayaNodeDesc::untag
+//       Access: Private
+//  Description: Un-tags this node for conversion, but does not tag child
+//               nodes.
+////////////////////////////////////////////////////////////////////
+void MayaNodeDesc::
+untag() {
+  _tagged = false;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: MayaNodeDesc::tag_recursively
 //       Access: Private
 //  Description: Tags this node and all descendant nodes for
@@ -301,6 +308,23 @@ tag_recursively() {
   for (ci = _children.begin(); ci != _children.end(); ++ci) {
     MayaNodeDesc *child = (*ci);
     child->tag_recursively();
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaNodeDesc::untag_recursively
+//       Access: Private
+//  Description: Un-tags this node and all descendant nodes for
+//               conversion.
+////////////////////////////////////////////////////////////////////
+void MayaNodeDesc::
+untag_recursively() {
+  _tagged = false;
+
+  Children::const_iterator ci;
+  for (ci = _children.begin(); ci != _children.end(); ++ci) {
+    MayaNodeDesc *child = (*ci);
+    child->untag_recursively();
   }
 }
 
