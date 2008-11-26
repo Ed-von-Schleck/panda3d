@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -916,6 +912,31 @@ ai_format_update(const string &field_name, DOID_TYPE do_id,
   }
 
   return field->ai_format_update(do_id, to_id, from_id, args);
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: DCClass::ai_format_update_msg_type
+//       Access: Published
+//  Description: Generates a datagram containing the message necessary
+//               to send an update, using the indicated msg type
+//               for the indicated distributed
+//               object from the AI.
+////////////////////////////////////////////////////////////////////
+Datagram DCClass::
+ai_format_update_msg_type(const string &field_name, DOID_TYPE do_id, 
+                 CHANNEL_TYPE to_id, CHANNEL_TYPE from_id, int msg_type, PyObject *args) const {
+  DCField *field = get_field_by_name(field_name);
+  if (field == (DCField *)NULL) {
+    ostringstream strm;
+    strm << "No field named " << field_name << " in class " << get_name()
+         << "\n";
+    nassert_raise(strm.str());
+    return Datagram();
+  }
+
+  return field->ai_format_update_msg_type(do_id, to_id, from_id, msg_type, args);
 }
 #endif  // HAVE_PYTHON
 
