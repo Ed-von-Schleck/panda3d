@@ -9,6 +9,9 @@ import gc
 import types
 
 class FakeObject:
+    pass
+
+class FakeDelObject:
     def __del__(self):
         pass
 
@@ -16,6 +19,10 @@ def _createGarbage(num=1):
     for i in xrange(num):
         a = FakeObject()
         b = FakeObject()
+        a.other = b
+        b.other = a
+        a = FakeDelObject()
+        b = FakeDelObject()
         a.other = b
         b.other = a
 
@@ -29,7 +36,7 @@ class GarbageReport(Job):
 
     def __init__(self, name, log=True, verbose=False, fullReport=False, findCycles=True,
                  threaded=False, doneCallback=None, autoDestroy=False, priority=None,
-                 safeMode=False):
+                 safeMode=False, delOnly=False):
         # if autoDestroy is True, GarbageReport will self-destroy after logging
         # if false, caller is responsible for calling destroy()
         # if threaded is True, processing will be performed over multiple frames
@@ -37,7 +44,7 @@ class GarbageReport(Job):
         # stick the arguments onto a ScratchPad so we can delete them all at once
         self._args = ScratchPad(name=name, log=log, verbose=verbose, fullReport=fullReport,
                                 findCycles=findCycles, doneCallback=doneCallback,
-                                autoDestroy=autoDestroy, safeMode=safeMode)
+                                autoDestroy=autoDestroy, safeMode=safeMode, delOnly=delOnly)
         if priority is not None:
             self.setPriority(priority)
         jobMgr.add(self)
@@ -48,30 +55,34 @@ class GarbageReport(Job):
         # do the garbage collection
         oldFlags = gc.get_debug()
 
-        # do a collect without SAVEALL, to get the instances that define __del__
-        # cycles that do not involve any instances that define __del__ are cleaned up
-        # automatically by Python, but they also appear in gc.garbage when SAVEALL is set
-        gc.set_debug(0)
-        gc.collect()
-        garbageInstances = gc.garbage[:]
-        del gc.garbage[:]
-        # only yield if there's more time-consuming work to do,
-        # if there's no garbage, give instant feedback
-        if len(garbageInstances) > 0:
-            yield None
-        # don't repr the garbage list if we don't have to
-        if self.notify.getDebug():
-            self.notify.debug('garbageInstances == %s' % fastRepr(garbageInstances))
-
-        self.numGarbageInstances = len(garbageInstances)
-        # grab the ids of the garbage instances (objects with __del__)
-        self.garbageInstanceIds = set()
-        for i in xrange(len(garbageInstances)):
-            self.garbageInstanceIds.add(id(garbageInstances[i]))
-            if not (i % 20):
+        if self._args.delOnly:
+            # do a collect without SAVEALL, to identify the instances that are involved in
+            # cycles with instances that define __del__
+            # cycles that do not involve any instances that define __del__ are cleaned up
+            # automatically by Python, but they also appear in gc.garbage when SAVEALL is set
+            gc.set_debug(0)
+            gc.collect()
+            garbageInstances = gc.garbage[:]
+            del gc.garbage[:]
+            # only yield if there's more time-consuming work to do,
+            # if there's no garbage, give instant feedback
+            if len(garbageInstances) > 0:
                 yield None
-        # then release the list of instances so that it doesn't interfere with the gc.collect() below
-        del garbageInstances
+            # don't repr the garbage list if we don't have to
+            if self.notify.getDebug():
+                self.notify.debug('garbageInstances == %s' % fastRepr(garbageInstances))
+
+            self.numGarbageInstances = len(garbageInstances)
+            # grab the ids of the garbage instances (objects with __del__)
+            self.garbageInstanceIds = set()
+            for i in xrange(len(garbageInstances)):
+                self.garbageInstanceIds.add(id(garbageInstances[i]))
+                if not (i % 20):
+                    yield None
+            # then release the list of instances so that it doesn't interfere with the gc.collect() below
+            del garbageInstances
+        else:
+            self.garbageInstanceIds = set()
 
         # do a SAVEALL pass so that we have all of the objects involved in legitimate garbage cycles
         # without SAVEALL, gc.garbage only contains objects with __del__ methods
@@ -95,7 +106,7 @@ class GarbageReport(Job):
             yield None
 
         if self._args.verbose:
-            self.notify.info('found %s garbage instances' % self.numGarbageInstances)
+            self.notify.info('found %s garbage items' % self.numGarbage)
 
         """ spammy
         # print the types of the garbage first, in case the repr of an object
@@ -127,7 +138,7 @@ class GarbageReport(Job):
                 yield None
 
         # grab the referrers (pointing to garbage)
-        if self._args.fullReport and (self.numGarbageInstances != 0):
+        if self._args.fullReport and (self.numGarbage != 0):
             if self._args.verbose:
                 self.notify.info('getting referrers...')
             for i in xrange(self.numGarbage):
@@ -139,7 +150,7 @@ class GarbageReport(Job):
                 self.referrersByReference[i] = byRef
 
         # grab the referents (pointed to by garbage)
-        if self.numGarbageInstances > 0:
+        if self.numGarbage > 0:
             if self._args.verbose:
                 self.notify.info('getting referents...')
             for i in xrange(self.numGarbage):
@@ -151,7 +162,7 @@ class GarbageReport(Job):
                 self.referentsByReference[i] = byRef
 
         # find the cycles
-        if self._args.findCycles and self.numGarbageInstances > 0:
+        if self._args.findCycles and self.numGarbage > 0:
             if self._args.verbose:
                 self.notify.info('detecting cycles...')
             for i in xrange(self.numGarbage):
@@ -244,13 +255,16 @@ class GarbageReport(Job):
                         yield None
                         self.cycleIds.update(set(cycle))
 
+        self.numCycles = len(self.cycles)
+
         if self._args.findCycles:
-            s = ['===== GarbageReport: \'%s\' (%s __del__ instances, %s cycles) =====' % (
-                self._args.name, self.numGarbageInstances, len(self.cycles))]
+            s = ['===== GarbageReport: \'%s\' (%s %s) =====' % (
+                self._args.name, self.numCycles,
+                choice(self.numCycles == 1, 'cycle', 'cycles'))]
         else:
-            s = ['===== GarbageReport: \'%s\' (%s __del__ instances) =====' % (
-                self._args.name, self.numGarbageInstances)]
-        if self.numGarbageInstances > 0:
+            s = ['===== GarbageReport: \'%s\' =====' % (
+                self._args.name)]
+        if self.numGarbage > 0:
             # make a list of the ids we will actually be printing
             if self._args.fullReport:
                 garbageIndices = range(self.numGarbage)
@@ -336,7 +350,7 @@ class GarbageReport(Job):
         if self._args.log:
             self.printingBegin()
             for i in xrange(len(self._report)):
-                if self.numGarbageInstances > 0:
+                if self.numGarbage > 0:
                     yield None
                 self.notify.info(self._report[i])
             self.printingEnd()
@@ -450,8 +464,12 @@ class GarbageReport(Job):
                 break
             candidateCycle, curId, numDelInstances, resumeIndex = stateStack.pop()
             if self.notify.getDebug():
-                print 'restart: %s root=%s cur=%s numDelInstances=%s resume=%s' % (
-                    candidateCycle, rootId, curId, numDelInstances, resumeIndex)
+                if self._args.delOnly:
+                    print 'restart: %s root=%s cur=%s numDelInstances=%s resume=%s' % (
+                        candidateCycle, rootId, curId, numDelInstances, resumeIndex)
+                else:
+                    print 'restart: %s root=%s cur=%s resume=%s' % (
+                        candidateCycle, rootId, curId, resumeIndex)
             for index in xrange(resumeIndex, len(self.referentsByNumber[curId])):
                 yield None
                 refId = self.referentsByNumber[curId][index]
@@ -464,7 +482,7 @@ class GarbageReport(Job):
                     if not normCandidateCycleTuple in uniqueCycleSets:
                         # cycles with no instances that define __del__ will be
                         # cleaned up by Python
-                        if numDelInstances >= 1:
+                        if (not self._args.delOnly) or numDelInstances >= 1:
                             if self.notify.getDebug():
                                 print '  FOUND: ', normCandidateCycle + [normCandidateCycle[0],]
                             cycles.append(normCandidateCycle + [normCandidateCycle[0],])
