@@ -752,10 +752,6 @@ class Actor(DirectObject, NodePath):
         away. """
 
         self.__LODAnimation = (farDistance, nearDistance, delayFactor)
-
-        # Temporary hasattr for old Panda.
-        if not hasattr(Character, 'setLodAnimation'):
-            return
         
         for lodData in self.__partBundleDict.values():
             for partData in lodData.values():
@@ -769,10 +765,6 @@ class Actor(DirectObject, NodePath):
         """
 
         self.__LODAnimation = None
-
-        # Temporary hasattr for old Panda.
-        if not hasattr(Character, 'setLodAnimation'):
-            return
 
         for lodData in self.__partBundleDict.values():
             for partData in lodData.values():
@@ -1244,7 +1236,7 @@ class Actor(DirectObject, NodePath):
         if joint == None:
             Actor.notify.warning("no joint named %s!" % (jointName))
             return None
-        return joint.getInitialValue()
+        return joint.getDefaultValue()
 
 
     def controlJoint(self, node, partName, jointName, lodName="lodRoot"):
@@ -1271,7 +1263,7 @@ class Actor(DirectObject, NodePath):
                 node = self.attachNewNode(ModelNode(jointName))
                 joint = bundle.findChild(jointName)
                 if joint and isinstance(joint, MovingPartMatrix):
-                    node.setMat(joint.getInitialValue())
+                    node.setMat(joint.getDefaultValue())
 
             if bundle.controlJoint(jointName, node.node()):
                 anyGood = True
@@ -2300,9 +2292,7 @@ class Actor(DirectObject, NodePath):
         to be loaded immediately. """
 
         for bundle in self.getPartBundles(partName = partName):
-            # Temporary hasattr for old Pandas.
-            if hasattr(bundle, 'waitPending'):
-                bundle.waitPending()
+            bundle.waitPending()
 
     def __bindAnimToPart(self, animName, partName, lodName,
                          allowAsyncBind = True):
