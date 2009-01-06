@@ -168,12 +168,7 @@ class ShowBase(DirectObject.DirectObject):
 
         self.hidden = NodePath('hidden')
 
-        # Temporary hasattr for old pandas.
-        if hasattr(GraphicsEngine, 'getGlobalPtr'):
-            self.graphicsEngine = GraphicsEngine.getGlobalPtr()
-        else:
-            self.graphicsEngine = GraphicsEngine()
-
+        self.graphicsEngine = GraphicsEngine.getGlobalPtr()
         self.setupRender()
         self.setupRender2d()
         self.setupDataGraph()
@@ -1093,6 +1088,11 @@ class ShowBase(DirectObject.DirectObject):
         # region (see the comment in setupRender2d, above).
         dr.setClearDepthActive(1)
 
+        # Make any texture reloads on the gui come up first, before
+        # textures on the rest of the scene, and before the default
+        # asynchronous animation load priority (100).
+        dr.setTextureReloadPriority(200)
+
         left, right, bottom, top = coords
 
         # Now make a new Camera node.
@@ -1133,6 +1133,8 @@ class ShowBase(DirectObject.DirectObject):
 
         # Unlike render2d, we don't clear the depth buffer for
         # render2dp.  Caveat emptor.
+
+        dr.setTextureReloadPriority(250)
 
         left, right, bottom, top = coords
 
