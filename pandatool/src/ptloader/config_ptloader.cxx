@@ -24,6 +24,10 @@
 #include "config_xfile.h"
 #include "xFileToEggConverter.h"
 
+#ifdef HAVE_FCOLLADA
+#include "daeToEggConverter.h"
+#endif
+
 #include "dconfig.h"
 #include "loaderFileTypeRegistry.h"
 #include "eggData.h"
@@ -78,6 +82,11 @@ init_libptloader() {
   init_libxfile();
   XFileToEggConverter *xfile = new XFileToEggConverter;
   reg->register_type(new LoaderFileTypePandatool(xfile));
+
+#ifdef HAVE_FCOLLADA
+  DAEToEggConverter *dae = new DAEToEggConverter;
+  reg->register_type(new LoaderFileTypePandatool(dae));
+#endif
 
 #ifdef HAVE_MAYA
   // Register the Maya converter as a deferred type.  We don't compile
