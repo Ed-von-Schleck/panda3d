@@ -699,6 +699,7 @@ bool Texture::
 reload() {
   MutexHolder holder(_lock);
   if (_loaded_from_image && !_fullpath.empty()) {
+    do_clear_ram_image();
     do_unlock_and_reload_ram_image(true);
     return do_has_ram_image();
   }
@@ -2999,10 +3000,11 @@ do_reload_ram_image(bool allow_compression) {
           // instance, we don't want to change the filter type or the
           // border color or anything--we just want to get the image and
           // necessary associated parameters.
-          do_reconsider_image_properties(tex->get_x_size(), tex->get_y_size(),
-                                         tex->get_num_components(), 
-                                         tex->get_component_type(), 0,
-                                         LoaderOptions());
+          _x_size = tex->get_x_size();
+          _y_size = tex->get_y_size();
+          _num_components = tex->get_num_components();
+          _format = tex->get_format();
+          _component_type = tex->get_component_type();
           _compression = tex->get_compression();
           _ram_image_compression = tex->_ram_image_compression;
           _ram_images = tex->_ram_images;
@@ -3027,12 +3029,20 @@ do_reload_ram_image(bool allow_compression) {
   }
 
   _loaded_from_image = false;
+  Format orig_format = _format;
+  int orig_num_components = _num_components;
 
   LoaderOptions options;
   options.set_texture_flags(LoaderOptions::TF_preload);
   do_read(_fullpath, _alpha_fullpath,
           _primary_file_num_channels, _alpha_file_channel,
           z, n, _has_read_pages, _has_read_mipmaps, options, NULL);
+
+  if (orig_num_components == _num_components) {
+    // Restore the original format, in case it was needlessly changed
+    // during the reload operation.
+    _format = orig_format;
+  }
 
   if (do_has_ram_image() && record != (BamCacheRecord *)NULL) {
     if (cache->get_cache_textures() || (_ram_image_compression != CM_off && cache->get_cache_compressed_textures())) {
@@ -3662,6 +3672,149 @@ do_get_uncompressed_ram_image() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_ram_image_as
+//       Access: Published
+//  Description: Returns the uncompressed system-RAM image data
+//               associated with the texture, but rather than
+//               just returning a pointer to the data, like
+//               get_uncompressed_ram_image, this function first
+//               processes the data, reorders the components using
+//               the specified format string, and fills these into
+//               a new area. The 'format' arugment should specify
+//               in which order the components of the texture
+//               must be. For example, valid format strings are
+//               "RGBA", "GA", "ABRG" or "AAA". A component can
+//               also be written as "0" or "1", which means an
+//               empty/black or a full/white channel, respectively.
+//               This function is particularly useful to
+//               copy an image in-memory to a different library
+//               (for example, PIL or wxWidgets) that require
+//               a different component order than Panda's internal
+//               format, BGRA. Note, however, that this conversion
+//               can still be too slow if you want to do it every
+//               frame, and should thus be avoided for that purpose.
+//               The only requirement for the reordering is that
+//               an uncompressed image must be available. If the
+//               RAM image is compressed, it will attempt to re-load
+//               the texture from disk, if it doesn't find an
+//               uncompressed image there, it will return NULL.
+////////////////////////////////////////////////////////////////////
+CPTA_uchar Texture::
+get_ram_image_as(const string &requested_format) {
+  MutexHolder holder(_lock);
+  string format = upcase(requested_format);
+  
+  // Make sure we can grab something that's uncompressed.
+  CPTA_uchar data = do_get_uncompressed_ram_image();
+  if (data == NULL) {
+    gobj_cat.error() << "Couldn't find an uncompressed RAM image!\n";
+    return CPTA_uchar(get_class_type());
+  }
+  int imgsize = _x_size * _y_size;
+  nassertr(_num_components > 0 && _num_components <= 4, CPTA_uchar(get_class_type()));
+  nassertr(data.size() == _component_width * _num_components * imgsize, CPTA_uchar(get_class_type()));
+  
+  // Check if the format is already what we have internally.
+  if ((_num_components == 1 && format.size() == 1) || 
+      (_num_components == 2 && format.size() == 2 && format.at(1) == 'A' && format.at(0) != 'A') ||
+      (_num_components == 3 && format == "BGR") ||
+      (_num_components == 4 && format == "BGRA")) {
+    // The format string is already our format, so we just need to copy it.
+    return CPTA_uchar(data);
+  }
+  
+  // Create a new empty array that can hold our image.
+  PTA_uchar newdata = PTA_uchar::empty_array(imgsize * format.size() * _component_width, get_class_type());
+
+  // These ifs are for optimization of commonly used image types.
+  if (format == "RGBA" && _num_components == 4 && _component_width == 1) {
+    imgsize *= 4;
+    for (int p = 0; p < imgsize; p += 4) {
+      newdata[p    ] = data[p + 2];
+      newdata[p + 1] = data[p + 1];
+      newdata[p + 2] = data[p    ];
+      newdata[p + 3] = data[p + 3];
+    }
+    return newdata;
+  }
+  if (format == "RGB" && _num_components == 3 && _component_width == 1) {
+    imgsize *= 3;
+    for (int p = 0; p < imgsize; p += 3) {
+      newdata[p    ] = data[p + 2];
+      newdata[p + 1] = data[p + 1];
+      newdata[p + 2] = data[p    ];
+    }
+    return newdata;
+  }
+  if (format == "A" && _component_width == 1 && _num_components != 3) {
+    // We can generally rely on alpha to be the last component.
+    int component = _num_components - 1;
+    for (int p = 0; p < imgsize; ++p) {
+      newdata[p] = data[component];
+    }
+    return newdata;
+  }
+  if (_component_width == 1) {
+    for (int p = 0; p < imgsize; ++p) {
+      for (uchar s = 0; s < format.size(); ++s) {
+        char component = -1;
+        if (format.at(s) == 'B' || (_num_components <= 2 && format.at(s) != 'A')) {
+          component = 0;
+        } else if (format.at(s) == 'G') {
+          component = 1;
+        } else if (format.at(s) == 'R') {
+          component = 2;
+        } else if (format.at(s) == 'A') {
+          nassertr(_num_components != 3, CPTA_uchar(get_class_type()));
+          component = _num_components - 1;
+        } else if (format.at(s) == '0') {
+          newdata[p * format.size() + s] =  0;
+        } else if (format.at(s) == '1') {
+          newdata[p * format.size() + s] = -1;
+        } else {
+          gobj_cat.error() << "Unexpected component character '"
+            << format.at(s) << "', expected one of RGBA!\n";
+          return CPTA_uchar(get_class_type());
+        }
+        if (component >= 0) {
+          newdata[p * format.size() + s] = data[p * _num_components + component];
+        }
+      }
+    }
+    return newdata;
+  }
+  for (int p = 0; p < imgsize; ++p) {
+    for (uchar s = 0; s < format.size(); ++s) {
+      char component = -1;
+      if (format.at(s) == 'B' || (_num_components <= 2 && format.at(s) != 'A')) {
+        component = 0;
+      } else if (format.at(s) == 'G') {
+        component = 1;
+      } else if (format.at(s) == 'R') {
+        component = 2;
+      } else if (format.at(s) == 'A') {
+        nassertr(_num_components != 3, CPTA_uchar(get_class_type()));
+        component = _num_components - 1;
+      } else if (format.at(s) == '0') {
+        memset((void*)(newdata + (p * format.size() + s) * _component_width),  0, _component_width);
+      } else if (format.at(s) == '1') {
+        memset((void*)(newdata + (p * format.size() + s) * _component_width), -1, _component_width);
+      } else {
+        gobj_cat.error() << "Unexpected component character '"
+          << format.at(s) << "', expected one of RGBA!\n";
+        return CPTA_uchar(get_class_type());
+      }
+      if (component >= 0) {
+        memcpy((void*)(newdata + (p * format.size() + s) * _component_width),
+               (void*)(data + (p * _num_components + component) * _component_width),
+               _component_width);
+      }
+    }
+  }
+  return newdata;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Texture::do_set_simple_ram_image
 //       Access: Protected
 //  Description: 
@@ -4219,7 +4372,7 @@ read_dds_level_generic_uncompressed(Texture *tex, const DDSHeader &header,
       }
     }
     nassertr(p <= image.p() + size, false);
-    for (int b = 0; b < skip_bytes; ++b) {
+    for (int bi = 0; bi < skip_bytes; ++bi) {
       in.get();
     }
   }

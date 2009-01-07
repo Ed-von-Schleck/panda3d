@@ -1827,6 +1827,13 @@ reset() {
       << "\n";
   }
 
+  if (support_stencil) {
+    int min_stencil = D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE | D3DSTENCILCAPS_INCR | D3DSTENCILCAPS_DECR;
+    if ((d3d_caps.StencilCaps & min_stencil) == min_stencil) {
+      _supports_stencil = true;
+    }
+  }
+
   _max_vertices_per_array = d3d_caps.MaxVertexIndex;
   _max_vertices_per_primitive = d3d_caps.MaxPrimitiveCount;
 
@@ -4334,6 +4341,9 @@ void dx_set_stencil_functions (StencilRenderStates *stencil_render_states) {
 ////////////////////////////////////////////////////////////////////
 void DXGraphicsStateGuardian8::
 do_issue_stencil() {
+  if (!_supports_stencil) {
+    return;
+  }
 
   StencilRenderStates *stencil_render_states;
   const StencilAttrib *stencil = DCAST(StencilAttrib, _target_rs->get_attrib_def(StencilAttrib::get_class_slot()));
