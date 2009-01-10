@@ -3262,7 +3262,9 @@ do_compress_ram_image(Texture::CompressionMode compression,
         break;
         
       case QL_normal:
-        squish_flags |= squish::kColourClusterFit;
+        // ColourClusterFit is just too slow for everyday use.
+        squish_flags |= squish::kColourRangeFit;
+        // squish_flags |= squish::kColourClusterFit;
         break;
         
       case QL_best:

@@ -107,7 +107,7 @@ ConfigVariableBool compressed_textures
 	  "Texture::CM_on."));
 
 ConfigVariableBool cpu_compress_textures
-("cpu-compress-textures", true,
+("cpu-compress-textures", false,
  PRC_DESC("Set this true to use the squish library to compress textures on "
           "the CPU, as they are loaded, rather than to hand them off to "
           "the graphics driver to compress them.  This will be done "
