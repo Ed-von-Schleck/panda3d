@@ -2087,7 +2087,11 @@ do_read(const Filename &fullpath, const Filename &alpha_fullpath,
     // image now.
     do_clear_ram_image();
   } else {
-    consider_auto_compress_ram_image();
+    if ((options.get_texture_flags() & LoaderOptions::TF_preload) != 0) {
+      // If we intend to keep the ram image around, consider
+      // compressing it.
+      consider_auto_compress_ram_image();
+    }
   }
 
   return true;
@@ -2805,7 +2809,7 @@ do_write_one(const Filename &fullpath, int z, int n) const {
 bool Texture::
 do_store_one(PNMImage &pnmimage, int z, int n) const {
   // First, reload the ram image if necessary.
-  ((Texture *)this)->do_get_ram_image();
+  ((Texture *)this)->do_get_uncompressed_ram_image();
 
   nassertr(do_has_ram_mipmap_image(n), false);
   nassertr(z >= 0 && z < do_get_expected_mipmap_z_size(n), false);
@@ -3166,8 +3170,9 @@ consider_auto_compress_ram_image() {
       if (gsg != (GraphicsStateGuardianBase *)NULL) {
         if (do_compress_ram_image(compression, QL_default, gsg)) {
           gobj_cat.info()
-            << "Compressing " << get_name() << " with " 
+            << "Compressed " << get_name() << " with " 
             << _ram_image_compression << "\n";
+          return true;
         }
       }
     }
@@ -3854,7 +3859,7 @@ do_get_uncompressed_ram_image() {
     // uncompress it first.
     if (do_uncompress_ram_image()) {
       gobj_cat.info()
-        << "Uncompressing " << get_name() << "\n";
+        << "Uncompressed " << get_name() << "\n";
       return _ram_images[0]._image;
     }
   }
