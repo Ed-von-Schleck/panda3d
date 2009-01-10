@@ -2478,6 +2478,7 @@ do_read_txo(istream &in, const string &filename) {
     return false;
   }
 
+  Namable::operator = (*other);
   do_assign(*other);
   _loaded_from_image = true;
   _loaded_from_txo = true;
@@ -3163,7 +3164,11 @@ consider_auto_compress_ram_image() {
     if (compression != CM_off && _ram_image_compression == CM_off) {
       GraphicsStateGuardianBase *gsg = GraphicsStateGuardianBase::get_default_gsg();
       if (gsg != (GraphicsStateGuardianBase *)NULL) {
-        return do_compress_ram_image(compression, QL_default, gsg);
+        if (do_compress_ram_image(compression, QL_default, gsg)) {
+          gobj_cat.info()
+            << "Compressing " << get_name() << " with " 
+            << _ram_image_compression << "\n";
+        }
       }
     }
   }
@@ -3844,6 +3849,17 @@ do_get_ram_image() {
 ////////////////////////////////////////////////////////////////////
 CPTA_uchar Texture::
 do_get_uncompressed_ram_image() {
+  if (!_ram_images.empty() && _ram_image_compression != CM_off) {
+    // We have an image in-ram, but it's compressed.  Try to
+    // uncompress it first.
+    if (do_uncompress_ram_image()) {
+      gobj_cat.info()
+        << "Uncompressing " << get_name() << "\n";
+      return _ram_images[0]._image;
+    }
+  }
+
+  // Couldn't uncompress the existing image.  Try to reload it.
   if (_loaded_from_image && (!do_has_ram_image() || _ram_image_compression != CM_off) && !_fullpath.empty()) {
     do_unlock_and_reload_ram_image(false);
   }
