@@ -5376,8 +5376,8 @@ do_squish(Texture::CompressionMode compression, int squish_flags) {
           }
           squish::CompressMasked(tb, mask, d, squish_flags);
           d += cell_size;
+          Thread::consider_yield();
         }
-        Thread::consider_yield();
       }
     }
     compressed_ram_images.push_back(compressed_image);
