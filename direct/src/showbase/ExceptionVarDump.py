@@ -1,12 +1,9 @@
 from pandac.PandaModules import ConfigConfigureGetConfigConfigShowbase as config
-from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase.PythonUtil import fastRepr
 from exceptions import Exception
 import sys
 import types
 import traceback
-
-notify = directNotify.newCategory("ExceptionVarDump")
 
 reentry = 0
 
@@ -57,24 +54,31 @@ def _varDump__print(exc):
                 s += '::%s = %s\n' % (var, rep)
         exc._savedExcString = s
         exc._savedStackFrames = None
-    notify.info(exc._savedExcString)
+    print exc._savedExcString
     sReentry -= 1
+
+def doPrint(s):
+    print s
 
 oldExcepthook = None
 # store these values here so that Task.py can always reliably access them
 # from its main exception handler
 wantVariableDump = False
 dumpOnExceptionInit = False
+outputFunc = doPrint
+installed = False
 
 class _AttrNotFound:
     pass
 
 def _excepthookDumpVars(eType, eValue, tb):
     excStrs = traceback.format_exception(eType, eValue, tb)
-    s = 'printing traceback in case variable repr crashes the process...\n'
+    s = ''
     for excStr in excStrs:
         s += excStr
-    notify.info(s)
+    print s
+    # don't warn about C++ reprs if we're doing an OTP variable dump
+    warn = not config.GetBool('want-otp-variable-dump', 0)
     s = 'DUMPING STACK FRAME VARIABLES'
     origTb = tb
     #import pdb;pdb.set_trace()
@@ -121,8 +125,8 @@ def _excepthookDumpVars(eType, eValue, tb):
 
         while len(stateStack) > 0:
             name, obj, traversedIds = stateStack.pop()
-            #notify.info('%s, %s, %s' % (name, fastRepr(obj), traversedIds))
-            r = fastRepr(obj, maxLen=10)
+            #print '%s, %s, %s' % (name, fastRepr(obj, warn=True), traversedIds)
+            r = fastRepr(obj, maxLen=10, warn=warn)
             if type(r) is types.StringType:
                 r = r.replace('\n', '\\n')
             s += '\n    %s = %s' % (name, r)
@@ -157,14 +161,23 @@ def _excepthookDumpVars(eType, eValue, tb):
 
     if foundRun:
         s += '\n'
-        notify.info(s)
+        outputFunc(s)
     oldExcepthook(eType, eValue, origTb)
+
+def setOutputFunc(func):
+    global outputFunc
+    outputFunc = func
 
 def install():
     global oldExcepthook
     global wantVariableDump
     global dumpOnExceptionInit
+    global installed
 
+    if installed:
+        return
+
+    installed = True
     wantVariableDump = True
     dumpOnExceptionInit = config.GetBool('variable-dump-on-exception-init', 0)
     if dumpOnExceptionInit:

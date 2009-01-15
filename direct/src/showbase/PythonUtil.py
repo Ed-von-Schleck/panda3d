@@ -2461,20 +2461,21 @@ def _getSafeReprNotify():
     from direct.directnotify.DirectNotifyGlobal import directNotify
     safeReprNotify = directNotify.newCategory("safeRepr")
 
-def safeRepr(obj):
-    global dtoolSuperBase
-    if dtoolSuperBase is None:
-        _getDtoolSuperBase()
-
-    global safeReprNotify
-    if safeReprNotify is None:
-        _getSafeReprNotify()
-
-    if isinstance(obj, dtoolSuperBase):
+def safeRepr(obj, warn=False):
+    if warn:
         # repr of C++ object could crash, particularly if the object has been deleted
-        # log that we're calling repr
-        safeReprNotify.info('calling repr on instance of %s.%s' % (obj.__class__.__module__, obj.__class__.__name__))
-        sys.stdout.flush()
+        # log a warning that we're calling repr
+        global dtoolSuperBase
+        if dtoolSuperBase is None:
+            _getDtoolSuperBase()
+
+        global safeReprNotify
+        if safeReprNotify is None:
+            _getSafeReprNotify()
+
+        if isinstance(obj, dtoolSuperBase):
+            safeReprNotify.info('calling repr on instance of %s.%s' % (obj.__class__.__module__, obj.__class__.__name__))
+            sys.stdout.flush()
 
     try:
         return repr(obj)
@@ -2500,7 +2501,7 @@ def safeReprTypeOnFail(obj):
 
 
 
-def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
+def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None, warn=False):
     """ caps the length of iterable types, so very large objects will print faster.
     also prevents infinite recursion """
     try:
@@ -2548,11 +2549,11 @@ def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
             if maxLen is not None:
                 maxLen *= strFactor
             if maxLen is not None and len(obj) > maxLen:
-                return safeRepr(obj[:maxLen])
+                return safeRepr(obj[:maxLen], warn=warn)
             else:
-                return safeRepr(obj)
+                return safeRepr(obj, warn=warn)
         else:
-            r = safeRepr(obj)
+            r = safeRepr(obj, warn=warn)
             maxLen *= strFactor
             if len(r) > maxLen:
                 r = r[:maxLen]
