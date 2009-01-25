@@ -2717,7 +2717,7 @@ update_texture(TextureContext *tc, bool force) {
   if (gtc->was_image_modified()) {
     // If the texture image was modified, reload the texture.  This
     // means we also re-specify the properties for good measure.
-    specify_texture(gtc->get_texture());
+    specify_texture(gtc);
     bool okflag = upload_texture(gtc, force);
     if (!okflag) {
       GLCAT.error()
@@ -2728,8 +2728,20 @@ update_texture(TextureContext *tc, bool force) {
   } else if (gtc->was_properties_modified()) {
     // If only the properties have been modified, we don't necessarily
     // need to reload the texture.
-    specify_texture(gtc->get_texture());
-    gtc->mark_loaded();
+    if (specify_texture(gtc)) {
+      // Actually, looks like the texture *does* need to be reloaded.
+      bool okflag = upload_texture(gtc, force);
+      if (!okflag) {
+        GLCAT.error()
+          << "Could not load " << *gtc->get_texture() << "\n";
+        return false;
+      }
+
+    } else {
+      // The texture didn't need reloading, but mark it fully updated
+      // now.
+      gtc->mark_loaded();
+    }
   }
   gtc->enqueue_lru(&_prepared_objects->_graphics_memory_lru);
 
@@ -3380,7 +3392,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   CLP(TextureContext) *gtc = DCAST(CLP(TextureContext), tc);
 
   apply_texture(gtc);
-  specify_texture(tex);
+  bool needs_reload = specify_texture(gtc);
 
   GLenum target = get_texture_target(tex->get_texture_type());
   GLint internal_format = get_internal_image_format(tex);
@@ -3395,7 +3407,12 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
     }
   }
 
-  bool new_image = gtc->was_image_modified();
+  bool new_image = needs_reload || gtc->was_image_modified();
+  if (internal_format != gtc->_internal_format) {
+    // If the internal format has changed, we need to reload the
+    // image.
+    new_image = true;
+  }
   if (z >= 0) {
     // Copy to a cube map face.
     target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + z;
@@ -6839,14 +6856,17 @@ do_issue_tex_gen() {
 ////////////////////////////////////////////////////////////////////
 //     Function: GLGraphicsStateGuardian::specify_texture
 //       Access: Protected
-//  Description: Specifies the texture parameters.
+//  Description: Specifies the texture parameters.  Returns true if
+//               the texture may need to be reloaded.
 ////////////////////////////////////////////////////////////////////
-void CLP(GraphicsStateGuardian)::
-specify_texture(Texture *tex) {
+bool CLP(GraphicsStateGuardian)::
+specify_texture(CLP(TextureContext) *gtc) {
+  Texture *tex = gtc->get_texture();
+
   GLenum target = get_texture_target(tex->get_texture_type());
   if (target == GL_NONE) {
     // Unsupported target (e.g. 3-d texturing on GL 1.1).
-    return;
+    return false;
   }
 
   GLP(TexParameteri)(target, GL_TEXTURE_WRAP_S,
@@ -6918,6 +6938,14 @@ specify_texture(Texture *tex) {
   }
 
   report_my_gl_errors();
+
+  if (uses_mipmaps && !gtc->_uses_mipmaps) {
+    // Suddenly we require mipmaps.  This means the texture may need
+    // reloading.
+    return true;
+  }
+
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -7294,6 +7322,13 @@ upload_texture_image(CLP(TextureContext) *gtc,
       gtc->_depth != depth) {
     // We need to reload a new image.
 
+    if (GLCAT.is_debug()) {
+      GLCAT.debug()
+        << "loading new texture object, " << width << " x " << height
+        << " x " << depth << ", mipmaps " << num_ram_mipmap_levels 
+        << ", uses_mipmaps = " << uses_mipmaps << "\n";
+    }
+
     if (num_ram_mipmap_levels == 0) {
       if (external_format == GL_DEPTH_STENCIL_EXT) {
         GLP(TexImage2D)(page_target, 0, internal_format,
@@ -7385,6 +7420,14 @@ upload_texture_image(CLP(TextureContext) *gtc,
   } else {
     // We can reload the image over the previous image, possibly
     // saving on texture memory fragmentation.
+
+    if (GLCAT.is_debug()) {
+      GLCAT.debug()
+        << "subloading existing texture object, " << width << " x " << height
+        << " x " << depth << ", mipmaps " << num_ram_mipmap_levels
+        << ", uses_mipmaps = " << uses_mipmaps << "\n";
+    }
+
     for (int n = mipmap_bias; n < num_ram_mipmap_levels; ++n) {
       const unsigned char *image_ptr = tex->get_ram_mipmap_image(n);
       if (image_ptr == (const unsigned char *)NULL) {
@@ -7734,7 +7777,14 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
   }
   report_my_gl_errors();
 
-  GLint internal_format;
+  if (width <= 0 || height <= 0 || depth <= 0) {
+    GLCAT.error()
+      << "No texture data for " << tex->get_name() << "\n";
+    return false;
+  }
+
+  GLint internal_format = 0;
+
   GLP(GetTexLevelParameteriv)(page_target, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
 
   // Make sure we were able to query those parameters properly.
@@ -7761,6 +7811,7 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
     format = Texture::F_depth_stencil;
     break;
   case GL_RGBA:
+  case 4:
     format = Texture::F_rgba;
     break;
   case GL_RGBA4:
@@ -7775,6 +7826,7 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
     break;
 
   case GL_RGB:
+  case 3:
     format = Texture::F_rgb;
     break;
   case GL_RGB5:
@@ -7805,9 +7857,11 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
     format = Texture::F_alpha;
     break;
   case GL_LUMINANCE:
+  case 1:
     format = Texture::F_luminance;
     break;
   case GL_LUMINANCE_ALPHA:
+  case 2:
     format = Texture::F_luminance_alpha;
     break;
 
@@ -7856,6 +7910,12 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
     format = Texture::F_rgba;
     compression = Texture::CM_fxt1;
     break;
+
+  default:
+    GLCAT.warning()
+      << "Unhandled internal format for " << tex->get_name()
+      << " : " << hex << "0x" << internal_format << dec << "\n";
+    return false;
   }
 
   // We don't want to call setup_texture() again; that resets too
@@ -8022,7 +8082,7 @@ extract_texture_image(PTA_uchar &image, size_t &page_size,
       << "Unable to extract texture for " << *tex
       << ", mipmap level " << n
       << " : " << get_error_string(error_code) << "\n";
-
+    nassertr(false, false);
     return false;
   }
 
