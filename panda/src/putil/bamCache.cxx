@@ -114,7 +114,6 @@ BamCache::
 ////////////////////////////////////////////////////////////////////
 void BamCache::
 set_root(const Filename &root) {
-  ReMutexHolder holder(_lock);
   flush_index();
   _root = root;
 
@@ -160,7 +159,6 @@ set_root(const Filename &root) {
 ////////////////////////////////////////////////////////////////////
 PT(BamCacheRecord) BamCache::
 lookup(const Filename &source_filename, const string &cache_extension) {
-  ReMutexHolder holder(_lock);
   consider_flush_index();
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
@@ -193,7 +191,6 @@ lookup(const Filename &source_filename, const string &cache_extension) {
 ////////////////////////////////////////////////////////////////////
 bool BamCache::
 store(BamCacheRecord *record) {
-  ReMutexHolder holder(_lock);
   nassertr(!record->_cache_pathname.empty(), false);
   nassertr(record->has_data(), false);
 
@@ -323,7 +320,6 @@ emergency_read_only() {
 ////////////////////////////////////////////////////////////////////
 void BamCache::
 consider_flush_index() {
-  ReMutexHolder holder(_lock);
   if (_index_stale_since != 0) {
     int elapsed = (int)time(NULL) - (int)_index_stale_since;
     if (elapsed > _flush_time) {
@@ -339,7 +335,6 @@ consider_flush_index() {
 ////////////////////////////////////////////////////////////////////
 void BamCache::
 flush_index() {
-  ReMutexHolder holder(_lock);
   if (_index_stale_since == 0) {
     // Never mind.
     return;
@@ -996,7 +991,7 @@ void BamCache::
 make_global() {
   _global_ptr = new BamCache;
 
-  if (_global_ptr->_root.empty()) {
+  if (_global_ptr->get_root().empty()) {
     _global_ptr->set_active(false);
   }
 }
