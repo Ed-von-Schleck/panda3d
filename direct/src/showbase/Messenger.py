@@ -77,6 +77,18 @@ class Messenger:
     def _getObject(self, id):
         return self._id2object[id][1]
 
+    def _getObjects(self):
+        objs = []
+        for refCount, obj in self._id2object.itervalues():
+            objs.append(obj)
+        return objs
+
+    def _getNumListeners(self, event):
+        return len(self.__callbacks.get(event, {}))
+
+    def _getEvents(self):
+        return self.__callbacks.keys()
+
     def _releaseObject(self, object):
         # assumes lock is held.
         id = self._getMessengerId(object)

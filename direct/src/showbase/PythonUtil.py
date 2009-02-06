@@ -31,7 +31,8 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index',
 'pandaBreak','pandaTrace','formatTimeCompact','DestructiveScratchPad',
 'deeptype','getProfileResultString','StdoutCapture','StdoutPassthrough',
-'Averager', 'getRepository', 'formatTimeExact', 'startSuperLog', 'endSuperLog' ]
+'Averager', 'getRepository', 'formatTimeExact', 'startSuperLog', 'endSuperLog',
+'typeName', ]
 
 import types
 import string
@@ -3836,6 +3837,12 @@ def endSuperLog():
 def isInteger(n):
     return type(n) in (types.IntType, types.LongType)
 
+def typeName(o):
+    if hasattr(o, '__class__'):
+        return o.__class__.__name__
+    else:
+        return o.__name__
+
 import __builtin__
 __builtin__.Functor = Functor
 __builtin__.Stack = Stack
@@ -3888,3 +3895,4 @@ __builtin__.pdir = pdir
 __builtin__.deeptype = deeptype
 __builtin__.Default = Default
 __builtin__.isInteger = isInteger
+__builtin__.typeName = typeName
