@@ -49,6 +49,13 @@
 #include <algorithm>
 #include <limits.h>
 
+#ifdef HAVE_PYTHON
+#include "py_panda.h"  
+#ifndef CPPPARSER
+IMPORT_THIS struct Dtool_PyTypedObject Dtool_Texture;
+#endif
+#endif  // HAVE_PYTHON
+
 PStatCollector GraphicsStateGuardian::_vertex_buffer_switch_pcollector("Vertex buffer switch:Vertex");
 PStatCollector GraphicsStateGuardian::_index_buffer_switch_pcollector("Vertex buffer switch:Index");
 PStatCollector GraphicsStateGuardian::_load_vertex_buffer_pcollector("Draw:Transfer data:Vertex buffer");
@@ -369,6 +376,119 @@ get_gamma(float gamma) {
 void GraphicsStateGuardian::
 restore_gamma() {
 }
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::get_prepared_textures
+//       Access: Published
+//  Description: Returns a Python list of all of the
+//               currently-prepared textures within the GSG.
+////////////////////////////////////////////////////////////////////
+PyObject *GraphicsStateGuardian::
+get_prepared_textures() const {
+  ReMutexHolder holder(_prepared_objects->_lock);
+  size_t num_textures = _prepared_objects->_prepared_textures.size();
+  PyObject *list = PyList_New(num_textures);
+
+  size_t i = 0;
+  PreparedGraphicsObjects::Textures::const_iterator ti;
+  for (ti = _prepared_objects->_prepared_textures.begin();
+       ti != _prepared_objects->_prepared_textures.end();
+       ++ti) {
+    PT(Texture) tex = (*ti)->get_texture();
+
+    PyObject *element = 
+      DTool_CreatePyInstanceTyped(tex, Dtool_Texture,
+                                  true, false, tex->get_type_index());
+    tex->ref();
+
+    nassertr(i < num_textures, NULL);
+    PyList_SetItem(list, i, element);
+    ++i;
+  }
+  nassertr(i == num_textures, NULL);
+
+  return list;
+}
+#endif  // HAVE_PYTHON
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::traverse_prepared_textures
+//       Access: Public
+//  Description: Calls the indicated function on all
+//               currently-prepared textures, or until the callback
+//               function returns false.
+////////////////////////////////////////////////////////////////////
+void GraphicsStateGuardian::
+traverse_prepared_textures(GraphicsStateGuardian::TextureCallback *func, 
+                           void *callback_arg) {
+  ReMutexHolder holder(_prepared_objects->_lock);
+  PreparedGraphicsObjects::Textures::const_iterator ti;
+  for (ti = _prepared_objects->_prepared_textures.begin();
+       ti != _prepared_objects->_prepared_textures.end();
+       ++ti) {
+    bool result = (*func)(*ti,callback_arg);
+    if (!result) {
+      return;
+    }
+  }
+}
+
+#ifndef NDEBUG
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::set_flash_texture
+//       Access: Published
+//  Description: Sets the "flash texture".  This is a debug feature;
+//               when enabled, the specified texture will begin
+//               flashing in the scene, helping you to find it
+//               visually.
+//
+//               The texture also flashes with a color code: blue for
+//               mipmap level 0, yellow for mipmap level 1, and red
+//               for mipmap level 2 or higher (even for textures that
+//               don't have mipmaps).  This gives you an idea of the
+//               choice of the texture size.  If it is blue, the
+//               texture is being drawn the proper size or magnified;
+//               if it is yellow, it is being minified a little bit;
+//               and if it red, it is being minified considerably.  If
+//               you see a red texture when you are right in front of
+//               it, you should consider reducing the size of the
+//               texture to avoid wasting texture memory.
+//
+//               Not all rendering backends support the flash_texture
+//               feature.  Presently, it is only supported by OpenGL.
+////////////////////////////////////////////////////////////////////
+void GraphicsStateGuardian::
+set_flash_texture(Texture *tex) {
+  _flash_texture = tex;
+}
+#endif  // NDEBUG
+
+#ifndef NDEBUG
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::clear_flash_texture
+//       Access: Published
+//  Description: Resets the "flash texture", so that no textures will
+//               flash.  See set_flash_texture().
+////////////////////////////////////////////////////////////////////
+void GraphicsStateGuardian::
+clear_flash_texture() {
+  _flash_texture = NULL;
+}
+#endif  // NDEBUG
+
+#ifndef NDEBUG
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::get_flash_texture
+//       Access: Published
+//  Description: Returns the current "flash texture", if any, or NULL
+//               if none.  See set_flash_texture().
+////////////////////////////////////////////////////////////////////
+Texture *GraphicsStateGuardian::
+get_flash_texture() const {
+  return _flash_texture;
+}
+#endif  // NDEBUG
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::set_scene
@@ -1861,7 +1981,7 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
 #ifdef DO_PSTATS
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::init_frame_pstats
-//       Access: Pubilc, Static
+//       Access: Public, Static
 //  Description: Initializes the relevant PStats data at the beginning
 //               of the frame.
 ////////////////////////////////////////////////////////////////////
@@ -1888,6 +2008,7 @@ init_frame_pstats() {
   }
 }
 #endif  // DO_PSTATS
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::create_gamma_table
@@ -1920,25 +2041,6 @@ create_gamma_table (float gamma, unsigned short *red_table, unsigned short *gree
     green_table [i] = (int)g;
     blue_table [i] = (int)g;
   }    
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GraphicsStateGuardian::traverse_prepared_textures
-//       Access: Public
-//  Description: Calls the indicated function on all
-//               currently-prepared textures, or until the callback
-//               function returns false.
-////////////////////////////////////////////////////////////////////
-void GraphicsStateGuardian::
-traverse_prepared_textures(bool (*pertex_callbackfn)(TextureContext *,void *),void *callback_arg) {
-  PreparedGraphicsObjects::Textures::const_iterator ti;
-  for (ti = _prepared_objects->_prepared_textures.begin();
-       ti != _prepared_objects->_prepared_textures.end();
-       ++ti) {
-    bool bResult=(*pertex_callbackfn)(*ti,callback_arg);
-    if(!bResult)
-      return;
-  }
 }
 
 ////////////////////////////////////////////////////////////////////

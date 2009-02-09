@@ -705,7 +705,12 @@ reload() {
   if (_loaded_from_image && !_fullpath.empty()) {
     do_clear_ram_image();
     do_unlock_and_reload_ram_image(true);
-    return do_has_ram_image();
+    if (do_has_ram_image()) {
+      // An explicit call to reload() should increment image_modified.
+      ++_image_modified;
+      return true;
+    }
+    return false;
   }
 
   // We don't have a filename to load from.
@@ -1129,6 +1134,66 @@ was_image_modified(PreparedGraphicsObjects *prepared_objects) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_data_size_bytes
+//       Access: Public
+//  Description: Returns the number of bytes which the texture is
+//               reported to consume within graphics memory, for the
+//               indicated GSG.  This may return a nonzero value even
+//               if the texture is not currently resident; you should
+//               also check get_resident() if you want to know how
+//               much space the texture is actually consuming right
+//               now.
+////////////////////////////////////////////////////////////////////
+size_t Texture::
+get_data_size_bytes(PreparedGraphicsObjects *prepared_objects) const {
+  MutexHolder holder(_lock);
+  Contexts::const_iterator ci;
+  ci = _contexts.find(prepared_objects);
+  if (ci != _contexts.end()) {
+    TextureContext *tc = (*ci).second;
+    return tc->get_data_size_bytes();
+  }
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_active
+//       Access: Public
+//  Description: Returns true if this Texture was rendered in the most
+//               recent frame within the indicated GSG.
+////////////////////////////////////////////////////////////////////
+bool Texture::
+get_active(PreparedGraphicsObjects *prepared_objects) const {
+  MutexHolder holder(_lock);
+  Contexts::const_iterator ci;
+  ci = _contexts.find(prepared_objects);
+  if (ci != _contexts.end()) {
+    TextureContext *tc = (*ci).second;
+    return tc->get_active();
+  }
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_resident
+//       Access: Public
+//  Description: Returns true if this Texture is reported to be
+//               resident within graphics memory for the indicated
+//               GSG.
+////////////////////////////////////////////////////////////////////
+bool Texture::
+get_resident(PreparedGraphicsObjects *prepared_objects) const {
+  MutexHolder holder(_lock);
+  Contexts::const_iterator ci;
+  ci = _contexts.find(prepared_objects);
+  if (ci != _contexts.end()) {
+    TextureContext *tc = (*ci).second;
+    return tc->get_resident();
+  }
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Texture::release
 //       Access: Published
 //  Description: Frees the texture context only on the indicated object,
@@ -1470,22 +1535,51 @@ prepare_now(PreparedGraphicsObjects *prepared_objects,
   return tc;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::up_to_power_2
+//       Access: Published, Static
+//  Description: Returns the smallest power of 2 greater than or equal
+//               to value.
+////////////////////////////////////////////////////////////////////
+int Texture::
+up_to_power_2(int value) {
+  if (value <= 1) {
+    return 1;
+  }
+  int bit = get_next_higher_bit(((unsigned int)value) - 1);
+  return (1 << bit);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::down_to_power_2
+//       Access: Published, Static
+//  Description: Returns the largest power of 2 less than or equal
+//               to value.
+////////////////////////////////////////////////////////////////////
+int Texture::
+down_to_power_2(int value) {
+  if (value <= 1) {
+    return 1;
+  }
+  int bit = get_next_higher_bit(((unsigned int)value) >> 1);
+  return (1 << bit);
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Texture::texture_uploaded
 //       Access: Public
-//  Description: This method is called by the GraphicsStateGuardian
-//               after a texture has been successfully uploaded to
-//               graphics memory.  It is intended as a callback so the
-//               texture can release its RAM image, if _keep_ram_image
-//               is false.
+//  Description: This method is called by the GraphicsEngine at the
+//               beginning of the frame *after* a texture has been
+//               successfully uploaded to graphics memory.  It is
+//               intended as a callback so the texture can release its
+//               RAM image, if _keep_ram_image is false.
 //
-//               Normally, this is not called directly except by the
-//               GraphicsStateGuardian.  It will be called in the draw
-//               thread.
+//               This is called indirectly when the GSG calls
+//               GraphicsEngine::texture_uploaded().
 ////////////////////////////////////////////////////////////////////
 void Texture::
-texture_uploaded(GraphicsStateGuardianBase *gsg) {
+texture_uploaded() {
   MutexHolder holder(_lock);
 
   if (!keep_texture_ram && !_keep_ram_image) {
@@ -1598,36 +1692,6 @@ string_filter_type(const string &string) {
 PT(Texture) Texture::
 make_texture() {
   return new Texture;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Texture::up_to_power_2
-//       Access: Public, Static
-//  Description: Returns the smallest power of 2 greater than or equal
-//               to value.
-////////////////////////////////////////////////////////////////////
-int Texture::
-up_to_power_2(int value) {
-  int x = 1;
-  while (x < value) {
-    x = (x << 1);
-  }
-  return x;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Texture::down_to_power_2
-//       Access: Public, Static
-//  Description: Returns the largest power of 2 less than or equal
-//               to value.
-////////////////////////////////////////////////////////////////////
-int Texture::
-down_to_power_2(int value) {
-  int x = 1;
-  while ((x << 1) <= value) {
-    x = (x << 1);
-  }
-  return x;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2606,13 +2670,16 @@ do_read_dds(istream &in, const string &filename, bool header_only) {
 ////////////////////////////////////////////////////////////////////
 bool Texture::
 do_write(const Filename &fullpath, int z, int n, bool write_pages, bool write_mipmaps) const {
-  if (!do_has_ram_image()) {
-    ((Texture *)this)->do_get_ram_image();
-  }
-  nassertr(do_has_ram_image(), false);
-
   if (is_txo_filename(fullpath)) {
+    if (!do_has_ram_image()) {
+      ((Texture *)this)->do_get_ram_image();
+    }
+    nassertr(do_has_ram_image(), false);
     return do_write_txo_file(fullpath);
+  }
+
+  if (!do_has_uncompressed_ram_image()) {
+    ((Texture *)this)->do_get_uncompressed_ram_image();
   }
 
   nassertr(do_has_ram_mipmap_image(n), false);
@@ -2856,16 +2923,38 @@ do_unlock_and_reload_ram_image(bool allow_compression) {
     // properties have changed during the reload (for instance,
     // because we reloaded a txo), it won't contaminate the original
     // texture.
-    _x_size = tex->_x_size;
-    _y_size = tex->_y_size;
-    _z_size = tex->_z_size;
     _orig_file_x_size = tex->_orig_file_x_size;
     _orig_file_y_size = tex->_orig_file_y_size;
-    _num_components = tex->_num_components;
-    _component_width = tex->_component_width;
-    _texture_type = tex->_texture_type;
-    _format = tex->_format;
-    _component_type = tex->_component_type;
+ 
+    // If any of *these* properties have changed, the texture has
+    // changed in some fundamental way.  Update it appropriately.
+    if (tex->_x_size != _x_size ||
+        tex->_y_size != _y_size ||
+        tex->_z_size != _z_size ||
+        tex->_num_components != _num_components ||
+        tex->_component_width != _component_width ||
+        tex->_texture_type != _texture_type ||
+        tex->_format != _format ||
+        tex->_component_type != _component_type) {
+
+      _x_size = tex->_x_size;
+      _y_size = tex->_y_size;
+      _z_size = tex->_z_size;
+
+      _num_components = tex->_num_components;
+      _component_width = tex->_component_width;
+      _texture_type = tex->_texture_type;
+      _format = tex->_format;
+      _component_type = tex->_component_type;
+
+      // Normally, we don't update the _modified semaphores in a
+      // do_blah method, but we'll make an exception in this case,
+      // because it's easiest to modify this here, and only when we
+      // know it's needed.
+      ++_properties_modified;
+      ++_image_modified;
+    }
+
     _keep_ram_image = tex->_keep_ram_image;
     _ram_image_compression = tex->_ram_image_compression;
     _ram_images = tex->_ram_images;
@@ -2873,13 +2962,10 @@ do_unlock_and_reload_ram_image(bool allow_compression) {
     nassertv(_reloading);
     _reloading = false;
 
-    // Normally, we don't update the _modified semaphores in a do_blah
-    // method, but we'll make an exception in this case, because it's
-    // easiest to modify these here, and only when we know it's
-    // needed.
-    ++_image_modified;
-    ++_properties_modified;
-
+    // We don't generally increment the _image_modified semaphore,
+    // because this is just a reload, and presumably the image hasn't
+    // changed (unless we hit the if condition above).
+    
     _cvar.notify_all();
   }
 }
@@ -3960,9 +4046,9 @@ get_ram_image_as(const string &requested_format) {
           nassertr(_num_components != 3, CPTA_uchar(get_class_type()));
           component = _num_components - 1;
         } else if (format.at(s) == '0') {
-          newdata[p * format.size() + s] =  0;
+          newdata[p * format.size() + s] = 0x00;
         } else if (format.at(s) == '1') {
-          newdata[p * format.size() + s] = -1;
+          newdata[p * format.size() + s] = 0xff;
         } else {
           gobj_cat.error() << "Unexpected component character '"
             << format.at(s) << "', expected one of RGBA!\n";
@@ -5476,7 +5562,6 @@ do_squish(Texture::CompressionMode compression, int squish_flags) {
   }
   _ram_images.swap(compressed_ram_images);
   _ram_image_compression = compression;
-  ++_image_modified;
   return true;
 
 #else  // HAVE_SQUISH
@@ -5561,7 +5646,6 @@ do_unsquish(int squish_flags) {
   }
   _ram_images.swap(uncompressed_ram_images);
   _ram_image_compression = CM_off;
-  ++_image_modified;
   return true;
 
 #else  // HAVE_SQUISH

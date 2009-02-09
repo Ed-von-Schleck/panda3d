@@ -355,6 +355,10 @@ PUBLISHED:
   void prepare(PreparedGraphicsObjects *prepared_objects);
   bool is_prepared(PreparedGraphicsObjects *prepared_objects) const;
   bool was_image_modified(PreparedGraphicsObjects *prepared_objects) const;
+  size_t get_data_size_bytes(PreparedGraphicsObjects *prepared_objects) const;
+  bool get_active(PreparedGraphicsObjects *prepared_objects) const;
+  bool get_resident(PreparedGraphicsObjects *prepared_objects) const;
+
   bool release(PreparedGraphicsObjects *prepared_objects);
   int release_all();
 
@@ -420,8 +424,11 @@ PUBLISHED:
   TextureContext *prepare_now(PreparedGraphicsObjects *prepared_objects,
                               GraphicsStateGuardianBase *gsg);
 
+  static int up_to_power_2(int value);
+  static int down_to_power_2(int value);
+
 public:
-  void texture_uploaded(GraphicsStateGuardianBase *gsg);
+  void texture_uploaded();
   
   virtual bool has_cull_callback() const;
   virtual bool cull_callback(CullTraverser *trav, const CullTraverserData &data) const;
@@ -432,9 +439,6 @@ public:
   static PT(Texture) make_texture();
 
 public:
-  static int up_to_power_2(int value);
-  static int down_to_power_2(int value);
-
   static bool is_specific(CompressionMode compression);
   static bool has_alpha(Format format);
   static bool has_binary_alpha(Format format);
