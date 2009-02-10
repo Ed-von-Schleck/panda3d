@@ -2537,7 +2537,7 @@ upload_texture(TinyTextureContext *gtc, bool force) {
 
   gtc->update_data_size_bytes(bytecount);
   
-  get_engine()->texture_uploaded(tex);
+  tex->texture_uploaded(this);
   gtc->mark_loaded();
 
   return true;
