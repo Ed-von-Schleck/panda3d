@@ -38,6 +38,7 @@
 #include "zmath.h"
 #include "ztriangle_table.h"
 #include "store_pixel_table.h"
+#include "graphicsEngine.h"
 
 TypeHandle TinyGraphicsStateGuardian::_type_handle;
 
@@ -2404,9 +2405,9 @@ set_scissor(float left, float right, float bottom, float top) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TinyGraphicsStateGuardian::apply_texture
 //       Access: Protected
-//  Description: Updates TinyGL with the current information for this
-//               texture, and makes it the current texture available
-//               for rendering.
+//  Description: Updates the graphics state with the current
+//               information for this texture, and makes it the
+//               current texture available for rendering.
 ////////////////////////////////////////////////////////////////////
 bool TinyGraphicsStateGuardian::
 apply_texture(TextureContext *tc) {
@@ -2419,7 +2420,7 @@ apply_texture(TextureContext *tc) {
 ////////////////////////////////////////////////////////////////////
 //     Function: TinyGraphicsStateGuardian::upload_texture
 //       Access: Protected
-//  Description: Uploads the texture image to TinyGL.
+//  Description: Uploads the texture image to the graphics state.
 //
 //               The return value is true if successful, or false if
 //               the texture has no image.
@@ -2429,8 +2430,7 @@ upload_texture(TinyTextureContext *gtc, bool force) {
   Texture *tex = gtc->get_texture();
 
   if (_effective_incomplete_render && !force) {
-    bool has_image = _supports_compressed_texture ? tex->has_ram_image() : tex->has_uncompressed_ram_image();
-    if (!has_image && tex->might_have_ram_image() &&
+    if (!tex->has_ram_image() && tex->might_have_ram_image() &&
         tex->has_simple_ram_image() &&
         !_loader.is_null()) {
       // If we don't have the texture data right now, go get it, but in
@@ -2537,7 +2537,7 @@ upload_texture(TinyTextureContext *gtc, bool force) {
 
   gtc->update_data_size_bytes(bytecount);
   
-  tex->texture_uploaded(this);
+  get_engine()->texture_uploaded(tex);
   gtc->mark_loaded();
 
   return true;

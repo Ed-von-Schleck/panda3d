@@ -13,7 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "pandabase.h"
-#ifdef IS_LINUX
+#ifdef HAVE_X11
 
 #include "tinyXGraphicsPipe.h"
 #include "tinyXGraphicsWindow.h"
@@ -148,7 +148,7 @@ TinyXGraphicsPipe::
 ////////////////////////////////////////////////////////////////////
 string TinyXGraphicsPipe::
 get_interface_name() const {
-  return "TinyGL X11";
+  return "TinyPanda";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -341,4 +341,4 @@ io_error_handler(Display *display) {
   return 0;
 }
 
-#endif  // IS_LINUX
+#endif  // HAVE_X11
