@@ -38,7 +38,6 @@ extern "C" {
   EXPCL_DTOOLCONFIG int PyErr_Restore(...);
   EXPCL_DTOOLCONFIG int PyErr_SetString(...);
   EXPCL_DTOOLCONFIG int PyErr_Warn(...);
-  EXPCL_DTOOLCONFIG int PyErr_WarnEx(...);
   EXPCL_DTOOLCONFIG int PyEval_CallFunction(...);
   EXPCL_DTOOLCONFIG int PyEval_InitThreads(...);
   EXPCL_DTOOLCONFIG int PyEval_RestoreThread(...);
@@ -163,7 +162,6 @@ int PyErr_Print(...) { return 0; }
 int PyErr_Restore(...) { return 0; }
 int PyErr_SetString(...) { return 0; }
 int PyErr_Warn(...) { return 0; }
-int PyErr_WarnEx(...) { return 0; }
 int PyEval_CallFunction(...) { return 0; }
 int PyEval_InitThreads(...) { return 0; }
 int PyEval_RestoreThread(...) { return 0; }
