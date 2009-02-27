@@ -98,6 +98,21 @@ require_fully_complete() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TypedWritable::fillin
+//       Access: Public, Virtual
+//  Description: This internal function is intended to be called by
+//               each class's make_from_bam() method to read in all of
+//               the relevant data from the BamFile for the new
+//               object.  It is also called directly by the BamReader
+//               to re-read the data for an object that has been
+//               placed on the stream for an update.
+////////////////////////////////////////////////////////////////////
+void TypedWritable::
+fillin(DatagramIterator &, BamReader *) {
+}
+
+
+////////////////////////////////////////////////////////////////////
 //     Function: TypedWritable::finalize
 //       Access: Public, Virtual
 //  Description: Called by the BamReader to perform any final actions
@@ -106,22 +121,5 @@ require_fully_complete() const {
 ////////////////////////////////////////////////////////////////////
 void TypedWritable::
 finalize(BamReader *) {
-}
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: TypedWritable::fillin
-//       Access: Protected
-//  Description: This internal function is intended to be called by
-//               each class's make_from_bam() method to read in all of
-//               the relevant data from the BamFile for the new
-//               object.
-//
-//               It is defined at the TypedWritable level so that
-//               derived classes may call up the inheritance chain
-//               from their own fillin() method.
-////////////////////////////////////////////////////////////////////
-void TypedWritable::
-fillin(DatagramIterator &, BamReader *) {
 }
 

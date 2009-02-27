@@ -14,6 +14,15 @@
 
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamReaderAuxData::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE BamReaderAuxData::
+BamReaderAuxData() {
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: BamReader::get_filename
 //       Access: Public
 //  Description: If a BAM is a file, then the BamReader should
@@ -90,7 +99,7 @@ get_file_minor_ver() const {
 //               convention, but individual objects may choose to
 //               respect this flag when recording data.
 ////////////////////////////////////////////////////////////////////
-INLINE BamEndian BamReader::
+INLINE BamReader::BamEndian BamReader::
 get_file_endian() const {
   return _file_endian;
 }

@@ -526,6 +526,15 @@ process_incoming_udp_data(SocketInfo *sinfo) {
   } else {
     datagram.set_connection(sinfo->_connection);
     datagram.set_address(NetAddress(addr));
+
+    if (net_cat.is_spam()) {
+      net_cat.spam()
+        << "Received UDP datagram with " 
+        << datagram_udp_header_size + datagram.get_length() 
+        << " bytes on " << (void *)datagram.get_connection()
+        << " from " << datagram.get_address() << "\n";
+    }
+
     receive_datagram(datagram);
   }
 }
@@ -640,6 +649,15 @@ process_incoming_tcp_data(SocketInfo *sinfo) {
   } else {
     datagram.set_connection(sinfo->_connection);
     datagram.set_address(NetAddress(socket->GetPeerName()));
+
+    if (net_cat.is_spam()) {
+      net_cat.spam()
+        << "Received TCP datagram with " 
+        << _tcp_header_size + datagram.get_length() 
+        << " bytes on " << (void *)datagram.get_connection()
+        << " from " << datagram.get_address() << "\n";
+    }
+    
     receive_datagram(datagram);
   }
 }
@@ -689,6 +707,14 @@ process_raw_incoming_udp_data(SocketInfo *sinfo) {
   
   datagram.set_connection(sinfo->_connection);
   datagram.set_address(NetAddress(addr));
+
+  if (net_cat.is_spam()) {
+    net_cat.spam()
+      << "Received raw UDP datagram with " << datagram.get_length() 
+      << " bytes on " << (void *)datagram.get_connection()
+      << " from " << datagram.get_address() << "\n";
+  }
+
   receive_datagram(datagram);
 }
 
@@ -735,6 +761,14 @@ process_raw_incoming_tcp_data(SocketInfo *sinfo) {
   
   datagram.set_connection(sinfo->_connection);
   datagram.set_address(NetAddress(socket->GetPeerName()));
+
+  if (net_cat.is_spam()) {
+    net_cat.spam()
+      << "Received raw TCP datagram with " << datagram.get_length() 
+      << " bytes on " << (void *)datagram.get_connection()
+      << " from " << datagram.get_address() << "\n";
+  }
+
   receive_datagram(datagram);
 }
 

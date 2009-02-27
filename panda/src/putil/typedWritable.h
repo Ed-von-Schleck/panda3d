@@ -19,6 +19,7 @@
 #include "vector_typedWritable.h"
 #include "pvector.h"
 #include "lightMutex.h"
+#include "updateSeq.h"
 
 class BamReader;
 class BamWriter;
@@ -48,10 +49,12 @@ public:
   virtual int complete_pointers(TypedWritable **p_list, BamReader *manager);
   virtual bool require_fully_complete() const;
 
+  virtual void fillin(DatagramIterator &scan, BamReader *manager);
   virtual void finalize(BamReader *manager);
 
-protected:
-  void fillin(DatagramIterator &scan, BamReader *manager);
+PUBLISHED:
+  INLINE void mark_bam_modified();
+  INLINE UpdateSeq get_bam_modified() const;
 
 private:
   // We may need to store a list of the BamWriter(s) that have a
@@ -60,6 +63,8 @@ private:
   typedef pvector<BamWriter *> BamWriters;
   BamWriters *_bam_writers;
   static LightMutex _bam_writers_lock;
+
+  UpdateSeq _bam_modified;
 
 PUBLISHED:
   static TypeHandle get_class_type() {

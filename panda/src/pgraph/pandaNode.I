@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PandaNode::get_num_parents
 //       Access: Published
@@ -1873,4 +1872,15 @@ get_stashed() const {
 INLINE PandaNode::Parents PandaNodePipelineReader::
 get_parents() const {
   return PandaNode::Parents(_cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::BamReaderAuxDataDown::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE PandaNode::BamReaderAuxDataDown::
+BamReaderAuxDataDown() :
+  _down_list(PandaNode::get_class_type())
+{
 }

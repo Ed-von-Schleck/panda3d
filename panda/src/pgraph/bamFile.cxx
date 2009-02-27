@@ -331,7 +331,7 @@ get_file_minor_ver() {
 //  Description: Returns the endian preference indicated by the Bam
 //               file currently being read or written.
 ////////////////////////////////////////////////////////////////////
-BamEndian BamFile::
+BamFile::BamEndian BamFile::
 get_file_endian() const {
   if (_writer != (BamWriter *)NULL) {
     return _writer->get_file_endian();

@@ -21,7 +21,7 @@
 #include "config_util.h"
 #include "pipelineCyclerBase.h"
 
-TypeHandle BamReader::_remove_flag;
+TypeHandle BamReaderAuxData::_type_handle;
 
 WritableFactory *BamReader::_factory = (WritableFactory*)0L;
 BamReader *const BamReader::Null = (BamReader*)0L;
@@ -43,6 +43,7 @@ BamReader(DatagramGenerator *generator, const Filename &name)
   : _source(generator), _filename(name)
 {
   _num_extra_objects = 0;
+  _nesting_level = 0;
   _now_creating = _created_objs.end();
   _reading_cycler = (PipelineCyclerBase *)NULL;
   _pta_id = -1;
@@ -58,6 +59,8 @@ BamReader(DatagramGenerator *generator, const Filename &name)
 ////////////////////////////////////////////////////////////////////
 BamReader::
 ~BamReader() {
+  nassertv(_num_extra_objects == 0);
+  nassertv(_nesting_level == 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -223,6 +226,8 @@ TypedWritable *BamReader::
 read_object() {
   nassertr(_num_extra_objects == 0, (TypedWritable *)NULL);
 
+  int start_level = _nesting_level;
+
   // First, read the base object.
   int object_id = p_read_object();
 
@@ -230,9 +235,18 @@ read_object() {
   // objects, which may still need to be read.  And those objects
   // might in turn require reading additional objects.  Read all the
   // remaining objects.
+
+  // Prior to 6.19, we kept track of _num_extra_objects to know when
+  // we're done.
   while (_num_extra_objects > 0) {
     p_read_object();
     _num_extra_objects--;
+  }
+
+  // Beginning with 6.19, we use explicit nesting commands to know
+  // when we're done.
+  while (_nesting_level > start_level) {
+    p_read_object();
   }
 
   // Now look up the pointer of the object we read first.  It should
@@ -312,6 +326,11 @@ resolve() {
       
       TypedWritable *object_ptr = created_obj._ptr;
 
+      // Update _now_creating, so a call to get_int_tag() from within
+      // complete_pointers() will come to the right place.
+      CreatedObjs::iterator was_creating = _now_creating;
+      _now_creating = ci;
+      
       if (resolve_object_pointers(object_ptr, pref)) {
         // Now remove this object from the list of things that need
         // completion.  We have to be a bit careful when deleting things
@@ -344,6 +363,8 @@ resolve() {
         ++oi;
         all_completed = false;
       }
+
+      _now_creating = was_creating;
     }
 
   } while (!all_completed && any_completed_this_pass);
@@ -535,7 +556,7 @@ read_handle(DatagramIterator &scan) {
 //               pointer to an object that appears later in the Bam
 //               file).  Later, when all pointers are available, the
 //               complete_pointers() callback function will be called
-//               with an array of actual pointers, one for time
+//               with an array of actual pointers, one for each time
 //               read_pointer() was called.  It is then the calling
 //               object's responsibilty to store these pointers in the
 //               object properly.
@@ -562,10 +583,16 @@ read_pointer(DatagramIterator &scan) {
   // If the object ID is zero (which indicates a NULL pointer), we
   // don't have to do anything else.
   if (object_id != 0) {
-    if (_created_objs.count(object_id) == 0) {
-      // If we don't already have an entry in the map for this object
-      // ID (that is, we haven't encountered this object before), we
-      // must remember to read the object definition later.
+    /*
+    CreatedObj new_created_obj;
+    new_created_obj._ptr = NULL;
+    new_created_obj._change_this = NULL;
+    _created_objs.insert(CreatedObjs::value_type(object_id, new_created_obj)).second;
+    */
+
+    if (get_file_minor_ver() < 19) {
+      // Prior to bam version 6.19, we expect to read an adjunct
+      // object for each non-NULL pointer we read.
       _num_extra_objects++;
     }
   }
@@ -620,8 +647,8 @@ read_cdata(DatagramIterator &scan, PipelineCyclerBase &cycler) {
 ////////////////////////////////////////////////////////////////////
 //     Function: BamReader::read_cdata
 //       Access: Public
-//  Description: This flavor of BamReader allows passing an additional
-//               parameter to cdata->fillin().
+//  Description: This flavor of read_cdata allows passing an
+//               additional parameter to cdata->fillin().
 ////////////////////////////////////////////////////////////////////
 void BamReader::
 read_cdata(DatagramIterator &scan, PipelineCyclerBase &cycler,
@@ -632,6 +659,99 @@ read_cdata(DatagramIterator &scan, PipelineCyclerBase &cycler,
   cdata->fillin(scan, this, extra_data);
   cycler.release_write(cdata);
   _reading_cycler = old_cycler;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::set_int_tag
+//       Access: Public
+//  Description: Allows the creating object to store a temporary data
+//               value on the BamReader.  This method may be called
+//               during an object's fillin() method; it will associate
+//               an integer value with an arbitrary string key (which
+//               is in turn associated with the calling object only).
+//               Later, in the complete_pointers() method, the same
+//               object may query this data again via get_int_tag().
+//
+//               The tag string need not be unique between different
+//               objects, but it should be unique between an object
+//               and its CData object(s).
+////////////////////////////////////////////////////////////////////
+void BamReader::
+set_int_tag(const string &tag, int value) {
+  nassertv(_now_creating != _created_objs.end());
+  int requestor_id = (*_now_creating).first;
+
+  PointerReference &pref = _object_pointers[requestor_id];
+  pref._int_tags[tag] = value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::get_int_tag
+//       Access: Public
+//  Description: Returns the value previously set via set_int_tag().
+//               It is an error if no value has been set.
+////////////////////////////////////////////////////////////////////
+int BamReader::
+get_int_tag(const string &tag) const {
+  nassertr(_now_creating != _created_objs.end(), 0);
+  int requestor_id = (*_now_creating).first;
+
+  ObjectPointers::const_iterator opi = _object_pointers.find(requestor_id);
+  nassertr(opi != _object_pointers.end(), 0);
+  const PointerReference &pref = (*opi).second;
+
+  IntTags::const_iterator iti = pref._int_tags.find(tag);
+  nassertr(iti != pref._int_tags.end(), 0);
+  return (*iti).second;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::set_aux_tag
+//       Access: Public
+//  Description: Allows the creating object to store a temporary data
+//               value on the BamReader.  This method may be called
+//               during an object's fillin() method; it will associate
+//               a newly-allocated BamReaderAuxData construct with an
+//               arbitrary string key (which is in turn associated
+//               with the calling object only).  Later, in the
+//               complete_pointers() method, the same object may query
+//               this data again via get_aux_tag().
+//
+//               The BamReader will maintain the reference count on
+//               the BamReaderAuxData, and destruct it when it is
+//               cleaned up.
+//
+//               The tag string need not be unique between different
+//               objects, but it should be unique between an object
+//               and its CData object(s).
+////////////////////////////////////////////////////////////////////
+void BamReader::
+set_aux_tag(const string &tag, BamReaderAuxData *value) {
+  nassertv(_now_creating != _created_objs.end());
+  int requestor_id = (*_now_creating).first;
+
+  PointerReference &pref = _object_pointers[requestor_id];
+  pref._aux_tags[tag] = value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::get_aux_tag
+//       Access: Public
+//  Description: Returns the value previously set via set_aux_tag().
+//               It is an error if no value has been set.
+////////////////////////////////////////////////////////////////////
+BamReaderAuxData *BamReader::
+get_aux_tag(const string &tag) const {
+  nassertr(_now_creating != _created_objs.end(), NULL);
+  int requestor_id = (*_now_creating).first;
+
+  ObjectPointers::const_iterator opi = _object_pointers.find(requestor_id);
+  nassertr(opi != _object_pointers.end(), NULL);
+  const PointerReference &pref = (*opi).second;
+
+  AuxTags::const_iterator ati = pref._aux_tags.find(tag);
+  nassertr(ati != pref._aux_tags.end(), NULL);
+  return (*ati).second;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -897,15 +1017,26 @@ p_read_object() {
   // Now extract the object definition from the datagram.
   DatagramIterator scan(packet);
 
-  // An object definition in a Bam file consists of a TypeHandle
-  // definition, defining the object's type, followed by an object ID
-  // index, defining the particular instance (e.g. pointer) of this
-  // object.
+  // First, read the BamObjectCode.  In bam versions prior to 6.19,
+  // there was no BamObjectCode in the stream.
+  BamObjectCode boc = BOC_adjunct;
+  if (get_file_minor_ver() >= 19) {
+    boc = (BamObjectCode)scan.get_uint8();
+  }
+  switch (boc) {
+  case BOC_push:
+    ++_nesting_level;
+    break;
 
-  TypeHandle type = read_handle(scan);
+  case BOC_pop:
+    --_nesting_level;
+    return 0;
 
-  if (type == _remove_flag) {
-    // The _remove_flag TypeHandle is a special case; it begins a
+  case BOC_adjunct:
+    break;
+
+  case BOC_remove:
+    // The BOC_remove code is a special case; it begins a
     // record that simply lists all of the object ID's that are no
     // longer important to the file and may be released.
     free_object_ids(scan);
@@ -915,6 +1046,13 @@ p_read_object() {
     // calling recursively.
     return p_read_object();
   }
+
+  // An object definition in a Bam file consists of a TypeHandle
+  // definition, defining the object's type, followed by an object ID
+  // index, defining the particular instance (e.g. pointer) of this
+  // object.
+  
+  TypeHandle type = read_handle(scan);
 
   int object_id = read_object_id(scan);
 
@@ -936,10 +1074,6 @@ p_read_object() {
   if (type != TypeHandle::none()) {
     // Now we are going to read and create a new object.
 
-    // Define the parameters for passing to the object factory.
-    FactoryParams fparams;
-    fparams.add_param(new BamReaderParam(scan, this));
-
     // First, we must add an entry into the map for this object ID, so
     // that in case this function is called recursively during the
     // object's factory constructor, we will have some definition for
@@ -951,70 +1085,89 @@ p_read_object() {
       _created_objs.insert(CreatedObjs::value_type(object_id, new_created_obj)).first;
     CreatedObj &created_obj = (*oi).second;
 
-    // Now we can call the factory to create the object.  Update
-    // _now_creating during this call so if this function calls
-    // read_pointer() or register_change_this() we'll match it up
-    // properly.  This might recursively call back into this
-    // p_read_object(), so be sure to save and restore the original
-    // value of _now_creating.
-    CreatedObjs::iterator was_creating = _now_creating;
-    _now_creating = oi;
-    TypedWritable *object =
-      _factory->make_instance_more_general(type, fparams);
-    _now_creating = was_creating;
+    if (created_obj._ptr != NULL) {
+      // This object had already existed; thus, we are just receiving
+      // an update for it.
 
-    // And now we can store the new object pointer in the map.
-    nassertr(created_obj._ptr == object || created_obj._ptr == NULL, object_id);
-    created_obj._ptr = object;
-
-    if (created_obj._change_this != NULL) {
-      // If the pointer is scheduled to change after
-      // complete_pointers(), but we have no entry in
-      // _object_pointers for this object (and hence no plan to call
-      // complete_pointers()), then just change the pointer
-      // immediately.
-      ObjectPointers::const_iterator ri = _object_pointers.find(object_id);
-      if (ri == _object_pointers.end()) {
-        object = created_obj._change_this(object, this);
-        created_obj._ptr = object;
-        created_obj._change_this = NULL;
-      }
-    }
-
-    _created_objs_by_pointer[created_obj._ptr].push_back(object_id);
-
-    // Just some sanity checks
-    if (object == (TypedWritable *)NULL) {
-      if (bam_cat.is_debug()) {
-        bam_cat.debug()
-          << "Unable to create an object of type " << type << endl;
-      }
-
-    } else if (object->get_type() != type) {
-      if (_new_types.find(type) != _new_types.end()) {
-        // This was a type we hadn't heard of before, so it's not
-        // really surprising we didn't know how to create it.
-        // Suppress the warning (make it a debug statement instead).
-        if (bam_cat.is_debug()) {
-          bam_cat.warning()
-            << "Attempted to create a " << type.get_name() \
-            << " but a " << object->get_type() \
-            << " was created instead." << endl;
-        }
-
-      } else {
-        // This was a normal type that we should have known how to
-        // create.  Report the error.
-        bam_cat.warning()
-          << "Attempted to create a " << type.get_name() \
-          << " but a " << object->get_type() \
-          << " was created instead." << endl;
-      }
+      // Update _now_creating during this call so if this function
+      // calls read_pointer() or register_change_this() we'll match it
+      // up properly.  This might recursively call back into this
+      // p_read_object(), so be sure to save and restore the original
+      // value of _now_creating.
+      CreatedObjs::iterator was_creating = _now_creating;
+      _now_creating = oi;
+      created_obj._ptr->fillin(scan, this);
+      _now_creating = was_creating;
 
     } else {
-      if (bam_cat.is_spam()) {
-        bam_cat.spam()
-          << "Read a " << object->get_type() << ": " << (void *)object << "\n";
+      // We are receiving a new object.  Now we can call the factory
+      // to create the object.
+
+      // Define the parameters for passing to the object factory.
+      FactoryParams fparams;
+      fparams.add_param(new BamReaderParam(scan, this));
+      
+      // As above, we update and preserve _now_creating during this
+      // call.
+      CreatedObjs::iterator was_creating = _now_creating;
+      _now_creating = oi;
+      TypedWritable *object =
+        _factory->make_instance_more_general(type, fparams);
+      _now_creating = was_creating;
+      
+      // And now we can store the new object pointer in the map.
+      nassertr(created_obj._ptr == object || created_obj._ptr == NULL, object_id);
+      created_obj._ptr = object;
+
+      if (created_obj._change_this != NULL) {
+        // If the pointer is scheduled to change after
+        // complete_pointers(), but we have no entry in
+        // _object_pointers for this object (and hence no plan to call
+        // complete_pointers()), then just change the pointer
+        // immediately.
+        ObjectPointers::const_iterator ri = _object_pointers.find(object_id);
+        if (ri == _object_pointers.end()) {
+          object = created_obj._change_this(object, this);
+          created_obj._ptr = object;
+          created_obj._change_this = NULL;
+        }
+      }
+      
+      _created_objs_by_pointer[created_obj._ptr].push_back(object_id);
+
+      // Just some sanity checks
+      if (object == (TypedWritable *)NULL) {
+        if (bam_cat.is_debug()) {
+          bam_cat.debug()
+            << "Unable to create an object of type " << type << endl;
+        }
+
+      } else if (object->get_type() != type) {
+        if (_new_types.find(type) != _new_types.end()) {
+          // This was a type we hadn't heard of before, so it's not
+          // really surprising we didn't know how to create it.
+          // Suppress the warning (make it a debug statement instead).
+          if (bam_cat.is_debug()) {
+            bam_cat.warning()
+              << "Attempted to create a " << type.get_name()    \
+              << " but a " << object->get_type()                \
+              << " was created instead." << endl;
+          }
+          
+        } else {
+          // This was a normal type that we should have known how to
+          // create.  Report the error.
+          bam_cat.warning()
+            << "Attempted to create a " << type.get_name()      \
+            << " but a " << object->get_type()                  \
+            << " was created instead." << endl;
+        }
+        
+      } else {
+        if (bam_cat.is_spam()) {
+          bam_cat.spam()
+            << "Read a " << object->get_type() << ": " << (void *)object << "\n";
+        }
       }
     }
   }
@@ -1092,10 +1245,12 @@ resolve_object_pointers(TypedWritable *object,
 
       } else {
         const CreatedObj &child_obj = (*oi).second;
-        if (child_obj._change_this != NULL) {
+        if (child_obj._ptr == NULL) {
+          // The child object hasn't yet been created.
+          is_complete = false;
+        } else if (child_obj._change_this != NULL) {
           // It's been created, but the pointer might still change.
           is_complete = false;
-
         } else {
           if (require_fully_complete && 
               _object_pointers.find(child_id) != _object_pointers.end()) {
@@ -1129,6 +1284,7 @@ resolve_object_pointers(TypedWritable *object,
       bam_cat.warning()
         << object->get_type() << " completed " << num_completed
         << " of " << references.size() << " pointers.\n";
+      nassertr(num_completed < (int)references.size(), true);
     }
     return true;
 
@@ -1214,6 +1370,7 @@ resolve_cycler_pointers(PipelineCyclerBase *cycler,
       bam_cat.warning()
         << "CycleData object completed " << num_completed
         << " of " << references.size() << " pointers.\n";
+      nassertr(num_completed < (int)references.size(), true);
     }
     return true;
   }

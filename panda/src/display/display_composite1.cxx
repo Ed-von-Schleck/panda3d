@@ -1,3 +1,4 @@
+#include "cfCommand.cxx"
 #include "standardMunger.cxx"
 #include "drawableRegion.cxx"
 #include "displayRegion.cxx"

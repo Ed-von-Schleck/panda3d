@@ -12,8 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-
 #include "config_display.h"
+#include "cfCommand.h"
 #include "displayRegion.h"
 #include "standardMunger.h"
 #include "graphicsStateGuardian.h"
@@ -368,6 +368,8 @@ init_libdisplay() {
   }
   initialized = true;
 
+  CFCommand::init_type();
+  CFDoCullCommand::init_type();
   DisplayRegion::init_type();
   DisplayRegionPipelineReader::init_type();
   GraphicsBuffer::init_type();
@@ -379,6 +381,8 @@ init_libdisplay() {
   ParasiteBuffer::init_type();
   StandardMunger::init_type();
   StereoDisplayRegion::init_type();
+
+  CFDoCullCommand::register_with_read_factory();
 
 #if defined(HAVE_THREADS) && defined(DO_PIPELINING)
   PandaSystem *ps = PandaSystem::get_global_ptr();

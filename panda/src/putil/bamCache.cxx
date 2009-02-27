@@ -258,10 +258,10 @@ store(BamCacheRecord *record) {
     TypeHandle texture_type = type_registry->find_type("Texture");
     if (record->get_data()->is_of_type(texture_type)) {
       // Texture objects write the actual texture image.
-      writer.set_file_texture_mode(BTM_rawdata);
+      writer.set_file_texture_mode(BamWriter::BTM_rawdata);
     } else {
       // Any other kinds of objects write texture references.
-      writer.set_file_texture_mode(BTM_fullpath);
+      writer.set_file_texture_mode(BamWriter::BTM_fullpath);
     }
     
     if (!writer.write_object(record)) {

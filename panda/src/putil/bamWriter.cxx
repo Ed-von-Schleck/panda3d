@@ -26,7 +26,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: BamWriter::Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 BamWriter::
@@ -38,7 +38,7 @@ BamWriter(DatagramSink *sink, const Filename &name) :
 
 ////////////////////////////////////////////////////////////////////
 //     Function: BamWriter::Destructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 BamWriter::
@@ -59,7 +59,7 @@ BamWriter::
 
 ////////////////////////////////////////////////////////////////////
 //     Function: BamWriter::init
-//       Access: Public
+//       Access: Published
 //  Description: Initializes the BamWriter prior to writing any
 //               objects to its output stream.  This includes writing
 //               out the Bam header.
@@ -96,7 +96,7 @@ init() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: BamWriter::write_object
-//       Access: Public
+//       Access: Published
 //  Description: Writes a single object to the Bam file, so that the
 //               BamReader::read_object() can later correctly restore
 //               the object and all its pointers.
@@ -118,15 +118,10 @@ init() {
 ////////////////////////////////////////////////////////////////////
 bool BamWriter::
 write_object(const TypedWritable *object) {
-  nassertr(_object_queue.empty(), false);
-
-  int object_id = enqueue_object(object);
-  nassertr(object_id != 0, false);
-
   // If there are any freed objects to indicate, write them out now.
   if (!_freed_object_ids.empty()) {
     Datagram dg;
-    write_handle(dg, BamReader::_remove_flag);
+    dg.add_uint8(BOC_remove);
 
     FreedObjectIds::iterator fi;
     for (fi = _freed_object_ids.begin(); fi != _freed_object_ids.end(); ++fi) {
@@ -141,9 +136,15 @@ write_object(const TypedWritable *object) {
     }
   }
 
+  nassertr(_object_queue.empty(), false);
+
+  int object_id = enqueue_object(object);
+  nassertr(object_id != 0, false);
+
   // Now we write out all the objects in the queue, in order.  The
   // first one on the queue will, of course, be this object we just
   // queued up, but each object we write may append more to the queue.
+  BamObjectCode boc = BOC_push;
   while (!_object_queue.empty()) {
     object = _object_queue.front();
     _object_queue.pop_front();
@@ -154,15 +155,23 @@ write_object(const TypedWritable *object) {
 
     int object_id = (*si).second._object_id;
     bool already_written = (*si).second._written;
+    if ((*si).second._modified != object->get_bam_modified()) {
+      // This object was previously written, but it has since been
+      // modified, so we should write it again.
+      already_written = false;
+    }
+    cerr << object->get_type() << ": " << (*si).second._modified << " vs. " << object->get_bam_modified() << ", written = " << already_written << "\n";
 
     Datagram dg;
+    dg.add_uint8(boc);
+    boc = BOC_adjunct;
 
     if (!already_written) {
-      // The first time we write a particular object, we do so by
-      // writing its TypeHandle (which had better not be
-      // TypeHandle::none(), since that's our code for a
-      // previously-written object), followed by the object ID number,
-      // followed by the object definition.
+      // The first time we write a particular object, or when we
+      // update the same object later, we do so by writing its
+      // TypeHandle (which had better not be TypeHandle::none(), since
+      // that's our code for a previously-written object), followed by
+      // the object ID number, followed by the object definition.
 
       TypeHandle type = object->get_type();
       nassertr(type != TypeHandle::none(), false);
@@ -195,9 +204,11 @@ write_object(const TypedWritable *object) {
       // object wants to update some transparent cache value during
       // writing or something like that, so it's more convenient to
       // cheat and define it as a non-const method.
+      cerr << "calling " << object->get_type() << "->write_datagram()\n";
       ((TypedWritable *)object)->write_datagram(this, dg);
 
       (*si).second._written = true;
+      (*si).second._modified = object->get_bam_modified();
 
     } else {
       // On subsequent times when we write a particular object, we
@@ -216,12 +227,21 @@ write_object(const TypedWritable *object) {
     }
   }
 
+  // Finally, write the closing pop.
+  Datagram dg;
+  dg.add_uint8(BOC_pop);
+  if (!_target->put_datagram(dg)) {
+    util_cat.error()
+      << "Unable to write data to output.\n";
+    return false;
+  }
+
   return true;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: BamWriter::has_object
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if the object has previously been
 //               written (or at least requested to be written) to the
 //               bam file, or false if we've never heard of it before.
@@ -230,6 +250,17 @@ bool BamWriter::
 has_object(const TypedWritable *object) const {
   StateMap::const_iterator si = _state_map.find(object);
   return (si != _state_map.end());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamWriter::flush
+//       Access: Published
+//  Description: Ensures that all data written thus far is manifested
+//               on the output stream.
+////////////////////////////////////////////////////////////////////
+void BamWriter::
+flush() {
+  _target->flush();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -262,9 +293,23 @@ write_pointer(Datagram &packet, const TypedWritable *object) {
       write_object_id(packet, object_id);
 
     } else {
-      // We have already assigned this pointer an ID; thus, we can
-      // simply write out the ID.
-      write_object_id(packet, (*si).second._object_id);
+      // We have already assigned this pointer an ID, so it has
+      // previously been written; but we might still need to rewrite
+      // it if it is stale.
+      int object_id = (*si).second._object_id;
+      bool already_written = (*si).second._written;
+      if ((*si).second._modified != object->get_bam_modified()) {
+        // This object was previously written, but it has since been
+        // modified, so we should write it again.
+        already_written = false;
+      }
+
+      write_object_id(packet, object_id);
+
+      if (!already_written) {
+        // It's stale, so queue the object for rewriting too.
+        enqueue_object(object);
+      }
     }
   }
 }

@@ -17,8 +17,7 @@
 
 #include "pandabase.h"
 #include "pnotify.h"
-#include "bamEndian.h"
-#include "bamTextureMode.h"
+#include "bamEnums.h"
 #include "typedWritable.h"
 #include "datagramSink.h"
 #include "pdeque.h"
@@ -71,7 +70,7 @@
 //               See also BamFile, which defines a higher-level
 //               interface to read and write Bam files on disk.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_PUTIL BamWriter {
+class EXPCL_PANDA_PUTIL BamWriter : public BamEnums {
 PUBLISHED:
   BamWriter(DatagramSink *sink, const Filename &name = "");
   ~BamWriter();
@@ -80,6 +79,7 @@ PUBLISHED:
   INLINE const Filename &get_filename() const;
   bool write_object(const TypedWritable *obj);
   bool has_object(const TypedWritable *obj) const;
+  void flush();
 
   INLINE BamEndian get_file_endian() const;
 
@@ -119,6 +119,7 @@ private:
   public:
     int _object_id;
     bool _written;
+    UpdateSeq _modified;
 
     StoreState(int object_id) : _object_id(object_id), _written(false) {}
   };
