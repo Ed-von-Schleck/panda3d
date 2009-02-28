@@ -503,7 +503,8 @@ private:
     ALLOC_DELETED_CHAIN(CData);
 
     virtual CycleData *make_copy() const;
-    virtual void write_datagram(BamWriter *manager, Datagram &dg) const;
+    virtual void write_datagram(BamWriter *manager, Datagram &dg) const; 
+    void update_bam_nested(BamWriter *manager) const;
     virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
     virtual void fillin(DatagramIterator &scan, BamReader *manager);
     virtual TypeHandle get_parent_type() const {
@@ -599,6 +600,8 @@ private:
                        BamWriter *manager, Datagram &dg) const;
     void write_down_list(const Down &down_list,
                          BamWriter *manager, Datagram &dg) const;
+    void update_up_list(const Up &up_list, BamWriter *manager) const;
+    void update_down_list(const Down &down_list, BamWriter *manager) const;
     int complete_up_list(Up &up_list, const string &tag,
                          TypedWritable **p_list, BamReader *manager);
     int complete_down_list(Down &down_list, const string &tag,
@@ -716,6 +719,7 @@ private:
 public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &dg);
+  virtual void update_bam_nested(BamWriter *manager);
   void write_recorder(BamWriter *manager, Datagram &dg);
 
 protected:

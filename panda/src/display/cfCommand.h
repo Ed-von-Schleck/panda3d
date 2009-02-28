@@ -73,6 +73,7 @@ private:
 public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &dg);
+  virtual void update_bam_nested(BamWriter *manager);
   virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
 
 protected:

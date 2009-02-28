@@ -4030,6 +4030,19 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::update_bam_nested
+//       Access: Public, Virtual
+//  Description: Called by the BamWriter when this object has not
+//               itself been modified recently, but it should check
+//               its nested objects for updates.
+////////////////////////////////////////////////////////////////////
+void PandaNode::
+update_bam_nested(BamWriter *manager) {
+  CDReader cdata(_cycler);
+  cdata->update_bam_nested(manager);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PandaNode::write_recorder
 //       Access: Public
 //  Description: This method is provided for the benefit of classes
@@ -4230,7 +4243,24 @@ write_datagram(BamWriter *manager, Datagram &dg) const {
   write_up_list(*get_up(), manager, dg);
   write_down_list(*get_down(), manager, dg);
   write_down_list(*get_stashed(), manager, dg);
+}
 
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::CData::update_bam_nested
+//       Access: Public
+//  Description: Called by the BamWriter when this object has not
+//               itself been modified recently, but it should check
+//               its nested objects for updates.
+////////////////////////////////////////////////////////////////////
+void PandaNode::CData::
+update_bam_nested(BamWriter *manager) const {
+  manager->consider_update(_state);
+  manager->consider_update(_transform);
+  manager->consider_update(_effects);
+
+  update_up_list(*get_up(), manager);
+  update_down_list(*get_down(), manager);
+  update_down_list(*get_stashed(), manager);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -4446,6 +4476,38 @@ write_down_list(const PandaNode::Down &down_list,
     int sort = (*di).get_sort();
     manager->write_pointer(dg, child_node);
     dg.add_int32(sort);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::CData::update_up_list
+//       Access: Public
+//  Description: Calls consider_update on each node of the indicated
+//               up list.
+////////////////////////////////////////////////////////////////////
+void PandaNode::CData::
+update_up_list(const PandaNode::Up &up_list, BamWriter *manager) const {
+  Up::const_iterator ui;
+  for (ui = up_list.begin(); ui != up_list.end(); ++ui) {
+    PandaNode *parent_node = (*ui).get_parent();
+    if (manager->has_object(parent_node)) {
+      manager->consider_update(parent_node);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::CData::update_down_list
+//       Access: Public
+//  Description: Calls consider_update on each node of the indicated
+//               up list.
+////////////////////////////////////////////////////////////////////
+void PandaNode::CData::
+update_down_list(const PandaNode::Down &down_list, BamWriter *manager) const {
+  Down::const_iterator di;
+  for (di = down_list.begin(); di != down_list.end(); ++di) {
+    PandaNode *child_node = (*di).get_child();
+    manager->consider_update(child_node);
   }
 }
 

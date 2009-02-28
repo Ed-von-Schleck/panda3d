@@ -50,6 +50,18 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: CFDoCullCommand::update_bam_nested
+//       Access: Public, Virtual
+//  Description: Called by the BamWriter when this object has not
+//               itself been modified recently, but it should check
+//               its nested objects for updates.
+////////////////////////////////////////////////////////////////////
+void CFDoCullCommand::
+update_bam_nested(BamWriter *manager) {
+  manager->consider_update(_scene);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: CFDoCullCommand::complete_pointers
 //       Access: Public, Virtual
 //  Description: Receives an array of pointers, one for each time

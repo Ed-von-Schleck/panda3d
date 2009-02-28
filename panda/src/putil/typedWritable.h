@@ -44,7 +44,8 @@ public:
 
   virtual ~TypedWritable();
 
-  virtual void write_datagram(BamWriter *, Datagram &);
+  virtual void write_datagram(BamWriter *manager, Datagram &dg);
+  virtual void update_bam_nested(BamWriter *manager);
 
   virtual int complete_pointers(TypedWritable **p_list, BamReader *manager);
   virtual bool require_fully_complete() const;

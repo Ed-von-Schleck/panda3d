@@ -56,6 +56,17 @@ write_datagram(BamWriter *, Datagram &) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TypedWritable::update_bam_nested
+//       Access: Public, Virtual
+//  Description: Called by the BamWriter when this object has not
+//               itself been modified recently, but it should check
+//               its nested objects for updates.
+////////////////////////////////////////////////////////////////////
+void TypedWritable::
+update_bam_nested(BamWriter *) {
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TypedWritable::complete_pointers
 //       Access: Public, Virtual
 //  Description: Receives an array of pointers, one for each time
