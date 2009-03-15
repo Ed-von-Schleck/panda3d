@@ -236,14 +236,14 @@ read_object() {
   // might in turn require reading additional objects.  Read all the
   // remaining objects.
 
-  // Prior to 6.19, we kept track of _num_extra_objects to know when
+  // Prior to 6.20, we kept track of _num_extra_objects to know when
   // we're done.
   while (_num_extra_objects > 0) {
     p_read_object();
     _num_extra_objects--;
   }
 
-  // Beginning with 6.19, we use explicit nesting commands to know
+  // Beginning with 6.20, we use explicit nesting commands to know
   // when we're done.
   while (_nesting_level > start_level) {
     p_read_object();

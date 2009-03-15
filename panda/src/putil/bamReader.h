@@ -271,12 +271,12 @@ private:
   // This is the number of extra objects that must still be read (and
   // saved in the _created_objs map) before returning from
   // read_object().  It is only used when read bam versions prior to
-  // 6.19.
+  // 6.20.
   int _num_extra_objects;
 
   // The current nesting level.  We are not done reading an object
   // until we return to our starting nesting level.  It is only used
-  // when reading bam versions of 6.19 or higher.
+  // when reading bam versions of 6.20 or higher.
   int _nesting_level;
 
   // This is the set of all objects that registered themselves for
