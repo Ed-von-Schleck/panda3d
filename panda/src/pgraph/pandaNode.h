@@ -112,6 +112,7 @@ public:
   virtual bool has_single_child_visibility() const;
   virtual int get_visible_child() const;
   virtual bool is_renderable() const;
+  virtual void add_for_draw(CullTraverser *trav, CullTraverserData &data);
 
 PUBLISHED:
   PT(PandaNode) copy_subgraph(Thread *current_thread = Thread::get_current_thread()) const;
@@ -264,6 +265,9 @@ PUBLISHED:
   // returns the external bounding volume.  Although it might seem
   // strange and confusing to do this, this is actually the natural
   // way the user thinks about nodes and bounding volumes.
+  void set_bounds_type(BoundingVolume::BoundsType bounds_type);
+  BoundingVolume::BoundsType get_bounds_type() const;
+
   void set_bounds(const BoundingVolume *volume);
   void set_bound(const BoundingVolume *volume);
   INLINE void clear_bounds();
@@ -546,6 +550,9 @@ private:
     // for an ordinary PandaNode, and all bits on for a CollisionNode
     // or GeomNode.
     CollideMask _into_collide_mask;
+
+    // The requested bounding volume type.
+    BoundingVolume::BoundsType _bounds_type;
 
     // This is the user bounding volume, which is only specified by a
     // user.  It defaults to NULL, which means an empty volume.

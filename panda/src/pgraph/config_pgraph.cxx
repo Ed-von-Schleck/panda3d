@@ -42,6 +42,7 @@
 #include "fadeLodNodeData.h"
 #include "fog.h"
 #include "fogAttrib.h"
+#include "geomDrawCallbackData.h"
 #include "geomNode.h"
 #include "geomTransformer.h"
 #include "lensNode.h"
@@ -193,6 +194,30 @@ ConfigVariableBool state_cache
  PRC_DESC("Set this true to enable the cache of RenderState objects, "
           "similar to the TransformState cache controlled via "
           "transform-cache."));
+
+ConfigVariableBool uniquify_transforms
+("uniquify-transforms", true,
+ PRC_DESC("Set this true to ensure that equivalent TransformStates "
+          "are pointerwise equal.  This may improve caching performance, "
+          "but also adds additional overhead to maintain the cache, "
+          "including the need to check for a composition cycle in "
+          "the cache."));
+
+ConfigVariableBool uniquify_states
+("uniquify-states", true,
+ PRC_DESC("Set this true to ensure that equivalent RenderStates "
+          "are pointerwise equal.  This may improve caching performance, "
+          "but also adds additional overhead to maintain the cache, "
+          "including the need to check for a composition cycle in "
+          "the cache."));
+
+ConfigVariableBool uniquify_attribs
+("uniquify-attribs", true,
+ PRC_DESC("Set this true to ensure that equivalent RenderAttribs "
+          "are pointerwise equal.  This may improve caching performance, "
+          "but also adds additional overhead to maintain the cache, "
+          "including the need to check for a composition cycle in "
+          "the cache."));
 
 ConfigVariableBool retransform_sprites
 ("retransform-sprites", true,
@@ -401,6 +426,7 @@ init_libpgraph() {
   FindApproxLevelEntry::init_type();
   Fog::init_type();
   FogAttrib::init_type();
+  GeomDrawCallbackData::init_type();
   GeomNode::init_type();
   GeomTransformer::init_type();
   LensNode::init_type();

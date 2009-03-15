@@ -23,16 +23,20 @@
     buttonHandle.I \
     buttonHandle.h buttonRegistry.I buttonRegistry.h \
     cachedTypedWritableReferenceCount.h cachedTypedWritableReferenceCount.I \
+    callbackData.h callbackData.I \
+    callbackObject.h callbackObject.I \
     clockObject.h clockObject.I \
     collideMask.h \
     copyOnWriteObject.h copyOnWriteObject.I \
     copyOnWritePointer.h copyOnWritePointer.I \
     compareTo.I compareTo.h \
     config_util.N config_util.h configurable.h \
+    cPointerCallbackObject.h cPointerCallbackObject.I \
     datagramInputFile.I datagramInputFile.h \
     datagramOutputFile.I datagramOutputFile.h \
     doubleBitMask.I doubleBitMask.h \
     drawMask.h \
+    factory.I factory.h \
     factoryBase.I factoryBase.h \
     factoryParam.I factoryParam.h factoryParams.I \
     factoryParams.h \
@@ -54,7 +58,8 @@
     pbitops.I pbitops.h \
     portalMask.h \
     pta_double.h \
-    pta_int.h \
+    pta_int.h pta_ushort.h \
+    pythonCallbackObject.h pythonCallbackObject.I \
     simpleHashMap.I simpleHashMap.h \
     sparseArray.I sparseArray.h \
     string_utils.I string_utils.N string_utils.h \
@@ -79,10 +84,13 @@
     bitMask.cxx \
     buttonHandle.cxx buttonRegistry.cxx \
     cachedTypedWritableReferenceCount.cxx \
+    callbackData.cxx \
+    callbackObject.cxx \
     clockObject.cxx \
     copyOnWriteObject.cxx \
     copyOnWritePointer.cxx \
     config_util.cxx configurable.cxx \
+    cPointerCallbackObject.cxx \
     datagramInputFile.cxx datagramOutputFile.cxx \
     doubleBitMask.cxx \
     factoryBase.cxx \
@@ -100,6 +108,7 @@
     pbitops.cxx \
     pta_double.cxx \
     pta_int.cxx pta_ushort.cxx \
+    pythonCallbackObject.cxx \
     simpleHashMap.cxx \
     sparseArray.cxx \
     string_utils.cxx \
@@ -125,16 +134,20 @@
     buttonHandle.I buttonHandle.h buttonRegistry.I \
     buttonRegistry.h \
     cachedTypedWritableReferenceCount.h cachedTypedWritableReferenceCount.I \
+    callbackData.h callbackData.I \
+    callbackObject.h callbackObject.I \
     clockObject.h clockObject.I \
     collideMask.h \
     copyOnWriteObject.h copyOnWriteObject.I \
     copyOnWritePointer.h copyOnWritePointer.I \
     compareTo.I compareTo.h \
-    config_util.h configurable.h factory.I factory.h \
+    config_util.h configurable.h \
+    cPointerCallbackObject.h cPointerCallbackObject.I \
     datagramInputFile.I datagramInputFile.h \
     datagramOutputFile.I datagramOutputFile.h \
     doubleBitMask.I doubleBitMask.h \
     drawMask.h \
+    factory.I factory.h \
     factoryBase.I factoryBase.h factoryParam.I factoryParam.h \
     factoryParams.I factoryParams.h \
     firstOfPairCompare.I firstOfPairCompare.h \
@@ -157,6 +170,7 @@
     pbitops.I pbitops.h \
     pta_double.h \
     pta_int.h pta_ushort.h \
+    pythonCallbackObject.h pythonCallbackObject.I \
     simpleHashMap.I simpleHashMap.h \
     sparseArray.I sparseArray.h \
     string_utils.I string_utils.h \

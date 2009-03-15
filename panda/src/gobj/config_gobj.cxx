@@ -191,6 +191,20 @@ ConfigVariableBool hardware_point_sprites
           "computed in software, even if the hardware claims it can "
           "support them directly."));
 
+ConfigVariableBool hardware_points
+("hardware-points", true,
+ PRC_DESC("Set this true to allow the use of hardware extensions when "
+          "rendering large points.  When false, large points (even if "
+          "untextured) will be simulated via quads computed in software."));
+
+ConfigVariableBool singular_points
+("singular-points", true,
+ PRC_DESC("Set this true to insist that when RenderModeAttrib::M_points is "
+          "used, each point appears only once in the result, even if "
+          "the vertex is referenced multiple times.  This is particularly "
+          "important when rendering points from a triangle mesh and you "
+          "don't want the points to appear repeatedly."));
+
 ConfigVariableBool matrix_palette
 ("matrix-palette", false,
  PRC_DESC("Set this true to allow the use of the matrix palette when "

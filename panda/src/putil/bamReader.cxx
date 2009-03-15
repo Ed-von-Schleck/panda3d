@@ -590,8 +590,8 @@ read_pointer(DatagramIterator &scan) {
     _created_objs.insert(CreatedObjs::value_type(object_id, new_created_obj)).second;
     */
 
-    if (get_file_minor_ver() < 19) {
-      // Prior to bam version 6.19, we expect to read an adjunct
+    if (get_file_minor_ver() < 20) {
+      // Prior to bam version 6.20, we expect to read an adjunct
       // object for each non-NULL pointer we read.
       _num_extra_objects++;
     }
@@ -1017,10 +1017,10 @@ p_read_object() {
   // Now extract the object definition from the datagram.
   DatagramIterator scan(packet);
 
-  // First, read the BamObjectCode.  In bam versions prior to 6.19,
+  // First, read the BamObjectCode.  In bam versions prior to 6.20,
   // there was no BamObjectCode in the stream.
   BamObjectCode boc = BOC_adjunct;
-  if (get_file_minor_ver() >= 19) {
+  if (get_file_minor_ver() >= 20) {
     boc = (BamObjectCode)scan.get_uint8();
   }
   switch (boc) {

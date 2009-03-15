@@ -120,8 +120,11 @@ move_pointer(int device, int x, int y) {
       return false;
     }
 
-    XWarpPointer(_display, None, _xwindow, 0, 0, 0, 0, x, y);
-    _input_devices[0].set_pointer_in_window(x, y);
+    const MouseData &md = _input_devices[0].get_pointer();
+    if (!md.get_in_window() || md.get_x() != x || md.get_y() != y) {
+      XWarpPointer(_display, None, _xwindow, 0, 0, 0, 0, x, y);
+      _input_devices[0].set_pointer_in_window(x, y);
+    }
     return true;
   } else {
     // Move a raw mouse.
@@ -146,6 +149,10 @@ move_pointer(int device, int x, int y) {
 bool TinyXGraphicsWindow::
 begin_frame(FrameMode mode, Thread *current_thread) {
   PStatTimer timer(_make_current_pcollector, current_thread);
+
+  if (_xwindow == (Window)NULL) {
+    return false;
+  }
 
   begin_frame_spam(mode);
   if (_gsg == (GraphicsStateGuardian *)NULL) {
@@ -215,6 +222,10 @@ end_frame(FrameMode mode, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void TinyXGraphicsWindow::
 begin_flip() {
+  if (_xwindow == (Window)NULL) {
+    return;
+  }
+
   if (_reduced_frame_buffer != (ZBuffer *)NULL) {
     // Zoom the reduced buffer onto the full buffer.
     ZB_zoomFrameBuffer(_full_frame_buffer, 0, 0, 
@@ -223,14 +234,12 @@ begin_flip() {
                        _reduced_frame_buffer->xsize, _reduced_frame_buffer->ysize);
   }
 
-  if (_bytes_per_pixel == 4 && _pitch == _full_frame_buffer->linesize) {
-    // If we match the expected bpp, we don't need an intervening copy
-    // operation.  Just point the XImage directly at the framebuffer
-    // data.
-    _ximage->data = (char *)_full_frame_buffer->pbuf;
-  } else {
-    ZB_copyFrameBuffer(_full_frame_buffer, _ximage->data, _pitch);
-  }
+  // We can't just point the XPutImage directly at our own framebuffer
+  // data, even if the bytes_per_pixel matches, because some X
+  // displays will respect the alpha channel and make the window
+  // transparent there.  We don't want transparent windows where the
+  // alpha data happens to less than 1.0.
+  ZB_copyFrameBufferNoAlpha(_full_frame_buffer, _ximage->data, _pitch);
 
   XPutImage(_display, _xwindow, _gc, _ximage, 0, 0, 0, 0,
             _full_frame_buffer->xsize, _full_frame_buffer->ysize);
@@ -1247,7 +1256,7 @@ handle_keystroke(XKeyEvent &event) {
 
   } else {
     // Without an input context, just get the ascii keypress.
-    ButtonHandle button = get_button(event);
+    ButtonHandle button = get_button(event, true);
     if (button.has_ascii_equivalent()) {
       _input_devices[0].keystroke(button.get_ascii_equivalent());
     }
@@ -1265,7 +1274,16 @@ handle_keypress(XKeyEvent &event) {
   _input_devices[0].set_pointer_in_window(event.x, event.y);
 
   // Now get the raw unshifted button.
-  ButtonHandle button = get_button(event);
+  ButtonHandle button = get_button(event, false);
+  if (button == KeyboardButton::lcontrol() || button == KeyboardButton::rcontrol()) {
+    _input_devices[0].button_down(KeyboardButton::control());
+  }
+  if (button == KeyboardButton::lshift() || button == KeyboardButton::rshift()) {
+    _input_devices[0].button_down(KeyboardButton::shift());
+  }
+  if (button == KeyboardButton::lalt() || button == KeyboardButton::ralt()) {
+    _input_devices[0].button_down(KeyboardButton::alt());
+  }
   if (button != ButtonHandle::none()) {
     _input_devices[0].button_down(button);
   }
@@ -1282,7 +1300,16 @@ handle_keyrelease(XKeyEvent &event) {
   _input_devices[0].set_pointer_in_window(event.x, event.y);
 
   // Now get the raw unshifted button.
-  ButtonHandle button = get_button(event);
+  ButtonHandle button = get_button(event, false);
+  if (button == KeyboardButton::lcontrol() || button == KeyboardButton::rcontrol()) {
+    _input_devices[0].button_up(KeyboardButton::control());
+  }
+  if (button == KeyboardButton::lshift() || button == KeyboardButton::rshift()) {
+    _input_devices[0].button_up(KeyboardButton::shift());
+  }
+  if (button == KeyboardButton::lalt() || button == KeyboardButton::ralt()) {
+    _input_devices[0].button_up(KeyboardButton::alt());
+  }
   if (button != ButtonHandle::none()) {
     _input_devices[0].button_up(button);
   }
@@ -1295,18 +1322,107 @@ handle_keyrelease(XKeyEvent &event) {
 //               keyboard button indicated by the given key event.
 ////////////////////////////////////////////////////////////////////
 ButtonHandle TinyXGraphicsWindow::
-get_button(XKeyEvent &key_event) {
+get_button(XKeyEvent &key_event, bool allow_shift) {
   KeySym key = XLookupKeysym(&key_event, 0);
 
+  if ((key_event.state & Mod2Mask) != 0) {
+    // Mod2Mask corresponds to NumLock being in effect.  In this case,
+    // we want to get the alternate keysym associated with any keypad
+    // keys.  Weird system.
+    KeySym k2;
+    ButtonHandle button;
+    switch (key) {
+    case XK_KP_Space:
+    case XK_KP_Tab:
+    case XK_KP_Enter:
+    case XK_KP_F1:
+    case XK_KP_F2:
+    case XK_KP_F3:
+    case XK_KP_F4:
+    case XK_KP_Equal:
+    case XK_KP_Multiply:
+    case XK_KP_Add:
+    case XK_KP_Separator:
+    case XK_KP_Subtract:
+    case XK_KP_Divide:
+    case XK_KP_Left:
+    case XK_KP_Up:
+    case XK_KP_Right:
+    case XK_KP_Down:
+    case XK_KP_Begin:
+    case XK_KP_Prior:
+    case XK_KP_Next:
+    case XK_KP_Home:
+    case XK_KP_End:
+    case XK_KP_Insert:
+    case XK_KP_Delete:
+    case XK_KP_0:
+    case XK_KP_1:
+    case XK_KP_2:
+    case XK_KP_3:
+    case XK_KP_4:
+    case XK_KP_5:
+    case XK_KP_6:
+    case XK_KP_7:
+    case XK_KP_8:
+    case XK_KP_9:
+      k2 = XLookupKeysym(&key_event, 1);
+      button = map_button(k2);
+      if (button != ButtonHandle::none()) {
+        return button;
+      }
+      // If that didn't produce a button we know, just fall through
+      // and handle the normal, un-numlocked key.
+      break;
+
+    default:
+      break;
+    } 
+  }
+
+  if (allow_shift) {
+    // If shift is held down, get the shifted keysym.
+    if ((key_event.state & ShiftMask) != 0) {
+      KeySym k2 = XLookupKeysym(&key_event, 1);
+      ButtonHandle button = map_button(k2);
+      if (button != ButtonHandle::none()) {
+        return button;
+      }
+    }
+
+    // If caps lock is down, shift lowercase letters to uppercase.  We
+    // can do this in just the ASCII set, because we handle
+    // international keyboards elsewhere (via an input context).
+    if ((key_event.state & (ShiftMask | LockMask)) != 0) {
+      if (key >= XK_a and key <= XK_z) {
+        key += (XK_A - XK_a);
+      }
+    }
+  }
+
+  return map_button(key);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TinyXGraphicsWindow::map_button
+//       Access: Private
+//  Description: Maps from a single X keysym to Panda's ButtonHandle.
+//               Called by get_button(), above.
+////////////////////////////////////////////////////////////////////
+ButtonHandle TinyXGraphicsWindow::
+map_button(KeySym key) {
   switch (key) {
   case XK_BackSpace:
     return KeyboardButton::backspace();
   case XK_Tab:
+  case XK_KP_Tab:
     return KeyboardButton::tab();
   case XK_Return:
+  case XK_KP_Enter:
     return KeyboardButton::enter();
   case XK_Escape:
     return KeyboardButton::escape();
+  case XK_KP_Space:
   case XK_space:
     return KeyboardButton::space();
   case XK_exclam:
@@ -1328,36 +1444,52 @@ get_button(XKeyEvent &key_event) {
   case XK_parenright:
     return KeyboardButton::ascii_key(')');
   case XK_asterisk:
+  case XK_KP_Multiply:
     return KeyboardButton::ascii_key('*');
   case XK_plus:
+  case XK_KP_Add:
     return KeyboardButton::ascii_key('+');
   case XK_comma:
+  case XK_KP_Separator:
     return KeyboardButton::ascii_key(',');
   case XK_minus:
+  case XK_KP_Subtract:
     return KeyboardButton::ascii_key('-');
   case XK_period:
+  case XK_KP_Decimal:
     return KeyboardButton::ascii_key('.');
   case XK_slash:
+  case XK_KP_Divide:
     return KeyboardButton::ascii_key('/');
   case XK_0:
+  case XK_KP_0:
     return KeyboardButton::ascii_key('0');
   case XK_1:
+  case XK_KP_1:
     return KeyboardButton::ascii_key('1');
   case XK_2:
+  case XK_KP_2:
     return KeyboardButton::ascii_key('2');
   case XK_3:
+  case XK_KP_3:
     return KeyboardButton::ascii_key('3');
   case XK_4:
+  case XK_KP_4:
     return KeyboardButton::ascii_key('4');
   case XK_5:
+  case XK_KP_5:
     return KeyboardButton::ascii_key('5');
   case XK_6:
+  case XK_KP_6:
     return KeyboardButton::ascii_key('6');
   case XK_7:
+  case XK_KP_7:
     return KeyboardButton::ascii_key('7');
   case XK_8:
+  case XK_KP_8:
     return KeyboardButton::ascii_key('8');
   case XK_9:
+  case XK_KP_9:
     return KeyboardButton::ascii_key('9');
   case XK_colon:
     return KeyboardButton::ascii_key(':');
@@ -1366,6 +1498,7 @@ get_button(XKeyEvent &key_event) {
   case XK_less:
     return KeyboardButton::ascii_key('<');
   case XK_equal:
+  case XK_KP_Equal:
     return KeyboardButton::ascii_key('=');
   case XK_greater:
     return KeyboardButton::ascii_key('>');
@@ -1498,12 +1631,16 @@ get_button(XKeyEvent &key_event) {
   case XK_asciitilde:
     return KeyboardButton::ascii_key('~');
   case XK_F1:
+  case XK_KP_F1:
     return KeyboardButton::f1();
   case XK_F2:
+  case XK_KP_F2:
     return KeyboardButton::f2();
   case XK_F3:
+  case XK_KP_F3:
     return KeyboardButton::f3();
   case XK_F4:
+  case XK_KP_F4:
     return KeyboardButton::f4();
   case XK_F5:
     return KeyboardButton::f5();
@@ -1551,15 +1688,26 @@ get_button(XKeyEvent &key_event) {
   case XK_KP_Delete:
   case XK_Delete:
     return KeyboardButton::del();
+  case XK_Num_Lock:
+    return KeyboardButton::num_lock();
+  case XK_Scroll_Lock:
+    return KeyboardButton::scroll_lock();
+  case XK_Print:
+    return KeyboardButton::print_screen();
+  case XK_Pause:
+    return KeyboardButton::pause();
   case XK_Shift_L:
+    return KeyboardButton::lshift();
   case XK_Shift_R:
-    return KeyboardButton::shift();
+    return KeyboardButton::rshift();
   case XK_Control_L:
+    return KeyboardButton::lcontrol();
   case XK_Control_R:
-    return KeyboardButton::control();
+    return KeyboardButton::rcontrol();
   case XK_Alt_L:
+    return KeyboardButton::lalt();
   case XK_Alt_R:
-    return KeyboardButton::alt();
+    return KeyboardButton::ralt();
   case XK_Meta_L:
   case XK_Meta_R:
     return KeyboardButton::meta();
@@ -1585,7 +1733,11 @@ get_mouse_button(XButtonEvent &button_event) {
     return MouseButton::wheel_up();
   } else if (index == x_wheel_down_button) {
     return MouseButton::wheel_down();
-  } else  {
+  } else if (index == x_wheel_left_button) {
+    return MouseButton::wheel_left();
+  } else if (index == x_wheel_right_button) {
+    return MouseButton::wheel_right();
+  } else {
     return MouseButton::button(index - 1);
   }
 }
@@ -1676,19 +1828,14 @@ create_reduced_frame_buffer() {
 void TinyXGraphicsWindow::
 create_ximage() {
   if (_ximage != NULL) {
-    if (_bytes_per_pixel != 4) {
-      PANDA_FREE_ARRAY(_ximage->data);
-    }
+    PANDA_FREE_ARRAY(_ximage->data);
     _ximage->data = NULL;
     XDestroyImage(_ximage);
     _ximage = NULL;
   }
 
   int image_size = _full_frame_buffer->ysize * _pitch;
-  char *data = NULL;
-  if (_bytes_per_pixel != 4) {
-    data = (char *)PANDA_MALLOC_ARRAY(image_size);
-  }
+  char *data = (char *)PANDA_MALLOC_ARRAY(image_size);
 
   _ximage = XCreateImage(_display, _visual, _depth, ZPixmap, 0, data,
                          _full_frame_buffer->xsize, _full_frame_buffer->ysize,

@@ -169,6 +169,7 @@ PUBLISHED:
   CPT(TransformState) invert_compose(const TransformState *other) const;
 
   INLINE CPT(TransformState) get_inverse() const;
+  INLINE CPT(TransformState) get_unique() const;
 
   INLINE int get_geom_rendering(int geom_rendering) const;
 
@@ -188,9 +189,14 @@ PUBLISHED:
   INLINE int get_invert_composition_cache_size() const;
   INLINE const TransformState *get_invert_composition_cache_source(int n) const;
   INLINE const TransformState *get_invert_composition_cache_result(int n) const;
+#ifdef HAVE_PYTHON
+  PyObject *get_composition_cache() const;
+  PyObject *get_invert_composition_cache() const;
+#endif  // HAVE_PYTHON
 
   void output(ostream &out) const;
   void write(ostream &out, int indent_level) const;
+  void write_composition_cache(ostream &out, int indent_level) const;
 
   static int get_num_states();
   static int get_num_unused_states();
@@ -198,6 +204,10 @@ PUBLISHED:
   static void list_cycles(ostream &out);
   static void list_states(ostream &out);
   static bool validate_states();
+#ifdef HAVE_PYTHON
+  static PyObject *get_states();
+#endif  // HAVE_PYTHON
+
 
 public:
   static void init_states();
@@ -221,12 +231,18 @@ private:
   typedef pvector<CompositionCycleDescEntry> CompositionCycleDesc;
 
   static CPT(TransformState) return_new(TransformState *state);
+  static CPT(TransformState) return_unique(TransformState *state);
+
   CPT(TransformState) do_compose(const TransformState *other) const;
   CPT(TransformState) do_invert_compose(const TransformState *other) const;
   static bool r_detect_cycles(const TransformState *start_state,
                               const TransformState *current_state,
                               int length, UpdateSeq this_seq,
                               CompositionCycleDesc *cycle_desc);
+  static bool r_detect_reverse_cycles(const TransformState *start_state,
+                                      const TransformState *current_state,
+                                      int length, UpdateSeq this_seq,
+                                      CompositionCycleDesc *cycle_desc);
 
   void release_new();
   void remove_cache_pointers();
@@ -239,6 +255,7 @@ private:
   typedef phash_set<const TransformState *, indirect_less_hash<const TransformState *> > States;
   static States *_states;
   static CPT(TransformState) _identity_state;
+  static CPT(TransformState) _invalid_state;
 
   // This iterator records the entry corresponding to this TransformState
   // object in the above global set.  We keep the iterator around so

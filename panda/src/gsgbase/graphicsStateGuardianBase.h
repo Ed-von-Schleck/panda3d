@@ -128,6 +128,9 @@ public:
   // that display depends on.
   virtual SceneSetup *get_scene() const=0;
 
+  virtual void clear_before_callback()=0;
+  virtual void clear_state_and_transform()=0;
+
 #ifndef CPPPARSER
   // We hide this from interrogate, so that it will be properly
   // exported from the GraphicsStateGuardian class, later.

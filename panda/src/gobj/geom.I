@@ -231,6 +231,19 @@ unify(int max_indices, bool preserve_order) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Geom::make_points
+//       Access: Published
+//  Description: Returns a new Geom with points at all the vertices.
+//               See GeomPrimitive::make_points().
+////////////////////////////////////////////////////////////////////
+INLINE PT(Geom) Geom::
+make_points() const {
+  PT(Geom) new_geom = make_copy();
+  new_geom->make_points_in_place();
+  return new_geom;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Geom::get_modified
 //       Access: Published
 //  Description: Returns a sequence number which is guaranteed to
@@ -257,6 +270,43 @@ INLINE void Geom::
 mark_bounds_stale() const {
   CDWriter cdata(((Geom *)this)->_cycler, false);
   ((Geom *)this)->mark_internal_bounds_stale(cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::set_bounds_type
+//       Access: Published
+//  Description: Specifies the desired type of bounding volume that
+//               will be created for this Geom.  This is normally
+//               BoundingVolume::BT_default, which means to set the
+//               type according to the config variable "bounds-type".
+//
+//               If this is BT_sphere or BT_box, a BoundingSphere or
+//               BoundingBox is explicitly created.  If it is BT_best,
+//               a BoundingBox is created.
+//
+//               This affects the implicit bounding volume only.  If
+//               an explicit bounding volume is set on the Geom with
+//               set_bounds(), that bounding volume type is used.
+//               (This is different behavior from the similar method
+//               on PandaNode.)
+////////////////////////////////////////////////////////////////////
+INLINE void Geom::
+set_bounds_type(BoundingVolume::BoundsType bounds_type) {
+  CDWriter cdata(_cycler, true);
+  cdata->_bounds_type = bounds_type;
+  mark_internal_bounds_stale(cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Geom::get_bounds_type
+//       Access: Published
+//  Description: Returns the bounding volume type set with
+//               set_bounds_type().
+////////////////////////////////////////////////////////////////////
+INLINE BoundingVolume::BoundsType Geom::
+get_bounds_type() const {
+  CDReader cdata(_cycler);
+  return cdata->_bounds_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -493,7 +543,8 @@ CData() :
   _usage_hint(UH_unspecified),
   _got_usage_hint(false),
   _nested_vertices(0),
-  _internal_bounds_stale(true)
+  _internal_bounds_stale(true),
+  _bounds_type(BoundingVolume::BT_default)
 {
 }
 
@@ -515,6 +566,7 @@ CData(const Geom::CData &copy) :
   _internal_bounds(copy._internal_bounds),
   _nested_vertices(copy._nested_vertices),
   _internal_bounds_stale(copy._internal_bounds_stale),
+  _bounds_type(copy._bounds_type),
   _user_bounds(copy._user_bounds)
 {
 }

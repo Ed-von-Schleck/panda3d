@@ -101,12 +101,14 @@ PUBLISHED:
   INLINE PT(Geom) reverse() const;
   INLINE PT(Geom) rotate() const;
   INLINE PT(Geom) unify(int max_indices, bool preserve_order) const;
+  INLINE PT(Geom) make_points() const;
 
   void decompose_in_place();
   void doubleside_in_place();
   void reverse_in_place();
   void rotate_in_place();
   void unify_in_place(int max_indices, bool preserve_order);
+  void make_points_in_place();
 
   virtual bool copy_primitives_from(const Geom *other);
 
@@ -122,6 +124,8 @@ PUBLISHED:
   CPT(BoundingVolume) get_bounds(Thread *current_thread = Thread::get_current_thread()) const;
   int get_nested_vertices(Thread *current_thread = Thread::get_current_thread()) const;
   INLINE void mark_bounds_stale() const;
+  INLINE void set_bounds_type(BoundingVolume::BoundsType bounds_type);
+  INLINE BoundingVolume::BoundsType get_bounds_type() const;
   INLINE void set_bounds(const BoundingVolume *volume);
   INLINE void clear_bounds();
 
@@ -300,6 +304,7 @@ private:
     CPT(BoundingVolume) _internal_bounds;
     int _nested_vertices;
     bool _internal_bounds_stale;
+    BoundingVolume::BoundsType _bounds_type;
     CPT(BoundingVolume) _user_bounds;
     
   public:

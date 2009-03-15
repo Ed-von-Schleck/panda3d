@@ -1538,6 +1538,21 @@ prepare_display_region(DisplayRegionPipelineReader *dr,
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GLGraphicsStateGuardian::clear_before_callback
+//       Access: Public, Virtual
+//  Description: Resets any non-standard graphics state that might
+//               give a callback apoplexy.  Some drivers require that
+//               the graphics state be restored to neutral before
+//               performing certain operations.  In OpenGL, for
+//               instance, this closes any open vertex buffers.
+////////////////////////////////////////////////////////////////////
+void CLP(GraphicsStateGuardian)::
+clear_before_callback() {
+  disable_standard_vertex_arrays();
+  unbind_buffers();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GLGraphicsStateGuardian::calc_projection_mat
 //       Access: Public, Virtual
 //  Description: Given a lens, calculates the appropriate projection
@@ -1955,22 +1970,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
     // Before we compile or call a display list, make sure the current
     // buffers are unbound, or the nVidia drivers may crash.
-    if (_current_vbuffer_index != 0) {
-      if (GLCAT.is_debug() && CLP(debug_buffers)) {
-        GLCAT.debug()
-          << "unbinding vertex buffer\n";
-      }
-      _glBindBuffer(GL_ARRAY_BUFFER, 0);
-      _current_vbuffer_index = 0;
-    }
-    if (_current_ibuffer_index != 0) {
-      if (GLCAT.is_debug() && CLP(debug_buffers)) {
-        GLCAT.debug()
-          << "unbinding index buffer\n";
-      }
-      _glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-      _current_ibuffer_index = 0;
-    }
+    unbind_buffers();
 
     GeomContext *gc = ((Geom *)geom_reader->get_object())->prepare_now(get_prepared_objects(), this);
     nassertr(gc != (GeomContext *)NULL, false);
@@ -2301,6 +2301,35 @@ update_standard_vertex_arrays(bool force) {
     }
   }
   return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GLGraphicsStateGuardian::unbind_buffers
+//       Access: Protected
+//  Description: Ensures the vertex and array buffers are no longer
+//               bound.  Some graphics drivers crash if these are left
+//               bound indiscriminantly.
+////////////////////////////////////////////////////////////////////
+void CLP(GraphicsStateGuardian)::
+unbind_buffers() {
+  if (_current_vbuffer_index != 0) {
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
+      GLCAT.debug()
+        << "unbinding vertex buffer\n";
+    }
+    _glBindBuffer(GL_ARRAY_BUFFER, 0);
+    _current_vbuffer_index = 0;
+  }
+  if (_current_ibuffer_index != 0) {
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
+      GLCAT.debug()
+        << "unbinding index buffer\n";
+    }
+    _glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    _current_ibuffer_index = 0;
+  }
+
+  disable_standard_vertex_arrays();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -4926,7 +4955,7 @@ set_read_buffer(int rbtype) {
       break;
 
     default:
-      GLP(ReadBuffer)(GL_FRONT_AND_BACK);
+      break;
     }
   }
 
@@ -5889,6 +5918,21 @@ get_light_color(float light_color[4], Light *light) const {
   light_color[3] = c[3] * _light_color_scale[3];
 
   return light_color;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: GLGraphicsStateGuardian::reissue_transforms
+//       Access: Protected, Virtual
+//  Description: Called by clear_state_and_transform() to ensure that
+//               the current modelview and projection matrices are
+//               properly loaded in the graphics state, after a
+//               callback might have mucked them up.
+////////////////////////////////////////////////////////////////////
+void CLP(GraphicsStateGuardian)::
+reissue_transforms() {
+  prepare_lens();
+  do_issue_transform();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -7503,11 +7547,9 @@ upload_texture(CLP(TextureContext) *gtc, bool force) {
     gtc->_height = height;
     gtc->_depth = depth;
 
-#ifdef DO_PSTATS
     if (!image.is_null()) {
       gtc->update_data_size_bytes(get_texture_memory_size(tex));
     }
-#endif
 
     if (tex->get_post_load_store_cache()) {
       tex->set_post_load_store_cache(false);

@@ -16,6 +16,8 @@
     cfCommand.I cfCommand.h \
     drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h  \
+    displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
+    displayRegionDrawCallbackData.I displayRegionDrawCallbackData.h \
     frameBufferProperties.I frameBufferProperties.h \
     graphicsEngine.I graphicsEngine.h \
     graphicsOutput.I graphicsOutput.h \
@@ -44,6 +46,8 @@
     cfCommand.cxx \
     drawableRegion.cxx \
     displayRegion.cxx \
+    displayRegionCullCallbackData.cxx \
+    displayRegionDrawCallbackData.cxx \
     frameBufferProperties.cxx \
     graphicsEngine.cxx \
     graphicsOutput.cxx \
@@ -68,6 +72,8 @@
     cfCommand.I cfCommand.h \
     drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h \
+    displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
+    displayRegionDrawCallbackData.I displayRegionDrawCallbackData.h \
     frameBufferProperties.I frameBufferProperties.h \
     graphicsEngine.I graphicsEngine.h \
     graphicsOutput.I graphicsOutput.h \

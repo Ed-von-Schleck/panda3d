@@ -18,7 +18,7 @@
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 #include <AGL/agl.h>
-	
+        
 #include "pandabase.h"
 #include "glgsg.h"
 
@@ -40,21 +40,20 @@ public:
 
   void draw_resize_box();
   
-  bool get_gamma_table(void);
+  bool get_gamma_table();
   bool static_set_gamma(bool restore, float gamma);
   bool set_gamma(float gamma);
-  void atexit_function(void);
+  void atexit_function();
   void restore_gamma();
-	
+        
 protected:
   virtual void *get_extension_func(const char *prefix, const char *name);
   
 public:
-  OSStatus buildGL(osxGraphicsWindow &window, bool full_screen,
-                   FrameBufferProperties &fb_props);
-  AGLContext  get_context(void) { return _aglcontext; };
+  OSStatus build_gl(bool full_screen, bool pbuffer, FrameBufferProperties &fb_props);
+  AGLContext get_context() { return _aglcontext; };
   
-  const AGLPixelFormat  getAGlPixelFormat() const { return _aglPixFmt; };
+  const AGLPixelFormat get_agl_pixel_format() const { return _aglPixFmt; };
 
 private:
   void describe_pixel_format(FrameBufferProperties &fb_props);
@@ -63,8 +62,8 @@ private:
   // context with, since we don't create our own context in the
   // constructor.
   PT(osxGraphicsStateGuardian) _share_with;
-  AGLPixelFormat	_aglPixFmt;
-  AGLContext		_aglcontext;
+  AGLPixelFormat _aglPixFmt;
+  AGLContext _aglcontext;
   CGGammaValue _gOriginalRedTable[ 256 ];
   CGGammaValue _gOriginalGreenTable[ 256 ];
   CGGammaValue _gOriginalBlueTable[ 256 ];
@@ -72,7 +71,7 @@ private:
   CGDisplayErr _cgErr;
 
 public:
-  GLint   SharedBuffer;
+  GLint _shared_buffer;
 
 public:
   static TypeHandle get_class_type() {

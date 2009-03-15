@@ -27,8 +27,11 @@
 #include "geomVertexReader.h"
 #include "geomTriangles.h"
 #include "light.h"
+#include "lightMutexHolder.h"
+#include "geomDrawCallbackData.h"
 
 CullableObject::FormatMap CullableObject::_format_map;
+LightMutex CullableObject::_format_lock;
 
 PStatCollector CullableObject::_munge_geom_pcollector("*:Munge:Geom");
 PStatCollector CullableObject::_munge_sprites_pcollector("*:Munge:Sprites");
@@ -60,20 +63,33 @@ munge_geom(GraphicsStateGuardianBase *gsg,
   if (_geom != (Geom *)NULL) {
     _munger = munger;
 
-    GeomPipelineReader geom_reader(_geom, current_thread);
-    _munged_data = geom_reader.get_vertex_data();
+    int geom_rendering;
 
-#ifdef _DEBUG
     {
-      GeomVertexDataPipelineReader data_reader(_munged_data, current_thread);
-      data_reader.check_array_readers();
-      nassertr(geom_reader.check_valid(&data_reader), false);
-    }
+      GeomPipelineReader geom_reader(_geom, current_thread);
+      _munged_data = geom_reader.get_vertex_data();
+      
+#ifdef _DEBUG
+      {
+        GeomVertexDataPipelineReader data_reader(_munged_data, current_thread);
+        data_reader.check_array_readers();
+        nassertr(geom_reader.check_valid(&data_reader), false);
+      }
 #endif  // _DEBUG
-
-    int geom_rendering = geom_reader.get_geom_rendering();
-    geom_rendering = _state->get_geom_rendering(geom_rendering);
-    geom_rendering = _modelview_transform->get_geom_rendering(geom_rendering);
+      
+      geom_rendering = geom_reader.get_geom_rendering();
+      geom_rendering = _state->get_geom_rendering(geom_rendering);
+      geom_rendering = _modelview_transform->get_geom_rendering(geom_rendering);
+      
+      if (geom_rendering & Geom::GR_point_bits) {
+        if (geom_reader.get_primitive_type() != Geom::PT_points) {
+          if (singular_points) {
+            // Isolate the points so there's no unneeded overlap.
+            _geom = _geom->make_points();
+          }
+        }
+      }
+    }
     
     GraphicsStateGuardianBase *gsg = traverser->get_gsg();
     int gsg_bits = gsg->get_supported_geom_rendering();
@@ -82,6 +98,11 @@ munge_geom(GraphicsStateGuardianBase *gsg,
       // points is disabled, we don't allow the GSG to tell us it
       // supports them.
       gsg_bits &= ~(Geom::GR_point_perspective | Geom::GR_point_sprite);
+    }
+    if (!hardware_points) {
+      // If hardware-points is off, we don't allow any kind of point
+      // rendering, except plain old one-pixel points;
+      gsg_bits &= ~(Geom::GR_point_bits & ~Geom::GR_point);
     }
     int unsupported_bits = geom_rendering & ~gsg_bits;
 
@@ -156,12 +177,16 @@ munge_geom(GraphicsStateGuardianBase *gsg,
     }
 #endif
   }
-  if (_next != (CullableObject *)NULL) {
-    if (_next->_state != (RenderState *)NULL) {
-      _next->munge_geom(gsg, gsg->get_geom_munger(_next->_state, current_thread),
-                        traverser, force);
-    } else {
-      _next->munge_geom(gsg, munger, traverser, force);
+
+  if (_fancy) {
+    // Only check the _next pointer if the _fancy flag is set.
+    if (_next != (CullableObject *)NULL) {
+      if (_next->_state != (RenderState *)NULL) {
+        _next->munge_geom(gsg, gsg->get_geom_munger(_next->_state, current_thread),
+                          traverser, force);
+      } else {
+        _next->munge_geom(gsg, munger, traverser, force);
+      }
     }
   }
 
@@ -175,8 +200,12 @@ munge_geom(GraphicsStateGuardianBase *gsg,
 ////////////////////////////////////////////////////////////////////
 CullableObject::
 ~CullableObject() {
-  if (_next != (CullableObject *)NULL) {
-    delete _next;
+  if (_fancy) {
+    // Only check the _next pointer if the _fancy flag is set.
+    if (_next != (CullableObject *)NULL) {
+      delete _next;
+    }
+    set_draw_callback(NULL);
   }
 }
 
@@ -205,29 +234,35 @@ output(ostream &out) const {
 ////////////////////////////////////////////////////////////////////
 bool CullableObject::
 munge_points_to_quads(const CullTraverser *traverser, bool force) {
-  if (!force && !_munged_data->request_resident()) {
+  Thread *current_thread = traverser->get_current_thread();
+
+  // Better get the animated vertices, in case we're showing sprites
+  // on an animated model for some reason.
+  CPT(GeomVertexData) source_data = 
+    _munged_data->animate_vertices(force, current_thread);
+
+  if (!force && !source_data->request_resident()) {
     return false;
   }
 
-  Thread *current_thread = traverser->get_current_thread();
   PStatTimer timer(_munge_sprites_pcollector, current_thread);
-  _sw_sprites_pcollector.add_level(_munged_data->get_num_rows());
+  _sw_sprites_pcollector.add_level(source_data->get_num_rows());
 
   GraphicsStateGuardianBase *gsg = traverser->get_gsg();
 
-  GeomVertexReader vertex(_munged_data, InternalName::get_vertex(),
+  GeomVertexReader vertex(source_data, InternalName::get_vertex(),
                           current_thread);
-  GeomVertexReader normal(_munged_data, InternalName::get_normal(),
+  GeomVertexReader normal(source_data, InternalName::get_normal(),
                           current_thread);
-  GeomVertexReader color(_munged_data, InternalName::get_color(),
+  GeomVertexReader color(source_data, InternalName::get_color(),
                          current_thread);
-  GeomVertexReader texcoord(_munged_data, InternalName::get_texcoord(),
+  GeomVertexReader texcoord(source_data, InternalName::get_texcoord(),
                             current_thread);
-  GeomVertexReader rotate(_munged_data, InternalName::get_rotate(),
+  GeomVertexReader rotate(source_data, InternalName::get_rotate(),
                           current_thread);
-  GeomVertexReader size(_munged_data, InternalName::get_size(),
+  GeomVertexReader size(source_data, InternalName::get_size(),
                         current_thread);
-  GeomVertexReader aspect_ratio(_munged_data, InternalName::get_aspect_ratio(),
+  GeomVertexReader aspect_ratio(source_data, InternalName::get_aspect_ratio(),
                                 current_thread);
 
   bool has_normal = (normal.has_column());
@@ -244,7 +279,7 @@ munge_points_to_quads(const CullTraverser *traverser, bool force) {
       sprite_texcoord = true;
 
       // Turn off the TexGenAttrib, since we don't want it now.
-      _state = _state->add_attrib(tex_gen->remove_stage(TextureStage::get_default()));
+      _state = _state->set_attrib(tex_gen->remove_stage(TextureStage::get_default()));
     }
   }
 
@@ -258,61 +293,66 @@ munge_points_to_quads(const CullTraverser *traverser, bool force) {
     if (render_mode->get_mode() != RenderModeAttrib::M_filled_flat) {
       // Render the new polygons with M_filled_flat, for a slight
       // performance advantage when software rendering.
-      _state = _state->add_attrib(RenderModeAttrib::make(RenderModeAttrib::M_filled_flat));
+      _state = _state->set_attrib(RenderModeAttrib::make(RenderModeAttrib::M_filled_flat));
     }
   }
 
   // Get the vertex format of the newly created geometry.
   CPT(GeomVertexFormat) new_format;
-  FormatMap::iterator fmi = _format_map.find(_munged_data->get_format());
-  if (fmi != _format_map.end()) {
-    new_format = (*fmi).second;
 
-  } else {
-    // We have to construct the format now.
-    PT(GeomVertexArrayFormat) new_array_format;
-    if (retransform_sprites) {
-      // With retransform_sprites in effect, we will be sending ordinary
-      // 3-D points to the graphics API.
-      new_array_format = 
-        new GeomVertexArrayFormat(InternalName::get_vertex(), 3, 
-                                  Geom::NT_float32,
-                                  Geom::C_point);
+  {
+    LightMutexHolder holder(_format_lock);
+    SourceFormat sformat(source_data->get_format(), sprite_texcoord);
+    FormatMap::iterator fmi = _format_map.find(sformat);
+    if (fmi != _format_map.end()) {
+      new_format = (*fmi).second;
+      
     } else {
-      // Without retransform_sprites, we will be sending 4-component
-      // clip-space points.
-      new_array_format = 
-        new GeomVertexArrayFormat(InternalName::get_vertex(), 4, 
-                                  Geom::NT_float32,
-                                  Geom::C_clip_point);
+      // We have to construct the format now.
+      PT(GeomVertexArrayFormat) new_array_format;
+      if (sformat._retransform_sprites) {
+        // With retransform_sprites in effect, we will be sending ordinary
+        // 3-D points to the graphics API.
+        new_array_format = 
+          new GeomVertexArrayFormat(InternalName::get_vertex(), 3, 
+                                    Geom::NT_float32,
+                                    Geom::C_point);
+      } else {
+        // Without retransform_sprites, we will be sending 4-component
+        // clip-space points.
+        new_array_format = 
+          new GeomVertexArrayFormat(InternalName::get_vertex(), 4, 
+                                    Geom::NT_float32,
+                                    Geom::C_clip_point);
+      }
+      if (has_normal) {
+        const GeomVertexColumn *c = normal.get_column();
+        new_array_format->add_column
+          (InternalName::get_normal(), c->get_num_components(),
+           c->get_numeric_type(), c->get_contents());
+      }
+      if (has_color) {
+        const GeomVertexColumn *c = color.get_column();
+        new_array_format->add_column
+          (InternalName::get_color(), c->get_num_components(),
+           c->get_numeric_type(), c->get_contents());
+      }
+      if (sprite_texcoord) {
+        new_array_format->add_column
+          (InternalName::get_texcoord(), 2,
+           Geom::NT_float32,
+           Geom::C_texcoord);
+        
+      } else if (has_texcoord) {
+        const GeomVertexColumn *c = texcoord.get_column();
+        new_array_format->add_column
+          (InternalName::get_texcoord(), c->get_num_components(),
+           c->get_numeric_type(), c->get_contents());
+      }
+      
+      new_format = GeomVertexFormat::register_format(new_array_format);
+      _format_map[sformat] = new_format;
     }
-    if (has_normal) {
-      const GeomVertexColumn *c = normal.get_column();
-      new_array_format->add_column
-        (InternalName::get_normal(), c->get_num_components(),
-         c->get_numeric_type(), c->get_contents());
-    }
-    if (has_color) {
-      const GeomVertexColumn *c = color.get_column();
-      new_array_format->add_column
-        (InternalName::get_color(), c->get_num_components(),
-         c->get_numeric_type(), c->get_contents());
-    }
-    if (sprite_texcoord) {
-      new_array_format->add_column
-        (InternalName::get_texcoord(), 2,
-         Geom::NT_float32,
-         Geom::C_texcoord);
-
-    } else if (has_texcoord) {
-      const GeomVertexColumn *c = texcoord.get_column();
-      new_array_format->add_column
-        (InternalName::get_texcoord(), c->get_num_components(),
-         c->get_numeric_type(), c->get_contents());
-    }
-
-    new_format = GeomVertexFormat::register_format(new_array_format);
-    _format_map[_munged_data->get_format()] = new_format;
   }
 
   const LMatrix4f &modelview = _modelview_transform->get_mat();
@@ -338,14 +378,14 @@ munge_points_to_quads(const CullTraverser *traverser, bool force) {
   inv_render_transform.invert_from(render_transform);
 
   // Now convert all of the vertices in the GeomVertexData to quads.
-  // We always convert all the vertices, assuming all the vertices
-  // will referenced by GeomPrimitives, because we want to optimize
-  // for the most common case.
-  int orig_verts = _munged_data->get_num_rows();
+  // We always convert all the vertices, assuming all the vertices are
+  // referenced by GeomPrimitives, because we want to optimize for the
+  // most common case.
+  int orig_verts = source_data->get_num_rows();
   int new_verts = 4 * orig_verts;        // each vertex becomes four.
 
   PT(GeomVertexData) new_data = new GeomVertexData
-    (_munged_data->get_name(), new_format, Geom::UH_stream);
+    (source_data->get_name(), new_format, Geom::UH_stream);
   new_data->unclean_set_num_rows(new_verts);
 
   GeomVertexWriter new_vertex(new_data, InternalName::get_vertex());
@@ -729,4 +769,99 @@ get_flash_hardware_state() {
   }
 
   return flash_hardware_state;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CullableObject::draw_fancy
+//       Access: Private
+//  Description: Something fancy about this object.  Draw it properly.
+////////////////////////////////////////////////////////////////////
+void CullableObject::
+draw_fancy(GraphicsStateGuardianBase *gsg, bool force, 
+           Thread *current_thread) {
+  nassertv(_fancy);
+  if (_draw_callback != (CallbackObject *)NULL) {
+    // It has a callback associated.
+    gsg->clear_before_callback();
+    gsg->set_state_and_transform(_state, _internal_transform);
+    GeomDrawCallbackData cbdata(this, gsg, force);
+    _draw_callback->do_callback(&cbdata);
+    if (cbdata.get_lost_state()) {
+      // Tell the GSG to forget its state.
+      gsg->clear_state_and_transform();
+    }
+    // Now the callback has taken care of drawing.
+
+  } else if (_next != (CullableObject *)NULL) {
+    // It has decals.
+    draw_with_decals(gsg, force, current_thread);
+
+  } else {
+    // Huh, nothing fancy after all.  Somehow the _fancy flag got set
+    // incorrectly; that's a bug.
+    gsg->set_state_and_transform(_state, _internal_transform);
+    draw_inline(gsg, force, current_thread);
+    nassertv(false);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CullableObject::draw_with_decals
+//       Access: Private
+//  Description: Draws the current CullableObject, assuming it has
+//               attached decals.
+////////////////////////////////////////////////////////////////////
+void CullableObject::
+draw_with_decals(GraphicsStateGuardianBase *gsg, bool force, 
+                 Thread *current_thread) {
+  nassertv(_fancy && _next != (CullableObject *)NULL);  
+  // We draw with a three-step process.
+
+  // First, render all of the base geometry for the first pass.
+  CPT(RenderState) state = gsg->begin_decal_base_first();
+
+  CullableObject *base = this;
+  while (base != (CullableObject *)NULL && base->_geom != (Geom *)NULL) {
+    gsg->set_state_and_transform(base->_state->compose(state), base->_internal_transform);
+    base->draw_inline(gsg, force, current_thread);
+    
+    base = base->_next;
+  }
+
+  if (base != (CullableObject *)NULL) {
+    // Now, draw all the decals.
+    state = gsg->begin_decal_nested();
+
+    CullableObject *decal = base->_next;
+    while (decal != (CullableObject *)NULL) {
+      gsg->set_state_and_transform(decal->_state->compose(state), decal->_internal_transform);
+      decal->draw_inline(gsg, force, current_thread);
+      decal = decal->_next;
+    }
+  }
+
+  // And now, re-draw the base geometry, if required.
+  state = gsg->begin_decal_base_second();
+  if (state != (const RenderState *)NULL) {
+    base = this;
+    while (base != (CullableObject *)NULL && base->_geom != (Geom *)NULL) {
+      gsg->set_state_and_transform(base->_state->compose(state), base->_internal_transform);
+      base->draw_inline(gsg, force, current_thread);
+      
+      base = base->_next;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CullableObject::SourceFormat::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CullableObject::SourceFormat::
+SourceFormat(const GeomVertexFormat *format, bool sprite_texcoord) :
+  _format(format),
+  _sprite_texcoord(sprite_texcoord) 
+{
+  _retransform_sprites = retransform_sprites;
 }

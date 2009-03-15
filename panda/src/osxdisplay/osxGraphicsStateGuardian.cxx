@@ -28,7 +28,6 @@
 
 TypeHandle osxGraphicsStateGuardian::_type_handle;
 
-
 ////////////////////////////////////////////////////////////////////
 //     Function: osxGraphicsStateGuardian::get_extension_func
 //       Access: Public, Virtual
@@ -39,20 +38,16 @@ TypeHandle osxGraphicsStateGuardian::_type_handle;
 //               it is an error to call this for a function that is
 //               not defined.
 ////////////////////////////////////////////////////////////////////
-void *osxGraphicsStateGuardian::get_extension_func(const char *prefix, const char *name) 
-{	
-	string fullname = "_" + string(prefix) + string(name);
-    NSSymbol symbol = NULL;
-    
-    if (NSIsSymbolNameDefined (fullname.c_str()))
-        symbol = NSLookupAndBindSymbol (fullname.c_str());
-
-    if (osxdisplay_cat.is_debug())	
-	{		
-		osxdisplay_cat.debug() << "  Looking Up Symbol " << fullname <<" \n" ;
-	}
-		
-    return symbol ? NSAddressOfSymbol (symbol) : NULL;
+void *osxGraphicsStateGuardian::
+get_extension_func(const char *prefix, const char *name) {      
+  string fullname = "_" + string(prefix) + string(name);
+  NSSymbol symbol = NULL;
+  
+  if (NSIsSymbolNameDefined (fullname.c_str())) {
+    symbol = NSLookupAndBindSymbol (fullname.c_str());
+  }
+  
+  return symbol ? NSAddressOfSymbol(symbol) : NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -68,7 +63,7 @@ osxGraphicsStateGuardian(GraphicsEngine *engine, GraphicsPipe *pipe,
   _aglPixFmt(NULL),
   _aglcontext(NULL)
 {
-  SharedBuffer = 1011;
+  _shared_buffer = 1011;
   get_gamma_table();
 }
 
@@ -77,13 +72,12 @@ osxGraphicsStateGuardian(GraphicsEngine *engine, GraphicsPipe *pipe,
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-osxGraphicsStateGuardian::~osxGraphicsStateGuardian() 
-{
-  if(_aglcontext != (AGLContext)NULL)
-  {
-     aglDestroyContext(_aglcontext);
-	 aglReportError("osxGraphicsStateGuardian::~osxGraphicsStateGuardian()  aglDestroyContext");
-	 _aglcontext = (AGLContext)NULL;
+osxGraphicsStateGuardian::
+~osxGraphicsStateGuardian() {
+  if (_aglcontext != (AGLContext)NULL) {
+    aglDestroyContext(_aglcontext);
+    report_agl_error("aglDestroyContext");
+    _aglcontext = (AGLContext)NULL;
   }
 }
 
@@ -99,8 +93,8 @@ void osxGraphicsStateGuardian::reset()
   if(_aglcontext != (AGLContext)NULL)
   {
      aglDestroyContext(_aglcontext);
-	 aglReportError();
-	 _aglcontext = (AGLContext)NULL;
+     report_agl_error();
+     _aglcontext = (AGLContext)NULL;
   }
   */
 
@@ -179,21 +173,20 @@ draw_resize_box() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: osxGraphicsStateGuardian::buildGL
+//     Function: osxGraphicsStateGuardian::build_gl
 //       Access: Public, Virtual
 //  Description: This function will build up a context for a gsg..  
 ////////////////////////////////////////////////////////////////////
 OSStatus osxGraphicsStateGuardian::
-buildGL(osxGraphicsWindow &window, bool full_screen,
-        FrameBufferProperties &fb_props) {
+build_gl(bool full_screen, bool pbuffer, FrameBufferProperties &fb_props) {
   if (_aglcontext) {
     describe_pixel_format(fb_props);
     return noErr; // already built
   }
 
   OSStatus err = noErr;
-	
-  GDHandle display = GetMainDevice ();		
+        
+  GDHandle display = GetMainDevice();
         
   pvector<GLint> attrib;
   if (!fb_props.get_indexed_color()) {
@@ -217,8 +210,13 @@ buildGL(osxGraphicsWindow &window, bool full_screen,
   attrib.push_back(fb_props.get_depth_bits());
   attrib.push_back(AGL_STENCIL_SIZE);
   attrib.push_back(fb_props.get_stencil_bits());
-  attrib.push_back(AGL_SAMPLES_ARB);
-  attrib.push_back(fb_props.get_multisamples());
+  if (fb_props.get_multisamples() != 0) {
+    attrib.push_back(AGL_MULTISAMPLE);
+    attrib.push_back(AGL_SAMPLE_BUFFERS_ARB);
+    attrib.push_back(1);
+    attrib.push_back(AGL_SAMPLES_ARB);
+    attrib.push_back(fb_props.get_multisamples());
+  }
 
   if (fb_props.is_stereo()) {
     attrib.push_back(AGL_STEREO);
@@ -230,15 +228,13 @@ buildGL(osxGraphicsWindow &window, bool full_screen,
   if (full_screen) {
     attrib.push_back(AGL_FULLSCREEN);
   }
+  if (pbuffer) {
+    attrib.push_back(AGL_PBUFFER);
+  }
 
-  // These are renderer modes, not pixel modes.  Not sure if they have
-  // any meaning here; maybe we should handle these flags differently.
   if (fb_props.get_force_hardware()) {
     attrib.push_back(AGL_ACCELERATED);
     attrib.push_back(AGL_NO_RECOVERY);
-  }
-  if (fb_props.get_force_software()) {
-    attrib.push_back(AGL_PBUFFER);
   }
 
   // Allow the system to choose the largest buffers requested that
@@ -251,29 +247,29 @@ buildGL(osxGraphicsWindow &window, bool full_screen,
   // build context
   _aglcontext = NULL;
   _aglPixFmt = aglChoosePixelFormat(&display, 1, &attrib[0]);
-  err = aglReportError ("aglChoosePixelFormat");
+  err = report_agl_error("aglChoosePixelFormat");
   if (_aglPixFmt) {
     if(_share_with == NULL) {
       _aglcontext = aglCreateContext(_aglPixFmt, NULL);
     } else {
       _aglcontext = aglCreateContext(_aglPixFmt, ((osxGraphicsStateGuardian *)_share_with)->_aglcontext);
     }
-    err = aglReportError ("aglCreateContext");
+    err = report_agl_error("aglCreateContext");
 
     if (_aglcontext == NULL) {
       osxdisplay_cat.error()
-        << "osxGraphicsStateGuardian::buildG Error Getting Gl Context \n" ;
+        << "osxGraphicsStateGuardian::build_gl Error Getting GL Context \n" ;
       if(err == noErr) {
         err = -1;
       }
     } else {
-      aglSetInteger (_aglcontext, AGL_BUFFER_NAME, &SharedBuffer); 	
-      err = aglReportError ("aglSetInteger AGL_BUFFER_NAME");			
+      aglSetInteger(_aglcontext, AGL_BUFFER_NAME, &_shared_buffer);      
+      err = report_agl_error("aglSetInteger AGL_BUFFER_NAME");          
     }
-	
+        
   } else {
     osxdisplay_cat.error()
-      << "osxGraphicsStateGuardian::buildG Error Getting Pixel Format\n" ;
+      << "osxGraphicsStateGuardian::build_gl Error Getting Pixel Format\n" ;
     osxdisplay_cat.error()
       << fb_props << "\n";
     if(err == noErr) {
@@ -284,10 +280,10 @@ buildGL(osxGraphicsWindow &window, bool full_screen,
   if (err == noErr) {
     describe_pixel_format(fb_props);
   }
-	
+        
   if (osxdisplay_cat.is_debug()) {
     osxdisplay_cat.debug()
-      << "osxGraphicsStateGuardian::buildGL Returning :" << err << "\n"; 
+      << "osxGraphicsStateGuardian::build_gl Returning :" << err << "\n"; 
     osxdisplay_cat.debug()
       << fb_props << "\n";
   }
@@ -386,15 +382,16 @@ describe_pixel_format(FrameBufferProperties &fb_props) {
     }
   }
 }
+
 ////////////////////////////////////////////////////////////////////
 //     Function: osxGraphicsStateGuardian::get_gamma_table
 //       Access: Public, Static
 //  Description: Static function for getting the orig gamma tables
 ////////////////////////////////////////////////////////////////////
-bool osxGraphicsStateGuardian::get_gamma_table(void) {
-	CGDisplayRestoreColorSyncSettings();
-	_cgErr = CGGetDisplayTransferByTable( 0, 256, _gOriginalRedTable, _gOriginalGreenTable, _gOriginalBlueTable, &_sampleCount);
-
+bool osxGraphicsStateGuardian::
+get_gamma_table() {
+  CGDisplayRestoreColorSyncSettings();
+  _cgErr = CGGetDisplayTransferByTable( 0, 256, _gOriginalRedTable, _gOriginalGreenTable, _gOriginalBlueTable, &_sampleCount);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -405,56 +402,53 @@ bool osxGraphicsStateGuardian::get_gamma_table(void) {
 ////////////////////////////////////////////////////////////////////
 bool osxGraphicsStateGuardian::
 static_set_gamma(bool restore, float gamma) {
-    bool set;  
-	
-    set = false;
+  bool set;  
+        
+  set = false;
 
-	if (restore) {
-		CGDisplayRestoreColorSyncSettings();
-		set = true;
-		return set;
-	}
-    // CGDisplayRestoreColorSyncSettings();
+  if (restore) {
+    CGDisplayRestoreColorSyncSettings();
+    set = true;
+    return set;
+  }
+  // CGDisplayRestoreColorSyncSettings();
+  
+  // CGGammaValue gOriginalRedTable[ 256 ];
+  // CGGammaValue gOriginalGreenTable[ 256 ];
+  // CGGammaValue gOriginalBlueTable[ 256 ];
+  
+  // CGTableCount sampleCount;
+  // CGDisplayErr cgErr;
+  
+  // cgErr = CGGetDisplayTransferByTable( 0, 256, _gOriginalRedTable, _gOriginalGreenTable, _gOriginalBlueTable, &_sampleCount);
+  
+  CGGammaValue redTable[ 256 ];
+  CGGammaValue greenTable[ 256 ];
+  CGGammaValue blueTable[ 256 ];
+  
+  short j, i;
+  short y[3];
+  
+  for (j = 0; j < 3; j++) {
+    y[j] = 255;
+  }
 
-	// CGGammaValue gOriginalRedTable[ 256 ];
-	// CGGammaValue gOriginalGreenTable[ 256 ];
-	// CGGammaValue gOriginalBlueTable[ 256 ];
-	
-	// CGTableCount sampleCount;
-    // CGDisplayErr cgErr;
-	
-	// cgErr = CGGetDisplayTransferByTable( 0, 256, _gOriginalRedTable, _gOriginalGreenTable, _gOriginalBlueTable, &_sampleCount);
-	
-	CGGammaValue redTable[ 256 ];
-    CGGammaValue greenTable[ 256 ];
-    CGGammaValue blueTable[ 256 ];
-	
-	short j, i;
-	short y[3];
-
-	for (j = 0; j < 3; j++)
-		{
-			y[j] = 255;
-		};
-
-	y[0] = 256 * gamma;
-	y[1] = 256 * gamma;
-	y[2] = 256 * gamma;
-	
-	for (i = 0; i < 256; i++)
-	{
-	redTable[i] = _gOriginalRedTable[ i ] * (y[ 0 ] ) / 256;
-	greenTable[ i ] = _gOriginalGreenTable[ i ] * (y[ 1 ] ) / 256;
-	blueTable[ i ] = _gOriginalBlueTable[ i ] * (y[ 2 ] ) / 256;
-	};
-	_cgErr = CGSetDisplayTransferByTable( 0, 256, redTable, greenTable, blueTable);
-
-	if (_cgErr == 0){
-		set = true;
-		}
-
+  y[0] = 256 * gamma;
+  y[1] = 256 * gamma;
+  y[2] = 256 * gamma;
+  
+  for (i = 0; i < 256; i++) {
+    redTable[i] = _gOriginalRedTable[ i ] * (y[ 0 ] ) / 256;
+    greenTable[ i ] = _gOriginalGreenTable[ i ] * (y[ 1 ] ) / 256;
+    blueTable[ i ] = _gOriginalBlueTable[ i ] * (y[ 2 ] ) / 256;
+  }
+  _cgErr = CGSetDisplayTransferByTable( 0, 256, redTable, greenTable, blueTable);
+  
+  if (_cgErr == 0) {
+    set = true;
+  }
+  
   return set;
-
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -488,7 +482,7 @@ restore_gamma() {
 //  Description: This function is passed to the atexit function.
 ////////////////////////////////////////////////////////////////////
 void osxGraphicsStateGuardian::
-atexit_function(void) {
+atexit_function() {
   static_set_gamma(true, 1.0);
 }
 

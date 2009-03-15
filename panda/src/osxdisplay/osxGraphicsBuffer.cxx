@@ -37,7 +37,11 @@ osxGraphicsBuffer(GraphicsEngine *engine, GraphicsPipe *pipe,
 {
   osxGraphicsPipe *osx_pipe;
   DCAST_INTO_V(osx_pipe, _pipe);
+
+  _pbuffer = NULL;
  
+  // Since the pbuffer never gets flipped, we get screenshots from the
+  // same buffer we draw into.
   _screenshot_buffer_type = _draw_buffer_type;
 }
 
@@ -48,6 +52,7 @@ osxGraphicsBuffer(GraphicsEngine *engine, GraphicsPipe *pipe,
 ////////////////////////////////////////////////////////////////////
 osxGraphicsBuffer::
 ~osxGraphicsBuffer() {
+  nassertv(_pbuffer == NULL);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -67,15 +72,23 @@ begin_frame(FrameMode mode, Thread *current_thread) {
   if (_gsg == (GraphicsStateGuardian *)NULL) {
     return false;
   }
+  nassertr(_pbuffer != NULL, false);
 
   osxGraphicsStateGuardian *osxgsg;
   DCAST_INTO_R(osxgsg, _gsg, false);
-//  osxMakeCurrent(_display, _pbuffer, osxgsg->_context);
+  if (!aglSetPBuffer(osxgsg->get_context(), _pbuffer, 0, 0, 0)) {
+    report_agl_error("aglSetPBuffer");
+    return false;
+  }	
+
+  if (!aglSetCurrentContext(osxgsg->get_context())) {
+    report_agl_error("aglSetCurrentContext");
+    return false;
+  }	
 
   osxgsg->reset_if_new();
 
-  if (mode == FM_render) 
-  {
+  if (mode == FM_render) {
     for (int i=0; i<count_textures(); i++) {
       if (get_rtm_mode(i) == RTM_bind_or_copy) {
         _textures[i]._rtm_mode = RTM_copy_texture;
@@ -99,8 +112,7 @@ end_frame(FrameMode mode, Thread *current_thread) {
   end_frame_spam(mode);
   nassertv(_gsg != (GraphicsStateGuardian *)NULL);
 
-  if (mode == FM_render) 
-  {
+  if (mode == FM_render) {
     copy_to_textures();
   }
 
@@ -124,9 +136,13 @@ end_frame(FrameMode mode, Thread *current_thread) {
 void osxGraphicsBuffer::
 close_buffer() {
   if (_gsg != (GraphicsStateGuardian *)NULL) {
-    //osxMakeCurrent(_display, None, NULL);
+    //    aglSetPBuffer(osxgsg->get_context(), _pbuffer, 0, 0, 0);
     _gsg.clear();
     _active = false;
+  }
+  if (_pbuffer != NULL) {
+    aglDestroyPBuffer(_pbuffer);
+    _pbuffer = NULL;
   }
   _is_valid = false;
 }
@@ -140,11 +156,61 @@ close_buffer() {
 ////////////////////////////////////////////////////////////////////
 bool osxGraphicsBuffer::
 open_buffer() {
-
   if (_gsg == 0) {
     _gsg = new osxGraphicsStateGuardian(_engine, _pipe, NULL);
   }
+
+  if (_pbuffer == NULL) {
+    GLenum target = GL_TEXTURE_RECTANGLE_ARB;
+    if (_x_size == Texture::up_to_power_2(_x_size) && 
+        _y_size == Texture::up_to_power_2(_x_size)) {
+      // It's a power-of-two size, so we can use GL_TEXTURE_2D as the
+      // target.  Dunno, but maybe this will be more likely to work on
+      // some hardware.
+      target = GL_TEXTURE_2D;
+    }
+    if (!aglCreatePBuffer(_x_size, _y_size, target, GL_RGBA, 0, &_pbuffer)) {
+      report_agl_error("aglCreatePBuffer");
+      close_buffer();
+      return false;
+    }
+  }
+
+  osxGraphicsStateGuardian *osxgsg;
+  DCAST_INTO_R(osxgsg, _gsg, false);
+
+  OSStatus stat = osxgsg->build_gl(false, true, _fb_properties);
+  if (stat != noErr) {
+    return false;
+  }
+
+  if (!aglSetPBuffer(osxgsg->get_context(), _pbuffer, 0, 0, 0)) {
+    report_agl_error("aglSetPBuffer");
+    close_buffer();
+    return false;
+  }
+
+  if (!aglSetCurrentContext(osxgsg->get_context())) {
+    report_agl_error("aglSetCurrentContext");
+    return false;
+  }	
+
+  osxgsg->reset_if_new();
+  if (!osxgsg->is_valid()) {
+    close_buffer();
+    return false;
+  }
+
+  /*
+  if (!osxgsg->get_fb_properties().verify_hardware_software
+      (_fb_properties, osxgsg->get_gl_renderer())) {
+    close_buffer();
+    return false;
+  }
+  _fb_properties = osxgsg->get_fb_properties();
+  */
   
-  return false;
+  _is_valid = true;
+  return true;
 }
 

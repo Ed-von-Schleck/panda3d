@@ -684,6 +684,21 @@ get_inverse() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TransformState::get_unique
+//       Access: Published
+//  Description: Returns the pointer to the unique TransformState in
+//               the cache that is equivalent to this one.  This may
+//               be the same pointer as this object, or it may be a
+//               different pointer; but it will be an equivalent
+//               object, and it will be a shared pointer.  This may be
+//               called from time to time to improve cache benefits.
+////////////////////////////////////////////////////////////////////
+INLINE CPT(TransformState) TransformState::
+get_unique() const {
+  return return_unique((TransformState *)this);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TransformState::get_geom_rendering
 //       Access: Published
 //  Description: Returns the union of the Geom::GeomRendering bits
@@ -810,7 +825,7 @@ get_invert_composition_cache_num_entries() const {
 //               get_composition_cache_source() or result().
 //
 //               This has no practical value other than for examining
-//               the cache for performacne analysis.
+//               the cache for performance analysis.
 ////////////////////////////////////////////////////////////////////
 INLINE int TransformState::
 get_composition_cache_size() const {
@@ -827,7 +842,7 @@ get_composition_cache_size() const {
 //               See get_composition_cache_result().
 //
 //               This has no practical value other than for examining
-//               the cache for performacne analysis.
+//               the cache for performance analysis.
 ////////////////////////////////////////////////////////////////////
 INLINE const TransformState *TransformState::
 get_composition_cache_source(int n) const {
@@ -850,7 +865,7 @@ get_composition_cache_source(int n) const {
 //               a->get_composition_cache_result(n).
 //
 //               This has no practical value other than for examining
-//               the cache for performacne analysis.
+//               the cache for performance analysis.
 ////////////////////////////////////////////////////////////////////
 INLINE const TransformState *TransformState::
 get_composition_cache_result(int n) const {
@@ -871,7 +886,7 @@ get_composition_cache_result(int n) const {
 //               get_invert_composition_cache_source() or result().
 //
 //               This has no practical value other than for examining
-//               the cache for performacne analysis.
+//               the cache for performance analysis.
 ////////////////////////////////////////////////////////////////////
 INLINE int TransformState::
 get_invert_composition_cache_size() const {
@@ -883,12 +898,12 @@ get_invert_composition_cache_size() const {
 //     Function: TransformState::get_invert_composition_cache_source
 //       Access: Published
 //  Description: Returns the source TransformState of the nth element
-//               in the composition cache.  Returns NULL if there
-//               doesn't happen to be an entry in the nth element.
-//               See get_invert_composition_cache_result().
+//               in the invert composition cache.  Returns NULL if
+//               there doesn't happen to be an entry in the nth
+//               element.  See get_invert_composition_cache_result().
 //
 //               This has no practical value other than for examining
-//               the cache for performacne analysis.
+//               the cache for performance analysis.
 ////////////////////////////////////////////////////////////////////
 INLINE const TransformState *TransformState::
 get_invert_composition_cache_source(int n) const {
@@ -903,15 +918,16 @@ get_invert_composition_cache_source(int n) const {
 //     Function: TransformState::get_invert_composition_cache_result
 //       Access: Published
 //  Description: Returns the result TransformState of the nth element
-//               in the composition cache.  Returns NULL if there
-//               doesn't happen to be an entry in the nth element.
+//               in the invert composition cache.  Returns NULL if
+//               there doesn't happen to be an entry in the nth
+//               element.
 //
 //               In general,
-//               a->compose(a->get_invert_composition_cache_source(n)) ==
-//               a->get_invert_composition_cache_result(n).
+//               a->invert_compose(a->get_invert_composition_cache_source(n))
+//               == a->get_invert_composition_cache_result(n).
 //
 //               This has no practical value other than for examining
-//               the cache for performacne analysis.
+//               the cache for performance analysis.
 ////////////////////////////////////////////////////////////////////
 INLINE const TransformState *TransformState::
 get_invert_composition_cache_result(int n) const {
