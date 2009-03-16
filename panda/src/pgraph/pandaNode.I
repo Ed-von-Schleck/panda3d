@@ -663,6 +663,7 @@ INLINE void PandaNode::
 set_final(bool flag) {
   CDWriter cdata(_cycler);
   cdata->_final_bounds = flag;
+  mark_bam_modified();
 }
 
 ////////////////////////////////////////////////////////////////////
