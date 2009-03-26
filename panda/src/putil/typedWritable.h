@@ -25,6 +25,7 @@ class BamReader;
 class BamWriter;
 class Datagram;
 class DatagramIterator;
+class ReferenceCount;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : TypedWritable
@@ -52,6 +53,8 @@ public:
 
   virtual void fillin(DatagramIterator &scan, BamReader *manager);
   virtual void finalize(BamReader *manager);
+
+  virtual ReferenceCount *as_reference_count();
 
 PUBLISHED:
   INLINE void mark_bam_modified();

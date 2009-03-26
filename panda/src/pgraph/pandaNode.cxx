@@ -111,12 +111,18 @@ PandaNode::
 
   // We shouldn't have any parents left by the time we destruct, or
   // there's a refcount fault somewhere.
+
+  // Actually, that's not necessarily true anymore, since we might be
+  // updating a node dynamically via the bam reader, which doesn't
+  // necessarily keep related pairs of nodes in sync with each other.
+  /*
 #ifndef NDEBUG
   {
     CDReader cdata(_cycler);
     nassertv(cdata->get_up()->empty());
   }
 #endif  // NDEBUG
+  */
 
   remove_all_children();
 }
@@ -192,6 +198,17 @@ PandaNode(const PandaNode &copy) :
 void PandaNode::
 operator = (const PandaNode &copy) {
   nassertv(false);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::as_reference_count
+//       Access: Public, Virtual
+//  Description: Returns the pointer cast to a ReferenceCount pointer,
+//               if it is in fact of that type.
+////////////////////////////////////////////////////////////////////
+ReferenceCount *PandaNode::
+as_reference_count() {
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -209,6 +209,71 @@ AuxData() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamReader::CreatedObj::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE BamReader::CreatedObj::
+CreatedObj() :
+  _ptr(NULL),
+  _ptr_ref(NULL),
+  _change_this(NULL),
+  _change_this_ref(NULL)
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::CreatedObj::Destructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE BamReader::CreatedObj::
+~CreatedObj() {
+  set_ptr(NULL, NULL);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::CreatedObj::set_ptr
+//       Access: Public
+//  Description: Replaces the pointer to the created object.  There
+//               are actually two pointers to the same object in
+//               different forms: a generic TypedWritable poitner, and
+//               an untyped ReferenceCount pointer.  We need both
+//               pointers because some objects (like PandaNode)
+//               inherit from TypedWritable and ReferenceCount
+//               independently.
+//
+//               Managing a typed pointer and an untyped
+//               ReferenceCount pointer to the same object takes just
+//               a bit of extra care.
+////////////////////////////////////////////////////////////////////
+INLINE void BamReader::CreatedObj::
+set_ptr(TypedWritable *ptr, ReferenceCount *ptr_ref) {
+  if (_ptr_ref != ptr_ref) {
+    nassertv(_ptr != ptr);
+
+    if (_ptr_ref != NULL) {
+      // We can't use unref_delete, since we need to delete the
+      // TypedWritable flavor, not the ReferenceCount flavor (virtual
+      // destructor and all).
+      //  unref_delete(_ptr_ref);
+      if (!_ptr_ref->unref()) {
+        delete _ptr;
+      } 
+    }
+    
+    _ptr = ptr;
+    _ptr_ref = ptr_ref;
+    
+    if (_ptr_ref != NULL) {
+      _ptr_ref->ref();
+    }
+  } else {
+    nassertv(_ptr == ptr);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: parse_params
 //       Access: Private, Static
 //  Description: Takes in a FactoryParams, passed from a WritableFactory
@@ -225,3 +290,4 @@ parse_params(const FactoryParams &params,
   scan = param->get_iterator();
   manager = param->get_manager();
 }
+

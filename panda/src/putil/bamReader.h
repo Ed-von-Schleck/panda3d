@@ -19,6 +19,8 @@
 #include "pnotify.h"
 
 #include "typedWritable.h"
+#include "typedWritableReferenceCount.h"
+#include "pointerTo.h"
 #include "datagramGenerator.h"
 #include "datagramIterator.h"
 #include "bamReaderParam.h"
@@ -170,7 +172,9 @@ public:
   void register_finalize(TypedWritable *whom);
 
   typedef TypedWritable *(*ChangeThisFunc)(TypedWritable *object, BamReader *manager);
+  typedef PT(TypedWritableReferenceCount) (*ChangeThisRefFunc)(TypedWritableReferenceCount *object, BamReader *manager);
   void register_change_this(ChangeThisFunc func, TypedWritable *whom);
+  void register_change_this(ChangeThisRefFunc func, TypedWritableReferenceCount *whom);
 
   void finalize_now(TypedWritable *whom);
 
@@ -233,8 +237,15 @@ private:
   // to the actual pointers of the corresponding generated objects.
   class CreatedObj {
   public:
+    INLINE CreatedObj();
+    INLINE ~CreatedObj();
+    INLINE void set_ptr(TypedWritable *ptr, ReferenceCount *ptr_ref);
+
+  public:
     TypedWritable *_ptr;
+    ReferenceCount *_ptr_ref;
     ChangeThisFunc _change_this;
+    ChangeThisRefFunc _change_this_ref;
   };
   typedef phash_map<int, CreatedObj, int_hash> CreatedObjs;
   CreatedObjs _created_objs;

@@ -276,7 +276,8 @@ read_object() {
           << "Returning object of type " << object->get_type() << "\n";
       }
     }
-    if (created_obj._change_this != NULL) {
+    if (created_obj._change_this != NULL ||
+        created_obj._change_this_ref != NULL) {
       bam_cat.warning()
         << "Returning pointer to " << object->get_type()
         << " that might change.\n";
@@ -340,7 +341,28 @@ resolve() {
         _object_pointers.erase(old);
         
         // Does the pointer need to change?
-        if (created_obj._change_this != NULL) {
+        if (created_obj._change_this_ref != NULL) {
+          // Reference-counting variant.
+          TypedWritableReferenceCount *object_ref_ptr = (TypedWritableReferenceCount *)object_ptr;
+          nassertr(created_obj._ptr_ref == NULL || created_obj._ptr_ref == object_ref_ptr, false);
+          PT(TypedWritableReferenceCount) new_ptr = created_obj._change_this_ref(object_ref_ptr, this);
+          if (new_ptr != object_ref_ptr) {
+            // Also update the reverse
+            vector_int &old_refs = _created_objs_by_pointer[object_ptr];
+            vector_int &new_refs = _created_objs_by_pointer[new_ptr];
+            for (vector_int::const_iterator oi = old_refs.begin();
+                 oi != old_refs.end();
+                 ++oi) {
+              new_refs.push_back(*oi);
+            }
+            _created_objs_by_pointer.erase(object_ptr);
+          }
+          created_obj.set_ptr(new_ptr, new_ptr);
+          created_obj._change_this = NULL;
+          created_obj._change_this_ref = NULL;
+
+        } else if (created_obj._change_this != NULL) {
+          // Non-reference-counting variant.
           TypedWritable *new_ptr = created_obj._change_this(object_ptr, this);
           if (new_ptr != object_ptr) {
             // Also update the reverse
@@ -353,8 +375,9 @@ resolve() {
             }
             _created_objs_by_pointer.erase(object_ptr);
           }
-          created_obj._ptr = new_ptr;
+          created_obj.set_ptr(new_ptr, new_ptr->as_reference_count());
           created_obj._change_this = NULL;
+          created_obj._change_this_ref = NULL;
         }
         any_completed_this_pass = true;
         
@@ -437,7 +460,8 @@ change_pointer(const TypedWritable *orig_pointer, const TypedWritable *new_point
     nassertr(ci != _created_objs.end(), false);
     nassertr((*ci).second._ptr == orig_pointer, false);
 
-    (*ci).second._ptr = (TypedWritable *)new_pointer;
+    TypedWritable *ptr = (TypedWritable *)new_pointer;
+    (*ci).second.set_ptr(ptr, ptr->as_reference_count());
     new_refs.push_back(object_id);
   }
 
@@ -585,8 +609,6 @@ read_pointer(DatagramIterator &scan) {
   if (object_id != 0) {
     /*
     CreatedObj new_created_obj;
-    new_created_obj._ptr = NULL;
-    new_created_obj._change_this = NULL;
     _created_objs.insert(CreatedObjs::value_type(object_id, new_created_obj)).second;
     */
 
@@ -807,7 +829,7 @@ register_change_this(ChangeThisFunc func, TypedWritable *object) {
   // Sanity check the pointer--it should always be the same pointer
   // after we set it the first time.
   if (created_obj._ptr == (TypedWritable *)NULL) {
-    created_obj._ptr = object;
+    created_obj.set_ptr(object, object->as_reference_count());
   } else {
     // We've previously assigned this pointer, and we should have
     // assigned it to the same this pointer we have now.
@@ -816,6 +838,47 @@ register_change_this(ChangeThisFunc func, TypedWritable *object) {
 #endif  // NDEBUG
 
   created_obj._change_this = func;
+  created_obj._change_this_ref = NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::register_change_this
+//       Access: Public
+//  Description: Called by an object reading itself from the bam file
+//               to indicate that the object pointer that will be
+//               returned is temporary, and will eventually need to be
+//               replaced with another pointer.
+//
+//               The supplied function pointer will later be called on
+//               the object, immediately after complete_pointers() is
+//               called; it should return the new and final pointer.
+//
+//               We use a static function pointer instead of a virtual
+//               function (as in finalize()), to allow the function to
+//               destruct the old pointer if necessary.  (It is
+//               invalid to destruct the this pointer within a virtual
+//               function.)
+////////////////////////////////////////////////////////////////////
+void BamReader::
+register_change_this(ChangeThisRefFunc func, TypedWritableReferenceCount *object) {
+  nassertv(_now_creating != _created_objs.end());
+  CreatedObj &created_obj = (*_now_creating).second;
+
+#ifndef NDEBUG
+  // Sanity check the pointer--it should always be the same pointer
+  // after we set it the first time.
+  if (created_obj._ptr == (TypedWritable *)NULL) {
+    created_obj.set_ptr(object, object);
+  } else {
+    // We've previously assigned this pointer, and we should have
+    // assigned it to the same this pointer we have now.
+    nassertv(created_obj._ptr == object);
+    nassertv(created_obj._ptr_ref == object);
+  }
+#endif  // NDEBUG
+
+  created_obj._change_this = NULL;
+  created_obj._change_this_ref = func;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1079,8 +1142,6 @@ p_read_object() {
     // object's factory constructor, we will have some definition for
     // the object.  For now, we give it a NULL pointer.
     CreatedObj new_created_obj;
-    new_created_obj._ptr = NULL;
-    new_created_obj._change_this = NULL;
     CreatedObjs::iterator oi =
       _created_objs.insert(CreatedObjs::value_type(object_id, new_created_obj)).first;
     CreatedObj &created_obj = (*oi).second;
@@ -1117,9 +1178,9 @@ p_read_object() {
       
       // And now we can store the new object pointer in the map.
       nassertr(created_obj._ptr == object || created_obj._ptr == NULL, object_id);
-      created_obj._ptr = object;
+      created_obj.set_ptr(object, object->as_reference_count());
 
-      if (created_obj._change_this != NULL) {
+      if (created_obj._change_this_ref != NULL) {
         // If the pointer is scheduled to change after
         // complete_pointers(), but we have no entry in
         // _object_pointers for this object (and hence no plan to call
@@ -1127,9 +1188,21 @@ p_read_object() {
         // immediately.
         ObjectPointers::const_iterator ri = _object_pointers.find(object_id);
         if (ri == _object_pointers.end()) {
-          object = created_obj._change_this(object, this);
-          created_obj._ptr = object;
+          PT(TypedWritableReferenceCount) object_ref = (*created_obj._change_this_ref)((TypedWritableReferenceCount *)object, this);
+          object = object_ref;
+          created_obj.set_ptr(object_ref, object_ref);
           created_obj._change_this = NULL;
+          created_obj._change_this_ref = NULL;
+        }
+        
+      } else if (created_obj._change_this != NULL) {
+        // Non-reference-counting variant.
+        ObjectPointers::const_iterator ri = _object_pointers.find(object_id);
+        if (ri == _object_pointers.end()) {
+          object = (*created_obj._change_this)(object, this);
+          created_obj.set_ptr(object, object->as_reference_count());
+          created_obj._change_this = NULL;
+          created_obj._change_this_ref = NULL;
         }
       }
       
@@ -1248,7 +1321,7 @@ resolve_object_pointers(TypedWritable *object,
         if (child_obj._ptr == NULL) {
           // The child object hasn't yet been created.
           is_complete = false;
-        } else if (child_obj._change_this != NULL) {
+        } else if (child_obj._change_this != NULL || child_obj._change_this_ref != NULL) {
           // It's been created, but the pointer might still change.
           is_complete = false;
         } else {
@@ -1337,7 +1410,7 @@ resolve_cycler_pointers(PipelineCyclerBase *cycler,
 
       } else {
         const CreatedObj &child_obj = (*oi).second;
-        if (child_obj._change_this != NULL) {
+        if (child_obj._change_this != NULL || child_obj._change_this_ref != NULL) {
           // It's been created, but the pointer might still change.
           is_complete = false;
 

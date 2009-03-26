@@ -202,7 +202,6 @@ flush() {
 ////////////////////////////////////////////////////////////////////
 void BamWriter::
 consider_update(const TypedWritable *object) {
-  cerr << "consider_update(" << object << ": " << object->get_type() << ")\n";
   StateMap::iterator si = _state_map.find(object);
   if (si == _state_map.end()) {
     // This object has never even been seen before.
@@ -577,7 +576,6 @@ flush_queue() {
       // modified, so we should write it again.
       already_written = false;
     }
-    cerr << object->get_type() << ": " << (*si).second._modified << " vs. " << object->get_bam_modified() << ", written = " << already_written << "\n";
 
     Datagram dg;
     dg.add_uint8(_next_boc);
@@ -621,7 +619,6 @@ flush_queue() {
       // object wants to update some transparent cache value during
       // writing or something like that, so it's more convenient to
       // cheat and define it as a non-const method.
-      cerr << "calling " << object->get_type() << "->write_datagram()\n";
       ((TypedWritable *)object)->write_datagram(this, dg);
 
       (*si).second._written_seq = _writing_seq;

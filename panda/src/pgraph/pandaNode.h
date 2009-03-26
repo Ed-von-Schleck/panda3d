@@ -83,6 +83,7 @@ private:
   void operator = (const PandaNode &copy);
 
 public:
+  virtual ReferenceCount *as_reference_count();
   virtual PandaNode *make_copy() const;
   virtual PandaNode *dupe_for_flatten() const;
 

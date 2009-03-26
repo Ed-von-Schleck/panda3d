@@ -134,3 +134,13 @@ void TypedWritable::
 finalize(BamReader *) {
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: TypedWritable::as_reference_count
+//       Access: Public, Virtual
+//  Description: Returns the pointer cast to a ReferenceCount pointer,
+//               if it is in fact of that type.
+////////////////////////////////////////////////////////////////////
+ReferenceCount *TypedWritable::
+as_reference_count() {
+  return NULL;
+}

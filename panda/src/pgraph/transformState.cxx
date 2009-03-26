@@ -2421,45 +2421,15 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 //               Once this function has been called, the old pointer
 //               will no longer be accessed.
 ////////////////////////////////////////////////////////////////////
-TypedWritable *TransformState::
-change_this(TypedWritable *old_ptr, BamReader *manager) {
+PT(TypedWritableReferenceCount) TransformState::
+change_this(TypedWritableReferenceCount *old_ptr, BamReader *manager) {
   // First, uniquify the pointer.
   TransformState *state = DCAST(TransformState, old_ptr);
   CPT(TransformState) pointer = return_unique(state);
-
-  // But now we have a problem, since we have to hold the reference
-  // count and there's no way to return a TypedWritable while still
-  // holding the reference count!  We work around this by explicitly
-  // upping the count, and also setting a finalize() callback to down
-  // it later.
-  if (pointer == state) {
-    pointer->ref();
-    manager->register_finalize(state);
-  }
   
   // We have to cast the pointer back to non-const, because the bam
   // reader expects that.
   return (TransformState *)pointer.p();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TransformState::finalize
-//       Access: Public, Virtual
-//  Description: Called by the BamReader to perform any final actions
-//               needed for setting up the object after all objects
-//               have been read and all pointers have been completed.
-////////////////////////////////////////////////////////////////////
-void TransformState::
-finalize(BamReader *) {
-  // Unref the pointer that we explicitly reffed in change_this().
-  unref();
-
-  // We should never get back to zero after unreffing our own count,
-  // because we expect to have been stored in a pointer somewhere.  If
-  // we do get to zero, it's a memory leak; the way to avoid this is
-  // to call unref_delete() above instead of unref(), but this is
-  // dangerous to do from within a virtual function.
-  nassertv(get_ref_count() != 0);
 }
 
 ////////////////////////////////////////////////////////////////////
