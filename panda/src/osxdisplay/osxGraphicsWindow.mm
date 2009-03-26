@@ -9,6 +9,17 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+// We include these system header files first, because there is a
+// namescope conflict between them and some other header file that
+// gets included later (in particular, TCP_NODELAY must not be a
+// #define symbol for these headers to be included properly).
+
+#include <Carbon/Carbon.h>
+#include <Cocoa/Cocoa.h>
+#include <OpenGL/gl.h>
+#include <AGL/agl.h>
+#include <ApplicationServices/ApplicationServices.h>
+
 #include "osxGraphicsWindow.h"
 #include "config_osxdisplay.h"
 #include "osxGraphicsPipe.h"
@@ -23,13 +34,6 @@
 #include "virtualFileSystem.h"
 #include "config_util.h"
 #include "pset.h"
-
-#include <Carbon/Carbon.h>
-#include <Cocoa/Cocoa.h>
-#include <OpenGL/gl.h>
-#include <AGL/agl.h>
-#include <ApplicationServices/ApplicationServices.h>
-
 #include "pmutex.h"
 
 ////////////////////////////////////
@@ -354,7 +358,7 @@ system_close_window() {
     osxdisplay_cat.debug()
       << "System Closing Window \n";
   }
-  release_system_resources(); 
+  release_system_resources(false); 
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -391,8 +395,10 @@ window_event_handler(EventHandlerCallRef my_handler, EventRef event, void *) {
 ////////////////////////////////////////////////////////////////////
 void osxGraphicsWindow::
 do_resize() {
-  osxdisplay_cat.info()
-    << "In Resize....." << _properties << "\n";
+  if (osxdisplay_cat.is_debug()) {
+    osxdisplay_cat.debug()
+      << "In Resize....." << _properties << "\n";
+  }
 
   // only in window mode .. not full screen
   if (_osx_window != NULL && !_is_fullscreen && _properties.has_size()) {
@@ -422,8 +428,10 @@ do_resize() {
     // ping gl
     aglUpdateContext(aglGetCurrentContext());
     report_agl_error("aglUpdateContext .. This is a Resize..");
-    osxdisplay_cat.info() 
-      << "Resize Complete.....\n";
+    if (osxdisplay_cat.is_debug()) {
+      osxdisplay_cat.debug() 
+        << "Resize Complete.....\n";
+    }
   } 
 }
 
@@ -541,7 +549,7 @@ handle_text_input(EventHandlerCallRef my_handler, EventRef text_event) {
 //  Description: Clean up the OS level messes.
 ////////////////////////////////////////////////////////////////////
 void osxGraphicsWindow::
-release_system_resources() {
+release_system_resources(bool destructing) {
   if (_is_fullscreen) {
     _is_fullscreen = false;
     full_screen_window = NULL;
@@ -589,12 +597,14 @@ release_system_resources() {
     _current_icon = NULL;
   }
 
-  WindowProperties properties;
-  properties.set_foreground(false);
-  properties.set_open(false);
-  properties.set_cursor_filename(Filename());
-  system_changed_properties(properties);
- 
+  if (!destructing) {
+    WindowProperties properties;
+    properties.set_foreground(false);
+    properties.set_open(false);
+    properties.set_cursor_filename(Filename());
+    system_changed_properties(properties);
+  }
+    
   _is_fullscreen = false; 
   _osx_window = NULL;
 }
@@ -662,7 +672,7 @@ osxGraphicsWindow::
     SetWRefCon(_osx_window, (long) NULL);
   }
 
-  release_system_resources(); 
+  release_system_resources(true); 
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -981,7 +991,7 @@ close_window() {
   properties.set_open(false);
   system_changed_properties(properties);
 
-  release_system_resources();
+  release_system_resources(false);
   _gsg.clear();
   _active = false;
   GraphicsWindow::close_window();
@@ -1072,8 +1082,10 @@ os_open_window(WindowProperties &req_properties) {
   }
   
   if (req_properties.has_fullscreen() && req_properties.get_fullscreen()) {
-    osxdisplay_cat.info()
-      << "Creating full screen\n";
+    if (osxdisplay_cat.is_debug()) {
+      osxdisplay_cat.debug()
+        << "Creating full screen\n";
+    }
 
     // capture the main display
     CGDisplayCapture(kCGDirectMainDisplay);
@@ -1132,21 +1144,27 @@ os_open_window(WindowProperties &req_properties) {
     }
     
     if (req_properties.has_parent_window()) {
-      osxdisplay_cat.info()
-        << "Creating child window\n";
+      if (osxdisplay_cat.is_debug()) {
+        osxdisplay_cat.debug()
+          << "Creating child window\n";
+      }
         
       CreateNewWindow(kSimpleWindowClass, kWindowNoAttributes, &r, &_osx_window);
       add_a_window(_osx_window);
       
       _properties.set_fixed_size(true);
-      osxdisplay_cat.info()
-        << "Child window created\n";
+      if (osxdisplay_cat.is_debug()) {
+        osxdisplay_cat.debug()
+          << "Child window created\n";
+      }
     } else {
       if (req_properties.has_undecorated() && req_properties.get_undecorated()) { 
         // create a unmovable .. no edge window..
           
-        osxdisplay_cat.info()
-          << "Creating undecorated window\n";
+        if (osxdisplay_cat.is_debug()) {
+          osxdisplay_cat.debug()
+            << "Creating undecorated window\n";
+        }
  
         CreateNewWindow(kDocumentWindowClass, kWindowStandardDocumentAttributes | kWindowNoTitleBarAttribute, &r, &_osx_window);
       } else { 
@@ -1162,8 +1180,10 @@ os_open_window(WindowProperties &req_properties) {
         r.top = max(r.top, bounds.top);
         r.bottom = min(r.bottom, bounds.bottom);
         
-        osxdisplay_cat.info()
-          << "Creating standard window\n";
+        if (osxdisplay_cat.is_debug()) {
+          osxdisplay_cat.debug()  
+            << "Creating standard window\n";
+        }
         CreateNewWindow(kDocumentWindowClass, kWindowStandardDocumentAttributes | kWindowStandardHandlerAttribute, &r, &_osx_window);
         add_a_window(_osx_window);
       }
@@ -1212,8 +1232,10 @@ os_open_window(WindowProperties &req_properties) {
         req_properties.clear_parent_window();
       } 
  
-      osxdisplay_cat.info()
-        << "Event handler installed, now build_gl\n";
+      if (osxdisplay_cat.is_debug()) {
+        osxdisplay_cat.debug()
+          << "Event handler installed, now build_gl\n";
+      }
       if (build_gl(false) != noErr) {
         osxdisplay_cat.error()
           << "Error in build_gl\n";
@@ -1225,8 +1247,10 @@ os_open_window(WindowProperties &req_properties) {
         return false;
       }
       
-      osxdisplay_cat.info()
-        << "build_gl complete, set properties\n";
+      if (osxdisplay_cat.is_debug()) {
+        osxdisplay_cat.debug()
+          << "build_gl complete, set properties\n";
+      }
 
       //
       // attach the holder context to the window..
@@ -1762,8 +1786,10 @@ move_pointer(int device, int x, int y) {
 bool osxGraphicsWindow::
 do_reshape_request(int x_origin, int y_origin, bool has_origin,
                    int x_size, int y_size) {
-  osxdisplay_cat.info()
-    << "Do Reshape\n";
+  if (osxdisplay_cat.is_debug()) {
+    osxdisplay_cat.debug()
+      << "Do Reshape\n";
+  }
 
   if (_properties.get_fullscreen()) {
     return false;
@@ -1861,7 +1887,7 @@ set_properties_now(WindowProperties &properties) {
  
     // get a copy of my properties..
     WindowProperties req_properties(_properties); 
-    release_system_resources();
+    release_system_resources(false);
     req_properties.add_properties(properties); 
  
     os_open_window(req_properties); 
