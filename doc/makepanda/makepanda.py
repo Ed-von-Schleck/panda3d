@@ -628,7 +628,7 @@ def CompileLib(lib, obj, opts):
 def CompileLink(dll, obj, opts):
     if (COMPILER=="MSVC"):
         cmd = 'link /nologo /NOD:MFC80.LIB /NOD:MFC90.LIB /NOD:LIBCI.LIB /NOD:MSVCRTD.LIB /DEBUG '
-        cmd = cmd + " /nod:libc /nod:libcmtd /nod:atlthunk /FORCE:MULTIPLE"
+        cmd = cmd + " /nod:libc /nod:libcmtd /nod:atlthunk"
         if (GetOrigExt(dll) != ".exe"): cmd = cmd + " /DLL"
         optlevel = GetOptimizeOption(opts,OPTIMIZE)
         if (optlevel==1): cmd = cmd + " /MAP /MAPINFO:EXPORTS"
@@ -3586,7 +3586,7 @@ def MakeInstallerNSIS(file,fullname,smdirectory,installdir):
         os.remove(file)
     if (os.path.exists("nsis-output.exe")):
         os.remove("nsis-output.exe")
-    WriteFile("built/tmp/__init__.py", "")
+    WriteFile(GetOutputDir()+"/tmp/__init__.py", "")
     psource=os.path.abspath(".")
     panda=os.path.abspath(GetOutputDir())
     cmd="thirdparty/win-nsis/makensis /V2 "
@@ -3626,6 +3626,9 @@ Description: The Panda3D free 3D engine
 # We're not putting "python" in the "Requires" field,
 # since the rpm-based distros don't have a common
 # naming for the Python package.
+# The "AutoReqProv: no" field is necessary, otherwise
+# the user will be required to install Maya in order
+# to install the resulting RPM.
 INSTALLER_SPEC_FILE="""
 Summary: The Panda3D free 3D engine
 Name: panda3d
@@ -3634,6 +3637,7 @@ Release: 1
 License: BSD License
 Group: Development/Libraries
 BuildRoot: PANDASOURCE/linuxroot
+AutoReqProv: no
 %description
 The Panda3D engine.
 %post
