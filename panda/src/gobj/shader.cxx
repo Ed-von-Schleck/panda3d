@@ -1040,6 +1040,7 @@ cg_compile_entry_point(const char *entry, const ShaderCaps &caps, bool fshader)
   CGerror err;
   const char *compiler_args[100];
   int nargs = 0;
+  int override = fshader ? _cg_fprofile : _cg_vprofile;
   int active = fshader ? caps._active_fprofile : caps._active_vprofile;
   int ultimate = fshader ? caps._ultimate_fprofile : caps._ultimate_vprofile;
 
@@ -1051,6 +1052,26 @@ cg_compile_entry_point(const char *entry, const ShaderCaps &caps, bool fshader)
   }
   compiler_args[nargs] = 0;
 
+  // If someone has explicitly set a profile, use it.
+  if (override != (int)CG_PROFILE_UNKNOWN) {
+    prog = cgCreateProgram(_cg_context, CG_SOURCE, _text.c_str(),
+                           (CGprofile)override, entry, (const char **)compiler_args);
+    if (cgGetError() == CG_NO_ERROR) {
+      return prog;
+    }
+    if (prog != 0) {
+      cgDestroyProgram(prog);
+    }
+    if (fshader) {
+      gobj_cat.error() << "Fragment shader failed to compile with profile '"
+        << cgGetProfileString((CGprofile)override) << "!\n";
+    } else {
+      gobj_cat.error() << "Vertex shader failed to compile with profile '"
+        << cgGetProfileString((CGprofile)override) << "!\n";
+    }
+    return 0;
+  }
+  
   if ((active != (int)CG_PROFILE_UNKNOWN) && (active != ultimate)) {
     prog = cgCreateProgram(_cg_context, CG_SOURCE, _text.c_str(),
                            (CGprofile)active, entry, (const char **)compiler_args);
@@ -1353,7 +1374,8 @@ cg_compile_for(const ShaderCaps &caps,
   
   if ((cgGetProgramProfile(_cg_vprogram) != caps._active_vprofile)||
       (cgGetProgramProfile(_cg_fprogram) != caps._active_fprofile)) {
-    gobj_cat.error() << "Cg program too complex for driver:" << get_filename() << "\n";
+    gobj_cat.error() << "Cg program too complex for driver:"
+      << get_filename() << ". Try choosing a different profile.\n";
     return false;
   }
   
@@ -1408,7 +1430,7 @@ cg_compile_for(const ShaderCaps &caps,
 //  Description: Construct a Shader.
 ////////////////////////////////////////////////////////////////////
 Shader::
-Shader(const Filename &filename, const string &text) :
+Shader(const Filename &filename, const string &text, const string &vprofile, const string &fprofile) :
   _filename(filename),
   _text(text),
   _header(""),
@@ -1421,9 +1443,28 @@ Shader(const Filename &filename, const string &text) :
   parse_line(_header, true, true);
   
 #ifdef HAVE_CG
+  _error_flag = false;
   _cg_context = 0;
   _cg_vprogram = 0;
   _cg_fprogram = 0;
+  _cg_vprofile = CG_PROFILE_UNKNOWN;
+  _cg_fprofile = CG_PROFILE_UNKNOWN;
+  if (vprofile != "") {
+    CGprofile p = cgGetProfile(vprofile.c_str());
+    if (p == CG_PROFILE_UNKNOWN) {
+      gobj_cat.error() << "Invalid vertex profile: " << vprofile << "\n";
+      _error_flag = true;
+    }
+    _cg_vprofile = (int)p;
+  }
+  if (fprofile != "") {
+    CGprofile p = cgGetProfile(fprofile.c_str());
+    if (p == CG_PROFILE_UNKNOWN) {
+      gobj_cat.error() << "Invalid fragment profile: " << fprofile << "\n";
+      _error_flag = true;
+    }
+    _cg_fprofile = (int)p;
+  }
   if (_default_caps._ultimate_vprofile == 0) {
     _default_caps._active_vprofile = CG_PROFILE_UNKNOWN;
     _default_caps._active_fprofile = CG_PROFILE_UNKNOWN;
@@ -1431,8 +1472,8 @@ Shader(const Filename &filename, const string &text) :
     _default_caps._ultimate_fprofile = JCG_PROFILE_GLSLF;
   }
   if (_header == "//Cg") {
-    if (cg_analyze_shader(_default_caps)) {
-      _error_flag = false;
+    if (!cg_analyze_shader(_default_caps)) {
+      _error_flag = true;
     }
   } else {
     gobj_cat.error()
@@ -1461,20 +1502,30 @@ Shader::
 ////////////////////////////////////////////////////////////////////
 //     Function: Shader::load
 //       Access: Published, Static
-//  Description:
+//  Description: Loads the shader with the given filename.
+//               If the optional vshader or fshader parameters
+//               are set and non-empty, it will be used to override
+//               all other profile settings (it even overrides
+//               the basic-shaders-only flag) and forces the shader
+//               to use the given profile.
 ////////////////////////////////////////////////////////////////////
 PT(Shader) Shader::
-load(const string &file) {
-  return load(Filename(file));
+load(const string &file, const string &vprofile, const string &fprofile) {
+  return load(Filename(file), vprofile, fprofile);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Shader::load
 //       Access: Published, Static
-//  Description:
+//  Description: Loads the shader with the given filename.
+//               If the optional vshader or fshader parameters
+//               are set and non-empty, it will be used to override
+//               all other profile settings (it even overrides
+//               the basic-shaders-only flag) and forces the shader
+//               to use the given profile.
 ////////////////////////////////////////////////////////////////////
 PT(Shader) Shader::
-load(const Filename &file) {
+load(const Filename &file, const string &vprofile, const string &fprofile) {
   LoadTable::const_iterator i = _load_table.find(file);
   if (i != _load_table.end()) {
     return i->second;
@@ -1485,7 +1536,7 @@ load(const Filename &file) {
     gobj_cat.error() << "Could not read shader file: " << file << "\n";
     return NULL;
   }
-  PT(Shader) result = new Shader(file, body);
+  PT(Shader) result = new Shader(file, body, vprofile, fprofile);
   result->_loaded = true;
   _load_table[file] = result;
   return result;
@@ -1494,15 +1545,20 @@ load(const Filename &file) {
 ////////////////////////////////////////////////////////////////////
 //     Function: Shader::make
 //       Access: Published, Static
-//  Description:
+//  Description: Loads the shader, using the string as shader body.
+//               If the optional vshader or fshader parameters
+//               are set and non-empty, it will be used to override
+//               all other profile settings (it even overrides
+//               the basic-shaders-only flag) and forces the shader
+//               to use the given profile.
 ////////////////////////////////////////////////////////////////////
 PT(Shader) Shader::
-make(const string &body) {
+make(const string &body, const string &vprofile, const string &fprofile) {
   MakeTable::const_iterator i = _make_table.find(body);
   if (i != _make_table.end()) {
     return i->second;
   }
-  PT(Shader) result = new Shader("created-shader", body);
+  PT(Shader) result = new Shader("created-shader", body, vprofile, fprofile);
   _make_table[body] = result;
   if (dump_generated_shaders) {
     ostringstream fns;
