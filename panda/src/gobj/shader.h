@@ -38,9 +38,9 @@ class EXPCL_PANDA_GOBJ Shader: public TypedReferenceCount {
 
 PUBLISHED:
   
-  static PT(Shader) load(const Filename &file);
-  static PT(Shader) load(const string &file);
-  static PT(Shader) make(const string &body);
+  static PT(Shader) load(const Filename &file, const string &vprofile = "", const string &fprofile = "");
+  static PT(Shader) load(const string &file, const string &vprofile = "", const string &fprofile = "");
+  static PT(Shader) make(const string &body, const string &vprofile = "", const string &fprofile = "");
 
   INLINE const Filename &get_filename() const;
   INLINE const string   &get_text() const;
@@ -50,7 +50,7 @@ PUBLISHED:
   INLINE static ShaderUtilization get_shader_utilization();
   INLINE static void set_shader_utilization(ShaderUtilization utl);
   INLINE static bool have_shader_utilization();
-  
+
   void prepare(PreparedGraphicsObjects *prepared_objects);
   bool is_prepared(PreparedGraphicsObjects *prepared_objects) const;
   bool release(PreparedGraphicsObjects *prepared_objects);
@@ -268,6 +268,8 @@ public:
   CGcontext  _cg_context;
   CGprogram  _cg_vprogram;
   CGprogram  _cg_fprogram;
+  int        _cg_vprofile;
+  int        _cg_fprofile;
   
  public:
 
@@ -309,12 +311,11 @@ public:
   Contexts _contexts;
 
  private:  
-  Shader(const Filename &name, const string &text);
+  Shader(const Filename &name, const string &text, const string &vprofile = "", const string &fprofile = "");
   void clear_prepared(PreparedGraphicsObjects *prepared_objects);
 
  public:
   static void register_with_read_factory();
-  static PT(Shader) make(const string &name, const string &body);
   
   ~Shader();
   
