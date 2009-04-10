@@ -15,6 +15,7 @@
 import sys,os,platform,time,stat,string,re,getopt,cPickle,fnmatch,threading,Queue,signal,shutil
 
 from makepandacore import *
+from installpanda import *
 
 ########################################################################
 ##
@@ -36,6 +37,7 @@ GENMAN=0
 VERBOSE=1
 COMPRESSOR="zlib"
 THREADCOUNT=0
+CFLAGS=""
 
 PkgListSet(MAYAVERSIONS + MAXVERSIONS + DXVERSIONS + [
   "PYTHON","ZLIB","PNG","JPEG","TIFF","VRPN",
@@ -135,6 +137,12 @@ def parseopts(args):
     else: usage("Invalid setting for OPTIMIZE")
 
 parseopts(sys.argv[1:])
+
+# Now check if CFLAGS happens to be set
+if (os.environ.has_key("CFLAGS")):
+  CFLAGS=os.environ["CFLAGS"]
+if (os.environ.has_key("RPM_OPT_FLAGS")):
+  CFLAGS+=os.environ["RPM_OPT_FLAGS"]
 
 ########################################################################
 ##
@@ -332,7 +340,7 @@ if (COMPILER=="LINUX"):
     else:
       if (PkgSkip("NVIDIACG")==0): LibName("CGGL", "-lCgGL")
       if (PkgSkip("NVIDIACG")==0): LibName("NVIDIACG", "-lCg")
-      if (PkgSkip("OPENAL")==0):   LibName("OPENAL", "-lpandaopenal")
+      if (PkgSkip("OPENAL")==0):   LibName("OPENAL", "-lopenal")
       if (PkgSkip("TIFF")==0):     LibName("TIFF", "-ltiff")
     if (PkgSkip("SQUISH")==0):     LibName("SQUISH", "-lsquish")
     if (PkgSkip("FCOLLADA")==0):   LibName("FCOLLADA", "-lFCollada")
@@ -481,6 +489,7 @@ def CompileCxx(obj,src,opts):
         if (optlevel==2): cmd = cmd + " -O1"
         if (optlevel==3): cmd = cmd + " -O2"
         if (optlevel==4): cmd = cmd + " -O2 -DNDEBUG"
+        if (CFLAGS !=""): cmd = cmd + " " + CFLAGS
         building = GetValueOption(opts, "BUILDING:")
         if (building): cmd = cmd + " -DBUILDING_" + building
         cmd = cmd + ' ' + src
@@ -547,6 +556,7 @@ def CompileIgate(woutd,wsrc,opts):
         ConditionalWriteFile(woutd,"")
         return
     cmd = GetOutputDir()+"/bin/interrogate -srcdir "+srcdir+" -I"+srcdir
+    cmd = cmd + ' -Dvolatile -Dmutable'
     if (COMPILER=="MSVC"):
         cmd = cmd + ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -D__inline -longlong __int64 -D_X86_ -DWIN32_VC -D_WIN32'
         #NOTE: this 1500 value is the version number for VC2008.
@@ -820,6 +830,7 @@ DTOOL_CONFIG=[
     ("HAVE_GLOB_H",                    'UNDEF',                  '1'),
     ("HAVE_DIRENT_H",                  'UNDEF',                  '1'),
     ("HAVE_SYS_SOUNDCARD_H",           'UNDEF',                  '1'),
+    ("HAVE_UCONTEXT_H",                'UNDEF',                  '1'),
     ("HAVE_RTTI",                      '1',                      '1'),
     ("IS_LINUX",                       'UNDEF',                  '1'),
     ("IS_OSX",                         'UNDEF',                  'UNDEF'),
@@ -1493,6 +1504,7 @@ TargetAdd('libpandaexpress.dll', opts=['ADVAPI', 'WINSOCK2',  'OPENSSL', 'ZLIB']
 
 OPTS=['DIR:panda/src/pipeline', 'BUILDING:PANDA']
 TargetAdd('pipeline_composite.obj', opts=OPTS, input='pipeline_composite.cxx')
+TargetAdd('pipeline_contextSwitch.obj', opts=OPTS, input='contextSwitch.c')
 IGATEFILES=GetDirectoryContents('panda/src/pipeline', ["*.h", "*_composite.cxx"])
 TargetAdd('libpipeline.in', opts=OPTS, input=IGATEFILES)
 TargetAdd('libpipeline.in', opts=['IMOD:panda', 'ILIB:libpipeline', 'SRCDIR:panda/src/pipeline'])
@@ -1932,6 +1944,7 @@ TargetAdd('libpanda.dll', input='libdgraph_igate.obj')
 TargetAdd('libpanda.dll', input='display_composite.obj')
 TargetAdd('libpanda.dll', input='libdisplay_igate.obj')
 TargetAdd('libpanda.dll', input='pipeline_composite.obj')
+TargetAdd('libpanda.dll', input='pipeline_contextSwitch.obj')
 TargetAdd('libpanda.dll', input='libpipeline_igate.obj')
 TargetAdd('libpanda.dll', input='event_composite.obj')
 TargetAdd('libpanda.dll', input='libevent_igate.obj')
@@ -3660,7 +3673,6 @@ The Panda3D engine.
 /usr/include/panda3d
 """
 
-
 def MakeInstallerLinux():
     import compileall
     PYTHONV=SDK["PYTHONVERSION"]
@@ -3671,38 +3683,10 @@ def MakeInstallerLinux():
         oscmd("rm -rf `rpm -E '%_target_cpu'`")
     if (os.path.exists("/usr/bin/dpkg-deb")):
         oscmd("rm -rf `dpkg --print-architecture`")
-    oscmd("mkdir -p linuxroot/usr/bin")
-    oscmd("mkdir -p linuxroot/usr/include")
-    oscmd("mkdir -p linuxroot/usr/share/panda3d")
-    oscmd("mkdir -p linuxroot/usr/share/panda3d/direct")
-    oscmd("mkdir -p linuxroot/usr/lib/panda3d")
-    oscmd("mkdir -p linuxroot/usr/lib/"+PYTHONV+"/lib-dynload")
-    oscmd("mkdir -p linuxroot/usr/lib/"+PYTHONV+"/site-packages")
-    oscmd("mkdir -p linuxroot/etc/ld.so.conf.d")
-    WriteFile("linuxroot/usr/share/panda3d/direct/__init__.py", "")
-    oscmd("sed -e 's@model-cache-@# model-cache-@' -e 's@$THIS_PRC_DIR/[.][.]@/usr/share/panda3d@' < "+GetOutputDir()+"/etc/Config.prc > linuxroot/etc/Config.prc")
-    oscmd("cp "+GetOutputDir()+"/etc/Confauto.prc  linuxroot/etc/Confauto.prc")
-    oscmd("cp --recursive "+GetOutputDir()+"/include linuxroot/usr/include/panda3d")
-    oscmd("cp --recursive direct/src/*               linuxroot/usr/share/panda3d/direct")
-    oscmd("cp --recursive "+GetOutputDir()+"/pandac  linuxroot/usr/share/panda3d/pandac")
-    oscmd("cp --recursive "+GetOutputDir()+"/models  linuxroot/usr/share/panda3d/models")
-    if os.path.isdir("samples"):                  oscmd("cp --recursive samples                    linuxroot/usr/share/panda3d/samples")
-    if os.path.isdir(GetOutputDir()+"/Pmw"):      oscmd("cp --recursive "+GetOutputDir()+"/Pmw     linuxroot/usr/share/panda3d/Pmw")
-    if os.path.isdir(GetOutputDir()+"/plugins"):  oscmd("cp --recursive "+GetOutputDir()+"/plugins linuxroot/usr/share/panda3d/plugins")
-    oscmd("cp doc/LICENSE               linuxroot/usr/share/panda3d/LICENSE")
-    oscmd("cp doc/LICENSE               linuxroot/usr/include/panda3d/LICENSE")
-    oscmd("cp doc/ReleaseNotes          linuxroot/usr/share/panda3d/ReleaseNotes")
-    oscmd("echo '/usr/lib/panda3d'   >  linuxroot/etc/ld.so.conf.d/panda3d.conf")
-    oscmd("echo '/usr/share/panda3d' >  linuxroot/usr/lib/"+PYTHONV+"/site-packages/panda3d.pth")
-    oscmd("echo '/usr/lib/panda3d'   >> linuxroot/usr/lib/"+PYTHONV+"/site-packages/panda3d.pth")
-    oscmd("cp "+GetOutputDir()+"/bin/*               linuxroot/usr/bin/")
-    for base in os.listdir(GetOutputDir()+"/lib"):
-        oscmd("cp "+GetOutputDir()+"/lib/"+base+" linuxroot/usr/lib/panda3d/"+base)
-    for base in os.listdir("linuxroot/usr/share/panda3d/direct"):
-        if ((base != "extensions") and (base != "extensions_native")):
-            compileall.compile_dir("linuxroot/usr/share/panda3d/direct/"+base)
-    compileall.compile_dir("linuxroot/usr/share/panda3d/Pmw")
-    DeleteCVS("linuxroot")
+    oscmd("mkdir linuxroot")
+    
+    # Invoke installpanda.py to install it into a temporary dir
+    InstallPanda(destdir = "linuxroot", outputdir = GetOutputDir())
     oscmd("chmod -R 555 linuxroot/usr/share/panda3d")
     
     if (os.path.exists("/usr/bin/rpmbuild") and not os.path.exists("/usr/bin/dpkg-deb")):
