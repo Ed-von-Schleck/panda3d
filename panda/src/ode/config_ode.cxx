@@ -46,6 +46,8 @@
 #include "odeTriMeshData.h"
 #include "odeTriMeshGeom.h"
 #include "odeCollisionEntry.h"
+#include "odeManager.h"
+#include "odeNode.h"
 #include "dconfig.h"
 
 Configure(config_ode);
@@ -110,4 +112,6 @@ init_libode() {
   OdeTriMeshData::init_type();
   OdeTriMeshGeom::init_type();
   OdeCollisionEntry::init_type();
+  OdeManager::init_type();
+  OdeNode::init_type();
 }
