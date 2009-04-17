@@ -476,8 +476,8 @@ read_args() {
   // And on Mac, we have _NSGetExecutablePath.
   if (_binary_name.empty()) {
     char *pathbuf = new char[PATH_MAX];
-    uint32_t *bufsize;
-    if (_NSGetExecutablePath(pathbuf, bufsize) == 0) {
+    uint32_t bufsize = PATH_MAX;
+    if (_NSGetExecutablePath(pathbuf, &bufsize) == 0) {
       _binary_name = pathbuf;
     }
     delete[] pathbuf;
