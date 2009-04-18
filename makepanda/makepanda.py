@@ -2141,22 +2141,23 @@ if PkgSkip("OPENSSL")==0:
 # DIRECTORY: panda/src/downloadertools/
 #
 
-OPTS=['DIR:panda/src/downloadertools', 'ZLIB', 'ADVAPI']
+if PkgSkip("ZLIB")==0:
+    OPTS=['DIR:panda/src/downloadertools', 'ZLIB', 'ADVAPI']
 
-TargetAdd('multify_multify.obj', opts=OPTS, input='multify.cxx')
-TargetAdd('multify.exe', input=['multify_multify.obj'])
-TargetAdd('multify.exe', input=COMMON_PANDA_LIBS_PYSTUB)
-TargetAdd('multify.exe', opts=OPTS)
+    TargetAdd('multify_multify.obj', opts=OPTS, input='multify.cxx')
+    TargetAdd('multify.exe', input=['multify_multify.obj'])
+    TargetAdd('multify.exe', input=COMMON_PANDA_LIBS_PYSTUB)
+    TargetAdd('multify.exe', opts=OPTS)
 
-TargetAdd('pzip_pzip.obj', opts=OPTS, input='pzip.cxx')
-TargetAdd('pzip.exe', input=['pzip_pzip.obj'])
-TargetAdd('pzip.exe', input=COMMON_PANDA_LIBS_PYSTUB)
-TargetAdd('pzip.exe', opts=OPTS)
+    TargetAdd('pzip_pzip.obj', opts=OPTS, input='pzip.cxx')
+    TargetAdd('pzip.exe', input=['pzip_pzip.obj'])
+    TargetAdd('pzip.exe', input=COMMON_PANDA_LIBS_PYSTUB)
+    TargetAdd('pzip.exe', opts=OPTS)
 
-TargetAdd('punzip_punzip.obj', opts=OPTS, input='punzip.cxx')
-TargetAdd('punzip.exe', input=['punzip_punzip.obj'])
-TargetAdd('punzip.exe', input=COMMON_PANDA_LIBS_PYSTUB)
-TargetAdd('punzip.exe', opts=OPTS)
+    TargetAdd('punzip_punzip.obj', opts=OPTS, input='punzip.cxx')
+    TargetAdd('punzip.exe', input=['punzip_punzip.obj'])
+    TargetAdd('punzip.exe', input=COMMON_PANDA_LIBS_PYSTUB)
+    TargetAdd('punzip.exe', opts=OPTS)
 
 #
 # DIRECTORY: panda/src/windisplay/
