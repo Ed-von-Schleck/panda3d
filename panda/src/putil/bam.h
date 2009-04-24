@@ -40,7 +40,7 @@ static const unsigned short _bam_minor_ver = 20;
 // Bumped to minor version 17 on 8/6/08 to add PartBundle::_anim_preload.
 // Bumped to minor version 18 on 8/14/08 to add Texture::_simple_ram_image.
 // Bumped to minor version 19 on 8/14/08 to add PandaNode::_bounds_type.
-// Bumped to minor version 20 on 2/26/08 to add BamEnums::BamObjectCode.
+// Bumped to minor version 21 on 2/26/08 to add BamEnums::BamObjectCode.
 
 
 #endif

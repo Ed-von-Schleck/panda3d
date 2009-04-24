@@ -236,14 +236,14 @@ read_object() {
   // might in turn require reading additional objects.  Read all the
   // remaining objects.
 
-  // Prior to 6.20, we kept track of _num_extra_objects to know when
+  // Prior to 6.21, we kept track of _num_extra_objects to know when
   // we're done.
   while (_num_extra_objects > 0) {
     p_read_object();
     _num_extra_objects--;
   }
 
-  // Beginning with 6.20, we use explicit nesting commands to know
+  // Beginning with 6.21, we use explicit nesting commands to know
   // when we're done.
   while (_nesting_level > start_level) {
     p_read_object();
@@ -612,8 +612,8 @@ read_pointer(DatagramIterator &scan) {
     _created_objs.insert(CreatedObjs::value_type(object_id, new_created_obj)).second;
     */
 
-    if (get_file_minor_ver() < 20) {
-      // Prior to bam version 6.20, we expect to read an adjunct
+    if (get_file_minor_ver() < 21) {
+      // Prior to bam version 6.21, we expect to read an adjunct
       // object for each non-NULL pointer we read.
       _num_extra_objects++;
     }
@@ -1080,10 +1080,10 @@ p_read_object() {
   // Now extract the object definition from the datagram.
   DatagramIterator scan(packet);
 
-  // First, read the BamObjectCode.  In bam versions prior to 6.20,
+  // First, read the BamObjectCode.  In bam versions prior to 6.21,
   // there was no BamObjectCode in the stream.
   BamObjectCode boc = BOC_adjunct;
-  if (get_file_minor_ver() >= 20) {
+  if (get_file_minor_ver() >= 21) {
     boc = (BamObjectCode)scan.get_uint8();
   }
   switch (boc) {

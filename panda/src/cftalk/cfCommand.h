@@ -29,7 +29,7 @@
 //               This is an abstract base class.  Individual commands
 //               will specialize from this.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_DISPLAY CFCommand : public TypedWritableReferenceCount {
+class EXPCL_CFTALK CFCommand : public TypedWritableReferenceCount {
 protected:
   CFCommand();
 
@@ -59,7 +59,7 @@ private:
 // Description : Starts the cull process for a particular
 //               DisplayRegion.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_DISPLAY CFDoCullCommand : public CFCommand {
+class EXPCL_CFTALK CFDoCullCommand : public CFCommand {
 protected:
   INLINE CFDoCullCommand();
 PUBLISHED:

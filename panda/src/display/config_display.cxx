@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "config_display.h"
-#include "cfCommand.h"
 #include "displayRegion.h"
 #include "displayRegionCullCallbackData.h"
 #include "displayRegionDrawCallbackData.h"
@@ -370,8 +369,6 @@ init_libdisplay() {
   }
   initialized = true;
 
-  CFCommand::init_type();
-  CFDoCullCommand::init_type();
   DisplayRegion::init_type();
   DisplayRegionCullCallbackData::init_type();
   DisplayRegionDrawCallbackData::init_type();
@@ -385,8 +382,6 @@ init_libdisplay() {
   ParasiteBuffer::init_type();
   StandardMunger::init_type();
   StereoDisplayRegion::init_type();
-
-  CFDoCullCommand::register_with_read_factory();
 
 #if defined(HAVE_THREADS) && defined(DO_PIPELINING)
   PandaSystem *ps = PandaSystem::get_global_ptr();

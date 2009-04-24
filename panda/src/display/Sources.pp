@@ -13,7 +13,6 @@
   #define SOURCES  \
     standardMunger.I standardMunger.h \
     config_display.h \
-    cfCommand.I cfCommand.h \
     drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h  \
     displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
@@ -43,7 +42,6 @@
  #define INCLUDED_SOURCES  \
     standardMunger.cxx \
     config_display.cxx \
-    cfCommand.cxx \
     drawableRegion.cxx \
     displayRegion.cxx \
     displayRegionCullCallbackData.cxx \
@@ -69,7 +67,6 @@
   #define INSTALL_HEADERS \
     standardMunger.I standardMunger.h \
     config_display.h \
-    cfCommand.I cfCommand.h \
     drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h \
     displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
