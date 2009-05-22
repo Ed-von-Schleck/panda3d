@@ -52,7 +52,7 @@ class Messenger:
         # accept/ignore more than once over their lifetime)
         # get unique messenger id for this object
         if not hasattr(object, '_messengerId'):
-            object._messengerId = self._messengerIdGen
+            object._messengerId = (object.__class__.__name__, self._messengerIdGen)
             self._messengerIdGen += 1
         return object._messengerId
 
@@ -67,6 +67,18 @@ class Messenger:
 
     def _getObject(self, id):
         return self._id2object[id][1]
+
+    def _getObjects(self):
+        objs = []
+        for refCount, obj in self._id2object.itervalues():
+            objs.append(obj)
+        return objs
+
+    def _getNumListeners(self, event):
+        return len(self.__callbacks.get(event, {}))
+
+    def _getEvents(self):
+        return self.__callbacks.keys()
 
     def _releaseObject(self, object):
         id = self._getMessengerId(object)
