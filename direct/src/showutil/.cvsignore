@@ -2,3 +2,7 @@
 Makefile
 *.pyc
 pp.dep
+runp3d
+runp3d.bat
+packp3d
+packp3d.bat
