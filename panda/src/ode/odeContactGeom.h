@@ -22,12 +22,17 @@
 #include "ode_includes.h"
 #include "odeGeom.h"
 
+class OdeSpace;
+class OdeUtil;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : OdeContactGeom
 // Description : 
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAODE OdeContactGeom : public TypedReferenceCount {
   friend class OdeContact;
+  friend class OdeSpace;
+  friend class OdeUtil;
 
 PUBLISHED:
   OdeContactGeom();
@@ -64,7 +69,7 @@ public:
   static void init_type() {
     TypedReferenceCount::init_type();
     register_type(_type_handle, "OdeContactGeom",
-		  TypedReferenceCount::get_class_type());
+                  TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

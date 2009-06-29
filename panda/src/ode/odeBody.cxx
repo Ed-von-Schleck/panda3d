@@ -34,6 +34,9 @@ OdeBody::
 
 void OdeBody::
 destroy() {
+#ifdef HAVE_PYTHON
+  Py_XDECREF((PyObject*) dBodyGetData(_id));
+#endif
   nassertv(_id);
   dBodyDestroy(_id);
 }
@@ -49,8 +52,8 @@ void OdeBody::
 write(ostream &out, unsigned int indent) const {
   #ifndef NDEBUG //[
   out.width(indent); out << "" << get_type() \
-			 << "(id = " << _id \
-			 << ")";
+                         << "(id = " << _id \
+                         << ")";
   #endif //] NDEBUG
 }
 

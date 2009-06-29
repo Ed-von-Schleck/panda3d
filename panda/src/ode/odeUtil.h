@@ -21,7 +21,7 @@
 
 #include "ode_includes.h"
 #include "odeJointCollection.h"
-#include "odeContactCollection.h"
+#include "odeCollisionEntry.h"
 
 #ifdef HAVE_PYTHON
   #include "py_panda.h"
@@ -46,10 +46,12 @@ PUBLISHED:
   static int are_connected_excluding(const OdeBody &body1,
                                      const OdeBody &body2,
                                      const int joint_type);
-  static OdeContactCollection collide(const OdeGeom &geom1, const OdeGeom &geom2,
+  static PT(OdeCollisionEntry) collide(const OdeGeom &geom1, const OdeGeom &geom2,
                                       const short int max_contacts = 150);
+#ifdef HAVE_PYTHON
   static int collide2(const OdeGeom &geom1, const OdeGeom &geom2,
-                                       PyObject* arg, PyObject* callback);
+                      PyObject* arg, PyObject* callback);
+#endif
   static OdeGeom space_to_geom(const OdeSpace &space);
 
   static dReal OC_infinity;

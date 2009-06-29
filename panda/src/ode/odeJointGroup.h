@@ -30,13 +30,12 @@ PUBLISHED:
   OdeJointGroup();
   virtual ~OdeJointGroup();
   void destroy();
+  INLINE dJointGroupID get_id() const;
 
   INLINE void empty() const;
 
   INLINE int compare_to(const OdeJointGroup &other) const;
 
-public: 
-  INLINE dJointGroupID get_id() const;
 
 private:
   dJointGroupID _id;
@@ -48,7 +47,7 @@ public:
   static void init_type() {
     TypedObject::init_type();
     register_type(_type_handle, "OdeJointGroup",
-		  TypedObject::get_class_type());
+                  TypedObject::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

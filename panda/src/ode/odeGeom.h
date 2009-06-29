@@ -55,24 +55,25 @@ protected:
 
 PUBLISHED:
   enum GeomClass { GC_sphere = 0, 
-		   GC_box,
-		   GC_capped_cylinder,
-		   GC_cylinder,
-		   GC_plane,
-		   GC_ray,
-		   // GC_convex,
-		   // GC_geom_transform,
-		   GC_tri_mesh = 8,
-		   // GC_heightfield,
-		   
-		   GC_simple_space = 10,
-		   GC_hash_space,
-		   GC_quad_tree_space,
+                   GC_box,
+                   GC_capped_cylinder,
+                   GC_cylinder,
+                   GC_plane,
+                   GC_ray,
+                   // GC_convex,
+                   // GC_geom_transform,
+                   GC_tri_mesh = 8,
+                   // GC_heightfield,
+
+                   GC_simple_space = 10,
+                   GC_hash_space,
+                   GC_quad_tree_space,
   };
 
   virtual ~OdeGeom();
   void destroy();
   INLINE bool is_empty() const;
+  INLINE dGeomID get_id() const;
 
   //INLINE void set_data(void* data);
   INLINE void set_body(OdeBody &body);
@@ -120,6 +121,7 @@ PUBLISHED:
   OdeSpace get_space() const;
 
   virtual void write(ostream &out = cout, unsigned int indent=0) const;
+  operator bool () const;
   INLINE int compare_to(const OdeGeom &other) const;
 
   OdeBoxGeom convert_to_box() const;
@@ -138,8 +140,6 @@ PUBLISHED:
   
 
 public:
-  INLINE dGeomID get_id() const;
-
   INLINE static int get_geom_class() { return -1; };
 
 protected:
@@ -153,7 +153,7 @@ public:
   static void init_type() {
     TypedObject::init_type();
     register_type(_type_handle, "OdeGeom",
-		  TypedObject::get_class_type());
+                  TypedObject::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

@@ -53,22 +53,23 @@ protected:
   OdeJoint(dJointID id);
 
 PUBLISHED:
-  enum JointType { JT_none = 0,	/* or "unknown" */
-		   JT_ball,
-		   JT_hinge,
-		   JT_slider,
-		   JT_contact,
-		   JT_universal,
-		   JT_hinge2,
-		   JT_fixed,
-		   JT_null,
-		   JT_a_motor,
-		   JT_l_motor,
-		   JT_plane2d };
+  enum JointType { JT_none = 0, /* or "unknown" */
+                   JT_ball,
+                   JT_hinge,
+                   JT_slider,
+                   JT_contact,
+                   JT_universal,
+                   JT_hinge2,
+                   JT_fixed,
+                   JT_null,
+                   JT_a_motor,
+                   JT_l_motor,
+                   JT_plane2d };
 
   virtual ~OdeJoint();
   void destroy();
   INLINE bool is_empty() const;
+  INLINE dJointID get_id() const;
   
   /* INLINE void set_data(void *data); */
   /* INLINE void *get_data(); */
@@ -98,9 +99,6 @@ PUBLISHED:
   OdeLMotorJoint convert_to_l_motor() const;
   OdePlane2dJoint convert_to_plane2d() const;
 
-public: 
-  INLINE dJointID get_id() const;
-
 protected:
   dJointID _id;
 
@@ -111,7 +109,7 @@ public:
   static void init_type() {
     TypedObject::init_type();
     register_type(_type_handle, "OdeJoint",
-		  TypedObject::get_class_type());
+                  TypedObject::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
