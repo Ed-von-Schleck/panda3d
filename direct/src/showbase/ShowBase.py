@@ -253,6 +253,10 @@ class ShowBase(DirectObject.DirectObject):
         self.physicsMgrEnabled = 0
         self.physicsMgrAngular = 0
 
+        # ODE manager
+        self.odeMgr = OdeManager.getGlobalPtr()
+        self.odeMgrEnabled = self.config.GetBool('want-ode', 0)
+
         self.createBaseAudioManagers()
         self.createStats()
 
@@ -1432,6 +1436,8 @@ class ShowBase(DirectObject.DirectObject):
             self.particleMgr.doParticles(dt)
         if (self.physicsMgrEnabled == 1):
             self.physicsMgr.doPhysics(dt)
+        if (self.odeMgrEnabled == 1):
+            self.odeMgr.doPhysics(dt)
         return Task.cont
 
     def createStats(self, hostname=None, port=None):
