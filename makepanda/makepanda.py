@@ -50,8 +50,6 @@ CheckPandaSourceTree()
 
 VERSION=ParsePandaVersion("dtool/PandaVersion.pp")
 
-LoadDependencyCache()
-
 def keyboardInterruptHandler(x,y):
     exit("keyboard interrupt")
 
@@ -143,6 +141,9 @@ if (os.environ.has_key("CFLAGS")):
   CFLAGS=os.environ["CFLAGS"]
 if (os.environ.has_key("RPM_OPT_FLAGS")):
   CFLAGS+=os.environ["RPM_OPT_FLAGS"]
+
+# Load the dependency cache - to avoid having to rebuild everything every time. Important!
+LoadDependencyCache()
 
 ########################################################################
 ##
