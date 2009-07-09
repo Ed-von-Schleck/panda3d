@@ -75,6 +75,11 @@ class ShowBase(DirectObject.DirectObject):
         # Setup wantVerifyPdb as soon as reasonable:
         Verify.wantVerifyPdb = self.config.GetBool('want-verify-pdb', 0)
 
+        # [gjeon] to disable sticky keys
+        storeAccessibilityShortcutKeys()
+        if self.config.GetBool('disable-sticky-keys', 0):
+            allowAccessibilityShortcutKeys(False)
+
         self.printEnvDebugInfo()
         vfs = VirtualFileSystem.getGlobalPtr()
 
@@ -417,6 +422,9 @@ class ShowBase(DirectObject.DirectObject):
         automatically.
 
         This function is designed to be safe to call multiple times."""
+
+        # [gjeon] restore sticky key settings
+        allowAccessibilityShortcutKeys(True)
 
         taskMgr.destroy()
 
@@ -802,7 +810,6 @@ class ShowBase(DirectObject.DirectObject):
 
             self.setFrameRateMeter(self.config.GetBool(
                 'show-frame-rate-meter', 0))
-
         return success
 
     def setSleep(self, amount):
@@ -1540,6 +1547,9 @@ class ShowBase(DirectObject.DirectObject):
             self.cTrav.traverse(self.render)
         if self.appTrav:
             self.appTrav.traverse(self.render)
+        if self.shadowTrav:
+            self.shadowTrav.traverse(self.render)
+        messenger.send("collisionLoopFinished")
         return Task.cont
 
     def __audioLoop(self, state):
@@ -1603,11 +1613,7 @@ class ShowBase(DirectObject.DirectObject):
         # but leave enough room for the app to insert tasks
         # between collisionLoop and igLoop
         self.taskMgr.add(self.__collisionLoop, 'collisionLoop', priority = 30)
-        # do the shadowCollisionLoop after the collisionLoop and
-        # before the igLoop and camera updates (this moves the avatar vertically,
-        # to his final position for the frame):
-        self.taskMgr.add(
-            self.__shadowCollisionLoop, 'shadowCollisionLoop', priority = 44)
+        
         # give the igLoop task a reasonably "late" priority,
         # so that it will get run after most tasks
         self.taskMgr.add(self.__igLoop, 'igLoop', priority = 50)
@@ -2401,6 +2407,9 @@ class ShowBase(DirectObject.DirectObject):
             base.direct.enable()
         else:
             __builtin__.direct = self.direct = None
+
+    def getRepository(self):
+        return None
 
     def __doStartDirect(self):
         if self.__directStarted:
