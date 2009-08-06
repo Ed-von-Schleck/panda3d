@@ -2244,7 +2244,7 @@ set_color(const Colorf &color, int priority, const InternalName *pass) {
 //               using the geometry color.  This is normally the
 //               default, but it may be useful to use this to
 //               contradict set_color() at a higher node level (or,
-//               with a priority, pass, to override a set_color() at a lower
+//               with a priority, to override a set_color() at a lower
 //               level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -2419,7 +2419,7 @@ set_color_scale_off(int priority, const InternalName *pass) {
 //       Access: Published
 //  Description: Sets the alpha scale component of the transform
 //               without (much) affecting the color scale.  Note that
-//               any priority, pass specified will also apply to the color
+//               any priority specified will also apply to the color
 //               scale.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -2449,7 +2449,7 @@ set_alpha_scale(float scale, int priority, const InternalName *pass) {
 //       Access: Published
 //  Description: Scales all the color components of the object by the
 //               same amount, darkening the object, without (much)
-//               affecting alpha.  Note that any priority, pass specified
+//               affecting alpha.  Note that any priority specified
 //               will also apply to the alpha scale.
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -2568,7 +2568,7 @@ set_light(const NodePath &light, int priority, const InternalName *pass) {
 //               using no lights at all.  This is different
 //               from not specifying a light; rather, this
 //               specifically contradicts set_light() at a higher
-//               node level (or, with a priority, pass, overrides a
+//               node level (or, with a priority, overrides a
 //               set_light() at a lower level).
 //
 //               If no lights are in effect on a particular piece of
@@ -2589,7 +2589,7 @@ set_light_off(int priority, const InternalName *pass) {
 //               without using the indicated Light.  This is different
 //               from not specifying the Light; rather, this
 //               specifically contradicts set_light() at a higher node
-//               level (or, with a priority, pass, overrides a set_light()
+//               level (or, with a priority, overrides a set_light()
 //               at a lower level).
 //
 //               This interface does not support PolylightNodes, which
@@ -2814,7 +2814,7 @@ set_clip_plane(const NodePath &clip_plane, int priority, const InternalName *pas
 //               using no clip_planes at all.  This is different
 //               from not specifying a clip_plane; rather, this
 //               specifically contradicts set_clip_plane() at a higher
-//               node level (or, with a priority, pass, overrides a
+//               node level (or, with a priority, overrides a
 //               set_clip_plane() at a lower level).
 //
 //               If no clip_planes are in effect on a particular piece
@@ -2835,7 +2835,7 @@ set_clip_plane_off(int priority, const InternalName *pass) {
 //               This is different from not specifying the PlaneNode;
 //               rather, this specifically contradicts
 //               set_clip_plane() at a higher node level (or, with a
-//               priority, pass, overrides a set_clip_plane() at a lower
+//               priority, overrides a set_clip_plane() at a lower
 //               level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -3241,7 +3241,7 @@ set_texture(TextureStage *stage, Texture *tex, int priority, const InternalName 
 //               using no texture, on any stage.  This is different
 //               from not specifying a texture; rather, this
 //               specifically contradicts set_texture() at a higher
-//               node level (or, with a priority, pass, overrides a
+//               node level (or, with a priority, overrides a
 //               set_texture() at a lower level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -3257,7 +3257,7 @@ set_texture_off(int priority, const InternalName *pass) {
 //               using no texture, on the indicated stage.  This is
 //               different from not specifying a texture; rather, this
 //               specifically contradicts set_texture() at a higher
-//               node level (or, with a priority, pass, overrides a
+//               node level (or, with a priority, overrides a
 //               set_texture() at a lower level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -4210,7 +4210,7 @@ project_texture(TextureStage *stage, Texture *tex, const NodePath &projector, co
 //     Function: NodePath::set_normal_map
 //       Access: Published
 //  Description: A convenience function to set up a normal map on this
-//               geometry.  This uses the single highest-priority, pass
+//               geometry.  This uses the single highest-priority
 //               light on the object only.  It also requires
 //               multitexture, and consumes at least two texture
 //               stages, in addition to what may already be in use.
@@ -4682,7 +4682,7 @@ set_material(Material *mat, int priority, const InternalName *pass) {
 //               using no material.  This is normally the default, but
 //               it may be useful to use this to contradict
 //               set_material() at a higher node level (or, with a
-//               priority, pass, to override a set_material() at a lower
+//               priority, to override a set_material() at a lower
 //               level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
@@ -4767,7 +4767,7 @@ set_fog(Fog *fog, int priority, const InternalName *pass) {
 //               using no fog.  This is normally the default, but
 //               it may be useful to use this to contradict
 //               set_fog() at a higher node level (or, with a
-//               priority, pass, to override a set_fog() at a lower
+//               priority, to override a set_fog() at a lower
 //               level).
 ////////////////////////////////////////////////////////////////////
 void NodePath::
