@@ -1103,9 +1103,12 @@ copy_children(PandaNode *other, Thread *current_thread) {
 //               graph on this node.  This attribute will now apply to
 //               this node and everything below.  If there was already
 //               an attribute of the same type, it is replaced.
+//               If the optional pass argument is not empty, it
+//               only alters the state of the render pass with the
+//               given name. Otherwise, it modifies the normal state.
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
-set_attrib(const RenderAttrib *attrib, int override) {
+set_attrib(const RenderAttrib *attrib, int override, const InternalName *pass) {
   // Apply this operation to the current stage as well as to all
   // upstream stages.
   bool any_changed = false;
@@ -1113,11 +1116,20 @@ set_attrib(const RenderAttrib *attrib, int override) {
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
     
-    CPT(RenderState) new_state = cdata->_state->set_attrib(attrib, override);
-    if (cdata->_state != new_state) {
-      cdata->_state = new_state;
-      cdata->set_fancy_bit(FB_state, true);
-      any_changed = true;
+    if (pass == NULL) {
+      CPT(RenderState) new_state = cdata->_state->set_attrib(attrib, override);
+      if (cdata->_state != new_state) {
+        cdata->_state = new_state;
+        cdata->set_fancy_bit(FB_state, true);
+        any_changed = true;
+      }
+    } else {
+      CPT(RenderState) new_state = cdata->_states[pass]->set_attrib(attrib, override);
+      if (cdata->_states[pass] != new_state) {
+        cdata->_states[pass] = new_state;
+        cdata->set_fancy_bit(FB_state, true);
+        any_changed = true;
+      }
     }
   }
   CLOSE_ITERATE_CURRENT_AND_UPSTREAM(_cycler);
@@ -1139,18 +1151,27 @@ set_attrib(const RenderAttrib *attrib, int override) {
 //               nodes above this one.
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
-clear_attrib(int slot) {
+clear_attrib(int slot, const InternalName *pass) {
   bool any_changed = false;
 
   Thread *current_thread = Thread::get_current_thread();
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
     
-    CPT(RenderState) new_state = cdata->_state->remove_attrib(slot);
-    if (cdata->_state != new_state) {
-      cdata->_state = new_state;
-      cdata->set_fancy_bit(FB_state, !new_state->is_empty());
-      any_changed = true;
+    if (pass == NULL) {
+      CPT(RenderState) new_state = cdata->_state->remove_attrib(slot);
+      if (cdata->_state != new_state) {
+        cdata->_state = new_state;
+        cdata->set_fancy_bit(FB_state, !new_state->is_empty());
+        any_changed = true;
+      }
+    } else {
+      CPT(RenderState) new_state = cdata->_states[pass]->remove_attrib(slot);
+      if (cdata->_states[pass] != new_state) {
+        cdata->_states[pass] = new_state;
+        cdata->set_fancy_bit(FB_state, !new_state->is_empty());
+        any_changed = true;
+      }
     }
   }
   CLOSE_ITERATE_CURRENT_AND_UPSTREAM(_cycler);
@@ -1214,16 +1235,25 @@ clear_effect(TypeHandle type) {
 //               set on this node via repeated calls to set_attrib().
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
-set_state(const RenderState *state, Thread *current_thread) {
+set_state(const RenderState *state, const InternalName *pass, Thread *current_thread) {
   // Apply this operation to the current stage as well as to all
   // upstream stages.
   bool any_changed = false;
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
-    if (cdata->_state != state) {
-      cdata->_state = state;
-      cdata->set_fancy_bit(FB_state, !state->is_empty());
-      any_changed = true;
+
+    if (pass == NULL) {
+      if (cdata->_state != state) {
+        cdata->_state = state;
+        cdata->set_fancy_bit(FB_state, !state->is_empty());
+        any_changed = true;
+      }
+    } else {
+      if (cdata->_states[pass] != state) {
+        cdata->_states[pass] = state;
+        cdata->set_fancy_bit(FB_state, !state->is_empty() || !cdata->_state->is_empty());
+        any_changed = true;
+      }
     }
   }
   CLOSE_ITERATE_CURRENT_AND_UPSTREAM(_cycler);

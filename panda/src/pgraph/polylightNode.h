@@ -64,7 +64,7 @@ PUBLISHED:
   INLINE void set_color(Colorf color);
   INLINE void set_color(float r, float g, float b);
   INLINE Colorf get_color() const;
-  INLINE Colorf get_color_scenegraph() const;
+  INLINE Colorf get_color_scenegraph(const InternalName *pass = NULL) const;
   INLINE void set_radius(float r);
   INLINE float get_radius() const;
   INLINE bool set_attenuation(Attenuation_Type type);

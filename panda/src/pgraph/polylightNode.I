@@ -399,10 +399,10 @@ get_color() const {
 //               ignored.
 ////////////////////////////////////////////////////////////////////
 INLINE Colorf PolylightNode::
-get_color_scenegraph() const {
+get_color_scenegraph(const InternalName *pass) const {
 
   const RenderAttrib *attrib =
-    PandaNode::get_attrib(ColorAttrib::get_class_type());
+    PandaNode::get_attrib(ColorAttrib::get_class_type(), pass);
   if (attrib != (const RenderAttrib *)NULL) {
     const ColorAttrib *ca = DCAST(ColorAttrib, attrib);
     if (ca->get_color_type() == ColorAttrib::T_flat) {

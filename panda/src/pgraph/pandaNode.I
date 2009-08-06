@@ -232,9 +232,8 @@ find_stashed(PandaNode *node, Thread *current_thread) const {
 //               attributes may be inherited from parent nodes.
 ////////////////////////////////////////////////////////////////////
 INLINE const RenderAttrib *PandaNode::
-get_attrib(TypeHandle type) const {
-  CDReader cdata(_cycler);
-  return cdata->_state->get_attrib(type);
+get_attrib(TypeHandle type, const InternalName *pass) const {
+  return get_state(pass)->get_attrib(type);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -247,9 +246,8 @@ get_attrib(TypeHandle type) const {
 //               attributes may be inherited from parent nodes.
 ////////////////////////////////////////////////////////////////////
 INLINE const RenderAttrib *PandaNode::
-get_attrib(int slot) const {
-  CDReader cdata(_cycler);
-  return cdata->_state->get_attrib(slot);
+get_attrib(int slot, const InternalName *pass) const {
+  return get_state(pass)->get_attrib(slot);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -260,9 +258,8 @@ get_attrib(int slot) const {
 //               there is not.
 ////////////////////////////////////////////////////////////////////
 INLINE bool PandaNode::
-has_attrib(TypeHandle type) const {
-  CDReader cdata(_cycler);
-  return cdata->_state->has_attrib(type);
+has_attrib(TypeHandle type, const InternalName *pass) const {
+  return get_state(pass)->has_attrib(type);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -273,9 +270,8 @@ has_attrib(TypeHandle type) const {
 //               there is not.
 ////////////////////////////////////////////////////////////////////
 INLINE bool PandaNode::
-has_attrib(int slot) const {
-  CDReader cdata(_cycler);
-  return cdata->_state->has_attrib(slot);
+has_attrib(int slot, const InternalName *pass) const {
+  return get_state(pass)->has_attrib(slot);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -287,10 +283,10 @@ has_attrib(int slot) const {
 //               nodes above this one.
 ////////////////////////////////////////////////////////////////////
 INLINE void PandaNode::
-clear_attrib(TypeHandle type) {
+clear_attrib(TypeHandle type, const InternalName *pass) {
   RenderAttribRegistry *reg = RenderAttribRegistry::quick_get_global_ptr();
   int slot = reg->get_slot(type);
-  clear_attrib(slot);
+  clear_attrib(slot, pass);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -331,11 +327,21 @@ has_effect(TypeHandle type) const {
 //               node.  This returns only the RenderState set on this
 //               particular node, and has nothing to do with state
 //               that might be inherited from above.
+//               If the optional 'pass' argument is a non-empty
+//               string, returns the particular render state that
+//               applies to the render pass with the given name.
+//               NULL is returned if no such state exists.
 ////////////////////////////////////////////////////////////////////
 INLINE const RenderState *PandaNode::
-get_state(Thread *current_thread) const {
+get_state(const InternalName *pass, Thread *current_thread) const {
   CDReader cdata(_cycler, current_thread);
-  return cdata->_state;
+  if (pass == NULL) {
+    return cdata->_state;
+  } else {
+    int idx = cdata->_states.find(pass);
+    if (idx < 0) return NULL;
+    return cdata->_states.get_data(idx);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -347,8 +353,8 @@ get_state(Thread *current_thread) const {
 //               this level.
 ////////////////////////////////////////////////////////////////////
 INLINE void PandaNode::
-clear_state(Thread *current_thread) {
-  set_state(RenderState::make_empty(), current_thread);
+clear_state(const InternalName *pass, Thread *current_thread) {
+  set_state(RenderState::make_empty(), pass, current_thread);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1660,8 +1666,14 @@ find_stashed(PandaNode *node) const {
 //               that might be inherited from above.
 ////////////////////////////////////////////////////////////////////
 INLINE const RenderState *PandaNodePipelineReader::
-get_state() const {
-  return _cdata->_state;
+get_state(const InternalName *pass) const {
+  if (pass == NULL) {
+    return _cdata->_state;
+  } else {
+    int idx = _cdata->_states.find(pass);
+    if (idx < 0) return NULL;
+    return _cdata->_states.get_data(idx);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
