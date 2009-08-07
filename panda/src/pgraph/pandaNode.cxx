@@ -1124,9 +1124,17 @@ set_attrib(const RenderAttrib *attrib, int override, const InternalName *pass) {
         any_changed = true;
       }
     } else {
-      CPT(RenderState) new_state = cdata->_states[pass]->set_attrib(attrib, override);
-      if (cdata->_states[pass] != new_state) {
-        cdata->_states[pass] = new_state;
+      int idx = cdata->_states.find(pass);
+      if (idx > -1) {
+        CPT(RenderState) new_state = cdata->_states.get_data(idx)->set_attrib(attrib, override);
+        if (cdata->_states.get_data(idx) != new_state) {
+          cdata->_states.set_data(idx, new_state);
+          cdata->set_fancy_bit(FB_state, true);
+          any_changed = true;
+        }
+      } else {
+        CPT(RenderState) new_state = RenderState::make_empty()->set_attrib(attrib, override);
+        cdata->_states.store(pass, new_state);
         cdata->set_fancy_bit(FB_state, true);
         any_changed = true;
       }
@@ -1162,15 +1170,22 @@ clear_attrib(int slot, const InternalName *pass) {
       CPT(RenderState) new_state = cdata->_state->remove_attrib(slot);
       if (cdata->_state != new_state) {
         cdata->_state = new_state;
-        cdata->set_fancy_bit(FB_state, !new_state->is_empty());
+        cdata->set_fancy_bit(FB_state, !new_state->is_empty() || cdata->_states.get_size() > 0);
         any_changed = true;
       }
     } else {
-      CPT(RenderState) new_state = cdata->_states[pass]->remove_attrib(slot);
-      if (cdata->_states[pass] != new_state) {
-        cdata->_states[pass] = new_state;
-        cdata->set_fancy_bit(FB_state, !new_state->is_empty());
-        any_changed = true;
+      int idx = cdata->_states.find(pass);
+      if (idx > -1) {
+        CPT(RenderState) new_state = cdata->_states.get_data(idx)->remove_attrib(slot);
+        if (new_state->is_empty()) {
+          cdata->_states.remove_element(idx);
+          cdata->set_fancy_bit(FB_state, !cdata->_state->is_empty() || cdata->_states.get_size() > 0);
+          any_changed = true;
+        } else if (cdata->_states.get_data(idx) != new_state) {
+          cdata->_states.set_data(idx, new_state);
+          cdata->set_fancy_bit(FB_state, !cdata->_state->is_empty() || cdata->_states.get_size() > 0);
+          any_changed = true;
+        }
       }
     }
   }
@@ -1249,9 +1264,20 @@ set_state(const RenderState *state, const InternalName *pass, Thread *current_th
         any_changed = true;
       }
     } else {
-      if (cdata->_states[pass] != state) {
-        cdata->_states[pass] = state;
-        cdata->set_fancy_bit(FB_state, !state->is_empty() || !cdata->_state->is_empty());
+      int idx = cdata->_states.find(pass);
+      if (idx > -1) {
+        if (state == NULL || state->is_empty()) {
+          cdata->_states.remove_element(idx);
+          cdata->set_fancy_bit(FB_state, !cdata->_state->is_empty() || cdata->_states.get_size() > 0);
+          any_changed = true;
+        } else if (cdata->_states.get_data(idx) != state) {
+          cdata->_states.set_data(idx, state);
+          cdata->set_fancy_bit(FB_state, true);
+          any_changed = true;
+        }
+      } else if (state != NULL && !state->is_empty()) {
+        cdata->_states.store(pass, state);
+        cdata->set_fancy_bit(FB_state, true);
         any_changed = true;
       }
     }

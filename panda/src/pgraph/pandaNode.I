@@ -339,7 +339,7 @@ get_state(const InternalName *pass, Thread *current_thread) const {
     return cdata->_state;
   } else {
     int idx = cdata->_states.find(pass);
-    if (idx < 0) return NULL;
+    if (idx < 0) return RenderState::make_empty();
     return cdata->_states.get_data(idx);
   }
 }
