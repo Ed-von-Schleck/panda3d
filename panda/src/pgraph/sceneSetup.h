@@ -69,6 +69,9 @@ PUBLISHED:
 
   INLINE void set_world_transform(const TransformState *world_transform);
   INLINE const TransformState *get_world_transform() const;
+  
+  INLINE void set_pass_name(const InternalName *pass_name);
+  INLINE const InternalName *get_pass_name() const;
 
 private:
   DisplayRegion *_display_region;
@@ -82,6 +85,7 @@ private:
   CPT(RenderState) _initial_state;
   CPT(TransformState) _camera_transform;
   CPT(TransformState) _world_transform;
+  CPT(InternalName) _pass_name;
 };
 
 #include "sceneSetup.I"

@@ -1743,6 +1743,7 @@ setup_scene(GraphicsStateGuardian *gsg, DisplayRegionPipelineReader *dr) {
   scene_setup->set_initial_state(initial_state);
   scene_setup->set_camera_transform(camera_transform);
   scene_setup->set_world_transform(world_transform);
+  scene_setup->set_pass_name(dr->get_pass_name());
 
   return scene_setup;
 }

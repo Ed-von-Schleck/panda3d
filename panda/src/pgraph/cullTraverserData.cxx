@@ -47,7 +47,11 @@ get_modelview_transform(const CullTraverser *trav) const {
 ////////////////////////////////////////////////////////////////////
 void CullTraverserData::
 apply_transform_and_state(CullTraverser *trav) {
-  CPT(RenderState) node_state = _node_reader.get_state();
+  CPT(RenderState) node_state = _node_reader.get_state(NULL);
+  CPT(InternalName) pass_name = trav->get_scene()->get_pass_name();
+  if (pass_name != NULL && _node_reader.get_state(pass_name) != NULL) {
+    node_state = node_state->compose(_node_reader.get_state(pass_name));
+  }
 
   if (trav->has_tag_state_key() && 
       _node_reader.has_tag(trav->get_tag_state_key())) {

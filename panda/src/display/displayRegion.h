@@ -110,6 +110,9 @@ PUBLISHED:
   virtual void set_cube_map_index(int cube_map_index);
   INLINE int get_cube_map_index() const;
 
+  virtual void set_pass_name(const InternalName *pass_name);
+  INLINE const InternalName *get_pass_name() const;
+
   INLINE void set_cull_callback(CallbackObject *object);
   INLINE void clear_cull_callback();
   INLINE CallbackObject *get_cull_callback() const;
@@ -204,6 +207,7 @@ private:
     int _sort;
     Lens::StereoChannel _stereo_channel;
     int _cube_map_index;
+    CPT(InternalName) _pass_name;
 
     PT(CallbackObject) _cull_callback;
     PT(CallbackObject) _draw_callback;
@@ -308,6 +312,8 @@ public:
   INLINE int get_pixel_height() const;
 
   INLINE int get_lens_index() const;
+  
+  INLINE const InternalName *get_pass_name() const;
 
 private:
   DisplayRegion *_object;

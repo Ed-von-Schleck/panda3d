@@ -274,3 +274,27 @@ INLINE const TransformState *SceneSetup::
 get_world_transform() const {
   return _world_transform;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: SceneSetup::set_pass_name
+//       Access: Published
+//  Description: Sets the pass name. If this is not NULL, instead
+//               of using the PandaNodes' normal render state,
+//               the render state with the indicated pass name
+//               will be used.
+////////////////////////////////////////////////////////////////////
+INLINE void SceneSetup::
+set_pass_name(const InternalName *pass_name) {
+  _pass_name = pass_name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: SceneSetup::get_pass_name
+//       Access: Published
+//  Description: Returns the pass name, NULL by default. See also
+//               set_pass_name for more information.
+////////////////////////////////////////////////////////////////////
+INLINE const InternalName *SceneSetup::
+get_pass_name() const {
+  return _pass_name;
+}

@@ -207,6 +207,18 @@ get_cube_map_index() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegion::get_pass_name
+//       Access: Published
+//  Description: Returns the pass name, NULL by default. See also
+//               set_pass_name for more information.
+////////////////////////////////////////////////////////////////////
+INLINE const InternalName *DisplayRegion::
+get_pass_name() const {
+  CDReader cdata(_cycler);
+  return cdata->_pass_name;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: DisplayRegion::set_cull_callback
 //       Access: Published
 //  Description: Sets the CallbackObject that will be notified when
@@ -710,6 +722,17 @@ get_stereo_channel() {
 INLINE int DisplayRegionPipelineReader::
 get_cube_map_index() const {
   return _cdata->_cube_map_index;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegionPipelineReader::get_pass_name
+//       Access: Published
+//  Description: Returns the pass name, NULL by default. See also
+//               set_pass_name for more information.
+////////////////////////////////////////////////////////////////////
+INLINE const InternalName *DisplayRegionPipelineReader::
+get_pass_name() const {
+  return _cdata->_pass_name;
 }
 
 ////////////////////////////////////////////////////////////////////

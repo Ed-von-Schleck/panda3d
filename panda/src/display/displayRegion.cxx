@@ -375,6 +375,22 @@ set_cube_map_index(int cube_map_index) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegion::set_pass_name
+//       Access: Published, Virtual
+//  Description: Sets the pass name. If this is not NULL, instead
+//               of using the PandaNodes' normal render state,
+//               the render state with the indicated pass name
+//               will be used.
+////////////////////////////////////////////////////////////////////
+void DisplayRegion::
+set_pass_name(const InternalName *pass_name) {
+  int pipeline_stage = Thread::get_current_pipeline_stage();
+  nassertv(pipeline_stage == 0);
+  CDWriter cdata(_cycler);
+  cdata->_pass_name = pass_name;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: DisplayRegion::output
 //       Access: Published, Virtual
 //  Description:
@@ -757,7 +773,8 @@ CData() :
   _active(true),
   _sort(0),
   _stereo_channel(Lens::SC_mono),
-  _cube_map_index(-1)
+  _cube_map_index(-1),
+  _pass_name(NULL)
 {
 }
 
@@ -784,7 +801,8 @@ CData(const DisplayRegion::CData &copy) :
   _active(copy._active),
   _sort(copy._sort),
   _stereo_channel(copy._stereo_channel),
-  _cube_map_index(copy._cube_map_index)
+  _cube_map_index(copy._cube_map_index),
+  _pass_name(NULL)
 {
 }
 
