@@ -38,8 +38,6 @@
 #include "depthWriteAttrib.h"
 #include "eventStorePandaNode.h"
 #include "findApproxLevelEntry.h"
-#include "fadeLodNode.h"
-#include "fadeLodNodeData.h"
 #include "fog.h"
 #include "fogAttrib.h"
 #include "geomDrawCallbackData.h"
@@ -53,7 +51,6 @@
 #include "loaderFileType.h"
 #include "loaderFileTypeBam.h"
 #include "loaderFileTypeRegistry.h"
-#include "lodNode.h"
 #include "materialAttrib.h"
 #include "modelFlattenRequest.h"
 #include "modelLoadRequest.h"
@@ -89,7 +86,7 @@
 #include "transformState.h"
 #include "transparencyAttrib.h"
 #include "nodePathLerps.h"
-#include "shaderGeneratorBase.h"
+#include "uvScrollNode.h"
 
 #include "dconfig.h"
 
@@ -368,11 +365,6 @@ ConfigVariableString default_model_extension
           "Panda's loader; new code should probably give the correct name "
           "for each model file they intend to load."));
 
-ConfigVariableEnum<LODNodeType> default_lod_type
-("default-lod-type", LNT_pop,
- PRC_DESC("Set this to either 'pop' or 'fade' to determine the type of "
-          "LODNode that is created by LODNode::make_default_lod()."));
-
 ConfigVariableBool allow_live_flatten
 ("allow-live-flatten", true,
  PRC_DESC("Set this true to allow the use of flatten_strong() or any "
@@ -421,8 +413,6 @@ init_libpgraph() {
   DepthTestAttrib::init_type();
   DepthWriteAttrib::init_type();
   EventStorePandaNode::init_type();
-  FadeLODNode::init_type();
-  FadeLODNodeData::init_type();
   FindApproxLevelEntry::init_type();
   Fog::init_type();
   FogAttrib::init_type();
@@ -434,7 +424,6 @@ init_libpgraph() {
   LightAttrib::init_type();
   LightRampAttrib::init_type();
   Loader::init_type();
-  LODNode::init_type();
   LoaderFileType::init_type();
   LoaderFileTypeBam::init_type();
   MaterialAttrib::init_type();
@@ -462,7 +451,6 @@ init_libpgraph() {
   ShadeModelAttrib::init_type();
   ShaderInput::init_type();
   ShaderAttrib::init_type();
-  ShaderGeneratorBase::init_type();
   ShowBoundsEffect::init_type();
   StateMunger::init_type();
   StencilAttrib::init_type();
@@ -480,6 +468,7 @@ init_libpgraph() {
   PosHprScaleLerpFunctor::init_type();
   ColorLerpFunctor::init_type();
   ColorScaleLerpFunctor::init_type();
+  UvScrollNode::init_type();
 
   AlphaTestAttrib::register_with_read_factory();
   AntialiasAttrib::register_with_read_factory();
@@ -499,14 +488,12 @@ init_libpgraph() {
   DepthOffsetAttrib::register_with_read_factory();
   DepthTestAttrib::register_with_read_factory();
   DepthWriteAttrib::register_with_read_factory();
-  FadeLODNode::register_with_read_factory();
   Fog::register_with_read_factory();
   FogAttrib::register_with_read_factory();
   GeomNode::register_with_read_factory();
   LensNode::register_with_read_factory();
   LightAttrib::register_with_read_factory();
   LightRampAttrib::register_with_read_factory();
-  LODNode::register_with_read_factory();
   MaterialAttrib::register_with_read_factory();
   ModelNode::register_with_read_factory();
   ModelRoot::register_with_read_factory();
@@ -531,6 +518,7 @@ init_libpgraph() {
   TexGenAttrib::register_with_read_factory();
   TransformState::register_with_read_factory();
   TransparencyAttrib::register_with_read_factory();
+  UvScrollNode::register_with_read_factory();
 
   // By initializing the _states map up front, we also guarantee that
   // the _states_lock mutex gets created before we spawn any threads
