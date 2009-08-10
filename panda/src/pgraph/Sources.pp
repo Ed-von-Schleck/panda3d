@@ -47,8 +47,6 @@
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
     eventStorePandaNode.I eventStorePandaNode.h \
-    fadeLodNode.I fadeLodNode.h \
-    fadeLodNodeData.h \
     findApproxLevelEntry.I findApproxLevelEntry.h \
     findApproxPath.I findApproxPath.h \
     fog.I fog.h \
@@ -65,8 +63,6 @@
     loaderFileType.h \
     loaderFileTypeBam.h  \
     loaderFileTypeRegistry.h \
-    lodNode.I lodNode.h \
-    lodNodeType.h \
     materialAttrib.I materialAttrib.h \
     materialCollection.I materialCollection.h \
     modelFlattenRequest.I modelFlattenRequest.h \
@@ -92,7 +88,6 @@
     renderModeAttrib.I renderModeAttrib.h \
     renderState.I renderState.h \
     rescaleNormalAttrib.I rescaleNormalAttrib.h \
-    sceneGraphAnalyzer.h sceneGraphAnalyzer.I \
     sceneGraphReducer.I sceneGraphReducer.h \
     sceneSetup.I sceneSetup.h \
     scissorAttrib.I scissorAttrib.h \
@@ -112,6 +107,7 @@
     textureStageCollection.I textureStageCollection.h \
     transformState.I transformState.h \
     transparencyAttrib.I transparencyAttrib.h \
+    uvScrollNode.I uvScrollNode.h \
     weakNodePath.I weakNodePath.h \
     workingNodePath.I workingNodePath.h
 
@@ -151,8 +147,6 @@
     depthTestAttrib.cxx \
     depthWriteAttrib.cxx \
     eventStorePandaNode.cxx \
-    fadeLodNode.cxx \
-    fadeLodNodeData.cxx \
     findApproxLevelEntry.cxx \
     findApproxPath.cxx \
     fog.cxx \
@@ -169,8 +163,6 @@
     loaderFileType.cxx  \
     loaderFileTypeBam.cxx \
     loaderFileTypeRegistry.cxx  \
-    lodNode.cxx \
-    lodNodeType.cxx \
     materialAttrib.cxx \
     materialCollection.cxx \
     modelFlattenRequest.cxx \
@@ -195,7 +187,6 @@
     renderModeAttrib.cxx \
     renderState.cxx \
     rescaleNormalAttrib.cxx \
-    sceneGraphAnalyzer.cxx \
     sceneGraphReducer.cxx \
     sceneSetup.cxx \
     scissorAttrib.cxx \
@@ -215,6 +206,7 @@
     textureStageCollection.cxx \
     transformState.cxx \
     transparencyAttrib.cxx \
+    uvScrollNode.cxx \
     weakNodePath.cxx \
     workingNodePath.cxx
 
@@ -253,8 +245,6 @@
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
     eventStorePandaNode.I eventStorePandaNode.h \
-    fadeLodNode.I fadeLodNode.h \
-    fadeLodNodeData.h \
     fog.I fog.h \
     fogAttrib.I fogAttrib.h \
     geomDrawCallbackData.I geomDrawCallbackData.h \
@@ -269,8 +259,6 @@
     loaderFileType.h \
     loaderFileTypeBam.h \
     loaderFileTypeRegistry.h \
-    lodNode.I lodNode.h \
-    lodNodeType.h \
     materialAttrib.I materialAttrib.h \
     materialCollection.I materialCollection.h \
     modelFlattenRequest.I modelFlattenRequest.h \
@@ -296,7 +284,6 @@
     renderModeAttrib.I renderModeAttrib.h \
     renderState.I renderState.h \
     rescaleNormalAttrib.I rescaleNormalAttrib.h \
-    sceneGraphAnalyzer.h sceneGraphAnalyzer.I \
     sceneGraphReducer.I sceneGraphReducer.h \
     sceneSetup.I sceneSetup.h \
     scissorAttrib.I scissorAttrib.h \
@@ -316,6 +303,7 @@
     textureStageCollection.I textureStageCollection.h \
     transformState.I transformState.h \
     transparencyAttrib.I transparencyAttrib.h \
+    uvScrollNode.I uvScrollNode.h \
     weakNodePath.I weakNodePath.h \
     workingNodePath.I workingNodePath.h
 
