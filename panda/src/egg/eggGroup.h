@@ -46,13 +46,6 @@ PUBLISHED:
     GT_instance              = 0x00000001,
     GT_joint                 = 0x00000002,
   };
-  enum DartType {
-    // The bits here must correspond to those in Flags, below.
-    DT_none                  = 0x00000000,
-    DT_sync                  = 0x00000004,
-    DT_nosync                = 0x00000008,
-    DT_default               = 0x0000000c,
-  };
   enum DCSType {
     // The bits here must correspond to those in Flags2, below.
     DC_unspecified           = 0x00000000,
@@ -94,6 +87,16 @@ PUBLISHED:
     CF_level                 = 0x04000000,
     CF_intangible            = 0x08000000,
   };
+
+  enum DartType {
+    // The bits here must correspond to those in Flags, below.
+    DT_none                  = 0x00000000,
+    DT_structured            = 0x10000000,
+    DT_sync                  = 0x20000000,
+    DT_nosync                = 0x30000000,
+    DT_default               = 0x40000000,
+  };
+
 
   // These correspond to ColorBlendAttrib::Mode (but not numerically).
   enum BlendMode {
@@ -267,6 +270,15 @@ PUBLISHED:
   INLINE void set_default_pose(const EggTransform &transform);
   INLINE void clear_default_pose();
 
+  INLINE void set_scroll_u(const double u_speed);
+  INLINE void set_scroll_v(const double v_speed);
+  INLINE void set_scroll_r(const double r_speed);
+  INLINE double get_scroll_u() const;
+  INLINE double get_scroll_v() const;
+  INLINE double get_scroll_r() const;
+
+  INLINE bool has_scrolling_uvs();
+
 public:
   INLINE TagData::const_iterator tag_begin() const;
   INLINE TagData::const_iterator tag_end() const;
@@ -325,7 +337,6 @@ private:
 
   enum Flags {
     F_group_type             = 0x00000003,
-    F_dart_type              = 0x0000000c,
 
     F_billboard_type         = 0x000000e0,
     F_switch_flag            = 0x00000100,
@@ -336,6 +347,7 @@ private:
     F_direct_flag            = 0x00004000,
     F_cs_type                = 0x000f0000,
     F_collide_flags          = 0x0ff00000,
+    F_dart_type              = 0xf0000000,
   };
   enum Flags2 {
     F2_collide_mask          = 0x00000001,
@@ -365,6 +377,10 @@ private:
   double _fps;
   PT(EggSwitchCondition) _lod;
   TagData _tag_data;
+
+  double _u_speed;
+  double _v_speed;
+  double _r_speed;
 
   // This is the <DefaultPose> entry for a <Joint>.  It is not the
   // <Transform> entry (that is stored via inheritance, in the

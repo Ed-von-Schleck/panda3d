@@ -90,6 +90,7 @@
 #include "sparseArray.h"
 #include "bitArray.h"
 #include "thread.h"
+#include "uvScrollNode.h"
 
 #include <ctype.h>
 #include <algorithm>
@@ -135,6 +136,8 @@ EggLoader() {
   _data = new EggData;
   _data->set_coordinate_system(egg_coordinate_system);
   _error = false;
+  _dynamic_override = false;
+  _dynamic_override_char_maker = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -148,6 +151,8 @@ EggLoader(const EggData *data) :
   _data(new EggData(*data))
 {
   _error = false;
+  _dynamic_override = false;
+  _dynamic_override_char_maker = NULL;
 }
 
 
@@ -209,7 +214,6 @@ build_graph() {
 
   apply_deferred_nodes(_root, DeferredNodeProperty());
 }
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: EggLoader::reparent_decals
@@ -1696,7 +1700,7 @@ make_node(EggBin *egg_bin, PandaNode *parent) {
   // node (a parent of one or more similar EggPrimitives).
   switch (egg_bin->get_bin_number()) {
   case EggBinner::BN_polyset:
-    make_polyset(egg_bin, parent, NULL, false, NULL);
+    make_polyset(egg_bin, parent, NULL, _dynamic_override, _dynamic_override_char_maker);
     return NULL;
 
   case EggBinner::BN_lod:
@@ -1788,8 +1792,23 @@ make_node(EggGroup *egg_group, PandaNode *parent) {
 
   if (egg_group->get_dart_type() != EggGroup::DT_none) {
     // A group with the <Dart> flag set means to create a character.
-    CharacterMaker char_maker(egg_group, *this);
+    bool structured = (egg_group->get_dart_type() == EggGroup::DT_structured);
+   
+    CharacterMaker char_maker(egg_group, *this, structured);  
+
     node = char_maker.make_node();
+    if(structured) {
+      //we're going to generate the rest of the children normally
+      //except we'll be making dynamic geometry
+      _dynamic_override = true;
+      _dynamic_override_char_maker = &char_maker;
+      EggGroup::const_iterator ci;
+      for (ci = egg_group->begin(); ci != egg_group->end(); ++ci) {
+        make_node(*ci, node);
+      }
+      _dynamic_override_char_maker = NULL;
+      _dynamic_override = false;
+    }
 
   } else if (egg_group->get_cs_type() != EggGroup::CST_none) {
     // A collision group: create collision geometry.
@@ -1860,7 +1879,14 @@ make_node(EggGroup *egg_group, PandaNode *parent) {
     for (ci = egg_group->begin(); ci != egg_group->end(); ++ci) {
       make_node(*ci, node);
     }
-
+  } else if (egg_group->has_scrolling_uvs()) {
+    node = new UvScrollNode(egg_group->get_name(), egg_group->get_scroll_u(), egg_group->get_scroll_v(), egg_group->get_scroll_r());
+    
+    EggGroup::const_iterator ci;
+    for (ci = egg_group->begin(); ci != egg_group->end(); ++ci) {
+      make_node(*ci, node);
+    }
+    
   } else if (egg_group->get_model_flag() || egg_group->has_dcs_type()) {
     // A model or DCS flag; create a model node.
     node = new ModelNode(egg_group->get_name());

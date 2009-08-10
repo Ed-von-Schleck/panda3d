@@ -1051,3 +1051,39 @@ INLINE EggGroup::VertexRef::size_type EggGroup::
 vref_size() const {
   return _vref.size();
 }
+
+INLINE void EggGroup::
+set_scroll_u(const double u_speed) {
+  _u_speed = u_speed;
+}
+
+INLINE void EggGroup::
+set_scroll_v(const double v_speed) {
+  _v_speed = v_speed;
+}
+
+INLINE void EggGroup::
+set_scroll_r(const double r_speed) {
+  _r_speed = r_speed;
+}
+
+INLINE double EggGroup::
+get_scroll_u() const {
+  return _u_speed;
+}
+
+INLINE double EggGroup::
+get_scroll_v() const {
+  return _v_speed;
+}
+
+INLINE double EggGroup::
+get_scroll_r() const {
+  return _r_speed;
+}
+
+
+INLINE bool EggGroup::
+has_scrolling_uvs() {
+  return (_u_speed != 0) || (_v_speed != 0) || (_r_speed != 0);
+}
