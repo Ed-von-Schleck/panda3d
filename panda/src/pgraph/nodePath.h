@@ -256,16 +256,16 @@ PUBLISHED:
 
 
   // Aggregate transform and state information.
-  const RenderState *get_state(const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread()) const;
-  INLINE void set_state(const RenderState *state, const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread());
-  CPT(RenderState) get_state(const NodePath &other, const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread()) const;
-  void set_state(const NodePath &other, const RenderState *state, const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread());
-  INLINE CPT(RenderState) get_net_state(const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread()) const;
+  const RenderState *get_state(const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread()) const;
+  INLINE void set_state(const RenderState *state, const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread());
+  CPT(RenderState) get_state(const NodePath &other, const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread()) const;
+  void set_state(const NodePath &other, const RenderState *state, const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread());
+  INLINE CPT(RenderState) get_net_state(const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread()) const;
 
-  INLINE void set_attrib(const RenderAttrib *attrib, int priority = 0, const InternalName *pass = NULL);
-  INLINE const RenderAttrib *get_attrib(TypeHandle type, const InternalName *pass = NULL) const;
-  INLINE bool has_attrib(TypeHandle type, const InternalName *pass = NULL) const;
-  INLINE void clear_attrib(TypeHandle type, const InternalName *pass = NULL);
+  INLINE void set_attrib(const RenderAttrib *attrib, int priority = 0, const InternalName *pass = InternalName::get_root());
+  INLINE const RenderAttrib *get_attrib(TypeHandle type, const InternalName *pass = InternalName::get_root()) const;
+  INLINE bool has_attrib(TypeHandle type, const InternalName *pass = InternalName::get_root()) const;
+  INLINE void clear_attrib(TypeHandle type, const InternalName *pass = InternalName::get_root());
 
   INLINE void set_effect(const RenderEffect *effect);
   INLINE const RenderEffect *get_effect(TypeHandle type) const;
@@ -274,7 +274,7 @@ PUBLISHED:
 
   INLINE void set_effects(const RenderEffects *effects);
   INLINE const RenderEffects *get_effects() const;
-  INLINE void clear_effects(const InternalName *pass = NULL);
+  INLINE void clear_effects(const InternalName *pass = InternalName::get_root());
 
   const TransformState *get_transform(Thread *current_thread = Thread::get_current_thread()) const;
   INLINE void clear_transform(Thread *current_thread = Thread::get_current_thread());
@@ -505,55 +505,55 @@ PUBLISHED:
   // These affect the state at the bottom level only.
 
   void set_color(float r, float g, float b, float a = 1.0,
-                 int priority = 0, const InternalName *pass = NULL);
-  void set_color(const Colorf &color, int priority = 0, const InternalName *pass = NULL);
-  void set_color_off(int priority = 0, const InternalName *pass = NULL);
-  void clear_color(const InternalName *pass = NULL);
-  bool has_color(const InternalName *pass = NULL) const;
-  Colorf get_color(const InternalName *pass = NULL) const;
+                 int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_color(const Colorf &color, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_color_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_color(const InternalName *pass = InternalName::get_root());
+  bool has_color(const InternalName *pass = InternalName::get_root()) const;
+  Colorf get_color(const InternalName *pass = InternalName::get_root()) const;
 
-  bool has_color_scale(const InternalName *pass = NULL) const;
-  void clear_color_scale(const InternalName *pass = NULL);
+  bool has_color_scale(const InternalName *pass = InternalName::get_root()) const;
+  void clear_color_scale(const InternalName *pass = InternalName::get_root());
   void set_color_scale(const LVecBase4f &scale,
-                       int priority = 0, const InternalName *pass = NULL);
+                       int priority = 0, const InternalName *pass = InternalName::get_root());
   INLINE void set_color_scale(float sx, float sy, float sz, float sa,
-                              int priority = 0, const InternalName *pass = NULL);
+                              int priority = 0, const InternalName *pass = InternalName::get_root());
   void compose_color_scale(const LVecBase4f &scale,
-                           int priority = 0, const InternalName *pass = NULL);
+                           int priority = 0, const InternalName *pass = InternalName::get_root());
   INLINE void compose_color_scale(float sx, float sy, float sz, float sa,
-                                  int priority = 0, const InternalName *pass = NULL);
-  void set_color_scale_off(int priority = 0, const InternalName *pass = NULL);
+                                  int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_color_scale_off(int priority = 0, const InternalName *pass = InternalName::get_root());
   
-  void set_alpha_scale(float scale, int priority = 0, const InternalName *pass = NULL);
-  void set_all_color_scale(float scale, int priority = 0, const InternalName *pass = NULL);
-  INLINE void set_sr(float sr, const InternalName *pass = NULL);
-  INLINE void set_sg(float sg, const InternalName *pass = NULL);
-  INLINE void set_sb(float sb, const InternalName *pass = NULL);
-  INLINE void set_sa(float sa, const InternalName *pass = NULL);
+  void set_alpha_scale(float scale, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_all_color_scale(float scale, int priority = 0, const InternalName *pass = InternalName::get_root());
+  INLINE void set_sr(float sr, const InternalName *pass = InternalName::get_root());
+  INLINE void set_sg(float sg, const InternalName *pass = InternalName::get_root());
+  INLINE void set_sb(float sb, const InternalName *pass = InternalName::get_root());
+  INLINE void set_sa(float sa, const InternalName *pass = InternalName::get_root());
 
-  const LVecBase4f &get_color_scale(const InternalName *pass = NULL) const;
-  INLINE float get_sr(const InternalName *pass = NULL) const;
-  INLINE float get_sg(const InternalName *pass = NULL) const;
-  INLINE float get_sb(const InternalName *pass = NULL) const;
-  INLINE float get_sa(const InternalName *pass = NULL) const;
+  const LVecBase4f &get_color_scale(const InternalName *pass = InternalName::get_root()) const;
+  INLINE float get_sr(const InternalName *pass = InternalName::get_root()) const;
+  INLINE float get_sg(const InternalName *pass = InternalName::get_root()) const;
+  INLINE float get_sb(const InternalName *pass = InternalName::get_root()) const;
+  INLINE float get_sa(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_light(const NodePath &light, int priority = 0, const InternalName *pass = NULL);
-  void set_light_off(int priority = 0, const InternalName *pass = NULL);
-  void set_light_off(const NodePath &light, int priority = 0, const InternalName *pass = NULL);
-  void clear_light(const InternalName *pass = NULL);
-  void clear_light(const NodePath &light, const InternalName *pass = NULL);
-  bool has_light(const NodePath &light, const InternalName *pass = NULL) const;
-  bool has_light_off(const InternalName *pass = NULL) const;
-  bool has_light_off(const NodePath &light, const InternalName *pass = NULL) const;
+  void set_light(const NodePath &light, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_light_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_light_off(const NodePath &light, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_light(const InternalName *pass = InternalName::get_root());
+  void clear_light(const NodePath &light, const InternalName *pass = InternalName::get_root());
+  bool has_light(const NodePath &light, const InternalName *pass = InternalName::get_root()) const;
+  bool has_light_off(const InternalName *pass = InternalName::get_root()) const;
+  bool has_light_off(const NodePath &light, const InternalName *pass = InternalName::get_root()) const;
 
-  void set_clip_plane(const NodePath &clip_plane, int priority = 0, const InternalName *pass = NULL);
-  void set_clip_plane_off(int priority = 0, const InternalName *pass = NULL);
-  void set_clip_plane_off(const NodePath &clip_plane, int priority = 0, const InternalName *pass = NULL);
-  void clear_clip_plane(const InternalName *pass = NULL);
-  void clear_clip_plane(const NodePath &clip_plane, const InternalName *pass = NULL);
-  bool has_clip_plane(const NodePath &clip_plane, const InternalName *pass = NULL) const;
-  bool has_clip_plane_off(const InternalName *pass = NULL) const;
-  bool has_clip_plane_off(const NodePath &clip_plane, const InternalName *pass = NULL) const;
+  void set_clip_plane(const NodePath &clip_plane, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_clip_plane_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_clip_plane_off(const NodePath &clip_plane, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_clip_plane(const InternalName *pass = InternalName::get_root());
+  void clear_clip_plane(const NodePath &clip_plane, const InternalName *pass = InternalName::get_root());
+  bool has_clip_plane(const NodePath &clip_plane, const InternalName *pass = InternalName::get_root()) const;
+  bool has_clip_plane_off(const InternalName *pass = InternalName::get_root()) const;
+  bool has_clip_plane_off(const NodePath &clip_plane, const InternalName *pass = InternalName::get_root()) const;
 
   void set_scissor(float left, float right, float bottom, float top);
   void set_scissor(const LPoint3f &a, const LPoint3f &b);
@@ -567,120 +567,120 @@ PUBLISHED:
   void clear_scissor();
   bool has_scissor() const;
 
-  void set_bin(const string &bin_name, int draw_order, int priority = 0, const InternalName *pass = NULL);
-  void clear_bin(const InternalName *pass = NULL);
-  bool has_bin(const InternalName *pass = NULL) const;
-  string get_bin_name(const InternalName *pass = NULL) const;
-  int get_bin_draw_order(const InternalName *pass = NULL) const;
+  void set_bin(const string &bin_name, int draw_order, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_bin(const InternalName *pass = InternalName::get_root());
+  bool has_bin(const InternalName *pass = InternalName::get_root()) const;
+  string get_bin_name(const InternalName *pass = InternalName::get_root()) const;
+  int get_bin_draw_order(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_texture(Texture *tex, int priority = 0, const InternalName *pass = NULL);
-  void set_texture(TextureStage *stage, Texture *tex, int priority = 0, const InternalName *pass = NULL);
-  void set_texture_off(int priority = 0, const InternalName *pass = NULL);
-  void set_texture_off(TextureStage *stage, int priority = 0, const InternalName *pass = NULL);
-  void clear_texture(const InternalName *pass = NULL);
-  void clear_texture(TextureStage *stage, const InternalName *pass = NULL);
-  bool has_texture(const InternalName *pass = NULL) const;
-  bool has_texture(TextureStage *stage, const InternalName *pass = NULL) const;
-  bool has_texture_off(const InternalName *pass = NULL) const;
-  bool has_texture_off(TextureStage *stage, const InternalName *pass = NULL) const;
-  Texture *get_texture(const InternalName *pass = NULL) const;
-  Texture *get_texture(TextureStage *stage, const InternalName *pass = NULL) const;
+  void set_texture(Texture *tex, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_texture(TextureStage *stage, Texture *tex, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_texture_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_texture_off(TextureStage *stage, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_texture(const InternalName *pass = InternalName::get_root());
+  void clear_texture(TextureStage *stage, const InternalName *pass = InternalName::get_root());
+  bool has_texture(const InternalName *pass = InternalName::get_root()) const;
+  bool has_texture(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  bool has_texture_off(const InternalName *pass = InternalName::get_root()) const;
+  bool has_texture_off(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  Texture *get_texture(const InternalName *pass = InternalName::get_root()) const;
+  Texture *get_texture(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  void set_shader(const Shader *sha, int priority = 0, const InternalName *pass = NULL);
-  void set_shader_off(int priority = 0, const InternalName *pass = NULL);
-  void set_shader_auto(int priority = 0, const InternalName *pass = NULL);
-  void clear_shader(const InternalName *pass = NULL);
-  void set_shader_input(const ShaderInput *inp, const InternalName *pass = NULL);
-  void set_shader_input(InternalName *id, Texture *tex,       int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(InternalName *id, const NodePath &np, int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(InternalName *id, const LVector4f &v, int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(InternalName *id, double n1=0, double n2=0, double n3=0, double n4=1, int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(const string &id, Texture *tex,       int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(const string &id, const NodePath &np, int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(const string &id, const LVector4f &v, int priority=0, const InternalName *pass = NULL);
-  void set_shader_input(const string &id, double n1=0, double n2=0, double n3=0, double n4=1, int priority=0, const InternalName *pass = NULL);
-  void clear_shader_input(InternalName *id, const InternalName *pass = NULL);
-  void clear_shader_input(const string &id, const InternalName *pass = NULL);
+  void set_shader(const Shader *sha, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_shader_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_shader_auto(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_shader(const InternalName *pass = InternalName::get_root());
+  void set_shader_input(const ShaderInput *inp, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(InternalName *id, Texture *tex,       int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(InternalName *id, const NodePath &np, int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(InternalName *id, const LVector4f &v, int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(InternalName *id, double n1=0, double n2=0, double n3=0, double n4=1, int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(const string &id, Texture *tex,       int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(const string &id, const NodePath &np, int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(const string &id, const LVector4f &v, int priority=0, const InternalName *pass = InternalName::get_root());
+  void set_shader_input(const string &id, double n1=0, double n2=0, double n3=0, double n4=1, int priority=0, const InternalName *pass = InternalName::get_root());
+  void clear_shader_input(InternalName *id, const InternalName *pass = InternalName::get_root());
+  void clear_shader_input(const string &id, const InternalName *pass = InternalName::get_root());
 
-  const Shader *get_shader(const InternalName *pass = NULL) const;
-  const ShaderInput *get_shader_input(InternalName *id, const InternalName *pass = NULL) const;
-  const ShaderInput *get_shader_input(const string &id, const InternalName *pass = NULL) const;
+  const Shader *get_shader(const InternalName *pass = InternalName::get_root()) const;
+  const ShaderInput *get_shader_input(InternalName *id, const InternalName *pass = InternalName::get_root()) const;
+  const ShaderInput *get_shader_input(const string &id, const InternalName *pass = InternalName::get_root()) const;
   
-  void set_tex_transform(TextureStage *stage, const TransformState *transform, const InternalName *pass = NULL);
-  void clear_tex_transform(const InternalName *pass = NULL);
-  void clear_tex_transform(TextureStage *stage, const InternalName *pass = NULL);
-  bool has_tex_transform(TextureStage *stage, const InternalName *pass = NULL) const;
-  CPT(TransformState) get_tex_transform(TextureStage *stage, const InternalName *pass = NULL) const;
+  void set_tex_transform(TextureStage *stage, const TransformState *transform, const InternalName *pass = InternalName::get_root());
+  void clear_tex_transform(const InternalName *pass = InternalName::get_root());
+  void clear_tex_transform(TextureStage *stage, const InternalName *pass = InternalName::get_root());
+  bool has_tex_transform(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  CPT(TransformState) get_tex_transform(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  INLINE void set_tex_offset(TextureStage *stage, float u, float v, const InternalName *pass = NULL);
-  INLINE void set_tex_offset(TextureStage *stage, const LVecBase2f &uv, const InternalName *pass = NULL);
-  INLINE void set_tex_rotate(TextureStage *stage, float r, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(TextureStage *stage, float scale, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(TextureStage *stage, float su, float sv, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(TextureStage *stage, const LVecBase2f &scale, const InternalName *pass = NULL);
-  INLINE LVecBase2f get_tex_offset(TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE float get_tex_rotate(TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE LVecBase2f get_tex_scale(TextureStage *stage, const InternalName *pass = NULL) const;
+  INLINE void set_tex_offset(TextureStage *stage, float u, float v, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_offset(TextureStage *stage, const LVecBase2f &uv, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_rotate(TextureStage *stage, float r, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(TextureStage *stage, float scale, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(TextureStage *stage, float su, float sv, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(TextureStage *stage, const LVecBase2f &scale, const InternalName *pass = InternalName::get_root());
+  INLINE LVecBase2f get_tex_offset(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE float get_tex_rotate(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE LVecBase2f get_tex_scale(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  INLINE void set_tex_pos(TextureStage *stage, float u, float v, float w, const InternalName *pass = NULL);
-  INLINE void set_tex_pos(TextureStage *stage, const LVecBase3f &uvw, const InternalName *pass = NULL);
-  INLINE void set_tex_hpr(TextureStage *stage, float h, float p, float r, const InternalName *pass = NULL);
-  INLINE void set_tex_hpr(TextureStage *stage, const LVecBase3f &hpr, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(TextureStage *stage, float su, float sv, float sw, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(TextureStage *stage, const LVecBase3f &scale, const InternalName *pass = NULL);
-  INLINE LVecBase3f get_tex_pos(TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE LVecBase3f get_tex_hpr(TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE LVecBase3f get_tex_scale_3d(TextureStage *stage, const InternalName *pass = NULL) const;
+  INLINE void set_tex_pos(TextureStage *stage, float u, float v, float w, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_pos(TextureStage *stage, const LVecBase3f &uvw, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_hpr(TextureStage *stage, float h, float p, float r, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_hpr(TextureStage *stage, const LVecBase3f &hpr, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(TextureStage *stage, float su, float sv, float sw, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(TextureStage *stage, const LVecBase3f &scale, const InternalName *pass = InternalName::get_root());
+  INLINE LVecBase3f get_tex_pos(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE LVecBase3f get_tex_hpr(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE LVecBase3f get_tex_scale_3d(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  void set_tex_transform(const NodePath &other, TextureStage *stage, const TransformState *transform, const InternalName *pass = NULL);
-  CPT(TransformState) get_tex_transform(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
+  void set_tex_transform(const NodePath &other, TextureStage *stage, const TransformState *transform, const InternalName *pass = InternalName::get_root());
+  CPT(TransformState) get_tex_transform(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  INLINE void set_tex_offset(const NodePath &other, TextureStage *stage, float u, float v, const InternalName *pass = NULL);
-  INLINE void set_tex_offset(const NodePath &other, TextureStage *stage, const LVecBase2f &uv, const InternalName *pass = NULL);
-  INLINE void set_tex_rotate(const NodePath &other, TextureStage *stage, float r, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float scale, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float su, float sv, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, const LVecBase2f &scale, const InternalName *pass = NULL);
-  INLINE LVecBase2f get_tex_offset(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE float get_tex_rotate(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE LVecBase2f get_tex_scale(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
+  INLINE void set_tex_offset(const NodePath &other, TextureStage *stage, float u, float v, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_offset(const NodePath &other, TextureStage *stage, const LVecBase2f &uv, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_rotate(const NodePath &other, TextureStage *stage, float r, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float scale, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float su, float sv, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, const LVecBase2f &scale, const InternalName *pass = InternalName::get_root());
+  INLINE LVecBase2f get_tex_offset(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE float get_tex_rotate(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE LVecBase2f get_tex_scale(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  INLINE void set_tex_pos(const NodePath &other, TextureStage *stage, float u, float v, float w, const InternalName *pass = NULL);
-  INLINE void set_tex_pos(const NodePath &other, TextureStage *stage, const LVecBase3f &uvw, const InternalName *pass = NULL);
-  INLINE void set_tex_hpr(const NodePath &other, TextureStage *stage, float h, float p, float r, const InternalName *pass = NULL);
-  INLINE void set_tex_hpr(const NodePath &other, TextureStage *stage, const LVecBase3f &hpr, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float su, float sv, float sw, const InternalName *pass = NULL);
-  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, const LVecBase3f &scale, const InternalName *pass = NULL);
-  INLINE LVecBase3f get_tex_pos(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE LVecBase3f get_tex_hpr(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
-  INLINE LVecBase3f get_tex_scale_3d(const NodePath &other, TextureStage *stage, const InternalName *pass = NULL) const;
+  INLINE void set_tex_pos(const NodePath &other, TextureStage *stage, float u, float v, float w, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_pos(const NodePath &other, TextureStage *stage, const LVecBase3f &uvw, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_hpr(const NodePath &other, TextureStage *stage, float h, float p, float r, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_hpr(const NodePath &other, TextureStage *stage, const LVecBase3f &hpr, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, float su, float sv, float sw, const InternalName *pass = InternalName::get_root());
+  INLINE void set_tex_scale(const NodePath &other, TextureStage *stage, const LVecBase3f &scale, const InternalName *pass = InternalName::get_root());
+  INLINE LVecBase3f get_tex_pos(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE LVecBase3f get_tex_hpr(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  INLINE LVecBase3f get_tex_scale_3d(const NodePath &other, TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  void set_tex_gen(TextureStage *stage, RenderAttrib::TexGenMode mode, int priority = 0, const InternalName *pass = NULL);
+  void set_tex_gen(TextureStage *stage, RenderAttrib::TexGenMode mode, int priority = 0, const InternalName *pass = InternalName::get_root());
   void set_tex_gen(TextureStage *stage, RenderAttrib::TexGenMode mode, 
                    const string &source_name, const NodePath &light, 
-                   int priority = 0, const InternalName *pass = NULL);
+                   int priority = 0, const InternalName *pass = InternalName::get_root());
   void set_tex_gen(TextureStage *stage, RenderAttrib::TexGenMode mode, 
                    const TexCoord3f &constant_value,
-                   int priority = 0, const InternalName *pass = NULL);
-  void clear_tex_gen(const InternalName *pass = NULL);
-  void clear_tex_gen(TextureStage *stage, const InternalName *pass = NULL);
-  bool has_tex_gen(TextureStage *stage, const InternalName *pass = NULL) const;
-  RenderAttrib::TexGenMode get_tex_gen(TextureStage *stage, const InternalName *pass = NULL) const;
-  NodePath get_tex_gen_light(TextureStage *stage, const InternalName *pass = NULL) const;
+                   int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_tex_gen(const InternalName *pass = InternalName::get_root());
+  void clear_tex_gen(TextureStage *stage, const InternalName *pass = InternalName::get_root());
+  bool has_tex_gen(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  RenderAttrib::TexGenMode get_tex_gen(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  NodePath get_tex_gen_light(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  void set_tex_projector(TextureStage *stage, const NodePath &from, const NodePath &to, const InternalName *pass = NULL);
-  void clear_tex_projector(TextureStage *stage, const InternalName *pass = NULL);
-  void clear_tex_projector(const InternalName *pass = NULL);
-  bool has_tex_projector(TextureStage *stage, const InternalName *pass = NULL) const;
-  NodePath get_tex_projector_from(TextureStage *stage, const InternalName *pass = NULL) const;
-  NodePath get_tex_projector_to(TextureStage *stage, const InternalName *pass = NULL) const;
+  void set_tex_projector(TextureStage *stage, const NodePath &from, const NodePath &to, const InternalName *pass = InternalName::get_root());
+  void clear_tex_projector(TextureStage *stage, const InternalName *pass = InternalName::get_root());
+  void clear_tex_projector(const InternalName *pass = InternalName::get_root());
+  bool has_tex_projector(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  NodePath get_tex_projector_from(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  NodePath get_tex_projector_to(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  void project_texture(TextureStage *stage, Texture *tex, const NodePath &projector, const InternalName *pass = NULL);
-  INLINE void clear_project_texture(TextureStage *stage, const InternalName *pass = NULL);
+  void project_texture(TextureStage *stage, Texture *tex, const NodePath &projector, const InternalName *pass = InternalName::get_root());
+  INLINE void clear_project_texture(TextureStage *stage, const InternalName *pass = InternalName::get_root());
 
   void set_normal_map(Texture *normal_map, const string &texcoord_name = string(),
-                      bool preserve_color = false, const InternalName *pass = NULL);
-  void clear_normal_map(const InternalName *pass = NULL);
+                      bool preserve_color = false, const InternalName *pass = InternalName::get_root());
+  void clear_normal_map(const InternalName *pass = InternalName::get_root());
 
   INLINE bool has_texcoord(const string &texcoord_name) const;
   bool has_vertex_column(const InternalName *name) const;
@@ -689,65 +689,65 @@ PUBLISHED:
   InternalNameCollection find_all_texcoords() const;
   InternalNameCollection find_all_texcoords(const string &name) const;
 
-  Texture *find_texture(const string &name, const InternalName *pass = NULL) const;
-  Texture *find_texture(TextureStage *stage, const InternalName *pass = NULL) const;
-  TextureCollection find_all_textures(const InternalName *pass = NULL) const;
-  TextureCollection find_all_textures(const string &name, const InternalName *pass = NULL) const;
-  TextureCollection find_all_textures(TextureStage *stage, const InternalName *pass = NULL) const;
+  Texture *find_texture(const string &name, const InternalName *pass = InternalName::get_root()) const;
+  Texture *find_texture(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
+  TextureCollection find_all_textures(const InternalName *pass = InternalName::get_root()) const;
+  TextureCollection find_all_textures(const string &name, const InternalName *pass = InternalName::get_root()) const;
+  TextureCollection find_all_textures(TextureStage *stage, const InternalName *pass = InternalName::get_root()) const;
 
-  TextureStage *find_texture_stage(const string &name, const InternalName *pass = NULL) const;
-  TextureStageCollection find_all_texture_stages(const InternalName *pass = NULL) const;
-  TextureStageCollection find_all_texture_stages(const string &name, const InternalName *pass = NULL) const;
+  TextureStage *find_texture_stage(const string &name, const InternalName *pass = InternalName::get_root()) const;
+  TextureStageCollection find_all_texture_stages(const InternalName *pass = InternalName::get_root()) const;
+  TextureStageCollection find_all_texture_stages(const string &name, const InternalName *pass = InternalName::get_root()) const;
 
-  void unify_texture_stages(TextureStage *stage, const InternalName *pass = NULL);
+  void unify_texture_stages(TextureStage *stage, const InternalName *pass = InternalName::get_root());
 
-  Material *find_material(const string &name, const InternalName *pass = NULL) const;
-  MaterialCollection find_all_materials(const InternalName *pass = NULL) const;
-  MaterialCollection find_all_materials(const string &name, const InternalName *pass = NULL) const;
+  Material *find_material(const string &name, const InternalName *pass = InternalName::get_root()) const;
+  MaterialCollection find_all_materials(const InternalName *pass = InternalName::get_root()) const;
+  MaterialCollection find_all_materials(const string &name, const InternalName *pass = InternalName::get_root()) const;
 
-  void set_material(Material *tex, int priority = 0, const InternalName *pass = NULL);
-  void set_material_off(int priority = 0, const InternalName *pass = NULL);
-  void clear_material(const InternalName *pass = NULL);
-  bool has_material(const InternalName *pass = NULL) const;
-  PT(Material) get_material(const InternalName *pass = NULL) const;
+  void set_material(Material *tex, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_material_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_material(const InternalName *pass = InternalName::get_root());
+  bool has_material(const InternalName *pass = InternalName::get_root()) const;
+  PT(Material) get_material(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_fog(Fog *fog, int priority = 0, const InternalName *pass = NULL);
-  void set_fog_off(int priority = 0, const InternalName *pass = NULL);
-  void clear_fog(const InternalName *pass = NULL);
-  bool has_fog(const InternalName *pass = NULL) const;
-  bool has_fog_off(const InternalName *pass = NULL) const;
-  Fog *get_fog(const InternalName *pass = NULL) const;
+  void set_fog(Fog *fog, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_fog_off(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_fog(const InternalName *pass = InternalName::get_root());
+  bool has_fog(const InternalName *pass = InternalName::get_root()) const;
+  bool has_fog_off(const InternalName *pass = InternalName::get_root()) const;
+  Fog *get_fog(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_render_mode_wireframe(int priority = 0, const InternalName *pass = NULL);
-  void set_render_mode_filled(int priority = 0, const InternalName *pass = NULL);
-  void set_render_mode_thickness(float thickness, int priority = 0, const InternalName *pass = NULL);
-  void set_render_mode_perspective(bool perspective, int priority = 0, const InternalName *pass = NULL);
-  void set_render_mode(RenderModeAttrib::Mode mode, float thickness, int priority = 0, const InternalName *pass = NULL);
-  void clear_render_mode(const InternalName *pass = NULL);
-  bool has_render_mode(const InternalName *pass = NULL) const;
-  RenderModeAttrib::Mode get_render_mode(const InternalName *pass = NULL) const;
-  float get_render_mode_thickness(const InternalName *pass = NULL) const;
-  bool get_render_mode_perspective(const InternalName *pass = NULL) const;
+  void set_render_mode_wireframe(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_render_mode_filled(int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_render_mode_thickness(float thickness, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_render_mode_perspective(bool perspective, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void set_render_mode(RenderModeAttrib::Mode mode, float thickness, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_render_mode(const InternalName *pass = InternalName::get_root());
+  bool has_render_mode(const InternalName *pass = InternalName::get_root()) const;
+  RenderModeAttrib::Mode get_render_mode(const InternalName *pass = InternalName::get_root()) const;
+  float get_render_mode_thickness(const InternalName *pass = InternalName::get_root()) const;
+  bool get_render_mode_perspective(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_two_sided(bool two_sided, int priority = 0, const InternalName *pass = NULL);
-  void clear_two_sided(const InternalName *pass = NULL);
-  bool has_two_sided(const InternalName *pass = NULL) const;
-  bool get_two_sided(const InternalName *pass = NULL) const;
+  void set_two_sided(bool two_sided, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_two_sided(const InternalName *pass = InternalName::get_root());
+  bool has_two_sided(const InternalName *pass = InternalName::get_root()) const;
+  bool get_two_sided(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_depth_test(bool depth_test, int priority = 0, const InternalName *pass = NULL);
-  void clear_depth_test(const InternalName *pass = NULL);
-  bool has_depth_test(const InternalName *pass = NULL) const;
-  bool get_depth_test(const InternalName *pass = NULL) const;
+  void set_depth_test(bool depth_test, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_depth_test(const InternalName *pass = InternalName::get_root());
+  bool has_depth_test(const InternalName *pass = InternalName::get_root()) const;
+  bool get_depth_test(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_depth_write(bool depth_write, int priority = 0, const InternalName *pass = NULL);
-  void clear_depth_write(const InternalName *pass = NULL);
-  bool has_depth_write(const InternalName *pass = NULL) const;
-  bool get_depth_write(const InternalName *pass = NULL) const;
+  void set_depth_write(bool depth_write, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_depth_write(const InternalName *pass = InternalName::get_root());
+  bool has_depth_write(const InternalName *pass = InternalName::get_root()) const;
+  bool get_depth_write(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_depth_offset(int bias, int priority = 0, const InternalName *pass = NULL);
-  void clear_depth_offset(const InternalName *pass = NULL);
-  bool has_depth_offset(const InternalName *pass = NULL) const;
-  int get_depth_offset(const InternalName *pass = NULL) const;
+  void set_depth_offset(int bias, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_depth_offset(const InternalName *pass = InternalName::get_root());
+  bool has_depth_offset(const InternalName *pass = InternalName::get_root()) const;
+  int get_depth_offset(const InternalName *pass = InternalName::get_root()) const;
 
   void do_billboard_axis(const NodePath &camera, float offset);
   void do_billboard_point_eye(const NodePath &camera, float offset);
@@ -765,15 +765,15 @@ PUBLISHED:
   void clear_compass();
   bool has_compass() const;
 
-  void set_transparency(TransparencyAttrib::Mode mode, int priority = 0, const InternalName *pass = NULL);
-  void clear_transparency(const InternalName *pass = NULL);
-  bool has_transparency(const InternalName *pass = NULL) const;
-  TransparencyAttrib::Mode get_transparency(const InternalName *pass = NULL) const;
+  void set_transparency(TransparencyAttrib::Mode mode, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_transparency(const InternalName *pass = InternalName::get_root());
+  bool has_transparency(const InternalName *pass = InternalName::get_root()) const;
+  TransparencyAttrib::Mode get_transparency(const InternalName *pass = InternalName::get_root()) const;
 
-  void set_antialias(unsigned short mode, int priority = 0, const InternalName *pass = NULL);
-  void clear_antialias(const InternalName *pass = NULL);
-  bool has_antialias(const InternalName *pass = NULL) const;
-  unsigned short get_antialias(const InternalName *pass = NULL) const;
+  void set_antialias(unsigned short mode, int priority = 0, const InternalName *pass = InternalName::get_root());
+  void clear_antialias(const InternalName *pass = InternalName::get_root());
+  bool has_antialias(const InternalName *pass = InternalName::get_root()) const;
+  unsigned short get_antialias(const InternalName *pass = InternalName::get_root()) const;
 
   bool has_audio_volume() const;
   void clear_audio_volume();
@@ -782,7 +782,7 @@ PUBLISHED:
   float get_audio_volume() const;
   float get_net_audio_volume() const;
 
-  INLINE void adjust_all_priorities(int adjustment, const InternalName *pass = NULL);
+  INLINE void adjust_all_priorities(int adjustment, const InternalName *pass = InternalName::get_root());
 
   // Variants on show and hide
   INLINE void show();

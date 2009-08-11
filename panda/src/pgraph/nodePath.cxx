@@ -6443,7 +6443,7 @@ r_get_net_state(NodePathComponent *comp, const InternalName *pass, Thread *curre
     CPT(RenderState) state = comp->get_node()->get_state(NULL, current_thread);
     int pipeline_stage = current_thread->get_pipeline_stage();
     state = r_get_net_state(comp->get_next(pipeline_stage, current_thread), pass, current_thread)->compose(state);
-    if (pass != NULL) {
+    if (pass != NULL && pass != InternalName::get_root()) {
       state = state->compose(comp->get_node()->get_state(pass, current_thread));
     }
     return state;

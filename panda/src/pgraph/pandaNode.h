@@ -157,22 +157,22 @@ PUBLISHED:
   void steal_children(PandaNode *other, Thread *current_thread = Thread::get_current_thread());
   void copy_children(PandaNode *other, Thread *current_thread = Thread::get_current_thread());
 
-  void set_attrib(const RenderAttrib *attrib, int override = 0, const InternalName *pass = NULL);
-  INLINE const RenderAttrib *get_attrib(TypeHandle type, const InternalName *pass = NULL) const;
-  INLINE const RenderAttrib *get_attrib(int slot, const InternalName *pass = NULL) const;
-  INLINE bool has_attrib(TypeHandle type, const InternalName *pass = NULL) const;
-  INLINE bool has_attrib(int slot, const InternalName *pass = NULL) const;
-  INLINE void clear_attrib(TypeHandle type, const InternalName *pass = NULL);
-  void clear_attrib(int slot, const InternalName *pass = NULL);
+  void set_attrib(const RenderAttrib *attrib, int override = 0, const InternalName *pass = InternalName::get_root());
+  INLINE const RenderAttrib *get_attrib(TypeHandle type, const InternalName *pass = InternalName::get_root()) const;
+  INLINE const RenderAttrib *get_attrib(int slot, const InternalName *pass = InternalName::get_root()) const;
+  INLINE bool has_attrib(TypeHandle type, const InternalName *pass = InternalName::get_root()) const;
+  INLINE bool has_attrib(int slot, const InternalName *pass = InternalName::get_root()) const;
+  INLINE void clear_attrib(TypeHandle type, const InternalName *pass = InternalName::get_root());
+  void clear_attrib(int slot, const InternalName *pass = InternalName::get_root());
 
   void set_effect(const RenderEffect *effect);
   INLINE const RenderEffect *get_effect(TypeHandle type) const;
   INLINE bool has_effect(TypeHandle type) const;
   void clear_effect(TypeHandle type);
 
-  void set_state(const RenderState *state, const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread());
-  INLINE const RenderState *get_state(const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread()) const;
-  INLINE void clear_state(const InternalName *pass = NULL, Thread *current_thread = Thread::get_current_thread());
+  void set_state(const RenderState *state, const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread());
+  INLINE const RenderState *get_state(const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread()) const;
+  INLINE void clear_state(const InternalName *pass = InternalName::get_root(), Thread *current_thread = Thread::get_current_thread());
 
   void set_effects(const RenderEffects *effects, Thread *current_thread = Thread::get_current_thread());
   INLINE const RenderEffects *get_effects(Thread *current_thread = Thread::get_current_thread()) const;
@@ -810,7 +810,7 @@ public:
   INLINE int get_stashed_sort(int n) const;
   INLINE int find_stashed(PandaNode *node) const;
 
-  INLINE const RenderState *get_state(const InternalName *pass = NULL) const;
+  INLINE const RenderState *get_state(const InternalName *pass = InternalName::get_root()) const;
   INLINE const RenderEffects *get_effects() const;
   INLINE const TransformState *get_transform() const;
   INLINE const TransformState *get_prev_transform() const;

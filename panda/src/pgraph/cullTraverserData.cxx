@@ -49,7 +49,7 @@ void CullTraverserData::
 apply_transform_and_state(CullTraverser *trav) {
   CPT(RenderState) node_state = _node_reader.get_state(NULL);
   CPT(InternalName) pass_name = trav->get_scene()->get_pass_name();
-  if (pass_name != NULL && _node_reader.get_state(pass_name) != NULL) {
+  if (pass_name != NULL && pass_name != InternalName::get_root() && _node_reader.get_state(pass_name) != NULL) {
     node_state = node_state->compose(_node_reader.get_state(pass_name));
   }
 

@@ -1116,7 +1116,7 @@ set_attrib(const RenderAttrib *attrib, int override, const InternalName *pass) {
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
     
-    if (pass == NULL) {
+    if (pass == NULL || pass == InternalName::get_root()) {
       CPT(RenderState) new_state = cdata->_state->set_attrib(attrib, override);
       if (cdata->_state != new_state) {
         cdata->_state = new_state;
@@ -1166,7 +1166,7 @@ clear_attrib(int slot, const InternalName *pass) {
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
     
-    if (pass == NULL) {
+    if (pass == NULL || pass == InternalName::get_root()) {
       CPT(RenderState) new_state = cdata->_state->remove_attrib(slot);
       if (cdata->_state != new_state) {
         cdata->_state = new_state;
@@ -1257,7 +1257,7 @@ set_state(const RenderState *state, const InternalName *pass, Thread *current_th
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
 
-    if (pass == NULL) {
+    if (pass == NULL || pass == InternalName::get_root()) {
       if (cdata->_state != state) {
         cdata->_state = state;
         cdata->set_fancy_bit(FB_state, !state->is_empty());

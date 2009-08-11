@@ -335,7 +335,7 @@ has_effect(TypeHandle type) const {
 INLINE const RenderState *PandaNode::
 get_state(const InternalName *pass, Thread *current_thread) const {
   CDReader cdata(_cycler, current_thread);
-  if (pass == NULL) {
+  if (pass == NULL || pass == InternalName::get_root()) {
     return cdata->_state;
   } else {
     int idx = cdata->_states.find(pass);
@@ -1667,7 +1667,7 @@ find_stashed(PandaNode *node) const {
 ////////////////////////////////////////////////////////////////////
 INLINE const RenderState *PandaNodePipelineReader::
 get_state(const InternalName *pass) const {
-  if (pass == NULL) {
+  if (pass == NULL || pass == InternalName::get_root()) {
     return _cdata->_state;
   } else {
     int idx = _cdata->_states.find(pass);
