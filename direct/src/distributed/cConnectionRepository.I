@@ -287,7 +287,7 @@ get_want_message_bundling() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void CConnectionRepository::
 set_in_quiet_zone(bool flag) {
-  ReMutexHolder holder(_lock);
+  ReMutexHolder holder();
   _in_quiet_zone = flag;
 }
 
@@ -298,7 +298,7 @@ set_in_quiet_zone(bool flag) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool CConnectionRepository::
 get_in_quiet_zone() const {
-  ReMutexHolder holder(_lock);
+  ReMutexHolder holder();
   return _in_quiet_zone;
 }
 
