@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -77,6 +73,7 @@
 #include <maya/MSelectionList.h>
 #include "post_maya_include.h"
 
+
 ////////////////////////////////////////////////////////////////////
 //     Function: MayaToEggConverter::Constructor
 //       Access: Public
@@ -112,6 +109,7 @@ MayaToEggConverter(const MayaToEggConverter &copy) :
   _from_selection(copy._from_selection),
   _subsets(copy._subsets),
   _subroots(copy._subroots),
+  _excludes(copy._excludes),
   _ignore_sliders(copy._ignore_sliders),
   _force_joints(copy._force_joints),
   _tree(this),
@@ -268,6 +266,27 @@ clear_subsets() {
 void MayaToEggConverter::
 add_subset(const GlobPattern &glob) {
   _subsets.push_back(glob);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::clear_excludes
+//       Access: Public
+//  Description: Empties the list of excluded nodes added via
+//               add_exclude().
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+clear_excludes() {
+  _excludes.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaToEggConverter::add_exclude
+//       Access: Public
+//  Description: Adds a name pattern to the list of excluded nodes.
+////////////////////////////////////////////////////////////////////
+void MayaToEggConverter::
+add_exclude(const GlobPattern &glob) {
+  _excludes.push_back(glob);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -468,7 +487,6 @@ convert_maya() {
   if (all_ok) {
     if (_from_selection) {
       all_ok = _tree.tag_selected();
-
     } else if (!_subsets.empty()) {
       Globs::const_iterator gi;
       for (gi = _subsets.begin(); gi != _subsets.end(); ++gi) {
@@ -480,6 +498,18 @@ convert_maya() {
 
     } else {
       _tree.tag_all();
+    }
+  }
+
+  if (all_ok) {
+    if (!_excludes.empty()) {
+      Globs::const_iterator gi;
+      for (gi = _excludes.begin(); gi != _excludes.end(); ++gi) {
+        if (!_tree.untag_named(*gi)) {
+          mayaegg_cat.info()
+            << "No node matching " << *gi << " found.\n";
+        }
+      }
     }
   }
 
@@ -875,8 +905,9 @@ process_model_node(MayaNodeDesc *node_desc) {
     
     // Extract some interesting Camera data
     if (mayaegg_cat.is_spam()) {
-      mayaegg_cat.spam() << "  eyePoint: "
-                         << camera.eyePoint(MSpace::kWorld) << endl;
+      MPoint eyePoint = camera.eyePoint(MSpace::kWorld);
+      mayaegg_cat.spam() << "  eyePoint: " << eyePoint.x << " " 
+                         << eyePoint.y << " " << eyePoint.z << endl;
       mayaegg_cat.spam() << "  upDirection: "
                          << camera.upDirection(MSpace::kWorld) << endl;
       mayaegg_cat.spam() << "  viewDirection: "
@@ -920,7 +951,7 @@ process_model_node(MayaNodeDesc *node_desc) {
          << color.b << "]\n";
     
     cout << "  intensity: " << light.intensity() << endl;
-
+    */
   } else if (dag_path.hasFn(MFn::kNurbsSurface)) {
     EggGroup *egg_group = _tree.get_egg_group(node_desc);
     get_transform(node_desc, dag_path, egg_group);
@@ -936,7 +967,6 @@ process_model_node(MayaNodeDesc *node_desc) {
         make_nurbs_surface(node_desc, dag_path, surface, egg_group);
       }
     }
-    */
   } else if (dag_path.hasFn(MFn::kNurbsCurve)) {
     // Only convert NurbsCurves if we aren't making an animated model.
     // Animated models, as a general rule, don't want these sorts of
@@ -1998,7 +2028,7 @@ make_polyset(MayaNodeDesc *node_desc, const MDagPath &dag_path,
                                   c.b * poly_color[2], c.a * poly_color[3]));
 
             if (mayaegg_cat.is_spam()) {
-              mayaegg_cat.spam() << "maya_color = " << c << endl;
+              mayaegg_cat.spam() << "maya_color = " << c.r << " " << c.g << " " << c.b << " " << c.a << endl;
               mayaegg_cat.spam() << "vert_color = " << vert.get_color() << endl;
             }
           }
@@ -2535,7 +2565,7 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
         //}
         Filename filename = Filename::from_os_specific(color_def->_texture_filename);
         Filename fullpath, outpath;
-        _path_replace->full_convert_path(filename, get_texture_path(), fullpath, outpath);
+        _path_replace->full_convert_path(filename, get_model_path(), fullpath, outpath);
         tex.set_filename(outpath);
         tex.set_fullpath(fullpath);
         apply_texture_uvprops(tex, *color_def);
@@ -2579,7 +2609,7 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
             // set_alpha_file_channel()), but for now we assume it comes
             // from the grayscale data.
             filename = Filename::from_os_specific(trans_def._texture_filename);
-            _path_replace->full_convert_path(filename, get_texture_path(),
+            _path_replace->full_convert_path(filename, get_model_path(),
                                              fullpath, outpath);
             tex.set_alpha_filename(outpath);
             tex.set_alpha_fullpath(fullpath);
@@ -2678,7 +2708,7 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
         // primary filename, and set the format accordingly.
         Filename filename = Filename::from_os_specific(trans_def._texture_filename);
         Filename fullpath,outpath;
-        _path_replace->full_convert_path(filename, get_texture_path(),
+        _path_replace->full_convert_path(filename, get_model_path(),
                                          fullpath, outpath);
         tex.set_filename(outpath);
         tex.set_fullpath(fullpath);
@@ -2709,7 +2739,9 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
         }
       } else {
         primitive.add_texture(new_tex);
-        new_tex->set_uv_name(color_def->_uvset_name);
+        if (color_def->_uvset_name != "map1") {
+          new_tex->set_uv_name(color_def->_uvset_name);
+        }
       }
     }
   }
@@ -2842,7 +2874,7 @@ void MayaToEggConverter::
 apply_texture_filename(EggTexture &tex, const MayaShaderColorDef &def) {
   Filename filename = Filename::from_os_specific(def._texture_filename);
   Filename fullpath, outpath;
-  _path_replace->full_convert_path(filename, get_texture_path(), fullpath, outpath);
+  _path_replace->full_convert_path(filename, get_model_path(), fullpath, outpath);
   tex.set_filename(outpath);
   tex.set_fullpath(fullpath);
 }
@@ -2859,7 +2891,7 @@ apply_texture_alpha_filename(EggTexture &tex, const MayaShaderColorDef &def) {
     if (def._opposite->_texture_filename != def._texture_filename) {
       Filename filename = Filename::from_os_specific(def._opposite->_texture_filename);
       Filename fullpath, outpath;
-      _path_replace->full_convert_path(filename, get_texture_path(), fullpath, outpath);
+      _path_replace->full_convert_path(filename, get_model_path(), fullpath, outpath);
       tex.set_alpha_filename(outpath);
       tex.set_alpha_fullpath(fullpath);
     }

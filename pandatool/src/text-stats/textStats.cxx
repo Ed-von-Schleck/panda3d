@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -57,6 +53,12 @@ TextStats() {
      "time per collector.",
      &TextStats::dispatch_none, &_show_raw_data, NULL);
 
+  add_option
+    ("o", "filename", 0,
+     "Filename where to print. If not given then stderr is being used.",
+     &TextStats::dispatch_string, &_got_outputFileName, &_outputFileName);
+     
+  _outFile = NULL;
   _port = pstats_port;
 }
 
@@ -68,7 +70,8 @@ TextStats() {
 ////////////////////////////////////////////////////////////////////
 PStatMonitor *TextStats::
 make_monitor() {
-  return new TextMonitor(this);
+  
+  return new TextMonitor(this, _outFile, _show_raw_data);
 }
 
 
@@ -90,6 +93,12 @@ run() {
 
   nout << "Listening for connections.\n";
 
+  if (_got_outputFileName) {
+    _outFile = new ofstream(_outputFileName.c_str(), ios::out);
+  } else {
+    _outFile = &(nout);
+  }
+  
   main_loop(&user_interrupted);
   nout << "Exiting.\n";
 }

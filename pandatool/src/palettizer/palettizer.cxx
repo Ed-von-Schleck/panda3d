@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -41,7 +37,7 @@ Palettizer *pal = (Palettizer *)NULL;
 // allows us to easily update egg-palettize to write out additional
 // information to its pi file, without having it increment the bam
 // version number for all bam and boo files anywhere in the world.
-int Palettizer::_pi_version = 17;
+int Palettizer::_pi_version = 18;
 // Updated to version 8 on 3/20/03 to remove extensions from texture key names.
 // Updated to version 9 on 4/13/03 to add a few properties in various places.
 // Updated to version 10 on 4/15/03 to add _alpha_file_channel.
@@ -52,6 +48,7 @@ int Palettizer::_pi_version = 17;
 // Updated to version 15 on 8/01/05 to make TextureImages be case-insensitive.
 // Updated to version 16 on 4/03/06 to add Palettizer::_cutout_mode et al.
 // Updated to version 17 on 3/02/07 to add TextureImage::_txa_wrap_u etc.
+// Updated to version 18 on 5/13/08 to add TextureProperties::_quality_level.
 
 int Palettizer::_min_pi_version = 8;
 // Dropped support for versions 7 and below on 7/14/03.
@@ -122,7 +119,7 @@ Palettizer() {
   _shadow_color_type = (PNMFileType *)NULL;
   _shadow_alpha_type = (PNMFileType *)NULL;
   _pal_x_size = _pal_y_size = 512;
-  _background.set(0.0, 0.0, 0.0, 1.0);
+  _background.set(0.0, 0.0, 0.0, 0.0);
   _cutout_mode = EggRenderMode::AM_dual;
   _cutout_ratio = 0.3;
 
@@ -131,6 +128,8 @@ Palettizer() {
   _round_fuzz = 0.01;
   _remap_uv = RU_poly;
   _remap_char_uv = RU_poly;
+
+  get_palette_group("null");
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@ __all__ = ['StateVar', 'FunctionCall', 'EnterExit', 'Pulse', 'EventPulse',
            'EventArgument', ]
 
 from direct.showbase.DirectObject import DirectObject
+import types
 
 class PushesStateChanges:
     # base class for objects that broadcast state changes to a set of subscriber objects
@@ -22,6 +23,10 @@ class PushesStateChanges:
 
     def getState(self):
         return self._value
+
+    def pushCurrentState(self):
+        self._handleStateChange()
+        return self
 
     def _addSubscription(self, subscriber):
         self._subscribers.add(subscriber)
@@ -141,20 +146,109 @@ if __debug__:
     del scn
     del sv
 
-class FunctionCall(StateChangeNode):
-    # calls func with new state whenever state changes
-    def __init__(self, source, func):
-        self._func = func
-        StateChangeNode.__init__(self, source)
-        self._handleStateChange()
+class ReceivesMultipleStateChanges:
+    # base class for objects that subscribe to state changes from multiple PushesStateChanges
+    # objects
+    def __init__(self):
+        self._key2source = {}
+        self._source2key = {}
 
     def destroy(self):
-        StateChangeNode.destroy(self)
+        keys = self._key2source.keys()
+        for key in keys:
+            self._unsubscribe(key)
+        del self._key2source
+        del self._source2key
+
+    def _subscribeTo(self, source, key):
+        self._unsubscribe(key)
+        self._key2source[key] = source
+        self._source2key[source] = key
+        source._addSubscription(self)
+
+    def _unsubscribe(self, key):
+        if key in self._key2source:
+            source = self._key2source[key]
+            source._removeSubscription(self)
+            del self._key2source[key]
+            del self._source2key[source]
+
+    def _recvStatePush(self, source):
+        self._recvMultiStatePush(self._source2key[source], source)
+
+    def _recvMultiStatePush(self, key, source):
+        pass
+
+if __debug__:
+    rsc = ReceivesMultipleStateChanges()
+    sv = StateVar(0)
+    sv2 = StateVar('b')
+    rsc._subscribeTo(sv, 'a')
+    rsc._subscribeTo(sv2, 2)
+    rsc._unsubscribe('a')
+    rsc.destroy()
+    del rsc
+
+class FunctionCall(ReceivesMultipleStateChanges, PushesStateChanges):
+    # calls func with provided args whenever arguments' state changes
+    def __init__(self, func, *args, **kArgs):
+        self._initialized = False
+        ReceivesMultipleStateChanges.__init__(self)
+        PushesStateChanges.__init__(self, None)
+        self._func = func
+        self._args = args
+        self._kArgs = kArgs
+        # keep a copy of the arguments ready to go, already filled in with
+        # the value of arguments that push state
+        self._bakedArgs = []
+        self._bakedKargs = {}
+        for i in xrange(len(self._args)):
+            key = i
+            arg = self._args[i]
+            if isinstance(arg, PushesStateChanges):
+                self._bakedArgs.append(arg.getState())
+                self._subscribeTo(arg, key)
+            else:
+                self._bakedArgs.append(self._args[i])
+        for key, arg in self._kArgs.iteritems():
+            if isinstance(arg, PushesStateChanges):
+                self._bakedKargs[key] = arg.getState()
+                self._subscribeTo(arg, key)
+            else:
+                self._bakedKargs[key] = arg
+        self._initialized = True
+        # call pushCurrentState() instead
+        ## push the current state to any listeners
+        ##self._handleStateChange()
+
+    def destroy(self):
+        ReceivesMultipleStateChanges.destroy(self)
+        PushesStateChanges.destroy(self)
         del self._func
+        del self._args
+        del self._kArgs
+        del self._bakedArgs
+        del self._bakedKargs
+
+    def getState(self):
+        # for any state recievers that are hooked up to us, they get a tuple
+        # of (tuple(positional argument values), dict(keyword argument name->value))
+        return (tuple(self._bakedArgs), dict(self._bakedKargs))
+
+    def _recvMultiStatePush(self, key, source):
+        # one of the arguments changed
+        # pick up the new value
+        if isinstance(key, types.StringType):
+            self._bakedKargs[key] = source.getState()
+        else:
+            self._bakedArgs[key] = source.getState()
+        # and send it out
+        self._handlePotentialStateChange(self.getState())
 
     def _handleStateChange(self):
-        self._func(self._value)
-        StateChangeNode._handleStateChange(self)
+        if self._initialized:
+            self._func(*self._bakedArgs, **self._bakedKargs)
+            PushesStateChanges._handleStateChange(self)
         
 if __debug__:
     l = []
@@ -162,12 +256,35 @@ if __debug__:
         l.append(value)
     assert l == []
     sv = StateVar(0)
-    fc = FunctionCall(sv, handler)
+    fc = FunctionCall(handler, sv)
+    assert l == []
+    fc.pushCurrentState()
     assert l == [0,]
     sv.set(1)
     assert l == [0,1,]
     sv.set(2)
     assert l == [0,1,2,]
+    fc.destroy()
+    sv.destroy()
+    del fc
+    del sv
+    del handler
+    del l
+
+    l = []
+    def handler(value, kDummy=None, kValue=None, l=l):
+        l.append((value, kValue))
+    assert l == []
+    sv = StateVar(0)
+    ksv = StateVar('a')
+    fc = FunctionCall(handler, sv, kValue=ksv)
+    assert l == []
+    fc.pushCurrentState()
+    assert l == [(0,'a',),]
+    sv.set(1)
+    assert l == [(0,'a'),(1,'a'),]
+    ksv.set('b')
+    assert l == [(0,'a'),(1,'a'),(1,'b'),]
     fc.destroy()
     sv.destroy()
     del fc
@@ -240,7 +357,9 @@ if __debug__:
     def handler(value, l=l):
         l.append(value)
     p = Pulse()
-    fc = FunctionCall(p, handler)
+    fc = FunctionCall(handler, p)
+    assert l == []
+    fc.pushCurrentState()
     assert l == [False, ]
     p.sendPulse()
     assert l == [False, True, False, ]
@@ -268,12 +387,12 @@ if __debug__:
     def handler(value, l=l):
         l.append(value)
     ep = EventPulse('testEvent')
-    fc = FunctionCall(ep, handler)
-    assert l == [False, ]
+    fc = FunctionCall(handler, ep)
+    assert l == []
     messenger.send('testEvent')
-    assert l == [False, True, False, ]
+    assert l == [True, False, ]
     messenger.send('testEvent')
-    assert l == [False, True, False, True, False, ]
+    assert l == [True, False, True, False, ]
     fc.destroy()
     ep.destroy()
     del fc
@@ -301,7 +420,10 @@ if __debug__:
     def handler(value, l=l):
         l.append(value)
     ea = EventArgument('testEvent', index=1)
-    fc = FunctionCall(ea, handler)
+    fc = FunctionCall(handler, ea)
+    assert l == []
+    fc.pushCurrentState()
+    assert l == [None, ]
     messenger.send('testEvent', ['a', 'b'])
     assert l == [None, 'b', ]
     messenger.send('testEvent', [1, 2, 3, ])
@@ -325,15 +447,15 @@ class AttrSetter(StateChangeNode):
 
 if __debug__:
     o = ScratchPad()
-    sv = StateVar(0)
-    as = AttrSetter(sv, o, 'testAttr')
+    svar = StateVar(0)
+    aset = AttrSetter(svar, o, 'testAttr')
     assert hasattr(o, 'testAttr')
     assert o.testAttr == 0
-    sv.set('red')
+    svar.set('red')
     assert o.testAttr == 'red'
-    as.destroy()
-    sv.destroy()
+    aset.destroy()
+    svar.destroy()
     o.destroy()
-    del as
-    del sv
+    del aset
+    del svar
     del o

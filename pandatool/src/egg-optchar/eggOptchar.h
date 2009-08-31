@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -80,11 +76,15 @@ private:
   void quantize_vertex(EggVertex *egg_vertex);
 
   void do_flag_groups(EggGroupNode *egg_group);
+  void rename_joints();
   void rename_primitives(EggGroupNode *egg_group, const string &name);
+  void do_preload();
+  void do_defpose();
 
   bool _list_hierarchy;
   bool _list_hierarchy_v;
   bool _list_hierarchy_p;
+  bool _preload;
   bool _keep_all;
 
   class StringPair {
@@ -96,6 +96,7 @@ private:
   StringPairs _new_joints;
   StringPairs _reparent_joints;
   StringPairs _zero_channels;
+  StringPairs _rename_joints;
 
   vector_string _keep_components;
   vector_string _drop_components;
@@ -119,6 +120,8 @@ private:
   };
   typedef pvector<FlagGroupsEntry> FlagGroups;
   FlagGroups _flag_groups;
+
+  string _defpose;
 
   bool _optimal_hierarchy;
   double _vref_quantum;

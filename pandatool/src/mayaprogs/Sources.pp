@@ -17,7 +17,7 @@
     egg:c pandaegg:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m pystub \
+    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
     pipeline:c pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -46,7 +46,7 @@
     egg:c pandaegg:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m pystub \
+    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
     pipeline:c pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -76,7 +76,7 @@
     egg:c pandaegg:m \
     linmath:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m pystub \
+    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
     putil:c pipeline:c pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -99,7 +99,7 @@
     framework:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m pystub \
+    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
     pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -139,7 +139,7 @@
     framework:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m pystub \
+    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
     pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -167,7 +167,8 @@
     event:c gobj:c chan:c pgraph:c parametrics:c char:c prc:c dtoolutil:c \
     interrogatedb:c dtoolbase:c collide:c pnmimage:c dgraph:c tform:c \
     pipeline:c pstatclient:c grutil:c gsgbase:c net:c lerp:c display:c \
-    cull:c text:c nativenet:c pnmtext:c movies:c audio:c
+    cull:c text:c nativenet:c movies:c audio:c \
+    $[if $[HAVE_FREETYPE],pnmtext:c]
 
   #define SOURCES \
     config_mayaloader.cxx

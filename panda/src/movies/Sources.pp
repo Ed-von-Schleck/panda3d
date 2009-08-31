@@ -23,10 +23,7 @@
         ffmpegAudio.h ffmpegAudio.I \
         ffmpegAudioCursor.h ffmpegAudioCursor.I \
         ffmpegVirtualFile.h ffmpegVirtualFile.I \
-        userDataAudio.h userDataAudio.I \
-        userDataAudioCursor.h userDataAudioCursor.I \
         webcamVideo.h webcamVideo.I \
-        microphoneAudio.h microphoneAudio.I \
 	config_movies.h
     
   #define INCLUDED_SOURCES \
@@ -41,12 +38,8 @@
         ffmpegAudio.cxx \
         ffmpegAudioCursor.cxx \
         ffmpegVirtualFile.cxx \
-        userDataAudio.cxx \
-        userDataAudioCursor.cxx \
 	webcamVideo.cxx \
 	webcamVideoDS.cxx \
-        microphoneAudio.cxx \
-        microphoneAudioDS.cxx \
         config_movies.cxx
     
   #define INSTALL_HEADERS \
@@ -62,7 +55,6 @@
         ffmpegAudioCursor.h ffmpegAudioCursor.I \
         ffmpegVirtualFile.h ffmpegVirtualFile.I \
         webcamVideo.h webcamVideo.I \
-        microphoneAudio.h microphoneAudio.I \
 	config_movies.h
 
   #define IGATESCAN all

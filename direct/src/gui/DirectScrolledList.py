@@ -83,6 +83,8 @@ class DirectScrolledList(DirectFrame):
             ('numItemsVisible',    1,         self.setNumItemsVisible),
             ('scrollSpeed',        8,         self.setScrollSpeed),
             ('forceHeight',        None,      self.setForceHeight),
+            ('incButtonCallback',  None,      self.setIncButtonCallback),
+            ('decButtonCallback',  None,      self.setDecButtonCallback),
             )
         # Merge keyword options with default options
         self.defineoptions(kw, optiondefs)
@@ -142,8 +144,12 @@ class DirectScrolledList(DirectFrame):
         taskMgr.remove(self.taskName("scroll"))
         if hasattr(self, "currentSelected"):
             del self.currentSelected
+        if self.incButtonCallback:
+            self.incButtonCallback = None
+        if self.decButtonCallback:
+            self.decButtonCallback = None
         self.incButton.destroy()
-        self.decButton.destroy()
+        self.decButton.destroy()       
         DirectFrame.destroy(self)
 
     def selectListItem(self, item):
@@ -312,6 +318,8 @@ class DirectScrolledList(DirectFrame):
         taskMgr.add(task, taskName)
         self.scrollBy(task.delta)
         messenger.send('wakeup')
+        if self.incButtonCallback:
+            self.incButtonCallback()
         
     def __decButtonDown(self, event):
         assert self.notify.debugStateCall(self)
@@ -324,6 +332,8 @@ class DirectScrolledList(DirectFrame):
         taskMgr.add(task, taskName)
         self.scrollBy(task.delta)
         messenger.send('wakeup')
+        if self.decButtonCallback:
+            self.decButtonCallback()        
                
     def __buttonUp(self, event):
         assert self.notify.debugStateCall(self)
@@ -366,6 +376,24 @@ class DirectScrolledList(DirectFrame):
             return 1
         else:
             return 0
+        
+    def removeAndDestroyItem(self, item, refresh = 1):
+        """
+        Remove and destroy this item from the panel.
+        """
+        assert self.notify.debugStateCall(self)
+        if item in self["items"]:
+            if hasattr(self, "currentSelected") and self.currentSelected is item:
+                del self.currentSelected
+            if (hasattr(item, 'destroy') and callable(item.destroy)):
+                item.destroy()
+            self["items"].remove(item)
+            if type(item) != type(''):
+                item.reparentTo(hidden)
+            self.refresh()
+            return 1
+        else:
+            return 0
 
     def removeAllItems(self, refresh=1):
         """
@@ -392,6 +420,29 @@ class DirectScrolledList(DirectFrame):
             self.refresh()
             
         return retval
+    
+    def removeAndDestroyAllItems(self, refresh = 1):
+        """
+        Remove and destroy all items from the panel.
+        Warning 2006_10_19 tested only in the trolley metagame
+        """
+        assert self.notify.debugStateCall(self)
+        retval = 0
+        while len (self["items"]):
+            item = self['items'][0]
+            if hasattr(self, "currentSelected") and self.currentSelected is item:
+                del self.currentSelected
+            if (hasattr(item, 'destroy') and callable(item.destroy)):
+                item.destroy()
+            self["items"].remove(item)
+            if type(item) != type(''):
+                #RAU possible leak here, let's try to do the right thing 
+                #item.reparentTo(hidden)
+                item.removeNode()
+            retval = 1
+        if (refresh):
+            self.refresh()            
+        return retval
 
     def refresh(self):
         """
@@ -411,6 +462,13 @@ class DirectScrolledList(DirectFrame):
         assert self.notify.debugStateCall(self)
         return self['items'][self.index]['text']
 
+    def setIncButtonCallback(self):
+        assert self.notify.debugStateCall(self)
+        self.incButtonCallback = self["incButtonCallback"]
+
+    def setDecButtonCallback(self):
+        assert self.notify.debugStateCall(self)
+        self.decButtonCallback = self["decButtonCallback"]        
 
 
 """

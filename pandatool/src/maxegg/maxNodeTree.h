@@ -5,24 +5,16 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://www.panda3d.org/license.txt .
-//
-// To contact the maintainers of this program write to
-// panda3d@yahoogroups.com .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
 #ifndef MAXNODETREE_H
 #define MAXNODETREE_H
-
-#include "pandatoolbase.h"
-
-#include "maxNodeDesc.h"
 
 class EggData;
 class EggGroupNode;
@@ -38,7 +30,6 @@ public:
   MaxNodeDesc *build_node(INode *max_node);
   MaxNodeDesc *build_joint(INode *max_node, MaxNodeDesc *node_joint);
   bool build_complete_hierarchy(INode *root, ULONG *selection_list, int len);
-  bool build_selected_hierarchy(INode *root);
   MaxNodeDesc *find_node(INode *max_node);
   MaxNodeDesc *find_joint(INode *max_node);
 

@@ -4,21 +4,18 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
 #include "mayaApi.h"
 #include "config_maya.h"
 #include "string_utils.h"
+#include "thread.h"
 
 #include "pre_maya_include.h"
 #include <maya/MGlobal.h>
@@ -67,19 +64,27 @@ MayaApi(const string &program_name) {
 
   // Furthermore, the current directory may change during the call to
   // any Maya function!  Egad!
-  Filename cwd = ExecutionEnvironment::get_cwd();
+  _cwd = ExecutionEnvironment::get_cwd();
   MStatus stat = MLibrary::initialize((char *)program_name.c_str());
+
+  int error_count = init_maya_repeat_count;
+  while (!stat && error_count > 1) {
+    stat.perror("MLibrary::initialize");
+    Thread::sleep(init_maya_timeout);
+    stat = MLibrary::initialize((char *)program_name.c_str());
+    --error_count;
+  }
   
   // Restore the current directory.
-  string dirname = cwd.to_os_specific();
+  string dirname = _cwd.to_os_specific();
   if (chdir(dirname.c_str()) < 0) {
     maya_cat.warning()
-      << "Unable to restore current directory to " << cwd
+      << "Unable to restore current directory to " << _cwd
       << " after initializing Maya.\n";
   } else {
     if (maya_cat.is_debug()) {
       maya_cat.debug()
-        << "Restored current directory to " << cwd << "\n";
+        << "Restored current directory to " << _cwd << "\n";
     }
   }
 
@@ -262,8 +267,28 @@ read(const Filename &filename) {
   // even on Windows.
   string os_filename = filename.to_os_generic();
 
+  string dirname = _cwd.to_os_specific();
+  if (maya_cat.is_debug()) {
+    maya_cat.debug() << "cwd(read:before): " << dirname.c_str() << endl;
+  }
+
   MFileIO::newFile(true);
   MStatus stat = MFileIO::open(os_filename.c_str());
+  // Beginning with Maya2008, the call to read seem to change
+  // the current directory specially if there is a refrence file!  Yikes!
+
+  // Furthermore, the current directory may change during the call to
+  // any Maya function!  Egad!
+  if (chdir(dirname.c_str()) < 0) {
+    maya_cat.warning()
+      << "Unable to restore current directory after ::read to " << _cwd
+      << " after initializing Maya.\n";
+  } else {
+    if (maya_cat.is_debug()) {
+      maya_cat.debug()
+        << "Restored current directory after ::read to " << _cwd << "\n";
+    }
+  }
   if (!stat) {
     stat.perror(os_filename.c_str());
     return false;
@@ -282,6 +307,11 @@ write(const Filename &filename) {
   maya_cat.info() << "Writing " << filename << "\n";
   string os_filename = filename.to_os_generic();
 
+  string dirname = _cwd.to_os_specific();
+  if (maya_cat.is_debug()) {
+    maya_cat.debug() << "cwd(write:before): " << dirname.c_str() << endl;
+  }
+
   const char *type = "mayaBinary";
   string extension = filename.get_extension();
   if (extension == "ma") {
@@ -292,6 +322,21 @@ write(const Filename &filename) {
   if (!stat) {
     stat.perror(os_filename.c_str());
     return false;
+  }
+  // Beginning with Maya2008, the call to read seem to change
+  // the current directory specially if there is a refrence file!  Yikes!
+
+  // Furthermore, the current directory may change during the call to
+  // any Maya function!  Egad!
+  if (chdir(dirname.c_str()) < 0) {
+    maya_cat.warning()
+      << "Unable to restore current directory after ::write to " << _cwd
+      << " after initializing Maya.\n";
+  } else {
+    if (maya_cat.is_debug()) {
+      maya_cat.debug()
+        << "Restored current directory after ::write to " << _cwd << "\n";
+    }
   }
   return true;
 }
@@ -340,6 +385,44 @@ get_units() {
 
   default:
     return DU_invalid;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaApi::set_units
+//       Access: Public
+//  Description: Set Maya's UI units.
+////////////////////////////////////////////////////////////////////
+void MayaApi::
+set_units(DistanceUnit unit) {
+  switch (unit) {
+  case DU_inches:
+    MDistance::setUIUnit(MDistance::kInches);
+    break;
+  case DU_feet:
+    MDistance::setUIUnit(MDistance::kFeet);
+    break;
+  case DU_yards:
+    MDistance::setUIUnit(MDistance::kYards);
+    break;
+  case DU_statute_miles:
+    MDistance::setUIUnit(MDistance::kMiles);
+    break;
+  case DU_millimeters:
+    MDistance::setUIUnit(MDistance::kMillimeters);
+    break;
+  case DU_centimeters:
+    MDistance::setUIUnit(MDistance::kCentimeters);
+    break;
+  case DU_kilometers:
+    MDistance::setUIUnit(MDistance::kKilometers);
+    break;
+  case DU_meters:
+    MDistance::setUIUnit(MDistance::kMeters);
+    break;
+
+  default:
+    ;
   }
 }
 

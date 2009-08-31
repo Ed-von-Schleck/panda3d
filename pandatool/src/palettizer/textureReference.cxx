@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -106,6 +102,7 @@ from_egg(EggFile *egg_file, EggData *data, EggTexture *egg_tex) {
   _properties._format = _egg_tex->get_format();
   _properties._minfilter = _egg_tex->get_minfilter();
   _properties._magfilter = _egg_tex->get_magfilter();
+  _properties._quality_level = _egg_tex->get_quality_level();
   _properties._anisotropic_degree = _egg_tex->get_anisotropic_degree();
 
   string name = filename.get_basename_wo_extension();
@@ -420,7 +417,12 @@ update_egg() {
     return;
   }
 
-  nassertv(_placement != (TexturePlacement *)NULL);
+  if (_placement == (TexturePlacement *)NULL) {
+    // Nor if we don't have an actual placement yet.  This is possible
+    // if the egg was assigned to the "null" group, and the texture
+    // hasn't been re-assigned yet.
+    return;
+  }
 
   TextureImage *texture = get_texture();
   if (texture != (TextureImage *)NULL) {
@@ -482,8 +484,11 @@ update_egg() {
   nassertv(image != (PaletteImage *)NULL);
 
   image->update_egg_tex(_egg_tex);
-  // Palette images never wrap.
-  _egg_tex->set_wrap_mode(EggTexture::WM_clamp);
+
+  // Palette images never wrap, so the wrap mode doesn't matter.  We
+  // let this default to unspecified, which means the images will
+  // wrap by default, which is the fastest mode for tinydisplay anyway.
+  _egg_tex->set_wrap_mode(EggTexture::WM_unspecified);
   _egg_tex->set_wrap_u(EggTexture::WM_unspecified);
   _egg_tex->set_wrap_v(EggTexture::WM_unspecified);
 

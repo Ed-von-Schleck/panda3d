@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -182,6 +178,32 @@ tag_named(const GlobPattern &glob) {
     MayaNodeDesc *node = (*ni);
     if (glob.matches(node->get_name())) {
       node->tag_recursively();
+      found_any = true;
+    }
+  }
+
+  return found_any;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: MayaNodeTree::untag_named
+//       Access: Public
+//  Description: Un-tags nodes matching the indicated glob (and all of
+//               their children) for conversion.  Returns true on
+//               success, false otherwise (e.g. the named node does
+//               not exist).
+////////////////////////////////////////////////////////////////////
+bool MayaNodeTree::
+untag_named(const GlobPattern &glob) {
+  // There might be multiple nodes matching the name; search for all
+  // of them.
+  bool found_any = false;
+
+  Nodes::iterator ni;
+  for (ni = _nodes.begin(); ni != _nodes.end(); ++ni) {
+    MayaNodeDesc *node = (*ni);
+    if (glob.matches(node->get_name())) {
+      node->untag_recursively();
       found_any = true;
     }
   }
@@ -367,6 +389,13 @@ get_egg_group(MayaNodeDesc *node_desc) {
       }
       if (get_enum_attribute(dag_object, "eggObjectTypes3", object_type)) {
         egg_group->add_object_type(object_type);
+      }
+      pvector<string> tag_attribute_names;
+      get_tag_attribute_names(dag_object, tag_attribute_names);
+      for (uint ti=0; ti < tag_attribute_names.size(); ti++) {
+        if (get_enum_attribute(dag_object, tag_attribute_names[ti], object_type)) {
+          egg_group->set_tag(tag_attribute_names[ti].substr(3), object_type);
+        }
       }
 
       // Is the node flagged to be invisible?  If it is, it is tagged

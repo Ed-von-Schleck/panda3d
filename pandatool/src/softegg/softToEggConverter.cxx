@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2003, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -2034,7 +2030,7 @@ set_shader_attributes(SoftNodeDesc *node_desc, EggPrimitive &primitive, int idx)
   EggTexture tex(texName, "");
 
   Filename filename = Filename::from_os_specific(texName);
-  Filename fullpath = _path_replace->match_path(filename, get_texture_path());
+  Filename fullpath = _path_replace->match_path(filename, get_model_path());
   tex.set_filename(_path_replace->store_path(fullpath));
   tex.set_fullpath(fullpath);
   //  tex.set_format(EggTexture::F_rgb);

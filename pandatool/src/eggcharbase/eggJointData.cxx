@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -412,6 +408,37 @@ quantize_channels(const string &components, double quantum) {
   for (ci = _children.begin(); ci != _children.end(); ++ci) {
     EggJointData *child = (*ci);
     child->quantize_channels(components, quantum);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggJointData::apply_default_pose
+//       Access: Public
+//  Description: Applies the pose from the indicated frame of the
+//               indicated source model_index as the initial pose for
+//               this joint, and does this recursively on all joints
+//               below.
+////////////////////////////////////////////////////////////////////
+void EggJointData::
+apply_default_pose(int source_model, int frame) {
+  if (has_model(source_model)) {
+    EggJointPointer *source_joint;
+    DCAST_INTO_V(source_joint, _back_pointers[source_model]);
+    BackPointers::iterator bpi;
+    for (bpi = _back_pointers.begin(); bpi != _back_pointers.end(); ++bpi) {
+      EggBackPointer *back = (*bpi);
+      if (back != (EggBackPointer *)NULL) {
+        EggJointPointer *joint;
+        DCAST_INTO_V(joint, back);
+        joint->apply_default_pose(source_joint, frame);
+      }
+    }
+  }
+
+  Children::iterator ci;
+  for (ci = _children.begin(); ci != _children.end(); ++ci) {
+    EggJointData *child = (*ci);
+    child->apply_default_pose(source_model, frame);
   }
 }
 

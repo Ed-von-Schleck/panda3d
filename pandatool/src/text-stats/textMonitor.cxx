@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -29,7 +25,9 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 TextMonitor::
-TextMonitor(TextStats *server) : PStatMonitor(server) {
+TextMonitor(TextStats *server, ostream *outStream, bool show_raw_data ) : PStatMonitor(server) {
+    _outStream = outStream;    //[PECI]
+    _show_raw_data = show_raw_data;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -109,30 +107,30 @@ new_data(int thread_index, int frame_number) {
     if (view.all_collectors_known()) {
       const PStatClientData *client_data = get_client_data();
 
-      nout << "\rThread "
+      (*_outStream) << "\rThread "
            << client_data->get_thread_name(thread_index)
            << " frame " << frame_number << ", "
            << view.get_net_value() * 1000.0 << " ms ("
            << thread_data->get_frame_rate() << " Hz):\n";
 
-      if (get_server()->_show_raw_data) {
+      if (_show_raw_data) {
         const PStatFrameData &frame_data = thread_data->get_frame(frame_number);
-        nout << "raw data:\n";
+        (*_outStream) << "raw data:\n";
         int num_events = frame_data.get_num_events();
         for (int i = 0; i < num_events; ++i) {
           // The iomanipulators are much too clumsy.
           char formatted[32];
           sprintf(formatted, "%15.06lf", frame_data.get_time(i));
-          nout << formatted;
+          (*_outStream) << formatted;
 
           if (frame_data.is_start(i)) {
-            nout << " start ";
+            (*_outStream) << " start ";
           } else {
-            nout << " stop  ";
+            (*_outStream) << " stop  ";
           }
           
           int collector_index = frame_data.get_time_collector(i);
-          nout << client_data->get_collector_fullname(collector_index) << "\n";
+          (*_outStream) << client_data->get_collector_fullname(collector_index) << "\n";
         }
       }
 
@@ -156,6 +154,7 @@ new_data(int thread_index, int frame_number) {
       }
     }
   }
+  _outStream->flush();
 }
 
 
@@ -200,7 +199,7 @@ show_ms(const PStatViewLevel *level, int indent_level) {
   const PStatClientData *client_data = get_client_data();
   const PStatCollectorDef &def = client_data->get_collector_def(collector_index);
 
-  indent(nout, indent_level)
+  indent((*_outStream), indent_level)
     << def._name << " = " << level->get_net_value() * 1000.0 << " ms\n" ;
 
   int num_children = level->get_num_children();
@@ -221,7 +220,7 @@ show_level(const PStatViewLevel *level, int indent_level) {
   const PStatClientData *client_data = get_client_data();
   const PStatCollectorDef &def = client_data->get_collector_def(collector_index);
 
-  indent(nout, indent_level)
+  indent((*_outStream), indent_level)
     << def._name << " = " << level->get_net_value() << " " 
     << def._level_units << "\n";
 

@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -47,6 +43,7 @@ TxaLine() {
   _alpha_mode = EggRenderMode::AM_unspecified;
   _wrap_u = EggTexture::WM_unspecified;
   _wrap_v = EggTexture::WM_unspecified;
+  _quality_level = EggTexture::QL_unspecified;
   _got_margin = false;
   _margin = 0;
   _got_coverage_threshold = false;
@@ -287,28 +284,35 @@ parse(const string &line) {
             if (am != EggRenderMode::AM_unspecified) {
               _alpha_mode = am;
 
-            } else if (word.length() > 2 && word[word.length() - 2] == '_' &&
-                       strchr("uv", word[word.length() - 1]) != NULL) {
-              // It must be a wrap mode for u or v.
-              string prefix = word.substr(0, word.length() - 2);
-              EggTexture::WrapMode wm = EggTexture::string_wrap_mode(prefix);
-              if (wm == EggTexture::WM_unspecified) {
-                return false;
-              }
-              switch (word[word.length() - 1]) {
-              case 'u':
-                _wrap_u = wm;
-                break;
-
-              case 'v':
-                _wrap_v = wm;
-                break;
-              }
-
             } else {
-              // Maybe it's an image file request.
-              if (!parse_image_type_request(word, _color_type, _alpha_type)) {
-                return false;
+              // Maybe it's a quality level.
+              EggTexture::QualityLevel ql = EggTexture::string_quality_level(word);
+              if (ql != EggTexture::QL_unspecified) {
+                _quality_level = ql;
+
+              } else if (word.length() > 2 && word[word.length() - 2] == '_' &&
+                         strchr("uv", word[word.length() - 1]) != NULL) {
+                // It must be a wrap mode for u or v.
+                string prefix = word.substr(0, word.length() - 2);
+                EggTexture::WrapMode wm = EggTexture::string_wrap_mode(prefix);
+                if (wm == EggTexture::WM_unspecified) {
+                  return false;
+                }
+                switch (word[word.length() - 1]) {
+                case 'u':
+                  _wrap_u = wm;
+                  break;
+                  
+                case 'v':
+                  _wrap_v = wm;
+                  break;
+                }
+                
+              } else {
+                // Maybe it's an image file request.
+                if (!parse_image_type_request(word, _color_type, _alpha_type)) {
+                  return false;
+                }
               }
             }
           }
@@ -454,6 +458,10 @@ match_texture(TextureImage *texture) const {
     request._properties._alpha_type = _alpha_type;
   }
 
+  if (_quality_level != EggTexture::QL_unspecified) {
+    request._properties._quality_level = _quality_level;
+  }
+
   if (_format != EggTexture::F_unspecified) {
     request._format = _format;
     request._force_format = _force_format;
@@ -514,6 +522,7 @@ match_texture(TextureImage *texture) const {
 
   texture->_explicitly_assigned_groups.make_union
     (texture->_explicitly_assigned_groups, _palette_groups);
+  texture->_explicitly_assigned_groups.remove_null();
 
   if (got_cont) {
     // If we have the "cont" keyword, we should keep scanning for

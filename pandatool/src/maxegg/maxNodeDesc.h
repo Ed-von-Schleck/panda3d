@@ -5,45 +5,16 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://www.panda3d.org/license.txt .
-//
-// To contact the maintainers of this program write to
-// panda3d@yahoogroups.com .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
 #ifndef MAXNODEDESC_H
 #define MAXNODEDESC_H
-
-#pragma conform(forScope, off)
-
-#include "pandatoolbase.h"
-
-#include "referenceCount.h"
-#include "pointerTo.h"
-#include "namable.h"
-
-#ifdef MAX5
-//Disable the "Too many actual parameters in istdplug.h" warning in Max5
-#pragma warning(push)
-#pragma warning(disable: 4002)
-#include "max_pre_include.h"
-#endif
-#include <Max.h>
-#include "bipexp.h"
-#ifdef MAX5
-#include "max_post_include.h"
-#pragma warning(pop)
-#endif
-
-class EggGroup;
-class EggTable;
-class EggXfmSAnim;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : MaxNodeDesc
@@ -86,7 +57,7 @@ class MaxNodeDesc : public ReferenceCount, public Namable {
     JT_none,         // Not a joint.
     JT_node_joint,    // Node that represents a joint in the geometry 
                                          // but not the actual joint itself
-        JT_joint,        // An actual joint in Max.
+    JT_joint,        // An actual joint in Max.
     JT_pseudo_joint, // Not a joint in Max, but treated just like a
                      // joint for the purposes of the converter.
     JT_joint_parent, // A parent or ancestor of a joint or pseudo joint.

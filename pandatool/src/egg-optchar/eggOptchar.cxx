@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -28,6 +24,9 @@
 #include "eggGroupNode.h"
 #include "eggPrimitive.h"
 #include "eggVertexPool.h"
+#include "eggTable.h"
+#include "eggGroup.h"
+#include "eggAnimPreload.h"
 #include "string_utils.h"
 #include "dcast.h"
 #include "pset.h"
@@ -114,6 +113,23 @@ EggOptchar() {
      &EggOptchar::dispatch_flag_groups, NULL, &_flag_groups);
 
   add_option
+    ("defpose", "anim.egg,frame", 0,
+     "Specify the model's default pose.  The pose is taken "
+     "from the indicated frame of the named animation file (which must "
+     "also be named separately on the command line).  The "
+     "pose will be held by the model in "
+     "the absence of any animation, and need not be the same "
+     "pose in which the model was originally skinned.",
+     &EggOptchar::dispatch_string, NULL, &_defpose);
+
+  add_option
+    ("preload", "", 0,
+     "Add an <AnimPreload> entry for each animation to the model file(s).  "
+     "This can be used at runtime to support asynchronous "
+     "loading and binding of animation channels.",
+     &EggOptchar::dispatch_none, &_preload);
+
+  add_option
     ("zero", "joint[,hprxyzijkabc]", 0,
      "Zeroes out the animation channels for the named joint.  If "
      "a subset of the component letters hprxyzijkabc is included, the "
@@ -140,6 +156,11 @@ EggOptchar() {
      "Creates a new joint under the named parent joint.  The new "
      "joint will inherit the same net transform as its parent.",
      &EggOptchar::dispatch_vector_string_pair, NULL, &_new_joints);
+
+  add_option
+    ("rename", "joint,newjoint", 0,
+     "Renames the indicated joint, if present, to the given name.",
+     &EggOptchar::dispatch_vector_string_pair, NULL, &_rename_joints);
 
   if (FFTCompressor::is_compression_available()) {
     add_option
@@ -246,6 +267,8 @@ run() {
     // morph sliders can simply be removed, while static sliders need
     // to be applied to the vertices and then removed.
 
+    rename_joints();
+
     // Quantize the vertex memberships.  We call this even if
     // _vref_quantum is 0, because this also normalizes the vertex
     // memberships.
@@ -260,6 +283,18 @@ run() {
       for (ei = _eggs.begin(); ei != _eggs.end(); ++ei) {
         do_flag_groups(*ei);
       }
+    }
+
+    // Add the AnimPreload entries.
+    if (_preload) {
+      do_preload();
+    }
+
+    // Finally, set the default poses.  It's important not to do this
+    // until after we have adjusted all of the transforms for the
+    // various joints.
+    if (!_defpose.empty()) {
+      do_defpose();
     }
 
     write_eggs();
@@ -1330,6 +1365,42 @@ do_flag_groups(EggGroupNode *egg_group) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggOptchar::rename_joints
+//       Access: Private
+//  Description: Rename all the joints named with the -rename
+//               command-line option.
+////////////////////////////////////////////////////////////////////
+void EggOptchar::
+rename_joints() {
+  for (StringPairs::iterator spi = _rename_joints.begin();
+       spi != _rename_joints.end();
+       ++spi) {
+    const StringPair &sp = (*spi);
+    int num_characters = _collection->get_num_characters();
+    int ci;
+    for (ci = 0; ci < num_characters; ++ci) {
+      EggCharacterData *char_data = _collection->get_character(ci);
+      EggJointData *joint = char_data->find_joint(sp._a);
+      if (joint != (EggJointData *)NULL) {
+        nout << "Renaming joint " << sp._a << " to " << sp._b << "\n";
+        joint->set_name(sp._b);
+
+        int num_models = joint->get_num_models();
+        for (int mn = 0; mn < num_models; ++mn) {
+          if (joint->has_model(mn)) {
+            EggBackPointer *model = joint->get_model(mn);
+            model->set_name(sp._b);
+          }
+        }
+
+      } else {
+        nout << "Couldn't find joint " << sp._a << "\n";
+      }
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggOptchar::rename_primitives
 //       Access: Private
 //  Description: Recursively walks the indicated egg hierarchy,
@@ -1349,6 +1420,142 @@ rename_primitives(EggGroupNode *egg_group, const string &name) {
       child->set_name(name);
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggOptchar::do_preload
+//       Access: Private
+//  Description: Generates the preload tables for each model.
+////////////////////////////////////////////////////////////////////
+void EggOptchar::
+do_preload() {
+  // First, build up the list of AnimPreload entries, one for each
+  // animation file.
+  PT(EggGroup) anim_group = new EggGroup("preload");
+
+  int num_characters = _collection->get_num_characters();
+  int ci;
+  for (ci = 0; ci < num_characters; ++ci) {
+    EggCharacterData *char_data = _collection->get_character(ci);
+
+    int num_models = char_data->get_num_models();
+    for (int mn = 0; mn < num_models; ++mn) {
+      EggNode *root = char_data->get_model_root(mn);
+      if (root->is_of_type(EggTable::get_class_type())) {
+        // This model represents an animation.
+        EggData *data = char_data->get_egg_data(mn);
+        string basename = data->get_egg_filename().get_basename_wo_extension();
+        PT(EggAnimPreload) anim_preload = new EggAnimPreload(basename);
+
+        int mi = char_data->get_model_index(mn);
+        anim_preload->set_num_frames(char_data->get_num_frames(mi));
+        double frame_rate = char_data->get_frame_rate(mi);
+        if (frame_rate != 0.0) {
+          anim_preload->set_fps(frame_rate);
+        }
+        
+        anim_group->add_child(anim_preload);
+      }
+    }
+  }
+
+  // Now go back through and copy the preload tables into each of the
+  // model files.
+  for (ci = 0; ci < num_characters; ++ci) {
+    EggCharacterData *char_data = _collection->get_character(ci);
+
+    int num_models = char_data->get_num_models();
+    for (int mn = 0; mn < num_models; ++mn) {
+      EggNode *root = char_data->get_model_root(mn);
+      if (root->is_of_type(EggGroup::get_class_type())) {
+        // This is a model file.  Copy in the table.
+        EggGroup *model_root = DCAST(EggGroup, root);
+        EggGroup::const_iterator ci;
+        for (ci = anim_group->begin(); ci != anim_group->end(); ++ci) {
+          EggAnimPreload *anim_preload = DCAST(EggAnimPreload, *ci);
+          PT(EggAnimPreload) new_anim_preload = new EggAnimPreload(*anim_preload);
+          model_root->add_child(new_anim_preload);
+        }
+      }
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggOptchar::do_defpose
+//       Access: Private
+//  Description: Sets the initial pose for the character(s).
+////////////////////////////////////////////////////////////////////
+void EggOptchar::
+do_defpose() {
+  // Split out the defpose parameter.
+  Filename egg_filename;
+  size_t comma = _defpose.find(',');
+  egg_filename = _defpose.substr(0, comma);
+
+  string frame_str;
+  if (comma != string::npos) {
+    frame_str = _defpose.substr(comma + 1);
+  }
+  frame_str = trim(frame_str);
+  int frame = 0;
+  if (!frame_str.empty()) {
+    if (!string_to_int(frame_str, frame)) {
+      nout << "Invalid integer in -defpose: " << frame_str << "\n";
+      return;
+    }
+  }
+
+  // Now find the named animation file in our egg list.
+  int egg_index = -1;
+  int num_eggs = _collection->get_num_eggs();
+  int i;
+
+  // First, look for an exact match.
+  for (i = 0; i < num_eggs && egg_index == -1; ++i) {
+    if (_collection->get_egg(i)->get_egg_filename() == egg_filename) {
+      egg_index = i;
+    }
+  }
+
+  // Then, look for an inexact match.
+  string egg_basename = egg_filename.get_basename_wo_extension();
+  for (i = 0; i < num_eggs && egg_index == -1; ++i) {
+    if (_collection->get_egg(i)->get_egg_filename().get_basename_wo_extension() == egg_basename) {
+      egg_index = i;
+    }
+  }
+
+  if (egg_index == -1) {
+    // No joy.
+    nout << "Egg file " << egg_filename << " named in -defpose, but does not appear on command line.\n";
+    return;
+  }
+
+  EggData *egg_data = _collection->get_egg(egg_index);
+
+  if (_collection->get_num_models(egg_index) == 0) {
+    nout << "Egg file " << egg_filename << " does not include any model or animation.\n";
+    return;
+  }
+
+  // Now get the first model (or animation) named by this egg file.
+  int mi = _collection->get_first_model_index(egg_index);
+  EggCharacterData *ch = _collection->get_character_by_model_index(mi);
+  EggJointData *root_joint = ch->get_root_joint();
+
+  int anim_index = -1;
+  for (i = 0; i < ch->get_num_models() && anim_index == -1; ++i) {
+    if (ch->get_egg_data(i) == egg_data) {
+      anim_index = i;
+    }
+  }
+
+  // This couldn't possibly fail, since we already checked this above.
+  nassertv(anim_index != -1);
+
+  // Now we can recursively apply the default pose to the hierarchy.
+  ch->get_root_joint()->apply_default_pose(anim_index, frame);
 }
 
 int main(int argc, char *argv[]) {

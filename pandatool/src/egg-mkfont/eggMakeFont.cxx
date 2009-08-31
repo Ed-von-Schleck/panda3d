@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -406,6 +402,7 @@ run() {
   PT(EggData) egg_data = new EggData;
   _group = new EggGroup();
   egg_data->add_child(_group);
+  append_command_comment(egg_data);
 
   _vpool = new EggVertexPool("vpool");
   _group->add_child(_vpool);
@@ -446,7 +443,7 @@ run() {
       texture->write(texture->read_source_image());
     }
 
-    write_egg_file();
+    egg_data->write_egg(get_output());
 
   } else {
     // Pass the generated egg structure through egg-palettize, without
@@ -641,6 +638,7 @@ make_tref(PNMTextGlyph *glyph, int character) {
   tref->set_wrap_mode(EggTexture::WM_clamp);
   tref->set_minfilter(EggTexture::FT_linear_mipmap_linear);
   tref->set_magfilter(EggTexture::FT_linear);
+  tref->set_quality_level(EggTexture::QL_best);
 
   return tref;
 }

@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -28,7 +24,18 @@
 #include "colorAttrib.h"
 #include "textureAttrib.h"
 #include "cullFaceAttrib.h"
+#include "transparencyAttrib.h"
+#include "depthWriteAttrib.h"
 #include "lodNode.h"
+#include "switchNode.h"
+#include "sequenceNode.h"
+#include "collisionNode.h"
+#include "collisionPolygon.h"
+#include "collisionPlane.h"
+#include "collisionSphere.h"
+#include "collisionInvSphere.h"
+#include "collisionTube.h"
+#include "textureStage.h"
 #include "geomNode.h"
 #include "geom.h"
 #include "geomTriangles.h"
@@ -43,6 +50,7 @@
 #include "eggPolygon.h"
 #include "eggTexture.h"
 #include "eggMaterial.h"
+#include "eggRenderMode.h"
 #include "somethingToEggConverter.h"
 #include "dcast.h"
 #include "pystub.h"
@@ -154,6 +162,15 @@ convert_node(const WorkingNodePath &node_path, EggGroupNode *egg_parent,
   } else if (node->is_of_type(LODNode::get_class_type())) {
     convert_lod_node(DCAST(LODNode, node), node_path, egg_parent, has_decal);
 
+  } else if (node->is_of_type(SequenceNode::get_class_type())) {
+    convert_sequence_node(DCAST(SequenceNode, node), node_path, egg_parent, has_decal);
+
+  } else if (node->is_of_type(SwitchNode::get_class_type())) {
+    convert_switch_node(DCAST(SwitchNode, node), node_path, egg_parent, has_decal);
+
+  } else if (node->is_of_type(CollisionNode::get_class_type())) {
+    convert_collision_node(DCAST(CollisionNode, node), node_path, egg_parent, has_decal);
+
   } else {
     // Just a generic node.
     EggGroup *egg_group = new EggGroup(node->get_name());
@@ -210,6 +227,131 @@ convert_lod_node(LODNode *node, const WorkingNodePath &node_path,
     next_group->set_lod(dist);
     egg_group->add_child(next_group.p());
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamToEgg::convert_sequence_node
+//       Access: Private
+//  Description: Converts the indicated SequenceNode to the corresponding
+//               Egg constructs.
+////////////////////////////////////////////////////////////////////
+void BamToEgg::
+convert_sequence_node(SequenceNode *node, const WorkingNodePath &node_path,
+                      EggGroupNode *egg_parent, bool has_decal) {
+  // A sequence node gets converted to an ordinary EggGroup, we only apply
+  // the appropriate switch attributes to turn it into a sequence
+  EggGroup *egg_group = new EggGroup(node->get_name());
+  egg_parent->add_child(egg_group);
+  apply_node_properties(egg_group, node);
+
+  // turn it into a sequence with the right frame-rate
+  egg_group->set_switch_flag(true);
+  egg_group->set_switch_fps(node->get_frame_rate());
+
+  int num_children = node->get_num_children();
+
+  for (int i = 0; i < num_children; i++) {
+    PandaNode *child = node->get_child(i);
+
+    // Convert just this one node to an EggGroup.
+    PT(EggGroup) next_group = new EggGroup;
+    convert_node(WorkingNodePath(node_path, child), next_group, has_decal);
+
+    egg_group->add_child(next_group.p());
+  }
+
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamToEgg::convert_switch_node
+//       Access: Private
+//  Description: Converts the indicated SwitchNode to the corresponding
+//               Egg constructs.
+////////////////////////////////////////////////////////////////////
+void BamToEgg::
+convert_switch_node(SwitchNode *node, const WorkingNodePath &node_path,
+                    EggGroupNode *egg_parent, bool has_decal) {
+  // A sequence node gets converted to an ordinary EggGroup, we only apply
+  // the appropriate switch attributes to turn it into a sequence
+  EggGroup *egg_group = new EggGroup(node->get_name());
+  egg_parent->add_child(egg_group);
+  apply_node_properties(egg_group, node);
+
+  // turn it into a switch..
+  egg_group->set_switch_flag(true);
+
+  int num_children = node->get_num_children();
+
+  for (int i = 0; i < num_children; i++) {
+    PandaNode *child = node->get_child(i);
+
+    // Convert just this one node to an EggGroup.
+    PT(EggGroup) next_group = new EggGroup;
+    convert_node(WorkingNodePath(node_path, child), next_group, has_decal);
+
+    egg_group->add_child(next_group.p());
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamToEgg::convert_collision_node
+//       Access: Private
+//  Description: Converts the indicated CollisionNode to the corresponding
+//               Egg constructs.
+////////////////////////////////////////////////////////////////////
+void BamToEgg::
+convert_collision_node(CollisionNode *node, const WorkingNodePath &node_path,
+                       EggGroupNode *egg_parent, bool has_decal) {
+  // A sequence node gets converted to an ordinary EggGroup, we only apply
+  // the appropriate switch attributes to turn it into a sequence
+  EggGroup *egg_group = new EggGroup(node->get_name());
+  egg_parent->add_child(egg_group);
+  apply_node_properties(egg_group, node, false);
+
+  // turn it into a collision node
+  egg_group->set_cs_type(EggGroup::CST_polyset);
+  egg_group->set_collide_flags(EggGroup::CF_descend);
+
+  int num_solids = node->get_num_solids();
+
+  if (num_solids > 0) {
+    // create vertex pool for collisions
+    EggVertexPool *cvpool = new EggVertexPool("vpool-collision");
+    egg_group->add_child(cvpool);
+
+    // traverse solids
+    for (int i = 0; i < num_solids; i++) {
+      CPT(CollisionSolid) child = node->get_solid(i);
+      if (child->is_of_type(CollisionPolygon::get_class_type())) {
+        EggPolygon *egg_poly = new EggPolygon;
+        egg_group->add_child(egg_poly);
+
+        CPT(CollisionPolygon) poly = DCAST(CollisionPolygon, child);
+        int num_points = poly->get_num_points();
+        for (int j = 0; j < num_points; j++) {
+          EggVertex egg_vert;
+          egg_vert.set_pos(LCAST(double, poly->get_point(j)));
+          egg_vert.set_normal(LCAST(double, poly->get_normal()));
+
+          EggVertex *new_egg_vert = cvpool->create_unique_vertex(egg_vert);
+          egg_poly->add_vertex(new_egg_vert);
+        }
+      } else if (child->is_of_type(CollisionPlane::get_class_type())) {
+        nout << "Encountered unhandled collsion type: CollisionPlane" << "\n";
+      } else if (child->is_of_type(CollisionSphere::get_class_type())) {
+        nout << "Encountered unhandled collsion type: CollisionSphere" << "\n";
+      } else if (child->is_of_type(CollisionInvSphere::get_class_type())) {
+        nout << "Encountered unhandled collsion type: CollisionInvSphere" << "\n";
+      } else if (child->is_of_type(CollisionTube::get_class_type())) {
+        nout << "Encountered unhandled collsion type: CollisionTube" << "\n";
+      } else {
+        nout << "Encountered unknown CollisionSolid" << "\n";
+      }
+    }
+  }
+
+  // recurse over children - hm. do I need to do this?
+  recurse_nodes(node_path, egg_group, has_decal);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -282,7 +424,7 @@ convert_triangles(const GeomVertexData *vertex_data,
 
   // Check for a color scale.
   LVecBase4f color_scale(1.0f, 1.0f, 1.0f, 1.0f);
-  const ColorScaleAttrib *csa = net_state->get_color_scale();
+  const ColorScaleAttrib *csa = DCAST(ColorScaleAttrib, net_state->get_attrib(ColorScaleAttrib::get_class_type()));
   if (csa != (const ColorScaleAttrib *)NULL) {
     color_scale = csa->get_scale();
   }
@@ -291,7 +433,7 @@ convert_triangles(const GeomVertexData *vertex_data,
   bool has_color_override = false;
   bool has_color_off = false;
   Colorf color_override;
-  const ColorAttrib *ca = net_state->get_color();
+  const ColorAttrib *ca = DCAST(ColorAttrib, net_state->get_attrib(ColorAttrib::get_class_type()));
   if (ca != (const ColorAttrib *)NULL) {
     if (ca->get_color_type() == ColorAttrib::T_flat) {
       has_color_override = true;
@@ -308,9 +450,42 @@ convert_triangles(const GeomVertexData *vertex_data,
 
   // Check for a texture.
   EggTexture *egg_tex = (EggTexture *)NULL;
-  const TextureAttrib *ta = net_state->get_texture();
+  const TextureAttrib *ta = DCAST(TextureAttrib, net_state->get_attrib(TextureAttrib::get_class_type()));
   if (ta != (const TextureAttrib *)NULL) {
     egg_tex = get_egg_texture(ta->get_texture());
+  }
+
+  // Check the texture environment
+  if ((ta != (const TextureAttrib *)NULL) && (egg_tex != (const EggTexture *)NULL)) {
+    TextureStage* tex_stage = ta->get_on_stage(0);
+    if (tex_stage != (const TextureStage *)NULL) {
+      switch (tex_stage->get_mode()) {
+        case TextureStage::M_modulate:
+          if (has_color_off == true) {
+            egg_tex->set_env_type(EggTexture::ET_replace);
+          } else {
+            egg_tex->set_env_type(EggTexture::ET_modulate);
+          }
+          break;
+        case TextureStage::M_decal:
+          egg_tex->set_env_type(EggTexture::ET_decal);
+          break;
+        case TextureStage::M_blend:
+          egg_tex->set_env_type(EggTexture::ET_blend);
+          break;
+        case TextureStage::M_replace:
+          egg_tex->set_env_type(EggTexture::ET_replace);
+          break;
+        case TextureStage::M_add:
+          egg_tex->set_env_type(EggTexture::ET_add);
+          break;
+        case TextureStage::M_blend_color_scale:
+          egg_tex->set_env_type(EggTexture::ET_blend_color_scale);
+          break;
+        default:
+          break;
+      }
+    }
   }
 
   // Check the backface flag.
@@ -322,6 +497,61 @@ convert_triangles(const GeomVertexData *vertex_data,
       bface = true;
     }
   }
+
+  // Check the depth write flag - only needed for AM_blend_no_occlude
+  bool has_depthwrite = false;
+  DepthWriteAttrib::Mode depthwrite = DepthWriteAttrib::M_on;
+  const RenderAttrib *dw_attrib = net_state->get_attrib(DepthWriteAttrib::get_class_type());
+  if (dw_attrib != (const RenderAttrib *)NULL) {
+    const DepthWriteAttrib *dwa = DCAST(DepthWriteAttrib, dw_attrib);
+    depthwrite = dwa->get_mode();
+    has_depthwrite = true;
+  }
+
+  // Check the transparency flag.
+  bool has_transparency = false;
+  TransparencyAttrib::Mode transparency = TransparencyAttrib::M_none;
+  const RenderAttrib *tr_attrib = net_state->get_attrib(TransparencyAttrib::get_class_type());
+  if (tr_attrib != (const RenderAttrib *)NULL) {
+    const TransparencyAttrib *tra = DCAST(TransparencyAttrib, tr_attrib);
+    transparency = tra->get_mode();
+    has_transparency = true;
+  }
+  if (has_transparency && (egg_tex != (EggTexture *)NULL)) {
+    EggRenderMode::AlphaMode tex_trans = EggRenderMode::AM_unspecified;
+    switch (transparency) {
+      case TransparencyAttrib::M_none:
+        tex_trans = EggRenderMode::AM_off;
+        break;
+      case TransparencyAttrib::M_alpha:
+        if (has_depthwrite && (depthwrite == DepthWriteAttrib::M_off)) {
+            tex_trans = EggRenderMode::AM_blend_no_occlude;
+                has_depthwrite = false;
+        } else {
+          tex_trans = EggRenderMode::AM_blend;
+        }
+        break;
+      case TransparencyAttrib::M_multisample:
+        tex_trans = EggRenderMode::AM_ms;
+        break;
+      case TransparencyAttrib::M_multisample_mask:
+        tex_trans = EggRenderMode::AM_ms_mask;
+        break;
+      case TransparencyAttrib::M_binary:
+        tex_trans = EggRenderMode::AM_binary;
+        break;
+      case TransparencyAttrib::M_dual:
+        tex_trans = EggRenderMode::AM_dual;
+        break;
+      default:  // intentional fall-through
+      case TransparencyAttrib::M_notused:
+        break;
+    }
+    if (tex_trans != EggRenderMode::AM_unspecified) {
+      egg_tex->set_alpha_mode(tex_trans);
+    }
+  }
+
 
   Normalf normal;
   Colorf color;
@@ -405,12 +635,13 @@ recurse_nodes(const WorkingNodePath &node_path, EggGroupNode *egg_parent,
 //               were applied, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool BamToEgg::
-apply_node_properties(EggGroup *egg_group, PandaNode *node) {
+apply_node_properties(EggGroup *egg_group, PandaNode *node, bool allow_backstage) {
   bool any_applied = false;
 
-  if (node->is_overall_hidden()) {
+  if (node->is_overall_hidden() && allow_backstage) {
     // This node is hidden.  We'll go ahead and convert it, but we'll
     // put in the "backstage" flag to mean it's not real geometry.
+    // unless the caller wants to keep it (by setting allow_backstage to false)
     egg_group->add_object_type("backstage");
   }
 

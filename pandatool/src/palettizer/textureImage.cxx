@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -50,6 +46,8 @@ TextureImage() {
   _ever_read_image = false;
   _forced_grayscale = false;
   _alpha_bits = 0;
+  _mid_pixel_ratio = 0.0;
+  _is_cutout = false;
   _alpha_mode = EggRenderMode::AM_unspecified;
   _txa_wrap_u = EggTexture::WM_unspecified;
   _txa_wrap_v = EggTexture::WM_unspecified;
@@ -138,12 +136,17 @@ assign_groups() {
       total.make_union(total, (*ei)->get_complete_groups());
     }
 
+    // We don't count the "null" group for texture assignment.
+    total.remove_null();
+    if (total.empty()) {
+      break;
+    }
+
     // Now, find the group that will satisfy the most egg files.  If
     // two groups satisfy the same number of egg files, choose (a) the
     // most specific one, i.e. with the lowest dirname_level, or the
     // lowest dependency_level if the dirname_levels are equal, and
     // (b) the one that has the fewest egg files sharing it.
-    nassertv(!total.empty());
     PaletteGroups::iterator gi = total.begin();
     PaletteGroup *best = (*gi);
     int best_egg_count = compute_egg_count(best, needed_eggs);
@@ -896,7 +899,7 @@ write_source_pathnames(ostream &out, int indent_level) const {
 
   if (_is_cutout) {
     indent(out, indent_level)
-      << "Cutout image (ratio " << _mid_pixel_ratio << ")";
+      << "Cutout image (ratio " << (float)_mid_pixel_ratio << ")\n";
   }
 
   // Now write out the group assignments.
@@ -1200,7 +1203,11 @@ consider_alpha() {
       }
     }
 
-    _mid_pixel_ratio = (double)num_mid_pixels / (double)(source.get_x_size() * source.get_y_size());
+    int num_pixels = source.get_x_size() * source.get_y_size();
+    _mid_pixel_ratio = 0.0;
+    if (num_pixels != 0) {
+      _mid_pixel_ratio = (double)num_mid_pixels / (double)num_pixels;
+    }
   }
 
   _is_cutout = false;

@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -36,6 +32,27 @@ TypeHandle PaletteGroups::_type_handle;
 ////////////////////////////////////////////////////////////////////
 PaletteGroups::
 PaletteGroups() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PaletteGroups::Copy Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+PaletteGroups::
+PaletteGroups(const PaletteGroups &copy) :
+  _groups(copy._groups)
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PaletteGroups::operator =
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+void PaletteGroups::
+operator = (const PaletteGroups &copy) {
+  _groups = copy._groups;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -156,6 +173,25 @@ make_intersection(const PaletteGroups &a, const PaletteGroups &b) {
   }
 
   _groups.swap(i);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PaletteGroups::remove_null
+//       Access: Public
+//  Description: Removes the special "null" group from the set.  This
+//               is a special group that egg files may be assigned to,
+//               but which textures never are; it indicates that the
+//               egg file should not influence the palette assignment.
+////////////////////////////////////////////////////////////////////
+void PaletteGroups::
+remove_null() {
+  Groups::iterator gi;
+  for (gi = _groups.begin(); gi != _groups.end(); ++gi) {
+    if ((*gi)->get_name() == "null") {
+      _groups.erase(gi);
+      return;
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////

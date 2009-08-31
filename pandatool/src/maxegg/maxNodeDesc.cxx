@@ -5,21 +5,15 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://www.panda3d.org/license.txt .
-//
-// To contact the maintainers of this program write to
-// panda3d@yahoogroups.com .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "maxNodeDesc.h"
-#include "maxLogger.h"
-#define MTEC Logger::ST_MAP_ME_TO_APP_SPECIFIC_SYSTEM4
+#include "maxEgg.h"
 
 TypeHandle MaxNodeDesc::_type_handle;
 
@@ -79,7 +73,6 @@ from_INode(INode *max_node) {
         ((c->ClassID() == BIPSLAVE_CONTROL_CLASS_ID) ||
          (c->ClassID() == BIPBODY_CONTROL_CLASS_ID) ||
          (c->ClassID() == FOOTPRINT_CLASS_ID)))) {
-      Logger::Log( MTEC, Logger::SAT_MEDIUM_LEVEL, "Found a joint." );
       
       // This node is a joint.
       _joint_type = JT_node_joint;

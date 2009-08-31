@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -51,6 +47,7 @@ main(int argc, char *argv[]) {
   // Now look up $MAYA_LOCATION.  We insist that it be set and
   // pointing to an actual Maya installation.
   Filename maya_location = Filename::expand_from("$MAYA_LOCATION");
+  cerr << "MAYA_LOCATION: " << maya_location << endl;
   if (maya_location.empty()) {
     cerr << "$MAYA_LOCATION is not set!\n";
     exit(1);
@@ -59,12 +56,33 @@ main(int argc, char *argv[]) {
     cerr << "The directory referred to by $MAYA_LOCATION does not exist!\n";
     exit(1);
   }
+
+  // Reset maya_location to its full long name, since Maya seems to
+  // require that.
+  maya_location.make_canonical();
+  maya_location = Filename::from_os_specific(maya_location.to_os_long_name());
   
   // Look for OpenMaya.dll as a sanity check.
+#ifdef IS_OSX
+  Filename openMaya = Filename::dso_filename(Filename(maya_location, "MacOS/libOpenMaya.dylib"));
+  if (!openMaya.is_regular_file()) {
+    cerr << "Could not find $MAYA_LOCATION/MacOS/" << openMaya.get_basename() << "!\n";
+    exit(1); 
+  }
+
+#else  // IS_OSX
   Filename openMaya = Filename::dso_filename(Filename(maya_location, "bin/OpenMaya.so"));
   if (!openMaya.is_regular_file()) {
     cerr << "Could not find $MAYA_LOCATION/bin/" << Filename(openMaya.get_basename()).to_os_specific() << "!\n";
     exit(1);
+  }
+#endif
+
+  // Re-set MAYA_LOCATION to its properly sanitized form.
+  {
+    string putenv_str = "MAYA_LOCATION=" + maya_location.to_os_specific();
+    char *putenv_cstr = strdup(putenv_str.c_str());
+    putenv(putenv_cstr);
   }
 
   // Now set PYTHONHOME & PYTHONPATH.  Maya2008 requires this to be
@@ -84,6 +102,51 @@ main(int argc, char *argv[]) {
     }
   }
 
+  // Also put the Maya bin directory on the PATH.
+  Filename bin = Filename(maya_location, "bin");
+  if (bin.is_directory()) {
+    char *path = getenv("PATH");
+    if (path == NULL) {
+      path = "";
+    }
+#ifdef WIN32
+    string sep = ";";
+#else
+    string sep = ":";
+#endif
+    string putenv_str = "PATH=" + bin.to_os_specific() + sep + path;
+    char *putenv_cstr = strdup(putenv_str.c_str());
+    putenv(putenv_cstr);
+  }
+
+#ifdef IS_OSX
+  // And on DYLD_LIBRARY_PATH.
+  if (bin.is_directory()) {
+    char *path = getenv("DYLD_LIBRARY_PATH");
+    if (path == NULL) {
+      path = "";
+    }
+    string sep = ":";
+    string putenv_str = "DYLD_LIBRARY_PATH=" + bin.to_os_specific() + sep + path;
+    char *putenv_cstr = strdup(putenv_str.c_str());
+    putenv(putenv_cstr);
+  }
+
+#elif !defined(_WIN32)
+  // Linux (or other non-Windows OS) gets it added to LD_LIBRARY_PATH.
+  if (bin.is_directory()) {
+    char *path = getenv("LD_LIBRARY_PATH");
+    if (path == NULL) {
+      path = "";
+    }
+    string sep = ":";
+    string putenv_str = "LD_LIBRARY_PATH=" + bin.to_os_specific() + sep + path;
+    char *putenv_cstr = strdup(putenv_str.c_str());
+    putenv(putenv_cstr);
+  }
+
+#endif // IS_OSX
+
   // Now that we have set up the environment variables properly, chain
   // to the actual maya2egg_bin (or whichever) executable.
 
@@ -101,9 +164,17 @@ main(int argc, char *argv[]) {
                               &process_info);
   if (result) {
     WaitForSingleObject(process_info.hProcess, INFINITE);
+    DWORD exit_code = 0;
+
+    if (GetExitCodeProcess(process_info.hProcess, &exit_code)) {
+      if (exit_code != 0) {
+        cerr << "Program exited with status " << exit_code << "\n";
+      }
+    }
+
     CloseHandle(process_info.hProcess);
     CloseHandle(process_info.hThread);
-    exit(0);
+    exit(exit_code);
   }
   cerr << "Couldn't execute " << command << ": " << GetLastError() << "\n";
 

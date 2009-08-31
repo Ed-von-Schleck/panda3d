@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -43,6 +39,7 @@ TextureProperties() {
   _keep_format = false;
   _minfilter = EggTexture::FT_unspecified;
   _magfilter = EggTexture::FT_unspecified;
+  _quality_level = EggTexture::QL_unspecified;
   _anisotropic_degree = 0;
   _color_type = (PNMFileType *)NULL;
   _alpha_type = (PNMFileType *)NULL;
@@ -61,6 +58,7 @@ TextureProperties(const TextureProperties &copy) :
   _keep_format(copy._keep_format),
   _minfilter(copy._minfilter),
   _magfilter(copy._magfilter),
+  _quality_level(copy._quality_level),
   _anisotropic_degree(copy._anisotropic_degree),
   _color_type(copy._color_type),
   _alpha_type(copy._alpha_type),
@@ -82,6 +80,7 @@ operator = (const TextureProperties &copy) {
   _keep_format = copy._keep_format;
   _minfilter = copy._minfilter;
   _magfilter = copy._magfilter;
+  _quality_level = copy._quality_level;
   _anisotropic_degree = copy._anisotropic_degree;
   _color_type = copy._color_type;
   _alpha_type = copy._alpha_type;
@@ -105,6 +104,7 @@ clear_basic() {
 
   _minfilter = EggTexture::FT_unspecified;
   _magfilter = EggTexture::FT_unspecified;
+  _quality_level = EggTexture::QL_unspecified;
   _anisotropic_degree = 0;
 }
 
@@ -223,6 +223,7 @@ get_string() const {
   result += get_filter_string(_magfilter);
   result += get_anisotropic_degree_string(_anisotropic_degree);
   result += get_type_string(_color_type, _alpha_type);
+  result += get_quality_level_string(_quality_level);
   return result;
 }
 
@@ -249,6 +250,7 @@ update_properties(const TextureProperties &other) {
 
   _minfilter = union_filter(_minfilter, other._minfilter);
   _magfilter = union_filter(_magfilter, other._magfilter);
+  _quality_level = union_quality_level(_quality_level, other._quality_level);
 
   _anisotropic_degree = other._anisotropic_degree;
 
@@ -494,6 +496,7 @@ update_egg_tex(EggTexture *egg_tex) const {
   egg_tex->set_format(_format);
   egg_tex->set_minfilter(_minfilter);
   egg_tex->set_magfilter(_minfilter);
+  egg_tex->set_quality_level(_quality_level);
   egg_tex->set_anisotropic_degree(_anisotropic_degree);
 }
 
@@ -510,6 +513,7 @@ egg_properties_match(const TextureProperties &other) const {
   return (_format == other._format &&
           _minfilter == other._minfilter &&
           _magfilter == other._magfilter &&
+          _quality_level == other._quality_level &&
           _anisotropic_degree == other._anisotropic_degree);
 }
 
@@ -528,6 +532,9 @@ operator < (const TextureProperties &other) const {
   }
   if (_magfilter != other._magfilter) {
     return (int)_magfilter < (int)other._magfilter;
+  }
+  if (_quality_level != other._quality_level) {
+    return (int)_quality_level < (int)other._quality_level;
   }
   if (_anisotropic_degree != other._anisotropic_degree) {
     return _anisotropic_degree < other._anisotropic_degree;
@@ -553,6 +560,7 @@ operator == (const TextureProperties &other) const {
   return (_format == other._format &&
           _minfilter == other._minfilter &&
           _magfilter == other._magfilter &&
+          _quality_level == other._quality_level &&
           _anisotropic_degree == other._anisotropic_degree &&
           _color_type == other._color_type &&
           (_color_type == (PNMFileType *)NULL ||
@@ -648,26 +656,26 @@ get_format_string(EggTexture::Format format) {
 string TextureProperties::
 get_filter_string(EggTexture::FilterType filter_type) {
   switch (filter_type) {
-      case EggTexture::FT_unspecified:
-        return "u";
-
-      case EggTexture::FT_nearest:
-        return "n";
-
-      case EggTexture::FT_linear:
-        return "l";
-
-      case EggTexture::FT_nearest_mipmap_nearest:
-        return "m1";
-
-      case EggTexture::FT_linear_mipmap_nearest:
-        return "m2";
-
-      case EggTexture::FT_nearest_mipmap_linear:
-        return "m3";
-
-      case EggTexture::FT_linear_mipmap_linear:
-        return "m";
+  case EggTexture::FT_unspecified:
+    return "u";
+    
+  case EggTexture::FT_nearest:
+    return "n";
+    
+  case EggTexture::FT_linear:
+    return "l";
+    
+  case EggTexture::FT_nearest_mipmap_nearest:
+    return "m1";
+    
+  case EggTexture::FT_linear_mipmap_nearest:
+    return "m2";
+    
+  case EggTexture::FT_nearest_mipmap_linear:
+    return "m3";
+    
+  case EggTexture::FT_linear_mipmap_linear:
+    return "m";
   }
 
   return "x";
@@ -685,6 +693,30 @@ get_anisotropic_degree_string(int aniso_degree) {
   } else {
     return string("an") + format_string(aniso_degree);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureProperties::get_quality_level_string
+//       Access: Private, Static
+//  Description: Returns a short string describing the quality level.
+////////////////////////////////////////////////////////////////////
+string TextureProperties::
+get_quality_level_string(EggTexture::QualityLevel quality_level) {
+  switch (quality_level) {
+  case EggTexture::QL_unspecified:
+  case EggTexture::QL_default:
+    return "";
+
+  case EggTexture::QL_fastest:
+    return "f";
+
+  case EggTexture::QL_normal:
+    return "n";
+
+  case EggTexture::QL_best:
+    return "b";
+  }
+  return "";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -760,6 +792,21 @@ union_filter(EggTexture::FilterType a, EggTexture::FilterType b) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureProperties::union_quality_level
+//       Access: Private, Static
+//  Description: Returns the EggTexture quality level which is the
+//               more specific of the two.
+////////////////////////////////////////////////////////////////////
+EggTexture::QualityLevel TextureProperties::
+union_quality_level(EggTexture::QualityLevel a, EggTexture::QualityLevel b) {
+  if ((int)a < (int)b) {
+    return b;
+  } else {
+    return a;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureProperties::register_with_read_factory
 //       Access: Public, Static
 //  Description: Registers the current object as something that can be
@@ -790,6 +837,7 @@ write_datagram(BamWriter *writer, Datagram &datagram) {
   datagram.add_bool(_keep_format);
   datagram.add_int32((int)_minfilter);
   datagram.add_int32((int)_magfilter);
+  datagram.add_int32((int)_quality_level);
   datagram.add_int32(_anisotropic_degree);
   writer->write_pointer(datagram, _color_type);
   writer->write_pointer(datagram, _alpha_type);
@@ -868,6 +916,9 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   }
   _minfilter = (EggTexture::FilterType)scan.get_int32();
   _magfilter = (EggTexture::FilterType)scan.get_int32();
+  if (Palettizer::_read_pi_version >= 18) {
+    _quality_level = (EggTexture::QualityLevel)scan.get_int32();
+  }
   _anisotropic_degree = scan.get_int32();
 
   manager->read_pointer(scan);  // _color_type

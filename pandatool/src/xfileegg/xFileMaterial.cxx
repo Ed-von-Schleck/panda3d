@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -103,7 +99,7 @@ void XFileMaterial::
 apply_to_egg(EggPrimitive *egg_prim, XFileToEggConverter *converter) {
   // Is there a texture?
   if (_has_texture) {
-    Filename texture = converter->convert_texture_path(_texture);
+    Filename texture = converter->convert_model_path(_texture);
     EggTexture temp("", texture);
     EggTexture *egg_tex = converter->create_unique_texture(temp);
     egg_prim->set_texture(egg_tex);
@@ -116,7 +112,6 @@ apply_to_egg(EggPrimitive *egg_prim, XFileToEggConverter *converter) {
     EggMaterial temp("");
     temp.set_diff(_face_color);
     if (got_spec) {
-      cerr << "shininess = " << _power << "\n";
       temp.set_shininess(_power);
       temp.set_spec(Colorf(_specular_color[0], _specular_color[1],
                            _specular_color[2], 1.0));

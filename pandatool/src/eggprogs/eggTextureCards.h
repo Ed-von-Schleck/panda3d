@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -43,6 +39,8 @@ protected:
   virtual bool handle_args(Args &args);
 
   static bool dispatch_wrap_mode(const string &opt, const string &arg, void *var);
+  static bool dispatch_filter_type(const string &opt, const string &arg, void *var);
+  static bool dispatch_quality_level(const string &opt, const string &arg, void *var);
   static bool dispatch_format(const string &opt, const string &arg, void *var);
 
 private:
@@ -61,6 +59,13 @@ public:
   Colorf _polygon_color;
   vector_string _texture_names;
   EggTexture::WrapMode _wrap_mode;
+  EggTexture::WrapMode _wrap_u;
+  EggTexture::WrapMode _wrap_v;
+  EggTexture::FilterType _minfilter;
+  EggTexture::FilterType _magfilter;
+  bool _got_aniso_degree;
+  int _aniso_degree;
+  EggTexture::QualityLevel _quality_level;
   EggTexture::Format _format;
   EggTexture::Format _format_1, _format_2, _format_3, _format_4;
   bool _apply_bface;

@@ -4,22 +4,20 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
 #include "eggToMaya.h"
 #include "mayaEggLoader.h"
 #include "mayaApi.h"
-#include "pystub.h"
+#ifdef _WIN32
+  #include "pystub.h"
+#endif
 
 // We must define this to prevent Maya from doubly-declaring its
 // MApiVersion string in this file as well as in libmayaegg.
@@ -97,12 +95,30 @@ run() {
     exit(1);
   }
 
+  // [gjeon] since maya's internal unit is fixed to cm
+  // and when we can't change UI unit without affecting data
+  // all distance data is converted to cm
+  // we need to convert them back to proper output unit user provided here
+  // along with UI unit
+  maya->set_units(_output_units);
+
+  if (_output_units != DU_centimeters && _output_units != DU_invalid) {
+    nout << "Converting from centimeters"
+         << " to " << format_long_unit(_output_units) << "\n";
+  }
+
   // Now convert the data.
   if (!MayaLoadEggData(_data, true, _convert_model, _convert_anim, _respect_normals)) {
     nout << "Unable to convert egg file.\n";
     exit(1);
   }
 
+  if (!maya->write(_output_filename)) {
+    status.perror("Could not save file");
+    exit(1);
+  }
+    
+  /*
   // And write out the resulting Maya file.
   string os_specific = _output_filename.to_os_generic();
   const char *file_type = NULL;
@@ -114,14 +130,19 @@ run() {
     status.perror("Could not save file");
     exit(1);
   }
+  */
 }
 
 int main(int argc, char *argv[]) {
+  // We don't want pystub on linux, since it gives problems with Maya's python.
+#ifdef _WIN32
   // A call to pystub() to force libpystub.so to be linked in.
   pystub();
+#endif
 
   EggToMaya prog;
   prog.parse_command_line(argc, argv);
   prog.run();
   return 0;
 }
+

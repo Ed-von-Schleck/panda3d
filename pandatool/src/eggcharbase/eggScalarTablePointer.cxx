@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -30,6 +26,21 @@ TypeHandle EggScalarTablePointer::_type_handle;
 EggScalarTablePointer::
 EggScalarTablePointer(EggObject *object) {
   _data = DCAST(EggSAnimData, object);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggScalarTablePointer::get_frame_rate
+//       Access: Public, Virtual
+//  Description: Returns the stated frame rate of this particular
+//               joint, or 0.0 if it doesn't state.
+////////////////////////////////////////////////////////////////////
+double EggScalarTablePointer::
+get_frame_rate() const {
+  if (_data == (EggSAnimData *)NULL || !_data->has_fps()) {
+    return 0.0;
+  } else {
+    return _data->get_fps();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -85,4 +96,17 @@ get_frame(int n) const {
 
   nassertr(n >= 0 && n < get_num_frames(), 0.0);
   return _data->get_value(n);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggScalarTablePointer::set_name
+//       Access: Public, Virtual
+//  Description: Applies the indicated name change to the egg file.
+////////////////////////////////////////////////////////////////////
+void EggScalarTablePointer::
+set_name(const string &name) {
+  // Actually, let's not rename the slider table (yet), because we
+  // haven't written the code to rename all of the morph targets.
+
+  //  _data->set_name(name);
 }

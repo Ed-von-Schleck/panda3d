@@ -28,7 +28,7 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'superFlattenShip','HotkeyBreaker','logMethodCalls','GoldenRatio',
 'GoldenRectangle', 'pivotScalar', 'rad90', 'rad180', 'rad270', 'rad360',
 'nullGen', 'loopGen', 'makeFlywheelGen', 'flywheel', 'choice',
-'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index', ]
+'printStack', 'printReverseStack', 'listToIndex2item', 'listToItem2index', 'formatTimeCompact']
 
 import types
 import string
@@ -2901,14 +2901,7 @@ def superFlattenShip(ship):
     #PHASE 3: stop rocking task
     taskMgr.remove("shipRocking-%d"%(ship.getDoId()))
 
-    #PHASE 4: kill lamp effects
-    from pirates.shipparts.DistributedShipDecor import DistributedShipDecor
-    for DO in base.cr.doId2do.values():
-        if(type(DO) == DistributedShipDecor):
-            if (hasattr(DO.prop, 'lanternGlowEffect')):
-                DO.prop.lanternGlowEffect.destroy()
-            
-    #PHASE 5: flatten strong!
+    #PHASE 4: flatten strong!
     return ship.flattenStrong()
 
 def exceptionLogged(append=True):
@@ -3313,6 +3306,26 @@ def recordFunctorCreationStacks():
             Functor = recordCreationStackStr(Functor)
             Functor._functorCreationStacksRecorded = True
             Functor.__call__ = Functor._exceptionLoggedCreationStack__call__
+
+def formatTimeCompact(seconds):
+    # returns string in format '1d3h22m43s'
+    result = ''
+    a = int(seconds)
+    seconds = a % 60
+    a /= 60
+    if a > 0:
+        minutes = a % 60
+        a /= 60
+        if a > 0:
+            hours = a % 24
+            a /= 24
+            if a > 0:
+                days = a
+                result += '%sd' % days
+            result += '%sh' % hours
+        result += '%sm' % minutes
+    result += '%ss' % seconds
+    return result
 
 import __builtin__
 __builtin__.Functor = Functor

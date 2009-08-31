@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -55,10 +51,9 @@ XFileToEgg() :
 
   add_option
     ("fr", "fps", 0,
-     "Specify the frame rate of the resulting animation.  The animation "
-     "tables should have one entry per frame, rather than one per "
-     "keyframe; the time component of the animation tables is ignored "
-     "and the frames are played sequentially at the specified frame rate.",
+     "Specify the frame rate of the resulting animation.  If this is "
+     "omitted or 0, the frame rate is inferred from the file itself; but "
+     "note that the file must contain evenly-spaced keyframes.",
      &XFileToEgg::dispatch_double, NULL, &_frame_rate);
 
   add_option
@@ -87,7 +82,7 @@ XFileToEgg() :
      "Specify the coordinate system of the input " + _format_name +
      " file.  Normally, this is y-up-left.");
 
-  _frame_rate = 30.0;
+  _frame_rate = 0.0;
   _coordinate_system = CS_yup_left;
 }
 

@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -183,6 +179,27 @@ expose(EggGroup::DCSType dcs_type) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggJointNodePointer::apply_default_pose
+//       Access: Public, Virtual
+//  Description: Applies the pose from the indicated frame of the
+//               indicated source joint as the initial pose for
+//               this joint.
+////////////////////////////////////////////////////////////////////
+void EggJointNodePointer::
+apply_default_pose(EggJointPointer *source_joint, int frame) {
+  if (_joint != (EggGroup *)NULL) {
+    LMatrix4d pose;
+    if (frame >= 0 && frame < source_joint->get_num_frames()) {
+      pose = source_joint->get_frame(frame);
+    } else {
+      pose = get_frame(0);
+    }
+    _joint->clear_default_pose();
+    _joint->modify_default_pose().add_matrix4(pose);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggJointNodePointer::has_vertices
 //       Access: Public, Virtual
 //  Description: Returns true if there are any vertices referenced by
@@ -211,4 +228,14 @@ make_new_joint(const string &name) {
   new_joint->set_group_type(EggGroup::GT_joint);
   _joint->add_child(new_joint);
   return new EggJointNodePointer(new_joint);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggJointNodePointer::set_name
+//       Access: Public, Virtual
+//  Description: Applies the indicated name change to the egg file.
+////////////////////////////////////////////////////////////////////
+void EggJointNodePointer::
+set_name(const string &name) {
+  _joint->set_name(name);
 }

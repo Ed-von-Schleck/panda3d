@@ -4,15 +4,11 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
-// All use of this software is subject to the terms of the Panda 3d
-// Software license.  You should have received a copy of this license
-// along with this source code; you will also find a current copy of
-// the license at http://etc.cmu.edu/panda3d/docs/license/ .
-//
-// To contact the maintainers of this program write to
-// panda3d-general@lists.sourceforge.net .
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -120,6 +116,21 @@ extend_to(int model_index, int num_frames) const {
   EggBackPointer *back = get_model(model_index);
   nassertv(back != (EggBackPointer *)NULL);
   back->extend_to(num_frames);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggComponentData::get_frame_rate
+//       Access: Public, Virtual
+//  Description: Returns the number of frames of animation for this
+//               particular component in the indicated model.
+////////////////////////////////////////////////////////////////////
+double EggComponentData::
+get_frame_rate(int model_index) const {
+  EggBackPointer *back = get_model(model_index);
+  if (back == (EggBackPointer *)NULL) {
+    return 0.0;
+  }
+  return back->get_frame_rate();
 }
 
 ////////////////////////////////////////////////////////////////////
