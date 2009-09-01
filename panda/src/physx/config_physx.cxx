@@ -1,5 +1,5 @@
-// Filename: config_physics.cxx
-// Created by:  pratt (Apr 18, 2006)
+// Filename: physxManager.h
+// Created by:  enn0x (01Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -13,34 +13,17 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "config_physx.h"
+#include "pandaSystem.h"
 
-#include "dconfig.h"
+//#include "physxScene.h"
+//#...
 
-#include "physxActorNode.h"
-#include "physxJoint.h"
-#include "physxD6Joint.h"
-#include "physxShape.h"
-#include "physxBoxShape.h"
-#include "physxCapsuleShape.h"
-#include "physxPlaneShape.h"
-#include "physxSphereShape.h"
-
-ConfigureDef(config_physx);
-NotifyCategoryDef(physx, "");
+Configure(config_physx);
+NotifyCategoryDef(physx,"");
 
 ConfigureFn(config_physx) {
   init_libphysx();
 }
-
-ConfigVariableBool physx_want_visual_debugger
-("physx-want-visual-debugger", false);
-
-ConfigVariableString physx_visual_debugger_host
-("physx-visual-debugger-host", "localhost");
-
-ConfigVariableInt physx_visual_debugger_port
-("physx-visual-debugger-port", 5425);
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: init_libphysx
@@ -58,12 +41,10 @@ init_libphysx() {
   }
   initialized = true;
 
-  PhysxActorNode::init_type();
-  PhysxJoint::init_type();
-  PhysxD6Joint::init_type();
-  PhysxShape::init_type();
-  PhysxBoxShape::init_type();
-  PhysxCapsuleShape::init_type();
-  PhysxPlaneShape::init_type();
-  PhysxSphereShape::init_type();
+  //PhysxScene::init_type();
+  //...
+
+  PandaSystem *ps = PandaSystem::get_global_ptr();
+  ps->add_system( "PhysX" );
 }
+
