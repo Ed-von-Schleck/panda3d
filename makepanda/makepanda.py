@@ -47,7 +47,7 @@ PkgListSet(MAYAVERSIONS + MAXVERSIONS + DXVERSIONS + [
   "PYTHON","ZLIB","PNG","JPEG","TIFF","VRPN","TINYXML",
   "FMODEX","OPENAL","NVIDIACG","OPENSSL","FREETYPE",
   "FFTW","ARTOOLKIT","SQUISH","ODE","DIRECTCAM","NPAPI",
-  "OPENCV","FFMPEG","FCOLLADA","PANDATOOL"
+  "OPENCV","FFMPEG","FCOLLADA","PANDATOOL","PHYSX"
 ])
 
 CheckPandaSourceTree()
@@ -217,10 +217,12 @@ SdkLocateMacOSX()
 SdkLocatePython()
 SdkLocateVisualStudio()
 SdkLocateMSPlatform()
+SdkLocatePhysX()
 
 SdkAutoDisableDirectX()
 SdkAutoDisableMaya()
 SdkAutoDisableMax()
+SdkAutoDisablePhysX()
 
 ########################################################################
 ##
@@ -383,6 +385,15 @@ if (COMPILER=="MSVC"):
             LibName(pkg, SDK[pkg] +  '/lib/mesh.lib')
             LibName(pkg, SDK[pkg] +  '/lib/maxutil.lib')
             LibName(pkg, SDK[pkg] +  '/lib/paramblk2.lib')
+    if (PkgSkip("PHYSX")==0):
+        LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/PhysXLoader.lib")
+        LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/NxCharacter.lib")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/NxCharacter/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/NxExtensions/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/Foundation/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/Cooking/include")
 
 if (COMPILER=="LINUX"):
     if (PkgSkip("PYTHON")==0):
@@ -512,6 +523,16 @@ if (COMPILER=="LINUX"):
             LibName(pkg, "-lIMFbase")
             if (sys.platform == "darwin"):
                 LibName(pkg, "-dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
+    if (PkgSkip("PHYSX")==0):
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/NxCharacter/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/NxExtensions/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/Foundation/include")
+        IncDirectory("PHYSX", SDK["PHYSX"] + "/Cooking/include")
+        LibDirectory("PHYSX", SDK["PHYSXLIBS"])
+        LibName("PHYSX", "-lPhysXLoader")
+        LibName("PHYSX", "-lNxCharacter")
 
 DefSymbol("WITHINPANDA", "WITHIN_PANDA", "1")
 IncDirectory("ALWAYS", GetOutputDir()+"/tmp")
@@ -1150,6 +1171,7 @@ DTOOL_CONFIG=[
     ("HAVE_FCOLLADA",                  'UNDEF',                  'UNDEF'),
     ("HAVE_TINYXML",                   'UNDEF',                  'UNDEF'),
     ("HAVE_OPENAL_FRAMEWORK",          'UNDEF',                  'UNDEF'),
+    ("HAVE_PHYSX",                     'UNDEF',                  'UNDEF'),
     ("PRC_SAVE_DESCRIPTIONS",          '1',                      '1'),
 ]
 
@@ -1622,6 +1644,10 @@ if (PkgSkip("PANDATOOL")==0):
     CopyAllHeaders('pandatool/src/vrmlprogs')
     CopyAllHeaders('pandatool/src/win-stats')
     CopyAllHeaders('pandatool/src/xfileprogs')
+
+if (PkgSkip("PHYSX")==0):
+  CopyAllHeaders('panda/src/physx')
+  CopyAllHeaders('panda/metalibs/pandaphysx')
 
 ########################################################################
 # 
@@ -2850,6 +2876,37 @@ if (PkgSkip("ODE")==0):
   TargetAdd('libpandaode.dll', opts=['WINUSER', 'ODE'])
 
 #
+# DIRECTORY: panda/src/physx/
+#
+
+if (PkgSkip("PHYSX")==0):
+  OPTS=['DIR:panda/src/physx', 'BUILDING:PANDAPHYSX', 'PHYSX']
+  TargetAdd('physx_composite.obj', opts=OPTS, input='physx_composite.cxx')
+  IGATEFILES=GetDirectoryContents('panda/src/physx', ["*.h", "*_composite.cxx"])
+  TargetAdd('libpandaphysx.in', opts=OPTS, input=IGATEFILES)
+  TargetAdd('libpandaphysx.in', opts=['IMOD:pandaphysx', 'ILIB:libpandaphysx', 'SRCDIR:panda/src/physx'])
+  TargetAdd('libpandaphysx_igate.obj', input='libpandaphysx.in', opts=["DEPENDENCYONLY"])
+
+#
+# DIRECTORY: panda/metalibs/pandaphysx/
+#
+
+if (PkgSkip("PHYSX")==0):
+  OPTS=['DIR:panda/metalibs/pandaphysx', 'BUILDING:PANDAPHYSX', 'PHYSX']
+  TargetAdd('pandaphysx_pandaphysx.obj', opts=OPTS, input='pandaphysx.cxx')
+  
+  TargetAdd('libpandaphysx_module.obj', input='libpandaphysx.in')
+  TargetAdd('libpandaphysx_module.obj', opts=OPTS)
+  TargetAdd('libpandaphysx_module.obj', opts=['IMOD:pandaphysx', 'ILIB:libpandaphysx'])
+  
+  TargetAdd('libpandaphysx.dll', input='pandaphysx_pandaphysx.obj')
+  TargetAdd('libpandaphysx.dll', input='libpandaphysx_module.obj')
+  TargetAdd('libpandaphysx.dll', input='physx_composite.obj')
+  TargetAdd('libpandaphysx.dll', input='libpandaphysx_igate.obj')
+  TargetAdd('libpandaphysx.dll', input=COMMON_PANDA_LIBS)
+  TargetAdd('libpandaphysx.dll', opts=['WINUSER', 'PHYSX'])
+
+#
 # DIRECTORY: panda/src/physics/
 #
 
@@ -3974,6 +4031,8 @@ if (PkgSkip("PYTHON")==0):
   TargetAdd('PandaModules.py', input='libpandaegg.dll')
   if (PkgSkip("ODE")==0):
     TargetAdd('PandaModules.py', input='libpandaode.dll')
+  if (PkgSkip("PHYSX")==0):
+    TargetAdd('PandaModules.py', input='libpandaphysx.dll')
 
 #
 # Freeze whatever we need to freeze.
