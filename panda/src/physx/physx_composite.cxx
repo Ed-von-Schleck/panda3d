@@ -1,5 +1,8 @@
 
 #include "config_physx.cxx"
+#include "physxManager.cxx"
+
+/*
 #include "physxActorDesc.cxx"
 #include "physxActorNode.cxx"
 #include "physxBodyDesc.cxx"
@@ -19,7 +22,6 @@
 #include "physxJointHandler.cxx"
 #include "physxJointLimitSoftDesc.cxx"
 #include "physxJointLimitSoftPairDesc.cxx"
-#include "physxManager.cxx"
 #include "physxMaterial.cxx"
 #include "physxMaterialDesc.cxx"
 #include "physxPlane.cxx"
@@ -37,3 +39,4 @@
 #include "physxSphereShapeDesc.cxx"
 #include "physxTriggerHandler.cxx"
 #include "physxUtilLib.cxx"
+*/
