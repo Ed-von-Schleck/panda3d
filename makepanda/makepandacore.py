@@ -977,6 +977,9 @@ def SdkLocateMacOSX():
     else:
         exit("Could not find any MacOSX SDK")
 
+def SdkLocatePhysX():
+    pass # TODO
+
 ########################################################################
 ##
 ## SDK Auto-Disables
@@ -1016,6 +1019,12 @@ def SdkAutoDisableMax():
                     WARNINGS.append("The registry does not appear to contain a pointer to "+version)
                 WARNINGS.append("I have automatically added this command-line option: --no-"+version.lower())
             PkgDisable(version)
+
+def SdkAutoDisablePhysX():
+    if ("PHYSX" not in SDK) and (PkgSkip("PHYSX")==0):
+        PkgDisable("PHYSX")
+        WARNINGS.append("I cannot locate SDK for PhysX")
+        WARNINGS.append("I have automatically added this command-line option: --no-physx")
 
 ########################################################################
 ##
