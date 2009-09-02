@@ -1171,7 +1171,6 @@ DTOOL_CONFIG=[
     ("HAVE_FCOLLADA",                  'UNDEF',                  'UNDEF'),
     ("HAVE_TINYXML",                   'UNDEF',                  'UNDEF'),
     ("HAVE_OPENAL_FRAMEWORK",          'UNDEF',                  'UNDEF'),
-    ("HAVE_PHYSX",                     'UNDEF',                  'UNDEF'),
     ("PRC_SAVE_DESCRIPTIONS",          '1',                      '1'),
 ]
 
@@ -1646,8 +1645,8 @@ if (PkgSkip("PANDATOOL")==0):
     CopyAllHeaders('pandatool/src/xfileprogs')
 
 if (PkgSkip("PHYSX")==0):
-  CopyAllHeaders('panda/src/physx')
-  CopyAllHeaders('panda/metalibs/pandaphysx')
+    CopyAllHeaders('panda/src/physx')
+    CopyAllHeaders('panda/metalibs/pandaphysx')
 
 ########################################################################
 # 
