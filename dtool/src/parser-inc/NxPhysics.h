@@ -1,4 +1,4 @@
-// Filename: Python.h
+// Filename: NxPhysics.h
 // Created by:  enn0x (02Sep09)
 //
 ////////////////////////////////////////////////////////////////////
@@ -128,7 +128,6 @@ class NxI32;
 class NxReal;
 class NxF32;
 class NxVec3;
-class NxExtendedVec3;
 class NxMat33;
 class NxMat34;
 class NxQuat;
