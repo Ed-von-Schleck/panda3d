@@ -1,4 +1,4 @@
-// Filename: physxManager.h
+// Filename: physxManager.cxx
 // Created by:  enn0x (01Sep09)
 //
 ////////////////////////////////////////////////////////////////////
@@ -54,6 +54,16 @@ PhysxManager::
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function : is_hardware_available
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxManager::
+is_hardware_available() {
+  return _sdk->getHWVersion() != NX_HW_VERSION_NONE;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxManager::get_sdk_error_string
 //       Access: Private
 //  Description: Returns the NxSDKCreateError enum as string.
@@ -104,6 +114,7 @@ get_error_code_string(NxErrorCode code) {
   case NXE_DB_INFO:            return "DB_INFO"; break;
   case NXE_DB_WARNING:         return "DB_WARNING"; break;
   case NXE_DB_PRINT:           return "DB_PRINT"; break;
+  default:                     return ""; break;
   }
 }
 

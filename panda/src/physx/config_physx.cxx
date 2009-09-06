@@ -1,4 +1,4 @@
-// Filename: physxManager.h
+// Filename: config_physx.cxx
 // Created by:  enn0x (01Sep09)
 //
 ////////////////////////////////////////////////////////////////////
@@ -15,8 +15,7 @@
 #include "config_physx.h"
 #include "pandaSystem.h"
 
-//#include "physxScene.h"
-//#...
+#include "physxSceneDesc.h"
 
 Configure(config_physx);
 NotifyCategoryDef(physx,"");
@@ -41,8 +40,7 @@ init_libphysx() {
   }
   initialized = true;
 
-  //PhysxScene::init_type();
-  //...
+  PhysxSceneDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system( "PhysX" );
