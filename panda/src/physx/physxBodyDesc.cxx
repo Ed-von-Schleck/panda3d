@@ -1,4 +1,4 @@
-// Filename: physxSceneDesc.cxx
+// Filename: physxBodyDesc.cxx
 // Created by:  enn0x (05Sep09)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,20 +12,18 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "physxSceneDesc.h"
-#include "physxManager.h"
+#include "physxBodyDesc.h"
 
-TypeHandle PhysxSceneDesc::_type_handle;
+TypeHandle PhysxBodyDesc::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSceneDesc::set_gravity
+//     Function: PhysxBodyDesc::set_mass
 //       Access: Published
-//  Description: Sets the gravity vector.
+//  Description: Set the mass of body. 
 ////////////////////////////////////////////////////////////////////
-void PhysxSceneDesc::
-set_gravity(const LVector3f &gravity) {
+void PhysxBodyDesc::
+set_mass(float mass) {
 
-  nassertv_always(!gravity.is_nan());
-  _desc.gravity = PhysxManager::vec3_to_nxVec3(gravity);
+  _desc.mass = mass;
 }
 

@@ -1,5 +1,5 @@
-
 #include "config_physx.cxx"
 #include "physxManager.cxx"
+#include "physxActorDesc.cxx"
+#include "physxBodyDesc.cxx"
 #include "physxSceneDesc.cxx"
-

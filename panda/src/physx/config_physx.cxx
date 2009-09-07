@@ -15,6 +15,8 @@
 #include "config_physx.h"
 #include "pandaSystem.h"
 
+#include "physxActorDesc.h"
+#include "physxBodyDesc.h"
 #include "physxSceneDesc.h"
 
 Configure(config_physx);
@@ -40,6 +42,8 @@ init_libphysx() {
   }
   initialized = true;
 
+  PhysxActorDesc::init_type();
+  PhysxBodyDesc::init_type();
   PhysxSceneDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();

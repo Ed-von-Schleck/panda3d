@@ -14,14 +14,23 @@
   #define SOURCES \
     NoMinMax.h \
     config_physx.h \
+    physxActorDesc.I physxActorDesc.h \
+    physxBodyDesc.I physxBodyDesc.h \
+    physxSceneDesc.I physxSceneDesc.h \
     physxManager.I physxManager.h \
 
   #define INCLUDED_SOURCES
+    physxActorDesc.cxx \
+    physxBodyDesc.cxx \
+    physxSceneDesc.cxx \
     physxManager.cxx \
 
   #define INSTALL_HEADERS \
     NoMinMax.h \
     config_physx.h
+    physxActorDesc.I physxActorDesc.h \
+    physxBodyDesc.I physxBodyDesc.h \
+    physxSceneDesc.I physxSceneDesc.h \
     physxManager.I physxManager.h \
 
   #define IGATESCAN all

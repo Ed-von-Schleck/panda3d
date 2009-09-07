@@ -1,4 +1,4 @@
-// Filename: physxSceneDesc.h
+// Filename: physxActorDesc.h
 // Created by:  enn0x (05Sep09)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,39 +12,38 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXSCENEDESC_H
-#define PHYSXSCENEDESC_H
+#ifndef PHYSXACTORDESC_H
+#define PHYSXACTORDESC_H
 
 #include "pandabase.h"
 #include "typedReferenceCount.h"
-
-#include <lvector3.h>
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysSceneDesc
+//       Class : PhysActorDesc
 // Description : 
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSceneDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxActorDesc : public TypedReferenceCount {
 
 PUBLISHED:
-  INLINE PhysxSceneDesc();
-  INLINE ~PhysxSceneDesc();
+  INLINE PhysxActorDesc();
+  INLINE ~PhysxActorDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  void set_gravity(const LVector3f &gravity);
+  void set_name(const char *name);
+  void set_density(float density);
 
 public:
-  INLINE PhysxSceneDesc( NxSceneDesc &desc );
+  INLINE PhysxActorDesc( NxActorDesc &desc );
 
-  virtual NxSceneDesc *ptr() { return &_desc; };
+  virtual NxActorDesc *ptr() { return &_desc; };
 
 private:
-  NxSceneDesc _desc;
+  NxActorDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -53,7 +52,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysSceneDesc", 
+    register_type(_type_handle, "PhysActorDesc", 
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -68,6 +67,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxSceneDesc.I"
+#include "physxActorDesc.I"
 
-#endif // PHYSXSCENEDESC_H
+#endif // PHYSXACTORDESC_H

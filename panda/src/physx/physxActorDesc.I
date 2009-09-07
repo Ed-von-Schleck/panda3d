@@ -1,4 +1,4 @@
-// Filename: physxSceneDesc.I
+// Filename: physxActorDesc.I
 // Created by:  enn0x (05Sep09)
 //
 ////////////////////////////////////////////////////////////////////
@@ -15,52 +15,52 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSceneDesc::Constructor
+//     Function: PhysxActorDesc::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxSceneDesc::
-PhysxSceneDesc() {
+INLINE PhysxActorDesc::
+PhysxActorDesc() {
 
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSceneDesc::Constructor
+//     Function: PhysxActorDesc::Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxSceneDesc::
-PhysxSceneDesc(NxSceneDesc &desc) : _desc(desc) {
+INLINE PhysxActorDesc::
+PhysxActorDesc(NxActorDesc &desc) : _desc(desc) {
 
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSceneDesc::Destructor
+//     Function: PhysxActorDesc::Destructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxSceneDesc::
-~PhysxSceneDesc() {
+INLINE PhysxActorDesc::
+~PhysxActorDesc() {
 
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSceneDesc::set_to_default
+//     Function: PhysxActorDesc::set_to_default
 //       Access: Published
 //  Description: (re)sets the structure to the default.
 ////////////////////////////////////////////////////////////////////
-INLINE void PhysxSceneDesc::
+INLINE void PhysxActorDesc::
 set_to_default() {
 
   _desc.setToDefault();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSceneDesc::is_valid
+//     Function: PhysxActorDesc::is_valid
 //       Access: Published
 //  Description: Returns true if the descriptor is valid.
 ////////////////////////////////////////////////////////////////////
-INLINE bool PhysxSceneDesc::
+INLINE bool PhysxActorDesc::
 is_valid() const {
 
   return _desc.isValid();
