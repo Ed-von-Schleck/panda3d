@@ -27,3 +27,14 @@ set_mass(float mass) {
   _desc.mass = mass;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::get_mass
+//       Access: Published
+//  Description: Get the mass of body. 
+////////////////////////////////////////////////////////////////////
+float PhysxBodyDesc::
+get_mass() const {
+
+  return _desc.mass;
+}
+

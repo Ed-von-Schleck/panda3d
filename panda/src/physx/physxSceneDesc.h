@@ -18,7 +18,7 @@
 #include "pandabase.h"
 #include "typedReferenceCount.h"
 
-#include <lvector3.h>
+#include "lvector3.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -37,6 +37,8 @@ PUBLISHED:
   INLINE bool is_valid() const;
 
   void set_gravity(const LVector3f &gravity);
+
+  LVector3f get_gravity() const;
 
 public:
   INLINE PhysxSceneDesc( NxSceneDesc &desc );

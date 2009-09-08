@@ -37,8 +37,10 @@ PUBLISHED:
 
   void set_mass(float mass);
 
+  float get_mass() const;
+
 public:
-  INLINE PhysxBodyDesc(NxBodyDesc &desc);
+  INLINE PhysxBodyDesc(const NxBodyDesc *desc);
 
   virtual NxBodyDesc *ptr() { return &_desc; };
 

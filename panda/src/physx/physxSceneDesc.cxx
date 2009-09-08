@@ -29,3 +29,14 @@ set_gravity(const LVector3f &gravity) {
   _desc.gravity = PhysxManager::vec3_to_nxVec3(gravity);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_gravity
+//       Access: Published
+//  Description: Get the gravity vector.
+////////////////////////////////////////////////////////////////////
+LVector3f PhysxSceneDesc::
+get_gravity() const {
+
+  return PhysxManager::nxVec3_to_vec3(_desc.gravity);
+}
+

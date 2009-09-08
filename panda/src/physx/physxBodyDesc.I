@@ -30,7 +30,7 @@ PhysxBodyDesc() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PhysxBodyDesc::
-PhysxBodyDesc(NxBodyDesc &desc) : _desc(desc) {
+PhysxBodyDesc(const NxBodyDesc *desc) : _desc(*desc) {
 
 }
 
