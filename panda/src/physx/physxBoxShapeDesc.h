@@ -1,5 +1,5 @@
-// Filename: physxSceneDesc.h
-// Created by:  enn0x (05Sep09)
+// Filename: physxBoxShapeDesc.h
+// Created by:  enn0x (08Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,39 +12,39 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXSCENEDESC_H
-#define PHYSXSCENEDESC_H
+#ifndef PHYSXBOXSHAPEDESC_H
+#define PHYSXBOXSHAPEDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
+#include "physxShapeDesc.h"
 
-#include <lvector3.h>
+#include "lvector3.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxSceneDesc
-// Description : Descriptor for PhysxScene.
+//       Class : PhysxBoxShapeDesc
+// Description : Descriptor class for PhysxBoxShape.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSceneDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxBoxShapeDesc : public PhysxShapeDesc {
 
 PUBLISHED:
-  INLINE PhysxSceneDesc();
-  INLINE ~PhysxSceneDesc();
+  INLINE PhysxBoxShapeDesc();
+  INLINE ~PhysxBoxShapeDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  void set_gravity(const LVector3f &gravity);
+  void set_dimensions(const LVector3f &dimensions);
 
 public:
-  INLINE PhysxSceneDesc( NxSceneDesc &desc );
+  INLINE PhysxBoxShapeDesc(NxBoxShapeDesc &desc);
 
-  virtual NxSceneDesc *ptr() { return &_desc; };
+  virtual NxShapeDesc *ptr() { return (NxShapeDesc *)&_desc; };
 
 private:
-  NxSceneDesc _desc;
+  NxBoxShapeDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -52,9 +52,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxSceneDesc", 
-                  TypedReferenceCount::get_class_type());
+    PhysxShapeDesc::init_type();
+    register_type(_type_handle, "PhysxBoxShapeDesc", 
+                  PhysxShapeDesc::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -68,6 +68,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxSceneDesc.I"
+#include "physxBoxShapeDesc.I"
 
-#endif // PHYSXSCENEDESC_H
+#endif // PHYSXBOXSHAPEDESC_H

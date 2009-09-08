@@ -22,8 +22,9 @@
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysBodyDesc
-// Description : 
+//       Class : PhysxBodyDesc
+// Description : Descriptor for the optional rigid body dynamic
+//               state of PhysxActor.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxBodyDesc : public TypedReferenceCount {
 
@@ -37,7 +38,7 @@ PUBLISHED:
   void set_mass(float mass);
 
 public:
-  INLINE PhysxBodyDesc( NxBodyDesc &desc );
+  INLINE PhysxBodyDesc(NxBodyDesc &desc);
 
   virtual NxBodyDesc *ptr() { return &_desc; };
 
@@ -51,7 +52,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysBodyDesc", 
+    register_type(_type_handle, "PhysxBodyDesc", 
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {

@@ -1,5 +1,5 @@
-// Filename: physxSceneDesc.h
-// Created by:  enn0x (05Sep09)
+// Filename: physxPlaneShapeDesc.h
+// Created by:  enn0x (08Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,39 +12,39 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXSCENEDESC_H
-#define PHYSXSCENEDESC_H
+#ifndef PHYSXPLANESHAPEDESC_H
+#define PHYSXPLANESHAPEDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
+#include "physxShapeDesc.h"
 
-#include <lvector3.h>
+#include "lvector3.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxSceneDesc
-// Description : Descriptor for PhysxScene.
+//       Class : PhysxPlaneShapeDesc
+// Description : Descriptor class for PhysxPlaneShape.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSceneDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxPlaneShapeDesc : public PhysxShapeDesc {
 
 PUBLISHED:
-  INLINE PhysxSceneDesc();
-  INLINE ~PhysxSceneDesc();
+  INLINE PhysxPlaneShapeDesc();
+  INLINE ~PhysxPlaneShapeDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  void set_gravity(const LVector3f &gravity);
+  void set_plane(const LVector3f &normal, float d);
 
 public:
-  INLINE PhysxSceneDesc( NxSceneDesc &desc );
+  INLINE PhysxPlaneShapeDesc(NxPlaneShapeDesc &desc);
 
-  virtual NxSceneDesc *ptr() { return &_desc; };
+  virtual NxShapeDesc *ptr() { return (NxShapeDesc *)&_desc; };
 
 private:
-  NxSceneDesc _desc;
+  NxPlaneShapeDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -52,9 +52,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxSceneDesc", 
-                  TypedReferenceCount::get_class_type());
+    PhysxShapeDesc::init_type();
+    register_type(_type_handle, "PhysxPlaneShapeDesc", 
+                  PhysxShapeDesc::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -68,6 +68,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxSceneDesc.I"
+#include "physxPlaneShapeDesc.I"
 
-#endif // PHYSXSCENEDESC_H
+#endif // PHYSXPLANESHAPEDESC_H

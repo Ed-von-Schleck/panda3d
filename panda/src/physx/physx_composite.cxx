@@ -2,4 +2,7 @@
 #include "physxManager.cxx"
 #include "physxActorDesc.cxx"
 #include "physxBodyDesc.cxx"
+#include "physxBoxShapeDesc.cxx"
+#include "physxPlaneShapeDesc.cxx"
 #include "physxSceneDesc.cxx"
+#include "physxShapeDesc.cxx"

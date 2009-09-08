@@ -18,6 +18,9 @@
     physxBodyDesc.I physxBodyDesc.h \
     physxSceneDesc.I physxSceneDesc.h \
     physxManager.I physxManager.h \
+    physxShapeDesc.I physxShapeDesc.h \
+    physxBoxShapeDesc.I physxBoxShapeDesc.h \
+    physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
 
   #define INCLUDED_SOURCES
     physxActorDesc.cxx \
@@ -32,6 +35,9 @@
     physxBodyDesc.I physxBodyDesc.h \
     physxSceneDesc.I physxSceneDesc.h \
     physxManager.I physxManager.h \
+    physxShapeDesc.I physxShapeDesc.h \
+    physxBoxShapeDesc.I physxBoxShapeDesc.h \
+    physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
 
   #define IGATESCAN all
 

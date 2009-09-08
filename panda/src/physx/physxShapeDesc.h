@@ -1,5 +1,5 @@
-// Filename: physxSceneDesc.h
-// Created by:  enn0x (05Sep09)
+// Filename: physxShapeDesc.h
+// Created by:  enn0x (08Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,39 +12,47 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXSCENEDESC_H
-#define PHYSXSCENEDESC_H
+#ifndef PHYSXSHAPEDESC_H
+#define PHYSXSHAPEDESC_H
 
 #include "pandabase.h"
 #include "typedReferenceCount.h"
 
-#include <lvector3.h>
+#include "lpoint3.h"
+#include "lmatrix.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxSceneDesc
-// Description : Descriptor for PhysxScene.
+//       Class : PhysxShapeDesc
+// Description : Descriptor class for the PhysxShape class. Shape
+//               descriptors for all the different shape types are
+//               derived from this class.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSceneDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxShapeDesc : public TypedReferenceCount {
 
 PUBLISHED:
-  INLINE PhysxSceneDesc();
-  INLINE ~PhysxSceneDesc();
+  INLINE PhysxShapeDesc();
+  INLINE ~PhysxShapeDesc();
 
-  INLINE void set_to_default();
-  INLINE bool is_valid() const;
+  virtual void set_to_default() = 0;
+  virtual bool is_valid() const = 0;
 
-  void set_gravity(const LVector3f &gravity);
+  void set_name(const char *name);
+  void set_trigger(bool value);
+  void set_local_pos(const LPoint3f &pos);
+  void set_local_mat(const LMatrix4f &mat);
+  void set_local_hpr(float h, float p, float r);
+  void set_skin_width(float skinWidth);
+
+  //void set_material(const PhysMaterial &material);
+  //void set_flag(...)
 
 public:
-  INLINE PhysxSceneDesc( NxSceneDesc &desc );
+  //INLINE PhysxShapeDesc(NxShapeDesc &desc);
 
-  virtual NxSceneDesc *ptr() { return &_desc; };
-
-private:
-  NxSceneDesc _desc;
+  virtual NxShapeDesc *ptr() const = 0;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -53,7 +61,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxSceneDesc", 
+    register_type(_type_handle, "PhysxShapeDesc", 
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -68,6 +76,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxSceneDesc.I"
+#include "physxShapeDesc.I"
 
-#endif // PHYSXSCENEDESC_H
+#endif // PHYSXSHAPEDESC_H

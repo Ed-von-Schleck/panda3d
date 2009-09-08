@@ -22,8 +22,8 @@
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysActorDesc
-// Description : 
+//       Class : PhysxActorDesc
+// Description : Descriptor for PhysxActor.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxActorDesc : public TypedReferenceCount {
 
@@ -38,7 +38,7 @@ PUBLISHED:
   void set_density(float density);
 
 public:
-  INLINE PhysxActorDesc( NxActorDesc &desc );
+  INLINE PhysxActorDesc(NxActorDesc &desc);
 
   virtual NxActorDesc *ptr() { return &_desc; };
 
@@ -52,7 +52,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysActorDesc", 
+    register_type(_type_handle, "PhysxActorDesc", 
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
