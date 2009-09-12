@@ -114,3 +114,30 @@ set_skin_width(float skinWidth) {
   nassertv(skinWidth >= 0.0f);
   ptr()->skinWidth = skinWidth;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::set_flag
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxShapeDesc::
+set_flag(const PhysxShapeFlag flag, bool value) {
+
+  if (value == true) {
+    ptr()->shapeFlags |= flag;
+  } else {
+    ptr()->shapeFlags &= ~(flag);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_flag
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+bool PhysxShapeDesc::
+get_flag(const PhysxShapeFlag flag) const {
+
+  return (ptr()->shapeFlags & flag) ? true : false;
+}
+

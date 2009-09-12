@@ -1,5 +1,5 @@
-// Filename: physxPlaneShapeDesc.h
-// Created by:  enn0x (08Sep09)
+// Filename: physxCapsuleShapeDesc.h
+// Created by:  enn0x (11Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,8 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXPLANESHAPEDESC_H
-#define PHYSXPLANESHAPEDESC_H
+#ifndef PHYSXCAPSULESHAPEDESC_H
+#define PHYSXCAPSULESHAPEDESC_H
 
 #include "pandabase.h"
 #include "physxShapeDesc.h"
@@ -24,27 +24,31 @@
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxPlaneShapeDesc
-// Description : Descriptor class for PhysxPlaneShape.
+//       Class : PhysxCapsuleShapeDesc
+// Description : Descriptor class for PhysxCapsuleShape.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxPlaneShapeDesc : public PhysxShapeDesc {
+class EXPCL_PANDAPHYSX PhysxCapsuleShapeDesc : public PhysxShapeDesc {
 
 PUBLISHED:
-  INLINE PhysxPlaneShapeDesc();
-  INLINE ~PhysxPlaneShapeDesc();
+  INLINE PhysxCapsuleShapeDesc();
+  INLINE ~PhysxCapsuleShapeDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  void set_plane(const LVector3f &normal, float d);
+  void set_radius(float radius);
+  void set_height(float height);
+
+  float get_radius() const;
+  float get_height() const;
 
 public:
-  INLINE PhysxPlaneShapeDesc(NxPlaneShapeDesc &desc);
+  INLINE PhysxCapsuleShapeDesc(NxCapsuleShapeDesc &desc);
 
   virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
-  NxPlaneShapeDesc _desc;
+  NxCapsuleShapeDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -53,7 +57,7 @@ public:
   }
   static void init_type() {
     PhysxShapeDesc::init_type();
-    register_type(_type_handle, "PhysxPlaneShapeDesc", 
+    register_type(_type_handle, "PhysxCapsuleShapeDesc", 
                   PhysxShapeDesc::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -68,6 +72,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxPlaneShapeDesc.I"
+#include "physxCapsuleShapeDesc.I"
 
-#endif // PHYSXPLANESHAPEDESC_H
+#endif // PHYSXCAPSULESHAPEDESC_H

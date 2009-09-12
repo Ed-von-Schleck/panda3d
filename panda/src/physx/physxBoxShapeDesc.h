@@ -41,7 +41,7 @@ PUBLISHED:
 public:
   INLINE PhysxBoxShapeDesc(NxBoxShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() { return (NxShapeDesc *)&_desc; };
+  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxBoxShapeDesc _desc;

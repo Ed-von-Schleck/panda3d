@@ -1,5 +1,5 @@
-// Filename: physxPlaneShapeDesc.h
-// Created by:  enn0x (08Sep09)
+// Filename: physxSphereShapeDesc.h
+// Created by:  enn0x (11Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,8 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXPLANESHAPEDESC_H
-#define PHYSXPLANESHAPEDESC_H
+#ifndef PHYSXSPHERESHAPEDESC_H
+#define PHYSXSPHERESHAPEDESC_H
 
 #include "pandabase.h"
 #include "physxShapeDesc.h"
@@ -24,27 +24,29 @@
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxPlaneShapeDesc
-// Description : Descriptor class for PhysxPlaneShape.
+//       Class : PhysxSphereShapeDesc
+// Description : Descriptor class for PhysxSphereShape.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxPlaneShapeDesc : public PhysxShapeDesc {
+class EXPCL_PANDAPHYSX PhysxSphereShapeDesc : public PhysxShapeDesc {
 
 PUBLISHED:
-  INLINE PhysxPlaneShapeDesc();
-  INLINE ~PhysxPlaneShapeDesc();
+  INLINE PhysxSphereShapeDesc();
+  INLINE ~PhysxSphereShapeDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  void set_plane(const LVector3f &normal, float d);
+  void set_radius(float radius);
+
+  float get_radius() const;
 
 public:
-  INLINE PhysxPlaneShapeDesc(NxPlaneShapeDesc &desc);
+  INLINE PhysxSphereShapeDesc(NxSphereShapeDesc &desc);
 
   virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
-  NxPlaneShapeDesc _desc;
+  NxSphereShapeDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -53,7 +55,7 @@ public:
   }
   static void init_type() {
     PhysxShapeDesc::init_type();
-    register_type(_type_handle, "PhysxPlaneShapeDesc", 
+    register_type(_type_handle, "PhysxSphereShapeDesc", 
                   PhysxShapeDesc::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -68,6 +70,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxPlaneShapeDesc.I"
+#include "physxSphereShapeDesc.I"
 
-#endif // PHYSXPLANESHAPEDESC_H
+#endif // PHYSXSPHERESHAPEDESC_H

@@ -21,12 +21,20 @@
     physxShapeDesc.I physxShapeDesc.h \
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
     physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
+    physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxSphereShapeDesc.I physxSphereShapeDesc.h \
+    physxObject.I physxObject.h \
 
   #define INCLUDED_SOURCES
     physxActorDesc.cxx \
     physxBodyDesc.cxx \
     physxSceneDesc.cxx \
     physxManager.cxx \
+    physxShapeDesc.cxx \
+    physxBoxShapeDesc.cxx \
+    physxPlaneShapeDesc.cxx \
+    physxCapsuleShapeDesc.cxx \
+    physxSphereShapeDesc.cxx \
 
   #define INSTALL_HEADERS \
     NoMinMax.h \
@@ -38,6 +46,9 @@
     physxShapeDesc.I physxShapeDesc.h \
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
     physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
+    physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxSphereShapeDesc.I physxSphereShapeDesc.h \
+    physxObject.I physxObject.h \
 
   #define IGATESCAN all
 
