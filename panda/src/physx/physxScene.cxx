@@ -108,7 +108,30 @@ do_physics(float dt) {
 
   nassertv(_error_type == ET_ok);
 
-  // TODO
+  // Advance simulation state
+  _ptr->simulate( dt );
+  _ptr->flushStream();
+
+  // Update node transforms
+  NxU32 nbTransforms = 0;
+  NxActiveTransform *activeTransforms = _ptr->getActiveTransforms(nbTransforms);
+
+  if( nbTransforms && activeTransforms ) {
+    for( NxU32 i=0; i<nbTransforms; ++i ) {
+
+      // Objects created by the Visual Remote Debugger might not have
+      // user data. So check if user data ist set.
+      void *userData = activeTransforms[i].userData;
+      if (userData) {
+        LMatrix4f m = PhysxManager::nxMat34_to_mat4(activeTransforms[i].actor2World);
+        PhysxActor *actor = (PhysxActor *)userData;
+        actor->update_transform(m);
+      }
+    }
+  }
+
+  // Fetch simulation results
+  _ptr->fetchResults( NX_RIGID_BODY_FINISHED, true );
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -52,6 +52,20 @@ PUBLISHED:
   void set_name( const char *name );
   const char *get_name() const;
 
+  LPoint3f get_global_pos() const;
+  LMatrix4f get_global_mat() const;
+  LQuaternionf get_global_quat() const;
+  void set_global_pos(const LPoint3f &pos);
+  void set_global_mat(const LMatrix4f &mat);
+  void set_global_hpr(float h, float p, float r);
+
+  void attach_node_path(const NodePath &np);
+  void detach_node_path();
+  NodePath get_node_path() const;
+
+public:
+  void update_transform(const LMatrix4f m);
+
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:
   void release();
@@ -64,6 +78,7 @@ public:
 
 private:
   NxActor *_ptr;
+  NodePath _np;
 
 ////////////////////////////////////////////////////////////////////
 public:
