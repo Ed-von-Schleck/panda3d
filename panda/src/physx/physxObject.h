@@ -1,5 +1,5 @@
-// Filename: physxActorDesc.h
-// Created by:  enn0x (05Sep09)
+// Filename: physxObject.h
+// Created by:  enn0x (11Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,52 +12,50 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXACTORDESC_H
-#define PHYSXACTORDESC_H
+#ifndef PHYSXOBJECT_H
+#define PHYSXOBJECT_H
 
 #include "pandabase.h"
 #include "typedReferenceCount.h"
 
-#include "lpoint3.h"
-#include "lmatrix.h"
-
-#include "NoMinMax.h"
-#include "NxPhysics.h"
-
-class PhysxBodyDesc;
-class PhysxShapeDesc;
+#ifdef HAVE_PYTHON
+#undef _POSIX_C_SOURCE
+#include <Python.h>
+#endif // HAVE_PYTHON
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxActorDesc
-// Description : Descriptor for PhysxActor.
+//       Class : PhysxObject
+// Description : 
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxActorDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxObject : public TypedReferenceCount {
 
+#ifdef HAVE_PYTHON
 PUBLISHED:
-  INLINE PhysxActorDesc();
-  INLINE ~PhysxActorDesc();
+  INLINE void set_python_tag(const string &key, PyObject *value);
+  INLINE PyObject *get_python_tag(const string &key) const;
+  INLINE bool has_python_tag(const string &key) const;
+  INLINE void clear_python_tag(const string &key);
+  INLINE bool has_python_tags() const;
+#endif // HAVE_PYTHON
 
-  INLINE void set_to_default();
-  INLINE bool is_valid() const;
+protected:
+  INLINE PhysxObject();
+  INLINE ~PhysxObject();
 
-  void add_shape(PhysxShapeDesc &desc);
+  enum ErrorType {
+    ET_empty,
+    ET_ok,
+    ET_released,
+    ET_fail,
+  };
 
-  void set_body(PhysxBodyDesc &desc);
-  void set_name(const char *name);
-  void set_density(float density);
-  void set_global_pos(const LPoint3f &pos);
-  void set_global_mat(const LMatrix4f &mat);
-  void set_global_hpr(float h, float p, float r);
+  ErrorType _error_type;
 
-  PhysxBodyDesc *get_body() const;
-
-public:
-  INLINE PhysxActorDesc(NxActorDesc &desc);
-
-  virtual NxActorDesc *ptr() { return &_desc; };
-
+#ifdef HAVE_PYTHON
 private:
-  NxActorDesc _desc;
+  typedef phash_map<string, PyObject *, string_hash> PythonTagData;
+  PythonTagData _python_tag_data;
+#endif // HAVE_PYTHON
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -66,7 +64,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxActorDesc", 
+    register_type(_type_handle, "PhysxObject", 
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -81,6 +79,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxActorDesc.I"
+#include "physxObject.I"
 
-#endif // PHYSXACTORDESC_H
+#endif // PHYSXOBJECT_H

@@ -22,6 +22,7 @@
 INLINE PhysxCapsuleShapeDesc::
 PhysxCapsuleShapeDesc() {
 
+  _desc.name = "";
 }
 
 ////////////////////////////////////////////////////////////////////

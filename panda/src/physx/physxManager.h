@@ -23,6 +23,9 @@
 #include "NxPhysics.h"
 #include "NxExtended.h"
 
+class PhysxScene;
+class PhysxSceneDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxManager
 // Description : The central interface to the PhysX subsystem.
@@ -36,6 +39,11 @@ PUBLISHED:
   ~PhysxManager();
 
   bool is_hardware_available();
+
+  unsigned int get_num_scenes() const;
+  PT(PhysxScene) create_scene(PhysxSceneDesc &desc);
+  PT(PhysxScene) get_scene(unsigned int idx) const;
+  MAKE_SEQ(get_scenes, get_num_scenes, get_scene);
 
 public:
   INLINE static NxVec3 vec3_to_nxVec3(const LVector3f &v);

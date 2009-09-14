@@ -13,6 +13,8 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxManager.h"
+#include "physxScene.h"
+#include "physxSceneDesc.h"
 
 PhysxManager::PhysxOutputStream PhysxManager::_outputStream;
 
@@ -27,9 +29,9 @@ PhysxManager() {
   NxSDKCreateError error;
   NxPhysicsSDKDesc desc = NxPhysicsSDKDesc();
 
-  _sdk = NxCreatePhysicsSDK( NX_PHYSICS_SDK_VERSION, NULL, &_outputStream, desc, &error );
+  _sdk = NxCreatePhysicsSDK(NX_PHYSICS_SDK_VERSION, NULL, &_outputStream, desc, &error);
 
-  if ( error == NXCE_NO_ERROR ) {
+  if (error == NXCE_NO_ERROR) {
     physx_cat.info() << "PhysX subsystem initialized. Number of PPUs="
                      << _sdk->getNbPPUs() << endl;
   }
@@ -38,8 +40,8 @@ PhysxManager() {
                       << get_sdk_error_string(error) << endl;
   }
 
-  nassertv_always( error == NXCE_NO_ERROR );
-  nassertv_always( _sdk );
+  nassertv_always(error == NXCE_NO_ERROR);
+  nassertv_always(_sdk);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -50,16 +52,64 @@ PhysxManager() {
 PhysxManager::
 ~PhysxManager() {
 
-  NxReleasePhysicsSDK( _sdk );
+  NxReleasePhysicsSDK(_sdk);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : is_hardware_available
+//     Function: PhysxManager::get_num_scenes
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxManager::
+get_num_scenes() const {
+
+  return _sdk->getNbScenes();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxManager::create_scene
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+PT(PhysxScene) PhysxManager::
+create_scene(PhysxSceneDesc &desc) {
+
+  nassertr(desc.is_valid(),NULL);
+
+  PT(PhysxScene) scene = new PhysxScene();
+
+  desc.ptr()->userData = scene;
+  NxScene *ptr = _sdk->createScene(*desc.ptr());
+
+  scene->link(ptr);
+
+  return scene;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_scene
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxScene) PhysxManager::
+get_scene(unsigned int idx) const {
+
+  nassertr_always(idx < _sdk->getNbScenes(), NULL);
+
+  NxScene *scenePtr = _sdk->getScene(idx);
+  PhysxScene *scene = (PhysxScene *)(scenePtr->userData);
+
+  return scene;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxManager::is_hardware_available
 //       Access : Published
 //  Description :
 ////////////////////////////////////////////////////////////////////
 bool PhysxManager::
 is_hardware_available() {
+
   return _sdk->getHWVersion() != NX_HW_VERSION_NONE;
 }
 
@@ -71,7 +121,7 @@ is_hardware_available() {
 const char *PhysxManager::
 get_sdk_error_string(const NxSDKCreateError &error) {
 
-  switch ( error ) {
+  switch (error) {
   case NXCE_NO_ERROR:           return "NXCE_NO_ERROR"; break;
   case NXCE_PHYSX_NOT_FOUND:    return "NXCE_PHYSX_NOT_FOUND"; break;
   case NXCE_WRONG_VERSION:      return "NXCE_WRONG_VERSION"; break;

@@ -22,6 +22,7 @@
 INLINE PhysxSphereShapeDesc::
 PhysxSphereShapeDesc() {
 
+  _desc.name = "";
 }
 
 ////////////////////////////////////////////////////////////////////

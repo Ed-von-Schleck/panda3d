@@ -15,16 +15,17 @@
 #include "config_physx.h"
 #include "pandaSystem.h"
 
+#include "physxActor.h"
 #include "physxActorDesc.h"
 #include "physxBodyDesc.h"
 #include "physxBoxShapeDesc.h"
 #include "physxCapsuleShapeDesc.h"
+#include "physxObject.h"
 #include "physxPlaneShapeDesc.h"
+#include "physxScene.h"
 #include "physxSceneDesc.h"
 #include "physxShapeDesc.h"
 #include "physxSphereShapeDesc.h"
-
-//#include "physxObject.h"
 
 Configure(config_physx);
 NotifyCategoryDef(physx,"");
@@ -49,16 +50,17 @@ init_libphysx() {
   }
   initialized = true;
 
+  PhysxActor::init_type();
   PhysxActorDesc::init_type();
   PhysxBodyDesc::init_type();
   PhysxBoxShapeDesc::init_type();
   PhysxCapsuleShapeDesc::init_type();
+  PhysxObject::init_type();
   PhysxPlaneShapeDesc::init_type();
+  PhysxScene::init_type();
   PhysxSceneDesc::init_type();
   PhysxShapeDesc::init_type();
   PhysxSphereShapeDesc::init_type();
-
-  //PhysxObject::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system( "PhysX" );

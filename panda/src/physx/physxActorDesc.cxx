@@ -18,6 +18,18 @@
 TypeHandle PhysxActorDesc::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxActorDesc::add_shape
+//       Access: Published
+//  Description: Adds a shape to the list of collision shapes
+//               composing this actor.
+////////////////////////////////////////////////////////////////////
+void PhysxActorDesc::
+add_shape(PhysxShapeDesc &desc) {
+
+  _desc.shapes.push_back(desc.ptr());
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxActorDesc::set_name
 //       Access: Published
 //  Description: Sets the optional debug name for the actor.

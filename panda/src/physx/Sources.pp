@@ -14,8 +14,10 @@
   #define SOURCES \
     NoMinMax.h \
     config_physx.h \
+    physxActor.I physxActor.h \
     physxActorDesc.I physxActorDesc.h \
     physxBodyDesc.I physxBodyDesc.h \
+    physxScene.I physxScene.h \
     physxSceneDesc.I physxSceneDesc.h \
     physxManager.I physxManager.h \
     physxShapeDesc.I physxShapeDesc.h \
@@ -26,8 +28,10 @@
     physxObject.I physxObject.h \
 
   #define INCLUDED_SOURCES
+    physxActor.cxx \
     physxActorDesc.cxx \
     physxBodyDesc.cxx \
+    physxScene.cxx \
     physxSceneDesc.cxx \
     physxManager.cxx \
     physxShapeDesc.cxx \
@@ -39,8 +43,10 @@
   #define INSTALL_HEADERS \
     NoMinMax.h \
     config_physx.h
+    physxActor.I physxActor.h \
     physxActorDesc.I physxActorDesc.h \
     physxBodyDesc.I physxBodyDesc.h \
+    physxScene.I physxScene.h \
     physxSceneDesc.I physxSceneDesc.h \
     physxManager.I physxManager.h \
     physxShapeDesc.I physxShapeDesc.h \
