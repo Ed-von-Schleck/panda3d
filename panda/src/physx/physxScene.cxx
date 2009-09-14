@@ -40,7 +40,18 @@ link(NxScene *scenePtr) {
 void PhysxScene::
 unlink() {
 
-  // TODO: unlink actors etc.
+  // TODO: unlink joints, materials etc.
+
+  // Unlink actors
+  NxActor **actors = _ptr->getActors();
+  NxU32 nActors = _ptr->getNbActors();
+
+  for (NxU32 i=0; i < nActors; i++) {
+    PT(PhysxActor) actor = (PhysxActor *)actors[i]->userData;
+    if ( actor ) {
+      actor->unlink();
+    }
+  }
 
   _error_type = ET_released;
   unref();
