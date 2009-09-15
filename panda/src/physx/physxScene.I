@@ -22,6 +22,7 @@
 INLINE PhysxScene::
 PhysxScene() : PhysxObject() {
 
+  _debugNode = new PhysxDebugGeomNode();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -32,5 +33,6 @@ PhysxScene() : PhysxObject() {
 INLINE PhysxScene::
 ~PhysxScene() {
 
+  _debugNode = NULL;
 }
 

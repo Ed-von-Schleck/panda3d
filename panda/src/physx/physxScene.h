@@ -1,5 +1,5 @@
 // Filename: physxScene.h
-// Created by:  enn0x (145Sep09)
+// Created by:  enn0x (14Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -23,8 +23,9 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
-class PhysActor;
-class PhysActorDesc;
+class PhysxActor;
+class PhysxActorDesc;
+class PhysxDebugGeomNode;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxScene
@@ -48,6 +49,8 @@ PUBLISHED:
 
   void do_physics(float dt);
 
+  PT(PhysxDebugGeomNode) get_debug_geom_node();
+
   void set_gravity(const LVector3f &gravity);
   LVector3f get_gravity() const;
 
@@ -68,6 +71,7 @@ public:
 
 private:
   NxScene *_ptr;
+  PT(PhysxDebugGeomNode) _debugNode;
 
 ////////////////////////////////////////////////////////////////////
 public:

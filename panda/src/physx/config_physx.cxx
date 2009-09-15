@@ -20,6 +20,7 @@
 #include "physxBodyDesc.h"
 #include "physxBoxShapeDesc.h"
 #include "physxCapsuleShapeDesc.h"
+#include "physxDebugGeomNode.h"
 #include "physxObject.h"
 #include "physxPlaneShapeDesc.h"
 #include "physxScene.h"
@@ -55,6 +56,7 @@ init_libphysx() {
   PhysxBodyDesc::init_type();
   PhysxBoxShapeDesc::init_type();
   PhysxCapsuleShapeDesc::init_type();
+  PhysxDebugGeomNode::init_type();
   PhysxObject::init_type();
   PhysxPlaneShapeDesc::init_type();
   PhysxScene::init_type();

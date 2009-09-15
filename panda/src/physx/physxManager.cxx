@@ -40,6 +40,15 @@ PhysxManager() {
                       << get_sdk_error_string(error) << endl;
   }
 
+  _sdk->setParameter(NX_VISUALIZATION_SCALE, 0.0f);
+  _sdk->setParameter(NX_VISUALIZE_ACTOR_AXES, true);
+  _sdk->setParameter(NX_VISUALIZE_BODY_LIN_VELOCITY, true);
+  _sdk->setParameter(NX_VISUALIZE_COLLISION_AABBS, false);
+  _sdk->setParameter(NX_VISUALIZE_COLLISION_SHAPES, true);
+  _sdk->setParameter(NX_VISUALIZE_COLLISION_VNORMALS, false);
+  _sdk->setParameter(NX_VISUALIZE_COLLISION_FNORMALS, false);
+  _sdk->setParameter(NX_VISUALIZE_FORCE_FIELDS, false);
+
   nassertv_always(error == NXCE_NO_ERROR);
   nassertv_always(_sdk);
 }

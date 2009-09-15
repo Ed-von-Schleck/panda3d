@@ -143,6 +143,9 @@ do_physics(float dt) {
 
   // Fetch simulation results
   _ptr->fetchResults( NX_RIGID_BODY_FINISHED, true );
+
+  // Update debug node
+  _debugNode->update(_ptr);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -194,5 +197,26 @@ get_actor(unsigned int idx) const {
   PhysxActor *actor = (PhysxActor *)(actorPtr->userData);
 
   return actor;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_debug_node
+//       Access: Published
+//  Description: Retrieves the debug geom node for this scene. The
+//               debug geom node is used to visualize information
+//               about the physical scene which can be useful for
+//               debugging an application.
+//
+//               The debug geom node geometry is generated in global
+//               coordinates. In order to see correct information
+//               it is important not to dislocate the debug node.
+//               Reparent it to render and leave position at
+//               (0,0,0).
+////////////////////////////////////////////////////////////////////
+PT(PhysxDebugGeomNode) PhysxScene::
+get_debug_geom_node() {
+
+  nassertr( _error_type == ET_ok, NULL );
+  return _debugNode;
 }
 
