@@ -17,15 +17,20 @@
     physxActor.I physxActor.h \
     physxActorDesc.I physxActorDesc.h \
     physxBodyDesc.I physxBodyDesc.h \
+    physxBoxShape.I physxBoxShape.h \
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
+    physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
     physxObject.I physxObject.h \
+    physxPlaneShape.I physxPlaneShape.h \
     physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
     physxScene.I physxScene.h \
     physxSceneDesc.I physxSceneDesc.h \
+    physxShape.I physxShape.h \
     physxShapeDesc.I physxShapeDesc.h \
+    physxSphereShape.I physxSphereShape.h \
     physxSphereShapeDesc.I physxSphereShapeDesc.h \
 
   #define INCLUDED_SOURCES
@@ -33,14 +38,18 @@
     physxActorDesc.cxx \
     physxBodyDesc.cxx \
     physxBoxShapeDesc.cxx \
+    physxCapsuleShape.cxx \
     physxCapsuleShapeDesc.cxx \
     physxDebugGeomNode.cxx \
     physxManager.cxx \
     physxObject.cxx \
+    physxPlaneShape.cxx \
     physxPlaneShapeDesc.cxx \
     physxScene.cxx \
     physxSceneDesc.cxx \
+    physxShape.cxx \
     physxShapeDesc.cxx \
+    physxSphereShape.cxx \
     physxSphereShapeDesc.cxx \
 
   #define INSTALL_HEADERS \
@@ -49,15 +58,20 @@
     physxActor.I physxActor.h \
     physxActorDesc.I physxActorDesc.h \
     physxBodyDesc.I physxBodyDesc.h \
+    physxBoxShape.I physxBoxShape.h \
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
+    physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
     physxObject.I physxObject.h \
+    physxPlaneShape.I physxPlaneShape.h \
     physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
     physxScene.I physxScene.h \
     physxSceneDesc.I physxSceneDesc.h \
+    physxShape.I physxShape.h \
     physxShapeDesc.I physxShapeDesc.h \
+    physxSphereShape.I physxSphereShape.h \
     physxSphereShapeDesc.I physxSphereShapeDesc.h \
 
   #define IGATESCAN all

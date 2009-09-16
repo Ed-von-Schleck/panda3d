@@ -18,14 +18,19 @@
 #include "physxActor.h"
 #include "physxActorDesc.h"
 #include "physxBodyDesc.h"
+#include "physxBoxShape.h"
 #include "physxBoxShapeDesc.h"
+#include "physxCapsuleShape.h"
 #include "physxCapsuleShapeDesc.h"
 #include "physxDebugGeomNode.h"
 #include "physxObject.h"
+#include "physxPlaneShape.h"
 #include "physxPlaneShapeDesc.h"
 #include "physxScene.h"
 #include "physxSceneDesc.h"
+#include "physxShape.h"
 #include "physxShapeDesc.h"
+#include "physxSphereShape.h"
 #include "physxSphereShapeDesc.h"
 
 Configure(config_physx);
@@ -54,17 +59,22 @@ init_libphysx() {
   PhysxActor::init_type();
   PhysxActorDesc::init_type();
   PhysxBodyDesc::init_type();
+  PhysxBoxShape::init_type();
   PhysxBoxShapeDesc::init_type();
+  PhysxCapsuleShape::init_type();
   PhysxCapsuleShapeDesc::init_type();
   PhysxDebugGeomNode::init_type();
   PhysxObject::init_type();
+  PhysxPlaneShape::init_type();
   PhysxPlaneShapeDesc::init_type();
   PhysxScene::init_type();
   PhysxSceneDesc::init_type();
+  PhysxShape::init_type();
   PhysxShapeDesc::init_type();
+  PhysxSphereShape::init_type();
   PhysxSphereShapeDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
-  ps->add_system( "PhysX" );
+  ps->add_system("PhysX");
 }
 

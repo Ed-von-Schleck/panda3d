@@ -29,7 +29,7 @@ update(NxScene *scenePtr) {
   }
 
   const NxDebugRenderable *renderable = scenePtr->getDebugRenderable();
-  if ( !renderable ) {
+  if (!renderable) {
     remove_all_geoms();
     physx_cat.warning() << "Could no get debug renderable." << endl;
     return;
@@ -42,8 +42,8 @@ update(NxScene *scenePtr) {
 
   for (NxU32 i=0; i<n; i++)
   {
-    NxF32 b = NxF32((lines[i].color    )&0xff) / 255.0f;
-    NxF32 g = NxF32((lines[i].color>>8 )&0xff) / 255.0f;
+    NxF32 b = NxF32((lines[i].color)&0xff) / 255.0f;
+    NxF32 g = NxF32((lines[i].color>>8)&0xff) / 255.0f;
     NxF32 r = NxF32((lines[i].color>>16)&0xff) / 255.0f;
 
     NxVec3 p0 = lines[i].p0;
@@ -92,7 +92,7 @@ off() {
 void PhysxDebugGeomNode::
 toggle() {
 
-  if ( NxGetPhysicsSDK()->getParameter(NX_VISUALIZATION_SCALE) == 0.0f ) {
+  if (NxGetPhysicsSDK()->getParameter(NX_VISUALIZATION_SCALE) == 0.0f) {
     on();
   } else {
     off();

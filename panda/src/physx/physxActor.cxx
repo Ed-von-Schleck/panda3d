@@ -25,11 +25,23 @@ TypeHandle PhysxActor::_type_handle;
 void PhysxActor::
 link(NxActor *actorPtr) {
 
-  // TODO: link shapes
-
+  // Link self
   ref();
   _ptr = actorPtr;
+  _ptr->userData = this;
   _error_type = ET_ok;
+
+  // Link shapes
+  NxShape * const *shapes = _ptr->getShapes();
+  NxU32 nShapes = _ptr->getNbShapes();
+
+  for (NxU32 i=0; i < nShapes; i++) {
+    if (shapes[i]->getName() == NULL) shapes[i]->setName("");
+
+    PT(PhysxShape) shape = PhysxShape::factory(shapes[i]->getType());
+    shape->link(shapes[i]);
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -40,8 +52,16 @@ link(NxActor *actorPtr) {
 void PhysxActor::
 unlink() {
 
-  // TODO: unlink shapes etc.
+  // Unlink shapes
+  NxShape * const *shapes = _ptr->getShapes();
+  NxU32 nShapes = _ptr->getNbShapes();
 
+  for (NxU32 i=0; i < nShapes; i++) {
+    PT(PhysxShape) shape = (PhysxShape *)shapes[i]->userData;
+    shape->unlink();
+  }
+
+  // Unlink self
   _error_type = ET_released;
   unref();
 }
@@ -70,10 +90,10 @@ release() {
 //               engine.
 ////////////////////////////////////////////////////////////////////
 void PhysxActor::
-set_name( const char *name ) {
+set_name(const char *name) {
 
-  nassertv( _error_type == ET_ok );
-  _ptr->setName( name );
+  nassertv(_error_type == ET_ok);
+  _ptr->setName(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -84,7 +104,7 @@ set_name( const char *name ) {
 const char *PhysxActor::
 get_name() const {
 
-  nassertr( _error_type == ET_ok, "" );
+  nassertr(_error_type == ET_ok, "");
   return _ptr->getName();
 }
 
@@ -113,6 +133,8 @@ update_transform(const LMatrix4f m) {
   }
 
 /*
+  TODO when controllers are implemented...
+
   if (_controller) {
     LVector3f hpr(_controller->get_h(), 0.0f, 0.0f);
     LPoint3f pos = _controller->get_pos();
@@ -286,5 +308,112 @@ get_node_path() const {
   nassertr(_error_type == ET_ok, NodePath::fail());
 
   return _np;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::get_scene
+//       Access: Published
+//  Description: Retrieves the scene which this actor belongs to.
+////////////////////////////////////////////////////////////////////
+PT(PhysxScene) PhysxActor::
+get_scene() const {
+
+  nassertr(_error_type == ET_ok, NULL);
+
+  NxScene *scenePtr = &(_ptr->getScene());
+  PhysxScene *scene = (PhysxScene *)(scenePtr->userData);
+
+  return scene;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::get_num_shapes
+//       Access: Published
+//  Description: Returns the number of shapes assigned to the
+//               actor.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxActor::
+get_num_shapes() const {
+
+  nassertr(_error_type == ET_ok, -1);
+
+  return _ptr->getNbShapes();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::create_shape
+//       Access: Published
+//  Description: Creates a new shape and adds it to the list of
+//               shapes of this actor. 
+//
+//               Mass properties of dynamic actors will not
+//               automatically be recomputed to reflect the new mass
+//               distribution implied by the shape. Follow this call
+//               with a call to update_mass_from_shapes() to do
+//               that.
+////////////////////////////////////////////////////////////////////
+PT(PhysxShape) PhysxActor::
+create_shape(PhysxShapeDesc &desc) {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr(desc.is_valid(),NULL);
+
+  PT(PhysxShape) shape = PhysxShape::factory(desc.ptr()->getType());
+  nassertr(shape, NULL);
+
+  NxShape *shapePtr = _ptr->createShape(*desc.ptr());
+  nassertr(shapePtr, NULL);
+
+  shape->link(shapePtr);
+
+  return shape;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::get_shape
+//       Access: Published
+//  Description: Retrieves an individual shape from the actor's
+//               array of shapes. Index must be in the range from
+//               zero to (number-of-shapes minus 1).
+////////////////////////////////////////////////////////////////////
+PT(PhysxShape) PhysxActor::
+get_shape(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbShapes(), NULL);
+
+  NxShape * const *shapes = _ptr->getShapes();
+  NxShape *shapePtr = shapes[idx];
+  PhysxShape *shape = (PhysxShape *)(shapePtr->userData);
+
+  return shape;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::get_shape_by_name
+//       Access: Published
+//  Description: Retrieves an individual shape from the actor's
+//               array of shapes. The first shape for which the
+//               shape's name matches the specified name is
+//               returned, or NULL if no shape has a matching name.
+////////////////////////////////////////////////////////////////////
+PT(PhysxShape) PhysxActor::
+get_shape_by_name(const char *name) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+
+  NxShape * const *shapes = _ptr->getShapes();
+  NxShape *shapePtr = NULL;
+  NxU32 nShapes = _ptr->getNbShapes();
+
+  for (NxU32 i=0; i < nShapes; i++) {
+    shapePtr = shapes[i];
+
+    if (strcmp(shapePtr->getName(), name) == 0) {
+      return (PhysxShape *) shapePtr->userData;
+    }
+  }
+
+  return NULL;
 }
 

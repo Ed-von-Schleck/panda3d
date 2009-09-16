@@ -20,7 +20,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PhysxDebugGeomNode::
-PhysxDebugGeomNode() : GeomNode( "debug" ) {
+PhysxDebugGeomNode() : GeomNode("debug") {
 
   _scale = 1.0f;
 }

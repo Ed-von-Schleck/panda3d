@@ -85,19 +85,20 @@ create_scene(PhysxSceneDesc &desc) {
 
   nassertr(desc.is_valid(),NULL);
 
-  PT(PhysxScene) scene = new PhysxScene();
-
   //_desc.timeStepMethod = NX_TIMESTEP_FIXED;
   //_desc.maxTimestep = 1.0f / 240.0f;
   //_desc.maxIter = 8;
 
   desc.ptr()->flags |= NX_SF_ENABLE_ACTIVETRANSFORMS;
   desc.ptr()->flags |= NX_SF_SIMULATE_SEPARATE_THREAD;
-  desc.ptr()->userData = scene;
 
-  NxScene *ptr = _sdk->createScene(*desc.ptr());
+  PT(PhysxScene) scene = new PhysxScene();
+  nassertr(scene, NULL);
 
-  scene->link(ptr);
+  NxScene *scenePtr = _sdk->createScene(*desc.ptr());
+  nassertr(scenePtr, NULL);
+
+  scene->link(scenePtr);
 
   return scene;
 }

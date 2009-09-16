@@ -27,7 +27,9 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
-class PhysScene;
+class PhysxScene;
+class PhysxShape;
+class PhysxShapeDesc;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxActor
@@ -49,7 +51,7 @@ PUBLISHED:
   INLINE PhysxActor();
   INLINE ~PhysxActor();
 
-  void set_name( const char *name );
+  void set_name(const char *name);
   const char *get_name() const;
 
   LPoint3f get_global_pos() const;
@@ -62,6 +64,14 @@ PUBLISHED:
   void attach_node_path(const NodePath &np);
   void detach_node_path();
   NodePath get_node_path() const;
+
+  PT(PhysxScene) get_scene() const;
+
+  unsigned int get_num_shapes() const;
+  PT(PhysxShape) create_shape(PhysxShapeDesc &desc);
+  PT(PhysxShape) get_shape(unsigned int idx) const;
+  PT(PhysxShape) get_shape_by_name(const char *name) const;
+  MAKE_SEQ(get_shapes, get_num_shapes, get_shape);
 
 public:
   void update_transform(const LMatrix4f m);

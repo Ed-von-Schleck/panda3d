@@ -59,7 +59,7 @@ PUBLISHED:
 
   bool get_flag(const PhysxShapeFlag flag) const;
 
-  //void set_material(const PhysMaterial &material);
+  //void set_material(const PhysxMaterial &material);
 
 public:
   virtual NxShapeDesc *ptr() const = 0;

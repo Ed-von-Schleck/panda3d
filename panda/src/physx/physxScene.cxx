@@ -25,11 +25,13 @@ TypeHandle PhysxScene::_type_handle;
 void PhysxScene::
 link(NxScene *scenePtr) {
 
-  // TODO: link actors etc.
-
+  // Link self
   ref();
   _ptr = scenePtr;
+  _ptr->userData = this;
   _error_type = ET_ok;
+
+  // Link materials TODO
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -40,7 +42,7 @@ link(NxScene *scenePtr) {
 void PhysxScene::
 unlink() {
 
-  // TODO: unlink joints, materials etc.
+  // Unlink controllers TODO
 
   // Unlink actors
   NxActor **actors = _ptr->getActors();
@@ -48,11 +50,18 @@ unlink() {
 
   for (NxU32 i=0; i < nActors; i++) {
     PT(PhysxActor) actor = (PhysxActor *)actors[i]->userData;
-    if ( actor ) {
+    if (actor) {
       actor->unlink();
     }
   }
 
+  // Unlink joints TODO
+  // Unlink forcefields TODO
+  // Unlink cloths TODO
+  // Unlink softbodies TODO
+  // Unlink materials TODO
+
+  // Unlink self
   _error_type = ET_released;
   unref();
 }
@@ -68,8 +77,7 @@ release() {
   nassertv(_error_type == ET_ok);
 
   unlink();
-  NxPhysicsSDK *sdk = NxGetPhysicsSDK(); // TODO: make manager a singleton ???
-  // TODO: assert sdk != NULL
+  NxPhysicsSDK *sdk = NxGetPhysicsSDK();
   sdk->releaseScene(*_ptr);
   _ptr = NULL;
 }
@@ -120,15 +128,15 @@ do_physics(float dt) {
   nassertv(_error_type == ET_ok);
 
   // Advance simulation state
-  _ptr->simulate( dt );
+  _ptr->simulate(dt);
   _ptr->flushStream();
 
   // Update node transforms
   NxU32 nbTransforms = 0;
   NxActiveTransform *activeTransforms = _ptr->getActiveTransforms(nbTransforms);
 
-  if( nbTransforms && activeTransforms ) {
-    for( NxU32 i=0; i<nbTransforms; ++i ) {
+  if (nbTransforms && activeTransforms) {
+    for (NxU32 i=0; i<nbTransforms; ++i) {
 
       // Objects created by the Visual Remote Debugger might not have
       // user data. So check if user data ist set.
@@ -142,7 +150,7 @@ do_physics(float dt) {
   }
 
   // Fetch simulation results
-  _ptr->fetchResults( NX_RIGID_BODY_FINISHED, true );
+  _ptr->fetchResults(NX_RIGID_BODY_FINISHED, true);
 
   // Update debug node
   _debugNode->update(_ptr);
@@ -173,11 +181,12 @@ create_actor(PhysxActorDesc &desc) {
   nassertr(desc.is_valid(),NULL);
 
   PT(PhysxActor) actor = new PhysxActor();
+  nassertr(actor, NULL);
 
-  desc.ptr()->userData = actor;
-  NxActor *ptr = _ptr->createActor(*desc.ptr());
+  NxActor *actorPtr = _ptr->createActor(*desc.ptr());
+  nassertr(actorPtr, NULL);
 
-  actor->link(ptr);
+  actor->link(actorPtr);
 
   return actor;
 }
@@ -216,7 +225,7 @@ get_actor(unsigned int idx) const {
 PT(PhysxDebugGeomNode) PhysxScene::
 get_debug_geom_node() {
 
-  nassertr( _error_type == ET_ok, NULL );
+  nassertr(_error_type == ET_ok, NULL);
   return _debugNode;
 }
 
