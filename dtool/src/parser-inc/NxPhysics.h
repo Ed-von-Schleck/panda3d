@@ -118,6 +118,7 @@ class NxSoftBodyMeshDesc;
 enum NxSDKCreateError;
 enum NxAssertResponse;
 enum NxErrorCode;
+enum NxTriggerFlag;
 
 template<class T> class NxUserEntityReport;
 
