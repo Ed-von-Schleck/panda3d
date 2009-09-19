@@ -17,6 +17,11 @@
 
 TypeHandle PhysxScene::_type_handle;
 
+PStatCollector PhysxScene::_pcollector_fetch_results("App:PhysX:Fetch Results");
+PStatCollector PhysxScene::_pcollector_update_transforms("App:PhysX:Update Transforms");
+PStatCollector PhysxScene::_pcollector_debug_renderer("App:PhysX:Debug Renderer");
+PStatCollector PhysxScene::_pcollector_simulate("App:PhysX:Simulate");
+
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxScene::link
 //       Access: Public
@@ -83,6 +88,80 @@ release() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::simulate
+//       Access: Published
+//  Description: Advances the simulation by an elapsedTime time.
+//               The elapsed time has to be in the range (0, inf).
+//
+//               It is not allowed to modify the physics scene in
+//               between the simulate(dt) and the fetch_results
+//               calls!  But it is allowed to read from the scene
+//               and do additional computations, e. g. AI, in
+//               between these calls.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+simulate(float dt) {
+
+  nassertv(_error_type == ET_ok);
+
+  _pcollector_simulate.start();
+  _ptr->simulate(dt);
+  _ptr->flushStream();
+  _pcollector_simulate.stop();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::fetch_results
+//       Access: Published
+//  Description: Waits until the simulation has finished, and then
+//               updates the scene graph with with simulation
+//               results.
+//
+//               It is not allowed to modify the physics scene in
+//               between the simulate(dt) and the fetch_results
+//               calls!  But it is allowed to read from the scene
+//               and do additional computations, e. g. AI, in
+//               between these calls.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+fetch_results() {
+
+  nassertv(_error_type == ET_ok);
+
+  _pcollector_fetch_results.start();
+  _ptr->fetchResults(NX_RIGID_BODY_FINISHED, true);
+  _pcollector_fetch_results.stop();
+
+  // Update node transforms
+  _pcollector_update_transforms.start();
+
+  NxU32 nbTransforms = 0;
+  NxActiveTransform *activeTransforms = _ptr->getActiveTransforms(nbTransforms);
+
+  if (nbTransforms && activeTransforms) {
+    for (NxU32 i=0; i<nbTransforms; ++i) {
+
+      // Objects created by the Visual Remote Debugger might not have
+      // user data. So check if user data ist set.
+      void *userData = activeTransforms[i].userData;
+      if (userData) {
+        LMatrix4f m = PhysxManager::nxMat34_to_mat4(activeTransforms[i].actor2World);
+        PhysxActor *actor = (PhysxActor *)userData;
+        actor->update_transform(m);
+      }
+    }
+  }
+  _pcollector_update_transforms.stop();
+
+  // Update debug node
+  _pcollector_debug_renderer.start();
+  _debugNode->update(_ptr);
+  _pcollector_debug_renderer.stop();
+
+  nassertv(_ptr->isWritable());
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxScene::set_gravity
 //       Access: Published
 //  Description: Sets a constant gravity for the entire scene.
@@ -109,51 +188,6 @@ get_gravity() const {
   NxVec3 gravity;
   _ptr->getGravity(gravity);
   return PhysxManager::nxVec3_to_vec3(gravity);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxScene::do_physics
-//       Access: Published
-//  Description: Advances the simulation by an elapsedTime time. 
-//
-//               If elapsedTime is large, it is internally
-//               subdivided according to parameters provided with
-//               the setFixedTimesteps() method.
-//
-//               The elapsed time has to be in the range (0, inf).
-////////////////////////////////////////////////////////////////////
-void PhysxScene::
-do_physics(float dt) {
-
-  nassertv(_error_type == ET_ok);
-
-  // Advance simulation state
-  _ptr->simulate(dt);
-  _ptr->flushStream();
-
-  // Update node transforms
-  NxU32 nbTransforms = 0;
-  NxActiveTransform *activeTransforms = _ptr->getActiveTransforms(nbTransforms);
-
-  if (nbTransforms && activeTransforms) {
-    for (NxU32 i=0; i<nbTransforms; ++i) {
-
-      // Objects created by the Visual Remote Debugger might not have
-      // user data. So check if user data ist set.
-      void *userData = activeTransforms[i].userData;
-      if (userData) {
-        LMatrix4f m = PhysxManager::nxMat34_to_mat4(activeTransforms[i].actor2World);
-        PhysxActor *actor = (PhysxActor *)userData;
-        actor->update_transform(m);
-      }
-    }
-  }
-
-  // Fetch simulation results
-  _ptr->fetchResults(NX_RIGID_BODY_FINISHED, true);
-
-  // Update debug node
-  _debugNode->update(_ptr);
 }
 
 ////////////////////////////////////////////////////////////////////

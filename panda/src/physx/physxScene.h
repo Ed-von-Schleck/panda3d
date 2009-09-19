@@ -47,7 +47,8 @@ PUBLISHED:
   INLINE PhysxScene();
   INLINE ~PhysxScene();
 
-  void do_physics(float dt);
+  void simulate(float dt);
+  void fetch_results();
 
   PT(PhysxDebugGeomNode) get_debug_geom_node();
 
@@ -72,6 +73,11 @@ public:
 private:
   NxScene *_ptr;
   PT(PhysxDebugGeomNode) _debugNode;
+
+  static PStatCollector _pcollector_fetch_results;
+  static PStatCollector _pcollector_update_transforms;
+  static PStatCollector _pcollector_debug_renderer;
+  static PStatCollector _pcollector_simulate;
 
 ////////////////////////////////////////////////////////////////////
 public:

@@ -55,15 +55,15 @@ PhysxManager() {
   _sdk->setParameter(NX_VISUALIZE_FORCE_FIELDS, false);
 
   // Connect VDR
-  if(physx_want_visual_debugger) {
+  if(physx_want_vrd) {
     physx_cat.info() << "Connecting to visual remote debugger at ("
-                     << physx_visual_debugger_host << ":"
-                     << physx_visual_debugger_port << ")" << endl;
+                     << physx_vrd_host << ":"
+                     << physx_vrd_port << ")" << endl;
 
     NxRemoteDebugger *debugger = _sdk->getFoundationSDK().getRemoteDebugger();
 
-    debugger->connect(physx_visual_debugger_host.c_str(),
-                      physx_visual_debugger_port);
+    debugger->connect(physx_vrd_host.c_str(),
+                      physx_vrd_port);
 
     if (!debugger->isConnected()) {
       physx_cat.warning() << "Could not connect to visual remot debugger!" << endl;
@@ -81,7 +81,7 @@ PhysxManager::
 ~PhysxManager() {
 
   // Disconnect VRD
-  if(physx_want_visual_debugger) {
+  if(physx_want_vrd) {
     NxRemoteDebugger *debugger = _sdk->getFoundationSDK().getRemoteDebugger();
     if (!debugger->isConnected()) {
       debugger->disconnect();

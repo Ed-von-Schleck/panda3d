@@ -40,19 +40,19 @@ ConfigureFn(config_physx) {
   init_libphysx();
 }
 
-ConfigVariableBool physx_want_visual_debugger
-("physx-want-visual-debugger", false,
+ConfigVariableBool physx_want_vrd
+("physx-want-vrd", false,
 PRC_DESC("Specified wether the manager should try to connect to the NVIDIA "
          "PhysX visual debugger or not. Connection is established when "
          "the first instance of PhysxManager is created."));
 
-ConfigVariableString physx_visual_debugger_host
-("physx-visual-debugger-host", "localhost",
+ConfigVariableString physx_vrd_host
+("physx-vrd-host", "localhost",
 PRC_DESC("Specified the host where the NVIDIA PhysX visual debugger is running"
          "on. Only used if the config-varibale 'physx-want-visual-debugger' "
          "is set to 'true'."));
 
-ConfigVariableInt physx_visual_debugger_port
+ConfigVariableInt physx_vrd_port
 ("physx-visual-debugger-port", 5425,
 PRC_DESC("Specified the port where the NVIDIA PhysX visual debugger is running"
          "on. Only used if the config-varibale 'physx-want-visual-debugger' "
