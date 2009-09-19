@@ -26,6 +26,7 @@ PhysxManager::PhysxOutputStream PhysxManager::_outputStream;
 PhysxManager::
 PhysxManager() {
 
+  // Create PhysX SDK
   NxSDKCreateError error;
   NxPhysicsSDKDesc desc = NxPhysicsSDKDesc();
 
@@ -40,17 +41,35 @@ PhysxManager() {
                       << get_sdk_error_string(error) << endl;
   }
 
+  nassertv_always(error == NXCE_NO_ERROR);
+  nassertv_always(_sdk);
+  
+  // Set some default parameters
   _sdk->setParameter(NX_VISUALIZATION_SCALE, 0.0f);
+  _sdk->setParameter(NX_VISUALIZE_COLLISION_SHAPES, true);
   _sdk->setParameter(NX_VISUALIZE_ACTOR_AXES, true);
   _sdk->setParameter(NX_VISUALIZE_BODY_LIN_VELOCITY, true);
   _sdk->setParameter(NX_VISUALIZE_COLLISION_AABBS, false);
-  _sdk->setParameter(NX_VISUALIZE_COLLISION_SHAPES, true);
   _sdk->setParameter(NX_VISUALIZE_COLLISION_VNORMALS, false);
   _sdk->setParameter(NX_VISUALIZE_COLLISION_FNORMALS, false);
   _sdk->setParameter(NX_VISUALIZE_FORCE_FIELDS, false);
 
-  nassertv_always(error == NXCE_NO_ERROR);
-  nassertv_always(_sdk);
+  // Connect VDR
+  if(physx_want_visual_debugger) {
+    physx_cat.info() << "Connecting to visual remote debugger at ("
+                     << physx_visual_debugger_host << ":"
+                     << physx_visual_debugger_port << ")" << endl;
+
+    NxRemoteDebugger *debugger = _sdk->getFoundationSDK().getRemoteDebugger();
+
+    debugger->connect(physx_visual_debugger_host.c_str(),
+                      physx_visual_debugger_port);
+
+    if (!debugger->isConnected()) {
+      physx_cat.warning() << "Could not connect to visual remot debugger!" << endl;
+    }
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -61,6 +80,15 @@ PhysxManager() {
 PhysxManager::
 ~PhysxManager() {
 
+  // Disconnect VRD
+  if(physx_want_visual_debugger) {
+    NxRemoteDebugger *debugger = _sdk->getFoundationSDK().getRemoteDebugger();
+    if (!debugger->isConnected()) {
+      debugger->disconnect();
+    }
+  }
+
+  // Release PhysX SDK
   NxReleasePhysicsSDK(_sdk);
 }
 

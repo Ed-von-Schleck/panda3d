@@ -19,7 +19,12 @@
 #include "notifyCategoryProxy.h"
 #include "dconfig.h"
 
+ConfigureDecl(config_physx, EXPCL_PANDAPHYSX, EXPTP_PANDAPHYSX);
 NotifyCategoryDecl(physx, EXPCL_PANDAPHYSX, EXPTP_PANDAPHYSX);
+
+extern EXPCL_PANDAPHYSX ConfigVariableBool physx_want_visual_debugger;
+extern EXPCL_PANDAPHYSX ConfigVariableString physx_visual_debugger_host;
+extern EXPCL_PANDAPHYSX ConfigVariableInt physx_visual_debugger_port;
 
 extern EXPCL_PANDAPHYSX void init_libphysx();
 
