@@ -1,0 +1,89 @@
+// Filename: physxContactReport.cxx
+// Created by:  enn0x (19Sep09)
+//
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
+//
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
+//
+////////////////////////////////////////////////////////////////////
+
+#include "physxContactReport.h"
+
+#include "eventQueue.h"
+#include "eventParameter.h"
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxContactReport::clear_events
+//       Access : Public
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxContactReport::
+clear_events() {
+
+  events.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxContactReport::throw_events
+//       Access : Public
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxContactReport::
+throw_events() {
+
+  pvector<Event *>::const_iterator it;
+  for (it = events.begin(); it != events.end(); ++it) {
+    EventQueue::get_global_event_queue( )->queue_event(*it);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxContactReport::onContactNotify
+//       Access : Public
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxContactReport::
+onContactNotify(NxContactPair &pair, NxU32 flags) {
+
+  Event *event;
+
+  if (flags & NX_NOTIFY_ON_START_TOUCH) {
+    event = new Event("physx-contact-start");
+  }
+  else if (flags & NX_NOTIFY_ON_END_TOUCH) {
+    event = new Event("physx-contact-stop");
+  }
+  else if (flags & NX_NOTIFY_ON_TOUCH) {
+    event = new Event("physx-contact-touch");
+  }
+  else if (flags & NX_NOTIFY_ON_START_TOUCH_FORCE_THRESHOLD) {
+    event = new Event("physx-contact-start-force-threshold");
+  }
+  else if (flags & NX_NOTIFY_ON_END_TOUCH_FORCE_THRESHOLD) {
+    event = new Event("physx-contact-stop-force-threshold");
+  }
+  else if (flags & NX_NOTIFY_ON_TOUCH_FORCE_THRESHOLD) {
+    event = new Event("physx-contact-touch-force-threshold");
+  }
+  else {
+    return;
+  }
+
+  PT(PhysxActor) pActor0 = (PhysxActor *)pair.actors[0]->userData;
+  PT(PhysxActor) pActor1 = (PhysxActor *)pair.actors[1]->userData;
+
+  event->add_parameter(EventParameter(pActor0));
+  event->add_parameter(EventParameter(pActor1));
+  events.push_back(event);
+
+
+  //event._sumNormalForce = pair.sumNormalForce;
+  //event._sumFrictionForce = pair.sumFrictionForce;
+
+}
+

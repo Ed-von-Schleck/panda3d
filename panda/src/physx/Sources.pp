@@ -21,6 +21,7 @@
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxContactReport.I physxContactReport.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
     physxObject.I physxObject.h \
@@ -32,6 +33,7 @@
     physxShapeDesc.I physxShapeDesc.h \
     physxSphereShape.I physxSphereShape.h \
     physxSphereShapeDesc.I physxSphereShapeDesc.h \
+    physxTriggerReport.I physxTriggerReport.h \
 
   #define INCLUDED_SOURCES
     physxActor.cxx \
@@ -40,6 +42,7 @@
     physxBoxShapeDesc.cxx \
     physxCapsuleShape.cxx \
     physxCapsuleShapeDesc.cxx \
+    physxContactReport.cxx \
     physxDebugGeomNode.cxx \
     physxManager.cxx \
     physxObject.cxx \
@@ -51,6 +54,7 @@
     physxShapeDesc.cxx \
     physxSphereShape.cxx \
     physxSphereShapeDesc.cxx \
+    physxTriggerReport.cxx \
 
   #define INSTALL_HEADERS \
     NoMinMax.h \
@@ -62,6 +66,7 @@
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxContactReport.I physxContactReport.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
     physxObject.I physxObject.h \
@@ -73,6 +78,7 @@
     physxShapeDesc.I physxShapeDesc.h \
     physxSphereShape.I physxSphereShape.h \
     physxSphereShapeDesc.I physxSphereShapeDesc.h \
+    physxTriggerReport.I physxTriggerReport.h \
 
   #define IGATESCAN all
 

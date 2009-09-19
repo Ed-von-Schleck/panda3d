@@ -18,3 +18,5 @@
 #include "physxSphereShape.cxx"
 #include "physxSphereShapeDesc.cxx"
 
+#include "physxTriggerReport.cxx"
+#include "physxContactReport.cxx"
