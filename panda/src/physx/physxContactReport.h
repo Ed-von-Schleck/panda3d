@@ -16,8 +16,6 @@
 #define PHYSXCONTACTREPORT_H
 
 #include "pandabase.h"
-#include "pvector.h"
-#include "event.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -32,13 +30,15 @@ public:
   INLINE PhysxContactReport();
   INLINE ~PhysxContactReport();
 
-  void clear_events();
-  void throw_events();
+  void enable();
+  void disable();
+  bool is_enabled() const;
 
   void onContactNotify(NxContactPair& pair, NxU32 flags);
 
 private:
-  pvector<Event *> events;
+  bool _enabled;
+  static PStatCollector _pcollector;
 };
 
 #include "physxContactReport.I"

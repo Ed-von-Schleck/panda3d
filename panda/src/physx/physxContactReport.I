@@ -21,6 +21,7 @@
 INLINE PhysxContactReport::
 PhysxContactReport() : NxUserContactReport() {
 
+  _enabled = false;
 }
 
 ////////////////////////////////////////////////////////////////////

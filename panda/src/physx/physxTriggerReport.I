@@ -21,6 +21,7 @@
 INLINE PhysxTriggerReport::
 PhysxTriggerReport() : NxUserTriggerReport() {
 
+  _enabled = false;
 }
 
 ////////////////////////////////////////////////////////////////////

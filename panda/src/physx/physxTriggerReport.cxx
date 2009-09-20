@@ -14,32 +14,43 @@
 
 #include "physxTriggerReport.h"
 
+#include "event.h"
 #include "eventQueue.h"
 #include "eventParameter.h"
 
+PStatCollector PhysxTriggerReport::_pcollector("App:PhysX:Trigger Reporting");
+
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriggerReport::clear_events
+//     Function : PhysxTriggerReport::enable
 //       Access : Public
 //  Description :
 ////////////////////////////////////////////////////////////////////
 void PhysxTriggerReport::
-clear_events() {
+enable() {
 
-  events.clear();
+  _enabled = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriggerReport::throw_events
+//     Function : PhysxTriggerReport::disable
 //       Access : Public
 //  Description :
 ////////////////////////////////////////////////////////////////////
 void PhysxTriggerReport::
-throw_events() {
+disable() {
 
-  pvector<Event *>::const_iterator it;
-  for (it = events.begin(); it != events.end(); ++it) {
-    EventQueue::get_global_event_queue( )->queue_event(*it);
-  }
+  _enabled = false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxTriggerReport::is_enabled
+//       Access : Public
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxTriggerReport::
+is_enabled() const {
+
+  return _enabled;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -50,8 +61,13 @@ throw_events() {
 void PhysxTriggerReport::
 onTrigger(NxShape &triggerShape, NxShape &otherShape, NxTriggerFlag status) {
 
-  Event *event;
+  if (!_enabled) {
+    return;
+  }
 
+  _pcollector.start();
+
+  Event *event;
   if (status & NX_TRIGGER_ON_ENTER) {
     event = new Event("physx-trigger-enter");
   }
@@ -67,9 +83,11 @@ onTrigger(NxShape &triggerShape, NxShape &otherShape, NxTriggerFlag status) {
 
   PT(PhysxShape) pTriggerShape = (PhysxShape *)triggerShape.userData;
   PT(PhysxShape) pOtherShape = (PhysxShape *)otherShape.userData;
-
   event->add_parameter(EventParameter(pTriggerShape));
   event->add_parameter(EventParameter(pOtherShape));
-  events.push_back(event);
+
+  EventQueue::get_global_event_queue( )->queue_event(event);
+
+  _pcollector.stop();
 }
 

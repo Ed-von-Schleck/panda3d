@@ -16,8 +16,6 @@
 #define PHYSXTRIGGERREPORT_H
 
 #include "pandabase.h"
-#include "pvector.h"
-#include "event.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -32,13 +30,15 @@ public:
   INLINE PhysxTriggerReport();
   INLINE ~PhysxTriggerReport();
 
-  void clear_events();
-  void throw_events();
+  void enable();
+  void disable();
+  bool is_enabled() const;
 
   void onTrigger(NxShape &triggerShape, NxShape &otherShape, NxTriggerFlag status);
 
 private:
-  pvector<Event *> events;
+  bool _enabled;
+  static PStatCollector _pcollector;
 };
 
 #include "physxTriggerReport.I"

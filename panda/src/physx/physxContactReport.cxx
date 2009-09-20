@@ -13,33 +13,45 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxContactReport.h"
+#include "physxManager.h"
 
+#include "event.h"
 #include "eventQueue.h"
 #include "eventParameter.h"
 
+PStatCollector PhysxContactReport::_pcollector("App:PhysX:Contact Reporting");
+
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxContactReport::clear_events
+//     Function : PhysxContactReport::enable
 //       Access : Public
 //  Description :
 ////////////////////////////////////////////////////////////////////
 void PhysxContactReport::
-clear_events() {
+enable() {
 
-  events.clear();
+  _enabled = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxContactReport::throw_events
+//     Function : PhysxContactReport::disable
 //       Access : Public
 //  Description :
 ////////////////////////////////////////////////////////////////////
 void PhysxContactReport::
-throw_events() {
+disable() {
 
-  pvector<Event *>::const_iterator it;
-  for (it = events.begin(); it != events.end(); ++it) {
-    EventQueue::get_global_event_queue( )->queue_event(*it);
-  }
+  _enabled = false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxContactReport::is_enabled
+//       Access : Public
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxContactReport::
+is_enabled() const {
+
+  return _enabled;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -50,8 +62,13 @@ throw_events() {
 void PhysxContactReport::
 onContactNotify(NxContactPair &pair, NxU32 flags) {
 
-  Event *event;
+  if (!_enabled) {
+    return;
+  }
 
+  _pcollector.start();
+
+  Event *event;
   if (flags & NX_NOTIFY_ON_START_TOUCH) {
     event = new Event("physx-contact-start");
   }
@@ -76,14 +93,14 @@ onContactNotify(NxContactPair &pair, NxU32 flags) {
 
   PT(PhysxActor) pActor0 = (PhysxActor *)pair.actors[0]->userData;
   PT(PhysxActor) pActor1 = (PhysxActor *)pair.actors[1]->userData;
-
   event->add_parameter(EventParameter(pActor0));
   event->add_parameter(EventParameter(pActor1));
-  events.push_back(event);
 
+  //LVector3f normal = PhysxManager::nxVec3_to_vec3(pair.sumNormalForce);
+  //LVector3f friction = PhysxManager::nxVec3_to_vec3(pair.sumFrictionForce);
 
-  //event._sumNormalForce = pair.sumNormalForce;
-  //event._sumFrictionForce = pair.sumFrictionForce;
+  EventQueue::get_global_event_queue( )->queue_event(event);
 
+  _pcollector.stop();
 }
 

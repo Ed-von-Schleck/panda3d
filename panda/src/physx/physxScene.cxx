@@ -263,3 +263,69 @@ get_debug_geom_node() {
   return _debugNode;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::enable_contact_reporting
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+enable_contact_reporting(bool enabled) {
+
+  nassertv(_error_type == ET_ok);
+
+  if (enabled) {
+    _ptr->setUserContactReport(&_contact_report);
+    _contact_report.enable();
+  }
+  else {
+    _ptr->setUserContactReport(NULL);
+    _contact_report.disable();
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::is_contact_reporting_enabled
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+is_contact_reporting_enabled() const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  return _contact_report.is_enabled();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::enable_trigger_reporting
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+enable_trigger_reporting(bool enabled) {
+
+  nassertv(_error_type == ET_ok);
+
+  if (enabled) {
+    _ptr->setUserTriggerReport(&_trigger_report);
+    _trigger_report.enable();
+  }
+  else {
+    _ptr->setUserTriggerReport(NULL);
+    _trigger_report.disable();
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::is_trigger_reporting_enabled
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+is_trigger_reporting_enabled() const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  return _trigger_report.is_enabled();
+}
+

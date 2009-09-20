@@ -6,6 +6,7 @@
 #include "physxBoxShapeDesc.cxx"
 #include "physxCapsuleShape.cxx"
 #include "physxCapsuleShapeDesc.cxx"
+#include "physxContactReport.cxx"
 #include "physxDebugGeomNode.cxx"
 #include "physxManager.cxx"
 #include "physxObject.cxx"
@@ -17,6 +18,5 @@
 #include "physxShapeDesc.cxx"
 #include "physxSphereShape.cxx"
 #include "physxSphereShapeDesc.cxx"
-
 #include "physxTriggerReport.cxx"
-#include "physxContactReport.cxx"
+

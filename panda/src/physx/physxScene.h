@@ -16,9 +16,11 @@
 #define PHYSXSCENE_H
 
 #include "pandabase.h"
-#include "physxObject.h"
-
 #include "lvector3.h"
+
+#include "physxObject.h"
+#include "physxContactReport.h"
+#include "physxTriggerReport.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -52,6 +54,11 @@ PUBLISHED:
 
   PT(PhysxDebugGeomNode) get_debug_geom_node();
 
+  void enable_contact_reporting(bool enabled);
+  bool is_contact_reporting_enabled() const;
+  void enable_trigger_reporting(bool enabled);
+  bool is_trigger_reporting_enabled() const;
+
   void set_gravity(const LVector3f &gravity);
   LVector3f get_gravity() const;
 
@@ -73,6 +80,9 @@ public:
 private:
   NxScene *_ptr;
   PT(PhysxDebugGeomNode) _debugNode;
+
+  PhysxContactReport _contact_report;
+  PhysxTriggerReport _trigger_report;
 
   static PStatCollector _pcollector_fetch_results;
   static PStatCollector _pcollector_update_transforms;
