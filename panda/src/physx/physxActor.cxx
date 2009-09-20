@@ -417,3 +417,248 @@ get_shape_by_name(const char *name) const {
   return NULL;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::set_body_flag
+//       Access: Published
+//  Description: Raise or lower individual PhysxBodyFlag flags. 
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+set_body_flag(PhysxBodyFlag flag, bool value) {
+
+  nassertv(_error_type == ET_ok);
+
+  if (value == true) {
+    _ptr->raiseBodyFlag((NxBodyFlag)flag);
+  } else {
+    _ptr->clearBodyFlag((NxBodyFlag)flag);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::get_body_flag
+//       Access: Published
+//  Description: Returns the specified PhysxBodyFlag flag.
+////////////////////////////////////////////////////////////////////
+bool PhysxActor::
+get_body_flag(PhysxBodyFlag flag) const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  return ptr()->readBodyFlag((NxBodyFlag)flag);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_force
+//       Access: Published
+//  Description: Applies a force (or impulse) defined in the global
+//               coordinate frame to the actor.
+//
+//               This will not induce a torque.
+//
+//               The PhysxForceMode determines if the force is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_force(const LVector3f force, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!force.is_nan());
+
+  _ptr->addForce(PhysxManager::vec3_to_nxVec3(force), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_force_at_pos
+//       Access: Published
+//  Description: Applies a force (or impulse) defined in the global
+//               coordinate frame, acting at a particular point in
+//               global coordinates, to the actor. 
+//
+//               Note that if the force does not act along the
+//               center of mass of the actor, this will also add the
+//               corresponding torque. Because forces are reset at
+//               the end of every timestep, you can maintain a total
+//               external force on an object by calling this once
+//               every frame.
+//
+//               PhysxForceMode determines if the force is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_force_at_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!force.is_nan());
+  nassertv_always(!pos.is_nan());
+
+  _ptr->addForceAtPos(PhysxManager::vec3_to_nxVec3(force), PhysxManager::point3_to_nxVec3(pos), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_force_at_local_pos
+//       Access: Published
+//  Description: Applies a force (or impulse) defined in the global
+//               coordinate frame, acting at a particular point in
+//               local coordinates, to the actor. 
+//
+//               Note that if the force does not act along the
+//               center of mass of the actor, this will also add
+//               the corresponding torque. Because forces are reset
+//               at the end of every timestep, you can maintain a
+//               total external force on an object by calling this
+//               once every frame.
+//
+//               PhysxForceMode determines if the force is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_force_at_local_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!force.is_nan());
+  nassertv_always(!pos.is_nan());
+
+  _ptr->addForceAtLocalPos(PhysxManager::vec3_to_nxVec3(force), PhysxManager::point3_to_nxVec3(pos), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_torque
+//       Access: Published
+//  Description: Applies an impulsive torque defined in the global
+//               coordinate frame to the actor. 
+//
+//               The PhysxForceMode determines if the torque is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_torque(const LVector3f torque, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!torque.is_nan());
+
+  _ptr->addTorque(PhysxManager::vec3_to_nxVec3(torque), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_local_force
+//       Access: Published
+//  Description: Applies a force (or impulse) defined in the actor
+//               local coordinate frame to the actor. 
+//               This will not induce a torque.
+//
+//               PhysxForceMode determines if the force is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_local_force(const LVector3f force, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!force.is_nan());
+
+  _ptr->addLocalForce(PhysxManager::vec3_to_nxVec3(force), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_local_force_at_pos
+//       Access: Published
+//  Description: Applies a force (or impulse) defined in the actor
+//               local coordinate frame, acting at a particular
+//               point in global coordinates, to the actor. 
+//
+//               Note that if the force does not act along the
+//               center of mass of the actor, this will also add
+//               the corresponding torque. Because forces are reset
+//               at the end of every timestep, you can maintain a
+//               total external force on an object by calling this
+//               once every frame.
+//
+//               PhysxForceMode determines if the force is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_local_force_at_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!force.is_nan());
+  nassertv_always(!pos.is_nan());
+
+  _ptr->addLocalForceAtPos(PhysxManager::vec3_to_nxVec3(force), PhysxManager::point3_to_nxVec3(pos), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_local_force_at_local_pos
+//       Access: Published
+//  Description: Applies a force (or impulse) defined in the actor
+//               local coordinate frame, acting at a particular
+//               point in local coordinates, to the actor. 
+//
+//               Note that if the force does not act along the
+//               center of mass of the actor, this will also add the
+//               corresponding torque. Because forces are reset at
+//               the end of every timestep, you can maintain a total
+//               external force on an object by calling this once
+//               every frame.
+//
+//               PhysxForceMode determines if the force is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_local_force_at_local_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!force.is_nan());
+  nassertv_always(!pos.is_nan());
+
+  _ptr->addLocalForceAtLocalPos(PhysxManager::vec3_to_nxVec3(force), PhysxManager::point3_to_nxVec3(pos), (NxForceMode)mode, wakeup);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::add_local_torque
+//       Access: Published
+//  Description: Applies an impulsive torque defined in the actor
+//               local coordinate frame to the actor.
+//
+//               PhysxForceMode determines if the torque is to be
+//               conventional or impulsive.
+//
+//               The actor must be dynamic.
+//               This call wakes the actor if it is sleeping and the
+//               wakeup parameter is true (default).
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+add_local_torque(const LVector3f torque, PhysxForceMode mode, bool wakeup) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!torque.is_nan());
+
+  _ptr->addLocalTorque(PhysxManager::vec3_to_nxVec3(torque), (NxForceMode)mode, wakeup);
+}
+

@@ -17,9 +17,10 @@
 
 #include "pandabase.h"
 #include "typedReferenceCount.h"
-
 #include "lpoint3.h"
 #include "lmatrix.h"
+
+#include "physx_enumerations.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -38,16 +39,6 @@ PUBLISHED:
 
   virtual void set_to_default() = 0;
   virtual bool is_valid() const = 0;
-
-  enum PhysxShapeFlag {
-    SF_trigger_on_enter      = 1<<0, // NX_TRIGGER_ON_ENTER
-    SF_trigger_on_leave      = 1<<1, // NX_TRIGGER_ON_LEAVE
-    SF_trigger_on_stay       = 1<<2, // NX_TRIGGER_ON_STAY
-    SF_trigger_enable        = 7,    // NX_TRIGGER_ENABLE
-    SF_visualization         = 1<<3, // NX_SF_VISUALIZATION
-    SF_disable_collision     = 1<<4, // NX_SF_DISABLE_COLLISION
-    SF_disable_raycasting    = 1<<6, // NX_SF_DISABLE_RAYCASTING
-  };
 
   void set_name(const char *name);
   void set_trigger(bool value);

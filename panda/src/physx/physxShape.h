@@ -19,6 +19,8 @@
 #include "pointerTo.h"
 #include "lmatrix.h"
 #include "lquaternion.h"
+
+#include "physx_enumerations.h"
 #include "physxObject.h"
 
 #include "NoMinMax.h"
@@ -39,7 +41,10 @@ PUBLISHED:
   PT(PhysxActor) get_actor() const;
 
   void set_name(const char *name);
+  void set_flag(const PhysxShapeFlag flag, bool value);
+
   const char *get_name() const;
+  bool get_flag(const PhysxShapeFlag flag) const;
 
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:

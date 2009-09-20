@@ -20,6 +20,8 @@
 #include "lvector3.h"
 #include "lmatrix.h"
 
+#include "physx_enumerations.h"
+
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
@@ -50,6 +52,7 @@ PUBLISHED:
   void set_sleep_damping(float damping);
   void set_mass_local_mat(const LMatrix4f mat);
   void set_mass_space_inertia(const LVector3f inertia);
+  void set_flag(PhysxBodyFlag flag, bool value);
 
   float get_mass() const;
   float get_linear_damping() const;
@@ -64,24 +67,7 @@ PUBLISHED:
   float get_sleep_damping() const;
   LMatrix4f get_mass_local_mat() const;
   LVector3f get_mass_space_inertia() const;
-
-/*
-  enum BodyFlag {
-    BF_disable_gravity    = (1<<0),   // NX_BF_DISABLE_GRAVITY
-    Bf_frozen_pos_x       = (1<<1),   // NX_BF_FROZEN_POS_X
-    BF_frozen_pos_y       = (1<<2),   // NX_BF_FROZEN_POS_Y
-    BF_frozen_pos_z       = (1<<3),   // NX_BF_FROZEN_POS_Z
-    BF_frozen_rot_x       = (1<<4),   // NX_BF_FROZEN_ROT_X
-    BF_frozen_rot_y       = (1<<5),   // NX_BF_FROZEN_ROT_Y
-    BF_frozen_rot_z       = (1<<6),   // NX_BF_FROZEN_ROT_Z
-    BF_kinematic          = (1<<7),   // NX_BF_KINEMATIC
-    BF_visualization      = (1<<8),   // NX_BF_VISUALIZATION
-    BF_filter_sleep_vel   = (1<<10),  // NX_BF_FILTER_SLEEP_VEL
-    BF_energy_sleep_test  = (1<<11),  // NX_BF_ENERGY_SLEEP_TEST
-  };
-
-  void set_flag( BodyFlag flag, bool value );
-*/
+  bool get_flag(PhysxBodyFlag flag) const;
 
 public:
   INLINE PhysxBodyDesc(const NxBodyDesc *desc);

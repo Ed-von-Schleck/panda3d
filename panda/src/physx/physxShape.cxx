@@ -110,12 +110,49 @@ set_name(const char *name) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxShape::get_name
 //       Access: Published
-//  Description: Retrieves the name string. 
+//  Description: Returns the name string. 
 ////////////////////////////////////////////////////////////////////
 const char *PhysxShape::
 get_name() const {
 
   nassertr(_error_type == ET_ok, "");
   return ptr()->getName();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxShape::set_flag
+//       Access : Published
+//  Description : Sets the specified shape flag.
+//
+//                The shape may be turned into a trigger by setting
+//                one or more of the TriggerFlags to true. A trigger
+//                shape will not collide with other shapes. Instead,
+//                if a shape enters the trigger's volume, a trigger
+//                event will be sent. Trigger events can be listened
+//                to by DirectObjects.
+//                The following trigger events can be sent:
+//                - physx-trigger-enter
+//                - physx-trigger-stay
+//                - physx-trigger-leave
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_flag(PhysxShapeFlag flag, bool value) {
+
+  nassertv(_error_type == ET_ok);
+
+  ptr()->setFlag((NxShapeFlag)flag, value);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxShape::get_flag
+//       Access : Published
+//  Description : Returns the specified shape flag.
+////////////////////////////////////////////////////////////////////
+bool PhysxShape::
+get_flag(PhysxShapeFlag flag) const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  return (ptr()->getFlag((NxShapeFlag)flag)) ? true : false;
 }
 

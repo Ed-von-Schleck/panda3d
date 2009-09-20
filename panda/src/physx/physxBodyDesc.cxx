@@ -322,20 +322,29 @@ get_mass_space_inertia() const {
   return PhysxManager::nxVec3_to_vec3(_desc.massSpaceInertia);
 }
 
-
-/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBodyDesc::set_flag
 //       Access: Published
-//  Description: Raise or lower individual BodyFlag flags.
+//  Description: Raise or lower individual PhysxBodyFlag flags.
 ////////////////////////////////////////////////////////////////////
 void PhysxBodyDesc::
-set_flag( BodyFlag flag, bool value ) {
+set_flag(const PhysxBodyFlag flag, bool value) {
 
-  if ( value == true ) {
+  if (value == true) {
     _desc.flags |= flag;
   } else {
     _desc.flags &= ~(flag);
   }
 }
-*/
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::get_flag
+//       Access: Published
+//  Description: Returns the specified PhysxBodyFlag flag.
+////////////////////////////////////////////////////////////////////
+bool PhysxBodyDesc::
+get_flag(const PhysxBodyFlag flag) const {
+
+  return (_desc.flags & flag) ? true : false;
+}
+
