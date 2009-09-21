@@ -99,7 +99,7 @@ onContactNotify(NxContactPair &pair, NxU32 flags) {
   //LVector3f normal = PhysxManager::nxVec3_to_vec3(pair.sumNormalForce);
   //LVector3f friction = PhysxManager::nxVec3_to_vec3(pair.sumFrictionForce);
 
-  EventQueue::get_global_event_queue( )->queue_event(event);
+  EventQueue::get_global_event_queue()->queue_event(event);
 
   _pcollector.stop();
 }

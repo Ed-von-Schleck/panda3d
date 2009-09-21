@@ -24,6 +24,8 @@
     physxContactReport.I physxContactReport.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
+    physxMaterial.I physxMaterial.h \
+    physxMaterialDesc.I physxMaterialDesc.h \
     physxObject.I physxObject.h \
     physxPlaneShape.I physxPlaneShape.h \
     physxPlaneShapeDesc.I physxPlaneShapeDesc.h \
@@ -45,6 +47,8 @@
     physxContactReport.cxx \
     physxDebugGeomNode.cxx \
     physxManager.cxx \
+    physxMaterial.cxx \
+    physxMaterialDesc.cxx \
     physxObject.cxx \
     physxPlaneShape.cxx \
     physxPlaneShapeDesc.cxx \
@@ -69,6 +73,8 @@
     physxContactReport.I physxContactReport.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
+    physxMaterial.I physxMaterial.h \
+    physxMaterialDesc.I physxMaterialDesc.h \
     physxObject.I physxObject.h \
     physxPlaneShape.I physxPlaneShape.h \
     physxPlaneShapeDesc.I physxPlaneShapeDesc.h \

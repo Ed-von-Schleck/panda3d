@@ -332,7 +332,8 @@ set_flag(const PhysxBodyFlag flag, bool value) {
 
   if (value == true) {
     _desc.flags |= flag;
-  } else {
+  }
+  else {
     _desc.flags &= ~(flag);
   }
 }

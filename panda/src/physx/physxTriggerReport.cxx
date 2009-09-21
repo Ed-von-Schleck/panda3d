@@ -86,7 +86,7 @@ onTrigger(NxShape &triggerShape, NxShape &otherShape, NxTriggerFlag status) {
   event->add_parameter(EventParameter(pTriggerShape));
   event->add_parameter(EventParameter(pOtherShape));
 
-  EventQueue::get_global_event_queue( )->queue_event(event);
+  EventQueue::get_global_event_queue()->queue_event(event);
 
   _pcollector.stop();
 }

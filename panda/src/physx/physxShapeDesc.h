@@ -25,6 +25,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxMaterial;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxShapeDesc
 // Description : Descriptor class for the PhysxShape class. Shape
@@ -47,10 +49,21 @@ PUBLISHED:
   void set_local_hpr(float h, float p, float r);
   void set_skin_width(float skinWidth);
   void set_flag(const PhysxShapeFlag flag, bool value);
+  void set_mass(float mass);
+  void set_density(float density);
+  void set_group(unsigned short group);
+  void set_material(const PhysxMaterial &material);
+  void set_material_index(unsigned short index);
 
+  const char *get_name() const;
+  LPoint3f get_local_pos() const;
+  LMatrix4f get_local_mat() const;
+  float get_skin_width() const;
   bool get_flag(const PhysxShapeFlag flag) const;
-
-  //void set_material(const PhysxMaterial &material);
+  float get_mass() const;
+  float get_density() const;
+  unsigned short get_group() const;
+  unsigned short get_material_index() const;
 
 public:
   virtual NxShapeDesc *ptr() const = 0;

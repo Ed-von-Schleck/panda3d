@@ -94,7 +94,8 @@ toggle() {
 
   if (NxGetPhysicsSDK()->getParameter(NX_VISUALIZATION_SCALE) == 0.0f) {
     on();
-  } else {
+  }
+  else {
     off();
   }
 }

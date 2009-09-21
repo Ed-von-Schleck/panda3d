@@ -23,6 +23,8 @@
 #include "physxCapsuleShape.h"
 #include "physxCapsuleShapeDesc.h"
 #include "physxDebugGeomNode.h"
+#include "physxMaterial.h"
+#include "physxMaterialDesc.h"
 #include "physxObject.h"
 #include "physxPlaneShape.h"
 #include "physxPlaneShapeDesc.h"
@@ -82,6 +84,8 @@ init_libphysx() {
   PhysxCapsuleShape::init_type();
   PhysxCapsuleShapeDesc::init_type();
   PhysxDebugGeomNode::init_type();
+  PhysxMaterial::init_type();
+  PhysxMaterialDesc::init_type();
   PhysxObject::init_type();
   PhysxPlaneShape::init_type();
   PhysxPlaneShapeDesc::init_type();

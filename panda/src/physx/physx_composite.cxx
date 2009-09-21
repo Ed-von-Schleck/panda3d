@@ -9,6 +9,8 @@
 #include "physxContactReport.cxx"
 #include "physxDebugGeomNode.cxx"
 #include "physxManager.cxx"
+#include "physxMaterial.cxx"
+#include "physxMaterialDesc.cxx"
 #include "physxObject.cxx"
 #include "physxPlaneShape.cxx"
 #include "physxPlaneShapeDesc.cxx"
@@ -19,4 +21,3 @@
 #include "physxSphereShape.cxx"
 #include "physxSphereShapeDesc.cxx"
 #include "physxTriggerReport.cxx"
-

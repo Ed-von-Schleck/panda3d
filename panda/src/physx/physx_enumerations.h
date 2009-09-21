@@ -36,6 +36,17 @@
 #define NX_BF_FILTER_SLEEP_VEL 1<<10
 #define NX_BF_ENERGY_SLEEP_TEST 1<<11
 
+// PhysxCombineMode
+#define NX_CM_AVERAGE 0
+#define NX_CM_MIN 1
+#define NX_CM_MULTIPLY 2
+#define NX_CM_MAX 3
+
+// PhysxMaterialFlag
+#define NX_MF_ANISOTROPIC 1<<0
+#define NX_MF_DISABLE_FRICTION 1<<4
+#define NX_MF_DISABLE_STRONG_FRICTION 1<<5
+
 // PhysxForceMode
 #define NX_FORCE 0
 #define NX_IMPULSE 1
@@ -86,6 +97,13 @@ enum PhysxBodyFlag {
   BF_energy_sleep_test = NX_BF_ENERGY_SLEEP_TEST
 };
 
+enum PhysxCombineMode {
+  CM_average  = NX_CM_AVERAGE,
+  CM_min      = NX_CM_MIN,
+  CM_multiply = NX_CM_MULTIPLY,
+  CM_max      = NX_CM_MAX
+};
+
 enum PhysxForceMode {
   FM_force                  = NX_FORCE,
   FM_impulse                = NX_IMPULSE,
@@ -93,6 +111,12 @@ enum PhysxForceMode {
   FM_smooth_impulse         = NX_SMOOTH_IMPULSE,
   FM_smooth_velocity_change = NX_SMOOTH_VELOCITY_CHANGE,
   FM_acceleration           = NX_ACCELERATION
+};
+
+enum PhysxMaterialFlag {
+  MF_anisotropic             = NX_MF_ANISOTROPIC,
+  MF_disable_friction        = NX_MF_DISABLE_FRICTION,
+  MF_disable_strong_friction = NX_MF_DISABLE_STRONG_FRICTION
 };
 
 enum PhysxShapeFlag {

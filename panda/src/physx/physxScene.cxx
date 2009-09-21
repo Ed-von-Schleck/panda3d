@@ -36,7 +36,16 @@ link(NxScene *scenePtr) {
   _ptr->userData = this;
   _error_type = ET_ok;
 
-  // Link materials TODO
+  // Link materials
+  NxMaterial *materials[5];
+  NxU32 iterator = 0;
+
+  while (NxU32 i=_ptr->getMaterialArray(materials, 5, iterator)) {
+    while(i--) {
+      PT(PhysxMaterial) material = new PhysxMaterial();
+      material->link(materials[i]);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -65,6 +74,17 @@ unlink() {
   // Unlink cloths TODO
   // Unlink softbodies TODO
   // Unlink materials TODO
+
+  // Unlink materials
+  NxMaterial *materials[5];
+  NxU32 iterator = 0;
+
+  while (NxU32 i=_ptr->getMaterialArray(materials, 5, iterator)) {
+    while(i--) {
+      PT(PhysxMaterial) material = (PhysxMaterial *)materials[i]->userData;
+      material->unlink();
+    }
+  }
 
   // Unlink self
   _error_type = ET_released;
@@ -327,5 +347,155 @@ is_trigger_reporting_enabled() const {
   nassertr(_error_type == ET_ok, false);
 
   return _trigger_report.is_enabled();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_num_materials
+//       Access: Published
+//  Description: Return the number of materials in the scene. 
+//
+//               Note that the returned value is not related to
+//               material indices. Those may not be allocated
+//               continuously, and its values may be higher than
+//               get_num_materials(). This will also include the
+//               default material which exists without having to
+//               be created.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxScene::
+get_num_materials() const {
+
+  nassertr(_error_type == ET_ok, -1);
+  return _ptr->getNbMaterials();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::create_material
+//       Access: Published
+//  Description: Creates a new PhysxMaterial.
+//
+//               The material library consists of an array of
+//               material objects. Each material has a well defined
+//               index that can be used to refer to it. If an object
+//               references an undefined material, the default
+//               material with index 0 is used instead.
+////////////////////////////////////////////////////////////////////
+PT(PhysxMaterial) PhysxScene::
+create_material(PhysxMaterialDesc &desc) {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr(desc.is_valid(),NULL);
+
+  PT(PhysxMaterial) material = new PhysxMaterial();
+  nassertr(material, NULL);
+
+  NxMaterial *materialPtr = _ptr->createMaterial(*desc.ptr());
+  nassertr(materialPtr, NULL);
+
+  material->link(materialPtr);
+
+  return material;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::create_material
+//       Access: Published
+//  Description: Creates a new PhysxMaterial using the default
+//               settings of PhysxMaterialDesc.
+////////////////////////////////////////////////////////////////////
+PT(PhysxMaterial) PhysxScene::
+create_material() {
+
+  nassertr(_error_type == ET_ok, NULL);
+
+  PT(PhysxMaterial) material = new PhysxMaterial();
+  nassertr(material, NULL);
+
+  NxMaterialDesc desc;
+  desc.setToDefault();
+  NxMaterial *materialPtr = _ptr->createMaterial(desc);
+  nassertr(materialPtr, NULL);
+
+  material->link(materialPtr);
+
+  return material;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_hightest_material_index
+//       Access: Published
+//  Description: Returns current highest valid material index.
+//
+//               Note that not all indices below this are valid if
+//               some of them belong to meshes that have beed
+//               freed.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxScene::
+get_hightest_material_index() const {
+
+  nassertr(_error_type == ET_ok, -1);
+  return _ptr->getHighestMaterialIndex();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_material_from_index
+//       Access: Published
+//  Description: Retrieves the material with the given material
+//               index. 
+//
+//               There is always at least one material in the Scene,
+//               the default material (index 0). If the specified
+//               material index is out of range (larger than
+//               get_hightest_material_index) or belongs to a
+//               material that has been released, then the default
+//               material is returned, but no error is reported.
+////////////////////////////////////////////////////////////////////
+PT(PhysxMaterial) PhysxScene::
+get_material_from_index(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+
+  NxMaterial *materialPtr = _ptr->getMaterialFromIndex(idx);
+
+  return (PhysxMaterial *)(materialPtr->userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_material
+//       Access: Published
+//  Description: Retrieves the n-th material from the array of
+//               materials. See also get_material_from_index,
+//               which retrieves a material by it's material index.
+////////////////////////////////////////////////////////////////////
+PT(PhysxMaterial) PhysxScene::
+get_material(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbMaterials(), NULL);
+
+  NxU32 n = _ptr->getNbMaterials();
+  NxMaterial **materials = new NxMaterial *[n];
+  NxU32 materialCount;
+  NxU32 iterator = 0;
+
+  materialCount = _ptr->getMaterialArray(materials, n, iterator);
+  nassertr((materialCount == n), NULL);
+
+  NxMaterial *materialPtr = materials[idx];
+  delete[] materials;
+
+  return (PhysxMaterial *)(materialPtr->userData);
 }
 

@@ -14,6 +14,7 @@
 
 #include "physxShapeDesc.h"
 #include "physxManager.h"
+#include "physxMaterial.h"
 
 TypeHandle PhysxShapeDesc::_type_handle;
 
@@ -41,7 +42,8 @@ set_trigger(bool value) {
 
   if (value == true) {
     ptr()->shapeFlags |= NX_TRIGGER_ENABLE;
-  } else {
+  }
+  else {
     ptr()->shapeFlags &= ~(NX_TRIGGER_ENABLE);
   }
 }
@@ -125,9 +127,98 @@ set_flag(const PhysxShapeFlag flag, bool value) {
 
   if (value == true) {
     ptr()->shapeFlags |= flag;
-  } else {
+  }
+  else {
     ptr()->shapeFlags &= ~(flag);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::set_mass
+//       Access: Published
+//  Description: Sets the mass of this individual shape when
+//               computing mass inertial properties for a rigidbody.
+//               When mass<=0.0 then density and volume determine
+//               the mass. Note that this will only be used if the
+//               body has a zero inertia tensor, or if you call
+//               PhysxActor::update_mass_from_shapes explicitly.
+////////////////////////////////////////////////////////////////////
+void PhysxShapeDesc::
+set_mass(float mass) {
+
+  ptr()->mass = mass;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::set_density
+//       Access: Published
+//  Description: Sets the density of this individual shape when 
+//               computing mass inertial properties for a rigidbody
+//               (unless a valid mass >0.0 is provided). Note that
+//               this will only be used if the body has a zero
+//               inertia tensor, or if you call
+//               PhysxActor::update_mass_from_shapes explicitly.
+////////////////////////////////////////////////////////////////////
+void PhysxShapeDesc::
+set_density(float density) {
+
+  nassertv(density > 0.0f);
+  ptr()->density = density;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::set_group
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxShapeDesc::
+set_group(unsigned short group) {
+
+  ptr()->group = group;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_name
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+const char *PhysxShapeDesc::
+get_name() const {
+
+  return ptr()->name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_local_pos
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LPoint3f PhysxShapeDesc::
+get_local_pos() const {
+
+  return PhysxManager::nxVec3_to_point3(ptr()->localPose.t);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_local_mat
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LMatrix4f PhysxShapeDesc::
+get_local_mat() const {
+
+  return PhysxManager::nxMat34_to_mat4(ptr()->localPose);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_skin_width
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxShapeDesc::
+get_skin_width() const {
+
+  return ptr()->skinWidth;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -139,5 +230,71 @@ bool PhysxShapeDesc::
 get_flag(const PhysxShapeFlag flag) const {
 
   return (ptr()->shapeFlags & flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_mass
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxShapeDesc::
+get_mass() const {
+
+  return ptr()->mass;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_density
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxShapeDesc::
+get_density() const {
+
+  return ptr()->density;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_group
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned short PhysxShapeDesc::
+get_group() const {
+
+  return ptr()->group;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::set_material
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxShapeDesc::
+set_material(const PhysxMaterial &material) {
+
+  ptr()->materialIndex = material.ptr()->getMaterialIndex();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::set_material_index
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxShapeDesc::
+set_material_index(unsigned short index) {
+
+  ptr()->materialIndex = index;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShapeDesc::get_material_index
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned short PhysxShapeDesc::
+get_material_index() const {
+
+  return ptr()->materialIndex;
 }
 

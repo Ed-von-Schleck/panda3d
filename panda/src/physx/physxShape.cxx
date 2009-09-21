@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxShape.h"
+#include "physxManager.h"
 #include "physxActor.h"
 #include "physxBoxShape.h"
 #include "physxCapsuleShape.h"
@@ -154,5 +155,184 @@ get_flag(PhysxShapeFlag flag) const {
   nassertr(_error_type == ET_ok, false);
 
   return (ptr()->getFlag((NxShapeFlag)flag)) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_skin_width
+//       Access: Published
+//  Description: Sets the skin width. 
+//               The skin width must be non-negative.
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_skin_width(float skinWidth) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv(skinWidth >= 0.0f);
+
+  ptr()->setSkinWidth(skinWidth);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_skin_width
+//       Access: Published
+//  Description: Returns the skin width.
+////////////////////////////////////////////////////////////////////
+float PhysxShape::
+get_skin_width() const {
+
+  nassertr(_error_type == ET_ok, 0.0f);
+
+  return ptr()->getSkinWidth();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_group
+//       Access: Published
+//  Description: Sets which collision group this shape is part of. 
+//
+//               Default group is 0. Maximum possible group is 31.
+//               Collision groups are sets of shapes which may or
+//               may not be set to collision detect with each other;
+//               this can be set using
+//               PhysxScene::set_group_collision_flag().
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_group(unsigned short group) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv(group >= 0 && group < 32);
+
+  ptr()->setGroup(group);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_group
+//       Access: Published
+//  Description: Retrieves the collision group set for this shape. 
+//               The collision group is an integer between 0 and
+//               31.
+////////////////////////////////////////////////////////////////////
+unsigned short PhysxShape::
+get_group() const {
+
+  nassertr(_error_type == ET_ok, 0);
+
+  return ptr()->getGroup();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_local_pos
+//       Access: Published
+//  Description: Set the position of the shape in actor space, i.e.
+//               relative to the actor it is owned by.
+//
+//               Calling this method does NOT wake the associated
+//               actor up automatically.
+//
+//               Calling this method does not automatically update
+//               the inertia properties of the owning actor (if
+//               applicable); use
+//               PhysxActor::update_mass_from_shapes() to do this.
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_local_pos(const LPoint3f &pos) {
+
+  nassertv(_error_type == ET_ok);
+
+  ptr()->setLocalPosition(PhysxManager::point3_to_nxVec3(pos));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_local_pos
+//       Access: Published
+//  Description: Retrieve the position of the shape in actor space,
+//               i.e. relative to the actor it is owned by. 
+////////////////////////////////////////////////////////////////////
+LPoint3f PhysxShape::
+get_local_pos() const {
+
+  nassertr(_error_type == ET_ok, LPoint3f::zero());
+
+  return PhysxManager::nxVec3_to_point3(ptr()->getLocalPosition());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_local_mat
+//       Access: Published
+//  Description: Set the transform of the shape in actor space,
+//               i.e. relative to the actor it is owned by.
+//
+//               Calling this method does NOT wake the associated
+//               actor up automatically.
+//
+//               Calling this method does not automatically update
+//               the inertia properties of the owning actor (if
+//               applicable); use
+//               PhysxActor::update_mass_from_shapes() to do this.
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_local_mat(const LMatrix4f &mat) {
+
+  nassertv(_error_type == ET_ok);
+
+  ptr()->setLocalPose(PhysxManager::mat4_to_nxMat34(mat));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_local_mat
+//       Access: Published
+//  Description: Retrieve the transform of the shape in actor space,
+//               i.e. relative to the actor it is owned by. 
+////////////////////////////////////////////////////////////////////
+LMatrix4f PhysxShape::
+get_local_mat() const {
+
+  nassertr(_error_type == ET_ok, LMatrix4f::zeros_mat());
+
+  return PhysxManager::nxMat34_to_mat4(ptr()->getLocalPose());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_material_index
+//       Access: Published
+//  Description: Returns the material index currently assigned to
+//               the shape. 
+////////////////////////////////////////////////////////////////////
+unsigned short PhysxShape::
+get_material_index() const {
+
+  nassertr(_error_type == ET_ok, 0);
+  NxMaterialIndex index = ptr()->getMaterial();
+  return (unsigned int)index;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_material
+//       Access: Published
+//  Description: Assigns a material to the shape.
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_material(const PhysxMaterial &material) {
+
+  nassertv(_error_type == ET_ok);
+  ptr()->setMaterial(material.ptr()->getMaterialIndex());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_material_index
+//       Access: Published
+//  Description: Assigns a material index to the shape. 
+//
+//               The material index can be retrieved by calling
+//               PhysxMaterial::get_material_index(). If the material
+//               index is invalid, it will still be recorded, but
+//               the default material (at index 0) will effectively
+//               be used for simulation.
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_material_index(unsigned short index) {
+
+  nassertv(_error_type == ET_ok);
+  ptr()->setMaterial((NxMaterialIndex)index);
 }
 

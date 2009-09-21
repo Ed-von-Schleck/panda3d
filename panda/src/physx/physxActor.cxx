@@ -141,7 +141,8 @@ update_transform(const LMatrix4f m) {
 
     _np.set_transform(_np.get_top(), TransformState::make_pos_hpr(pos, hpr));
 
-  } else {
+  }
+  else {
     _np.set_transform(_np.get_top(), TransformState::make_mat(m));
   }
 */
@@ -429,7 +430,8 @@ set_body_flag(PhysxBodyFlag flag, bool value) {
 
   if (value == true) {
     _ptr->raiseBodyFlag((NxBodyFlag)flag);
-  } else {
+  }
+  else {
     _ptr->clearBodyFlag((NxBodyFlag)flag);
   }
 }
