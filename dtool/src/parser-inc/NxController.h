@@ -1,5 +1,5 @@
-// Filename: NxExtended.h
-// Created by:  enn0x (02Sep09)
+// Filename: NxController.h
+// Created by:  enn0x (22Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -17,9 +17,14 @@
 // interrogate) in lieu of the actual system headers, to generate the
 // interrogate database.
 
-#ifndef NXEXTENDED_H
-#define NXEXTENDED_H
+#ifndef NXCONTROLLER_H
+#define NXCONTROLLER_H
 
-class NxExtendedVec3;
+class NxController;
+class NxControllerDesc;
+class NxUserControllerHitReport;
+class NxControllerShapeHit;
+class NxControllersHit;
+class NxControllerAction;
 
-#endif  // NXEXTENDED_H
+#endif  // NXCONTROLLER_H
