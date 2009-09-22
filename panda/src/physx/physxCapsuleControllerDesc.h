@@ -1,5 +1,5 @@
-// Filename: physxCapsuleShapeDesc.h
-// Created by:  enn0x (11Sep09)
+// Filename: physxCapsuleControllerDesc.h
+// Created by:  enn0x (22Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,24 +12,25 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXCAPSULESHAPEDESC_H
-#define PHYSXCAPSULESHAPEDESC_H
+#ifndef PHYSXCAPSULECONTROLLERDESC_H
+#define PHYSXCAPSULECONTROLLERDESC_H
 
 #include "pandabase.h"
-#include "physxShapeDesc.h"
+#include "physxControllerDesc.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
+#include "NxCapsuleController.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxCapsuleShapeDesc
-// Description : Descriptor class for PhysxCapsuleShape.
+//       Class : PhysxCapsuleControllerDesc
+// Description : Descriptor class for PhysxCapsuleController.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxCapsuleShapeDesc : public PhysxShapeDesc {
+class EXPCL_PANDAPHYSX PhysxCapsuleControllerDesc : public PhysxControllerDesc {
 
 PUBLISHED:
-  INLINE PhysxCapsuleShapeDesc();
-  INLINE ~PhysxCapsuleShapeDesc();
+  INLINE PhysxCapsuleControllerDesc();
+  INLINE ~PhysxCapsuleControllerDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
@@ -41,12 +42,12 @@ PUBLISHED:
   float get_height() const;
 
 public:
-  INLINE PhysxCapsuleShapeDesc(NxCapsuleShapeDesc &desc);
+  INLINE PhysxCapsuleControllerDesc(NxCapsuleControllerDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  virtual NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
 
 private:
-  NxCapsuleShapeDesc _desc;
+  NxCapsuleControllerDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -54,9 +55,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    PhysxShapeDesc::init_type();
-    register_type(_type_handle, "PhysxCapsuleShapeDesc", 
-                  PhysxShapeDesc::get_class_type());
+    PhysxControllerDesc::init_type();
+    register_type(_type_handle, "PhysxCapsuleControllerDesc", 
+                  PhysxControllerDesc::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -70,6 +71,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxCapsuleShapeDesc.I"
+#include "physxCapsuleControllerDesc.I"
 
-#endif // PHYSXCAPSULESHAPEDESC_H
+#endif // PHYSXCAPSULECONTROLLERDESC_H

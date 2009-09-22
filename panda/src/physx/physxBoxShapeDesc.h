@@ -16,9 +16,9 @@
 #define PHYSXBOXSHAPEDESC_H
 
 #include "pandabase.h"
-#include "physxShapeDesc.h"
-
 #include "lvector3.h"
+
+#include "physxShapeDesc.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -37,6 +37,8 @@ PUBLISHED:
   INLINE bool is_valid() const;
 
   void set_dimensions(const LVector3f &dimensions);
+
+  LVector3f get_dimensions() const;
 
 public:
   INLINE PhysxBoxShapeDesc(NxBoxShapeDesc &desc);

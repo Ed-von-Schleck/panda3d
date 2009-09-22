@@ -17,11 +17,17 @@
     physxActor.I physxActor.h \
     physxActorDesc.I physxActorDesc.h \
     physxBodyDesc.I physxBodyDesc.h \
+    physxBoxController.I physxBoxController.h \
+    physxBoxControllerDesc.I physxBoxControllerDesc.h \
     physxBoxShape.I physxBoxShape.h \
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
+    physxCapsuleController.I physxCapsuleController.h \
+    physxCapsuleControllerDesc.I physxCapsuleControllerDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxContactReport.I physxContactReport.h \
+    physxController.I physxController.h \
+    physxControllerDesc.I physxControllerDesc.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
     physxMaterial.I physxMaterial.h \
@@ -41,10 +47,17 @@
     physxActor.cxx \
     physxActorDesc.cxx \
     physxBodyDesc.cxx \
+    physxBoxController.cxx \
+    physxBoxControllerDesc.cxx \
+    physxBoxShape.cxx \
     physxBoxShapeDesc.cxx \
+    physxCapsuleController.cxx \
+    physxCapsuleControllerDesc.cxx \
     physxCapsuleShape.cxx \
     physxCapsuleShapeDesc.cxx \
     physxContactReport.cxx \
+    physxController.cxx \
+    physxControllerDesc.cxx \
     physxDebugGeomNode.cxx \
     physxManager.cxx \
     physxMaterial.cxx \
@@ -66,11 +79,17 @@
     physxActor.I physxActor.h \
     physxActorDesc.I physxActorDesc.h \
     physxBodyDesc.I physxBodyDesc.h \
+    physxBoxController.I physxBoxController.h \
+    physxBoxControllerDesc.I physxBoxControllerDesc.h \
     physxBoxShape.I physxBoxShape.h \
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
+    physxCapsuleController.I physxCapsuleController.h \
+    physxCapsuleControllerDesc.I physxCapsuleControllerDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxContactReport.I physxContactReport.h \
+    physxController.I physxController.h \
+    physxControllerDesc.I physxControllerDesc.h \
     physxDebugGeomNode.I physxDebugGeomNode.h \
     physxManager.I physxManager.h \
     physxMaterial.I physxMaterial.h \

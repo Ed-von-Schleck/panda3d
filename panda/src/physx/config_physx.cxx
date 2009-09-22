@@ -18,10 +18,16 @@
 #include "physxActor.h"
 #include "physxActorDesc.h"
 #include "physxBodyDesc.h"
+//#include "physxBoxController.h"
+#include "physxBoxControllerDesc.h"
 #include "physxBoxShape.h"
 #include "physxBoxShapeDesc.h"
+//#include "physxCapsuleController.h"
+#include "physxCapsuleControllerDesc.h"
 #include "physxCapsuleShape.h"
 #include "physxCapsuleShapeDesc.h"
+//#include "physxController.h"
+#include "physxControllerDesc.h"
 #include "physxDebugGeomNode.h"
 #include "physxMaterial.h"
 #include "physxMaterialDesc.h"
@@ -79,10 +85,16 @@ init_libphysx() {
   PhysxActor::init_type();
   PhysxActorDesc::init_type();
   PhysxBodyDesc::init_type();
+  //PhysxBoxController::init_type();
+  PhysxBoxControllerDesc::init_type();
   PhysxBoxShape::init_type();
   PhysxBoxShapeDesc::init_type();
+  //PhysxCapsuleController::init_type();
+  PhysxCapsuleControllerDesc::init_type();
   PhysxCapsuleShape::init_type();
   PhysxCapsuleShapeDesc::init_type();
+  //PhysxController::init_type();
+  PhysxControllerDesc::init_type();
   PhysxDebugGeomNode::init_type();
   PhysxMaterial::init_type();
   PhysxMaterialDesc::init_type();

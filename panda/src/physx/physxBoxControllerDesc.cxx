@@ -1,5 +1,5 @@
-// Filename: physxBoxShapeDesc.cxx
-// Created by:  enn0x (08Sep09)
+// Filename: physxBoxControllerDesc.cxx
+// Created by:  enn0x (22Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,13 +12,13 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "physxBoxShapeDesc.h"
+#include "physxBoxControllerDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxBoxShapeDesc::_type_handle;
+TypeHandle PhysxBoxControllerDesc::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBoxShapeDesc::set_dimensions
+//     Function: PhysxBoxControllerDesc::set_extents
 //       Access: Published
 //  Description: Sets the dimensions of the box.
 //
@@ -26,20 +26,20 @@ TypeHandle PhysxBoxShapeDesc::_type_handle;
 //               meaning 1/2 extents in x dimension, 1/2 extents
 //               in y dimension, 1/2 extents in z dimension.
 ////////////////////////////////////////////////////////////////////
-void PhysxBoxShapeDesc::
-set_dimensions(const LVector3f &dimensions) {
+void PhysxBoxControllerDesc::
+set_extents(const LVector3f &extents) {
 
-  _desc.dimensions = PhysxManager::vec3_to_nxVec3(dimensions);
+  _desc.extents = PhysxManager::vec3_to_nxVec3(extents);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBoxShapeDesc::get_dimensions
+//     Function: PhysxBoxControllerDesc::get_extents
 //       Access: Published
 //  Description: Returns the dimensions of the box.
 ////////////////////////////////////////////////////////////////////
-LVector3f PhysxBoxShapeDesc::
-get_dimensions() const {
+LVector3f PhysxBoxControllerDesc::
+get_extents() const {
 
-  return PhysxManager::nxVec3_to_vec3(_desc.dimensions);
+  return PhysxManager::nxVec3_to_vec3(_desc.extents);
 }
 
