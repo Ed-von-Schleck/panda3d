@@ -18,8 +18,8 @@
 #include "pandabase.h"
 #include "lvector3.h"
 
-#include "physx_enumerations.h"
 #include "physxObject.h"
+#include "physxEnums.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -49,7 +49,7 @@ class PhysxScene;
 //               the default material by querying for material
 //               index 0.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxMaterial : public PhysxObject {
+class EXPCL_PANDAPHYSX PhysxMaterial : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxMaterial();

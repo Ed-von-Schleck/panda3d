@@ -421,7 +421,7 @@ get_shape_by_name(const char *name) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActor::set_body_flag
 //       Access: Published
-//  Description: Raise or lower individual PhysxBodyFlag flags. 
+//  Description: Raise or lower individual body flags. 
 ////////////////////////////////////////////////////////////////////
 void PhysxActor::
 set_body_flag(PhysxBodyFlag flag, bool value) {
@@ -439,7 +439,7 @@ set_body_flag(PhysxBodyFlag flag, bool value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActor::get_body_flag
 //       Access: Published
-//  Description: Returns the specified PhysxBodyFlag flag.
+//  Description: Returns the specified body flag.
 ////////////////////////////////////////////////////////////////////
 bool PhysxActor::
 get_body_flag(PhysxBodyFlag flag) const {
@@ -457,8 +457,8 @@ get_body_flag(PhysxBodyFlag flag) const {
 //
 //               This will not induce a torque.
 //
-//               The PhysxForceMode determines if the force is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -487,8 +487,8 @@ add_force(const LVector3f force, PhysxForceMode mode, bool wakeup) {
 //               external force on an object by calling this once
 //               every frame.
 //
-//               PhysxForceMode determines if the force is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -518,8 +518,8 @@ add_force_at_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMode mode
 //               total external force on an object by calling this
 //               once every frame.
 //
-//               PhysxForceMode determines if the force is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -541,8 +541,8 @@ add_force_at_local_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMod
 //  Description: Applies an impulsive torque defined in the global
 //               coordinate frame to the actor. 
 //
-//               The PhysxForceMode determines if the torque is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -564,8 +564,8 @@ add_torque(const LVector3f torque, PhysxForceMode mode, bool wakeup) {
 //               local coordinate frame to the actor. 
 //               This will not induce a torque.
 //
-//               PhysxForceMode determines if the force is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -594,8 +594,8 @@ add_local_force(const LVector3f force, PhysxForceMode mode, bool wakeup) {
 //               total external force on an object by calling this
 //               once every frame.
 //
-//               PhysxForceMode determines if the force is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -625,8 +625,8 @@ add_local_force_at_pos(const LVector3f force, const LPoint3f &pos, PhysxForceMod
 //               external force on an object by calling this once
 //               every frame.
 //
-//               PhysxForceMode determines if the force is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the
@@ -648,8 +648,8 @@ add_local_force_at_local_pos(const LVector3f force, const LPoint3f &pos, PhysxFo
 //  Description: Applies an impulsive torque defined in the actor
 //               local coordinate frame to the actor.
 //
-//               PhysxForceMode determines if the torque is to be
-//               conventional or impulsive.
+//               Mode determines if the torque is to be conventional
+//               or impulsive.
 //
 //               The actor must be dynamic.
 //               This call wakes the actor if it is sleeping and the

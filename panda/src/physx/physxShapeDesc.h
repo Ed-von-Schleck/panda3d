@@ -20,7 +20,7 @@
 #include "lpoint3.h"
 #include "lmatrix.h"
 
-#include "physx_enumerations.h"
+#include "physxEnums.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -33,7 +33,7 @@ class PhysxMaterial;
 //               descriptors for all the different shape types are
 //               derived from this class.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxShapeDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxShapeDesc : public TypedReferenceCount, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxShapeDesc();

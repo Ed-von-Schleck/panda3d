@@ -18,7 +18,7 @@
 #include "pandabase.h"
 #include "typedReferenceCount.h"
 
-#include "physx_enumerations.h"
+#include "physxEnums.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -27,7 +27,7 @@
 //       Class : PhysxMaterialDesc
 // Description : Descriptor class for materials. See PhysxMaterial.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxMaterialDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxMaterialDesc : public TypedReferenceCount, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxMaterialDesc();

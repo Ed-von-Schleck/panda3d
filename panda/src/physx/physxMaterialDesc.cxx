@@ -241,7 +241,7 @@ get_dir_of_anisotropy() const {
 //       Access: Published
 //  Description: Returns the friction combine mode.
 ////////////////////////////////////////////////////////////////////
-PhysxCombineMode PhysxMaterialDesc::
+PhysxEnums::PhysxCombineMode PhysxMaterialDesc::
 get_friction_combine_mode() const {
 
   return (PhysxCombineMode)_desc.frictionCombineMode;
@@ -252,7 +252,7 @@ get_friction_combine_mode() const {
 //       Access: Published
 //  Description: Returns the restitution combine mode.
 ////////////////////////////////////////////////////////////////////
-PhysxCombineMode PhysxMaterialDesc::
+PhysxEnums::PhysxCombineMode PhysxMaterialDesc::
 get_restitution_combine_mode() const {
 
   return (PhysxCombineMode)_desc.restitutionCombineMode;

@@ -14,6 +14,7 @@
 //#include "physxController.cxx"
 #include "physxControllerDesc.cxx"
 #include "physxDebugGeomNode.cxx"
+#include "physxEnums.cxx"
 #include "physxManager.cxx"
 #include "physxMaterial.cxx"
 #include "physxMaterialDesc.cxx"

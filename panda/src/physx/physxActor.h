@@ -22,8 +22,8 @@
 #include "lpoint3.h"
 #include "lquaternion.h"
 
-#include "physx_enumerations.h"
 #include "physxObject.h"
+#include "physxEnums.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -46,7 +46,7 @@ class PhysxShapeDesc;
 //               PhysxScene::create_actor() and destroyed by calling
 //               PhysxActor::release().
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxActor : public PhysxObject {
+class EXPCL_PANDAPHYSX PhysxActor : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxActor();

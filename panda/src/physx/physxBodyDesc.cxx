@@ -325,7 +325,7 @@ get_mass_space_inertia() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBodyDesc::set_flag
 //       Access: Published
-//  Description: Raise or lower individual PhysxBodyFlag flags.
+//  Description: Raise or lower individual body flags.
 ////////////////////////////////////////////////////////////////////
 void PhysxBodyDesc::
 set_flag(const PhysxBodyFlag flag, bool value) {
@@ -341,7 +341,7 @@ set_flag(const PhysxBodyFlag flag, bool value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBodyDesc::get_flag
 //       Access: Published
-//  Description: Returns the specified PhysxBodyFlag flag.
+//  Description: Returns the specified body flag.
 ////////////////////////////////////////////////////////////////////
 bool PhysxBodyDesc::
 get_flag(const PhysxBodyFlag flag) const {

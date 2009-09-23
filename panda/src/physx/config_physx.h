@@ -17,7 +17,12 @@
 
 #include "pandabase.h"
 #include "notifyCategoryProxy.h"
+#include "configVariableBool.h"
+#include "configVariableEnum.h"
+#include "configVariableInt.h"
 #include "dconfig.h"
+
+#include "physxEnums.h"
 
 ConfigureDecl(config_physx, EXPCL_PANDAPHYSX, EXPTP_PANDAPHYSX);
 NotifyCategoryDecl(physx, EXPCL_PANDAPHYSX, EXPTP_PANDAPHYSX);
@@ -25,6 +30,7 @@ NotifyCategoryDecl(physx, EXPCL_PANDAPHYSX, EXPTP_PANDAPHYSX);
 extern EXPCL_PANDAPHYSX ConfigVariableBool physx_want_vrd;
 extern EXPCL_PANDAPHYSX ConfigVariableString physx_vrd_host;
 extern EXPCL_PANDAPHYSX ConfigVariableInt physx_vrd_port;
+extern EXPCL_PANDAPHYSX ConfigVariableEnum<PhysxEnums::PhysxUpAxis> physx_up_axis;
 
 extern EXPCL_PANDAPHYSX void init_libphysx();
 

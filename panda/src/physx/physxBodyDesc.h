@@ -20,7 +20,7 @@
 #include "lvector3.h"
 #include "lmatrix.h"
 
-#include "physx_enumerations.h"
+#include "physxEnums.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -30,7 +30,7 @@
 // Description : Descriptor for the optional rigid body dynamic
 //               state of PhysxActor.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxBodyDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxBodyDesc : public TypedReferenceCount, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxBodyDesc();

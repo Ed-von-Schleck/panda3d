@@ -66,6 +66,10 @@ PRC_DESC("Specified the port where the NVIDIA PhysX visual debugger is running"
          "on. Only used if the config-varibale 'physx-want-visual-debugger' "
          "is set to 'true'."));
 
+ConfigVariableEnum<PhysxEnums::PhysxUpAxis> physx_up_axis
+("physx-up-axis", PhysxEnums::Z_up,
+PRC_DESC("Set the up direction for controllers and heightfields."));
+
 ////////////////////////////////////////////////////////////////////
 //     Function: init_libphysx
 //  Description: Initializes the library.  This must be called at

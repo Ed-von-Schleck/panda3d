@@ -315,7 +315,7 @@ set_friction_combine_mode(PhysxCombineMode mode) {
 //       Access: Published
 //  Description: Returns the friction combine mode.
 ////////////////////////////////////////////////////////////////////
-PhysxCombineMode PhysxMaterial::
+PhysxEnums::PhysxCombineMode PhysxMaterial::
 get_friction_combine_mode() const {
 
   nassertr(_error_type == ET_ok, CM_average);
@@ -343,7 +343,7 @@ set_restitution_combine_mode(PhysxCombineMode mode) {
 //       Access: Published
 //  Description: Returns the restitution combine mode.
 ////////////////////////////////////////////////////////////////////
-PhysxCombineMode PhysxMaterial::
+PhysxEnums::PhysxCombineMode PhysxMaterial::
 get_restitution_combine_mode() const {
 
   nassertr(_error_type == ET_ok, CM_average);

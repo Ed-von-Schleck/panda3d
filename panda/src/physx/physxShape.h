@@ -21,8 +21,8 @@
 #include "lmatrix.h"
 #include "lquaternion.h"
 
-#include "physx_enumerations.h"
 #include "physxObject.h"
+#include "physxEnums.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -34,7 +34,7 @@ class PhysxMaterial;
 //       Class : PhysxShape
 // Description : Abstract base class for shapes.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxShape : public PhysxObject {
+class EXPCL_PANDAPHYSX PhysxShape : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxShape();

@@ -38,9 +38,6 @@ PUBLISHED:
   PhysxManager();
   ~PhysxManager();
 
-#undef PHYSX_ENUMERATIONS_H
-#include "physx_enumerations.h"
-
   bool is_hardware_available();
 
   unsigned int get_num_scenes() const;
