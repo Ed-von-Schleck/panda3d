@@ -1,5 +1,5 @@
-// Filename: physxCapsuleShape.cxx
-// Created by:  enn0x (16Sep09)
+// Filename: physxCapsuleController.cxx
+// Created by:  enn0x (24Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,42 +12,53 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "physxCapsuleShape.h"
+#include "physxCapsuleController.h"
 
-TypeHandle PhysxCapsuleShape::_type_handle;
+TypeHandle PhysxCapsuleController::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShape::link
+//     Function: PhysxCapsuleController::link
 //       Access: Public
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-void PhysxCapsuleShape::
-link(NxShape *shapePtr) {
+void PhysxCapsuleController::
+link(NxController *controllerPtr) {
 
+  nassertv(controllerPtr->getType() == NX_CONTROLLER_CAPSULE);
+
+  // Link self
   ref();
-  _ptr = shapePtr->isCapsule();
-  _ptr->userData = this;
+  _ptr = (NxCapsuleController *)controllerPtr;
   _error_type = ET_ok;
+
+  // Link actor
+  PT(PhysxActor) actor = new PhysxActor();
+  actor->link(_ptr->getActor());
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShape::unlink
+//     Function: PhysxCapsuleController::unlink
 //       Access: Public
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-void PhysxCapsuleShape::
+void PhysxCapsuleController::
 unlink() {
 
+  // Unlink actor
+  PT(PhysxActor) actor = (PhysxActor *)ptr()->getActor()->userData;
+  actor->unlink();
+
+  // Unlink self
   _error_type = ET_released;
   unref();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShape::set_radius
+//     Function: PhysxCapsuleController::set_radius
 //       Access: Published
-//  Description: Alters the radius of the capsule.
+//  Description: Resets the controller's radius.
 ////////////////////////////////////////////////////////////////////
-void PhysxCapsuleShape::
+void PhysxCapsuleController::
 set_radius(float radius) {
 
   nassertv(_error_type == ET_ok);
@@ -55,11 +66,11 @@ set_radius(float radius) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShape::set_height
+//     Function: PhysxCapsuleController::set_height
 //       Access: Published
-//  Description: Alters the height of the capsule.
+//  Description: Resets the controller's height.
 ////////////////////////////////////////////////////////////////////
-void PhysxCapsuleShape::
+void PhysxCapsuleController::
 set_height(float height) {
 
   nassertv(_error_type == ET_ok);
@@ -67,11 +78,11 @@ set_height(float height) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShape::get_radius
+//     Function: PhysxCapsuleController::get_radius
 //       Access: Published
-//  Description: Retrieves the radius of the capsule.
+//  Description: Returns the controller's radius.
 ////////////////////////////////////////////////////////////////////
-float PhysxCapsuleShape::
+float PhysxCapsuleController::
 get_radius() const {
 
   nassertr(_error_type == ET_ok, 0.0f);
@@ -79,11 +90,11 @@ get_radius() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShape::get_height
+//     Function: PhysxCapsuleController::get_height
 //       Access: Published
-//  Description: Retrieves the height of the capsule.
+//  Description: Returns the controller's height.
 ////////////////////////////////////////////////////////////////////
-float PhysxCapsuleShape::
+float PhysxCapsuleController::
 get_height() const {
 
   nassertr(_error_type == ET_ok, 0.0f);

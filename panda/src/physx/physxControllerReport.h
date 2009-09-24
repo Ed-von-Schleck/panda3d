@@ -1,5 +1,5 @@
-// Filename: physxContactReport.h
-// Created by:  enn0x (19Sep09)
+// Filename: physxControllerReport.h
+// Created by:  enn0x (24Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,36 +12,37 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXCONTACTREPORT_H
-#define PHYSXCONTACTREPORT_H
+#ifndef PHYSXCONTROLLERREPORT_H
+#define PHYSXCONTROLLERREPORT_H
 
 #include "pandabase.h"
 #include "pStatCollector.h"
 
-#include "NoMinMax.h"
-#include "NxPhysics.h"
+#include "NxController.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxContactReport
-// Description :
+//       Class : PhysxControllerReport
+// Description : Implementation of the user callback class for
+//               character controller callbacks.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxContactReport : public NxUserContactReport {
+class EXPCL_PANDAPHYSX PhysxControllerReport : public NxUserControllerHitReport {
 
 public:
-  INLINE PhysxContactReport();
-  INLINE ~PhysxContactReport();
+  INLINE PhysxControllerReport();
+  INLINE ~PhysxControllerReport();
 
   void enable();
   void disable();
   bool is_enabled() const;
 
-  void onContactNotify(NxContactPair& pair, NxU32 flags);
+  virtual NxControllerAction onShapeHit(const NxControllerShapeHit& hit);
+  virtual NxControllerAction onControllerHit(const NxControllersHit& hit);
 
 private:
   bool _enabled;
   static PStatCollector _pcollector;
 };
 
-#include "physxContactReport.I"
+#include "physxControllerReport.I"
 
-#endif // PHYSXCONTACTREPORT_H
+#endif // PHYSXCONTROLLERREPORT_H

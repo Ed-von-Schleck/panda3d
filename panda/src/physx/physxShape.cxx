@@ -79,7 +79,6 @@ factory(NxShapeType shapeType) {
   return NULL;
 }
 
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxShape::get_actor
 //       Access: Published

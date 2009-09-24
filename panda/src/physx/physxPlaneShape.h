@@ -16,9 +16,9 @@
 #define PHYSXPLANESHAPE_H
 
 #include "pandabase.h"
-#include "physxShape.h"
-
 #include "lvector3.h"
+
+#include "physxShape.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"

@@ -36,6 +36,9 @@ link(NxScene *scenePtr) {
   _ptr->userData = this;
   _error_type = ET_ok;
 
+  _cm = NxCreateControllerManager(NxGetPhysicsSDKAllocator());
+  nassertv_always(_cm);
+
   // Link materials
   NxMaterial *materials[5];
   NxU32 iterator = 0;
@@ -57,6 +60,13 @@ void PhysxScene::
 unlink() {
 
   // Unlink controllers TODO
+  NxU32 nControllers = _cm->getNbControllers();
+
+  for (NxU32 i=0; i < nControllers; i++) {
+    NxController *controllerPtr = _cm->getController(i);
+    PT(PhysxController) controller = (PhysxController *)controllerPtr->getUserData();
+    controller->unlink();
+  }
 
   // Unlink actors
   NxActor **actors = _ptr->getActors();
@@ -64,6 +74,8 @@ unlink() {
 
   for (NxU32 i=0; i < nActors; i++) {
     PT(PhysxActor) actor = (PhysxActor *)actors[i]->userData;
+
+    // Actor could have already been unlinked by controller
     if (actor) {
       actor->unlink();
     }
@@ -87,6 +99,7 @@ unlink() {
   }
 
   // Unlink self
+  NxReleaseControllerManager(_cm);
   _error_type = ET_released;
   unref();
 }
@@ -349,18 +362,36 @@ is_trigger_reporting_enabled() const {
   return _trigger_report.is_enabled();
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::enable_controller_reporting
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+enable_controller_reporting(bool enabled) {
 
+  nassertv(_error_type == ET_ok);
 
+  if (enabled) {
+    _controller_report.enable();
+  }
+  else {
+    _controller_report.disable();
+  }
+}
 
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::is_controller_reporting_enabled
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+is_controller_reporting_enabled() const {
 
+  nassertr(_error_type == ET_ok, false);
 
-
-
-
-
-
-
-
+  return _controller_report.is_enabled();
+}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxScene::get_num_materials
@@ -497,5 +528,61 @@ get_material(unsigned int idx) const {
   delete[] materials;
 
   return (PhysxMaterial *)(materialPtr->userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_num_controllers
+//       Access: Published
+//  Description: Return the number of controllers in the scene. 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxScene::
+get_num_controllers() const {
+
+  nassertr(_error_type == ET_ok, -1);
+  return _cm->getNbControllers();
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::create_controller
+//       Access: Published
+//  Description: Creates a new character controller.
+////////////////////////////////////////////////////////////////////
+PT(PhysxController) PhysxScene::
+create_controller(PhysxControllerDesc &desc) {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr(desc.is_valid(),NULL);
+
+  PT(PhysxController) controller = PhysxController::factory(desc.ptr()->getType());
+  nassertr(controller, NULL);
+
+  desc.ptr()->callback = &_controller_report;
+  desc.ptr()->userData = controller;
+
+  NxController *controllerPtr = _cm->createController(_ptr,*desc.ptr());
+  nassertr(controllerPtr, NULL);
+
+  controller->link(controllerPtr);
+  controllerPtr->getActor()->setName("");
+
+  return controller;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_controller
+//       Access: Published
+//  Description: Retrieves the n-th controller within the scene.
+////////////////////////////////////////////////////////////////////
+PT(PhysxController) PhysxScene::
+get_controller(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _cm->getNbControllers(), NULL);
+
+  NxController *controllerPtr = _cm->getController(idx);
+  PhysxController *controller = (PhysxController *)(controllerPtr->getUserData());
+
+  return controller;
 }
 

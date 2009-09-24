@@ -16,12 +16,13 @@
 #define PHYSXTRIGGERREPORT_H
 
 #include "pandabase.h"
+#include "pStatCollector.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxTriggerHandler
+//       Class : PhysxTriggerReport
 // Description :
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxTriggerReport : public NxUserTriggerReport {

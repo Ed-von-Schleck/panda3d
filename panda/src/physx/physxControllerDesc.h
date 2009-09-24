@@ -19,8 +19,6 @@
 #include "typedReferenceCount.h"
 #include "lpoint3.h"
 
-#include "NoMinMax.h"
-#include "NxPhysics.h"
 #include "NxController.h"
 
 ////////////////////////////////////////////////////////////////////

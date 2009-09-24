@@ -20,15 +20,19 @@
 
 #include "physxObject.h"
 #include "physxContactReport.h"
+#include "PhysxControllerReport.h"
 #include "physxTriggerReport.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
+#include "NxControllerManager.h"
 
 class PhysxActor;
 class PhysxActorDesc;
 class PhysxMaterial;
 class PhysxMaterialDesc;
+class PhysxController;
+class PhysxControllerDesc;
 class PhysxDebugGeomNode;
 
 ////////////////////////////////////////////////////////////////////
@@ -60,6 +64,8 @@ PUBLISHED:
   bool is_contact_reporting_enabled() const;
   void enable_trigger_reporting(bool enabled);
   bool is_trigger_reporting_enabled() const;
+  void enable_controller_reporting(bool enabled);
+  bool is_controller_reporting_enabled() const;
 
   void set_gravity(const LVector3f &gravity);
   LVector3f get_gravity() const;
@@ -77,21 +83,29 @@ PUBLISHED:
   PT(PhysxMaterial) get_material_from_index(unsigned int idx) const;
   MAKE_SEQ(get_materials, get_num_materials, get_material);
 
+  unsigned int get_num_controllers() const;
+  PT(PhysxController) create_controller(PhysxControllerDesc &controllerDesc);
+  PT(PhysxController) get_controller(unsigned int idx) const;
+  MAKE_SEQ(get_controllers, get_num_controllers, get_controller);
+
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:
   void release();
 
 public:
   INLINE NxScene *ptr() const { return _ptr; };
+  INLINE NxControllerManager *cm() const { return _cm; };
 
   void link(NxScene *ptr);
   void unlink();
 
 private:
   NxScene *_ptr;
+  NxControllerManager *_cm;
   PT(PhysxDebugGeomNode) _debugNode;
 
   PhysxContactReport _contact_report;
+  PhysxControllerReport _controller_report;
   PhysxTriggerReport _trigger_report;
 
   static PStatCollector _pcollector_fetch_results;

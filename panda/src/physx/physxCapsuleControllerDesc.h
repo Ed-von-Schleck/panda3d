@@ -18,8 +18,6 @@
 #include "pandabase.h"
 #include "physxControllerDesc.h"
 
-#include "NoMinMax.h"
-#include "NxPhysics.h"
 #include "NxCapsuleController.h"
 
 ////////////////////////////////////////////////////////////////////

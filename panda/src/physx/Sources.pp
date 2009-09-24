@@ -23,6 +23,7 @@
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
     physxCapsuleController.I physxCapsuleController.h \
     physxCapsuleControllerDesc.I physxCapsuleControllerDesc.h \
+    physxCapsuleControllerReport.I physxCapsuleControllerReport.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxContactReport.I physxContactReport.h \
@@ -58,6 +59,7 @@
     physxContactReport.cxx \
     physxController.cxx \
     physxControllerDesc.cxx \
+    physxControllerReport.cxx \
     physxDebugGeomNode.cxx \
     physxManager.cxx \
     physxMaterial.cxx \
@@ -85,6 +87,7 @@
     physxBoxShapeDesc.I physxBoxShapeDesc.h \
     physxCapsuleController.I physxCapsuleController.h \
     physxCapsuleControllerDesc.I physxCapsuleControllerDesc.h \
+    physxCapsuleControllerReport.I physxCapsuleControllerReport.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxContactReport.I physxContactReport.h \

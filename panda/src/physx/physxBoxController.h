@@ -1,5 +1,5 @@
-// Filename: physxBoxControllerDesc.h
-// Created by:  enn0x (22Sep09)
+// Filename: physxBoxController.h
+// Created by:  enn0x (24Sep09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,40 +12,38 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXBOXCONTROLLERDESC_H
-#define PHYSXBOXCONTROLLERDESC_H
+#ifndef PHYSXBOXCONTROLLER_H
+#define PHYSXBOXCONTROLLER_H
 
 #include "pandabase.h"
 #include "lvector3.h"
 
-#include "physxControllerDesc.h"
+#include "physxController.h"
 
 #include "NxBoxController.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxBoxControllerDesc
-// Description : Descriptor class for PhysxBoxController.
+//       Class : PhysxBoxController
+// Description : Box character controller.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxBoxControllerDesc : public PhysxControllerDesc {
+class EXPCL_PANDAPHYSX PhysxBoxController : public PhysxController {
 
 PUBLISHED:
-  INLINE PhysxBoxControllerDesc();
-  INLINE ~PhysxBoxControllerDesc();
-
-  INLINE void set_to_default();
-  INLINE bool is_valid() const;
+  INLINE PhysxBoxController();
+  INLINE ~PhysxBoxController();
 
   void set_extents(const LVector3f &extents);
-
   LVector3f get_extents() const;
 
+////////////////////////////////////////////////////////////////////
 public:
-  INLINE PhysxBoxControllerDesc(NxBoxControllerDesc &desc);
+  INLINE NxController *ptr() const { return (NxController *)_ptr; };
 
-  virtual NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
+  void link(NxController *controllerPtr);
+  void unlink();
 
 private:
-  NxBoxControllerDesc _desc;
+  NxBoxController *_ptr;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -53,9 +51,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    PhysxControllerDesc::init_type();
-    register_type(_type_handle, "PhysxBoxControllerDesc", 
-                  PhysxControllerDesc::get_class_type());
+    PhysxController::init_type();
+    register_type(_type_handle, "PhysxBoxController", 
+                  PhysxController::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -69,6 +67,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxBoxControllerDesc.I"
+#include "physxBoxController.I"
 
-#endif // PHYSXBOXCONTROLLERDESC_H
+#endif // PHYSXBOXCONTROLLER_H
