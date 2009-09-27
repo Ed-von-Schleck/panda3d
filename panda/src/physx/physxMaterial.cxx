@@ -41,6 +41,7 @@ void PhysxMaterial::
 unlink() {
 
   // Unlink self
+  _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
 }

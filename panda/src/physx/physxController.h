@@ -43,49 +43,43 @@ PUBLISHED:
   void set_pos(const LPoint3f &pos);
   void set_sharpness(float sharpness);
   void set_collision(bool enable);
+  void set_min_distance(float min_dist);
+  void set_step_offset(float offset);
 
   LPoint3f get_pos() const;
   float get_sharpness() const;
 
-/*
-  void set_global_speed(const LVector2f &speed);
   void set_global_speed(const LVector3f &speed);
-  void set_local_speed(const LVector2f &speed);
   void set_local_speed(const LVector3f &speed);
-
   void set_omega(float omega);
   void set_h(float heading);
   float get_h() const;
+
   void report_scene_changed();
   void start_jump(float v0);
   void stop_jump();
-  void set_min_distance(float minDist);
-  void set_step_offset(float offset);
 
 public:
   void update(float dt);
 
-protected:
-  NxReal get_jump_height(float dt, float G);
-
 private:
-  NxControllerManager *_cm;
+  NxReal get_jump_height(float dt, NxVec3 &gravity);
 
-  LVector3f _speed;
-  float _omega;
-  float _heading;
-
-  PT(PhysxActor) _actor;
+  float _sharpness;
+  float _min_dist;
 
   bool  _jumping;
-  float _jumpTime;
-  float _v0;
+  float _jump_time;
+  float _jump_v0;
 
-  float _minDist;
-*/
+  float _omega;
+  float _heading;
+  NxVec3 _speed;
 
-private:
-  float _sharpness;
+  NxVec3 _up_vector;
+  NxQuat _up_quat;
+  NxQuat _up_quat_inv;
+  NxHeightFieldAxis _up_axis;
 
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:

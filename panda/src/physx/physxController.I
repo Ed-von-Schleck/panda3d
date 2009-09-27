@@ -22,6 +22,33 @@
 INLINE PhysxController::
 PhysxController() : PhysxObject() {
 
+  _speed = NxVec3(0.0f, 0.0f, 0.0f);
+  _omega = 0.0f;
+  _heading = 0.0f;
+
+  _jumping = false;
+  _jump_time = 0.0f;
+  _jump_v0 = 0.0f;
+
+  _sharpness = 1.0f;
+  _min_dist = 0.0001f;
+
+  _up_vector = NxVec3(0.0f, 1.0f, 0.0f);
+  _up_axis = (NxHeightFieldAxis)physx_up_axis.get_value();
+
+  switch (_up_axis) {
+  case NX_Z:
+    _up_quat = NxQuat(90.0f, NxVec3(1.0f, 0.0f, 0.0f));
+    break;
+  case NX_Y:
+    _up_quat = NxQuat(0.0f, NxVec3(1.0f, 0.0f, 0.0f));
+    break;
+  default:
+    physx_cat.error() << "only y-up and z-up are permitted" << endl;
+  }
+
+  _up_quat_inv = _up_quat;
+  _up_quat_inv.invert();
 }
 
 ////////////////////////////////////////////////////////////////////

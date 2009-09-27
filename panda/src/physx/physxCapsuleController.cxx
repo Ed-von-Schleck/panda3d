@@ -34,6 +34,7 @@ link(NxController *controllerPtr) {
   // Link actor
   PT(PhysxActor) actor = new PhysxActor();
   actor->link(_ptr->getActor());
+  actor->link_controller(this);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -38,6 +38,7 @@ link(NxShape *shapePtr) {
 void PhysxSphereShape::
 unlink() {
 
+  _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
 }

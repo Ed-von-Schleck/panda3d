@@ -62,6 +62,7 @@ unlink() {
   }
 
   // Unlink self
+  _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
 }
@@ -79,6 +80,17 @@ release() {
   unlink();
   _ptr->getScene().releaseActor(*_ptr);
   _ptr = NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::link_controller
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+link_controller(PT(PhysxController) controller) {
+
+  _controller = controller;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -128,24 +140,14 @@ update_transform(const LMatrix4f m) {
 
   if (_np.is_empty()) return;
 
-  if (true) {
-    _np.set_transform(_np.get_top(), TransformState::make_mat(m));
-  }
-
-/*
-  TODO when controllers are implemented...
-
   if (_controller) {
     LVector3f hpr(_controller->get_h(), 0.0f, 0.0f);
     LPoint3f pos = _controller->get_pos();
-
     _np.set_transform(_np.get_top(), TransformState::make_pos_hpr(pos, hpr));
-
   }
   else {
     _np.set_transform(_np.get_top(), TransformState::make_mat(m));
   }
-*/
 }
 
 ////////////////////////////////////////////////////////////////////

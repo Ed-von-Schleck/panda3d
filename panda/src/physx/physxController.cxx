@@ -148,3 +148,242 @@ set_collision(bool enable) {
   ptr()->setCollision(enable);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::set_min_distance
+//       Access: Published
+//  Description: Sets the the minimum travelled distance to consider
+//               when moving the controller. If travelled distance
+//               is smaller, the character doesn't move. This is
+//               used to stop the recursive motion algorithm when
+//               remaining distance to travel is small. 
+//               The default value is 0.0001.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+set_min_distance(float min_dist) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv(min_dist > 0.0f);
+
+  _min_dist = min_dist;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::set_step_offset
+//       Access: Published
+//  Description: Sets the step height/offset for the controller.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+set_step_offset(float offset) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv(offset > 0.0f);
+
+  ptr()->setStepOffset(offset);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::set_global_speed
+//       Access: Published
+//  Description: Sets the linear speed of the controller in global
+//               space.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+set_global_speed(const LVector3f &speed) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!speed.is_nan());
+
+  _speed = NxVec3(speed.get_x(), speed.get_y(), speed.get_z());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::set_local_speed
+//       Access: Published
+//  Description: Sets the linear speed of the controller in local
+//               coordinates.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+set_local_speed(const LVector3f &speed) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv_always(!speed.is_nan());
+
+  NodePath np = get_actor()->get_node_path();
+  nassertv(!np.is_empty());
+
+  NxQuat q = ptr()->getActor()->getGlobalOrientationQuat();
+  NxVec3 s = NxVec3(speed.get_x(), speed.get_y(), speed.get_z());
+  _speed = (q * _up_quat_inv).rot(s);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::set_omega
+//       Access: Published
+//  Description: Sets the angular velocity (degrees per second)
+//               of the controller. The angular velocity is used to
+//               compute the new heading when updating the
+//               controller.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+set_omega(float omega) {
+
+  nassertv(_error_type == ET_ok);
+  _omega = omega;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::set_h
+//       Access: Published
+//  Description: Sets the heading of the controller is global
+//               space. Note: only heading is supported. Pitch and
+//               roll are constrained by PhysX in order to alyways
+//               keep the character upright.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+set_h(float heading) {
+
+  nassertv(_error_type == ET_ok);
+
+  _heading = heading;
+  NxQuat q(_heading, _up_vector);
+  ptr()->getActor()->moveGlobalOrientationQuat(_up_quat * q);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::get_h
+//       Access: Published
+//  Description: Returns the heading of the controller in global
+//               space.
+////////////////////////////////////////////////////////////////////
+float PhysxController::
+get_h() const {
+
+  nassertr(_error_type == ET_ok, 0.0f);
+  return _heading;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::report_scene_changed
+//       Access: Published
+//  Description: The character controller uses caching in order to
+//               speed up collision testing, this caching can not
+//               detect when static objects have changed in the
+//               scene. You need to call this method when such
+//               changes have been made.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+report_scene_changed() {
+
+  nassertv(_error_type == ET_ok);
+  ptr()->reportSceneChanged();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::update
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+update(float dt) {
+
+  nassertv(_error_type == ET_ok);
+
+  // Speed
+  NxU32 mask = 0xFFFFFFFF;
+  NxU32 collision_flags;
+  NxVec3 gravity;
+
+  ptr()->getActor()->getScene().getGravity(gravity);
+
+  NxVec3 d = (_speed + gravity) * dt;
+
+  NxReal heightDelta = get_jump_height(dt, gravity);
+  if (heightDelta != 0.0f) {
+    ((_up_axis == NX_Z) ? d.z : d.y) += heightDelta;
+  }
+
+  ptr()->move(d, mask, _min_dist, collision_flags, _sharpness);
+
+  if (collision_flags & NXCC_COLLISION_DOWN) {
+    stop_jump();
+  }
+
+  // Omega
+  if (_omega != 0.0f) {
+    NxReal delta = _omega * dt;
+    _heading += delta;
+    NxQuat q(_heading, _up_vector);
+    ptr()->getActor()->moveGlobalOrientationQuat(_up_quat * q);
+  }
+
+  // Reset speed and omega
+  _speed.zero();
+  _omega = 0.0f;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::get_jump_height
+//       Access: Private
+//  Description: 
+////////////////////////////////////////////////////////////////////
+NxReal PhysxController::
+get_jump_height(float dt, NxVec3 &gravity) {
+
+  if (_jumping == false) {
+    return 0.0f;
+  }
+
+  _jump_time += dt;
+
+  float G = (_up_axis == NX_Z) ? gravity.z : gravity.y;
+  float h = 2.0f * G * _jump_time * _jump_time + _jump_v0 * _jump_time;
+  return (h - G) * dt;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::start_jump
+//       Access: Published
+//  Description: Enters the jump mode. The parameter is the intial
+//               upward velocity of the character.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+start_jump(float v0) {
+
+  nassertv(_error_type == ET_ok);
+
+  if (_jumping == true) {
+     return;
+  }
+
+  _jumping = true;
+  _jump_time = 0.0f;
+  _jump_v0 = v0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::stop_jump
+//       Access: Published
+//  Description: Leaves the jump mode. This method is automatically
+//               called if a ground collision is detected. Usually
+//               users need not call this method.
+////////////////////////////////////////////////////////////////////
+void PhysxController::
+stop_jump() {
+
+  nassertv(_error_type == ET_ok);
+
+  if (_jumping == false) {
+    return;
+  }
+
+  _jumping = false;
+
+  NxVec3 v = ptr()->getActor()->getLinearVelocity();
+  NxReal velocity = (_up_axis == NX_Z) ? v.z : v.y;
+
+  Event *event = new Event("physx-controller-down");
+  event->add_parameter(EventParameter(this));
+  event->add_parameter(EventParameter(velocity));
+  EventQueue::get_global_event_queue()->queue_event(event);
+}
+

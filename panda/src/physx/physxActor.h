@@ -28,6 +28,7 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxController;
 class PhysxScene;
 class PhysxShape;
 class PhysxShapeDesc;
@@ -104,12 +105,14 @@ PUBLISHED:
 public:
   INLINE NxActor *ptr() const { return _ptr; };
 
+  void link_controller(PT(PhysxController) controller);
   void link(NxActor *ptr);
   void unlink();
 
 private:
   NxActor *_ptr;
   NodePath _np;
+  PT(PhysxController) _controller;
 
 ////////////////////////////////////////////////////////////////////
 public:

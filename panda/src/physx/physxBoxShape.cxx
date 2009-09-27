@@ -39,6 +39,7 @@ link(NxShape *shapePtr) {
 void PhysxBoxShape::
 unlink() {
 
+  _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
 }

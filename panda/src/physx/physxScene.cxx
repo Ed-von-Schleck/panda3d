@@ -59,7 +59,7 @@ link(NxScene *scenePtr) {
 void PhysxScene::
 unlink() {
 
-  // Unlink controllers TODO
+  // Unlink controllers
   NxU32 nControllers = _cm->getNbControllers();
 
   for (NxU32 i=0; i < nControllers; i++) {
@@ -100,6 +100,7 @@ unlink() {
 
   // Unlink self
   NxReleaseControllerManager(_cm);
+  _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
 }
@@ -138,8 +139,20 @@ simulate(float dt) {
   nassertv(_error_type == ET_ok);
 
   _pcollector_simulate.start();
+
+  // Update all controllers
+  for (NxU32 i=0; i < _cm->getNbControllers(); i++) {
+    NxController *controllerPtr = _cm->getController(i);
+    PhysxController *controller = (PhysxController *)controllerPtr->getUserData();
+    controller->update(dt);
+  }
+
+  _cm->updateControllers();
+
+  // Simulate and flush streams
   _ptr->simulate(dt);
   _ptr->flushStream();
+
   _pcollector_simulate.stop();
 }
 
