@@ -119,6 +119,7 @@ enum NxSDKCreateError;
 enum NxAssertResponse;
 enum NxErrorCode;
 enum NxTriggerFlag;
+enum NxHeightFieldAxis;
 
 template<class T> class NxUserEntityReport;
 
