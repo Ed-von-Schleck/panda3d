@@ -387,7 +387,8 @@ if (COMPILER=="MSVC"):
             LibName(pkg, SDK[pkg] +  '/lib/paramblk2.lib')
     if (PkgSkip("PHYSX")==0):
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/PhysXLoader.lib")
-        LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/NxCharacter.lib")
+        LibName("PHYSX",      THIRDPARTYLIBS + "physx/lib/NxCharacterSTATIC.lib")
+        DefSymbol("PHYSX", "NXCHARACTER_STATIC", "1")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/NxCharacter/include")
@@ -606,7 +607,11 @@ def CompileCxx(obj,src,opts):
         for (opt,dir) in INCDIRECTORIES:
             if (opt=="ALWAYS") or (opts.count(opt)): cmd += " /I" + BracketNameWithQuotes(dir)
         for (opt,var,val) in DEFSYMBOLS:
-            if (opt=="ALWAYS") or (opts.count(opt)): cmd += " /D" + var + "=" + val
+            if (opt=="ALWAYS") or (opts.count(opt)):
+                if (val == None):
+                    cmd += " /D" + var
+                else:
+                    cmd += " /D" + var + "=" + val
         if (opts.count('NOFLOATWARN')): cmd += ' /wd4244 /wd4305'
         if (opts.count('MSFORSCOPE')): cmd += ' /Zc:forScope-'
         optlevel = GetOptimizeOption(opts)
@@ -907,11 +912,7 @@ def CompileResource(target, src, opts):
         for (opt,dir) in INCDIRECTORIES:
             if (opt=="ALWAYS") or (opts.count(opt)): cmd += " -i " + BracketNameWithQuotes(dir)
         for (opt,var,val) in DEFSYMBOLS:
-            if (opt=="ALWAYS") or (opts.count(opt)):
-                if (val == ""):
-                    cmd += " -d " + var
-                else:
-                    cmd += " -d " + var + " = " + val
+            if (opt=="ALWAYS") or (opts.count(opt)): cmd += " -d " + var + " = " + val
         
         cmd += " " + BracketNameWithQuotes(src)
         oscmd(cmd)
