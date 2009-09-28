@@ -43,6 +43,16 @@
     physxSphereShape.I physxSphereShape.h \
     physxSphereShapeDesc.I physxSphereShapeDesc.h \
     physxTriggerReport.I physxTriggerReport.h \
+    physxJointDesc.I physxJointDesc.h \
+    physxCylindricalJointDesc.I physxCylindricalJointDesc.h \
+    physxFixedJointDesc.I physxFixedJointDesc.h \
+    physxPointInPlaneJointDesc.I physxPointInPlaneJointDesc.h \
+    physxPointOnLineJointDesc.I physxPointOnLineJointDesc.h \
+    physxPrismaticJointDesc.I physxPrismaticJointDesc.h \
+    physxDistanceJointDesc.I physxDistanceJointDesc.h \
+    physxPulleyJointDesc.I physxPulleyJointDesc.h \
+    physxRevoluteJointDesc.I physxRevoluteJointDesc.h \
+    physxSphericalJointDesc.I physxSphericalJointDesc.h \
 
   #define INCLUDED_SOURCES
     physxActor.cxx \
@@ -74,6 +84,16 @@
     physxSphereShape.cxx \
     physxSphereShapeDesc.cxx \
     physxTriggerReport.cxx \
+    physxJointDesc.h \
+    physxCylindricalJointDesc.h \
+    physxFixedJointDesc.h \
+    physxPointInPlaneJointDesc.h \
+    physxPointOnLineJointDesc.h \
+    physxPrismaticJointDesc.h \
+    physxDistanceJointDesc.h \
+    physxPulleyJointDesc.h \
+    physxRevoluteJointDesc.h \
+    physxSphericalJointDesc.h \
 
   #define INSTALL_HEADERS \
     NoMinMax.h \
@@ -107,6 +127,16 @@
     physxSphereShape.I physxSphereShape.h \
     physxSphereShapeDesc.I physxSphereShapeDesc.h \
     physxTriggerReport.I physxTriggerReport.h \
+    physxJointDesc.I physxJointDesc.h \
+    physxCylindricalJointDesc.I physxCylindricalJointDesc.h \
+    physxFixedJointDesc.I physxFixedJointDesc.h \
+    physxPointInPlaneJointDesc.I physxPointInPlaneJointDesc.h \
+    physxPointOnLineJointDesc.I physxPointOnLineJointDesc.h \
+    physxPrismaticJointDesc.I physxPrismaticJointDesc.h \
+    physxDistanceJointDesc.I physxDistanceJointDesc.h \
+    physxPulleyJointDesc.I physxPulleyJointDesc.h \
+    physxRevoluteJointDesc.I physxRevoluteJointDesc.h \
+    physxSphericalJointDesc.I physxSphericalJointDesc.h \
 
   #define IGATESCAN all
 

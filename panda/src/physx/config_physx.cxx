@@ -28,18 +28,28 @@
 #include "physxCapsuleShapeDesc.h"
 #include "physxController.h"
 #include "physxControllerDesc.h"
+#include "physxCylindricalJointDesc.h"
 #include "physxDebugGeomNode.h"
+#include "physxDistanceJointDesc.h"
+#include "physxFixedJointDesc.h"
+#include "physxJointDesc.h"
 #include "physxMaterial.h"
 #include "physxMaterialDesc.h"
 #include "physxObject.h"
 #include "physxPlaneShape.h"
 #include "physxPlaneShapeDesc.h"
+#include "physxPointInPlaneJointDesc.h"
+#include "physxPointOnLineJointDesc.h"
+#include "physxPrismaticJointDesc.h"
+#include "physxPulleyJointDesc.h"
+#include "physxRevoluteJointDesc.h"
 #include "physxScene.h"
 #include "physxSceneDesc.h"
 #include "physxShape.h"
 #include "physxShapeDesc.h"
 #include "physxSphereShape.h"
 #include "physxSphereShapeDesc.h"
+#include "physxSphericalJointDesc.h"
 
 ConfigureDef(config_physx);
 NotifyCategoryDef(physx, "");
@@ -99,18 +109,28 @@ init_libphysx() {
   PhysxCapsuleShapeDesc::init_type();
   PhysxController::init_type();
   PhysxControllerDesc::init_type();
+  PhysxCylindricalJointDesc::init_type();
   PhysxDebugGeomNode::init_type();
+  PhysxDistanceJointDesc::init_type();
+  PhysxFixedJointDesc::init_type();
+  PhysxJointDesc::init_type();
   PhysxMaterial::init_type();
   PhysxMaterialDesc::init_type();
   PhysxObject::init_type();
   PhysxPlaneShape::init_type();
   PhysxPlaneShapeDesc::init_type();
+  PhysxPointInPlaneJointDesc::init_type();
+  PhysxPointOnLineJointDesc::init_type();
+  PhysxPrismaticJointDesc::init_type();
+  PhysxPulleyJointDesc::init_type();
+  PhysxRevoluteJointDesc::init_type();
   PhysxScene::init_type();
   PhysxSceneDesc::init_type();
   PhysxShape::init_type();
   PhysxShapeDesc::init_type();
   PhysxSphereShape::init_type();
   PhysxSphereShapeDesc::init_type();
+  PhysxSphericalJointDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system("PhysX");

@@ -44,6 +44,11 @@
 #define NX_CM_MULTIPLY 2
 #define NX_CM_MAX 3
 
+// PhysxDistanceJointFlag
+#define NX_DJF_MAX_DISTANCE_ENABLED 1<<0
+#define NX_DJF_MIN_DISTANCE_ENABLED 1<<1
+#define NX_DJF_SPRING_ENABLED 1<<2
+
 // PhysxMaterialFlag
 #define NX_MF_ANISOTROPIC 1<<0
 #define NX_MF_DISABLE_FRICTION 1<<4
@@ -56,6 +61,24 @@
 #define NX_SMOOTH_IMPULSE 3
 #define NX_SMOOTH_VELOCITY_CHANGE 4
 #define NX_ACCELERATION 5
+
+// PhysxJointFlag
+#define NX_JF_COLLISION_ENABLED 1<<0
+#define NX_JF_VISUALIZATION 1<<1
+
+// PhysxProjectionMode
+#define NX_JPM_NONE 0
+#define NX_JPM_POINT_MINDIST 1
+#define NX_JPM_LINEAR_MINDIST 2
+
+// PhysxPulleyJointFlag
+#define NX_PJF_IS_RIGID 1<<0
+#define NX_PJF_MOTOR_ENABLED 1<<1
+
+// PhysxRevoluteJointFlag
+#define NX_RJF_LIMIT_ENABLED 1<<0
+#define NX_RJF_MOTOR_ENABLED 1<<1
+#define NX_RJF_SPRING_ENABLED 1<<2
 
 // PhysxShapeFlag
 #define NX_TRIGGER_ON_ENTER 1<<0
@@ -79,6 +102,14 @@
 #define NX_SF_SOFTBODY_DRAIN 1<<18
 #define NX_SF_SOFTBODY_DISABLE_COLLISION 1<<19
 #define NX_SF_SOFTBODY_TWOWAY 1<<20
+
+// PhysxSphericalJointFlag
+#define NX_SJF_TWIST_LIMIT_ENABLED 1<<0
+#define NX_SJF_SWING_LIMIT_ENABLED 1<<1
+#define NX_SJF_TWIST_SPRING_ENABLED 1<<2
+#define NX_SJF_SWING_SPRING_ENABLED 1<<3
+#define NX_SJF_JOINT_SPRING_ENABLED 1<<4
+#define NX_SJF_PERPENDICULAR_DIR_CONSTRAINTS 1<<5
 
 // PhysxUpAxis
 #define NX_X 1
@@ -119,6 +150,12 @@ PUBLISHED:
     CM_max      = NX_CM_MAX
   };
 
+  enum PhysxDistanceJointFlag {
+    DJF_max_distance_enabled  = NX_DJF_MAX_DISTANCE_ENABLED,
+    DJF_mix_distance_enabled  = NX_DJF_MIN_DISTANCE_ENABLED,
+    DJF_spring_enabled        = NX_DJF_SPRING_ENABLED
+  };
+
   enum PhysxForceMode {
     FM_force                  = NX_FORCE,
     FM_impulse                = NX_IMPULSE,
@@ -128,10 +165,32 @@ PUBLISHED:
     FM_acceleration           = NX_ACCELERATION
   };
 
+  enum PhysxJointFlag {
+    JF_collision_enabled = NX_JF_COLLISION_ENABLED,
+    JF_visualization     = NX_JF_VISUALIZATION
+  };
+
   enum PhysxMaterialFlag {
     MF_anisotropic             = NX_MF_ANISOTROPIC,
     MF_disable_friction        = NX_MF_DISABLE_FRICTION,
     MF_disable_strong_friction = NX_MF_DISABLE_STRONG_FRICTION
+  };
+
+  enum PhysxProjectionMode {
+    PM_none             = NX_JPM_NONE,
+    PM_point_mindist    = NX_JPM_POINT_MINDIST,
+    PM_linear_mindist   = NX_JPM_LINEAR_MINDIST
+  };
+
+  enum PhysxPulleyJointFlag {
+    PJF_is_rigid       = NX_PJF_IS_RIGID,
+    PJF_motor_enabled  = NX_PJF_MOTOR_ENABLED
+  };
+
+  enum PhysxRevoluteJointFlag {
+    RJF_limit_enabled    = NX_RJF_LIMIT_ENABLED,
+    RJF_motor_enabled    = NX_RJF_MOTOR_ENABLED,
+    RJF_spring_enabled   = NX_RJF_SPRING_ENABLED
   };
 
   enum PhysxShapeFlag {
@@ -156,6 +215,15 @@ PUBLISHED:
     SF_softbody_drain             = NX_SF_SOFTBODY_DRAIN,
     SF_softbody_disable_collision = NX_SF_SOFTBODY_DISABLE_COLLISION,
     SF_softbody_twoway            = NX_SF_SOFTBODY_TWOWAY
+  };
+
+  enum PhysxSphericalJointFlag {
+    SJF_twist_limit_enabled           = NX_SJF_TWIST_LIMIT_ENABLED,
+    SJF_swing_limit_enabled           = NX_SJF_SWING_LIMIT_ENABLED,
+    SJF_twist_spring_enabled          = NX_SJF_TWIST_SPRING_ENABLED,
+    SJF_swing_spring_enabled          = NX_SJF_SWING_SPRING_ENABLED,
+    SJF_joint_spring_enabled          = NX_SJF_JOINT_SPRING_ENABLED,
+    SJF_perpendicular_dir_constraints = NX_SJF_PERPENDICULAR_DIR_CONSTRAINTS
   };
 
   enum PhysxUpAxis {
