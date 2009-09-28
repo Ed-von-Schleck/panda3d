@@ -20,9 +20,11 @@
 #include "physxEnums.cxx"
 #include "physxFixedJointDesc.cxx"
 #include "physxJointDesc.cxx"
+#include "physxJointLimitDesc.cxx"
 #include "physxManager.cxx"
 #include "physxMaterial.cxx"
 #include "physxMaterialDesc.cxx"
+#include "physxMotorDesc.cxx"
 #include "physxObject.cxx"
 #include "physxPlaneShape.cxx"
 #include "physxPlaneShapeDesc.cxx"
@@ -38,4 +40,5 @@
 #include "physxSphereShape.cxx"
 #include "physxSphereShapeDesc.cxx"
 #include "physxSphericalJointDesc.cxx" // TODO methods
+#include "physxSpringDesc.cxx"
 #include "physxTriggerReport.cxx"
