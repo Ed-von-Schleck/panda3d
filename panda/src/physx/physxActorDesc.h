@@ -17,7 +17,6 @@
 
 #include "pandabase.h"
 #include "typedReferenceCount.h"
-
 #include "lpoint3.h"
 #include "lmatrix.h"
 
@@ -42,14 +41,18 @@ PUBLISHED:
 
   void add_shape(PhysxShapeDesc &desc);
 
-  void set_body(PhysxBodyDesc &desc);
   void set_name(const char *name);
   void set_density(float density);
   void set_global_pos(const LPoint3f &pos);
   void set_global_mat(const LMatrix4f &mat);
   void set_global_hpr(float h, float p, float r);
+  void set_body(PhysxBodyDesc &desc);
 
-  PhysxBodyDesc *get_body() const;
+  const char *get_name() const;
+  float get_density() const;
+  LPoint3f get_global_pos() const;
+  LMatrix4f get_global_mat() const;
+  PT(PhysxBodyDesc) get_body() const;
 
 public:
   INLINE PhysxActorDesc(NxActorDesc &desc);

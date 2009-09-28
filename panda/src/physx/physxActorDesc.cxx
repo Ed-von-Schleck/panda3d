@@ -115,8 +115,52 @@ set_body(PhysxBodyDesc &desc) {
 //       Access: Published
 //  Description: Gets the body descriptor for this actor.
 ////////////////////////////////////////////////////////////////////
-PhysxBodyDesc *PhysxActorDesc::
+PT(PhysxBodyDesc) PhysxActorDesc::
 get_body() const {
 
   return new PhysxBodyDesc(_desc.body);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActorDesc::get_name
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+const char *PhysxActorDesc::
+get_name() const {
+
+  return _desc.name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActorDesc::get_density
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxActorDesc::
+get_density() const {
+
+  return _desc.density;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActorDesc::get_global_pos
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LPoint3f PhysxActorDesc::
+get_global_pos() const {
+
+  return PhysxManager::nxVec3_to_point3(_desc.globalPose.t);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActorDesc::get_global_mat
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LMatrix4f PhysxActorDesc::
+get_global_mat() const {
+
+  return PhysxManager::nxMat34_to_mat4(_desc.globalPose);
 }
