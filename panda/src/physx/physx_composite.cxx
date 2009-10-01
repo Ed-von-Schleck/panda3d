@@ -16,7 +16,7 @@
 #include "physxControllerReport.cxx"
 #include "physxCylindricalJointDesc.cxx"
 #include "physxDebugGeomNode.cxx"
-#include "physxDistanceJointDesc.cxx" // TODO methods
+#include "physxDistanceJointDesc.cxx"
 #include "physxEnums.cxx"
 #include "physxFixedJointDesc.cxx"
 #include "physxJointDesc.cxx"
@@ -31,14 +31,14 @@
 #include "physxPointInPlaneJointDesc.cxx"
 #include "physxPointOnLineJointDesc.cxx"
 #include "physxPrismaticJointDesc.cxx"
-#include "physxPulleyJointDesc.cxx" // TODO methods
-#include "physxRevoluteJointDesc.cxx" // TODO methods
+#include "physxPulleyJointDesc.cxx"
+#include "physxRevoluteJointDesc.cxx"
 #include "physxScene.cxx"
 #include "physxSceneDesc.cxx"
 #include "physxShape.cxx"
 #include "physxShapeDesc.cxx"
 #include "physxSphereShape.cxx"
 #include "physxSphereShapeDesc.cxx"
-#include "physxSphericalJointDesc.cxx" // TODO methods
+#include "physxSphericalJointDesc.cxx"
 #include "physxSpringDesc.cxx"
 #include "physxTriggerReport.cxx"
