@@ -29,11 +29,14 @@
 #include "physxController.h"
 #include "physxControllerDesc.h"
 #include "physxCylindricalJointDesc.h"
+#include "physxD6JointDesc.h"
 #include "physxDebugGeomNode.h"
 #include "physxDistanceJointDesc.h"
 #include "physxFixedJointDesc.h"
 #include "physxJointDesc.h"
+#include "physxJointDriveDesc.h"
 #include "physxJointLimitDesc.h"
+#include "physxJointLimitSoftDesc.h"
 #include "physxMaterial.h"
 #include "physxMaterialDesc.h"
 #include "physxMotorDesc.h"
@@ -113,11 +116,14 @@ init_libphysx() {
   PhysxController::init_type();
   PhysxControllerDesc::init_type();
   PhysxCylindricalJointDesc::init_type();
+  PhysxD6JointDesc::init_type();
   PhysxDebugGeomNode::init_type();
   PhysxDistanceJointDesc::init_type();
   PhysxFixedJointDesc::init_type();
   PhysxJointDesc::init_type();
+  PhysxJointDriveDesc::init_type();
   PhysxJointLimitDesc::init_type();
+  PhysxJointLimitSoftDesc::init_type();
   PhysxMaterial::init_type();
   PhysxMaterialDesc::init_type();
   PhysxMotorDesc::init_type();

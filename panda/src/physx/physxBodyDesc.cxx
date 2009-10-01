@@ -349,3 +349,71 @@ get_flag(const PhysxBodyFlag flag) const {
   return (_desc.flags & flag) ? true : false;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::set_ccd_motion_threshold
+//       Access: Published
+//  Description: When CCD is globally enabled, it is still not
+//               performed if the motion distance of all points on
+//               the body is below this threshold. 
+////////////////////////////////////////////////////////////////////
+void PhysxBodyDesc::
+set_ccd_motion_threshold(float threshold) {
+
+  _desc.CCDMotionThreshold = threshold;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::get_ccd_motion_threshold
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxBodyDesc::
+get_ccd_motion_threshold() const {
+
+  return _desc.CCDMotionThreshold;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::set_wake_up_counter
+//       Access: Published
+//  Description: Set the body's initial wake up counter.
+////////////////////////////////////////////////////////////////////
+void PhysxBodyDesc::
+set_wake_up_counter(float value) {
+
+  _desc.wakeUpCounter = value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::get_wake_up_counter
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxBodyDesc::
+get_wake_up_counter() const {
+
+  return _desc.wakeUpCounter;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::set_contact_report_threshold
+//       Access: Published
+//  Description: Set The force threshold for contact reports.
+////////////////////////////////////////////////////////////////////
+void PhysxBodyDesc::
+set_contact_report_threshold(float threshold) {
+
+  _desc.contactReportThreshold = threshold;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBodyDesc::get_contact_report_threshold
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxBodyDesc::
+get_contact_report_threshold() const {
+
+  return _desc.contactReportThreshold;
+}
+

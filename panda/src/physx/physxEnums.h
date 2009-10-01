@@ -44,6 +44,14 @@
 #define NX_CM_MULTIPLY 2
 #define NX_CM_MAX 3
 
+// PhysxD6JointDriveType
+#define NX_D6JOINT_DRIVE_POSITION 1<<0
+#define NX_D6JOINT_DRIVE_VELOCITY 1<<1
+
+// PhysxD6JointFlag
+#define NX_D6JOINT_SLERP_DRIVE 1<<0
+#define NX_D6JOINT_GEAR_ENABLED 1<<1
+
 // PhysxD6JointMotion
 #define NX_D6JOINT_MOTION_LOCKED 0
 #define NX_D6JOINT_MOTION_LIMITED 1
@@ -155,10 +163,20 @@ PUBLISHED:
     CM_max      = NX_CM_MAX
   };
 
+  enum PhysxD6JointDriveType {
+    D6_joint_drive_position = NX_D6JOINT_DRIVE_POSITION,
+    D6_joint_drive_velocity = NX_D6JOINT_DRIVE_VELOCITY
+  };
+
+  enum PhysxD6JointFlag {
+    D6_joint_slerp_drive   = NX_D6JOINT_SLERP_DRIVE,
+    D6_joint_gear_disabled = NX_D6JOINT_GEAR_ENABLED
+  };
+
   enum PhysxD6JointMotion {
-    D6_motion_locked  = NX_D6JOINT_MOTION_LOCKED,
-    D6_motion_limited = NX_D6JOINT_MOTION_LIMITED,
-    D6_motion_free    = NX_D6JOINT_MOTION_FREE
+    D6_joint_motion_locked  = NX_D6JOINT_MOTION_LOCKED,
+    D6_joint_motion_limited = NX_D6JOINT_MOTION_LIMITED,
+    D6_joint_motion_free    = NX_D6JOINT_MOTION_FREE
   };
 
   enum PhysxDistanceJointFlag {

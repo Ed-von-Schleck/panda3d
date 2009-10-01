@@ -53,6 +53,9 @@ PUBLISHED:
   void set_mass_local_mat(const LMatrix4f mat);
   void set_mass_space_inertia(const LVector3f inertia);
   void set_flag(PhysxBodyFlag flag, bool value);
+  void set_ccd_motion_threshold(float threshold);
+  void set_wake_up_counter(float value);
+  void set_contact_report_threshold(float threshold);
 
   float get_mass() const;
   float get_linear_damping() const;
@@ -68,6 +71,9 @@ PUBLISHED:
   LMatrix4f get_mass_local_mat() const;
   LVector3f get_mass_space_inertia() const;
   bool get_flag(PhysxBodyFlag flag) const;
+  float get_ccd_motion_threshold() const;
+  float get_wake_up_counter() const;
+  float get_contact_report_threshold() const;
 
 public:
   INLINE PhysxBodyDesc(const NxBodyDesc *desc);
