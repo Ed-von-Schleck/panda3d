@@ -44,6 +44,11 @@
 #define NX_CM_MULTIPLY 2
 #define NX_CM_MAX 3
 
+// PhysxD6JointMotion
+#define NX_D6JOINT_MOTION_LOCKED 0
+#define NX_D6JOINT_MOTION_LIMITED 1
+#define NX_D6JOINT_MOTION_FREE 2
+
 // PhysxDistanceJointFlag
 #define NX_DJF_MAX_DISTANCE_ENABLED 1<<0
 #define NX_DJF_MIN_DISTANCE_ENABLED 1<<1
@@ -148,6 +153,12 @@ PUBLISHED:
     CM_min      = NX_CM_MIN,
     CM_multiply = NX_CM_MULTIPLY,
     CM_max      = NX_CM_MAX
+  };
+
+  enum PhysxD6JointMotion {
+    D6_motion_locked  = NX_D6JOINT_MOTION_LOCKED,
+    D6_motion_limited = NX_D6JOINT_MOTION_LIMITED,
+    D6_motion_free    = NX_D6JOINT_MOTION_FREE
   };
 
   enum PhysxDistanceJointFlag {

@@ -13,12 +13,11 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxPulleyJointDesc.h"
-//#include "physxMotorDesc.h"
-//#include "physxConverter.h"
+#include "physxMotorDesc.h"
+#include "physxManager.h"
 
 TypeHandle PhysxPulleyJointDesc::_type_handle;
 
-/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxPulleyJointDesc::set_distance
 //       Access: Published
@@ -80,7 +79,7 @@ void PhysxPulleyJointDesc::
 set_pulley(unsigned int idx, const LPoint3f pos) {
 
   nassertv_always(idx < 2);
-  _desc.pulley[idx] = Point3_to_NxVec3(pos);
+  _desc.pulley[idx] = PhysxManager::point3_to_nxVec3(pos);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -93,4 +92,71 @@ set_motor(const PhysxMotorDesc &motor) {
 
   _desc.motor = motor.desc();
 }
-*/
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJointDesc::get_distance
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxPulleyJointDesc::
+get_distance() const {
+
+  return _desc.distance;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJointDesc::get_stiffness
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxPulleyJointDesc::
+get_stiffness() const {
+
+  return _desc.stiffness;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJointDesc::get_ratio
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxPulleyJointDesc::
+get_ratio() const {
+
+  return _desc.ratio;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJointDesc::get_flag
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+bool PhysxPulleyJointDesc::
+get_flag(PhysxPulleyJointFlag flag) const {
+
+  return (_desc.flags & flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJointDesc::get_pulley
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LPoint3f PhysxPulleyJointDesc::
+get_pulley(unsigned int idx) const {
+
+  nassertr_always(idx < 2, LPoint3f::zero());
+  return PhysxManager::nxVec3_to_point3(_desc.pulley[idx]);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJointDesc::get_motor
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxMotorDesc) PhysxPulleyJointDesc::
+get_motor() const {
+
+  return new PhysxMotorDesc(_desc.motor);
+}
+

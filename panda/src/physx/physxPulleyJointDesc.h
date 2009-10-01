@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxMotorDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxPulleyJointDesc
 // Description : Descriptor class for distance joint. See
@@ -36,14 +38,19 @@ PUBLISHED:
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  //void set_distance(float distance);
-  //void set_stiffness(float stiffness);
-  //void set_ratio(float ration);
-  //void set_pulley(unsigned int idx, const LPoint3f pos);
-  //void set_motor(const PhysMotorDesc &motor);
-  //void set_flag(PhysxPulleyJointFlag flag, bool value);
+  void set_distance(float distance);
+  void set_stiffness(float stiffness);
+  void set_ratio(float ration);
+  void set_pulley(unsigned int idx, const LPoint3f pos);
+  void set_motor(const PhysxMotorDesc &motor);
+  void set_flag(PhysxPulleyJointFlag flag, bool value);
 
-  // TODO: getter
+  float get_distance() const;
+  float get_stiffness() const;
+  float get_ratio() const;
+  bool get_flag(PhysxPulleyJointFlag flag) const;
+  LPoint3f get_pulley(unsigned int idx) const;
+  PT(PhysxMotorDesc) get_motor() const;
 
 public:
   INLINE PhysxPulleyJointDesc(NxPulleyJointDesc &desc);

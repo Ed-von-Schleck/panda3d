@@ -13,13 +13,12 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxSphericalJointDesc.h"
-//#include "physxManager.h"
-//#include "physxSpringDesc.h"
-//#include "physxJointLimitDesc.h"
+#include "physxManager.h"
+#include "physxSpringDesc.h"
+#include "physxJointLimitDesc.h"
 
 TypeHandle PhysxSphericalJointDesc::_type_handle;
 
-/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphericalJointDesc::set_projection_distance
 //       Access: Published
@@ -106,14 +105,24 @@ set_projection_mode(PhysxProjectionMode mode) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSphericalJointDesc::set_twist_limit
+//     Function: PhysxSphericalJointDesc::set_twist_limit_low
 //       Access: Published
 //  Description: Limits rotation around twist axis.
 ////////////////////////////////////////////////////////////////////
 void PhysxSphericalJointDesc::
-set_twist_limit(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high) {
+set_twist_limit_low(const PhysxJointLimitDesc &low) {
 
   _desc.twistLimit.low = low.desc();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::set_twist_limit_high
+//       Access: Published
+//  Description: Limits rotation around twist axis.
+////////////////////////////////////////////////////////////////////
+void PhysxSphericalJointDesc::
+set_twist_limit_high(const PhysxJointLimitDesc &high) {
+
   _desc.twistLimit.high = high.desc();
 }
 
@@ -127,4 +136,114 @@ set_swing_limit(const PhysxJointLimitDesc &limit) {
 
   _desc.swingLimit = limit.desc();
 }
-*/
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_projection_distance
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxSphericalJointDesc::
+get_projection_distance() const {
+
+  return _desc.projectionDistance;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_flag
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+bool PhysxSphericalJointDesc::
+get_flag(PhysxSphericalJointFlag flag) const {
+
+  return (_desc.flags & flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_twist_spring
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxSpringDesc) PhysxSphericalJointDesc::
+get_twist_spring() const {
+
+  return new PhysxSpringDesc(_desc.twistSpring);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_swing_spring
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxSpringDesc) PhysxSphericalJointDesc::
+get_swing_spring() const {
+
+  return new PhysxSpringDesc(_desc.swingSpring);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_joint_spring
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxSpringDesc) PhysxSphericalJointDesc::
+get_joint_spring() const {
+
+  return new PhysxSpringDesc(_desc.jointSpring);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_swing_axis
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LVector3f PhysxSphericalJointDesc::
+get_swing_axis() const {
+
+  return PhysxManager::nxVec3_to_vec3(_desc.swingAxis);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_projection_mode
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxProjectionMode PhysxSphericalJointDesc::
+get_projection_mode() const {
+
+  return (PhysxProjectionMode)_desc.projectionMode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_twist_limit_low
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxJointLimitDesc) PhysxSphericalJointDesc::
+get_twist_limit_low() const {
+
+  return new PhysxJointLimitDesc(_desc.twistLimit.low);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_twist_limit_high
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxJointLimitDesc) PhysxSphericalJointDesc::
+get_twist_limit_high() const {
+
+  return new PhysxJointLimitDesc(_desc.twistLimit.high);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJointDesc::get_swing_limit
+//       Access: Published
+//  Description: Limits swing of twist axis.
+////////////////////////////////////////////////////////////////////
+PT(PhysxJointLimitDesc) PhysxSphericalJointDesc::
+get_swing_limit() const {
+
+  return new PhysxJointLimitDesc(_desc.swingLimit);
+}
+

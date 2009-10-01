@@ -13,13 +13,12 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxRevoluteJointDesc.h"
-//#include "physxSpringDesc.h"
-//#include "physxMotorDesc.h"
-//#include "physxJointLimitDesc.h"
+#include "physxSpringDesc.h"
+#include "physxMotorDesc.h"
+#include "physxJointLimitDesc.h"
 
 TypeHandle PhysxRevoluteJointDesc::_type_handle;
 
-/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxRevoluteJointDesc::set_projection_distance
 //       Access: Published
@@ -94,15 +93,116 @@ set_motor(const PhysxMotorDesc &motor) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRevoluteJointDesc::set_limit
+//     Function: PhysxRevoluteJointDesc::set_limit_low
 //       Access: Published
 //  Description: Sets optional limits for the angular motion of the
 //               joint.
 ////////////////////////////////////////////////////////////////////
 void PhysxRevoluteJointDesc::
-set_limit(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high) {
+set_limit_low(const PhysxJointLimitDesc &low) {
 
   _desc.limit.low = low.desc();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::set_limit_high
+//       Access: Published
+//  Description: Sets optional limits for the angular motion of the
+//               joint.
+////////////////////////////////////////////////////////////////////
+void PhysxRevoluteJointDesc::
+set_limit_high(const PhysxJointLimitDesc &high) {
+
   _desc.limit.high = high.desc();
 }
-*/
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_projection_distance
+//       Access: Published
+//  Description: Return the distance beyond which the joint is
+//               projected.
+////////////////////////////////////////////////////////////////////
+float PhysxRevoluteJointDesc::
+get_projection_distance() const {
+
+  return _desc.projectionDistance;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_projection_angle
+//       Access: Published
+//  Description: Return the angle beyond which the joint is
+//               projected.
+////////////////////////////////////////////////////////////////////
+float PhysxRevoluteJointDesc::
+get_projection_angle() const {
+
+  return _desc.projectionAngle;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_spring
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxSpringDesc) PhysxRevoluteJointDesc::
+get_spring() const {
+
+  return new PhysxSpringDesc(_desc.spring);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_flag
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+bool PhysxRevoluteJointDesc::
+get_flag(PhysxRevoluteJointFlag flag) const {
+
+  return (_desc.flags & flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_projection_mode
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxProjectionMode PhysxRevoluteJointDesc::
+get_projection_mode() const {
+
+  return (PhysxProjectionMode)_desc.projectionMode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_motor
+//       Access: Published
+//  Description: Sets an optional joint motor.
+////////////////////////////////////////////////////////////////////
+PT(PhysxMotorDesc) PhysxRevoluteJointDesc::
+get_motor() const {
+
+  return new PhysxMotorDesc(_desc.motor);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_limit_low
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxJointLimitDesc) PhysxRevoluteJointDesc::
+get_limit_low() const {
+
+  return new PhysxJointLimitDesc(_desc.limit.low);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxRevoluteJointDesc::get_limit_high
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxJointLimitDesc) PhysxRevoluteJointDesc::
+get_limit_high() const {
+
+  return new PhysxJointLimitDesc(_desc.limit.high);
+}
+

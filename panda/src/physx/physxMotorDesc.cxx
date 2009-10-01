@@ -14,6 +14,8 @@
 
 #include "physxMotorDesc.h"
 
+TypeHandle PhysxMotorDesc::_type_handle;
+
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxMotorDesc::set_vel_target
 //       Access: Published

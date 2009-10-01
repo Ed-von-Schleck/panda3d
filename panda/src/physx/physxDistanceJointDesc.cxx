@@ -13,11 +13,10 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxDistanceJointDesc.h"
-//#include "physxSpringDesc.h"
+#include "physxSpringDesc.h"
 
 TypeHandle PhysxDistanceJointDesc::_type_handle;
 
-/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxDistanceJointDesc::set_max_distance
 //       Access: Published
@@ -69,4 +68,53 @@ set_flag(PhysxDistanceJointFlag flag, bool value) {
     _desc.flags &= ~(flag);
   }
 }
-*/
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxDistanceJointDesc::get_max_distance
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxDistanceJointDesc::
+get_max_distance() const {
+
+  return _desc.maxDistance;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxDistanceJointDesc::get_min_distance
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+float PhysxDistanceJointDesc::
+get_min_distance() const {
+
+  return _desc.minDistance;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxDistanceJointDesc::get_spring
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxSpringDesc) PhysxDistanceJointDesc::
+get_spring() const {
+
+  return new PhysxSpringDesc(_desc.spring);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxDistanceJointDesc::get_flag
+//       Access: Published
+//  Description: Return a single DistanceJointFlag flag.
+////////////////////////////////////////////////////////////////////
+bool PhysxDistanceJointDesc::
+get_flag(PhysxDistanceJointFlag flag) const {
+
+  return (_desc.flags & flag) ? true : false;
+}
+

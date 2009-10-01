@@ -37,6 +37,17 @@ PhysxSpringDesc(float spring, float damper, float target) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxSpringDesc::Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PhysxSpringDesc::
+PhysxSpringDesc(const NxSpringDesc &desc) {
+
+   _desc = desc;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxSpringDesc::Destructor
 //       Access: Published
 //  Description:

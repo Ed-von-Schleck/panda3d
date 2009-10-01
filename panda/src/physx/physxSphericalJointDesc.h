@@ -22,6 +22,9 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxSpringDesc;
+class PhysxJointLimitDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxSphericalJointDesc
 // Description : Descriptor class for distance joint. See
@@ -36,17 +39,27 @@ PUBLISHED:
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  //void set_projection_distance(float distance);
-  //void set_twist_spring(const PhysxSpringDesc &spring);
-  //void set_swing_spring(const PhysxSpringDesc &spring);
-  //void set_joint_spring(const PhysxSpringDesc &spring);
-  //void set_swing_axis(const LVector3f &axis);
-  //void set_twist_limit(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high);
-  //void set_swing_limit(const PhysxJointLimitDesc &limit);
-  //void set_flag(PhysxSphericalJointFlag flag, bool value);
-  //void set_projection_mode(PhysxProjectionMode mode);
+  void set_projection_distance(float distance);
+  void set_flag(PhysxSphericalJointFlag flag, bool value);
+  void set_swing_axis(const LVector3f &axis);
+  void set_twist_spring(const PhysxSpringDesc &spring);
+  void set_swing_spring(const PhysxSpringDesc &spring);
+  void set_joint_spring(const PhysxSpringDesc &spring);
+  void set_twist_limit_low(const PhysxJointLimitDesc &low);
+  void set_twist_limit_high(const PhysxJointLimitDesc &high);
+  void set_swing_limit(const PhysxJointLimitDesc &limit);
+  void set_projection_mode(PhysxProjectionMode mode);
 
-  // TODO: getter
+  float get_projection_distance() const;
+  bool get_flag(PhysxSphericalJointFlag flag) const;
+  LVector3f get_swing_axis() const;
+  PT(PhysxSpringDesc) get_twist_spring() const;
+  PT(PhysxSpringDesc) get_swing_spring() const;
+  PT(PhysxSpringDesc) get_joint_spring() const;
+  PT(PhysxJointLimitDesc) get_twist_limit_low() const;
+  PT(PhysxJointLimitDesc) get_twist_limit_high() const;
+  PT(PhysxJointLimitDesc) get_swing_limit() const;
+  PhysxProjectionMode get_projection_mode() const;
 
 public:
   INLINE PhysxSphericalJointDesc(NxSphericalJointDesc &desc);

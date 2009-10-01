@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxSpringDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxDistanceJointDesc
 // Description : Descriptor class for distance joint. See
@@ -36,12 +38,15 @@ PUBLISHED:
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  //void set_max_distance(float distance);
-  //void set_min_distance(float distance);
-  //void set_spring(const PhysxSpringDesc &spring);
-  //void set_flag(PhysxDistanceJointFlag flag, bool value);
+  void set_max_distance(float distance);
+  void set_min_distance(float distance);
+  void set_spring(const PhysxSpringDesc &spring);
+  void set_flag(PhysxDistanceJointFlag flag, bool value);
 
-  // TODO: getter
+  float get_max_distance() const;
+  float get_min_distance() const;
+  bool get_flag(PhysxDistanceJointFlag flag) const;
+  PT(PhysxSpringDesc) get_spring() const;
 
 public:
   INLINE PhysxDistanceJointDesc(NxDistanceJointDesc &desc);

@@ -33,8 +33,10 @@
 #include "physxDistanceJointDesc.h"
 #include "physxFixedJointDesc.h"
 #include "physxJointDesc.h"
+#include "physxJointLimitDesc.h"
 #include "physxMaterial.h"
 #include "physxMaterialDesc.h"
+#include "physxMotorDesc.h"
 #include "physxObject.h"
 #include "physxPlaneShape.h"
 #include "physxPlaneShapeDesc.h"
@@ -50,6 +52,7 @@
 #include "physxSphereShape.h"
 #include "physxSphereShapeDesc.h"
 #include "physxSphericalJointDesc.h"
+#include "physxSpringDesc.h"
 
 ConfigureDef(config_physx);
 NotifyCategoryDef(physx, "");
@@ -114,8 +117,10 @@ init_libphysx() {
   PhysxDistanceJointDesc::init_type();
   PhysxFixedJointDesc::init_type();
   PhysxJointDesc::init_type();
+  PhysxJointLimitDesc::init_type();
   PhysxMaterial::init_type();
   PhysxMaterialDesc::init_type();
+  PhysxMotorDesc::init_type();
   PhysxObject::init_type();
   PhysxPlaneShape::init_type();
   PhysxPlaneShapeDesc::init_type();
@@ -131,6 +136,7 @@ init_libphysx() {
   PhysxSphereShape::init_type();
   PhysxSphereShapeDesc::init_type();
   PhysxSphericalJointDesc::init_type();
+  PhysxSpringDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system("PhysX");

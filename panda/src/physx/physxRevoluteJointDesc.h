@@ -22,6 +22,10 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxSpringDesc;
+class PhysxMotorDesc;
+class PhysxJointLimitDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxRevoluteJointDesc
 // Description : Descriptor class for distance joint. See
@@ -36,15 +40,23 @@ PUBLISHED:
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  //void set_projection_distance(float distance);
-  //void set_projection_angle(float angle);
-  //void set_spring(const PhysxSpringDesc &spring);
-  //void set_flag(PhysxRevoluteJointFlag flag, bool value);
-  //void set_motor(const PhysxMotorDesc &motor);
-  //void set_limit(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high);
-  //void set_projection_mode(PhysxProjectionMode mode);
+  void set_projection_distance(float distance);
+  void set_projection_angle(float angle);
+  void set_spring(const PhysxSpringDesc &spring);
+  void set_flag(PhysxRevoluteJointFlag flag, bool value);
+  void set_motor(const PhysxMotorDesc &motor);
+  void set_limit_low(const PhysxJointLimitDesc &low);
+  void set_limit_high(const PhysxJointLimitDesc &high);
+  void set_projection_mode(PhysxProjectionMode mode);
 
-  // TODO: getter
+  float get_projection_distance() const;
+  float get_projection_angle() const;
+  bool get_flag(PhysxRevoluteJointFlag flag) const;
+  PT(PhysxSpringDesc) get_spring() const;
+  PT(PhysxMotorDesc) get_motor() const;
+  PT(PhysxJointLimitDesc) get_limit_low() const;
+  PT(PhysxJointLimitDesc) get_limit_high() const;
+  PhysxProjectionMode get_projection_mode() const;
 
 public:
   INLINE PhysxRevoluteJointDesc(NxRevoluteJointDesc &desc);
