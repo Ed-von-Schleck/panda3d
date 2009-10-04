@@ -81,7 +81,16 @@ unlink() {
     }
   }
 
-  // Unlink joints TODO
+  // Unlink joints
+  NxU32 nJoints = _ptr->getNbJoints();
+
+  _ptr->resetJointIterator();
+  for (NxU32 i=0; i < nJoints; i++) {
+    NxJoint *jointPtr = _ptr->getNextJoint();
+    PT(PhysxJoint) joint = (PhysxJoint *)jointPtr->userData;
+    joint->unlink();
+  }
+
   // Unlink forcefields TODO
   // Unlink cloths TODO
   // Unlink softbodies TODO
@@ -597,5 +606,64 @@ get_controller(unsigned int idx) const {
   PhysxController *controller = (PhysxController *)(controllerPtr->getUserData());
 
   return controller;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_num_joints
+//       Access: Published
+//  Description: Returns the number of joints in the scene
+//               (excluding "dead" joints). Note that this includes
+//               compartments.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxScene::
+get_num_joints() const {
+
+  nassertr(_error_type == ET_ok, -1);
+  return _ptr->getNbJoints();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::create_joint
+//       Access: Published
+//  Description: Creates a joint in this scene.
+////////////////////////////////////////////////////////////////////
+PT(PhysxJoint) PhysxScene::
+create_joint(PhysxJointDesc &desc) {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr(desc.is_valid(),NULL);
+
+  PT(PhysxJoint) joint = PhysxJoint::factory(desc.ptr()->getType());
+  nassertr(joint, NULL);
+
+  NxJoint *jointPtr = _ptr->createJoint(*desc.ptr());
+  nassertr(jointPtr, NULL);
+
+  joint->link(jointPtr);
+
+  return joint;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_joint
+//       Access: Published
+//  Description: Retrieve the n-th joint from the array of all the
+//               joints in the scene.
+////////////////////////////////////////////////////////////////////
+PT(PhysxJoint) PhysxScene::
+get_joint(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbJoints(), NULL);
+
+  NxJoint *jointPtr;
+  NxU32 nJoints = _ptr->getNbJoints();
+
+  _ptr->resetJointIterator();
+  for (NxU32 i=0; i <= idx; i++) {
+    jointPtr = _ptr->getNextJoint();
+  }
+
+  return (PhysxJoint *)(jointPtr->userData);
 }
 

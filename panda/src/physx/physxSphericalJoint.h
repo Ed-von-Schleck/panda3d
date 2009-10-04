@@ -36,13 +36,11 @@ PUBLISHED:
   INLINE PhysxSphericalJoint();
   INLINE ~PhysxSphericalJoint();
 
-  //void set_flag(PhysxSphericalJointFlag flag, bool value);
-  //void set_projection_mode(PhysxProjectionMode mode);
+  void set_flag(PhysxSphericalJointFlag flag, bool value);
+  void set_projection_mode(PhysxProjectionMode mode);
 
-  //bool get_flag(PhysxSphericalJointFlag flag) const;
-  //PhysxProjectionMode get_projection_mode() const;
-
-  // TODO: methods...
+  bool get_flag(PhysxSphericalJointFlag flag) const;
+  PhysxProjectionMode get_projection_mode() const;
 
 ////////////////////////////////////////////////////////////////////
 public:

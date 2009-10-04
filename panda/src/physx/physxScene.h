@@ -33,6 +33,8 @@ class PhysxMaterial;
 class PhysxMaterialDesc;
 class PhysxController;
 class PhysxControllerDesc;
+class PhysxJoint;
+class PhysxJointDesc;
 class PhysxDebugGeomNode;
 
 ////////////////////////////////////////////////////////////////////
@@ -74,6 +76,11 @@ PUBLISHED:
   PT(PhysxActor) create_actor(PhysxActorDesc &desc);
   PT(PhysxActor) get_actor(unsigned int idx) const;
   MAKE_SEQ(get_actors, get_num_actors, get_actor);
+
+  unsigned int get_num_joints() const;
+  PT(PhysxJoint) create_joint(PhysxJointDesc &desc);
+  PT(PhysxJoint) get_joint(unsigned int idx) const;
+  MAKE_SEQ(get_joints, get_num_joints, get_joint);
 
   unsigned int get_num_materials() const;
   unsigned int get_hightest_material_index() const;

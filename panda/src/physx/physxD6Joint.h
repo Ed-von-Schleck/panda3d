@@ -22,10 +22,15 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxD6JointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxD6Joint
-// Description : A fixed joint permits no relative movement between
-//               two bodies. ie the bodies are glued together. 
+// Description : A D6 joint is a general constraint between two
+//               actors.  It allows the user to individually define
+//               the linear and rotational degrees of freedom.  It
+//               also allows the user to configure the joint with
+//               limits and driven degrees of freedom as they wish.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxD6Joint : public PhysxJoint {
 
@@ -33,7 +38,10 @@ PUBLISHED:
   INLINE PhysxD6Joint();
   INLINE ~PhysxD6Joint();
 
-  // TODO: methods...
+  void set_drive_angular_velocity(const LVector3f &v);
+  void set_drive_linear_velocity(const LVector3f &v);
+  void set_drive_orientation(const LQuaternionf &quat);
+  void set_drive_position(const LPoint3f &pos);
 
 ////////////////////////////////////////////////////////////////////
 public:

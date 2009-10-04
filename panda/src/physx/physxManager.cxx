@@ -159,6 +159,28 @@ is_hardware_available() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function : PhysxManager::set_parameter
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxManager::
+set_parameter(PhysxParameter param, float value) {
+
+  _sdk->setParameter((NxParameter)param, value);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxManager::get_parameter
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+float PhysxManager::
+get_parameter(PhysxParameter param) {
+
+  return _sdk->getParameter((NxParameter)param);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxManager::get_sdk_error_string
 //       Access: Private
 //  Description: Returns the NxSDKCreateError enum as string.

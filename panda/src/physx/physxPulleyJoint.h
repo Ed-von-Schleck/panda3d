@@ -39,6 +39,7 @@ PUBLISHED:
   void set_flag(PhysxPulleyJointFlag flag, bool value);
 
   bool get_flag(PhysxPulleyJointFlag flag) const;
+  PT(PhysxMotorDesc) get_motor() const;
 
 ////////////////////////////////////////////////////////////////////
 public:

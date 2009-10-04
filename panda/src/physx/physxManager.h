@@ -19,6 +19,8 @@
 #include "pointerTo.h"
 #include "luse.h"
 
+#include "physxEnums.h"
+
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 #include "NxExtended.h"
@@ -32,11 +34,14 @@ class PhysxSceneDesc;
 //               Used e. g. for setting/retrieving global parameters
 //               or for creating scenes.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxManager {
+class EXPCL_PANDAPHYSX PhysxManager : public PhysxEnums {
 
 PUBLISHED:
   PhysxManager();
   ~PhysxManager();
+
+  void set_parameter(PhysxParameter param, float value);
+  float get_parameter(PhysxParameter param);
 
   bool is_hardware_available();
 

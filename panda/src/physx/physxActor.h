@@ -58,19 +58,34 @@ PUBLISHED:
   void set_global_mat(const LMatrix4f &mat);
   void set_global_hpr(float h, float p, float r);
   void set_body_flag(PhysxBodyFlag flag, bool value);
+  void set_actor_flag(PhysxActorFlag flag, bool value);
+  void set_contact_report_flag(PhysxContactPairFlag flag, bool value);
+  void set_contact_report_threshold(float threshold);
+  void set_group(unsigned int group);
+  void set_dominance_group(unsigned int group);
+  void set_shape_group( unsigned int group );
 
   const char *get_name() const;
   LPoint3f get_global_pos() const;
   LMatrix4f get_global_mat() const;
   LQuaternionf get_global_quat() const;
   bool get_body_flag(PhysxBodyFlag flag) const;
+  bool get_actor_flag(PhysxActorFlag flag) const;
+  unsigned int get_group() const;
+  unsigned int get_dominance_group() const;
+
+  bool is_dynamic() const;
+  float compute_kinetic_energy() const;
+  bool update_mass_from_shapes(float density, float totalMass);
 
   PT(PhysxScene) get_scene() const;
 
+  // NodePath
   void attach_node_path(const NodePath &np);
   void detach_node_path();
   NodePath get_node_path() const;
 
+  // Shapes
   unsigned int get_num_shapes() const;
   PT(PhysxShape) create_shape(PhysxShapeDesc &desc);
   PT(PhysxShape) get_shape(unsigned int idx) const;
@@ -94,6 +109,66 @@ PUBLISHED:
      PhysxForceMode mode=FM_force, bool wakeup=true);
   void add_local_torque(const LVector3f torque,
      PhysxForceMode mode=FM_force, bool wakeup=true);
+
+  // Mass manipulation
+  void set_mass(float mass);
+  void set_c_mass_offset_local_mat(const LMatrix4f &mat);
+  void set_c_mass_offset_local_pos(const LPoint3f &pos);
+  void set_c_mass_offset_local_orientation(const LMatrix3f &mat);
+  void set_c_mass_offset_global_mat(const LMatrix4f &mat);
+  void set_c_mass_offset_global_pos(const LPoint3f &pos);
+  void set_c_mass_offset_global_orientation(const LMatrix3f &mat);
+  void set_c_mass_global_mat(const LMatrix4f &mat);
+  void set_c_mass_global_pos(const LPoint3f &pos);
+  void set_c_mass_global_orientation(const LMatrix3f &mat);
+  void set_mass_space_inertia_tensor(const LVector3f &m);
+
+  float get_mass() const;
+  LMatrix4f get_c_mass_global_mat() const;
+  LPoint3f get_c_mass_global_pos() const;
+  LMatrix3f get_c_mass_global_orientation() const;
+  LMatrix4f get_c_mass_local_mat() const;
+  LPoint3f get_c_mass_local_pos() const;
+  LMatrix3f get_c_mass_local_orientation() const;
+  LVector3f get_mass_space_inertia_tensor() const;
+  LMatrix3f get_global_inertia_tensor() const;
+  LMatrix3f get_global_inertia_tensor_inverse() const;
+
+  // Damping
+  void set_linear_damping(float linDamp);
+  void set_angular_damping(float angDamp);
+  float get_linear_damping() const;
+  float get_angular_damping() const;
+
+  // Vecocity
+  void set_linear_velocity(const LVector3f &linVel);
+  void set_angular_velocity(const LVector3f &angVel);
+  void set_max_angular_velocity(float maxAngVel);
+
+  LVector3f get_linear_velocity() const;
+  LVector3f get_angular_velocity() const;
+  float get_max_angular_velocity() const;
+
+  // Point Velocity 
+  LVector3f get_point_velocity(const LPoint3f &point) const;
+  LVector3f get_local_point_velocity(const LPoint3f &point) const; 
+
+  // Momentum
+  void set_linear_momentum(const LVector3f &momentum);
+  void set_angular_momentum(const LVector3f &momentum);
+  LVector3f get_linear_momentum() const;
+  LVector3f get_angular_momentum() const;
+
+  // Sleeping
+  void set_sleep_linear_velocity(float threshold);
+  void set_sleep_angular_velocity(float threshold);
+  void set_sleep_energy_threshold(float threshold);
+  float get_sleep_linear_velocity() const;
+  float get_sleep_angular_velocity() const;
+  float get_sleep_energy_threshold() const;
+  bool is_sleeping() const;
+  void wake_up(float wakeCounterValue=NX_SLEEP_INTERVAL);
+  void put_to_sleep();
 
 public:
   void update_transform(const LMatrix4f m);

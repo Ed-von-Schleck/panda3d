@@ -48,7 +48,7 @@ PUBLISHED:
   void set_local_mat(const LMatrix4f &mat);
   void set_local_hpr(float h, float p, float r);
   void set_skin_width(float skinWidth);
-  void set_flag(const PhysxShapeFlag flag, bool value);
+  void set_shape_flag(const PhysxShapeFlag flag, bool value);
   void set_mass(float mass);
   void set_density(float density);
   void set_group(unsigned short group);
@@ -59,7 +59,7 @@ PUBLISHED:
   LPoint3f get_local_pos() const;
   LMatrix4f get_local_mat() const;
   float get_skin_width() const;
-  bool get_flag(const PhysxShapeFlag flag) const;
+  bool get_shape_flag(const PhysxShapeFlag flag) const;
   float get_mass() const;
   float get_density() const;
   unsigned short get_group() const;

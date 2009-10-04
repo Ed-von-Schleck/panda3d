@@ -68,7 +68,6 @@ PUBLISHED:
   //void set_groups_mask(const PhysxMask128 &mask);
   //PhysxMask128 get_groups_mask() const;
 
-
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:
   void release();

@@ -118,12 +118,12 @@ set_skin_width(float skinWidth) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxShapeDesc::set_flag
+//     Function: PhysxShapeDesc::set_shape_flag
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 void PhysxShapeDesc::
-set_flag(const PhysxShapeFlag flag, bool value) {
+set_shape_flag(const PhysxShapeFlag flag, bool value) {
 
   if (value == true) {
     ptr()->shapeFlags |= flag;
@@ -222,12 +222,12 @@ get_skin_width() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxShapeDesc::get_flag
+//     Function: PhysxShapeDesc::get_shape_flag
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 bool PhysxShapeDesc::
-get_flag(const PhysxShapeFlag flag) const {
+get_shape_flag(const PhysxShapeFlag flag) const {
 
   return (ptr()->shapeFlags & flag) ? true : false;
 }

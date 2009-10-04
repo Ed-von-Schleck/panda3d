@@ -115,3 +115,18 @@ get_flag(PhysxPulleyJointFlag flag) const {
   return (_ptr->getFlags() & flag) ? true : false;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPulleyJoint::get_motor
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxMotorDesc) PhysxPulleyJoint::
+get_motor() const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  NxMotorDesc desc;
+  _ptr->getMotor(desc);  
+  return new PhysxMotorDesc(desc);
+}
+

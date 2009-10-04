@@ -43,3 +43,60 @@ unlink() {
   unref();
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJoint::set_projection_mode
+//       Access: Published
+//  Description: Sets the joint projection mode.
+////////////////////////////////////////////////////////////////////
+void PhysxSphericalJoint::
+set_projection_mode(PhysxProjectionMode mode) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setProjectionMode((NxJointProjectionMode)mode);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJoint::get_projection_mode
+//       Access: Published
+//  Description: Returns the current projection mode settings.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxProjectionMode PhysxSphericalJoint::
+get_projection_mode() const {
+
+  nassertr(_error_type == ET_ok, PM_none);
+  return (PhysxProjectionMode)_ptr->getProjectionMode();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJoint::set_flag
+//       Access: Published
+//  Description: Sets or clears a single SphericalJointFlag.
+////////////////////////////////////////////////////////////////////
+void PhysxSphericalJoint::
+set_flag(PhysxSphericalJointFlag flag, bool value) {
+
+  nassertv(_error_type == ET_ok);
+  NxU32 flags = _ptr->getFlags();
+
+  if (value == true) {
+    flags |= flag;
+  }
+  else {
+    flags &= ~(flag);
+  }
+
+  _ptr->setFlags(flags);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphericalJoint::get_flag
+//       Access: Published
+//  Description: Returns the value of a single SphericalJointFlag.
+////////////////////////////////////////////////////////////////////
+bool PhysxSphericalJoint::
+get_flag(PhysxSphericalJointFlag flag) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return (_ptr->getFlags() & flag) ? true : false;
+}
+

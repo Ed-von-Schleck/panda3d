@@ -40,19 +40,18 @@ PUBLISHED:
   INLINE PhysxRevoluteJoint();
   INLINE ~PhysxRevoluteJoint();
 
-  //void set_spring(const PhysxSpringDesc &spring);
-  //void set_motor(const PhysxMotorDesc &motor);
-  //void set_limits(const PhysxJointLimitDesc &low);
-  //void set_limits(const PhysxJointLimitDesc &high);
-  //void set_flag(PhysxRevoluteJointFlag flag, bool value);
-  //void set_projection_mode(PhysxProjectionMode mode);
+  void set_spring(const PhysxSpringDesc &spring);
+  void set_motor(const PhysxMotorDesc &motor);
+  void set_limits(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high);
+  void set_flag(PhysxRevoluteJointFlag flag, bool value);
+  void set_projection_mode(PhysxProjectionMode mode);
 
-  //float get_angle() const;
-  //float get_velocity() const;
-  //bool get_flag(PhysxRevoluteJointFlag flag) const;
-  //PhysxProjectionMode get_projection_mode() const;
-
-  // TODO methods...
+  float get_angle() const;
+  float get_velocity() const;
+  bool get_flag(PhysxRevoluteJointFlag flag) const;
+  PhysxProjectionMode get_projection_mode() const;
+  PT(PhysxMotorDesc) get_motor() const;
+  PT(PhysxSpringDesc) get_spring() const;
 
 ////////////////////////////////////////////////////////////////////
 public:
