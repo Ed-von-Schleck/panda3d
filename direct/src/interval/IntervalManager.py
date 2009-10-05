@@ -116,7 +116,11 @@ class IntervalManager(CIntervalManager):
             # try to add a new interval.
             ival = self.ivals[index]
             self.ivals[index] = None
-            ival.privPostEvent()
+            try:
+                ival.privPostEvent()
+            except:
+                print "Error in ival:\n---------------\n",ival
+                raise
             index = self.getNextRemoval()
 
         index = self.getNextEvent()
