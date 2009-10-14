@@ -1,0 +1,74 @@
+// Filename: physxConvexMesh.h
+// Created by:  enn0x (13Oct09)
+//
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
+//
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
+//
+////////////////////////////////////////////////////////////////////
+
+#ifndef PHYSXCONVEXMESH_H
+#define PHYSXCONVEXMESH_H
+
+#include "pandabase.h"
+
+#include "physxObject.h"
+
+#include "NoMinMax.h"
+#include "NxPhysics.h"
+
+////////////////////////////////////////////////////////////////////
+//       Class : PhysxConvexMesh
+// Description : 
+////////////////////////////////////////////////////////////////////
+class EXPCL_PANDAPHYSX PhysxConvexMesh : public PhysxObject {
+
+PUBLISHED:
+  INLINE PhysxConvexMesh();
+  INLINE ~PhysxConvexMesh();
+
+  unsigned int get_reference_count() const;
+
+////////////////////////////////////////////////////////////////////
+PUBLISHED:
+  void release();
+
+public:
+  INLINE NxConvexMesh *ptr() const { return _ptr; };
+
+  void link(NxConvexMesh *meshPtr);
+  void unlink();
+
+private:
+  NxConvexMesh *_ptr;
+
+////////////////////////////////////////////////////////////////////
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    PhysxObject::init_type();
+    register_type(_type_handle, "PhysxConvexMesh", 
+                  PhysxObject::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {
+    init_type();
+    return get_class_type();
+  }
+
+private:
+  static TypeHandle _type_handle;
+};
+
+#include "physxConvexMesh.I"
+
+#endif // PHYSXCONVEXMESH_H

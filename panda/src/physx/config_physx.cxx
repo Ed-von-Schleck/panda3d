@@ -68,6 +68,13 @@
 #include "physxSphericalJointDesc.h"
 #include "physxSpringDesc.h"
 
+#include "physxConvexMesh.h"
+#include "physxConvexShape.h"
+#include "physxConvexShapeDesc.h"
+#include "physxTriangleMesh.h"
+#include "physxTriangleMeshShape.h"
+#include "physxTriangleMeshShapeDesc.h"
+
 ConfigureDef(config_physx);
 NotifyCategoryDef(physx, "");
 
@@ -165,6 +172,13 @@ init_libphysx() {
   PhysxSphericalJoint::init_type();
   PhysxSphericalJointDesc::init_type();
   PhysxSpringDesc::init_type();
+
+  PhysxConvexMesh::init_type();
+  PhysxConvexShape::init_type();
+  PhysxConvexShapeDesc::init_type();
+  PhysxTriangleMesh::init_type();
+  PhysxTriangleMeshShape::init_type();
+  PhysxTriangleMeshShapeDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system("PhysX");

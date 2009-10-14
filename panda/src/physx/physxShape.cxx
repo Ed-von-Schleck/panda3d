@@ -19,9 +19,9 @@
 #include "physxCapsuleShape.h"
 #include "physxPlaneShape.h"
 #include "physxSphereShape.h"
-//#include "physxConvexShape.h"
+#include "physxConvexShape.h"
 //#include "physxHeightFieldShape.h"
-//#include "physxTriangleMeshShape.h"
+#include "physxTriangleMeshShape.h"
 //#include "physxWheelShape.h"
 
 TypeHandle PhysxShape::_type_handle;
@@ -62,11 +62,11 @@ factory(NxShapeType shapeType) {
   case NX_SHAPE_CAPSULE:
     return new PhysxCapsuleShape();
 
-  //case NX_SHAPE_CONVEX:
-  //  return new PhysxConvexShape();
+  case NX_SHAPE_CONVEX:
+    return new PhysxConvexShape();
 
-  //case NX_SHAPE_MESH:
-  //  return new PhysxTriangleMeshShape();
+  case NX_SHAPE_MESH:
+    return new PhysxTriangleMeshShape();
 
   //case NX_SHAPE_HEIGHTFIELD:
   //  return new PhysxHeightFieldShape();
