@@ -20,7 +20,7 @@
 #include "physxPlaneShape.h"
 #include "physxSphereShape.h"
 #include "physxConvexShape.h"
-//#include "physxHeightFieldShape.h"
+#include "physxHeightFieldShape.h"
 #include "physxTriangleMeshShape.h"
 //#include "physxWheelShape.h"
 
@@ -68,8 +68,8 @@ factory(NxShapeType shapeType) {
   case NX_SHAPE_MESH:
     return new PhysxTriangleMeshShape();
 
-  //case NX_SHAPE_HEIGHTFIELD:
-  //  return new PhysxHeightFieldShape();
+  case NX_SHAPE_HEIGHTFIELD:
+    return new PhysxHeightFieldShape();
 
   //case NX_SHAPE_WHEEL:
   //  return new PhysxWheelShape();

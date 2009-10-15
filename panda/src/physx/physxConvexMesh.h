@@ -29,9 +29,6 @@
 class EXPCL_PANDAPHYSX PhysxConvexMesh : public PhysxObject {
 
 PUBLISHED:
-  INLINE PhysxConvexMesh();
-  INLINE ~PhysxConvexMesh();
-
   unsigned int get_reference_count() const;
 
 ////////////////////////////////////////////////////////////////////
@@ -39,6 +36,9 @@ PUBLISHED:
   void release();
 
 public:
+  INLINE PhysxConvexMesh();
+  INLINE ~PhysxConvexMesh();
+
   INLINE NxConvexMesh *ptr() const { return _ptr; };
 
   void link(NxConvexMesh *meshPtr);

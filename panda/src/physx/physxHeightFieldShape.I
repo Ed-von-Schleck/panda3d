@@ -1,5 +1,5 @@
-// Filename: physxConvexMesh.I
-// Created by:  enn0x (13Oct09)
+// Filename: physxHeightFieldShape.I
+// Created by:  enn0x (15Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -15,22 +15,22 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxConvexMesh::Constructor
-//       Access: Public
+//     Function: PhysxHeightFieldShape::Constructor
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxConvexMesh::
-PhysxConvexMesh() : PhysxObject() {
+INLINE PhysxHeightFieldShape::
+PhysxHeightFieldShape() : PhysxShape() {
 
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxConvexMesh::Destructor
-//       Access: Public
+//     Function: PhysxHeightFieldShape::Destructor
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxConvexMesh::
-~PhysxConvexMesh() {
+INLINE PhysxHeightFieldShape::
+~PhysxHeightFieldShape() {
 
 }
 

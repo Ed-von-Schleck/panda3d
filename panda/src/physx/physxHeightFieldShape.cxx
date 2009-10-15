@@ -1,5 +1,5 @@
-// Filename: physxConvexMesh.I
-// Created by:  enn0x (13Oct09)
+// Filename: physxHeightFieldShape.cxx
+// Created by:  enn0x (15Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,25 +12,34 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+#include "physxHeightFieldShape.h"
 
+TypeHandle PhysxHeightFieldShape::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxConvexMesh::Constructor
+//     Function: PhysxHeightFieldShape::link
 //       Access: Public
-//  Description:
+//  Description: 
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxConvexMesh::
-PhysxConvexMesh() : PhysxObject() {
+void PhysxHeightFieldShape::
+link(NxShape *shapePtr) {
 
+  ref();
+  _ptr = shapePtr->isHeightField();
+  _ptr->userData = this;
+  _error_type = ET_ok;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxConvexMesh::Destructor
+//     Function: PhysxHeightFieldShape::unlink
 //       Access: Public
-//  Description:
+//  Description: 
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxConvexMesh::
-~PhysxConvexMesh() {
+void PhysxHeightFieldShape::
+unlink() {
 
+  _ptr->userData = NULL;
+  _error_type = ET_released;
+  unref();
 }
 

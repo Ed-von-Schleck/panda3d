@@ -1,5 +1,5 @@
-// Filename: physxTriangleMesh.h
-// Created by:  enn0x (14Oct09)
+// Filename: physxHeightFieldShapeDesc.h
+// Created by:  enn0x (15Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,40 +12,41 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXTRIANGLEMESH_H
-#define PHYSXTRIANGLEMESH_H
+#ifndef PHYSXHEIGHTFIELDSHAPEDESC_H
+#define PHYSXHEIGHTFIELDSHAPEDESC_H
 
 #include "pandabase.h"
 
-#include "physxObject.h"
+#include "physxShapeDesc.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
-////////////////////////////////////////////////////////////////////
-//       Class : PhysxTriangleMesh
-// Description : 
-////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxTriangleMesh : public PhysxObject {
-
-PUBLISHED:
-  unsigned int get_reference_count() const;
+class PhysxHeightField;
 
 ////////////////////////////////////////////////////////////////////
+//       Class : PhysxHeightFieldShapeDesc
+// Description : Descriptor class for PhysxHeightFieldShape.
+////////////////////////////////////////////////////////////////////
+class EXPCL_PANDAPHYSX PhysxHeightFieldShapeDesc : public PhysxShapeDesc {
+
 PUBLISHED:
-  void release();
+  INLINE PhysxHeightFieldShapeDesc();
+  INLINE ~PhysxHeightFieldShapeDesc();
+
+  void set_to_default();
+  INLINE bool is_valid() const;
+
+  void set_height_field(const PhysxHeightField &hf);
+  void set_dimensions(const LVector3f &dimensions);
 
 public:
-  INLINE PhysxTriangleMesh();
-  INLINE ~PhysxTriangleMesh();
+  INLINE PhysxHeightFieldShapeDesc(NxHeightFieldShapeDesc &desc);
 
-  INLINE NxTriangleMesh *ptr() const { return _ptr; };
-
-  void link(NxTriangleMesh *meshPtr);
-  void unlink();
+  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
-  NxTriangleMesh *_ptr;
+  NxHeightFieldShapeDesc _desc;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -53,9 +54,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    PhysxObject::init_type();
-    register_type(_type_handle, "PhysxTriangleMesh", 
-                  PhysxObject::get_class_type());
+    PhysxShapeDesc::init_type();
+    register_type(_type_handle, "PhysxHeightFieldShapeDesc", 
+                  PhysxShapeDesc::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -69,6 +70,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxTriangleMesh.I"
+#include "physxHeightFieldShapeDesc.I"
 
-#endif // PHYSXTRIANGLEMESH_H
+#endif // PHYSXHEIGHTFIELDSHAPEDESC_H

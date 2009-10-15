@@ -70,3 +70,8 @@
 #include "physxFileStream.cxx"
 #include "physxMemoryReadBuffer.cxx"
 #include "physxMemoryWriteBuffer.cxx"
+
+#include "physxHeightField.cxx"
+#include "physxHeightFieldDesc.cxx"
+#include "physxHeightFieldShape.cxx"
+#include "physxHeightFieldShapeDesc.cxx"

@@ -75,6 +75,11 @@
 #include "physxTriangleMeshShape.h"
 #include "physxTriangleMeshShapeDesc.h"
 
+#include "physxHeightField.h"
+#include "physxHeightFieldDesc.h"
+#include "physxHeightFieldShape.h"
+#include "physxHeightFieldShapeDesc.h"
+
 ConfigureDef(config_physx);
 NotifyCategoryDef(physx, "");
 
@@ -179,6 +184,11 @@ init_libphysx() {
   PhysxTriangleMesh::init_type();
   PhysxTriangleMeshShape::init_type();
   PhysxTriangleMeshShapeDesc::init_type();
+
+  PhysxHeightField::init_type();
+  PhysxHeightFieldDesc::init_type();
+  PhysxHeightFieldShape::init_type();
+  PhysxHeightFieldShapeDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system("PhysX");

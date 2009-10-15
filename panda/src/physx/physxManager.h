@@ -27,6 +27,8 @@
 
 class PhysxScene;
 class PhysxSceneDesc;
+class PhysxHeightField;
+class PhysxHeightFieldDesc;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxManager
@@ -49,6 +51,11 @@ PUBLISHED:
   PT(PhysxScene) create_scene(PhysxSceneDesc &desc);
   PT(PhysxScene) get_scene(unsigned int idx) const;
   MAKE_SEQ(get_scenes, get_num_scenes, get_scene);
+
+  unsigned int get_num_height_fields();
+  PT(PhysxHeightField) create_height_field(PhysxHeightFieldDesc &desc);
+  PT(PhysxHeightField) get_height_field(unsigned int idx);
+  MAKE_SEQ(get_height_fields, get_num_height_fields, get_height_field);
 
 public:
   INLINE static NxVec3 vec3_to_nxVec3(const LVector3f &v);

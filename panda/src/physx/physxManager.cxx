@@ -148,6 +148,57 @@ get_scene(unsigned int idx) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_num_height_fields
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxManager::
+get_num_height_fields() {
+
+  return _sdk->getNbHeightFields();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::create_height_field
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxHeightField) PhysxManager::
+create_height_field(PhysxHeightFieldDesc &desc) {
+
+  nassertr(desc.is_valid(),NULL);
+
+  PT(PhysxHeightField) hf = new PhysxHeightField();
+  nassertr(hf, NULL);
+
+  NxHeightField *hfPtr = _sdk->createHeightField(*desc.ptr());
+  nassertr(hfPtr, NULL);
+
+  hf->link(hfPtr);
+
+  // _hfs....
+  // TODO...
+
+  return hf;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_height_field
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxHeightField) PhysxManager::
+get_height_field(unsigned int idx) {
+
+  nassertr_always(idx < _sdk->getNbHeightFields(), NULL);
+
+  //return (PhysxHeightField *)_hfs[idx];
+  // TODO...
+
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function : PhysxManager::is_hardware_available
 //       Access : Published
 //  Description :
