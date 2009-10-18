@@ -43,7 +43,7 @@ PUBLISHED:
 public:
   INLINE PhysxSphereShapeDesc(NxSphereShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxSphereShapeDesc _desc;

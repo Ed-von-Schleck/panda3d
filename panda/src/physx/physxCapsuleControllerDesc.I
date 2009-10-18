@@ -20,7 +20,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PhysxCapsuleControllerDesc::
-PhysxCapsuleControllerDesc() {
+PhysxCapsuleControllerDesc() : PhysxControllerDesc() {
 
   _desc.upDirection = (NxHeightFieldAxis)physx_up_axis.get_value();
 }

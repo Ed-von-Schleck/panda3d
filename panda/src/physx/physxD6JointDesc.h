@@ -98,7 +98,7 @@ PUBLISHED:
 public:
   INLINE PhysxD6JointDesc(NxD6JointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxD6JointDesc _desc;

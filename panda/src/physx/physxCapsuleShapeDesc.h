@@ -43,7 +43,7 @@ PUBLISHED:
 public:
   INLINE PhysxCapsuleShapeDesc(NxCapsuleShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxCapsuleShapeDesc _desc;

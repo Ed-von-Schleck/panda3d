@@ -59,7 +59,7 @@ PUBLISHED:
 public:
   INLINE PhysxMaterialDesc(const NxMaterialDesc *desc);
 
-  virtual NxMaterialDesc *ptr() { return &_desc; };
+  NxMaterialDesc *ptr() { return &_desc; };
 
 private:
   NxMaterialDesc _desc;

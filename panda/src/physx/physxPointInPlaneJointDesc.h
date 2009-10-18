@@ -39,7 +39,7 @@ PUBLISHED:
 public:
   INLINE PhysxPointInPlaneJointDesc(NxPointInPlaneJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxPointInPlaneJointDesc _desc;

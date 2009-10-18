@@ -35,8 +35,7 @@ class PhysxActor;
 class EXPCL_PANDAPHYSX PhysxController : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
-  INLINE PhysxController();
-  INLINE ~PhysxController();
+  void release();
 
   PT(PhysxActor) get_actor() const;
 
@@ -62,6 +61,16 @@ PUBLISHED:
 public:
   void update(float dt);
 
+  static PT(PhysxController) factory(NxControllerType shapeType);
+
+  virtual NxController *ptr() const = 0;
+
+  virtual void link(NxController *controllerPtr) = 0;
+  virtual void unlink() = 0;
+
+protected:
+  INLINE PhysxController();
+
 private:
   NxReal get_jump_height(float dt, NxVec3 &gravity);
 
@@ -80,18 +89,6 @@ private:
   NxQuat _up_quat;
   NxQuat _up_quat_inv;
   NxHeightFieldAxis _up_axis;
-
-////////////////////////////////////////////////////////////////////
-PUBLISHED:
-  void release();
-
-public:
-  static PT(PhysxController) factory(NxControllerType shapeType);
-
-  virtual NxController *ptr() const = 0;
-
-  virtual void link(NxController *controllerPtr) = 0;
-  virtual void unlink() = 0;
 
 ////////////////////////////////////////////////////////////////////
 public:

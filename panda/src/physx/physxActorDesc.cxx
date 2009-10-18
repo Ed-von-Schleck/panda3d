@@ -124,7 +124,7 @@ get_body() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActorDesc::get_name
 //       Access: Published
-//  Description: 
+//  Description: Returns the optional debug name for this actor.
 ////////////////////////////////////////////////////////////////////
 const char *PhysxActorDesc::
 get_name() const {
@@ -135,7 +135,7 @@ get_name() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActorDesc::get_density
 //       Access: Published
-//  Description: 
+//  Description: Returns the actor's density.
 ////////////////////////////////////////////////////////////////////
 float PhysxActorDesc::
 get_density() const {
@@ -146,7 +146,7 @@ get_density() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActorDesc::get_global_pos
 //       Access: Published
-//  Description: 
+//  Description: Returns the actor's position in global space.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxActorDesc::
 get_global_pos() const {
@@ -157,10 +157,11 @@ get_global_pos() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActorDesc::get_global_mat
 //       Access: Published
-//  Description: 
+//  Description: Returns the actor's transform in global space.
 ////////////////////////////////////////////////////////////////////
 LMatrix4f PhysxActorDesc::
 get_global_mat() const {
 
   return PhysxManager::nxMat34_to_mat4(_desc.globalPose);
 }
+

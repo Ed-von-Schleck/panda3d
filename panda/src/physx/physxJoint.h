@@ -38,8 +38,7 @@ class PhysxScene;
 class EXPCL_PANDAPHYSX PhysxJoint : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
-  INLINE PhysxJoint();
-  INLINE ~PhysxJoint();
+  void release();
 
   //PT(PhysxActor) get_actor(unsigned int idx) const;
   //PT(PhysxScene) get_scene() const;
@@ -59,10 +58,6 @@ PUBLISHED:
   //float get_solver_extrapolation_factor() const;
   //bool get_use_acceleration_spring() const;
 
-////////////////////////////////////////////////////////////////////
-PUBLISHED:
-  void release();
-
 public:
   static PT(PhysxJoint) factory(NxJointType shapeType);
 
@@ -70,6 +65,9 @@ public:
 
   virtual void link(NxJoint *shapePtr) = 0;
   virtual void unlink() = 0;
+
+protected:
+  INLINE PhysxJoint();
 
 ////////////////////////////////////////////////////////////////////
 public:

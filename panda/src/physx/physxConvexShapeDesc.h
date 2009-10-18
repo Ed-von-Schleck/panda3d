@@ -42,7 +42,7 @@ PUBLISHED:
 public:
   INLINE PhysxConvexShapeDesc(NxConvexShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxConvexShapeDesc _desc;

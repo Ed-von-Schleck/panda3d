@@ -28,9 +28,6 @@
 class EXPCL_PANDAPHYSX PhysxControllerDesc : public TypedReferenceCount {
 
 PUBLISHED:
-  INLINE PhysxControllerDesc();
-  INLINE ~PhysxControllerDesc();
-
   virtual void set_to_default() = 0;
   virtual bool is_valid() const = 0;
 
@@ -47,6 +44,8 @@ PUBLISHED:
   bool get_interaction_flag() const;
 
 public:
+  INLINE PhysxControllerDesc();
+
   virtual NxControllerDesc *ptr() const = 0;
 
 ////////////////////////////////////////////////////////////////////

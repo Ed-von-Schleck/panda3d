@@ -39,7 +39,7 @@ PUBLISHED:
 public:
   INLINE PhysxPointOnLineJointDesc(NxPointOnLineJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxPointOnLineJointDesc _desc;

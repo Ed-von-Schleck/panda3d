@@ -20,7 +20,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PhysxCapsuleShapeDesc::
-PhysxCapsuleShapeDesc() {
+PhysxCapsuleShapeDesc() : PhysxShapeDesc() {
 
   _desc.name = "";
 }

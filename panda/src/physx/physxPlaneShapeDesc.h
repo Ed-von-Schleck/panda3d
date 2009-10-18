@@ -41,7 +41,7 @@ PUBLISHED:
 public:
   INLINE PhysxPlaneShapeDesc(NxPlaneShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxPlaneShapeDesc _desc;

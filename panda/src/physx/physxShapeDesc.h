@@ -29,16 +29,13 @@ class PhysxMaterial;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxShapeDesc
-// Description : Descriptor class for the PhysxShape class. Shape
-//               descriptors for all the different shape types are
+// Description : Abstract base class for shape descriptors.
+//               Descriptors for all the different shape types are
 //               derived from this class.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxShapeDesc : public TypedReferenceCount, public PhysxEnums {
 
 PUBLISHED:
-  INLINE PhysxShapeDesc();
-  INLINE ~PhysxShapeDesc();
-
   virtual void set_to_default() = 0;
   virtual bool is_valid() const = 0;
 
@@ -67,6 +64,9 @@ PUBLISHED:
 
 public:
   virtual NxShapeDesc *ptr() const = 0;
+
+protected:
+  INLINE PhysxShapeDesc();
 
 ////////////////////////////////////////////////////////////////////
 public:

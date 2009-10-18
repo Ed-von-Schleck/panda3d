@@ -55,7 +55,7 @@ PUBLISHED:
 public:
   INLINE PhysxPulleyJointDesc(NxPulleyJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxPulleyJointDesc _desc;

@@ -34,9 +34,6 @@ class PhysxActor;
 class EXPCL_PANDAPHYSX PhysxJointDesc : public TypedReferenceCount, public PhysxEnums {
 
 PUBLISHED:
-  INLINE PhysxJointDesc();
-  INLINE ~PhysxJointDesc();
-
   virtual void set_to_default() = 0;
   virtual bool is_valid() const = 0;
 
@@ -64,6 +61,9 @@ PUBLISHED:
 
 public:
   virtual NxJointDesc *ptr() const = 0;
+
+protected:
+  INLINE PhysxJointDesc();
 
 ////////////////////////////////////////////////////////////////////
 public:

@@ -37,8 +37,7 @@ class PhysxMaterial;
 class EXPCL_PANDAPHYSX PhysxShape : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
-  INLINE PhysxShape();
-  INLINE ~PhysxShape();
+  void release();
 
   PT(PhysxActor) get_actor() const;
 
@@ -68,10 +67,6 @@ PUBLISHED:
   //void set_groups_mask(const PhysxMask128 &mask);
   //PhysxMask128 get_groups_mask() const;
 
-////////////////////////////////////////////////////////////////////
-PUBLISHED:
-  void release();
-
 public:
   static PT(PhysxShape) factory(NxShapeType shapeType);
 
@@ -79,6 +74,9 @@ public:
 
   virtual void link(NxShape *shapePtr) = 0;
   virtual void unlink() = 0;
+
+protected:
+  INLINE PhysxShape();
 
 ////////////////////////////////////////////////////////////////////
 public:

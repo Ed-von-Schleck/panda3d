@@ -42,7 +42,7 @@ PUBLISHED:
 public:
   INLINE PhysxBoxControllerDesc(NxBoxControllerDesc &desc);
 
-  virtual NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
+  NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
 
 private:
   NxBoxControllerDesc _desc;

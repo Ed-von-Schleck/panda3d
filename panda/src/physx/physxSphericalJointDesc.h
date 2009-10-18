@@ -64,7 +64,7 @@ PUBLISHED:
 public:
   INLINE PhysxSphericalJointDesc(NxSphericalJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxSphericalJointDesc _desc;

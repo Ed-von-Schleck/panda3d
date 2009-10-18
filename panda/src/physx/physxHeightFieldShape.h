@@ -44,7 +44,6 @@ PUBLISHED:
   INLINE PhysxHeightFieldShape();
   INLINE ~PhysxHeightFieldShape();
 
-////////////////////////////////////////////////////////////////////
 public:
   INLINE NxShape *ptr() const { return (NxShape *)_ptr; };
 

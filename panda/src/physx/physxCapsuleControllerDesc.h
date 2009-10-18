@@ -42,7 +42,7 @@ PUBLISHED:
 public:
   INLINE PhysxCapsuleControllerDesc(NxCapsuleControllerDesc &desc);
 
-  virtual NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
+  NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
 
 private:
   NxCapsuleControllerDesc _desc;

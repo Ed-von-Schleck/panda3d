@@ -51,7 +51,7 @@ PUBLISHED:
 public:
   INLINE PhysxDistanceJointDesc(NxDistanceJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxDistanceJointDesc _desc;

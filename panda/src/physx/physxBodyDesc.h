@@ -78,7 +78,7 @@ PUBLISHED:
 public:
   INLINE PhysxBodyDesc(const NxBodyDesc *desc);
 
-  virtual NxBodyDesc *ptr() { return &_desc; };
+  NxBodyDesc *ptr() { return &_desc; };
 
 private:
   NxBodyDesc _desc;

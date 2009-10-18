@@ -39,7 +39,7 @@ PUBLISHED:
 public:
   INLINE PhysxPrismaticJointDesc(NxPrismaticJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxPrismaticJointDesc _desc;

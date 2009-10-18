@@ -61,7 +61,7 @@ PUBLISHED:
 public:
   INLINE PhysxRevoluteJointDesc(NxRevoluteJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxRevoluteJointDesc _desc;

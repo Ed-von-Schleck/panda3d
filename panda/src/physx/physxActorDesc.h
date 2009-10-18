@@ -57,7 +57,7 @@ PUBLISHED:
 public:
   INLINE PhysxActorDesc(NxActorDesc &desc);
 
-  virtual NxActorDesc *ptr() { return &_desc; };
+  NxActorDesc *ptr() { return &_desc; };
 
 private:
   NxActorDesc _desc;

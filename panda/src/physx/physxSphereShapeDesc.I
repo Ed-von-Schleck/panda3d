@@ -20,7 +20,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PhysxSphereShapeDesc::
-PhysxSphereShapeDesc() {
+PhysxSphereShapeDesc() : PhysxShapeDesc() {
 
   _desc.name = "";
 }

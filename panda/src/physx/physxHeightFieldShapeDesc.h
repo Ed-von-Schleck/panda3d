@@ -43,7 +43,7 @@ PUBLISHED:
 public:
   INLINE PhysxHeightFieldShapeDesc(NxHeightFieldShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxHeightFieldShapeDesc _desc;

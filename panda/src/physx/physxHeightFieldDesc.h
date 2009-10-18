@@ -46,7 +46,7 @@ PUBLISHED:
 public:
   INLINE PhysxHeightFieldDesc(const NxHeightFieldDesc *desc);
 
-  virtual NxHeightFieldDesc *ptr() { return &_desc; };
+  NxHeightFieldDesc *ptr() { return &_desc; };
 
 private:
   NxHeightFieldDesc _desc;

@@ -39,7 +39,7 @@ PUBLISHED:
 public:
   INLINE PhysxCylindricalJointDesc(NxCylindricalJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxCylindricalJointDesc _desc;

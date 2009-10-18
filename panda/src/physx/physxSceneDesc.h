@@ -43,7 +43,7 @@ PUBLISHED:
 public:
   INLINE PhysxSceneDesc(NxSceneDesc &desc);
 
-  virtual NxSceneDesc *ptr() { return &_desc; };
+  NxSceneDesc *ptr() { return &_desc; };
 
 private:
   NxSceneDesc _desc;

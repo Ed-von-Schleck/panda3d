@@ -42,7 +42,7 @@ PUBLISHED:
 public:
   INLINE PhysxTriangleMeshShapeDesc(NxTriangleMeshShapeDesc &desc);
 
-  virtual NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
+  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:
   NxTriangleMeshShapeDesc _desc;

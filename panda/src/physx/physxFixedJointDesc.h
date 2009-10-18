@@ -40,7 +40,7 @@ PUBLISHED:
 public:
   INLINE PhysxFixedJointDesc(NxFixedJointDesc &desc);
 
-  virtual NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
+  NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:
   NxFixedJointDesc _desc;
