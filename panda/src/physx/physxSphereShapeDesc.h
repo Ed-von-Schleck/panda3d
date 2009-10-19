@@ -41,8 +41,6 @@ PUBLISHED:
   float get_radius() const;
 
 public:
-  INLINE PhysxSphereShapeDesc(NxSphereShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

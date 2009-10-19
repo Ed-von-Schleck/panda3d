@@ -59,8 +59,6 @@ PUBLISHED:
   PhysxProjectionMode get_projection_mode() const;
 
 public:
-  INLINE PhysxRevoluteJointDesc(NxRevoluteJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

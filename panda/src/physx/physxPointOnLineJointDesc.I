@@ -26,16 +26,6 @@ PhysxPointOnLineJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPointOnLineJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxPointOnLineJointDesc::
-PhysxPointOnLineJointDesc(NxPointOnLineJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxPointOnLineJointDesc::Destructor
 //       Access: Published
 //  Description:

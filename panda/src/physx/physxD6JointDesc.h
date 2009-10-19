@@ -96,8 +96,6 @@ PUBLISHED:
   PT(PhysxJointLimitSoftDesc) get_twist_limit_high() const;
 
 public:
-  INLINE PhysxD6JointDesc(NxD6JointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

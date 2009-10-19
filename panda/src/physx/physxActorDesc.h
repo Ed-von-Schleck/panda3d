@@ -55,8 +55,6 @@ PUBLISHED:
   PT(PhysxBodyDesc) get_body() const;
 
 public:
-  INLINE PhysxActorDesc(NxActorDesc &desc);
-
   NxActorDesc *ptr() { return &_desc; };
 
 private:

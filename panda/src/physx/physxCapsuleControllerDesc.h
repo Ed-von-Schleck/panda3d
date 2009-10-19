@@ -40,8 +40,6 @@ PUBLISHED:
   float get_height() const;
 
 public:
-  INLINE PhysxCapsuleControllerDesc(NxCapsuleControllerDesc &desc);
-
   NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
 
 private:

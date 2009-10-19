@@ -26,16 +26,6 @@ PhysxBoxControllerDesc() : PhysxControllerDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBoxControllerDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxBoxControllerDesc::
-PhysxBoxControllerDesc(NxBoxControllerDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxBoxControllerDesc::Destructor
 //       Access: Published
 //  Description:

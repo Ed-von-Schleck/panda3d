@@ -53,8 +53,6 @@ PUBLISHED:
   PT(PhysxMotorDesc) get_motor() const;
 
 public:
-  INLINE PhysxPulleyJointDesc(NxPulleyJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

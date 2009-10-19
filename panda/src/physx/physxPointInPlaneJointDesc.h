@@ -37,8 +37,6 @@ PUBLISHED:
   INLINE bool is_valid() const;
 
 public:
-  INLINE PhysxPointInPlaneJointDesc(NxPointInPlaneJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

@@ -41,8 +41,6 @@ PUBLISHED:
   LVector3f get_gravity() const;
 
 public:
-  INLINE PhysxSceneDesc(NxSceneDesc &desc);
-
   NxSceneDesc *ptr() { return &_desc; };
 
 private:

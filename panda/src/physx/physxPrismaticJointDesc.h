@@ -37,8 +37,6 @@ PUBLISHED:
   INLINE bool is_valid() const;
 
 public:
-  INLINE PhysxPrismaticJointDesc(NxPrismaticJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

@@ -26,16 +26,6 @@ PhysxCapsuleControllerDesc() : PhysxControllerDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleControllerDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxCapsuleControllerDesc::
-PhysxCapsuleControllerDesc(NxCapsuleControllerDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsuleControllerDesc::Destructor
 //       Access: Published
 //  Description:

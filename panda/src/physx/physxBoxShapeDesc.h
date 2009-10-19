@@ -41,8 +41,6 @@ PUBLISHED:
   LVector3f get_dimensions() const;
 
 public:
-  INLINE PhysxBoxShapeDesc(NxBoxShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

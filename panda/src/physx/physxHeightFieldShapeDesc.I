@@ -26,16 +26,6 @@ PhysxHeightFieldShapeDesc() : PhysxShapeDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxHeightFieldShapeDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxHeightFieldShapeDesc::
-PhysxHeightFieldShapeDesc(NxHeightFieldShapeDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxHeightFieldShapeDesc::Destructor
 //       Access: Published
 //  Description:

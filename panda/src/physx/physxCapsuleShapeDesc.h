@@ -41,8 +41,6 @@ PUBLISHED:
   float get_height() const;
 
 public:
-  INLINE PhysxCapsuleShapeDesc(NxCapsuleShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

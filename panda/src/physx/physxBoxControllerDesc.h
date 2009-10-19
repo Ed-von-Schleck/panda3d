@@ -40,8 +40,6 @@ PUBLISHED:
   LVector3f get_extents() const;
 
 public:
-  INLINE PhysxBoxControllerDesc(NxBoxControllerDesc &desc);
-
   NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
 
 private:

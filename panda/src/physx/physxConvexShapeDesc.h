@@ -40,8 +40,6 @@ PUBLISHED:
   void set_mesh(PT(PhysxConvexMesh) mesh);
 
 public:
-  INLINE PhysxConvexShapeDesc(NxConvexShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

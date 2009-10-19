@@ -37,8 +37,6 @@ PUBLISHED:
   INLINE bool is_valid() const;
 
 public:
-  INLINE PhysxCylindricalJointDesc(NxCylindricalJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

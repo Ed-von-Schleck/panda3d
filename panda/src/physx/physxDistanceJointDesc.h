@@ -49,8 +49,6 @@ PUBLISHED:
   PT(PhysxSpringDesc) get_spring() const;
 
 public:
-  INLINE PhysxDistanceJointDesc(NxDistanceJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

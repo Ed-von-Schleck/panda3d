@@ -26,16 +26,6 @@ PhysxDistanceJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxDistanceJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxDistanceJointDesc::
-PhysxDistanceJointDesc(NxDistanceJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxDistanceJointDesc::Destructor
 //       Access: Published
 //  Description:

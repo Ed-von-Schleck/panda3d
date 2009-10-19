@@ -26,16 +26,6 @@ PhysxTriangleMeshShapeDesc() : PhysxShapeDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxTriangleMeshShapeDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxTriangleMeshShapeDesc::
-PhysxTriangleMeshShapeDesc(NxTriangleMeshShapeDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxTriangleMeshShapeDesc::Destructor
 //       Access: Published
 //  Description:

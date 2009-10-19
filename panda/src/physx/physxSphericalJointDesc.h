@@ -62,8 +62,6 @@ PUBLISHED:
   PhysxProjectionMode get_projection_mode() const;
 
 public:
-  INLINE PhysxSphericalJointDesc(NxSphericalJointDesc &desc);
-
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
 
 private:

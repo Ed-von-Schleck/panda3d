@@ -57,8 +57,6 @@ PUBLISHED:
   PhysxCombineMode get_restitution_combine_mode() const;
 
 public:
-  INLINE PhysxMaterialDesc(const NxMaterialDesc *desc);
-
   NxMaterialDesc *ptr() { return &_desc; };
 
 private:

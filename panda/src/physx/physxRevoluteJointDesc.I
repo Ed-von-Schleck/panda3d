@@ -26,16 +26,6 @@ PhysxRevoluteJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRevoluteJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxRevoluteJointDesc::
-PhysxRevoluteJointDesc(NxRevoluteJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxRevoluteJointDesc::Destructor
 //       Access: Published
 //  Description:

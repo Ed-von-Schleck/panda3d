@@ -26,16 +26,6 @@ PhysxPulleyJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPulleyJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxPulleyJointDesc::
-PhysxPulleyJointDesc(NxPulleyJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxPulleyJointDesc::Destructor
 //       Access: Published
 //  Description:

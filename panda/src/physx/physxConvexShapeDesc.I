@@ -26,16 +26,6 @@ PhysxConvexShapeDesc() : PhysxShapeDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxConvexShapeDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxConvexShapeDesc::
-PhysxConvexShapeDesc(NxConvexShapeDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxConvexShapeDesc::Destructor
 //       Access: Published
 //  Description:

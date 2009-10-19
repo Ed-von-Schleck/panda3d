@@ -25,16 +25,6 @@ PhysxMaterialDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxMaterialDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxMaterialDesc::
-PhysxMaterialDesc(const NxMaterialDesc *desc) : _desc(*desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxMaterialDesc::Destructor
 //       Access: Published
 //  Description:

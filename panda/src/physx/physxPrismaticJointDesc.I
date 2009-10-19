@@ -26,16 +26,6 @@ PhysxPrismaticJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPrismaticJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxPrismaticJointDesc::
-PhysxPrismaticJointDesc(NxPrismaticJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxPrismaticJointDesc::Destructor
 //       Access: Published
 //  Description:

@@ -44,8 +44,6 @@ PUBLISHED:
   void set_convex_edge_threshold(float threshold);
 
 public:
-  INLINE PhysxHeightFieldDesc(const NxHeightFieldDesc *desc);
-
   NxHeightFieldDesc *ptr() { return &_desc; };
 
 private:

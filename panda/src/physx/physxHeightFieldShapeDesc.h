@@ -41,8 +41,6 @@ PUBLISHED:
   void set_dimensions(const LVector3f &dimensions);
 
 public:
-  INLINE PhysxHeightFieldShapeDesc(NxHeightFieldShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

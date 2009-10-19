@@ -27,17 +27,6 @@ PhysxHeightFieldDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxHeightFieldDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxHeightFieldDesc::
-PhysxHeightFieldDesc(const NxHeightFieldDesc *desc) : _desc(*desc) {
-
-  dealloc_samples();
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxHeightFieldDesc::Destructor
 //       Access: Published
 //  Description:

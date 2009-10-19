@@ -26,16 +26,6 @@ PhysxD6JointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxD6JointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxD6JointDesc::
-PhysxD6JointDesc(NxD6JointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxD6JointDesc::Destructor
 //       Access: Published
 //  Description:

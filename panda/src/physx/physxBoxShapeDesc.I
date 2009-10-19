@@ -26,16 +26,6 @@ PhysxBoxShapeDesc() : PhysxShapeDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBoxShapeDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxBoxShapeDesc::
-PhysxBoxShapeDesc(NxBoxShapeDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxBoxShapeDesc::Destructor
 //       Access: Published
 //  Description:

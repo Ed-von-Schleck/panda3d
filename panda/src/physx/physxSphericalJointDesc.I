@@ -26,16 +26,6 @@ PhysxSphericalJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxSphericalJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxSphericalJointDesc::
-PhysxSphericalJointDesc(NxSphericalJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphericalJointDesc::Destructor
 //       Access: Published
 //  Description:

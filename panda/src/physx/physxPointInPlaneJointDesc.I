@@ -26,16 +26,6 @@ PhysxPointInPlaneJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPointInPlaneJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxPointInPlaneJointDesc::
-PhysxPointInPlaneJointDesc(NxPointInPlaneJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxPointInPlaneJointDesc::Destructor
 //       Access: Published
 //  Description:

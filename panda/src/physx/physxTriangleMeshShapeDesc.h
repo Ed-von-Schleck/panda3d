@@ -40,8 +40,6 @@ PUBLISHED:
   void set_mesh(PT(PhysxTriangleMesh) mesh);
 
 public:
-  INLINE PhysxTriangleMeshShapeDesc(NxTriangleMeshShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

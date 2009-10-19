@@ -26,16 +26,6 @@ PhysxCylindricalJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCylindricalJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxCylindricalJointDesc::
-PhysxCylindricalJointDesc(NxCylindricalJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxCylindricalJointDesc::Destructor
 //       Access: Published
 //  Description:

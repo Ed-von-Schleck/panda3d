@@ -26,16 +26,6 @@ PhysxPlaneShapeDesc() : PhysxShapeDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPlaneShapeDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxPlaneShapeDesc::
-PhysxPlaneShapeDesc(NxPlaneShapeDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxPlaneShapeDesc::Destructor
 //       Access: Published
 //  Description:

@@ -26,16 +26,6 @@ PhysxFixedJointDesc() : PhysxJointDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxFixedJointDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxFixedJointDesc::
-PhysxFixedJointDesc(NxFixedJointDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxFixedJointDesc::Destructor
 //       Access: Published
 //  Description:

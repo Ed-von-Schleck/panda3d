@@ -39,8 +39,6 @@ PUBLISHED:
   void set_plane(const LVector3f &normal, float d);
 
 public:
-  INLINE PhysxPlaneShapeDesc(NxPlaneShapeDesc &desc);
-
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
 
 private:

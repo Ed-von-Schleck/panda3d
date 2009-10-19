@@ -26,16 +26,6 @@ PhysxCapsuleShapeDesc() : PhysxShapeDesc() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxCapsuleShapeDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxCapsuleShapeDesc::
-PhysxCapsuleShapeDesc(NxCapsuleShapeDesc &desc) : _desc(desc) {
-
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsuleShapeDesc::Destructor
 //       Access: Published
 //  Description:
