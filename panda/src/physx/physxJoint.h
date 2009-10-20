@@ -40,23 +40,23 @@ class EXPCL_PANDAPHYSX PhysxJoint : public PhysxObject, public PhysxEnums {
 PUBLISHED:
   void release();
 
-  //PT(PhysxActor) get_actor(unsigned int idx) const;
-  //PT(PhysxScene) get_scene() const;
+  PT(PhysxActor) get_actor(unsigned int idx) const;
+  PT(PhysxScene) get_scene() const;
 
   void set_name(const char *name);
-  //void set_global_anchor(const LPoint3f &anchor);
-  //void set_global_axis(const LVector3f &axis);
-  //void set_breakable(float maxForce, float maxTorque);
-  //void set_solver_extrapolation_factor(float factor);
-  //void set_use_acceleration_spring(bool value);
-  //void set_limit_point(const LPoint3f &pos, bool isOnActor2=true);
-  //void add_limit_plane(const LVector3f &normal, const LPoint3f &pointInPlane, float restitution=0.0f);
+  void set_global_anchor(const LPoint3f &anchor);
+  void set_global_axis(const LVector3f &axis);
+  void set_breakable(float maxForce, float maxTorque);
+  void set_solver_extrapolation_factor(float factor);
+  void set_use_acceleration_spring(bool value);
+  void set_limit_point(const LPoint3f &pos, bool isOnActor2=true);
+  void add_limit_plane(const LVector3f &normal, const LPoint3f &pointInPlane, float restitution=0.0f);
 
   const char *get_name() const;
-  //LPoint3f get_global_anchor() const;
-  //LVector3f get_global_axis() const;
-  //float get_solver_extrapolation_factor() const;
-  //bool get_use_acceleration_spring() const;
+  LPoint3f get_global_anchor() const;
+  LVector3f get_global_axis() const;
+  float get_solver_extrapolation_factor() const;
+  bool get_use_acceleration_spring() const;
 
 public:
   static PT(PhysxJoint) factory(NxJointType shapeType);
