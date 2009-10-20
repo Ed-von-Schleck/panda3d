@@ -112,6 +112,7 @@ class NxMeshData;
 class NxConstraintDominance;
 class NxRemoteDebugger;
 class NxGroupsMask;
+class NxSceneStats2;
 
 class NxSoftBody;
 class NxSoftBodyDesc;
