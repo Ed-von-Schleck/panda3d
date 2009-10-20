@@ -14,6 +14,7 @@
 
 #include "physxScene.h"
 #include "physxManager.h"
+#include "physxSceneStats2.h"
 
 TypeHandle PhysxScene::_type_handle;
 
@@ -665,5 +666,17 @@ get_joint(unsigned int idx) const {
   }
 
   return (PhysxJoint *)(jointPtr->userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxScene::get_stats2
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+PhysxSceneStats2 PhysxScene::
+get_stats2() const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  return PhysxSceneStats2(_ptr->getStats2());
 }
 

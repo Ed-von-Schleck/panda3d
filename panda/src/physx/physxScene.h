@@ -36,6 +36,7 @@ class PhysxControllerDesc;
 class PhysxJoint;
 class PhysxJointDesc;
 class PhysxDebugGeomNode;
+class PhysxSceneStats2;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxScene
@@ -94,6 +95,8 @@ PUBLISHED:
   PT(PhysxController) create_controller(PhysxControllerDesc &controllerDesc);
   PT(PhysxController) get_controller(unsigned int idx) const;
   MAKE_SEQ(get_controllers, get_num_controllers, get_controller);
+
+  PhysxSceneStats2 get_stats2() const;
 
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:

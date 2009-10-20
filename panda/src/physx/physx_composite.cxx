@@ -48,6 +48,7 @@
 #include "physxRevoluteJointDesc.cxx"
 #include "physxScene.cxx"
 #include "physxSceneDesc.cxx"
+#include "physxSceneStats2.cxx"
 #include "physxShape.cxx"
 #include "physxShapeDesc.cxx"
 #include "physxSphereShape.cxx"
@@ -70,7 +71,6 @@
 #include "physxFileStream.cxx"
 #include "physxMemoryReadBuffer.cxx"
 #include "physxMemoryWriteBuffer.cxx"
-
 #include "physxHeightField.cxx"
 #include "physxHeightFieldDesc.cxx"
 #include "physxHeightFieldShape.cxx"
