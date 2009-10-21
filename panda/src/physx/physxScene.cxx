@@ -680,3 +680,228 @@ get_stats2() const {
   return PhysxSceneStats2(_ptr->getStats2());
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::raycast_any_shape
+//       Access: Published
+//  Description: Returns true if any shape is intersected by the
+//               ray.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+raycast_any_shape(const PhysxRay &ray,
+                        PhysxShapesType shapesType,
+                        PhysxMask mask,
+                        PhysxGroupsMask *groups) const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+
+  return _ptr->raycastAnyShape(ray._ray, (NxShapesType)shapesType, 
+                               mask.get_mask(), ray._length, groupsPtr);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::raycast_closest_shape
+//       Access: Published
+//  Description: Returns the first shape that is hit along the ray.
+//               If not shape is hit then an empty raycast hit
+//               is returned (is_empty() == true).
+////////////////////////////////////////////////////////////////////
+PhysxRaycastHit PhysxScene::
+raycast_closest_shape(const PhysxRay &ray,
+                            PhysxShapesType shapesType,
+                            PhysxMask mask,
+                            PhysxGroupsMask *groups, bool smoothNormal) const {
+
+  NxRaycastHit hit;
+
+  nassertr(_error_type == ET_ok, hit);
+
+  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+
+  NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
+  if (smoothNormal == true) {
+    hints |= NX_RAYCAST_NORMAL;
+  }
+  else {
+    hints |= NX_RAYCAST_FACE_NORMAL;
+  }
+
+  _ptr->raycastClosestShape(ray._ray, (NxShapesType)shapesType, hit, 
+                            mask.get_mask(), ray._length, hints);
+
+
+  return PhysxRaycastHit(hit);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::raycast_all_shapes
+//       Access: Published
+//  Description: Returns a PhysxRaycastReport object which can be
+//               used to iterate over all shapes that have been
+//               hit by the ray.
+////////////////////////////////////////////////////////////////////
+PhysxRaycastReport PhysxScene::
+raycast_all_shapes(const PhysxRay &ray,
+                   PhysxShapesType shapesType,
+                   PhysxMask mask,
+                   PhysxGroupsMask *groups, bool smoothNormal) const {
+
+  PhysxRaycastReport report;
+
+  nassertr(_error_type == ET_ok, report);
+
+  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+
+  NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
+  if (smoothNormal == true) {
+    hints |= NX_RAYCAST_NORMAL;
+  }
+  else {
+    hints |= NX_RAYCAST_FACE_NORMAL;
+  }
+
+  _ptr->raycastAllShapes(ray._ray, report, (NxShapesType)shapesType,
+                         mask.get_mask(), ray._length, hints);
+
+  return report;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::raycast_any_bounds
+//       Access: Published
+//  Description: Returns true if any axis aligned bounding box
+//               enclosing a shape is intersected by the ray.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+raycast_any_bounds(const PhysxRay &ray,
+                         PhysxShapesType shapesType,
+                         PhysxMask mask,
+                         PhysxGroupsMask *groups) const {
+
+  nassertr(_error_type == ET_ok, false);
+
+  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+
+  return _ptr->raycastAnyBounds(ray._ray, (NxShapesType)shapesType, 
+                                mask.get_mask(), ray._length, groupsPtr);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::raycast_closest_bounds
+//       Access: Published
+//  Description: Returns the first axis aligned bounding box
+//               enclosing a shape that is hit along the ray.
+//               If not shape is hit then an empty raycast hit
+//               is returned (is_empty() == true).
+////////////////////////////////////////////////////////////////////
+PhysxRaycastHit PhysxScene::
+raycast_closest_bounds(const PhysxRay &ray, PhysxShapesType shapesType, PhysxMask mask, PhysxGroupsMask *groups, bool smoothNormal) const {
+
+  NxRaycastHit hit;
+
+  nassertr(_error_type == ET_ok, hit);
+
+  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+
+  NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
+  if (smoothNormal == true) {
+    hints |= NX_RAYCAST_NORMAL;
+  }
+  else {
+    hints |= NX_RAYCAST_FACE_NORMAL;
+  }
+
+  _ptr->raycastClosestBounds(ray._ray, (NxShapesType)shapesType, hit, 
+                             mask.get_mask(), ray._length, hints);
+
+
+  return PhysxRaycastHit(hit);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::raycast_all_bounds
+//       Access: Published
+//  Description: Returns a PhysxRaycastReport object which can be
+//               used to iterate over all shapes that have been
+//               enclosed by axis aligned bounding boxes hit by
+//               the ray.
+////////////////////////////////////////////////////////////////////
+PhysxRaycastReport PhysxScene::
+raycast_all_bounds(const PhysxRay &ray,
+                         PhysxShapesType shapesType,
+                         PhysxMask mask,
+                         PhysxGroupsMask *groups, bool smoothNormal) const {
+
+  PhysxRaycastReport report;
+
+  nassertr(_error_type == ET_ok, report);
+
+  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+
+  NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
+  if (smoothNormal == true) {
+    hints |= NX_RAYCAST_NORMAL;
+  }
+  else {
+    hints |= NX_RAYCAST_FACE_NORMAL;
+  }
+
+  _ptr->raycastAllBounds(ray._ray, report, (NxShapesType)shapesType,
+                         mask.get_mask(), ray._length, hints);
+
+  return report;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::overlap_sphere_shapes
+//       Access: Published
+//  Description: Returns the set of shapes overlapped by the
+//               world-space sphere. 
+//               You can test against static and/or dynamic objects
+//               by adjusting 'shapeType'.
+////////////////////////////////////////////////////////////////////
+PhysxOverlapReport PhysxScene::
+overlap_sphere_shapes(const LPoint3f &center, float radius,
+                      PhysxShapesType shapesType,
+                      PhysxMask mask, bool accurateCollision) const {
+
+  PhysxOverlapReport report;
+
+  nassertr(_error_type == ET_ok, report);
+
+  NxSphere worldSphere(PhysxManager::point3_to_nxVec3(center), radius);
+
+  _ptr->overlapSphereShapes(worldSphere, (NxShapesType)shapesType, 0, NULL, &report,
+                            mask.get_mask(), NULL, accurateCollision);
+
+  return report;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::overlap_capsule_shapes
+//       Access: Published
+//  Description: Returns the set of shapes overlapped by the
+//               world-space capsule. 
+//               You can test against static and/or dynamic objects
+//               by adjusting 'shapeType'.
+////////////////////////////////////////////////////////////////////
+PhysxOverlapReport PhysxScene::
+overlap_capsule_shapes(const LPoint3f &p0, const LPoint3f &p1, float radius,
+                       PhysxShapesType shapesType,
+                       PhysxMask mask, bool accurateCollision) const {
+
+  PhysxOverlapReport report;
+
+  nassertr(_error_type == ET_ok, report);
+
+  NxSegment segment(PhysxManager::point3_to_nxVec3(p0),
+                    PhysxManager::point3_to_nxVec3(p1));
+  NxCapsule worldCapsule(segment, radius);
+
+  _ptr->overlapCapsuleShapes(worldCapsule, (NxShapesType)shapesType, 0, NULL, &report,
+                             mask.get_mask(), NULL, accurateCollision);
+
+  return report;
+}
+

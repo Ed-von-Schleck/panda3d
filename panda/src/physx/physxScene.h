@@ -19,9 +19,13 @@
 #include "lvector3.h"
 
 #include "physxObject.h"
+#include "physxEnums.h"
 #include "physxContactReport.h"
 #include "PhysxControllerReport.h"
 #include "physxTriggerReport.h"
+#include "physxOverlapReport.h"
+#include "physxMask.h"
+#include "physxGroupsMask.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -37,6 +41,10 @@ class PhysxJoint;
 class PhysxJointDesc;
 class PhysxDebugGeomNode;
 class PhysxSceneStats2;
+class PhysxRay;
+class PhysxRaycastHit;
+class PhysxRaycastReport;
+class PhysOverlapReport;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxScene
@@ -52,7 +60,7 @@ class PhysxSceneStats2;
 //               scene and then using it to attach bodies from a
 //               different scene results in undefined behavior.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxScene : public PhysxObject {
+class EXPCL_PANDAPHYSX PhysxScene : public PhysxObject, public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxScene();
@@ -62,6 +70,8 @@ PUBLISHED:
   void fetch_results();
 
   PT(PhysxDebugGeomNode) get_debug_geom_node();
+
+  PhysxSceneStats2 get_stats2() const;
 
   void enable_contact_reporting(bool enabled);
   bool is_contact_reporting_enabled() const;
@@ -73,16 +83,19 @@ PUBLISHED:
   void set_gravity(const LVector3f &gravity);
   LVector3f get_gravity() const;
 
+  // Actors
   unsigned int get_num_actors() const;
   PT(PhysxActor) create_actor(PhysxActorDesc &desc);
   PT(PhysxActor) get_actor(unsigned int idx) const;
   MAKE_SEQ(get_actors, get_num_actors, get_actor);
 
+  // Joints
   unsigned int get_num_joints() const;
   PT(PhysxJoint) create_joint(PhysxJointDesc &desc);
   PT(PhysxJoint) get_joint(unsigned int idx) const;
   MAKE_SEQ(get_joints, get_num_joints, get_joint);
 
+  // Materials
   unsigned int get_num_materials() const;
   unsigned int get_hightest_material_index() const;
   PT(PhysxMaterial) create_material(PhysxMaterialDesc &desc);
@@ -91,12 +104,51 @@ PUBLISHED:
   PT(PhysxMaterial) get_material_from_index(unsigned int idx) const;
   MAKE_SEQ(get_materials, get_num_materials, get_material);
 
+  // Controllers
   unsigned int get_num_controllers() const;
   PT(PhysxController) create_controller(PhysxControllerDesc &controllerDesc);
   PT(PhysxController) get_controller(unsigned int idx) const;
   MAKE_SEQ(get_controllers, get_num_controllers, get_controller);
 
-  PhysxSceneStats2 get_stats2() const;
+  // Raycast queries
+  bool raycast_any_shape(const PhysxRay &ray,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(),
+    PhysxGroupsMask *groups=NULL) const;
+
+  PhysxRaycastHit raycast_closest_shape(const PhysxRay &ray,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(),
+    PhysxGroupsMask *groups=NULL, bool smoothNormal=true) const;
+
+  PhysxRaycastReport raycast_all_shapes(const PhysxRay &ray,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(),
+    PhysxGroupsMask *groups=NULL, bool smoothNormal=true) const;
+
+  bool raycast_any_bounds(const PhysxRay &ray,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(),
+    PhysxGroupsMask *groups=NULL) const;
+
+  PhysxRaycastHit raycast_closest_bounds(const PhysxRay &ray,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(),
+    PhysxGroupsMask *groups=NULL, bool smoothNormal=true) const;
+
+  PhysxRaycastReport raycast_all_bounds(const PhysxRay &ray,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(),
+    PhysxGroupsMask *groups=NULL, bool smoothNormal=true) const;
+
+  // Overlap queries
+  PhysxOverlapReport overlap_sphere_shapes(const LPoint3f &center, float radius,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(), bool accurateCollision=true) const;
+
+  PhysxOverlapReport overlap_capsule_shapes(const LPoint3f &p0, const LPoint3f &p1, float radius,
+    PhysxShapesType shapesType=ST_all,
+    PhysxMask mask=PhysxMask::all_on(), bool accurateCollision=true) const;
 
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:

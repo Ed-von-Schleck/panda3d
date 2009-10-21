@@ -227,6 +227,11 @@
 #define NX_SF_SOFTBODY_DISABLE_COLLISION 1<<19
 #define NX_SF_SOFTBODY_TWOWAY 1<<20
 
+// PhysxShapesType
+#define NX_STATIC_SHAPES 1<<0
+#define NX_DYNAMIC_SHAPES 1<<1
+#define NX_ALL_SHAPES (1<<0|1<<1)
+
 // PhysxSphericalJointFlag
 #define NX_SJF_TWIST_LIMIT_ENABLED 1<<0
 #define NX_SJF_SWING_LIMIT_ENABLED 1<<1
@@ -470,6 +475,12 @@ PUBLISHED:
     SF_softbody_drain             = NX_SF_SOFTBODY_DRAIN,
     SF_softbody_disable_collision = NX_SF_SOFTBODY_DISABLE_COLLISION,
     SF_softbody_twoway            = NX_SF_SOFTBODY_TWOWAY
+  };
+
+  enum PhysxShapesType {
+    ST_static   = NX_STATIC_SHAPES ,
+    ST_dynamic  = NX_DYNAMIC_SHAPES ,
+    ST_all      = NX_ALL_SHAPES 
   };
 
   enum PhysxSphericalJointFlag {

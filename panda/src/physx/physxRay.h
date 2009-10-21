@@ -40,7 +40,7 @@ PUBLISHED:
   LPoint3f get_origin() const;
   LVector3f get_direction() const;
 
-private:
+public:
   NxRay _ray;
   NxReal _length;
 };

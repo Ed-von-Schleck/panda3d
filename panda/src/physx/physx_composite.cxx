@@ -61,6 +61,10 @@
 #include "physxSpringDesc.cxx"
 #include "physxTriggerReport.cxx"
 
+#include "physxMask.cxx"
+#include "physxGroupsMask.cxx"
+#include "physxOverlapReport.cxx"
+
 #include "physxKitchen.cxx"
 #include "physxMeshPool.cxx"
 #include "physxConvexMesh.cxx"
