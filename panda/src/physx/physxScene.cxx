@@ -905,3 +905,331 @@ overlap_capsule_shapes(const LPoint3f &p0, const LPoint3f &p1, float radius,
   return report;
 }
 
+
+
+
+
+
+
+
+
+
+//################################
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_actor_pair_flag
+//       Access: Published
+//  Description: Sets the pair flags for the given pair of actors. 
+//
+//               Calling this on an actor that has no shape(s) has
+//               no effect. The two actor references must not
+//               reference the same actor.
+//
+//               It is important to note that the engine stores
+//               pair flags per shape, even for actor pair flags.
+//               This means that shapes should be created before
+//               actor pair flags are set, otherwise the pair flags
+//               will be ignored.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_actor_pair_flag(PhysxActor &actorA, PhysxActor &actorB,
+                    PhysxContactPairFlag flag, bool value) {
+
+  nassertv(_error_type == ET_ok);
+
+  NxActor *ptrA = actorA.ptr();
+  NxActor *ptrB = actorB.ptr();
+  NxU32 flags = _ptr->getActorPairFlags(*ptrA, *ptrB); 
+
+  if (value == true) {
+    flags |= flag;
+  }
+  else {
+    flags &= ~(flag);
+  }
+
+  _ptr->setActorPairFlags(*ptrA, *ptrB, flags);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_actor_pair_flag
+//       Access: Published
+//  Description: Retrieves a single flag for the given pair of
+//               actors.
+// 
+//               The two actor references must not reference the
+//               same actor.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+get_actor_pair_flag(PhysxActor &actorA, PhysxActor &actorB,
+                    PhysxContactPairFlag flag) {
+
+  nassertr(_error_type == ET_ok, false);
+
+  NxActor *ptrA = actorA.ptr();
+  NxActor *ptrB = actorB.ptr();
+  NxU32 flags = _ptr->getActorPairFlags(*ptrA, *ptrB); 
+
+  return (flags && flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_shape_pair_flag
+//       Access: Published
+//  Description: Disables or enables contact generation for a pair
+//               of shapes.
+//
+//               The two shape references must not reference the
+//               same shape.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_shape_pair_flag(PhysxShape &shapeA, PhysxShape &shapeB, bool value) {
+
+  nassertv(_error_type == ET_ok);
+
+  NxShape *ptrA = shapeA.ptr();
+  NxShape *ptrB = shapeB.ptr();
+  NxU32 flags = _ptr->getShapePairFlags(*ptrA, *ptrB); 
+
+  if (value == true) {
+    flags |= NX_IGNORE_PAIR;
+  }
+  else {
+    flags &= ~(NX_IGNORE_PAIR);
+  }
+
+  _ptr->setShapePairFlags(*ptrA, *ptrB, flags);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_shape_pair_flag
+//       Access: Published
+//  Description: Returns /true/ if contact generation between a pair
+//               of shapes is enabled, and /false/ if contact
+//               generation is disables.
+//
+//               The two shape references must not reference the
+//               same shape.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+get_shape_pair_flag(PhysxShape &shapeA, PhysxShape &shapeB) {
+
+  nassertr(_error_type == ET_ok, false);
+
+  NxShape *ptrA = shapeA.ptr();
+  NxShape *ptrB = shapeB.ptr();
+  NxU32 flags = _ptr->getShapePairFlags(*ptrA, *ptrB); 
+
+  return (flags && NX_IGNORE_PAIR) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_actor_group_pair_flag
+//       Access: Published
+//  Description: With this method one can set contact reporting
+//               flags between actors belonging to a pair of groups. 
+//
+//               It is possible to assign each actor to a group
+//               using PhysxActor::set_group(). This is a different
+//               set of groups from the shape groups despite the
+//               similar name. Here up to 0xffff different groups
+//               are permitted, With this method one can set
+//               contact reporting flags between actors belonging
+//               to a pair of groups.
+//
+//               The following flags are permitted:
+//               - CPF_start_touch
+//               - CPF_end_touch
+//               - CPF_touch
+//               - CPF_start_touch_treshold
+//               - CPF_end_touch_treshold
+//               - CPF_touch_treshold
+//
+//               Note that finer grain control of pairwise flags is
+//               possible using the function
+//               PhysxScene::set_actor_pair_flags().
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_actor_group_pair_flag(unsigned int g1, unsigned int g2,
+                          PhysxContactPairFlag flag, bool value) {
+
+  nassertv(_error_type == ET_ok);
+
+  NxU32 flags = _ptr->getActorGroupPairFlags(g1, g2); 
+  if (value == true) {
+    flags |= flag;
+  }
+  else {
+    flags &= ~(flag);
+  }
+  _ptr->setActorGroupPairFlags(g1, g2, flags);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_actor_group_pair_flag
+//       Access: Published
+//  Description: Retrieves a single flag set with
+//               PhysxScene::set_actor_group_pair_flag()
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+get_actor_group_pair_flag(unsigned int g1, unsigned int g2,
+                          PhysxContactPairFlag flag) {
+
+  nassertr(_error_type == ET_ok, false);
+  NxU32 flags = _ptr->getActorGroupPairFlags(g1, g2); 
+  return (flags && flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_filter_ops
+//       Access: Published
+//  Description: Setups filtering operations.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_filter_ops(PhysxFilterOp op0, PhysxFilterOp op1, PhysxFilterOp op2) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setFilterOps((NxFilterOp)op0, (NxFilterOp)op1, (NxFilterOp)op2);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_filter_bool
+//       Access: Published
+//  Description: Setups filtering's boolean value.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_filter_bool(bool flag) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setFilterBool(flag);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_filter_constant0
+//       Access: Published
+//  Description: Setups filtering's K0 value.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_filter_constant0(const PhysxGroupsMask &mask) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setFilterConstant0(mask.get_mask());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_filter_constant1
+//       Access: Published
+//  Description: Setups filtering's K1 value.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_filter_constant1(const PhysxGroupsMask &mask) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setFilterConstant1(mask.get_mask());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_filter_bool
+//       Access: Published
+//  Description: Retrieves filtering's boolean value.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+get_filter_bool() const {
+
+  nassertr(_error_type == ET_ok, false);
+  return _ptr->getFilterBool();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_filter_constant0
+//       Access: Published
+//  Description: Gets filtering constant K0.
+////////////////////////////////////////////////////////////////////
+PhysxGroupsMask PhysxScene::
+get_filter_constant0() const {
+
+  PhysxGroupsMask mask;
+
+  nassertr(_error_type == ET_ok, mask);
+
+  NxGroupsMask _mask = ptr()->getFilterConstant0();
+  mask.set_mask(_mask);
+
+  return mask;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_filter_constant1
+//       Access: Published
+//  Description: Gets filtering constant K1.
+////////////////////////////////////////////////////////////////////
+PhysxGroupsMask PhysxScene::
+get_filter_constant1() const {
+
+  PhysxGroupsMask mask;
+
+  nassertr(_error_type == ET_ok, mask);
+
+  NxGroupsMask _mask = ptr()->getFilterConstant1();
+  mask.set_mask(_mask);
+
+  return mask;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_filter_op0
+//       Access: Published
+//  Description: Retrieves the op0 filtering operation.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxFilterOp PhysxScene::
+get_filter_op0() const {
+
+  nassertr(_error_type == ET_ok, FO_and);
+
+  NxFilterOp op0;
+  NxFilterOp op1;
+  NxFilterOp op2;
+
+  _ptr->getFilterOps(op0, op1, op2);
+
+  return (PhysxFilterOp)op0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_filter_op1
+//       Access: Published
+//  Description: Retrieves the op1 filtering operation.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxFilterOp PhysxScene::
+get_filter_op1() const {
+
+  nassertr(_error_type == ET_ok, FO_and);
+
+  NxFilterOp op0;
+  NxFilterOp op1;
+  NxFilterOp op2;
+
+  _ptr->getFilterOps(op0, op1, op2);
+
+  return (PhysxFilterOp)op1;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_filter_op2
+//       Access: Published
+//  Description: Retrieves the op2 filtering operation.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxFilterOp PhysxScene::
+get_filter_op2() const {
+
+  nassertr(_error_type == ET_ok, FO_and);
+
+  NxFilterOp op0;
+  NxFilterOp op1;
+  NxFilterOp op2;
+
+  _ptr->getFilterOps(op0, op1, op2);
+
+  return (PhysxFilterOp)op2;
+}
+

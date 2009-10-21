@@ -150,6 +150,37 @@ PUBLISHED:
     PhysxShapesType shapesType=ST_all,
     PhysxMask mask=PhysxMask::all_on(), bool accurateCollision=true) const;
 
+  // Filters
+  void set_actor_pair_flag(PhysxActor &actorA,
+    PhysxActor &actorB,
+    PhysxContactPairFlag flag, bool value);
+  void set_shape_pair_flag(PhysxShape &shapeA,
+    PhysxShape &shapeB, bool value);
+  void set_actor_group_pair_flag(unsigned int g1, unsigned int g2,
+    PhysxContactPairFlag flag, bool value);
+  void set_group_collision_flag(unsigned int g1, unsigned int g2, bool enable);
+  void set_filter_ops(PhysxFilterOp op0,
+    PhysxFilterOp op1,
+    PhysxFilterOp op2);
+  void set_filter_bool(bool flag);
+  void set_filter_constant0(const PhysxGroupsMask &mask);
+  void set_filter_constant1(const PhysxGroupsMask &mask);
+
+  bool get_actor_pair_flag(PhysxActor &actorA,
+    PhysxActor &actorB,
+    PhysxContactPairFlag flag);
+  bool get_shape_pair_flag(PhysxShape &shapeA,
+    PhysxShape &shapeB);
+  bool get_actor_group_pair_flag(unsigned int g1, unsigned int g2,
+    PhysxContactPairFlag flag);
+  bool get_group_collision_flag(unsigned int g1, unsigned int g2);
+  bool get_filter_bool() const;
+  PhysxGroupsMask get_filter_constant0() const;
+  PhysxGroupsMask get_filter_constant1() const;
+  PhysxFilterOp get_filter_op0() const;
+  PhysxFilterOp get_filter_op1() const;
+  PhysxFilterOp get_filter_op2() const;
+
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:
   void release();

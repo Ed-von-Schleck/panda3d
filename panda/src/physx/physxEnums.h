@@ -173,6 +173,15 @@
 #define NX_DJF_MIN_DISTANCE_ENABLED 1<<1
 #define NX_DJF_SPRING_ENABLED 1<<2
 
+// PhysxFilterOp
+#define NX_FILTEROP_AND 0
+#define NX_FILTEROP_OR 1
+#define NX_FILTEROP_XOR 2
+#define NX_FILTEROP_NAND 3
+#define NX_FILTEROP_NOR 4
+#define NX_FILTEROP_NXOR 5
+#define NX_FILTEROP_SWAP_AND 6
+
 // PhysxMaterialFlag
 #define NX_MF_ANISOTROPIC 1<<0
 #define NX_MF_DISABLE_FRICTION 1<<4
@@ -416,6 +425,16 @@ PUBLISHED:
     DJF_spring_enabled        = NX_DJF_SPRING_ENABLED
   };
 
+  enum PhysxFilterOp {
+    FO_and       = NX_FILTEROP_AND,
+    FO_or        = NX_FILTEROP_OR,
+    FO_xor       = NX_FILTEROP_XOR,
+    FO_nand      = NX_FILTEROP_NAND,
+    FO_nor       = NX_FILTEROP_NOR,
+    FO_nxor      = NX_FILTEROP_NXOR,
+    FO_swap_and  = NX_FILTEROP_SWAP_AND
+  };
+
   enum PhysxForceMode {
     FM_force                  = NX_FORCE,
     FM_impulse                = NX_IMPULSE,
@@ -493,9 +512,9 @@ PUBLISHED:
   };
 
   enum PhysxUpAxis {
-    X_up                          = NX_X,
-    Y_up                          = NX_Y,
-    Z_up                          = NX_Z
+    X_up  = NX_X,
+    Y_up  = NX_Y,
+    Z_up  = NX_Z
   };
 
 };
