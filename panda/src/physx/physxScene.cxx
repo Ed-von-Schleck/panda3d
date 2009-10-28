@@ -1233,3 +1233,46 @@ get_filter_op2() const {
   return (PhysxFilterOp)op2;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_group_collision_flag
+//       Access: Published
+//  Description: Specifies if collision should be performed by a
+//               pair of shape groups. 
+//
+//               It is possible to assign each shape to a collision
+//               groups using PhysxShape::set_group(). With this
+//               method one can set whether collisions should be
+//               detected between shapes belonging to a given pair
+//               of groups. Initially all pairs are enabled.
+//
+//               Fluids can be assigned to collision groups as well.
+//
+//               Collision groups are integers between 0 and 31.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_group_collision_flag(unsigned int g1, unsigned int g2, bool enable) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv(g1 >= 0 && g1 < 32);
+  nassertv(g2 >= 0 && g2 < 32);
+
+  _ptr->setGroupCollisionFlag((NxCollisionGroup)g1, (NxCollisionGroup)g2, enable);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_group_collision_flag
+//       Access: Published
+//  Description: Determines if collision detection is performed
+//               between a pair of groups. Collision groups are
+//               integers between 0 and 31.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+get_group_collision_flag(unsigned int g1, unsigned int g2) {
+
+  nassertr(_error_type == ET_ok, false);
+  nassertr(g1 >= 0 && g1 < 32, false);
+  nassertr(g2 >= 0 && g2 < 32, false);
+
+  return _ptr->getGroupCollisionFlag((NxCollisionGroup)g1, (NxCollisionGroup)g2);
+}
+

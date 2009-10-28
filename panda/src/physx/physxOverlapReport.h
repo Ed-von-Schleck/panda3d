@@ -23,6 +23,8 @@
 
 class PhysxShape;
 
+class PhysxUserEntityReport : public NxUserEntityReport<NxShape *> {};
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxOverlapReport
 // Description : Objects of this class are returned by the 'overlap
@@ -30,7 +32,7 @@ class PhysxShape;
 //               They contain an iterable list of all sshapes that
 //               the raycast query produced.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxOverlapReport : public NxUserEntityReport<NxShape *> {
+class EXPCL_PANDAPHYSX PhysxOverlapReport : public PhysxUserEntityReport {
 
 PUBLISHED:
   unsigned int get_num_overlaps() const;
