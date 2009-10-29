@@ -16,8 +16,6 @@
 #include "physxManager.h"
 #include "physxMaterial.h"
 
-TypeHandle PhysxShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxShapeDesc::set_name
 //       Access: Published

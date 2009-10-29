@@ -16,8 +16,6 @@
 #define PHYSXSCENEDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
-
 #include "lvector3.h"
 
 #include "NoMinMax.h"
@@ -27,7 +25,7 @@
 //       Class : PhysxSceneDesc
 // Description : Descriptor for PhysxScene.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSceneDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxSceneDesc {
 
 PUBLISHED:
   INLINE PhysxSceneDesc();
@@ -41,31 +39,7 @@ PUBLISHED:
   LVector3f get_gravity() const;
 
 public:
-  NxSceneDesc *ptr() { return &_desc; };
-
-private:
   NxSceneDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxSceneDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxSceneDesc.I"

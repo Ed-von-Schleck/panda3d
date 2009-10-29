@@ -16,7 +16,6 @@
 #define PHYSXHEIGHTFIELDDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 #include "pnmImage.h"
 
 #include "NoMinMax.h"
@@ -30,7 +29,7 @@
 //               the user may discard the original height data (e.g.
 //               release the PNGImage).
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxHeightFieldDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxHeightFieldDesc {
 
 PUBLISHED:
   INLINE PhysxHeightFieldDesc();
@@ -44,35 +43,13 @@ PUBLISHED:
   void set_convex_edge_threshold(float threshold);
 
 public:
-  NxHeightFieldDesc *ptr() { return &_desc; };
+  NxHeightFieldDesc _desc;
 
 private:
-  NxHeightFieldDesc _desc;
   NxU32 *_samples;
 
   INLINE void alloc_samples(unsigned int n);
   INLINE void dealloc_samples();
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxHeightFieldDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxHeightFieldDesc.I"

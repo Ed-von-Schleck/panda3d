@@ -17,8 +17,6 @@
 #include "physxMotorDesc.h"
 #include "physxJointLimitDesc.h"
 
-TypeHandle PhysxRevoluteJointDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxRevoluteJointDesc::set_projection_distance
 //       Access: Published
@@ -50,7 +48,7 @@ set_projection_angle(float angle) {
 void PhysxRevoluteJointDesc::
 set_spring(const PhysxSpringDesc &spring) {
 
-  _desc.spring = spring.desc();
+  _desc.spring = spring._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -89,7 +87,7 @@ set_projection_mode(PhysxProjectionMode mode) {
 void PhysxRevoluteJointDesc::
 set_motor(const PhysxMotorDesc &motor) {
 
-  _desc.motor = motor.desc();
+  _desc.motor = motor._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -101,7 +99,7 @@ set_motor(const PhysxMotorDesc &motor) {
 void PhysxRevoluteJointDesc::
 set_limit_low(const PhysxJointLimitDesc &low) {
 
-  _desc.limit.low = low.desc();
+  _desc.limit.low = low._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -113,7 +111,7 @@ set_limit_low(const PhysxJointLimitDesc &low) {
 void PhysxRevoluteJointDesc::
 set_limit_high(const PhysxJointLimitDesc &high) {
 
-  _desc.limit.high = high.desc();
+  _desc.limit.high = high._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -145,10 +143,12 @@ get_projection_angle() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxSpringDesc) PhysxRevoluteJointDesc::
+PhysxSpringDesc PhysxRevoluteJointDesc::
 get_spring() const {
 
-  return new PhysxSpringDesc(_desc.spring);
+  PhysxSpringDesc value;
+  value._desc = _desc.spring;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -178,10 +178,12 @@ get_projection_mode() const {
 //       Access: Published
 //  Description: Sets an optional joint motor.
 ////////////////////////////////////////////////////////////////////
-PT(PhysxMotorDesc) PhysxRevoluteJointDesc::
+PhysxMotorDesc PhysxRevoluteJointDesc::
 get_motor() const {
 
-  return new PhysxMotorDesc(_desc.motor);
+  PhysxMotorDesc value;
+  value._desc = _desc.motor;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -189,10 +191,12 @@ get_motor() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitDesc) PhysxRevoluteJointDesc::
+PhysxJointLimitDesc PhysxRevoluteJointDesc::
 get_limit_low() const {
 
-  return new PhysxJointLimitDesc(_desc.limit.low);
+  PhysxJointLimitDesc value;
+  value._desc = _desc.limit.low;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -200,9 +204,11 @@ get_limit_low() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitDesc) PhysxRevoluteJointDesc::
+PhysxJointLimitDesc PhysxRevoluteJointDesc::
 get_limit_high() const {
 
-  return new PhysxJointLimitDesc(_desc.limit.high);
+  PhysxJointLimitDesc value;
+  value._desc = _desc.limit.high;
+  return value;
 }
 

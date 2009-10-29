@@ -15,8 +15,6 @@
 #include "physxTriangleMeshShapeDesc.h"
 #include "physxTriangleMesh.h"
 
-TypeHandle PhysxTriangleMeshShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxTriangleMeshShapeDesc::set_mesh
 //       Access: Published

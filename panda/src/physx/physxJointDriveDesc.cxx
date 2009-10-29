@@ -14,8 +14,6 @@
 
 #include "physxJointDriveDesc.h"
 
-TypeHandle PhysxJointDriveDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxJointDriveDesc::spring
 //       Access: Published

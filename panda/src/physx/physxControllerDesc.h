@@ -16,7 +16,6 @@
 #define PHYSXCONTROLLERDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 #include "lpoint3.h"
 
 #include "NxController.h"
@@ -25,7 +24,7 @@
 //       Class : PhysxControllerDesc
 // Description : Descriptor class for a character controller.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxControllerDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxControllerDesc {
 
 PUBLISHED:
   virtual void set_to_default() = 0;
@@ -44,30 +43,10 @@ PUBLISHED:
   bool get_interaction_flag() const;
 
 public:
-  INLINE PhysxControllerDesc();
-
   virtual NxControllerDesc *ptr() const = 0;
 
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxControllerDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
+protected:
+  INLINE PhysxControllerDesc();
 };
 
 #include "physxControllerDesc.I"

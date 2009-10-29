@@ -16,7 +16,6 @@
 #define PHYSXMATERIALDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 
 #include "physxEnums.h"
 
@@ -27,7 +26,7 @@
 //       Class : PhysxMaterialDesc
 // Description : Descriptor class for materials. See PhysxMaterial.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxMaterialDesc : public TypedReferenceCount, public PhysxEnums {
+class EXPCL_PANDAPHYSX PhysxMaterialDesc : public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxMaterialDesc();
@@ -57,31 +56,7 @@ PUBLISHED:
   PhysxCombineMode get_restitution_combine_mode() const;
 
 public:
-  NxMaterialDesc *ptr() { return &_desc; };
-
-private:
   NxMaterialDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxMaterialDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxMaterialDesc.I"

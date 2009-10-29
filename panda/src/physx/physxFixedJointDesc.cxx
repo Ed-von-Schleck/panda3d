@@ -14,5 +14,3 @@
 
 #include "physxFixedJointDesc.h"
 
-TypeHandle PhysxFixedJointDesc::_type_handle;
-

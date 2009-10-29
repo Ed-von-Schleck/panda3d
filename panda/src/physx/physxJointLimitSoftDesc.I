@@ -38,17 +38,6 @@ PhysxJointLimitSoftDesc(float value, float restitution, float spring, float damp
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxJointLimitSoftDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxJointLimitSoftDesc::
-PhysxJointLimitSoftDesc(const NxJointLimitSoftDesc &desc) {
-
-  _desc = desc;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxJointLimitSoftDesc::Destructor
 //       Access: Published
 //  Description:
@@ -56,16 +45,5 @@ PhysxJointLimitSoftDesc(const NxJointLimitSoftDesc &desc) {
 INLINE PhysxJointLimitSoftDesc::
 ~PhysxJointLimitSoftDesc() {
 
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxJointLimitSoftDesc::get_desc
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-INLINE NxJointLimitSoftDesc PhysxJointLimitSoftDesc::
-desc() const {
-
-  return _desc;
 }
 

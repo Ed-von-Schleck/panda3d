@@ -15,8 +15,6 @@
 #include "physxBoxControllerDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxBoxControllerDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBoxControllerDesc::set_extents
 //       Access: Published

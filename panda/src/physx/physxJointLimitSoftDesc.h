@@ -16,7 +16,6 @@
 #define PHYSXJOINTLIMITSOFTDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -25,7 +24,7 @@
 //       Class : PhysxJointLimitSoftDesc
 // Description : Describes a joint limit.
 ////////////////////////////////////////////////////////////////////
-class PhysxJointLimitSoftDesc : public TypedReferenceCount {
+class PhysxJointLimitSoftDesc {
 
 PUBLISHED:
   INLINE PhysxJointLimitSoftDesc();
@@ -43,32 +42,7 @@ PUBLISHED:
   float get_damping() const;
 
 public:
-  INLINE PhysxJointLimitSoftDesc(const NxJointLimitSoftDesc &desc);
-  INLINE NxJointLimitSoftDesc desc() const;
-
-private:
   NxJointLimitSoftDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxJointLimitSoftDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxJointLimitSoftDesc.I"

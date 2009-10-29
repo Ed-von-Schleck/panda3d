@@ -15,8 +15,6 @@
 #include "physxSceneDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxSceneDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSceneDesc::set_gravity
 //       Access: Published

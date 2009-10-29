@@ -50,8 +50,8 @@ PUBLISHED:
   float get_velocity() const;
   bool get_flag(PhysxRevoluteJointFlag flag) const;
   PhysxProjectionMode get_projection_mode() const;
-  PT(PhysxMotorDesc) get_motor() const;
-  PT(PhysxSpringDesc) get_spring() const;
+  PhysxMotorDesc get_motor() const;
+  PhysxSpringDesc get_spring() const;
 
 ////////////////////////////////////////////////////////////////////
 public:

@@ -17,8 +17,6 @@
 #include "physxJointDriveDesc.h"
 #include "physxJointLimitSoftDesc.h"
 
-TypeHandle PhysxD6JointDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxD6JointDesc::set_x_motion
 //       Access: Published
@@ -93,7 +91,7 @@ set_twist_motion(PhysxD6JointMotion twistMotion) {
 void PhysxD6JointDesc::
 set_x_drive(const PhysxJointDriveDesc &drive) {
 
-  _desc.xDrive = drive.desc();
+  _desc.xDrive = drive._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -104,7 +102,7 @@ set_x_drive(const PhysxJointDriveDesc &drive) {
 void PhysxD6JointDesc::
 set_y_drive(const PhysxJointDriveDesc &drive) {
 
-  _desc.yDrive = drive.desc();
+  _desc.yDrive = drive._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -115,7 +113,7 @@ set_y_drive(const PhysxJointDriveDesc &drive) {
 void PhysxD6JointDesc::
 set_z_drive(const PhysxJointDriveDesc &drive) {
 
-  _desc.zDrive = drive.desc();
+  _desc.zDrive = drive._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -126,7 +124,7 @@ set_z_drive(const PhysxJointDriveDesc &drive) {
 void PhysxD6JointDesc::
 set_swing_drive(const PhysxJointDriveDesc &drive) {
 
-  _desc.swingDrive = drive.desc();
+  _desc.swingDrive = drive._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -137,7 +135,7 @@ set_swing_drive(const PhysxJointDriveDesc &drive) {
 void PhysxD6JointDesc::
 set_twist_drive(const PhysxJointDriveDesc &drive) {
 
-  _desc.twistDrive = drive.desc();
+  _desc.twistDrive = drive._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -148,7 +146,7 @@ set_twist_drive(const PhysxJointDriveDesc &drive) {
 void PhysxD6JointDesc::
 set_slerp_drive(const PhysxJointDriveDesc &drive) {
 
-  _desc.slerpDrive = drive.desc();
+  _desc.slerpDrive = drive._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -175,7 +173,7 @@ set_flag(PhysxD6JointFlag flag, bool value) {
 void PhysxD6JointDesc::
 set_linear_limit(const PhysxJointLimitSoftDesc &limit) {
 
-  _desc.linearLimit = limit.desc();
+  _desc.linearLimit = limit._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -186,7 +184,7 @@ set_linear_limit(const PhysxJointLimitSoftDesc &limit) {
 void PhysxD6JointDesc::
 set_swing1_limit(const PhysxJointLimitSoftDesc &limit) {
 
-  _desc.swing1Limit = limit.desc();
+  _desc.swing1Limit = limit._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -197,7 +195,7 @@ set_swing1_limit(const PhysxJointLimitSoftDesc &limit) {
 void PhysxD6JointDesc::
 set_swing2_limit(const PhysxJointLimitSoftDesc &limit) {
 
-  _desc.swing2Limit = limit.desc();
+  _desc.swing2Limit = limit._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -208,7 +206,7 @@ set_swing2_limit(const PhysxJointLimitSoftDesc &limit) {
 void PhysxD6JointDesc::
 set_twist_limit_low(const PhysxJointLimitSoftDesc &limit) {
 
-  _desc.twistLimit.low = limit.desc();
+  _desc.twistLimit.low = limit._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -219,7 +217,7 @@ set_twist_limit_low(const PhysxJointLimitSoftDesc &limit) {
 void PhysxD6JointDesc::
 set_twist_limit_high(const PhysxJointLimitSoftDesc &limit) {
 
-  _desc.twistLimit.high = limit.desc();
+  _desc.twistLimit.high = limit._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -385,10 +383,12 @@ get_twist_motion() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointDriveDesc) PhysxD6JointDesc::
+PhysxJointDriveDesc PhysxD6JointDesc::
 get_x_drive() const {
 
-  return new PhysxJointDriveDesc(_desc.xDrive);
+  PhysxJointDriveDesc value;
+  value._desc = _desc.xDrive;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -396,10 +396,12 @@ get_x_drive() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointDriveDesc) PhysxD6JointDesc::
+PhysxJointDriveDesc PhysxD6JointDesc::
 get_y_drive() const {
 
-  return new PhysxJointDriveDesc(_desc.yDrive);
+  PhysxJointDriveDesc value;
+  value._desc = _desc.yDrive;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -407,10 +409,12 @@ get_y_drive() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointDriveDesc) PhysxD6JointDesc::
+PhysxJointDriveDesc PhysxD6JointDesc::
 get_z_drive() const {
 
-  return new PhysxJointDriveDesc(_desc.zDrive);
+  PhysxJointDriveDesc value;
+  value._desc = _desc.zDrive;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -418,10 +422,12 @@ get_z_drive() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointDriveDesc) PhysxD6JointDesc::
+PhysxJointDriveDesc PhysxD6JointDesc::
 get_swing_drive() const {
 
-  return new PhysxJointDriveDesc(_desc.swingDrive);
+  PhysxJointDriveDesc value;
+  value._desc = _desc.swingDrive;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -429,10 +435,12 @@ get_swing_drive() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointDriveDesc) PhysxD6JointDesc::
+PhysxJointDriveDesc PhysxD6JointDesc::
 get_twist_drive() const {
 
-  return new PhysxJointDriveDesc(_desc.twistDrive);
+  PhysxJointDriveDesc value;
+  value._desc = _desc.twistDrive;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -440,10 +448,12 @@ get_twist_drive() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointDriveDesc) PhysxD6JointDesc::
+PhysxJointDriveDesc PhysxD6JointDesc::
 get_slerp_drive() const {
 
-  return new PhysxJointDriveDesc(_desc.slerpDrive);
+  PhysxJointDriveDesc value;
+  value._desc = _desc.slerpDrive;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -462,10 +472,12 @@ get_flag(PhysxD6JointFlag flag) const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitSoftDesc) PhysxD6JointDesc::
+PhysxJointLimitSoftDesc PhysxD6JointDesc::
 get_linear_limit() const {
 
-  return new PhysxJointLimitSoftDesc(_desc.linearLimit);
+  PhysxJointLimitSoftDesc value;
+  value._desc = _desc.linearLimit;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -473,10 +485,12 @@ get_linear_limit() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitSoftDesc) PhysxD6JointDesc::
+PhysxJointLimitSoftDesc PhysxD6JointDesc::
 get_swing1_limit() const {
 
-  return new PhysxJointLimitSoftDesc(_desc.swing1Limit);
+  PhysxJointLimitSoftDesc value;
+  value._desc = _desc.swing1Limit;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -484,10 +498,12 @@ get_swing1_limit() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitSoftDesc) PhysxD6JointDesc::
+PhysxJointLimitSoftDesc PhysxD6JointDesc::
 get_swing2_limit() const {
 
-  return new PhysxJointLimitSoftDesc(_desc.swing2Limit);
+  PhysxJointLimitSoftDesc value;
+  value._desc = _desc.swing2Limit;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -495,10 +511,12 @@ get_swing2_limit() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitSoftDesc) PhysxD6JointDesc::
+PhysxJointLimitSoftDesc PhysxD6JointDesc::
 get_twist_limit_low() const {
 
-  return new PhysxJointLimitSoftDesc(_desc.twistLimit.low);
+  PhysxJointLimitSoftDesc value;
+  value._desc = _desc.twistLimit.low;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -506,10 +524,12 @@ get_twist_limit_low() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitSoftDesc) PhysxD6JointDesc::
+PhysxJointLimitSoftDesc PhysxD6JointDesc::
 get_twist_limit_high() const {
 
-  return new PhysxJointLimitSoftDesc(_desc.twistLimit.high);
+  PhysxJointLimitSoftDesc value;
+  value._desc = _desc.twistLimit.high;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////

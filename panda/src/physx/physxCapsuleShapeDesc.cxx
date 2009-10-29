@@ -14,8 +14,6 @@
 
 #include "physxCapsuleShapeDesc.h"
 
-TypeHandle PhysxCapsuleShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsuleShapeDesc::set_radius
 //       Access: Published

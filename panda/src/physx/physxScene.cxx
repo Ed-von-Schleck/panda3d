@@ -14,6 +14,8 @@
 
 #include "physxScene.h"
 #include "physxManager.h"
+#include "physxActorDesc.h"
+#include "physxControllerDesc.h"
 #include "physxSceneStats2.h"
 
 TypeHandle PhysxScene::_type_handle;
@@ -273,7 +275,7 @@ create_actor(PhysxActorDesc &desc) {
   PT(PhysxActor) actor = new PhysxActor();
   nassertr(actor, NULL);
 
-  NxActor *actorPtr = _ptr->createActor(*desc.ptr());
+  NxActor *actorPtr = _ptr->createActor(desc._desc);
   nassertr(actorPtr, NULL);
 
   actor->link(actorPtr);
@@ -455,7 +457,7 @@ create_material(PhysxMaterialDesc &desc) {
   PT(PhysxMaterial) material = new PhysxMaterial();
   nassertr(material, NULL);
 
-  NxMaterial *materialPtr = _ptr->createMaterial(*desc.ptr());
+  NxMaterial *materialPtr = _ptr->createMaterial(desc._desc);
   nassertr(materialPtr, NULL);
 
   material->link(materialPtr);

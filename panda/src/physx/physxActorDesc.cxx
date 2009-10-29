@@ -13,9 +13,8 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxActorDesc.h"
+#include "physxBodyDesc.h"
 #include "physxManager.h"
-
-TypeHandle PhysxActorDesc::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxActorDesc::add_shape
@@ -107,7 +106,7 @@ set_global_hpr(float h, float p, float r) {
 void PhysxActorDesc::
 set_body(PhysxBodyDesc &desc) {
 
-  _desc.body = desc.ptr();
+  _desc.body = &(desc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -115,10 +114,12 @@ set_body(PhysxBodyDesc &desc) {
 //       Access: Published
 //  Description: Gets the body descriptor for this actor.
 ////////////////////////////////////////////////////////////////////
-PT(PhysxBodyDesc) PhysxActorDesc::
+PhysxBodyDesc PhysxActorDesc::
 get_body() const {
 
-  return new PhysxBodyDesc(_desc.body);
+  PhysxBodyDesc value;
+  value._desc = *(_desc.body);
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////

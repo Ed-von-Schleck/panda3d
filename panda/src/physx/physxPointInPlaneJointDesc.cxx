@@ -14,5 +14,3 @@
 
 #include "physxPointInPlaneJointDesc.h"
 
-TypeHandle PhysxPointInPlaneJointDesc::_type_handle;
-

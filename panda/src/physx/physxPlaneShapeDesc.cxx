@@ -15,8 +15,6 @@
 #include "physxPlaneShapeDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxPlaneShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxPlaneShapeDesc::set_plane
 //       Access: Published

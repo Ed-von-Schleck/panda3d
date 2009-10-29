@@ -14,8 +14,6 @@
 
 #include "physxHeightFieldDesc.h"
 
-TypeHandle PhysxHeightFieldDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxHeightFieldDesc::set_convex_edge_threshold
 //       Access: Published

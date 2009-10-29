@@ -37,17 +37,6 @@ PhysxMotorDesc(float velTarget, float maxForce, bool freeSpin) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxMotorDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxMotorDesc::
-PhysxMotorDesc(const NxMotorDesc &desc) {
-
-  _desc = desc;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxMotorDesc::Destructor
 //       Access: Published
 //  Description:
@@ -55,16 +44,5 @@ PhysxMotorDesc(const NxMotorDesc &desc) {
 INLINE PhysxMotorDesc::
 ~PhysxMotorDesc() {
 
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxMotorDesc::get_desc
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-INLINE NxMotorDesc PhysxMotorDesc::
-desc() const {
-
-  return _desc;
 }
 

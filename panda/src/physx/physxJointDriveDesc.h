@@ -16,7 +16,6 @@
 #define PHYSXJOINTDRIVEDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 
 #include "physxEnums.h"
 
@@ -28,7 +27,7 @@
 // Description : Used to describe drive properties for a
 //               PhysxD6Joint.
 ////////////////////////////////////////////////////////////////////
-class PhysxJointDriveDesc : public TypedReferenceCount, public PhysxEnums {
+class PhysxJointDriveDesc : public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxJointDriveDesc();
@@ -46,32 +45,7 @@ PUBLISHED:
   float get_force_limit() const;
 
 public:
-  INLINE PhysxJointDriveDesc(const NxJointDriveDesc &desc);
-  INLINE NxJointDriveDesc desc() const;
-
-private:
   NxJointDriveDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxJointDriveDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxJointDriveDesc.I"

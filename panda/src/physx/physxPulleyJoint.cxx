@@ -79,7 +79,7 @@ void PhysxPulleyJoint::
 set_motor(const PhysxMotorDesc &motor) {
 
   nassertv(_error_type == ET_ok);
-  _ptr->setMotor(motor.desc());
+  _ptr->setMotor(motor._desc);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -120,13 +120,13 @@ get_flag(PhysxPulleyJointFlag flag) const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxMotorDesc) PhysxPulleyJoint::
+PhysxMotorDesc PhysxPulleyJoint::
 get_motor() const {
 
   nassertr(_error_type == ET_ok, false);
 
-  NxMotorDesc desc;
-  _ptr->getMotor(desc);  
-  return new PhysxMotorDesc(desc);
+  PhysxMotorDesc value;
+  _ptr->getMotor(value._desc);  
+  return value;
 }
 

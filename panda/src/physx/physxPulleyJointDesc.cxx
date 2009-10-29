@@ -16,8 +16,6 @@
 #include "physxMotorDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxPulleyJointDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxPulleyJointDesc::set_distance
 //       Access: Published
@@ -90,7 +88,7 @@ set_pulley(unsigned int idx, const LPoint3f pos) {
 void PhysxPulleyJointDesc::
 set_motor(const PhysxMotorDesc &motor) {
 
-  _desc.motor = motor.desc();
+  _desc.motor = motor._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -154,9 +152,11 @@ get_pulley(unsigned int idx) const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxMotorDesc) PhysxPulleyJointDesc::
+PhysxMotorDesc PhysxPulleyJointDesc::
 get_motor() const {
 
-  return new PhysxMotorDesc(_desc.motor);
+  PhysxMotorDesc value;
+  value._desc = _desc.motor;
+  return value;
 }
 

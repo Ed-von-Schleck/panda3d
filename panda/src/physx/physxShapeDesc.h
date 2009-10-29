@@ -16,7 +16,6 @@
 #define PHYSXSHAPEDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 #include "lpoint3.h"
 #include "lmatrix.h"
 
@@ -33,7 +32,7 @@ class PhysxMaterial;
 //               Descriptors for all the different shape types are
 //               derived from this class.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxShapeDesc : public TypedReferenceCount, public PhysxEnums {
+class EXPCL_PANDAPHYSX PhysxShapeDesc : public PhysxEnums {
 
 PUBLISHED:
   virtual void set_to_default() = 0;
@@ -67,27 +66,6 @@ public:
 
 protected:
   INLINE PhysxShapeDesc();
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxShapeDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxShapeDesc.I"

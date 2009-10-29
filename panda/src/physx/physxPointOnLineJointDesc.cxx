@@ -14,5 +14,3 @@
 
 #include "physxPointOnLineJointDesc.h"
 
-TypeHandle PhysxPointOnLineJointDesc::_type_handle;
-

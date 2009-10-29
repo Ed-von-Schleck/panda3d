@@ -15,8 +15,6 @@
 #include "physxDistanceJointDesc.h"
 #include "physxSpringDesc.h"
 
-TypeHandle PhysxDistanceJointDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxDistanceJointDesc::set_max_distance
 //       Access: Published
@@ -50,7 +48,7 @@ set_min_distance(float distance) {
 void PhysxDistanceJointDesc::
 set_spring(const PhysxSpringDesc &spring) {
 
-  _desc.spring = spring.desc();
+  _desc.spring = spring._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -68,11 +66,6 @@ set_flag(PhysxDistanceJointFlag flag, bool value) {
     _desc.flags &= ~(flag);
   }
 }
-
-
-
-
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxDistanceJointDesc::get_max_distance
@@ -101,10 +94,12 @@ get_min_distance() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxSpringDesc) PhysxDistanceJointDesc::
+PhysxSpringDesc PhysxDistanceJointDesc::
 get_spring() const {
 
-  return new PhysxSpringDesc(_desc.spring);
+  PhysxSpringDesc value;
+  value._desc = _desc.spring;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////

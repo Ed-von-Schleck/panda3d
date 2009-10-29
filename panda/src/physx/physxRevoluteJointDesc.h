@@ -52,38 +52,15 @@ PUBLISHED:
   float get_projection_distance() const;
   float get_projection_angle() const;
   bool get_flag(PhysxRevoluteJointFlag flag) const;
-  PT(PhysxSpringDesc) get_spring() const;
-  PT(PhysxMotorDesc) get_motor() const;
-  PT(PhysxJointLimitDesc) get_limit_low() const;
-  PT(PhysxJointLimitDesc) get_limit_high() const;
+  PhysxSpringDesc get_spring() const;
+  PhysxMotorDesc get_motor() const;
+  PhysxJointLimitDesc get_limit_low() const;
+  PhysxJointLimitDesc get_limit_high() const;
   PhysxProjectionMode get_projection_mode() const;
 
 public:
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
-
-private:
   NxRevoluteJointDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    PhysxJointDesc::init_type();
-    register_type(_type_handle, "PhysxRevoluteJointDesc", 
-                  PhysxJointDesc::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxRevoluteJointDesc.I"

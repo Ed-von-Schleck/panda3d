@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxActor.h"
+#include "physxShapeDesc.h"
 #include "physxManager.h"
 
 TypeHandle PhysxActor::_type_handle;

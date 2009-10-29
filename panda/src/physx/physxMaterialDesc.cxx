@@ -15,8 +15,6 @@
 #include "physxMaterialDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxMaterialDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxMaterialDesc::set_restitution
 //       Access: Published

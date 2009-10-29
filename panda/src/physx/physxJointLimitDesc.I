@@ -37,17 +37,6 @@ PhysxJointLimitDesc(float value, float restitution, float hardness) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxJointLimitDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxJointLimitDesc::
-PhysxJointLimitDesc(const NxJointLimitDesc &desc) {
-
-  _desc = desc;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxJointLimitDesc::Destructor
 //       Access: Published
 //  Description:
@@ -55,16 +44,5 @@ PhysxJointLimitDesc(const NxJointLimitDesc &desc) {
 INLINE PhysxJointLimitDesc::
 ~PhysxJointLimitDesc() {
 
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxJointLimitDesc::get_desc
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-INLINE NxJointLimitDesc PhysxJointLimitDesc::
-desc() const {
-
-  return _desc;
 }
 

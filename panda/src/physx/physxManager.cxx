@@ -117,13 +117,13 @@ create_scene(PhysxSceneDesc &desc) {
   //_desc.maxTimestep = 1.0f / 240.0f;
   //_desc.maxIter = 8;
 
-  desc.ptr()->flags |= NX_SF_ENABLE_ACTIVETRANSFORMS;
-  desc.ptr()->flags |= NX_SF_SIMULATE_SEPARATE_THREAD;
+  desc._desc.flags |= NX_SF_ENABLE_ACTIVETRANSFORMS;
+  desc._desc.flags |= NX_SF_SIMULATE_SEPARATE_THREAD;
 
   PT(PhysxScene) scene = new PhysxScene();
   nassertr(scene, NULL);
 
-  NxScene *scenePtr = _sdk->createScene(*desc.ptr());
+  NxScene *scenePtr = _sdk->createScene(desc._desc);
   nassertr(scenePtr, NULL);
 
   scene->link(scenePtr);
@@ -171,7 +171,7 @@ create_height_field(PhysxHeightFieldDesc &desc) {
   PT(PhysxHeightField) hf = new PhysxHeightField();
   nassertr(hf, NULL);
 
-  NxHeightField *hfPtr = _sdk->createHeightField(*desc.ptr());
+  NxHeightField *hfPtr = _sdk->createHeightField(desc._desc);
   nassertr(hfPtr, NULL);
 
   hf->link(hfPtr);

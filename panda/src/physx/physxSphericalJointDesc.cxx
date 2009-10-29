@@ -17,8 +17,6 @@
 #include "physxSpringDesc.h"
 #include "physxJointLimitDesc.h"
 
-TypeHandle PhysxSphericalJointDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphericalJointDesc::set_projection_distance
 //       Access: Published
@@ -54,7 +52,7 @@ set_flag(PhysxSphericalJointFlag flag, bool value) {
 void PhysxSphericalJointDesc::
 set_twist_spring(const PhysxSpringDesc &spring) {
 
-  _desc.twistSpring = spring.desc();
+  _desc.twistSpring = spring._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -65,7 +63,7 @@ set_twist_spring(const PhysxSpringDesc &spring) {
 void PhysxSphericalJointDesc::
 set_swing_spring(const PhysxSpringDesc &spring) {
 
-  _desc.swingSpring = spring.desc();
+  _desc.swingSpring = spring._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -76,7 +74,7 @@ set_swing_spring(const PhysxSpringDesc &spring) {
 void PhysxSphericalJointDesc::
 set_joint_spring(const PhysxSpringDesc &spring) {
 
-  _desc.jointSpring = spring.desc();
+  _desc.jointSpring = spring._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -112,7 +110,7 @@ set_projection_mode(PhysxProjectionMode mode) {
 void PhysxSphericalJointDesc::
 set_twist_limit_low(const PhysxJointLimitDesc &low) {
 
-  _desc.twistLimit.low = low.desc();
+  _desc.twistLimit.low = low._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -123,7 +121,7 @@ set_twist_limit_low(const PhysxJointLimitDesc &low) {
 void PhysxSphericalJointDesc::
 set_twist_limit_high(const PhysxJointLimitDesc &high) {
 
-  _desc.twistLimit.high = high.desc();
+  _desc.twistLimit.high = high._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -134,7 +132,7 @@ set_twist_limit_high(const PhysxJointLimitDesc &high) {
 void PhysxSphericalJointDesc::
 set_swing_limit(const PhysxJointLimitDesc &limit) {
 
-  _desc.swingLimit = limit.desc();
+  _desc.swingLimit = limit._desc;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -164,10 +162,12 @@ get_flag(PhysxSphericalJointFlag flag) const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxSpringDesc) PhysxSphericalJointDesc::
+PhysxSpringDesc PhysxSphericalJointDesc::
 get_twist_spring() const {
 
-  return new PhysxSpringDesc(_desc.twistSpring);
+  PhysxSpringDesc value;
+  value._desc = _desc.twistSpring;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -175,10 +175,12 @@ get_twist_spring() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxSpringDesc) PhysxSphericalJointDesc::
+PhysxSpringDesc PhysxSphericalJointDesc::
 get_swing_spring() const {
 
-  return new PhysxSpringDesc(_desc.swingSpring);
+  PhysxSpringDesc value;
+  value._desc = _desc.swingSpring;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -186,10 +188,12 @@ get_swing_spring() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxSpringDesc) PhysxSphericalJointDesc::
+PhysxSpringDesc PhysxSphericalJointDesc::
 get_joint_spring() const {
 
-  return new PhysxSpringDesc(_desc.jointSpring);
+  PhysxSpringDesc value;
+  value._desc = _desc.jointSpring;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -219,10 +223,12 @@ get_projection_mode() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitDesc) PhysxSphericalJointDesc::
+PhysxJointLimitDesc PhysxSphericalJointDesc::
 get_twist_limit_low() const {
 
-  return new PhysxJointLimitDesc(_desc.twistLimit.low);
+  PhysxJointLimitDesc value;
+  value._desc = _desc.twistLimit.low;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -230,10 +236,12 @@ get_twist_limit_low() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitDesc) PhysxSphericalJointDesc::
+PhysxJointLimitDesc PhysxSphericalJointDesc::
 get_twist_limit_high() const {
 
-  return new PhysxJointLimitDesc(_desc.twistLimit.high);
+  PhysxJointLimitDesc value;
+  value._desc = _desc.twistLimit.high;
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -241,9 +249,11 @@ get_twist_limit_high() const {
 //       Access: Published
 //  Description: Limits swing of twist axis.
 ////////////////////////////////////////////////////////////////////
-PT(PhysxJointLimitDesc) PhysxSphericalJointDesc::
+PhysxJointLimitDesc PhysxSphericalJointDesc::
 get_swing_limit() const {
 
-  return new PhysxJointLimitDesc(_desc.swingLimit);
+  PhysxJointLimitDesc value;
+  value._desc = _desc.swingLimit;
+  return value;
 }
 

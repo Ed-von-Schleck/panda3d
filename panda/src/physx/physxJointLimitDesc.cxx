@@ -14,8 +14,6 @@
 
 #include "physxJointLimitDesc.h"
 
-TypeHandle PhysxJointLimitDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxJointLimitDesc::set_value
 //       Access: Published

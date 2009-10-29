@@ -15,8 +15,6 @@
 #include "physxControllerDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxControllerDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxControllerDesc::set_pos
 //       Access: Published

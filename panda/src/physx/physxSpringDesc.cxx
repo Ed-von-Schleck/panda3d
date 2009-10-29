@@ -14,8 +14,6 @@
 
 #include "physxSpringDesc.h"
 
-TypeHandle PhysxSpringDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSpringDesc::set_spring
 //       Access: Published

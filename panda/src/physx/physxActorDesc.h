@@ -16,7 +16,6 @@
 #define PHYSXACTORDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 #include "lpoint3.h"
 #include "lmatrix.h"
 
@@ -30,7 +29,7 @@ class PhysxShapeDesc;
 //       Class : PhysxActorDesc
 // Description : Descriptor for PhysxActor.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxActorDesc : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxActorDesc {
 
 PUBLISHED:
   INLINE PhysxActorDesc();
@@ -52,34 +51,10 @@ PUBLISHED:
   float get_density() const;
   LPoint3f get_global_pos() const;
   LMatrix4f get_global_mat() const;
-  PT(PhysxBodyDesc) get_body() const;
+  PhysxBodyDesc get_body() const;
 
 public:
-  NxActorDesc *ptr() { return &_desc; };
-
-private:
   NxActorDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxActorDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxActorDesc.I"

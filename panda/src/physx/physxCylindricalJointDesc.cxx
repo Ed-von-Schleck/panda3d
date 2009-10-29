@@ -14,5 +14,3 @@
 
 #include "physxCylindricalJointDesc.h"
 
-TypeHandle PhysxCylindricalJointDesc::_type_handle;
-

@@ -14,5 +14,3 @@
 
 #include "physxPrismaticJointDesc.h"
 
-TypeHandle PhysxPrismaticJointDesc::_type_handle;
-

@@ -15,8 +15,6 @@
 #include "physxHeightFieldShapeDesc.h"
 #include "physxHeightField.h"
 
-TypeHandle PhysxHeightFieldShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxHeightFieldShapeDesc::set_to_default
 //       Access: Published

@@ -15,8 +15,6 @@
 #include "physxJointDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxJointDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxJointDesc::set_name
 //       Access: Published

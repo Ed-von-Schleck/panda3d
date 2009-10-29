@@ -83,44 +83,21 @@ PUBLISHED:
   PhysxD6JointMotion get_swing1_motion() const;
   PhysxD6JointMotion get_swing2_motion() const;
   PhysxD6JointMotion get_twist_motion() const;
-  PT(PhysxJointDriveDesc) get_x_drive() const;
-  PT(PhysxJointDriveDesc) get_y_drive() const;
-  PT(PhysxJointDriveDesc) get_z_drive() const;
-  PT(PhysxJointDriveDesc) get_swing_drive() const;
-  PT(PhysxJointDriveDesc) get_twist_drive() const;
-  PT(PhysxJointDriveDesc) get_slerp_drive() const;
-  PT(PhysxJointLimitSoftDesc) get_linear_limit() const;
-  PT(PhysxJointLimitSoftDesc) get_swing1_limit() const;
-  PT(PhysxJointLimitSoftDesc) get_swing2_limit() const;
-  PT(PhysxJointLimitSoftDesc) get_twist_limit_low() const;
-  PT(PhysxJointLimitSoftDesc) get_twist_limit_high() const;
+  PhysxJointDriveDesc get_x_drive() const;
+  PhysxJointDriveDesc get_y_drive() const;
+  PhysxJointDriveDesc get_z_drive() const;
+  PhysxJointDriveDesc get_swing_drive() const;
+  PhysxJointDriveDesc get_twist_drive() const;
+  PhysxJointDriveDesc get_slerp_drive() const;
+  PhysxJointLimitSoftDesc get_linear_limit() const;
+  PhysxJointLimitSoftDesc get_swing1_limit() const;
+  PhysxJointLimitSoftDesc get_swing2_limit() const;
+  PhysxJointLimitSoftDesc get_twist_limit_low() const;
+  PhysxJointLimitSoftDesc get_twist_limit_high() const;
 
 public:
   NxJointDesc *ptr() const { return (NxJointDesc *)&_desc; };
-
-private:
   NxD6JointDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    PhysxJointDesc::init_type();
-    register_type(_type_handle, "PhysxD6JointDesc", 
-                  PhysxJointDesc::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxD6JointDesc.I"

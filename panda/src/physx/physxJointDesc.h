@@ -16,7 +16,6 @@
 #define PHYSXJOINTDESC_H
 
 #include "pandabase.h"
-#include "typedReferenceCount.h"
 #include "lpoint3.h"
 #include "lvector3.h"
 
@@ -31,7 +30,7 @@ class PhysxActor;
 //       Class : PhysxJointDesc
 // Description : Abstract base class for joint descriptors.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxJointDesc : public TypedReferenceCount, public PhysxEnums {
+class EXPCL_PANDAPHYSX PhysxJointDesc : public PhysxEnums {
 
 PUBLISHED:
   virtual void set_to_default() = 0;
@@ -64,27 +63,6 @@ public:
 
 protected:
   INLINE PhysxJointDesc();
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxJointDesc", 
-                  TypedReferenceCount::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxJointDesc.I"

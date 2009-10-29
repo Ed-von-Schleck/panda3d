@@ -15,8 +15,6 @@
 #include "physxConvexShapeDesc.h"
 #include "physxConvexMesh.h"
 
-TypeHandle PhysxConvexShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxConvexShapeDesc::set_mesh
 //       Access: Published

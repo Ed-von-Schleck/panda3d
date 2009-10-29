@@ -14,8 +14,6 @@
 
 #include "physxCapsuleControllerDesc.h"
 
-TypeHandle PhysxCapsuleControllerDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsuleControllerDesc::set_radius
 //       Access: Published

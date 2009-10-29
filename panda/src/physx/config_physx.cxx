@@ -16,69 +16,35 @@
 #include "pandaSystem.h"
 
 #include "physxActor.h"
-#include "physxActorDesc.h"
-#include "physxBodyDesc.h"
 #include "physxBoxController.h"
-#include "physxBoxControllerDesc.h"
 #include "physxBoxShape.h"
-#include "physxBoxShapeDesc.h"
 #include "physxCapsuleController.h"
-#include "physxCapsuleControllerDesc.h"
 #include "physxCapsuleShape.h"
-#include "physxCapsuleShapeDesc.h"
 #include "physxController.h"
-#include "physxControllerDesc.h"
-#include "physxCylindricalJoint.h"
-#include "physxCylindricalJointDesc.h"
-#include "physxD6Joint.h"
-#include "physxD6JointDesc.h"
-#include "physxDebugGeomNode.h"
-#include "physxDistanceJoint.h"
-#include "physxDistanceJointDesc.h"
-#include "physxFixedJoint.h"
-#include "physxFixedJointDesc.h"
-#include "physxJoint.h"
-#include "physxJointDesc.h"
-#include "physxJointDriveDesc.h"
-#include "physxJointLimitDesc.h"
-#include "physxJointLimitSoftDesc.h"
-#include "physxMaterial.h"
-#include "physxMaterialDesc.h"
-#include "physxMotorDesc.h"
-#include "physxObject.h"
-#include "physxPlaneShape.h"
-#include "physxPlaneShapeDesc.h"
-#include "physxPointInPlaneJoint.h"
-#include "physxPointInPlaneJointDesc.h"
-#include "physxPointOnLineJoint.h"
-#include "physxPointOnLineJointDesc.h"
-#include "physxPrismaticJoint.h"
-#include "physxPrismaticJointDesc.h"
-#include "physxPulleyJoint.h"
-#include "physxPulleyJointDesc.h"
-#include "physxRevoluteJoint.h"
-#include "physxRevoluteJointDesc.h"
-#include "physxScene.h"
-#include "physxSceneDesc.h"
-#include "physxShape.h"
-#include "physxShapeDesc.h"
-#include "physxSphereShape.h"
-#include "physxSphereShapeDesc.h"
-#include "physxSphericalJoint.h"
-#include "physxSphericalJointDesc.h"
-#include "physxSpringDesc.h"
-
 #include "physxConvexMesh.h"
 #include "physxConvexShape.h"
-#include "physxConvexShapeDesc.h"
+#include "physxCylindricalJoint.h"
+#include "physxD6Joint.h"
+#include "physxDebugGeomNode.h"
+#include "physxDistanceJoint.h"
+#include "physxFixedJoint.h"
+#include "physxHeightField.h"
+#include "physxHeightFieldShape.h"
+#include "physxJoint.h"
+#include "physxMaterial.h"
+#include "physxObject.h"
+#include "physxPlaneShape.h"
+#include "physxPointInPlaneJoint.h"
+#include "physxPointOnLineJoint.h"
+#include "physxPrismaticJoint.h"
+#include "physxPulleyJoint.h"
+#include "physxRevoluteJoint.h"
+#include "physxScene.h"
+#include "physxShape.h"
+#include "physxSphereShape.h"
+#include "physxSphericalJoint.h"
 #include "physxTriangleMesh.h"
 #include "physxTriangleMeshShape.h"
-#include "physxTriangleMeshShapeDesc.h"
-
-#include "physxHeightField.h"
-#include "physxHeightFieldDesc.h"
-#include "physxHeightFieldShape.h"
-#include "physxHeightFieldShapeDesc.h"
 
 ConfigureDef(config_physx);
 NotifyCategoryDef(physx, "");
@@ -126,69 +92,35 @@ init_libphysx() {
   initialized = true;
 
   PhysxActor::init_type();
-  PhysxActorDesc::init_type();
-  PhysxBodyDesc::init_type();
   PhysxBoxController::init_type();
-  PhysxBoxControllerDesc::init_type();
   PhysxBoxShape::init_type();
-  PhysxBoxShapeDesc::init_type();
   PhysxCapsuleController::init_type();
-  PhysxCapsuleControllerDesc::init_type();
   PhysxCapsuleShape::init_type();
-  PhysxCapsuleShapeDesc::init_type();
   PhysxController::init_type();
-  PhysxControllerDesc::init_type();
-  PhysxCylindricalJoint::init_type();
-  PhysxCylindricalJointDesc::init_type();
-  PhysxD6Joint::init_type();
-  PhysxD6JointDesc::init_type();
-  PhysxDebugGeomNode::init_type();
-  PhysxDistanceJoint::init_type();
-  PhysxDistanceJointDesc::init_type();
-  PhysxFixedJoint::init_type();
-  PhysxFixedJointDesc::init_type();
-  PhysxJoint::init_type();
-  PhysxJointDesc::init_type();
-  PhysxJointDriveDesc::init_type();
-  PhysxJointLimitDesc::init_type();
-  PhysxJointLimitSoftDesc::init_type();
-  PhysxMaterial::init_type();
-  PhysxMaterialDesc::init_type();
-  PhysxMotorDesc::init_type();
-  PhysxObject::init_type();
-  PhysxPlaneShape::init_type();
-  PhysxPlaneShapeDesc::init_type();
-  PhysxPointInPlaneJoint::init_type();
-  PhysxPointInPlaneJointDesc::init_type();
-  PhysxPointOnLineJoint::init_type();
-  PhysxPointOnLineJointDesc::init_type();
-  PhysxPrismaticJoint::init_type();
-  PhysxPrismaticJointDesc::init_type();
-  PhysxPulleyJoint::init_type();
-  PhysxPulleyJointDesc::init_type();
-  PhysxRevoluteJoint::init_type();
-  PhysxRevoluteJointDesc::init_type();
-  PhysxScene::init_type();
-  PhysxSceneDesc::init_type();
-  PhysxShape::init_type();
-  PhysxShapeDesc::init_type();
-  PhysxSphereShape::init_type();
-  PhysxSphereShapeDesc::init_type();
-  PhysxSphericalJoint::init_type();
-  PhysxSphericalJointDesc::init_type();
-  PhysxSpringDesc::init_type();
-
   PhysxConvexMesh::init_type();
   PhysxConvexShape::init_type();
-  PhysxConvexShapeDesc::init_type();
+  PhysxCylindricalJoint::init_type();
+  PhysxD6Joint::init_type();
+  PhysxDebugGeomNode::init_type();
+  PhysxDistanceJoint::init_type();
+  PhysxFixedJoint::init_type();
+  PhysxHeightField::init_type();
+  PhysxHeightFieldShape::init_type();
+  PhysxJoint::init_type();
+  PhysxMaterial::init_type();
+  PhysxObject::init_type();
+  PhysxPlaneShape::init_type();
+  PhysxPointInPlaneJoint::init_type();
+  PhysxPointOnLineJoint::init_type();
+  PhysxPrismaticJoint::init_type();
+  PhysxPulleyJoint::init_type();
+  PhysxRevoluteJoint::init_type();
+  PhysxScene::init_type();
+  PhysxShape::init_type();
+  PhysxSphereShape::init_type();
+  PhysxSphericalJoint::init_type();
   PhysxTriangleMesh::init_type();
   PhysxTriangleMeshShape::init_type();
-  PhysxTriangleMeshShapeDesc::init_type();
-
-  PhysxHeightField::init_type();
-  PhysxHeightFieldDesc::init_type();
-  PhysxHeightFieldShape::init_type();
-  PhysxHeightFieldShapeDesc::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system("PhysX");

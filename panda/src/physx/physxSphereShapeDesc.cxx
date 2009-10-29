@@ -14,8 +14,6 @@
 
 #include "physxSphereShapeDesc.h"
 
-TypeHandle PhysxSphereShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphereShapeDesc::set_radius
 //       Access: Published

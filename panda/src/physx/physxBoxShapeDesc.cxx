@@ -15,8 +15,6 @@
 #include "physxBoxShapeDesc.h"
 #include "physxManager.h"
 
-TypeHandle PhysxBoxShapeDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBoxShapeDesc::set_dimensions
 //       Access: Published

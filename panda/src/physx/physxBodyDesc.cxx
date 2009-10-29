@@ -14,8 +14,6 @@
 
 #include "physxBodyDesc.h"
 
-TypeHandle PhysxBodyDesc::_type_handle;
-
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBodyDesc::set_mass
 //       Access: Published

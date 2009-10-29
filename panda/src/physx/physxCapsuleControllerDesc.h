@@ -16,6 +16,7 @@
 #define PHYSXCAPSULECONTROLLERDESC_H
 
 #include "pandabase.h"
+
 #include "physxControllerDesc.h"
 
 #include "NxCapsuleController.h"
@@ -41,30 +42,7 @@ PUBLISHED:
 
 public:
   NxControllerDesc *ptr() const { return (NxControllerDesc *)&_desc; };
-
-private:
   NxCapsuleControllerDesc _desc;
-
-////////////////////////////////////////////////////////////////////
-public:
-  static TypeHandle get_class_type() {
-    return _type_handle;
-  }
-  static void init_type() {
-    PhysxControllerDesc::init_type();
-    register_type(_type_handle, "PhysxCapsuleControllerDesc", 
-                  PhysxControllerDesc::get_class_type());
-  }
-  virtual TypeHandle get_type() const {
-    return get_class_type();
-  }
-  virtual TypeHandle force_init_type() {
-    init_type();
-    return get_class_type();
-  }
-
-private:
-  static TypeHandle _type_handle;
 };
 
 #include "physxCapsuleControllerDesc.I"

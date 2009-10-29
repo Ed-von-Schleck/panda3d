@@ -170,7 +170,7 @@ void PhysxRevoluteJoint::
 set_spring(const PhysxSpringDesc &spring) {
 
   nassertv(_error_type == ET_ok);
-  _ptr->setSpring(spring.desc());
+  _ptr->setSpring(spring._desc);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -208,7 +208,7 @@ void PhysxRevoluteJoint::
 set_motor(const PhysxMotorDesc &motor) {
 
   nassertv(_error_type == ET_ok);
-  _ptr->setMotor(motor.desc());
+  _ptr->setMotor(motor._desc);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -247,8 +247,8 @@ set_limits(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high) {
   nassertv(_error_type == ET_ok);
 
   NxJointLimitPairDesc limits;
-  limits.low = low.desc();
-  limits.high = high.desc();
+  limits.low = low._desc;
+  limits.high = high._desc;
   _ptr->setLimits(limits);
 }
 
@@ -257,14 +257,14 @@ set_limits(const PhysxJointLimitDesc &low, const PhysxJointLimitDesc &high) {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxMotorDesc) PhysxRevoluteJoint::
+PhysxMotorDesc PhysxRevoluteJoint::
 get_motor() const {
 
   nassertr(_error_type == ET_ok, NULL);
 
-  NxMotorDesc desc;
-  _ptr->getMotor(desc);  
-  return new PhysxMotorDesc(desc);
+  PhysxMotorDesc value;
+  _ptr->getMotor(value._desc);  
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -272,13 +272,13 @@ get_motor() const {
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-PT(PhysxSpringDesc) PhysxRevoluteJoint::
+PhysxSpringDesc PhysxRevoluteJoint::
 get_spring() const {
 
   nassertr(_error_type == ET_ok, NULL);
 
-  NxSpringDesc desc;
-  _ptr->getSpring(desc);  
-  return new PhysxSpringDesc(desc);
+  PhysxSpringDesc value;
+  _ptr->getSpring(value._desc);  
+  return value;
 }
 

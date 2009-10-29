@@ -37,17 +37,6 @@ PhysxJointDriveDesc(float spring, float damping, float forceLimit) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxJointDriveDesc::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE PhysxJointDriveDesc::
-PhysxJointDriveDesc(const NxJointDriveDesc &desc) {
-
-  _desc = desc;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxJointDriveDesc::Destructor
 //       Access: Published
 //  Description:
@@ -55,16 +44,5 @@ PhysxJointDriveDesc(const NxJointDriveDesc &desc) {
 INLINE PhysxJointDriveDesc::
 ~PhysxJointDriveDesc() {
 
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxJointDriveDesc::get_desc
-//       Access: Public
-//  Description: 
-////////////////////////////////////////////////////////////////////
-INLINE NxJointDriveDesc PhysxJointDriveDesc::
-desc() const {
-
-  return _desc;
 }
 
