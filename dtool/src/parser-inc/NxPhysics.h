@@ -138,4 +138,11 @@ class NxMat33;
 class NxMat34;
 class NxQuat;
 
+class NxBox;
+class NxSphere;
+class NxSegment;
+class NxCapsule;
+class NxPlane;
+class NxUtilLib;
+
 #endif  // NXPHYSICS_H
