@@ -1,5 +1,5 @@
-// Filename: physxRaycastHit.I
-// Created by:  enn0x (21Oct09)
+// Filename: physxCapsule.I
+// Created by:  enn0x (31Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -14,23 +14,33 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Constructor
+//     Function: PhysxCapsule::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-PhysxRaycastHit(const NxRaycastHit hit) {
+INLINE PhysxCapsule::
+PhysxCapsule() {
 
-  _hit = hit;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Destructor
+//     Function: PhysxCapsule::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-~PhysxRaycastHit() {
+INLINE PhysxCapsule::
+PhysxCapsule(const PhysxSegment &segment, float radius) {
+
+  _capsule = NxCapsule(segment._segment, radius);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxCapsule::Destructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PhysxCapsule::
+~PhysxCapsule() {
 
 }
 

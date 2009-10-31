@@ -1,5 +1,5 @@
-// Filename: physxRaycastHit.I
-// Created by:  enn0x (21Oct09)
+// Filename: physxSphere.I
+// Created by:  enn0x (31Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -14,23 +14,33 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Constructor
+//     Function: PhysxSphere::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-PhysxRaycastHit(const NxRaycastHit hit) {
+INLINE PhysxSphere::
+PhysxSphere() {
 
-  _hit = hit;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Destructor
+//     Function: PhysxSphere::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-~PhysxRaycastHit() {
+INLINE PhysxSphere::
+PhysxSphere(const PhysxSphere &sphere) {
+
+  _sphere = sphere._sphere;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSphere::Destructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PhysxSphere::
+~PhysxSphere() {
 
 }
 

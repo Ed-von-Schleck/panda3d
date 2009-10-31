@@ -1,5 +1,5 @@
-// Filename: physxRaycastHit.I
-// Created by:  enn0x (21Oct09)
+// Filename: physxBox.I
+// Created by:  enn0x (31Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -14,23 +14,22 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Constructor
+//     Function: PhysxBox::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-PhysxRaycastHit(const NxRaycastHit hit) {
+INLINE PhysxBox::
+PhysxBox() {
 
-  _hit = hit;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Destructor
+//     Function: PhysxBox::Destructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-~PhysxRaycastHit() {
+INLINE PhysxBox::
+~PhysxBox() {
 
 }
 

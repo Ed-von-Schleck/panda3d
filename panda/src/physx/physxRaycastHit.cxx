@@ -1,4 +1,4 @@
-// Filename: physRaycastHit.cxx
+// Filename: physxRaycastHit.cxx
 // Created by:  enn0x (21Oct09)
 //
 ////////////////////////////////////////////////////////////////////

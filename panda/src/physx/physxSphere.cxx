@@ -1,0 +1,117 @@
+// Filename: physxSphere.cxx
+// Created by:  enn0x (31Oct09)
+//
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
+//
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
+//
+////////////////////////////////////////////////////////////////////
+
+#include "physxSphere.h"
+#include "physxManager.h"
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::is_valid
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxSphere::
+is_valid() const {
+
+  return _sphere.IsValid();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::contains
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxSphere::
+contains(const LPoint3f &p) const {
+
+  return _sphere.Contains(PhysxManager::vec3_to_nxVec3(p));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::contains
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxSphere::
+contains(const PhysxSphere &sphere) const {
+
+  return _sphere.Contains(sphere._sphere);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::contains
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxSphere::
+contains(const LPoint3f &min, const LPoint3f &max) const {
+
+  return _sphere.Contains(PhysxManager::vec3_to_nxVec3(min), 
+                          PhysxManager::vec3_to_nxVec3(max));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::intersect
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+bool PhysxSphere::
+intersect(const PhysxSphere &sphere) const {
+
+  return _sphere.Intersect(sphere._sphere);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::get_center
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+LPoint3f PhysxSphere::
+get_center() const {
+
+  return PhysxManager::nxVec3_to_vec3(_sphere.center);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::set_center
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxSphere::
+set_center(LPoint3f center) {
+
+  _sphere.center = PhysxManager::vec3_to_nxVec3(center);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::get_radius
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+float PhysxSphere::
+get_radius() const {
+
+  return _sphere.radius;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphere::set_radius
+//       Access : Published
+//  Description :
+////////////////////////////////////////////////////////////////////
+void PhysxSphere::
+set_radius(float radius) {
+
+  _sphere.radius = radius;
+}
+

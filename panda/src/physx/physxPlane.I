@@ -1,5 +1,5 @@
-// Filename: physxRaycastHit.I
-// Created by:  enn0x (21Oct09)
+// Filename: physxPlane.I
+// Created by:  enn0x (31Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -14,23 +14,33 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Constructor
+//     Function: PhysxPlane::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-PhysxRaycastHit(const NxRaycastHit hit) {
+INLINE PhysxPlane::
+PhysxPlane() {
 
-  _hit = hit;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Destructor
+//     Function: PhysxPlane::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-~PhysxRaycastHit() {
+INLINE PhysxPlane::
+PhysxPlane(const PhysxPlane &plane) {
+
+  _plane = plane._plane;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxPlane::Destructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PhysxPlane::
+~PhysxPlane() {
 
 }
 

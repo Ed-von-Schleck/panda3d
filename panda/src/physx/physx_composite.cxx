@@ -80,3 +80,9 @@
 #include "physxTriangleMeshShape.cxx"
 #include "physxTriangleMeshShapeDesc.cxx"
 #include "physxTriggerReport.cxx"
+
+#include "physxBox.cxx"
+#include "physxSphere.cxx"
+#include "physxPlane.cxx"
+#include "physxSegment.cxx"
+#include "physxCapsule.cxx"

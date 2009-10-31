@@ -1,5 +1,5 @@
-// Filename: physxRaycastHit.I
-// Created by:  enn0x (21Oct09)
+// Filename: physxSegment.I
+// Created by:  enn0x (31Oct09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -14,23 +14,33 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Constructor
+//     Function: PhysxSegment::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-PhysxRaycastHit(const NxRaycastHit hit) {
+INLINE PhysxSegment::
+PhysxSegment() {
 
-  _hit = hit;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxRaycastHit::Destructor
+//     Function: PhysxSegment::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxRaycastHit::
-~PhysxRaycastHit() {
+INLINE PhysxSegment::
+PhysxSegment(const PhysxSegment &segment) {
+
+  _segment = segment._segment;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSegment::Destructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PhysxSegment::
+~PhysxSegment() {
 
 }
 
