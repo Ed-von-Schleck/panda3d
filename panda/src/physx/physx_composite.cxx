@@ -86,3 +86,4 @@
 #include "physxPlane.cxx"
 #include "physxSegment.cxx"
 #include "physxCapsule.cxx"
+#include "physxBounds3.cxx"
