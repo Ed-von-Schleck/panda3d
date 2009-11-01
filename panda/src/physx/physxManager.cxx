@@ -16,11 +16,12 @@
 #include "physxScene.h"
 #include "physxSceneDesc.h"
 
+PhysxManager *PhysxManager::_global_ptr;
 PhysxManager::PhysxOutputStream PhysxManager::_outputStream;
 
 ////////////////////////////////////////////////////////////////////
 //     Function : PhysxManager
-//       Access : Published
+//       Access : Protected
 //  Description : 
 ////////////////////////////////////////////////////////////////////
 PhysxManager::
@@ -74,7 +75,7 @@ PhysxManager() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function : ~PhysxManager
-//       Access : Published
+//       Access : Public
 //  Description : 
 ////////////////////////////////////////////////////////////////////
 PhysxManager::
@@ -90,6 +91,22 @@ PhysxManager::
 
   // Release PhysX SDK
   NxReleasePhysicsSDK(_sdk);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_global_ptr
+//       Access: Published
+//  Description: Returns a pointer to the global PhysxManager
+//               object.
+////////////////////////////////////////////////////////////////////
+PhysxManager *PhysxManager::
+get_global_ptr() {
+
+  if (_global_ptr == (PhysxManager *)NULL) {
+    _global_ptr = new PhysxManager;
+  }
+
+  return _global_ptr;
 }
 
 ////////////////////////////////////////////////////////////////////

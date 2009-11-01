@@ -38,9 +38,14 @@ class PhysxHeightFieldDesc;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxManager : public PhysxEnums {
 
-PUBLISHED:
+protected:
   PhysxManager();
+
+public:
   ~PhysxManager();
+
+PUBLISHED:
+  static PhysxManager *get_global_ptr();
 
   void set_parameter(PhysxParameter param, float value);
   float get_parameter(PhysxParameter param);
@@ -58,6 +63,8 @@ PUBLISHED:
   MAKE_SEQ(get_height_fields, get_num_height_fields, get_height_field);
 
 public:
+  INLINE NxPhysicsSDK *get_sdk() const;
+
   INLINE static NxVec3 vec3_to_nxVec3(const LVector3f &v);
   INLINE static LVector3f nxVec3_to_vec3(const NxVec3 &v);
   INLINE static NxExtendedVec3 vec3_to_nxExtVec3(const LVector3f &v);
@@ -75,6 +82,8 @@ public:
 
 private:
   NxPhysicsSDK *_sdk;
+
+  static PhysxManager *_global_ptr;
 
   class PhysxOutputStream : public NxUserOutputStream {
     void reportError(NxErrorCode code, const char *message, const char *file, int line);
