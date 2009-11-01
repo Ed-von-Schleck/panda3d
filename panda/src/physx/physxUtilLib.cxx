@@ -274,12 +274,216 @@ box_contains_point(const PhysxBox &box, const LPoint3f &p) {
   return _ptr->NxBoxContainsPoint(box._box, PhysxManager::point3_to_nxVec3(p));
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::int_ceil
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+int PhysxUtilLib::
+int_ceil(const float &f) {
 
+  return _ptr->NxIntCeil(f);
+}
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::int_chop
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+int PhysxUtilLib::
+int_chop(const float &f) {
 
+  return _ptr->NxIntChop(f);
+}
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::int_floor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+int PhysxUtilLib::
+int_floor(const float &f) {
 
+  return _ptr->NxIntFloor(f);
+}
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_aabb_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+ray_aabb_intersect(const LPoint3f &min, const LPoint3f &max, const LPoint3f &origin, const LVector3f &dir, LPoint3f &coord) {
+
+  nassertr_always(!min.is_nan(), false);
+  nassertr_always(!max.is_nan(), false);
+  nassertr_always(!origin.is_nan(), false);
+  nassertr_always(!dir.is_nan(), false);
+  nassertr_always(!coord.is_nan(), false);
+
+  return _ptr->NxRayAABBIntersect(PhysxManager::point3_to_nxVec3(min),
+                                  PhysxManager::point3_to_nxVec3(max),
+                                  PhysxManager::point3_to_nxVec3(origin),
+                                  PhysxManager::vec3_to_nxVec3(dir),
+                                  PhysxManager::point3_to_nxVec3(coord));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_aabb_intersect2
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxUtilLib::
+ray_aabb_intersect2(const LPoint3f &min, const LPoint3f &max, const LPoint3f &origin, const LVector3f &dir, LPoint3f &coord, float &t) {
+
+  nassertr_always(!min.is_nan(), false);
+  nassertr_always(!max.is_nan(), false);
+  nassertr_always(!origin.is_nan(), false);
+  nassertr_always(!dir.is_nan(), false);
+  nassertr_always(!coord.is_nan(), false);
+
+  return _ptr->NxRayAABBIntersect2(PhysxManager::point3_to_nxVec3(min),
+                                   PhysxManager::point3_to_nxVec3(max),
+                                   PhysxManager::point3_to_nxVec3(origin),
+                                   PhysxManager::vec3_to_nxVec3(dir),
+                                   PhysxManager::point3_to_nxVec3(coord), t);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_obb_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+ray_obb_intersect(const PhysxRay &ray, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot) {
+
+  nassertr_always(!center.is_nan(), false);
+  nassertr_always(!extents.is_nan(), false);
+  nassertr_always(!rot.is_nan(), false);
+
+  return _ptr->NxRayOBBIntersect(ray._ray,
+                                 PhysxManager::point3_to_nxVec3(center),
+                                 PhysxManager::point3_to_nxVec3(extents),
+                                 PhysxManager::mat3_to_nxMat33(rot));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_plane_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+ray_plane_intersect(const PhysxRay &ray, const PhysxPlane &plane, float &dist, LPoint3f &point_on_plane) {
+
+  nassertr_always(!point_on_plane.is_nan(), false);
+
+  return _ptr->NxRayPlaneIntersect(ray._ray, plane._plane, dist,
+                                   PhysxManager::point3_to_nxVec3(point_on_plane));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_sphere_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+ray_sphere_intersect(const LPoint3f &origin, const LVector3f &dir, float length, const LPoint3f &center, float radius, float &hit_time, LPoint3f &hit_pos) {
+
+  nassertr_always(!origin.is_nan(), false);
+  nassertr_always(!dir.is_nan(), false);
+  nassertr_always(!center.is_nan(), false);
+  nassertr_always(!hit_pos.is_nan(), false);
+
+  return _ptr->NxRaySphereIntersect(PhysxManager::point3_to_nxVec3(origin),
+                                    PhysxManager::vec3_to_nxVec3(dir),
+                                    length,
+                                    PhysxManager::point3_to_nxVec3(center),
+                                    radius, hit_time,
+                                    PhysxManager::point3_to_nxVec3(hit_pos));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_tri_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+ray_tri_intersect(const LPoint3f &orig, const LVector3f &dir, const LPoint3f &vert0, const LPoint3f &vert1, const LPoint3f &vert2, float &t, float &u, float &v, bool cull) {
+
+  nassertr_always(!orig.is_nan(), false);
+  nassertr_always(!dir.is_nan(), false);
+  nassertr_always(!vert0.is_nan(), false);
+  nassertr_always(!vert1.is_nan(), false);
+  nassertr_always(!vert2.is_nan(), false);
+
+  return _ptr->NxRayTriIntersect(PhysxManager::point3_to_nxVec3(orig),
+                                 PhysxManager::vec3_to_nxVec3(dir),
+                                 PhysxManager::point3_to_nxVec3(vert0),
+                                 PhysxManager::point3_to_nxVec3(vert1),
+                                 PhysxManager::point3_to_nxVec3(vert2),
+                                 t, u, v, cull);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::segment_aabb_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+segment_aabb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &min, const LPoint3f &max) {
+
+  nassertr_always(!p0.is_nan(), false);
+  nassertr_always(!p1.is_nan(), false);
+  nassertr_always(!min.is_nan(), false);
+  nassertr_always(!max.is_nan(), false);
+
+  return _ptr->NxSegmentAABBIntersect(PhysxManager::point3_to_nxVec3(p0),
+                                      PhysxManager::point3_to_nxVec3(p1),
+                                      PhysxManager::point3_to_nxVec3(min),
+                                      PhysxManager::point3_to_nxVec3(max));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::segment_box_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+segment_box_intersect(const LPoint3f &p1, const LPoint3f &p2, const LPoint3f &bbox_min, const LPoint3f &bbox_max, LPoint3f &intercept) {
+
+  nassertr_always(!p1.is_nan(), false);
+  nassertr_always(!p2.is_nan(), false);
+  nassertr_always(!bbox_min.is_nan(), false);
+  nassertr_always(!bbox_max.is_nan(), false);
+  nassertr_always(!intercept.is_nan(), false);
+
+  return _ptr->NxSegmentBoxIntersect(PhysxManager::point3_to_nxVec3(p1),
+                                     PhysxManager::point3_to_nxVec3(p2),
+                                     PhysxManager::point3_to_nxVec3(bbox_min),
+                                     PhysxManager::point3_to_nxVec3(bbox_max),
+                                     PhysxManager::point3_to_nxVec3(intercept));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::segment_obb_intersect
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+segment_obb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot) {
+
+  nassertr_always(!p0.is_nan(), false);
+  nassertr_always(!p1.is_nan(), false);
+  nassertr_always(!center.is_nan(), false);
+  nassertr_always(!extents.is_nan(), false);
+  nassertr_always(!rot.is_nan(), false);
+
+  return _ptr->NxSegmentOBBIntersect(PhysxManager::point3_to_nxVec3(p0),
+                                     PhysxManager::point3_to_nxVec3(p1),
+                                     PhysxManager::point3_to_nxVec3(center),
+                                     PhysxManager::vec3_to_nxVec3(extents),
+                                     PhysxManager::mat3_to_nxMat33(rot));
+}
 
 
 
@@ -665,39 +869,6 @@ get_box_triangles() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::int_ceil
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-int PhysxUtilLib::
-int_ceil(const float &f) {
-
-  return _ptr->NxIntCeil(f);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::int_chop
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-int PhysxUtilLib::
-int_chop(const float &f) {
-
-  return _ptr->NxIntChop(f);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::int_floor
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-int PhysxUtilLib::
-int_floor(const float &f) {
-
-  return _ptr->NxIntFloor(f);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::is_box_a_inside_box_b
 //       Access: Published
 //  Description:
@@ -750,105 +921,6 @@ void PhysxUtilLib::
 normal_to_tangents(const LVecBase3f &n, LVecBase3f &t1, LVecBase3f &t2) {
 
   _ptr->NxNormalToTangents(PhysxManager::lVecBase3_to_nxVec3(n), PhysxManager::lVecBase3_to_nxVec3(t1), PhysxManager::lVecBase3_to_nxVec3(t2));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::ray_aabb_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-ray_aabb_intersect(const LVecBase3f &min, const LVecBase3f &max, const LVecBase3f &origin, const LVecBase3f &dir, LVecBase3f &coord) {
-
-  return _ptr->NxRayAABBIntersect(PhysxManager::lVecBase3_to_nxVec3(min), PhysxManager::lVecBase3_to_nxVec3(max), PhysxManager::lVecBase3_to_nxVec3(origin), PhysxManager::lVecBase3_to_nxVec3(dir), PhysxManager::lVecBase3_to_nxVec3(coord));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::ray_aabb_intersect2
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-unsigned int PhysxUtilLib::
-ray_aabb_intersect2(const LVecBase3f &min, const LVecBase3f &max, const LVecBase3f &origin, const LVecBase3f &dir, LVecBase3f &coord, float &t) {
-
-  return _ptr->NxRayAABBIntersect2(PhysxManager::lVecBase3_to_nxVec3(min), PhysxManager::lVecBase3_to_nxVec3(max), PhysxManager::lVecBase3_to_nxVec3(origin), PhysxManager::lVecBase3_to_nxVec3(dir), PhysxManager::lVecBase3_to_nxVec3(coord), t);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::ray_obb_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-ray_obb_intersect(const PhysxRay &ray, const LVecBase3f &center, const LVecBase3f &extents, const LMatrix3f &rot) {
-
-  return _ptr->NxRayOBBIntersect(*(ray.nRay), PhysxManager::lVecBase3_to_nxVec3(center), PhysxManager::lVecBase3_to_nxVec3(extents), PhysxManager::lMatrix3_to_nxMat33(rot));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::ray_plane_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-ray_plane_intersect(const PhysxRay &ray, const PhysxPlane &plane, float &dist, LVecBase3f &point_on_plane) {
-
-  return _ptr->NxRayPlaneIntersect(*(ray.nRay), *(plane.nPlane), dist, PhysxManager::lVecBase3_to_nxVec3(point_on_plane));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::ray_sphere_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-ray_sphere_intersect(const LVecBase3f &origin, const LVecBase3f &dir, float length, const LVecBase3f &center, float radius, float &hit_time, LVecBase3f &hit_pos) {
-
-  return _ptr->NxRaySphereIntersect(PhysxManager::lVecBase3_to_nxVec3(origin), PhysxManager::lVecBase3_to_nxVec3(dir), length, PhysxManager::lVecBase3_to_nxVec3(center), radius, hit_time, PhysxManager::lVecBase3_to_nxVec3(hit_pos));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::ray_tri_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-ray_tri_intersect(const LVecBase3f &orig, const LVecBase3f &dir, const LVecBase3f &vert0, const LVecBase3f &vert1, const LVecBase3f &vert2, float &t, float &u, float &v, bool cull) {
-
-  return _ptr->NxRayTriIntersect(PhysxManager::lVecBase3_to_nxVec3(orig), PhysxManager::lVecBase3_to_nxVec3(dir), PhysxManager::lVecBase3_to_nxVec3(vert0), PhysxManager::lVecBase3_to_nxVec3(vert1), PhysxManager::lVecBase3_to_nxVec3(vert2), t, u, v, cull);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::segment_aabb_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-segment_aabb_intersect(const LVecBase3f &p0, const LVecBase3f &p1, const LVecBase3f &min, const LVecBase3f &max) {
-
-  return _ptr->NxSegmentAABBIntersect(PhysxManager::lVecBase3_to_nxVec3(p0), PhysxManager::lVecBase3_to_nxVec3(p1), PhysxManager::lVecBase3_to_nxVec3(min), PhysxManager::lVecBase3_to_nxVec3(max));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::segment_box_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-segment_box_intersect(const LVecBase3f &p1, const LVecBase3f &p2, const LVecBase3f &bbox_min, const LVecBase3f &bbox_max, LVecBase3f &intercept) {
-
-  return _ptr->NxSegmentBoxIntersect(PhysxManager::lVecBase3_to_nxVec3(p1), PhysxManager::lVecBase3_to_nxVec3(p2), PhysxManager::lVecBase3_to_nxVec3(bbox_min), PhysxManager::lVecBase3_to_nxVec3(bbox_max), PhysxManager::lVecBase3_to_nxVec3(intercept));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::segment_obb_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-segment_obb_intersect(const LVecBase3f &p0, const LVecBase3f &p1, const LVecBase3f &center, const LVecBase3f &extents, const LMatrix3f &rot) {
-
-  return _ptr->NxSegmentOBBIntersect(PhysxManager::lVecBase3_to_nxVec3(p0), PhysxManager::lVecBase3_to_nxVec3(p1), PhysxManager::lVecBase3_to_nxVec3(center), PhysxManager::lVecBase3_to_nxVec3(extents), PhysxManager::lMatrix3_to_nxMat33(rot));
 }
 
 ////////////////////////////////////////////////////////////////////
