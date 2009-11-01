@@ -16,9 +16,9 @@
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriangleMeshDesc::set_num_vertices
-//       Access : Published
-//  Description :
+//     Function: PhysxTriangleMeshDesc::set_num_vertices
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriangleMeshDesc::
 set_num_vertices(unsigned int numVertices) {
@@ -34,9 +34,9 @@ set_num_vertices(unsigned int numVertices) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriangleMeshDesc::set_vertex
-//       Access : Published
-//  Description :
+//     Function: PhysxTriangleMeshDesc::set_vertex
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriangleMeshDesc::
 set_vertex(unsigned int idx, const LPoint3f &vert) {
@@ -46,9 +46,9 @@ set_vertex(unsigned int idx, const LPoint3f &vert) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriangleMeshDesc::set_num_triangles
-//       Access : Published
-//  Description :
+//     Function: PhysxTriangleMeshDesc::set_num_triangles
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriangleMeshDesc::
 set_num_triangles(unsigned int numTriangles) {
@@ -64,9 +64,9 @@ set_num_triangles(unsigned int numTriangles) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriangleMeshDesc::set_triangles
-//       Access : Published
-//  Description :
+//     Function: PhysxTriangleMeshDesc::set_triangles
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriangleMeshDesc::
 set_triangle(unsigned int idx, unsigned int i1, unsigned int i2, unsigned int i3) {
@@ -80,9 +80,9 @@ set_triangle(unsigned int idx, unsigned int i1, unsigned int i2, unsigned int i3
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriangleMeshDesc::get_desc
-//       Access : Public
-//  Description :
+//     Function: PhysxTriangleMeshDesc::get_desc
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const NxTriangleMeshDesc &PhysxTriangleMeshDesc::
 get_desc() const {

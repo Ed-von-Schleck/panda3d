@@ -14,9 +14,9 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::get_num_stats
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::get_num_stats
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE unsigned int PhysxSceneStats2::
 get_num_stats() const {
@@ -25,9 +25,9 @@ get_num_stats() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::get_cur_value
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::get_cur_value
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE int PhysxSceneStats2::
 get_cur_value(unsigned int index) const {
@@ -37,9 +37,9 @@ get_cur_value(unsigned int index) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::get_max_value
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::get_max_value
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE int PhysxSceneStats2::
 get_max_value(unsigned int index) const {
@@ -49,9 +49,9 @@ get_max_value(unsigned int index) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::get_name
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::get_name
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE const char * PhysxSceneStats2::
 get_name(unsigned int index) const {
@@ -61,9 +61,9 @@ get_name(unsigned int index) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::get_parent
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::get_parent
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE unsigned int PhysxSceneStats2::
 get_parent(unsigned int index) const {

@@ -50,9 +50,9 @@ prepare_filename(Filename &fn) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxMeshPool::load_convex_mesh
-//       Access : Published
-//  Description :
+//     Function: PhysxMeshPool::load_convex_mesh
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PT(PhysxConvexMesh) PhysxMeshPool::
 load_convex_mesh(const Filename &filename) {
@@ -90,9 +90,9 @@ load_convex_mesh(const Filename &filename) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxMeshPool::load_triangle_mesh
-//       Access : Published
-//  Description :
+//     Function: PhysxMeshPool::load_triangle_mesh
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PT(PhysxTriangleMesh) PhysxMeshPool::
 load_triangle_mesh(const Filename &filename) {

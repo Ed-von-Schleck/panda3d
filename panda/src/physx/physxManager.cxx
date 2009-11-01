@@ -20,9 +20,9 @@ PhysxManager *PhysxManager::_global_ptr;
 PhysxManager::PhysxOutputStream PhysxManager::_outputStream;
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxManager
-//       Access : Protected
-//  Description : 
+//     Function: PhysxManager::Constructor
+//       Access: Protected
+//  Description: 
 ////////////////////////////////////////////////////////////////////
 PhysxManager::
 PhysxManager() {
@@ -74,9 +74,9 @@ PhysxManager() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : ~PhysxManager
-//       Access : Public
-//  Description : 
+//     Function: PhysxManager::Destructor
+//       Access: Public
+//  Description: 
 ////////////////////////////////////////////////////////////////////
 PhysxManager::
 ~PhysxManager() {
@@ -121,9 +121,9 @@ get_num_scenes() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxManager::create_scene
-//       Access : Published
-//  Description :
+//     Function: PhysxManager::create_scene
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PT(PhysxScene) PhysxManager::
 create_scene(PhysxSceneDesc &desc) {
@@ -216,9 +216,9 @@ get_height_field(unsigned int idx) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxManager::is_hardware_available
-//       Access : Published
-//  Description :
+//     Function: PhysxManager::is_hardware_available
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxManager::
 is_hardware_available() {
@@ -227,9 +227,9 @@ is_hardware_available() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxManager::set_parameter
-//       Access : Published
-//  Description :
+//     Function: PhysxManager::set_parameter
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxManager::
 set_parameter(PhysxParameter param, float value) {
@@ -238,9 +238,9 @@ set_parameter(PhysxParameter param, float value) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxManager::get_parameter
-//       Access : Published
-//  Description :
+//     Function: PhysxManager::get_parameter
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxManager::
 get_parameter(PhysxParameter param) {
@@ -270,9 +270,9 @@ get_sdk_error_string(const NxSDKCreateError &error) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxOutputStream::reportError
-//       Access : Private
-//  Description : Reports an error code from the PhysX SDK.
+//     Function: PhysxOutputStream::reportError
+//       Access: Private
+//  Description: Reports an error code from the PhysX SDK.
 ////////////////////////////////////////////////////////////////////
 void PhysxManager::PhysxOutputStream::
 reportError(NxErrorCode code, const char *message, const char *file, int line) {
@@ -282,9 +282,9 @@ reportError(NxErrorCode code, const char *message, const char *file, int line) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxOutputStream::get_error_code_string
-//       Access : Private
-//  Description : Returns the NxSDKCreateError enum as string.
+//     Function: PhysxOutputStream::get_error_code_string
+//       Access: Private
+//  Description: Returns the NxSDKCreateError enum as string.
 ////////////////////////////////////////////////////////////////////
 const char *PhysxManager::PhysxOutputStream::
 get_error_code_string(NxErrorCode code) {
@@ -304,10 +304,9 @@ get_error_code_string(NxErrorCode code) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxOutputStream::reportAssertViolation
-//       Access : Private
-//  Description : Reports an assertion violation from the PhysX
-//                SDK.
+//     Function: PhysxOutputStream::reportAssertViolation
+//       Access: Private
+//  Description: Reports an assertion violation from the PhysX SDK.
 ////////////////////////////////////////////////////////////////////
 NxAssertResponse PhysxManager::PhysxOutputStream::
 reportAssertViolation(const char *message, const char *file, int line) {
@@ -318,9 +317,9 @@ reportAssertViolation(const char *message, const char *file, int line) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxOutputStream::print
-//       Access : Private
-//  Description : Prints some debug text from the PhysX SDK.
+//     Function: PhysxOutputStream::print
+//       Access: Private
+//  Description: Prints some debug text from the PhysX SDK.
 ////////////////////////////////////////////////////////////////////
 void PhysxManager::PhysxOutputStream::
 print(const char *message) {

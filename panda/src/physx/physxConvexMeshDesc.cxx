@@ -16,9 +16,9 @@
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxConvexMeshDesc::set_num_vertices
-//       Access : Published
-//  Description :
+//     Function: PhysxConvexMeshDesc::set_num_vertices
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxConvexMeshDesc::
 set_num_vertices(unsigned int numVertices) {
@@ -34,9 +34,9 @@ set_num_vertices(unsigned int numVertices) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxConvexMeshDesc::set_vertex
-//       Access : Published
-//  Description :
+//     Function: PhysxConvexMeshDesc::set_vertex
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxConvexMeshDesc::
 set_vertex(unsigned int idx, const LPoint3f &vert) {
@@ -46,9 +46,9 @@ set_vertex(unsigned int idx, const LPoint3f &vert) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxConvexMeshDesc::get_desc
-//       Access : Public
-//  Description :
+//     Function: PhysxConvexMeshDesc::get_desc
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const NxConvexMeshDesc &PhysxConvexMeshDesc::
 get_desc() const {

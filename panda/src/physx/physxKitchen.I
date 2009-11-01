@@ -14,9 +14,9 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxKitchen
-//       Access : Published
-//  Description : 
+//     Function: PhysxKitchen::Constructor
+//       Access: Published
+//  Description: 
 ////////////////////////////////////////////////////////////////////
 PhysxKitchen::
 PhysxKitchen() {
@@ -28,9 +28,9 @@ PhysxKitchen() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : ~PhysxKitchen
-//       Access : Published
-//  Description : 
+//     Function: PhysxKitchen::Destructor
+//       Access: Published
+//  Description: 
 ////////////////////////////////////////////////////////////////////
 PhysxKitchen::
 ~PhysxKitchen() {

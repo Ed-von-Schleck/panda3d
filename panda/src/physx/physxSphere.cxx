@@ -16,9 +16,9 @@
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::is_valid
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::is_valid
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 is_valid() const {
@@ -27,9 +27,9 @@ is_valid() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::contains
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::contains
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const LPoint3f &p) const {
@@ -38,9 +38,9 @@ contains(const LPoint3f &p) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::contains
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::contains
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const PhysxSphere &sphere) const {
@@ -49,9 +49,9 @@ contains(const PhysxSphere &sphere) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::contains
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::contains
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const LPoint3f &min, const LPoint3f &max) const {
@@ -61,9 +61,9 @@ contains(const LPoint3f &min, const LPoint3f &max) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::intersect
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::intersect
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 intersect(const PhysxSphere &sphere) const {
@@ -72,9 +72,9 @@ intersect(const PhysxSphere &sphere) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::get_center
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::get_center
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSphere::
 get_center() const {
@@ -83,9 +83,9 @@ get_center() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::set_center
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::set_center
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSphere::
 set_center(LPoint3f center) {
@@ -94,9 +94,9 @@ set_center(LPoint3f center) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::get_radius
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::get_radius
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxSphere::
 get_radius() const {
@@ -105,9 +105,9 @@ get_radius() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSphere::set_radius
-//       Access : Published
-//  Description :
+//     Function: PhysxSphere::set_radius
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSphere::
 set_radius(float radius) {

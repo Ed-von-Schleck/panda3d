@@ -262,9 +262,9 @@ get_num_actors() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::create_actor
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::create_actor
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PT(PhysxActor) PhysxScene::
 create_actor(PhysxActorDesc &desc) {
@@ -322,9 +322,9 @@ get_debug_geom_node() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::enable_contact_reporting
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::enable_contact_reporting
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxScene::
 enable_contact_reporting(bool enabled) {
@@ -342,9 +342,9 @@ enable_contact_reporting(bool enabled) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::is_contact_reporting_enabled
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::is_contact_reporting_enabled
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxScene::
 is_contact_reporting_enabled() const {
@@ -355,9 +355,9 @@ is_contact_reporting_enabled() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::enable_trigger_reporting
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::enable_trigger_reporting
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxScene::
 enable_trigger_reporting(bool enabled) {
@@ -375,9 +375,9 @@ enable_trigger_reporting(bool enabled) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::is_trigger_reporting_enabled
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::is_trigger_reporting_enabled
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxScene::
 is_trigger_reporting_enabled() const {
@@ -388,9 +388,9 @@ is_trigger_reporting_enabled() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::enable_controller_reporting
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::enable_controller_reporting
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxScene::
 enable_controller_reporting(bool enabled) {
@@ -406,9 +406,9 @@ enable_controller_reporting(bool enabled) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::is_controller_reporting_enabled
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::is_controller_reporting_enabled
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxScene::
 is_controller_reporting_enabled() const {
@@ -671,9 +671,9 @@ get_joint(unsigned int idx) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxScene::get_stats2
-//       Access : Published
-//  Description :
+//     Function: PhysxScene::get_stats2
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PhysxSceneStats2 PhysxScene::
 get_stats2() const {

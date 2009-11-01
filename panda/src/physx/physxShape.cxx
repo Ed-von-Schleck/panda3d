@@ -120,9 +120,9 @@ get_name() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxShape::set_flag
-//       Access : Published
-//  Description : Sets the specified shape flag.
+//     Function: PhysxShape::set_flag
+//       Access: Published
+//  Description: Sets the specified shape flag.
 //
 //                The shape may be turned into a trigger by setting
 //                one or more of the TriggerFlags to true. A trigger
@@ -144,9 +144,9 @@ set_flag(PhysxShapeFlag flag, bool value) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxShape::get_flag
-//       Access : Published
-//  Description : Returns the specified shape flag.
+//     Function: PhysxShape::get_flag
+//       Access: Published
+//  Description: Returns the specified shape flag.
 ////////////////////////////////////////////////////////////////////
 bool PhysxShape::
 get_flag(PhysxShapeFlag flag) const {

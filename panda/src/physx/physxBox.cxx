@@ -29,9 +29,9 @@ PhysxBox(const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot)
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::is_valid
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::is_valid
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxBox::
 is_valid() const {
@@ -40,9 +40,9 @@ is_valid() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::rotate
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::rotate
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 rotate(const LMatrix4f &m, PhysxBox &obb) const {
@@ -51,9 +51,9 @@ rotate(const LMatrix4f &m, PhysxBox &obb) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::set_empty
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::set_empty
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_empty() {
@@ -62,9 +62,9 @@ set_empty() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::get_center
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::get_center
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxBox::
 get_center() const {
@@ -73,9 +73,9 @@ get_center() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::get_extents
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::get_extents
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxBox::
 get_extents() const {
@@ -84,9 +84,9 @@ get_extents() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::get_rot
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::get_rot
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LMatrix3f PhysxBox::
 get_rot() const {
@@ -95,9 +95,9 @@ get_rot() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::set_center
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::set_center
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_center(LPoint3f center) {
@@ -106,9 +106,9 @@ set_center(LPoint3f center) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::set_extents
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::set_extents
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_extents(LVector3f extents) {
@@ -117,9 +117,9 @@ set_extents(LVector3f extents) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBox::set_rot
-//       Access : Published
-//  Description :
+//     Function: PhysxBox::set_rot
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_rot(LMatrix3f rot) {

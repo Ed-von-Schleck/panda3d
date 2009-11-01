@@ -1,5 +1,5 @@
-// Filename: physxMeshPool.I
-// Created by:  enn0x (14Oct09)
+// Filename: physxUtilLib.I
+// Created by:  enn0x (01Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -14,22 +14,24 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxMeshPool::Constructor
+//     Function: PhysxUtilLib::Constructor
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxMeshPool::
-PhysxMeshPool() {
+INLINE PhysxUtilLib::
+PhysxUtilLib() {
 
+  _ptr = NxGetUtilLib();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxMeshPool::Destructor
+//     Function: PhysxUtilLib::Destructor
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxMeshPool::
-~PhysxMeshPool() {
+INLINE PhysxUtilLib::
+~PhysxUtilLib() {
 
+  _ptr = NULL;
 }
 

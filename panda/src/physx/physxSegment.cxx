@@ -28,9 +28,9 @@ PhysxSegment(const LPoint3f &p0, const LPoint3f &p1) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::get_p0
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::get_p0
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSegment::
 get_p0() const {
@@ -39,9 +39,9 @@ get_p0() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::set_p0
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::set_p0
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_p0(LPoint3f p) {
@@ -50,9 +50,9 @@ set_p0(LPoint3f p) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::get_p1
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::get_p1
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSegment::
 get_p1() const {
@@ -61,9 +61,9 @@ get_p1() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::set_p1
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::set_p1
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_p1(LPoint3f p) {
@@ -72,9 +72,9 @@ set_p1(LPoint3f p) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::get_origin
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::get_origin
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSegment::
 get_origin() const {
@@ -83,9 +83,9 @@ get_origin() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::compute_direction
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::compute_direction
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 compute_direction(LPoint3f &dir) const {
@@ -94,9 +94,9 @@ compute_direction(LPoint3f &dir) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::compute_length
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::compute_length
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxSegment::
 compute_length() const {
@@ -105,9 +105,9 @@ compute_length() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::compute_point
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::compute_point
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 compute_point(LPoint3f &p, float t) const {
@@ -116,9 +116,9 @@ compute_point(LPoint3f &p, float t) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::compute_square_length
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::compute_square_length
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxSegment::
 compute_square_length() const {
@@ -127,9 +127,9 @@ compute_square_length() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSegment::set_origin_direction
-//       Access : Published
-//  Description :
+//     Function: PhysxSegment::set_origin_direction
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_origin_direction(const LPoint3f &origin, const LVector3f &direction) {

@@ -16,9 +16,9 @@
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::get_radius
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::get_radius
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxCapsule::
 get_radius() const {
@@ -27,9 +27,9 @@ get_radius() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::set_radius
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::set_radius
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_radius(float radius) {
@@ -38,9 +38,9 @@ set_radius(float radius) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::get_p0
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::get_p0
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxCapsule::
 get_p0() const {
@@ -49,9 +49,9 @@ get_p0() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::set_p0
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::set_p0
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_p0(LPoint3f p) {
@@ -60,9 +60,9 @@ set_p0(LPoint3f p) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::get_p1
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::get_p1
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxCapsule::
 get_p1() const {
@@ -71,9 +71,9 @@ get_p1() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::set_p1
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::set_p1
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_p1(LPoint3f p) {
@@ -82,9 +82,9 @@ set_p1(LPoint3f p) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::get_origin
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::get_origin
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxCapsule::
 get_origin() const {
@@ -93,9 +93,9 @@ get_origin() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::compute_direction
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::compute_direction
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 compute_direction(LPoint3f &dir) const {
@@ -104,9 +104,9 @@ compute_direction(LPoint3f &dir) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::compute_length
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::compute_length
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxCapsule::
 compute_length() const {
@@ -115,9 +115,9 @@ compute_length() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::compute_point
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::compute_point
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 compute_point(LPoint3f &p, float t) const {
@@ -126,9 +126,9 @@ compute_point(LPoint3f &p, float t) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::compute_square_length
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::compute_square_length
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxCapsule::
 compute_square_length() const {
@@ -137,9 +137,9 @@ compute_square_length() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxCapsule::set_origin_direction
-//       Access : Published
-//  Description :
+//     Function: PhysxCapsule::set_origin_direction
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_origin_direction(const LPoint3f &origin, const LVector3f &direction) {

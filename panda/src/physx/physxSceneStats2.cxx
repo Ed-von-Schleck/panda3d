@@ -15,9 +15,9 @@
 #include "physxSceneStats2.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::Constructor
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::Constructor
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PhysxSceneStats2::
 PhysxSceneStats2(const NxSceneStats2 *ptr) {
@@ -26,9 +26,9 @@ PhysxSceneStats2(const NxSceneStats2 *ptr) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxSceneStats2::Destructor
-//       Access : Published
-//  Description :
+//     Function: PhysxSceneStats2::Destructor
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PhysxSceneStats2::
 ~PhysxSceneStats2() {

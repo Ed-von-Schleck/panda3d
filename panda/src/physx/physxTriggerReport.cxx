@@ -21,9 +21,9 @@
 PStatCollector PhysxTriggerReport::_pcollector("App:PhysX:Trigger Reporting");
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriggerReport::enable
-//       Access : Public
-//  Description :
+//     Function: PhysxTriggerReport::enable
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriggerReport::
 enable() {
@@ -32,9 +32,9 @@ enable() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriggerReport::disable
-//       Access : Public
-//  Description :
+//     Function: PhysxTriggerReport::disable
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriggerReport::
 disable() {
@@ -43,9 +43,9 @@ disable() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriggerReport::is_enabled
-//       Access : Public
-//  Description :
+//     Function: PhysxTriggerReport::is_enabled
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxTriggerReport::
 is_enabled() const {
@@ -54,9 +54,9 @@ is_enabled() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxTriggerReport::onTrigger
-//       Access : Public
-//  Description :
+//     Function: PhysxTriggerReport::onTrigger
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxTriggerReport::
 onTrigger(NxShape &triggerShape, NxShape &otherShape, NxTriggerFlag status) {

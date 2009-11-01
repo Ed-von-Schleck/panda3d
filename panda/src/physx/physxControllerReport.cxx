@@ -17,9 +17,9 @@
 PStatCollector PhysxControllerReport::_pcollector("App:PhysX:Controller Reporting");
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxControllerReport::enable
-//       Access : Public
-//  Description :
+//     Function: PhysxControllerReport::enable
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxControllerReport::
 enable() {
@@ -28,9 +28,9 @@ enable() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxControllerReport::disable
-//       Access : Public
-//  Description :
+//     Function: PhysxControllerReport::disable
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxControllerReport::
 disable() {
@@ -39,9 +39,9 @@ disable() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxControllerReport::is_enabled
-//       Access : Public
-//  Description :
+//     Function: PhysxControllerReport::is_enabled
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxControllerReport::
 is_enabled() const {

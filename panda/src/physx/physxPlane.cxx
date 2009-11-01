@@ -16,9 +16,9 @@
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::distance
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::distance
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxPlane::
 distance(const LPoint3f &p) const {
@@ -27,9 +27,9 @@ distance(const LPoint3f &p) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::belongs
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::belongs
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxPlane::
 belongs(const LPoint3f &p) const {
@@ -38,9 +38,9 @@ belongs(const LPoint3f &p) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::point_in_plane
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::point_in_plane
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxPlane::
 point_in_plane() const {
@@ -49,9 +49,9 @@ point_in_plane() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::project
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::project
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxPlane::
 project(const LPoint3f &p) const {
@@ -60,9 +60,9 @@ project(const LPoint3f &p) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::inverse_transform
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::inverse_transform
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxPlane::
 inverse_transform(const LMatrix4f &transform, PhysxPlane &transformed) const {
@@ -71,9 +71,9 @@ inverse_transform(const LMatrix4f &transform, PhysxPlane &transformed) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::normalize
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::normalize
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxPlane::
 normalize() {
@@ -82,9 +82,9 @@ normalize() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::transform
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::transform
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxPlane::
 transform(const LMatrix4f &transform, PhysxPlane &transformed) const {
@@ -93,9 +93,9 @@ transform(const LMatrix4f &transform, PhysxPlane &transformed) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::get_d
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::get_d
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 float PhysxPlane::
 get_d() const {
@@ -104,9 +104,9 @@ get_d() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::set_d
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::set_d
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxPlane::
 set_d(float value) {
@@ -115,9 +115,9 @@ set_d(float value) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::get_normal
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::get_normal
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxPlane::
 get_normal() const {
@@ -126,9 +126,9 @@ get_normal() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::set_normal
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::set_normal
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxPlane::
 set_normal(LVector3f normal) {
@@ -137,9 +137,9 @@ set_normal(LVector3f normal) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::set
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::set
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PhysxPlane PhysxPlane::
 set(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &p2) {
@@ -152,9 +152,9 @@ set(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &p2) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxPlane::zero
-//       Access : Published
-//  Description :
+//     Function: PhysxPlane::zero
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 PhysxPlane PhysxPlane::
 zero() {

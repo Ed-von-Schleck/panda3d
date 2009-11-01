@@ -22,9 +22,9 @@
 PStatCollector PhysxContactReport::_pcollector("App:PhysX:Contact Reporting");
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxContactReport::enable
-//       Access : Public
-//  Description :
+//     Function: PhysxContactReport::enable
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxContactReport::
 enable() {
@@ -33,9 +33,9 @@ enable() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxContactReport::disable
-//       Access : Public
-//  Description :
+//     Function: PhysxContactReport::disable
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxContactReport::
 disable() {
@@ -44,9 +44,9 @@ disable() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxContactReport::is_enabled
-//       Access : Public
-//  Description :
+//     Function: PhysxContactReport::is_enabled
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxContactReport::
 is_enabled() const {
@@ -55,9 +55,9 @@ is_enabled() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxContactReport::onContactNotify
-//       Access : Public
-//  Description :
+//     Function: PhysxContactReport::onContactNotify
+//       Access: Public
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxContactReport::
 onContactNotify(NxContactPair &pair, NxU32 flags) {

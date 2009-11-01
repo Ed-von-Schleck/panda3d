@@ -44,9 +44,9 @@ unlink() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxD6Joint::set_drive_angular_velocity
-//       Access : Published
-//  Description :
+//     Function: PhysxD6Joint::set_drive_angular_velocity
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxD6Joint::
 set_drive_angular_velocity(const LVector3f &v) {
@@ -56,9 +56,9 @@ set_drive_angular_velocity(const LVector3f &v) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxD6Joint::set_drive_linear_velocity
-//       Access : Published
-//  Description :
+//     Function: PhysxD6Joint::set_drive_linear_velocity
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxD6Joint::
 set_drive_linear_velocity(const LVector3f &v) {
@@ -68,9 +68,9 @@ set_drive_linear_velocity(const LVector3f &v) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxD6Joint::set_drive_orientation
-//       Access : Published
-//  Description :
+//     Function: PhysxD6Joint::set_drive_orientation
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxD6Joint::
 set_drive_orientation(const LQuaternionf &quat) {
@@ -80,9 +80,9 @@ set_drive_orientation(const LQuaternionf &quat) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxD6Joint::set_drive_position
-//       Access : Published
-//  Description :
+//     Function: PhysxD6Joint::set_drive_position
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxD6Joint::
 set_drive_position(const LPoint3f &pos) {

@@ -16,9 +16,9 @@
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::get_max
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::get_max
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxBounds3::
 get_max() const {
@@ -27,9 +27,9 @@ get_max() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::get_min
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::get_min
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxBounds3::
 get_min() const {
@@ -38,9 +38,9 @@ get_min() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::set_max
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::set_max
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_max(LPoint3f value) {
@@ -49,9 +49,9 @@ set_max(LPoint3f value) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::set_min
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::set_min
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_min(LPoint3f value) {
@@ -60,9 +60,9 @@ set_min(LPoint3f value) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::bounds_of_obb
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::bounds_of_obb
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 bounds_of_obb(const LMatrix3f &orientation, const LPoint3f &translation, const LVector3f &half_dims) {
@@ -73,9 +73,9 @@ bounds_of_obb(const LMatrix3f &orientation, const LPoint3f &translation, const L
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::combine
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::combine
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 combine(const PhysxBounds3 &b2) {
@@ -84,9 +84,9 @@ combine(const PhysxBounds3 &b2) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::contain
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::contain
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 contain(const LPoint3f &p) const {
@@ -95,9 +95,9 @@ contain(const LPoint3f &p) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::fatten
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::fatten
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 fatten(float distance) {
@@ -106,9 +106,9 @@ fatten(float distance) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::get_dimensions
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::get_dimensions
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxBounds3::
 get_dimensions() const {
@@ -120,9 +120,9 @@ get_dimensions() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::include
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::include
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 include(const LPoint3f &p) {
@@ -131,9 +131,9 @@ include(const LPoint3f &p) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::intersects
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::intersects
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 intersects(const PhysxBounds3 &b) const {
@@ -142,9 +142,9 @@ intersects(const PhysxBounds3 &b) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::intersects2d
-//       Access : Published
-//  Description : Indicates whether the intersection of this and b
+//     Function: PhysxBounds3::intersects2d
+//       Access: Published
+//  Description: Indicates whether the intersection of this and b
 //                is empty or not in the plane orthogonal to the
 //                axis passed (X = 0, Y = 1 or Z = 2). 
 ////////////////////////////////////////////////////////////////////
@@ -155,9 +155,9 @@ intersects2d(const PhysxBounds3 &b, unsigned axis_to_ignore) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::is_empty
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::is_empty
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 is_empty() const {
@@ -166,9 +166,9 @@ is_empty() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::scale
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::scale
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 scale(float scale) {
@@ -177,9 +177,9 @@ scale(float scale) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::set
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::set
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set(const LPoint3f &min, const LPoint3f &max) {
@@ -189,9 +189,9 @@ set(const LPoint3f &min, const LPoint3f &max) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::set_center_extents
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::set_center_extents
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_center_extents(const LPoint3f &center, const LVector3f &extents) {
@@ -201,9 +201,9 @@ set_center_extents(const LPoint3f &center, const LVector3f &extents) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::set_empty
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::set_empty
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_empty() {
@@ -212,9 +212,9 @@ set_empty() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::set_infinite
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::set_infinite
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_infinite() {
@@ -223,9 +223,9 @@ set_infinite() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysxBounds3::transform
-//       Access : Published
-//  Description :
+//     Function: PhysxBounds3::transform
+//       Access: Published
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 transform(const LMatrix3f &orientation, const LPoint3f &translation) {
