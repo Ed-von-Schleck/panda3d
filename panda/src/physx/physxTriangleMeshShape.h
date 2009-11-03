@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxTriangleMeshShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxTriangleMeshShape
 // Description : A shapes which is used to represent an instance of
@@ -32,6 +34,8 @@ class EXPCL_PANDAPHYSX PhysxTriangleMeshShape : public PhysxShape {
 PUBLISHED:
   INLINE PhysxTriangleMeshShape();
   INLINE ~PhysxTriangleMeshShape();
+
+  void save_to_desc(PhysxTriangleMeshShapeDesc &shapeDesc) const;
 
 ////////////////////////////////////////////////////////////////////
 public:

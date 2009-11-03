@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxConvexShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxConvexShape
 // Description : A shapes which is used to represent an instance of
@@ -32,6 +34,8 @@ class EXPCL_PANDAPHYSX PhysxConvexShape : public PhysxShape {
 PUBLISHED:
   INLINE PhysxConvexShape();
   INLINE ~PhysxConvexShape();
+
+  void save_to_desc(PhysxConvexShapeDesc &shapeDesc) const;
 
 ////////////////////////////////////////////////////////////////////
 public:

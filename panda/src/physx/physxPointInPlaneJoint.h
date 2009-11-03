@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxPointInPlaneJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxPointInPlaneJoint
 // Description : A point in plane joint constrains a point on one
@@ -37,6 +39,9 @@ class EXPCL_PANDAPHYSX PhysxPointInPlaneJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxPointInPlaneJoint();
   INLINE ~PhysxPointInPlaneJoint();
+
+  void save_to_desc(PhysxPointInPlaneJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxPointInPlaneJointDesc &jointDesc);
 
 ////////////////////////////////////////////////////////////////////
 public:

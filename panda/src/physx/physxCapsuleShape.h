@@ -23,6 +23,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxCapsuleShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxCapsuleShape
 // Description : A capsule shaped collision detection primitive,
@@ -49,8 +51,11 @@ PUBLISHED:
   INLINE PhysxCapsuleShape();
   INLINE ~PhysxCapsuleShape();
 
+  void save_to_desc(PhysxCapsuleShapeDesc &shapeDesc) const;
+
   void set_radius(float radius);
   void set_height(float height);
+
   float get_radius() const;
   float get_height() const;
 

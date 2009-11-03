@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxPulleyJoint.h"
+#include "physxPulleyJointDesc.h"
 #include "physxMotorDesc.h"
 
 TypeHandle PhysxPulleyJoint::_type_handle;
@@ -42,6 +43,32 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxPulleyJoint::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the joint object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxPulleyJoint::
+save_to_desc(PhysxPulleyJointDesc &jointDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(jointDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysPulleyJoint::load_from_desc
+//       Access : Published
+//  Description : Loads the entire state of the joint from a 
+//                descriptor with a single call.
+////////////////////////////////////////////////////////////////////
+void PhysxPulleyJoint::
+load_from_desc(const PhysxPulleyJointDesc &jointDesc) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->loadFromDesc(jointDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

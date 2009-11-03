@@ -23,6 +23,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxBoxShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxBoxShape
 // Description : A box shaped collision detection primitive. Each
@@ -43,6 +45,8 @@ class EXPCL_PANDAPHYSX PhysxBoxShape : public PhysxShape {
 PUBLISHED:
   INLINE PhysxBoxShape();
   INLINE ~PhysxBoxShape();
+
+  void save_to_desc(PhysxBoxShapeDesc &shapeDesc) const;
 
   void set_dimensions(const LVector3f &dimensions);
   LVector3f get_dimensions() const;

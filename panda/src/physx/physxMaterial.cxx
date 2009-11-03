@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxMaterial.h"
+#include "physxMaterialDesc.h"
 #include "physxManager.h"
 
 TypeHandle PhysxMaterial::_type_handle;
@@ -91,6 +92,32 @@ get_material_index() const {
 
   nassertr(_error_type == ET_ok, 0);
   return _ptr->getMaterialIndex();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxMaterial::load_from_desc
+//       Access : Published
+//  Description : Loads the entire state of the material from a 
+//                descriptor with a single call.
+////////////////////////////////////////////////////////////////////
+void PhysxMaterial::
+load_from_desc(const PhysxMaterialDesc &materialDesc) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->loadFromDesc(materialDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxMaterial::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the material object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxMaterial::
+save_to_desc(PhysxMaterialDesc & materialDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(materialDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

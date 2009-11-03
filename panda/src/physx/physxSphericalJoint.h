@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxSphericalJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxSphericalJoint
 // Description : A sphere joint constrains two points on two bodies
@@ -35,6 +37,9 @@ class EXPCL_PANDAPHYSX PhysxSphericalJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxSphericalJoint();
   INLINE ~PhysxSphericalJoint();
+
+  void save_to_desc(PhysxSphericalJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxSphericalJointDesc &jointDesc);
 
   void set_flag(PhysxSphericalJointFlag flag, bool value);
   void set_projection_mode(PhysxProjectionMode mode);

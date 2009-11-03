@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxPointOnLineJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxPointOnLineJoint
 // Description : A point on line joint constrains a point on one
@@ -36,6 +38,9 @@ class EXPCL_PANDAPHYSX PhysxPointOnLineJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxPointOnLineJoint();
   INLINE ~PhysxPointOnLineJoint();
+
+  void save_to_desc(PhysxPointOnLineJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxPointOnLineJointDesc &jointDesc);
 
 ////////////////////////////////////////////////////////////////////
 public:

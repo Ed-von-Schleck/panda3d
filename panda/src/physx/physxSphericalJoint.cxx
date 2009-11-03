@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxSphericalJoint.h"
+#include "physxSphericalJointDesc.h"
 
 TypeHandle PhysxSphericalJoint::_type_handle;
 
@@ -41,6 +42,32 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphericalJoint::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the joint object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxSphericalJoint::
+save_to_desc(PhysxSphericalJointDesc &jointDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(jointDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysSphericalJoint::load_from_desc
+//       Access : Published
+//  Description : Loads the entire state of the joint from a 
+//                descriptor with a single call.
+////////////////////////////////////////////////////////////////////
+void PhysxSphericalJoint::
+load_from_desc(const PhysxSphericalJointDesc &jointDesc) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->loadFromDesc(jointDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

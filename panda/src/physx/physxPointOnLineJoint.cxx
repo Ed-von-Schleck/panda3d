@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxPointOnLineJoint.h"
+#include "physxPointOnLineJointDesc.h"
 
 TypeHandle PhysxPointOnLineJoint::_type_handle;
 
@@ -41,5 +42,31 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxPointOnLineJoint::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the joint object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxPointOnLineJoint::
+save_to_desc(PhysxPointOnLineJointDesc &jointDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(jointDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysPointOnLineJoint::load_from_desc
+//       Access : Published
+//  Description : Loads the entire state of the joint from a 
+//                descriptor with a single call.
+////////////////////////////////////////////////////////////////////
+void PhysxPointOnLineJoint::
+load_from_desc(const PhysxPointOnLineJointDesc &jointDesc) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->loadFromDesc(jointDesc._desc);
 }
 

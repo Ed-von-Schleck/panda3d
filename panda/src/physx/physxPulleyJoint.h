@@ -23,6 +23,7 @@
 #include "NxPhysics.h"
 
 class PhysxMotorDesc;
+class PhysxPulleyJointDesc;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxPulleyJoint
@@ -34,6 +35,9 @@ class EXPCL_PANDAPHYSX PhysxPulleyJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxPulleyJoint();
   INLINE ~PhysxPulleyJoint();
+
+  void save_to_desc(PhysxPulleyJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxPulleyJointDesc &jointDesc);
 
   void set_motor(const PhysxMotorDesc &motor);
   void set_flag(PhysxPulleyJointFlag flag, bool value);

@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxPrismaticJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxPrismaticJoint
 // Description : A prismatic joint permits relative translational
@@ -33,6 +35,9 @@ class EXPCL_PANDAPHYSX PhysxPrismaticJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxPrismaticJoint();
   INLINE ~PhysxPrismaticJoint();
+
+  void save_to_desc(PhysxPrismaticJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxPrismaticJointDesc &jointDesc);
 
 ////////////////////////////////////////////////////////////////////
 public:

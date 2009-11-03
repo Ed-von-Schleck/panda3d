@@ -23,6 +23,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxPlaneShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxPlaneShape
 // Description : A plane collision detection primitive. By default
@@ -56,6 +58,8 @@ class EXPCL_PANDAPHYSX PhysxPlaneShape : public PhysxShape {
 PUBLISHED:
   INLINE PhysxPlaneShape();
   INLINE ~PhysxPlaneShape();
+
+  void save_to_desc(PhysxPlaneShapeDesc &shapeDesc) const;
 
   void set_plane(const LVector3f &normal, float d);
 

@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxCylindricalJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxCylindricalJoint
 // Description : Cylindrical Joints permit relative translational
@@ -33,6 +35,9 @@ class EXPCL_PANDAPHYSX PhysxCylindricalJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxCylindricalJoint();
   INLINE ~PhysxCylindricalJoint();
+
+  void save_to_desc(PhysxCylindricalJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxCylindricalJointDesc &jointDesc);
 
 ////////////////////////////////////////////////////////////////////
 public:

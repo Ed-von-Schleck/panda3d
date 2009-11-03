@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxFixedJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxFixedJoint
 // Description : A fixed joint permits no relative movement between
@@ -32,6 +34,9 @@ class EXPCL_PANDAPHYSX PhysxFixedJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxFixedJoint();
   INLINE ~PhysxFixedJoint();
+
+  void save_to_desc(PhysxFixedJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxFixedJointDesc &jointDesc);
 
 ////////////////////////////////////////////////////////////////////
 public:

@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxBoxShape.h"
+#include "physxBoxShapeDesc.h"
 #include "physxManager.h"
 
 TypeHandle PhysxBoxShape::_type_handle;
@@ -42,6 +43,19 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxBoxShape::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the shape object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxBoxShape::
+save_to_desc(PhysxBoxShapeDesc &shapeDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(shapeDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -32,6 +32,8 @@ class PhysxController;
 class PhysxScene;
 class PhysxShape;
 class PhysxShapeDesc;
+class PhysxActorDesc;
+class PhysxBodyDesc;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxActor
@@ -52,6 +54,9 @@ class EXPCL_PANDAPHYSX PhysxActor : public PhysxObject, public PhysxEnums {
 PUBLISHED:
   INLINE PhysxActor();
   INLINE ~PhysxActor();
+
+  bool save_body_to_desc(PhysxBodyDesc &bodyDesc) const;
+  void save_to_desc(PhysxActorDesc &actorDesc) const;
 
   void set_name(const char *name);
   void set_global_pos(const LPoint3f &pos);

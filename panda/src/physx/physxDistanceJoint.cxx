@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxDistanceJoint.h"
+#include "physxDistanceJointDesc.h"
 
 TypeHandle PhysxDistanceJoint::_type_handle;
 
@@ -41,5 +42,31 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxDistanceJoint::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the joint object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxDistanceJoint::
+save_to_desc(PhysxDistanceJointDesc &jointDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(jointDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysDistanceJoint::load_from_desc
+//       Access : Published
+//  Description : Loads the entire state of the joint from a 
+//                descriptor with a single call.
+////////////////////////////////////////////////////////////////////
+void PhysxDistanceJoint::
+load_from_desc(const PhysxDistanceJointDesc &jointDesc) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->loadFromDesc(jointDesc._desc);
 }
 

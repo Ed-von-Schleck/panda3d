@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxCapsuleShape.h"
+#include "physxCapsuleShapeDesc.h"
 
 TypeHandle PhysxCapsuleShape::_type_handle;
 
@@ -41,6 +42,19 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxCapsuleShape::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the shape object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxCapsuleShape::
+save_to_desc(PhysxCapsuleShapeDesc &shapeDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(shapeDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

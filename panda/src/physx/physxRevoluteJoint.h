@@ -22,6 +22,7 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxRevoluteJointDesc;
 class PhysxSpringDesc;
 class PhysxMotorDesc;
 class PhysxJointLimitDesc;
@@ -39,6 +40,9 @@ class EXPCL_PANDAPHYSX PhysxRevoluteJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxRevoluteJoint();
   INLINE ~PhysxRevoluteJoint();
+
+  void save_to_desc(PhysxRevoluteJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxRevoluteJointDesc &jointDesc);
 
   void set_spring(const PhysxSpringDesc &spring);
   void set_motor(const PhysxMotorDesc &motor);

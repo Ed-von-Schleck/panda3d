@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxSphereShape.h"
+#include "physxSphereShapeDesc.h"
 
 TypeHandle PhysxSphereShape::_type_handle;
 
@@ -41,6 +42,19 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxSphereShape::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the shape object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxSphereShape::
+save_to_desc(PhysxSphereShapeDesc &shapeDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(shapeDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

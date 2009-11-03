@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxFixedJoint.h"
+#include "physxFixedJointDesc.h"
 
 TypeHandle PhysxFixedJoint::_type_handle;
 
@@ -41,5 +42,31 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxFixedJoint::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the joint object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxFixedJoint::
+save_to_desc(PhysxFixedJointDesc &jointDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(jointDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysFixedJoint::load_from_desc
+//       Access : Published
+//  Description : Loads the entire state of the joint from a 
+//                descriptor with a single call.
+////////////////////////////////////////////////////////////////////
+void PhysxFixedJoint::
+load_from_desc(const PhysxFixedJointDesc &jointDesc) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->loadFromDesc(jointDesc._desc);
 }
 

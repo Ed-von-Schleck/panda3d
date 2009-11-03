@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxHeightFieldShape.h"
+#include "physxHeightFieldShapeDesc.h"
 
 TypeHandle PhysxHeightFieldShape::_type_handle;
 
@@ -41,5 +42,18 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxHeightFieldShape::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the shape object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxHeightFieldShape::
+save_to_desc(PhysxHeightFieldShapeDesc &shapeDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(shapeDesc._desc);
 }
 

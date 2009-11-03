@@ -23,6 +23,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxSphereShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxSphereShape
 // Description : A sphere shaped collision detection primitive. 
@@ -45,7 +47,10 @@ PUBLISHED:
   INLINE PhysxSphereShape();
   INLINE ~PhysxSphereShape();
 
+  void save_to_desc(PhysxSphereShapeDesc &shapeDesc) const;
+
   void set_radius(float radius);
+
   float get_radius() const;
 
 ////////////////////////////////////////////////////////////////////

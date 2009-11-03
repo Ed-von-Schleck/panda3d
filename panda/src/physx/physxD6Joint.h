@@ -38,6 +38,9 @@ PUBLISHED:
   INLINE PhysxD6Joint();
   INLINE ~PhysxD6Joint();
 
+  void save_to_desc(PhysxD6JointDesc &jointDesc) const;
+  void load_from_desc(const PhysxD6JointDesc &jointDesc);
+
   void set_drive_angular_velocity(const LVector3f &v);
   void set_drive_linear_velocity(const LVector3f &v);
   void set_drive_orientation(const LQuaternionf &quat);

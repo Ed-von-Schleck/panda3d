@@ -13,6 +13,8 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxActor.h"
+#include "physxActorDesc.h"
+#include "physxBodyDesc.h"
 #include "physxShapeDesc.h"
 #include "physxManager.h"
 
@@ -92,6 +94,32 @@ void PhysxActor::
 link_controller(PT(PhysxController) controller) {
 
   _controller = controller;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::save_body_to_desc
+//       Access: Published
+//  Description: Saves the body information of a dynamic actor to 
+//               the passed body descriptor.
+////////////////////////////////////////////////////////////////////
+bool PhysxActor::
+save_body_to_desc(PhysxBodyDesc &bodyDesc) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return _ptr->saveBodyToDesc(bodyDesc._desc);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxActor::save_to_desc
+//       Access: Published
+//  Description: Saves the state of the actor to the passed 
+//               descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxActor::
+save_to_desc(PhysxActorDesc &actorDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(actorDesc._desc);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxTriangleMeshShape.h"
+#include "physxTriangleMeshShapeDesc.h"
 
 TypeHandle PhysxTriangleMeshShape::_type_handle;
 
@@ -41,5 +42,18 @@ unlink() {
   _ptr->userData = NULL;
   _error_type = ET_released;
   unref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function : PhysxTriangleMeshShape::save_to_desc
+//       Access : Published
+//  Description : Saves the state of the shape object to a 
+//                descriptor.
+////////////////////////////////////////////////////////////////////
+void PhysxTriangleMeshShape::
+save_to_desc(PhysxTriangleMeshShapeDesc &shapeDesc) const {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->saveToDesc(shapeDesc._desc);
 }
 

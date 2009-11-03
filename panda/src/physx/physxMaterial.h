@@ -25,6 +25,7 @@
 #include "NxPhysics.h"
 
 class PhysxScene;
+class PhysxMaterialDesc;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxMaterial
@@ -57,6 +58,9 @@ PUBLISHED:
 
   PT(PhysxScene) get_scene() const;
   unsigned short get_material_index() const;
+
+  void load_from_desc(const PhysxMaterialDesc &materialDesc);
+  void save_to_desc(PhysxMaterialDesc &materialDesc) const;
 
   void set_dynamic_friction(float coef);
   void set_static_friction(float coef);

@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxHeightFieldShapeDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxHeightFieldShape
 // Description : This class is a shape instance of a height field
@@ -43,6 +45,8 @@ class EXPCL_PANDAPHYSX PhysxHeightFieldShape : public PhysxShape {
 PUBLISHED:
   INLINE PhysxHeightFieldShape();
   INLINE ~PhysxHeightFieldShape();
+
+  void save_to_desc(PhysxHeightFieldShapeDesc &shapeDesc) const;
 
 public:
   INLINE NxShape *ptr() const { return (NxShape *)_ptr; };

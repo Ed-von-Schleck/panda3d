@@ -22,6 +22,8 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
+class PhysxDistanceJointDesc;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxDistanceJoint
 // Description : A distance joint maintains a certain distance
@@ -32,6 +34,9 @@ class EXPCL_PANDAPHYSX PhysxDistanceJoint : public PhysxJoint {
 PUBLISHED:
   INLINE PhysxDistanceJoint();
   INLINE ~PhysxDistanceJoint();
+
+  void save_to_desc(PhysxDistanceJointDesc &jointDesc) const;
+  void load_from_desc(const PhysxDistanceJointDesc &jointDesc);
 
 ////////////////////////////////////////////////////////////////////
 public:
