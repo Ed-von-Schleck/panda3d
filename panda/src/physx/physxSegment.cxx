@@ -46,6 +46,8 @@ get_p0() const {
 void PhysxSegment::
 set_p0(LPoint3f p) {
 
+  nassertv_always(!p.is_nan());
+
   _segment.p0 = PhysxManager::vec3_to_nxVec3(p);
 }
 
@@ -67,6 +69,8 @@ get_p1() const {
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_p1(LPoint3f p) {
+
+  nassertv_always(!p.is_nan());
 
   _segment.p1 = PhysxManager::vec3_to_nxVec3(p);
 }
@@ -90,6 +94,8 @@ get_origin() const {
 void PhysxSegment::
 compute_direction(LPoint3f &dir) const {
 
+  nassertv(!dir.is_nan());
+
   _segment.computeDirection(PhysxManager::point3_to_nxVec3(dir));
 }
 
@@ -112,6 +118,8 @@ compute_length() const {
 void PhysxSegment::
 compute_point(LPoint3f &p, float t) const {
 
+  nassertv(!p.is_nan());
+
   _segment.computePoint(PhysxManager::point3_to_nxVec3(p), t);
 }
 
@@ -133,6 +141,9 @@ compute_square_length() const {
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_origin_direction(const LPoint3f &origin, const LVector3f &direction) {
+
+  nassertv_always(!origin.is_nan());
+  nassertv_always(!direction.is_nan());
 
   _segment.setOriginDirection(PhysxManager::point3_to_nxVec3(origin),
                               PhysxManager::vec3_to_nxVec3(direction));

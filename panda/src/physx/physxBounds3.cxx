@@ -45,6 +45,8 @@ get_min() const {
 void PhysxBounds3::
 set_max(LPoint3f value) {
 
+  nassertv(!value.is_nan());
+
   _bounds.max = PhysxManager::point3_to_nxVec3(value);
 }
 
@@ -56,6 +58,8 @@ set_max(LPoint3f value) {
 void PhysxBounds3::
 set_min(LPoint3f value) {
 
+  nassertv(!value.is_nan());
+
   _bounds.min = PhysxManager::point3_to_nxVec3(value);
 }
 
@@ -66,6 +70,10 @@ set_min(LPoint3f value) {
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 bounds_of_obb(const LMatrix3f &orientation, const LPoint3f &translation, const LVector3f &half_dims) {
+
+  nassertv(!orientation.is_nan());
+  nassertv(!translation.is_nan());
+  nassertv(!half_dims.is_nan());
 
   _bounds.boundsOfOBB(PhysxManager::mat3_to_nxMat33(orientation),
                       PhysxManager::point3_to_nxVec3(translation),
@@ -90,6 +98,8 @@ combine(const PhysxBounds3 &b2) {
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 contain(const LPoint3f &p) const {
+
+  nassertr(!p.is_nan(), false);
 
   return _bounds.contain(PhysxManager::point3_to_nxVec3(p));
 }
@@ -127,6 +137,7 @@ get_dimensions() const {
 void PhysxBounds3::
 include(const LPoint3f &p) {
 
+  nassertv(!p.is_nan());
   _bounds.include(PhysxManager::point3_to_nxVec3(p));
 }
 
@@ -184,6 +195,9 @@ scale(float scale) {
 void PhysxBounds3::
 set(const LPoint3f &min, const LPoint3f &max) {
 
+  nassertv(!min.is_nan());
+  nassertv(!max.is_nan());
+
   _bounds.set(PhysxManager::point3_to_nxVec3(min),
               PhysxManager::point3_to_nxVec3(max));
 }
@@ -195,6 +209,9 @@ set(const LPoint3f &min, const LPoint3f &max) {
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_center_extents(const LPoint3f &center, const LVector3f &extents) {
+
+  nassertv(!center.is_nan());
+  nassertv(!extents.is_nan());
 
   _bounds.setCenterExtents(PhysxManager::point3_to_nxVec3(center),
                            PhysxManager::vec3_to_nxVec3(extents));
@@ -229,6 +246,9 @@ set_infinite() {
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 transform(const LMatrix3f &orientation, const LPoint3f &translation) {
+
+  nassertv(!orientation.is_nan());
+  nassertv(!translation.is_nan());
 
   _bounds.transform(PhysxManager::mat3_to_nxMat33(orientation),
                     PhysxManager::point3_to_nxVec3(translation));

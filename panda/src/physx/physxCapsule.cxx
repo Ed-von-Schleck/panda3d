@@ -56,6 +56,8 @@ get_p0() const {
 void PhysxCapsule::
 set_p0(LPoint3f p) {
 
+  nassertv(!p.is_nan());
+
   _capsule.p0 = PhysxManager::vec3_to_nxVec3(p);
 }
 
@@ -77,6 +79,8 @@ get_p1() const {
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_p1(LPoint3f p) {
+
+  nassertv(!p.is_nan());
 
   _capsule.p1 = PhysxManager::vec3_to_nxVec3(p);
 }
@@ -100,6 +104,8 @@ get_origin() const {
 void PhysxCapsule::
 compute_direction(LPoint3f &dir) const {
 
+  nassertv(!dir.is_nan());
+
   _capsule.computeDirection(PhysxManager::point3_to_nxVec3(dir));
 }
 
@@ -122,6 +128,8 @@ compute_length() const {
 void PhysxCapsule::
 compute_point(LPoint3f &p, float t) const {
 
+  nassertv(!p.is_nan());
+
   _capsule.computePoint(PhysxManager::point3_to_nxVec3(p), t);
 }
 
@@ -143,6 +151,9 @@ compute_square_length() const {
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_origin_direction(const LPoint3f &origin, const LVector3f &direction) {
+
+  nassertv(!origin.is_nan());
+  nassertv(!direction.is_nan());
 
   _capsule.setOriginDirection(PhysxManager::point3_to_nxVec3(origin),
                               PhysxManager::vec3_to_nxVec3(direction));

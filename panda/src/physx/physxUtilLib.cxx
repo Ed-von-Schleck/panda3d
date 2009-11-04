@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_exceptions
 //       Access: Published
-//  Description:
+//  Description: Set FPU precision.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_exceptions(bool b) {
@@ -36,7 +36,7 @@ set_fpu_exceptions(bool b) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_precision24
 //       Access: Published
-//  Description:
+//  Description: Set FPU precision.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_precision24() {
@@ -47,7 +47,7 @@ set_fpu_precision24() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_precision53
 //       Access: Published
-//  Description:
+//  Description: Set FPU precision.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_precision53() {
@@ -58,7 +58,7 @@ set_fpu_precision53() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_precision64
 //       Access: Published
-//  Description:
+//  Description: Set FPU precision.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_precision64() {
@@ -69,7 +69,7 @@ set_fpu_precision64() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_rounding_chop
 //       Access: Published
-//  Description:
+//  Description: Set FPU precision.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_rounding_chop() {
@@ -80,7 +80,7 @@ set_fpu_rounding_chop() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_rounding_down
 //       Access: Published
-//  Description:
+//  Description: Set FPU rounding mode.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_rounding_down() {
@@ -91,7 +91,7 @@ set_fpu_rounding_down() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_rounding_near
 //       Access: Published
-//  Description:
+//  Description: Set FPU rounding mode.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_rounding_near() {
@@ -102,7 +102,7 @@ set_fpu_rounding_near() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::set_fpu_rounding_up
 //       Access: Published
-//  Description:
+//  Description: Set FPU rounding mode.
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
 set_fpu_rounding_up() {
@@ -110,6 +110,40 @@ set_fpu_rounding_up() {
   _ptr->NxSetFPURoundingUp();
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::int_ceil
+//       Access: Published
+//  Description: Convert a floating point number to an integer.
+////////////////////////////////////////////////////////////////////
+int PhysxUtilLib::
+int_ceil(const float &f) {
+
+  return _ptr->NxIntCeil(f);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::int_chop
+//       Access: Published
+//  Description: Convert a floating point number to an integer.
+////////////////////////////////////////////////////////////////////
+int PhysxUtilLib::
+int_chop(const float &f) {
+
+  return _ptr->NxIntChop(f);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::int_floor
+//       Access: Published
+//  Description: Convert a floating point number to an integer.
+////////////////////////////////////////////////////////////////////
+int PhysxUtilLib::
+int_floor(const float &f) {
+
+  return _ptr->NxIntFloor(f);
+}
+
+/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::sweep_box_box
 //       Access: Published
@@ -272,39 +306,6 @@ bool PhysxUtilLib::
 box_contains_point(const PhysxBox &box, const LPoint3f &p) {
 
   return _ptr->NxBoxContainsPoint(box._box, PhysxManager::point3_to_nxVec3(p));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::int_ceil
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-int PhysxUtilLib::
-int_ceil(const float &f) {
-
-  return _ptr->NxIntCeil(f);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::int_chop
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-int PhysxUtilLib::
-int_chop(const float &f) {
-
-  return _ptr->NxIntChop(f);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::int_floor
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-int PhysxUtilLib::
-int_floor(const float &f) {
-
-  return _ptr->NxIntFloor(f);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -484,6 +485,7 @@ segment_obb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &ce
                                      PhysxManager::vec3_to_nxVec3(extents),
                                      PhysxManager::mat3_to_nxMat33(rot));
 }
+*/
 
 
 

@@ -49,30 +49,30 @@ PUBLISHED:
   void set_fpu_rounding_near();
   void set_fpu_rounding_up();
 
-  bool sweep_box_box(const PhysxBox &box0, const PhysxBox &box1, const LVector3f &dir, float length, LPoint3f &ip, LVector3f &normal, float &min_dist);
-  bool sweep_box_capsule(const PhysxBox &box, const PhysxCapsule &lss, const LVector3f &dir, float length, float &min_dist, LVector3f &normal);
-  bool sweep_box_sphere(const PhysxBox &box, const PhysxSphere &sphere, const LVector3f &dir, float length, float &min_dist, LVector3f &normal);
-  bool sweep_capsule_capsule(const PhysxCapsule &lss0, const PhysxCapsule &lss1, const LVector3f &dir, float length, float &min_dist, LPoint3f &ip, LVector3f &normal);
-  bool sweep_sphere_capsule(const PhysxSphere &sphere, const PhysxCapsule &lss, const LVector3f &dir, float length, float &min_dist, LPoint3f &ip, LVector3f &normal);
-  bool swept_spheres_intersect(const PhysxSphere &sphere0, const LVector3f &velocity0, const PhysxSphere &sphere1, const LVector3f &velocity1);
-  bool tri_box_intersect(const LPoint3f &vertex0, const LPoint3f &vertex1, const LPoint3f &vertex2, const LPoint3f &center, const LVector3f &extents);
+  //bool sweep_box_box(const PhysxBox &box0, const PhysxBox &box1, const LVector3f &dir, float length, LPoint3f &ip, LVector3f &normal, float &min_dist);
+  //bool sweep_box_capsule(const PhysxBox &box, const PhysxCapsule &lss, const LVector3f &dir, float length, float &min_dist, LVector3f &normal);
+  //bool sweep_box_sphere(const PhysxBox &box, const PhysxSphere &sphere, const LVector3f &dir, float length, float &min_dist, LVector3f &normal);
+  //bool sweep_capsule_capsule(const PhysxCapsule &lss0, const PhysxCapsule &lss1, const LVector3f &dir, float length, float &min_dist, LPoint3f &ip, LVector3f &normal);
+  //bool sweep_sphere_capsule(const PhysxSphere &sphere, const PhysxCapsule &lss, const LVector3f &dir, float length, float &min_dist, LPoint3f &ip, LVector3f &normal);
+  //bool swept_spheres_intersect(const PhysxSphere &sphere0, const LVector3f &velocity0, const PhysxSphere &sphere1, const LVector3f &velocity1);
+  //bool tri_box_intersect(const LPoint3f &vertex0, const LPoint3f &vertex1, const LPoint3f &vertex2, const LPoint3f &center, const LVector3f &extents);
 
-  bool box_box_intersect(const LVector3f &extents0, const LPoint3f &center0, const LMatrix3f &rotation0, const LVector3f &extents1, const LPoint3f &center1, const LMatrix3f &rotation1, bool full_test);
-  bool box_contains_point(const PhysxBox &box, const LPoint3f &p);
+  //bool box_box_intersect(const LVector3f &extents0, const LPoint3f &center0, const LMatrix3f &rotation0, const LVector3f &extents1, const LPoint3f &center1, const LMatrix3f &rotation1, bool full_test);
+  //bool box_contains_point(const PhysxBox &box, const LPoint3f &p);
 
   int int_ceil(const float &f);
   int int_chop(const float &f);
   int int_floor(const float &f);
 
-  bool ray_aabb_intersect(const LPoint3f &min, const LPoint3f &max, const LPoint3f &origin, const LVector3f &dir, LPoint3f &coord);
-  unsigned int ray_aabb_intersect2(const LPoint3f &min, const LPoint3f &max, const LPoint3f &origin, const LVector3f &dir, LPoint3f &coord, float &t);
-  bool ray_obb_intersect(const PhysxRay &ray, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot);
-  bool ray_plane_intersect(const PhysxRay &ray, const PhysxPlane &plane, float &dist, LPoint3f &point_on_plane);
-  bool ray_sphere_intersect(const LPoint3f &origin, const LVector3f &dir, float length, const LPoint3f &center, float radius, float &hit_time, LPoint3f &hit_pos);
-  bool ray_tri_intersect(const LPoint3f &orig, const LVector3f &dir, const LPoint3f &vert0, const LPoint3f &vert1, const LPoint3f &vert2, float &t, float &u, float &v, bool cull);
-  bool segment_aabb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &min, const LPoint3f &max);
-  bool segment_box_intersect(const LPoint3f &p1, const LPoint3f &p2, const LPoint3f &bbox_min, const LPoint3f &bbox_max, LPoint3f &intercept);
-  bool segment_obb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot);
+  //bool ray_aabb_intersect(const LPoint3f &min, const LPoint3f &max, const LPoint3f &origin, const LVector3f &dir, LPoint3f &coord);
+  //unsigned int ray_aabb_intersect2(const LPoint3f &min, const LPoint3f &max, const LPoint3f &origin, const LVector3f &dir, LPoint3f &coord, float &t);
+  //bool ray_obb_intersect(const PhysxRay &ray, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot);
+  //bool ray_plane_intersect(const PhysxRay &ray, const PhysxPlane &plane, float &dist, LPoint3f &point_on_plane);
+  //bool ray_sphere_intersect(const LPoint3f &origin, const LVector3f &dir, float length, const LPoint3f &center, float radius, float &hit_time, LPoint3f &hit_pos);
+  //bool ray_tri_intersect(const LPoint3f &orig, const LVector3f &dir, const LPoint3f &vert0, const LPoint3f &vert1, const LPoint3f &vert2, float &t, float &u, float &v, bool cull);
+  //bool segment_aabb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &min, const LPoint3f &max);
+  //bool segment_box_intersect(const LPoint3f &p1, const LPoint3f &p2, const LPoint3f &bbox_min, const LPoint3f &bbox_max, LPoint3f &intercept);
+  //bool segment_obb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot);
 
 public:
   //const unsigned int *box_vertex_to_quad(unsigned int vertex_index);

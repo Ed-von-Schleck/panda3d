@@ -47,6 +47,8 @@ is_valid() const {
 void PhysxBox::
 rotate(const LMatrix4f &m, PhysxBox &obb) const {
 
+  nassertv(!m.is_nan());
+
   _box.rotate(PhysxManager::mat4_to_nxMat34(m), obb._box);
 }
 
@@ -102,6 +104,8 @@ get_rot() const {
 void PhysxBox::
 set_center(LPoint3f center) {
 
+  nassertv(!center.is_nan());
+
   _box.center = PhysxManager::vec3_to_nxVec3(center);
 }
 
@@ -113,6 +117,8 @@ set_center(LPoint3f center) {
 void PhysxBox::
 set_extents(LVector3f extents) {
 
+  nassertv(!extents.is_nan());
+
   _box.extents = PhysxManager::vec3_to_nxVec3(extents);
 }
 
@@ -123,6 +129,8 @@ set_extents(LVector3f extents) {
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_rot(LMatrix3f rot) {
+
+  nassertv(!rot.is_nan());
 
   _box.rot = PhysxManager::mat3_to_nxMat33(rot);
 }

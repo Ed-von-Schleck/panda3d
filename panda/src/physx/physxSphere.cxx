@@ -34,6 +34,8 @@ is_valid() const {
 bool PhysxSphere::
 contains(const LPoint3f &p) const {
 
+  nassertr(!p.is_nan(), false);
+
   return _sphere.Contains(PhysxManager::vec3_to_nxVec3(p));
 }
 
@@ -55,6 +57,9 @@ contains(const PhysxSphere &sphere) const {
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const LPoint3f &min, const LPoint3f &max) const {
+
+  nassertr(!min.is_nan(), false);
+  nassertr(!max.is_nan(), false);
 
   return _sphere.Contains(PhysxManager::vec3_to_nxVec3(min), 
                           PhysxManager::vec3_to_nxVec3(max));
@@ -89,6 +94,8 @@ get_center() const {
 ////////////////////////////////////////////////////////////////////
 void PhysxSphere::
 set_center(LPoint3f center) {
+
+  nassertv(!center.is_nan());
 
   _sphere.center = PhysxManager::vec3_to_nxVec3(center);
 }
