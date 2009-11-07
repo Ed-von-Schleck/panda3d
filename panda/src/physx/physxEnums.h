@@ -182,6 +182,12 @@
 #define NX_FILTEROP_NXOR 5
 #define NX_FILTEROP_SWAP_AND 6
 
+// PhysxForceFieldCoordinates
+#define NX_FFC_CARTESIAN 0
+#define NX_FFC_SPHERICAL 1
+#define NX_FFC_CYLINDRICAL 2
+#define NX_FFC_TOROIDAL 3
+
 // PhysxMaterialFlag
 #define NX_MF_ANISOTROPIC 1<<0
 #define NX_MF_DISABLE_FRICTION 1<<4
@@ -433,6 +439,13 @@ PUBLISHED:
     FO_nor       = NX_FILTEROP_NOR,
     FO_nxor      = NX_FILTEROP_NXOR,
     FO_swap_and  = NX_FILTEROP_SWAP_AND
+  };
+
+  enum PhysxForceFieldCoordinates {
+    FFC_cartesian,
+    FFC_spherical,
+    FFC_cylindrical,
+    FFC_toroidal,
   };
 
   enum PhysxForceMode {

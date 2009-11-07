@@ -72,6 +72,7 @@ PUBLISHED:
   INLINE void visualize_cloth_validbounds(bool value);
   INLINE void visualize_softbody_mesh(bool value);
   INLINE void visualize_softbody_validbounds(bool value);
+  INLINE void visualize_force_fields(bool value);
 
 public:
   void update(NxScene *scenePtr);

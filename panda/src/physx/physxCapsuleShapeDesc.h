@@ -16,6 +16,7 @@
 #define PHYSXCAPSULESHAPEDESC_H
 
 #include "pandabase.h"
+
 #include "physxShapeDesc.h"
 
 #include "NoMinMax.h"

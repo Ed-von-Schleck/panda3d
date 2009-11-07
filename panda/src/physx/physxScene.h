@@ -37,6 +37,8 @@ class PhysxMaterial;
 class PhysxMaterialDesc;
 class PhysxController;
 class PhysxControllerDesc;
+class PhysxForceField;
+class PhysxForceFieldDesc;
 class PhysxJoint;
 class PhysxJointDesc;
 class PhysxDebugGeomNode;
@@ -44,7 +46,7 @@ class PhysxSceneStats2;
 class PhysxRay;
 class PhysxRaycastHit;
 class PhysxRaycastReport;
-class PhysOverlapReport;
+class PhysxOverlapReport;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxScene
@@ -109,6 +111,12 @@ PUBLISHED:
   PT(PhysxController) create_controller(PhysxControllerDesc &controllerDesc);
   PT(PhysxController) get_controller(unsigned int idx) const;
   MAKE_SEQ(get_controllers, get_num_controllers, get_controller);
+
+  // Force fields
+  unsigned int get_num_force_fields() const;
+  PT(PhysxForceField) create_force_field(PhysxForceFieldDesc &desc);
+  PT(PhysxForceField) get_force_field(unsigned int idx) const;
+  MAKE_SEQ(get_force_fields, get_num_force_fields, get_force_field);
 
   // Raycast queries
   bool raycast_any_shape(const PhysxRay &ray,

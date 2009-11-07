@@ -365,3 +365,14 @@ visualize_softbody_validbounds(bool value) {
   NxGetPhysicsSDK()->setParameter(NX_VISUALIZE_SOFTBODY_VALIDBOUNDS, value);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxDebugGeomNode::visualize_force_fields
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxDebugGeomNode::
+visualize_force_fields(bool value) {
+
+  NxGetPhysicsSDK()->setParameter(NX_VISUALIZE_FORCE_FIELDS, value);
+}
+

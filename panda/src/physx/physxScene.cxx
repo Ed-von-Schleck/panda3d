@@ -15,6 +15,7 @@
 #include "physxScene.h"
 #include "physxManager.h"
 #include "physxActorDesc.h"
+#include "physxForceFieldDesc.h"
 #include "physxControllerDesc.h"
 #include "physxSceneStats2.h"
 
@@ -668,6 +669,66 @@ get_joint(unsigned int idx) const {
   }
 
   return (PhysxJoint *)(jointPtr->userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_num_force_fields
+//       Access: Published
+//  Description: Gets the number of force fields in the scene.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxScene::
+get_num_force_fields() const {
+
+  nassertr(_error_type == ET_ok, -1);
+  return _ptr->getNbForceFields();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::create_force_field
+//       Access: Published
+//  Description: Creates a force field in this scene.
+////////////////////////////////////////////////////////////////////
+PT(PhysxForceField) PhysxScene::
+create_force_field(PhysxForceFieldDesc &desc) {
+
+  nassertr(_error_type == ET_ok, NULL);
+
+  // Create the kernel
+  desc.create_kernel(_ptr);
+  nassertr(desc.is_valid(),NULL);
+
+  // Create the force field
+  PT(PhysxForceField) field = new PhysxForceField();
+  nassertr(field, NULL);
+
+  NxForceField *fieldPtr = _ptr->createForceField(desc._desc);
+  nassertr(fieldPtr, NULL);
+
+  // Create the exclude shape group
+  NxForceFieldShapeGroup *sgPtr = _ptr->createForceFieldShapeGroup(*desc.sg());
+  fieldPtr->addShapeGroup(*sgPtr);
+
+  field->link(fieldPtr);
+
+  return field;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_force_field
+//       Access: Published
+//  Description: Retrieve the n-th force field from the array of
+//               all the force fields in the scene.
+////////////////////////////////////////////////////////////////////
+PT(PhysxForceField) PhysxScene::
+get_force_field(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbForceFields(), NULL);
+
+  NxForceField **fields = _ptr->getForceFields();
+  NxForceField *fieldPtr = fields[idx];
+
+  return (PhysxForceField *)(fieldPtr->userData);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
-// Filename: physxSphereShapeDesc.h
-// Created by:  enn0x (11Sep09)
+// Filename: physxCapsuleForceFieldShapeDesc.h
+// Created by:  enn0x (06Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,38 +12,40 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXSPHERESHAPEDESC_H
-#define PHYSXSPHERESHAPEDESC_H
+#ifndef PHYSXCAPSULEFORCEFIELDSHAPEDESC_H
+#define PHYSXCAPSULEFORCEFIELDSHAPEDESC_H
 
 #include "pandabase.h"
 
-#include "physxShapeDesc.h"
+#include "physxForceFieldShapeDesc.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxSphereShapeDesc
-// Description : Descriptor class for PhysxSphereShape.
+//       Class : PhysxCapsuleForceFieldShapeDesc
+// Description : A descriptor for a capsule force field shape.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSphereShapeDesc : public PhysxShapeDesc {
+class EXPCL_PANDAPHYSX PhysxCapsuleForceFieldShapeDesc : public PhysxForceFieldShapeDesc {
 
 PUBLISHED:
-  INLINE PhysxSphereShapeDesc();
-  INLINE ~PhysxSphereShapeDesc();
+  INLINE PhysxCapsuleForceFieldShapeDesc();
+  INLINE ~PhysxCapsuleForceFieldShapeDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
   void set_radius(float radius);
+  void set_height(float height);
 
   float get_radius() const;
+  float get_height() const;
 
 public:
-  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
-  NxSphereShapeDesc _desc;
+  NxForceFieldShapeDesc *ptr() const { return (NxForceFieldShapeDesc *)&_desc; };
+  NxCapsuleForceFieldShapeDesc _desc;
 };
 
-#include "physxSphereShapeDesc.I"
+#include "physxCapsuleForceFieldShapeDesc.I"
 
-#endif // PHYSXSPHERESHAPEDESC_H
+#endif // PHYSXCAPSULEFORCEFIELDSHAPEDESC_H

@@ -1,5 +1,5 @@
-// Filename: physxBoxShapeDesc.cxx
-// Created by:  enn0x (08Sep09)
+// Filename: physxBoxForceFieldShapeDesc.cxx
+// Created by:  enn0x (06Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,11 +12,11 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "physxBoxShapeDesc.h"
+#include "physxBoxForceFieldShapeDesc.h"
 #include "physxManager.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBoxShapeDesc::set_dimensions
+//     Function: PhysxBoxForceFieldShapeDesc::set_dimensions
 //       Access: Published
 //  Description: Sets the dimensions of the box.
 //
@@ -24,7 +24,7 @@
 //               meaning 1/2 extents in x dimension, 1/2 extents
 //               in y dimension, 1/2 extents in z dimension.
 ////////////////////////////////////////////////////////////////////
-void PhysxBoxShapeDesc::
+void PhysxBoxForceFieldShapeDesc::
 set_dimensions(const LVector3f &dimensions) {
 
   nassertv(!dimensions.is_nan());
@@ -32,11 +32,11 @@ set_dimensions(const LVector3f &dimensions) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBoxShapeDesc::get_dimensions
+//     Function: PhysxBoxForceFieldShapeDesc::get_dimensions
 //       Access: Published
 //  Description: Returns the dimensions of the box.
 ////////////////////////////////////////////////////////////////////
-LVector3f PhysxBoxShapeDesc::
+LVector3f PhysxBoxForceFieldShapeDesc::
 get_dimensions() const {
 
   return PhysxManager::nxVec3_to_vec3(_desc.dimensions);

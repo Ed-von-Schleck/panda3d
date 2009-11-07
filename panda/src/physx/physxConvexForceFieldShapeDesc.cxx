@@ -1,5 +1,5 @@
-// Filename: physxPlaneShapeDesc.cxx
-// Created by:  enn0x (08Sep09)
+// Filename: physxConvexForceFieldShapeDesc.cxx
+// Created by:  enn0x (06Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,22 +12,18 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "physxPlaneShapeDesc.h"
-#include "physxManager.h"
+#include "physxConvexForceFieldShapeDesc.h"
+#include "physxConvexMesh.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPlaneShapeDesc::set_plane
+//     Function: PhysxConvexForceFieldShapeDesc::set_mesh
 //       Access: Published
-//  Description: Sets the parameters of the plane equation.
-//               normal: Plane normal.
-//               d: The distance from the origin. 
+//  Description: 
 ////////////////////////////////////////////////////////////////////
-void PhysxPlaneShapeDesc::
-set_plane(const LVector3f &normal, float d) {
+void PhysxConvexForceFieldShapeDesc::
+set_mesh(PT(PhysxConvexMesh) mesh) {
 
-  nassertv(!normal.is_nan());
-
-  _desc.normal = PhysxManager::vec3_to_nxVec3(normal);
-  _desc.d = d;
+  _desc.meshData = mesh->ptr();
 }
+
 

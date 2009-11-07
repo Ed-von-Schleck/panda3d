@@ -1,5 +1,5 @@
-// Filename: physxPlaneShapeDesc.cxx
-// Created by:  enn0x (08Sep09)
+// Filename: physxForceField.I
+// Created by:  enn0x (06Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,22 +12,25 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "physxPlaneShapeDesc.h"
-#include "physxManager.h"
+
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxPlaneShapeDesc::set_plane
+//     Function: PhysxForceField::Constructor
 //       Access: Published
-//  Description: Sets the parameters of the plane equation.
-//               normal: Plane normal.
-//               d: The distance from the origin. 
+//  Description:
 ////////////////////////////////////////////////////////////////////
-void PhysxPlaneShapeDesc::
-set_plane(const LVector3f &normal, float d) {
+INLINE PhysxForceField::
+PhysxForceField() : PhysxObject() {
 
-  nassertv(!normal.is_nan());
+}
 
-  _desc.normal = PhysxManager::vec3_to_nxVec3(normal);
-  _desc.d = d;
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::Destructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PhysxForceField::
+~PhysxForceField() {
+
 }
 

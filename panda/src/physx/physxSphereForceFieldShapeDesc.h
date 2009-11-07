@@ -1,5 +1,5 @@
-// Filename: physxSphereShapeDesc.h
-// Created by:  enn0x (11Sep09)
+// Filename: physxSphereForceFieldShapeDesc.h
+// Created by:  enn0x (06Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,25 +12,25 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXSPHERESHAPEDESC_H
-#define PHYSXSPHERESHAPEDESC_H
+#ifndef PHYSXSPHEREFORCEFIELDSHAPEDESC_H
+#define PHYSXSPHEREFORCEFIELDSHAPEDESC_H
 
 #include "pandabase.h"
 
-#include "physxShapeDesc.h"
+#include "physxForceFieldShapeDesc.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxSphereShapeDesc
-// Description : Descriptor class for PhysxSphereShape.
+//       Class : PhysxSphereForceFieldShapeDesc
+// Description : A descriptor for a sphere force field shape.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSphereShapeDesc : public PhysxShapeDesc {
+class EXPCL_PANDAPHYSX PhysxSphereForceFieldShapeDesc : public PhysxForceFieldShapeDesc {
 
 PUBLISHED:
-  INLINE PhysxSphereShapeDesc();
-  INLINE ~PhysxSphereShapeDesc();
+  INLINE PhysxSphereForceFieldShapeDesc();
+  INLINE ~PhysxSphereForceFieldShapeDesc();
 
   INLINE void set_to_default();
   INLINE bool is_valid() const;
@@ -40,10 +40,10 @@ PUBLISHED:
   float get_radius() const;
 
 public:
-  NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
-  NxSphereShapeDesc _desc;
+  NxForceFieldShapeDesc *ptr() const { return (NxForceFieldShapeDesc *)&_desc; };
+  NxSphereForceFieldShapeDesc _desc;
 };
 
-#include "physxSphereShapeDesc.I"
+#include "physxSphereForceFieldShapeDesc.I"
 
-#endif // PHYSXSPHERESHAPEDESC_H
+#endif // PHYSXSPHEREFORCEFIELDSHAPEDESC_H

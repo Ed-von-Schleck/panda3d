@@ -54,6 +54,7 @@ set_trigger(bool value) {
 void PhysxShapeDesc::
 set_local_pos(const LPoint3f &pos) {
 
+  nassertv(!pos.is_nan());
   ptr()->localPose.t = PhysxManager::point3_to_nxVec3(pos);
 }
 
@@ -65,6 +66,7 @@ set_local_pos(const LPoint3f &pos) {
 void PhysxShapeDesc::
 set_local_mat(const LMatrix4f &mat) {
 
+  nassertv(!mat.is_nan());
   ptr()->localPose = PhysxManager::mat4_to_nxMat34(mat);
 }
 

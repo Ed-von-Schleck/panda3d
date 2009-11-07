@@ -88,3 +88,14 @@
 #include "physxCapsule.cxx"
 #include "physxBounds3.cxx"
 #include "physxUtilLib.cxx"
+
+#include "physxBoxForceFieldShapeDesc.cxx"
+#include "physxCapsuleForceFieldShapeDesc.cxx"
+#include "physxConvexForceFieldShapeDesc.cxx"
+#include "physxForceFieldShapeDesc.cxx"
+#include "physxSphereForceFieldShapeDesc.cxx"
+#include "physxForceFieldDesc.cxx"
+#include "physxForceField.cxx"
+
+
+
