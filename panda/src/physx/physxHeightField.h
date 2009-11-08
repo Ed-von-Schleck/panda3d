@@ -35,15 +35,15 @@
 //
 //               Triangle meshes can be made of nonuniform geometry,
 //               while height fields are regular, rectangular grids.
-//               This means that with PhysHeightField, you sacrifice
-//               flexibility in return for improved performance and
-//               decreased memory consumption.
+//               This means that with PhysxHeightField, you
+//               sacrifice flexibility in return for improved
+//               performance and decreased memory consumption.
 //
 //               HeightFields are referenced by shape instances of
 //               type PhysxHeightFieldShape.
 //
 //               To create an instance of this class call
-//               PhysManager::create_height_field(), and
+//               PhysxManager::create_height_field(), and
 //               PhysxHeightField::release() to release it. This is
 //               only possible once you have released all of its
 //               PhysxHeightFiedShape instances before.

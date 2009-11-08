@@ -25,10 +25,12 @@ TypeHandle PhysxD6Joint::_type_handle;
 void PhysxD6Joint::
 link(NxJoint *jointPtr) {
 
-  ref();
   _ptr = jointPtr->isD6Joint();
   _ptr->userData = this;
   _error_type = ET_ok;
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_joints.add(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -41,7 +43,9 @@ unlink() {
 
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_joints.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,7 +62,7 @@ save_to_desc(PhysxD6JointDesc &jointDesc) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysD6Joint::load_from_desc
+//     Function : PhysxD6Joint::load_from_desc
 //       Access : Published
 //  Description : Loads the entire state of the joint from a 
 //                descriptor with a single call.

@@ -23,6 +23,7 @@
 #include "lquaternion.h"
 
 #include "physxObject.h"
+#include "physxObjectCollection.h"
 #include "physxEnums.h"
 
 #include "NoMinMax.h"
@@ -188,6 +189,8 @@ public:
   void link_controller(PT(PhysxController) controller);
   void link(NxActor *ptr);
   void unlink();
+
+  PhysxObjectCollection<PhysxShape> _shapes;
 
 private:
   NxActor *_ptr;

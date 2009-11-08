@@ -29,10 +29,12 @@ void PhysxActor::
 link(NxActor *actorPtr) {
 
   // Link self
-  ref();
   _ptr = actorPtr;
   _ptr->userData = this;
   _error_type = ET_ok;
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_actors.add(this);
 
   // Link shapes
   NxShape * const *shapes = _ptr->getShapes();
@@ -66,7 +68,9 @@ unlink() {
   // Unlink self
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_actors.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -677,7 +681,7 @@ add_local_torque(const LVector3f torque, PhysxForceMode mode, bool wakeup) {
 //               (non-physical), the call will fail.
 //
 //               The mass of each shape is either the shape's local
-//               density (as specified in the PhysShapeDesc;
+//               density (as specified in the PhysxShapeDesc;
 //               default 1.0) multiplied by the shape's volume or a
 //               directly specified shape mass.
 //
@@ -866,7 +870,7 @@ set_contact_report_threshold(float threshold) {
 //               This is similar to NxShape groups, except those are
 //               only five bits and serve a different purpose.
 //
-//               The PhysScene::set_actor_group_pair_flags() lets
+//               The PhysxScene::set_actor_group_pair_flags() lets
 //               you set certain behaviors for pairs of actor
 //               groups.
 //
@@ -905,7 +909,7 @@ get_group() const {
 //               This is similar to shape groups, except those serve
 //               a different purpose.
 //
-//               The PhysScene::set_dominance_group_pair() lets you
+//               The PhysxScene::set_dominance_group_pair() lets you
 //               set certain behaviors for pairs of dominance
 //               groups.
 //

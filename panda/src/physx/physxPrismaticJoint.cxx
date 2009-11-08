@@ -25,10 +25,12 @@ TypeHandle PhysxPrismaticJoint::_type_handle;
 void PhysxPrismaticJoint::
 link(NxJoint *jointPtr) {
 
-  ref();
   _ptr = jointPtr->isPrismaticJoint();
   _ptr->userData = this;
   _error_type = ET_ok;
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_joints.add(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -41,7 +43,9 @@ unlink() {
 
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_joints.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,7 +62,7 @@ save_to_desc(PhysxPrismaticJointDesc &jointDesc) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function : PhysPrismaticJoint::load_from_desc
+//     Function : PhysxPrismaticJoint::load_from_desc
 //       Access : Published
 //  Description : Loads the entire state of the joint from a 
 //                descriptor with a single call.

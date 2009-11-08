@@ -210,6 +210,54 @@ get_height_field(unsigned int idx) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_num_convex_meshes
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxManager::
+get_num_convex_meshes() {
+
+  return _sdk->getNbConvexMeshes();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_convex_mesh
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxConvexMesh) PhysxManager::
+get_convex_mesh(unsigned int idx) {
+
+  nassertr_always(idx < _sdk->getNbConvexMeshes(), NULL);
+
+  return (PhysxConvexMesh *)_convex_meshes[idx];
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_num_triangle_meshes
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxManager::
+get_num_triangle_meshes() {
+
+  return _sdk->getNbTriangleMeshes();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_triangle_mesh
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxTriangleMesh) PhysxManager::
+get_triangle_mesh(unsigned int idx) {
+
+  nassertr_always(idx < _sdk->getNbTriangleMeshes(), NULL);
+
+  return (PhysxTriangleMesh *)_triangle_meshes[idx];
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxManager::is_hardware_available
 //       Access: Published
 //  Description:

@@ -26,8 +26,8 @@
 //               motorized, this allows them to apply a force to
 //               cause attached actors to move. Joints which can be
 //               motorized:
-//               - PhysPulleyJoint
-//               - PhysRevoluteJoint
+//               - PhysxPulleyJoint
+//               - PhysxRevoluteJoint
 ////////////////////////////////////////////////////////////////////
 class PhysxMotorDesc {
 

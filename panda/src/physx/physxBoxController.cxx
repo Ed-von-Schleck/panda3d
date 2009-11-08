@@ -28,9 +28,11 @@ link(NxController *controllerPtr) {
   nassertv(controllerPtr->getType() == NX_CONTROLLER_BOX);
 
   // Link self
-  ref();
   _ptr = (NxBoxController *)controllerPtr;
   _error_type = ET_ok;
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getActor()->getScene().userData;
+  scene->_controllers.add(this);
 
   // Link actor
   PT(PhysxActor) actor = new PhysxActor();
@@ -52,7 +54,9 @@ unlink() {
 
   // Unlink self
   _error_type = ET_released;
-  unref();
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getActor()->getScene().userData;
+  scene->_controllers.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////

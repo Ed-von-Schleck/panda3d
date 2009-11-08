@@ -19,6 +19,7 @@
 #include "lvector3.h"
 
 #include "physxObject.h"
+#include "physxObjectCollection.h"
 #include "physxEnums.h"
 #include "physxContactReport.h"
 #include "PhysxControllerReport.h"
@@ -199,6 +200,12 @@ public:
 
   void link(NxScene *ptr);
   void unlink();
+
+  PhysxObjectCollection<PhysxActor> _actors;
+  PhysxObjectCollection<PhysxMaterial> _materials;
+  PhysxObjectCollection<PhysxJoint> _joints;
+  PhysxObjectCollection<PhysxForceField> _forcefields;
+  PhysxObjectCollection<PhysxController> _controllers;
 
 private:
   NxScene *_ptr;

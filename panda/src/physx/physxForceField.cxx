@@ -27,10 +27,12 @@ void PhysxForceField::
 link(NxForceField *materialPtr) {
 
   // Link self
-  ref();
   _ptr = materialPtr;
   _ptr->userData = this;
   _error_type = ET_ok;
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_forcefields.add(this);
 
   // Link shapes
   // --TODO--
@@ -50,7 +52,9 @@ unlink() {
   // Unlink self
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_forcefields.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -35,10 +35,10 @@ void PhysxScene::
 link(NxScene *scenePtr) {
 
   // Link self
-  ref();
   _ptr = scenePtr;
   _ptr->userData = this;
   _error_type = ET_ok;
+  PhysxManager::get_global_ptr()->_scenes.add(this);
 
   _cm = NxCreateControllerManager(NxGetPhysicsSDKAllocator());
   nassertv_always(_cm);
@@ -95,10 +95,17 @@ unlink() {
     joint->unlink();
   }
 
-  // Unlink forcefields TODO
+  // Unlink force fields
+  NxForceField **fields = _ptr->getForceFields();
+  NxU32 nFields = _ptr->getNbForceFields();
+
+  for (NxU32 i=0; i < nFields; i++) {
+    PT(PhysxForceField) field = (PhysxForceField *)fields[i]->userData;
+    field->unlink();
+  }
+
   // Unlink cloths TODO
   // Unlink softbodies TODO
-  // Unlink materials TODO
 
   // Unlink materials
   NxMaterial *materials[5];
@@ -115,7 +122,7 @@ unlink() {
   NxReleaseControllerManager(_cm);
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+  PhysxManager::get_global_ptr()->_scenes.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////

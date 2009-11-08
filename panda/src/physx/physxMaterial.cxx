@@ -27,10 +27,12 @@ void PhysxMaterial::
 link(NxMaterial *materialPtr) {
 
   // Link self
-  ref();
   _ptr = materialPtr;
   _ptr->userData = this;
   _error_type = ET_ok;
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_materials.add(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -44,7 +46,9 @@ unlink() {
   // Unlink self
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+
+  PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
+  scene->_materials.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////

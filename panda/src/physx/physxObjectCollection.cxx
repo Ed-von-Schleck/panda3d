@@ -62,7 +62,7 @@ remove(PT(T) object) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxObjectCollection<T>::get
 //       Access: Public
-//  Description: Returns the n-th PhysObject in the collection.
+//  Description: Returns the n-th PhysxObject in the collection.
 //               The operator [] is maybe a more convenient way to
 //               access objects from the collection.
 ////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ get(unsigned int index) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxObjectCollection<T>::operator []
 //       Access: Public
-//  Description: Returns the n-th PhysObject in the collection.
+//  Description: Returns the n-th PhysxObject in the collection.
 //               This is the same as the get() method.
 ////////////////////////////////////////////////////////////////////
 template <class T>

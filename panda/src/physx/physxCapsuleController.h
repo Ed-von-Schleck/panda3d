@@ -28,7 +28,7 @@
 //
 //               The capsule is defined as a position, a vertical
 //               height, and a radius. The height is the same height
-//               as for PhysCapsuleShape objects, i.e. the distance
+//               as for PhysxCapsuleShape objects, i.e. the distance
 //               between the two sphere centers at the end of the
 //               capsule. In other words:
 //

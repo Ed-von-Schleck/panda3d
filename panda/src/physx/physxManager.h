@@ -63,9 +63,18 @@ PUBLISHED:
   PT(PhysxHeightField) get_height_field(unsigned int idx);
   MAKE_SEQ(get_height_fields, get_num_height_fields, get_height_field);
 
+  unsigned int get_num_convex_meshes();
+  PT(PhysxConvexMesh) get_convex_mesh(unsigned int idx);
+  MAKE_SEQ(get_convex_meshes, get_num_convex_meshes, get_convex_mesh);
+
+  unsigned int get_num_triangle_meshes();
+  PT(PhysxTriangleMesh) get_triangle_mesh(unsigned int idx);
+  MAKE_SEQ(get_triangle_meshes, get_num_triangle_meshes, get_triangle_mesh);
+
 public:
   INLINE NxPhysicsSDK *get_sdk() const;
 
+  PhysxObjectCollection<PhysxScene> _scenes;
   PhysxObjectCollection<PhysxHeightField> _heightfields;
   PhysxObjectCollection<PhysxConvexMesh> _convex_meshes;
   PhysxObjectCollection<PhysxTriangleMesh> _triangle_meshes;

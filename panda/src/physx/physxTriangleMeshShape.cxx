@@ -25,10 +25,12 @@ TypeHandle PhysxTriangleMeshShape::_type_handle;
 void PhysxTriangleMeshShape::
 link(NxShape *shapePtr) {
 
-  ref();
   _ptr = shapePtr->isTriangleMesh();
   _ptr->userData = this;
   _error_type = ET_ok;
+
+  PhysxActor *actor = (PhysxActor *)_ptr->getActor().userData;
+  actor->_shapes.add(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -41,7 +43,9 @@ unlink() {
 
   _ptr->userData = NULL;
   _error_type = ET_released;
-  unref();
+
+  PhysxActor *actor = (PhysxActor *)_ptr->getActor().userData;
+  actor->_shapes.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////

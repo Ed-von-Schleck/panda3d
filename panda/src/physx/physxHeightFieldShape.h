@@ -27,8 +27,8 @@ class PhysxHeightFieldShapeDesc;
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxHeightFieldShape
 // Description : This class is a shape instance of a height field
-//               object of type PhysHeightField. Each shape is owned
-//               by an actor that it is attached to.
+//               object of type PhysxHeightField. Each shape is
+//               owned by an actor that it is attached to.
 //
 //               An instance can be created by calling the
 //               createShape() method of the PhysxActor object that
