@@ -24,7 +24,7 @@ TypeHandle PhysxHeightField::_type_handle;
 void PhysxHeightField::
 link(NxHeightField *hfPtr) {
 
-  ref();
+  PhysxManager::get_global_ptr()->_heightfields.add(this);
   _ptr = hfPtr;
   _error_type = ET_ok;
 }
@@ -38,7 +38,7 @@ void PhysxHeightField::
 unlink() {
 
   _error_type = ET_released;
-  unref();
+  PhysxManager::get_global_ptr()->_heightfields.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -52,11 +52,9 @@ release() {
   nassertv(_error_type == ET_ok);
 
   unlink();
-  NxPhysicsSDK *sdk = NxGetPhysicsSDK();
-  sdk->releaseHeightField(*_ptr);
+  NxGetPhysicsSDK()->releaseHeightField(*_ptr);
   _ptr = NULL;
 }
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxHeightField::get_height

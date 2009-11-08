@@ -25,9 +25,8 @@ void PhysxConvexMesh::
 link(NxConvexMesh *meshPtr) {
 
   // Link self
-  //ref();
+  PhysxManager::get_global_ptr()->_convex_meshes.add(this);
   _ptr = meshPtr;
-  //_ptr->userData = this;
   _error_type = ET_ok;
 }
 
@@ -40,9 +39,8 @@ void PhysxConvexMesh::
 unlink() {
 
   // Unlink self
-  //_ptr->userData = NULL;
   _error_type = ET_released;
-  //unref();
+  PhysxManager::get_global_ptr()->_convex_meshes.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -56,9 +54,6 @@ release() {
   nassertv(_error_type == ET_ok);
 
   unlink();
-  //_ptr->getScene().releaseConvexMesh(*_ptr);
-  //_ptr = NULL;
-
   NxGetPhysicsSDK()->releaseConvexMesh(*_ptr);
   _ptr = NULL;
 }

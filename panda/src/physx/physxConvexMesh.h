@@ -24,7 +24,9 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxConvexMesh
-// Description : 
+// Description : A Convex Mesh. Internally represented as a list of
+//               convex polygons. The number of polygons is
+//               limited to 256.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxConvexMesh : public PhysxObject {
 

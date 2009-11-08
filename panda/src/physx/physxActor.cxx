@@ -44,7 +44,6 @@ link(NxActor *actorPtr) {
     PT(PhysxShape) shape = PhysxShape::factory(shapes[i]->getType());
     shape->link(shapes[i]);
   }
-
 }
 
 ////////////////////////////////////////////////////////////////////

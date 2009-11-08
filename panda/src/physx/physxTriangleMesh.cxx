@@ -25,9 +25,8 @@ void PhysxTriangleMesh::
 link(NxTriangleMesh *meshPtr) {
 
   // Link self
-  //ref();
+  PhysxManager::get_global_ptr()->_triangle_meshes.add(this);
   _ptr = meshPtr;
-  //_ptr->userData = this;
   _error_type = ET_ok;
 }
 
@@ -40,9 +39,8 @@ void PhysxTriangleMesh::
 unlink() {
 
   // Unlink self
-  //_ptr->userData = NULL;
   _error_type = ET_released;
-  //unref();
+  PhysxManager::get_global_ptr()->_triangle_meshes.remove(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -56,9 +54,6 @@ release() {
   nassertv(_error_type == ET_ok);
 
   unlink();
-  //_ptr->getScene().releaseTriangleMesh(*_ptr);
-  //_ptr = NULL;
-
   NxGetPhysicsSDK()->releaseTriangleMesh(*_ptr);
   _ptr = NULL;
 }

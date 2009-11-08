@@ -193,9 +193,6 @@ create_height_field(PhysxHeightFieldDesc &desc) {
 
   hf->link(hfPtr);
 
-  // _hfs....
-  // TODO...
-
   return hf;
 }
 
@@ -209,10 +206,7 @@ get_height_field(unsigned int idx) {
 
   nassertr_always(idx < _sdk->getNbHeightFields(), NULL);
 
-  //return (PhysxHeightField *)_hfs[idx];
-  // TODO...
-
-  return NULL;
+  return (PhysxHeightField *)_heightfields[idx];
 }
 
 ////////////////////////////////////////////////////////////////////

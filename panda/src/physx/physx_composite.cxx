@@ -97,5 +97,4 @@
 #include "physxForceFieldDesc.cxx"
 #include "physxForceField.cxx"
 
-
-
+#include "physxObjectCollection.cxx"

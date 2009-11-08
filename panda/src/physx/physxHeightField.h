@@ -40,21 +40,22 @@
 //               decreased memory consumption.
 //
 //               HeightFields are referenced by shape instances of
-//               type PhysHeightFieldShape.
+//               type PhysxHeightFieldShape.
 //
 //               To create an instance of this class call
-//               PhysEngine::create_height_field(), and
-//               PhysHeightField::remove() to delete it. This is
+//               PhysManager::create_height_field(), and
+//               PhysxHeightField::release() to release it. This is
 //               only possible once you have released all of its
-//               PhysHeightFiedShape instances.
+//               PhysxHeightFiedShape instances before.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxHeightField : public PhysxObject {
 
 PUBLISHED:
+  void release();
+
   unsigned int get_reference_count() const;
   float get_height(float x, float y) const;
 
-////////////////////////////////////////////////////////////////////
 public:
   INLINE PhysxHeightField();
   INLINE ~PhysxHeightField();
@@ -63,7 +64,6 @@ public:
 
   void link(NxHeightField *ptr);
   void unlink();
-  void release();
 
 private:
   NxHeightField *_ptr;

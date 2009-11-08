@@ -20,6 +20,7 @@
 #include "luse.h"
 
 #include "physxEnums.h"
+#include "physxObjectCollection.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -64,6 +65,10 @@ PUBLISHED:
 
 public:
   INLINE NxPhysicsSDK *get_sdk() const;
+
+  PhysxObjectCollection<PhysxHeightField> _heightfields;
+  PhysxObjectCollection<PhysxConvexMesh> _convex_meshes;
+  PhysxObjectCollection<PhysxTriangleMesh> _triangle_meshes;
 
   INLINE static NxVec3 vec3_to_nxVec3(const LVector3f &v);
   INLINE static LVector3f nxVec3_to_vec3(const NxVec3 &v);
