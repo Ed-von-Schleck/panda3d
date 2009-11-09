@@ -98,3 +98,6 @@
 #include "physxForceField.cxx"
 
 #include "physxObjectCollection.cxx"
+
+#include "physxWheelShape.cxx"
+#include "physxWheelShapeDesc.cxx"

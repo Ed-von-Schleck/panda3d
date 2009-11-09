@@ -260,6 +260,15 @@
 #define NX_Y 2
 #define NX_Z 3
 
+// PhysxWheelShapeFlag
+#define NX_WF_WHEEL_AXIS_CONTACT_NORMAL 1<<0
+#define NX_WF_INPUT_LAT_SLIPVELOCITY 1<<1
+#define NX_WF_INPUT_LNG_SLIPVELOCITY 1<<2
+#define NX_WF_UNSCALED_SPRING_BEHAVIOR 1<<3
+#define NX_WF_AXLE_SPEED_OVERRIDE 1<<4
+#define NX_WF_EMULATE_LEGACY_WHEEL 1<<5
+#define NX_WF_CLAMPED_FRICTION 1<<6
+
 #endif // CPPPARSER
 
 ////////////////////////////////////////////////////////////////////
@@ -528,6 +537,16 @@ PUBLISHED:
     X_up  = NX_X,
     Y_up  = NX_Y,
     Z_up  = NX_Z
+  };
+
+  enum PhysxWheelShapeFlag {
+    WSF_wheel_axis_contact_normal = NX_WF_WHEEL_AXIS_CONTACT_NORMAL,
+    WSF_input_lat_slipvelocity    = NX_WF_INPUT_LAT_SLIPVELOCITY,
+    WSF_input_lng_slipvelocity    = NX_WF_INPUT_LNG_SLIPVELOCITY,
+    WSF_unscaled_spring_behavior  = NX_WF_UNSCALED_SPRING_BEHAVIOR,
+    WSF_axle_speed_override       = NX_WF_AXLE_SPEED_OVERRIDE,
+    WSF_emulate_legacy_wheel      = NX_WF_EMULATE_LEGACY_WHEEL,
+    WSF_clamped_friction          = NX_WF_CLAMPED_FRICTION
   };
 
 };

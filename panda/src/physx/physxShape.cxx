@@ -22,7 +22,7 @@
 #include "physxConvexShape.h"
 #include "physxHeightFieldShape.h"
 #include "physxTriangleMeshShape.h"
-//#include "physxWheelShape.h"
+#include "physxWheelShape.h"
 
 TypeHandle PhysxShape::_type_handle;
 
@@ -71,8 +71,8 @@ factory(NxShapeType shapeType) {
   case NX_SHAPE_HEIGHTFIELD:
     return new PhysxHeightFieldShape();
 
-  //case NX_SHAPE_WHEEL:
-  //  return new PhysxWheelShape();
+  case NX_SHAPE_WHEEL:
+    return new PhysxWheelShape();
   }
 
   physx_cat.error() << "Unknown shape type.\n";

@@ -46,6 +46,7 @@
 #include "physxSphericalJoint.h"
 #include "physxTriangleMesh.h"
 #include "physxTriangleMeshShape.h"
+#include "physxWheelShape.h"
 
 ConfigureDef(config_physx);
 NotifyCategoryDef(physx, "");
@@ -123,6 +124,7 @@ init_libphysx() {
   PhysxSphericalJoint::init_type();
   PhysxTriangleMesh::init_type();
   PhysxTriangleMeshShape::init_type();
+  PhysxWheelShape::init_type();
 
   PandaSystem *ps = PandaSystem::get_global_ptr();
   ps->add_system("PhysX");
