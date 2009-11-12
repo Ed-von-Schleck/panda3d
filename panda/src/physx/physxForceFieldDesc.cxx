@@ -14,6 +14,7 @@
 
 #include "physxForceFieldDesc.h"
 #include "physxForceFieldShapeDesc.h"
+#include "physxForceFieldShapeGroup.h"
 #include "physxManager.h"
 #include "physxActor.h"
 
@@ -168,28 +169,6 @@ set_kernel_velocity_multiplier(const LMatrix3f &multiplier) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceFieldDesc::add_include_shape
-//       Access: Published
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void PhysxForceFieldDesc::
-add_include_shape(PhysxForceFieldShapeDesc &desc) {
-
-  _desc.includeGroupShapes.push_back(desc.ptr());
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceFieldDesc::add_exclude_shape
-//       Access: Published
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void PhysxForceFieldDesc::
-add_exclude_shape(PhysxForceFieldShapeDesc &desc) {
-
-  _sg.shapes.push_back(desc.ptr());
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxForceFieldDesc::create_kernel
 //       Access: Public
 //  Description: 
@@ -209,5 +188,38 @@ void PhysxForceFieldDesc::
 set_coordinates(PhysxForceFieldCoordinates coordinates) {
 
   _desc.coordinates = (NxForceFieldCoordinates) coordinates;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldDesc::add_include_group_shape
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxForceFieldDesc::
+add_include_group_shape(PhysxForceFieldShapeDesc &desc) {
+
+  _desc.includeGroupShapes.push_back(desc.ptr());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldDesc::add_shape_group
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxForceFieldDesc::
+add_shape_group(PT(PhysxForceFieldShapeGroup) group) {
+
+  _desc.shapeGroups.push_back(group->ptr());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldDesc::set_actor
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxForceFieldDesc::
+set_actor(PT(PhysxActor) actor) {
+
+  _desc.actor = actor->ptr();
 }
 

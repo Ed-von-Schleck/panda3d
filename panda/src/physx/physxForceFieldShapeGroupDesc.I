@@ -1,5 +1,5 @@
-// Filename: physxForceFieldDesc.I
-// Created by:  enn0x (06Nov09)
+// Filename: physxForceFieldShapeGroupDesc.I
+// Created by:  enn0x (11Nov09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -15,43 +15,43 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceFieldDesc::Constructor
+//     Function: PhysxForceFieldShapeGroupDesc::Constructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxForceFieldDesc::
-PhysxForceFieldDesc() {
+INLINE PhysxForceFieldShapeGroupDesc::
+PhysxForceFieldShapeGroupDesc() {
 
   _desc.name = "";
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceFieldDesc::Destructor
+//     Function: PhysxForceFieldShapeGroupDesc::Destructor
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PhysxForceFieldDesc::
-~PhysxForceFieldDesc() {
+INLINE PhysxForceFieldShapeGroupDesc::
+~PhysxForceFieldShapeGroupDesc() {
 
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceFieldDesc::set_to_default
+//     Function: PhysxForceFieldShapeGroupDesc::set_to_default
 //       Access: Published
 //  Description: (re)sets the structure to the default.
 ////////////////////////////////////////////////////////////////////
-INLINE void PhysxForceFieldDesc::
+INLINE void PhysxForceFieldShapeGroupDesc::
 set_to_default() {
 
   _desc.setToDefault();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceFieldDesc::is_valid
+//     Function: PhysxForceFieldShapeGroupDesc::is_valid
 //       Access: Published
 //  Description: Returns true if the descriptor is valid.
 ////////////////////////////////////////////////////////////////////
-INLINE bool PhysxForceFieldDesc::
+INLINE bool PhysxForceFieldShapeGroupDesc::
 is_valid() const {
 
   return _desc.isValid();

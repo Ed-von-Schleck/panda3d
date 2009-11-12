@@ -25,8 +25,9 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
-class PhysxForceFieldShapeDesc;
 class PhysxActor;
+class PhysxForceFieldShapeDesc;
+class PhysxForceFieldShapeGroup;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxForceFieldDesc
@@ -46,6 +47,7 @@ PUBLISHED:
   void set_mat(const LMatrix4f &mat);
   void set_hpr(float h, float p, float r);
   void set_coordinates(PhysxForceFieldCoordinates coordinates);
+  void set_actor(PT(PhysxActor) actor);
 
   void set_kernel_constant(const LVector3f &constant);
   void set_kernel_position_target(const LPoint3f &target);
@@ -57,17 +59,14 @@ PUBLISHED:
   void set_kernel_falloff_quadratic(const LVector3f &falloff);
   void set_kernel_noise(const LVector3f &noise);
 
-  void add_include_shape(PhysxForceFieldShapeDesc &shapeDesc);
-  void add_exclude_shape(PhysxForceFieldShapeDesc &shapeDesc);
+  void add_include_group_shape(PhysxForceFieldShapeDesc &shapeDesc);
+  void add_shape_group(PT(PhysxForceFieldShapeGroup) group);
 
 public:
   void create_kernel(NxScene *scenePtr);
 
-  INLINE const NxForceFieldShapeGroupDesc *sg() const;
-
   NxForceFieldDesc _desc;
   NxForceFieldLinearKernelDesc _kernel;
-  NxForceFieldShapeGroupDesc _sg;
 };
 
 #include "physxForceFieldDesc.I"

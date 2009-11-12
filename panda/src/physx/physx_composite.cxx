@@ -96,6 +96,8 @@
 #include "physxSphereForceFieldShapeDesc.cxx"
 #include "physxForceFieldDesc.cxx"
 #include "physxForceField.cxx"
+#include "physxForceFieldShapeGroup.cxx"
+#include "physxForceFieldShapeGroupDesc.cxx"
 
 #include "physxObjectCollection.cxx"
 

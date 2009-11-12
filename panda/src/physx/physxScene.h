@@ -40,6 +40,8 @@ class PhysxController;
 class PhysxControllerDesc;
 class PhysxForceField;
 class PhysxForceFieldDesc;
+class PhysxForceFieldShapeGroup;
+class PhysxForceFieldShapeGroupDesc;
 class PhysxJoint;
 class PhysxJointDesc;
 class PhysxDebugGeomNode;
@@ -118,6 +120,12 @@ PUBLISHED:
   PT(PhysxForceField) create_force_field(PhysxForceFieldDesc &desc);
   PT(PhysxForceField) get_force_field(unsigned int idx) const;
   MAKE_SEQ(get_force_fields, get_num_force_fields, get_force_field);
+
+  // Force field shape groups
+  unsigned int get_num_force_field_shape_groups() const;
+  PT(PhysxForceFieldShapeGroup) create_force_field_shape_group(PhysxForceFieldShapeGroupDesc &desc);
+  PT(PhysxForceFieldShapeGroup) get_force_field_shape_group(unsigned int idx) const;
+  MAKE_SEQ(get_force_field_shape_groups, get_num_force_field_shape_groups, get_force_field_shape_group);
 
   // Raycast queries
   bool raycast_any_shape(const PhysxRay &ray,
@@ -205,6 +213,7 @@ public:
   PhysxObjectCollection<PhysxMaterial> _materials;
   PhysxObjectCollection<PhysxJoint> _joints;
   PhysxObjectCollection<PhysxForceField> _forcefields;
+  PhysxObjectCollection<PhysxForceFieldShapeGroup> _ffgroups;
   PhysxObjectCollection<PhysxController> _controllers;
 
 private:

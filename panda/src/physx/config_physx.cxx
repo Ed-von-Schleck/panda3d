@@ -29,6 +29,7 @@
 #include "physxDistanceJoint.h"
 #include "physxFixedJoint.h"
 #include "physxForceField.h"
+#include "physxForceFieldShapeGroup.h"
 #include "physxHeightField.h"
 #include "physxHeightFieldShape.h"
 #include "physxJoint.h"
@@ -107,6 +108,7 @@ init_libphysx() {
   PhysxDistanceJoint::init_type();
   PhysxFixedJoint::init_type();
   PhysxForceField::init_type();
+  PhysxForceFieldShapeGroup::init_type();
   PhysxHeightField::init_type();
   PhysxHeightFieldShape::init_type();
   PhysxJoint::init_type();

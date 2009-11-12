@@ -14,6 +14,7 @@
 
 #include "physxForceField.h"
 #include "physxForceFieldDesc.h"
+#include "physxForceFieldShapeGroup.h"
 #include "physxScene.h"
 
 TypeHandle PhysxForceField::_type_handle;
@@ -34,8 +35,10 @@ link(NxForceField *materialPtr) {
   PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
   scene->_forcefields.add(this);
 
-  // Link shapes
-  // --TODO--
+  // Link include shape group
+  PT(PhysxForceFieldShapeGroup) group = new PhysxForceFieldShapeGroup();
+  group->link(&(_ptr->getIncludeShapeGroup()));
+  _ptr->getIncludeShapeGroup().setName("");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -46,8 +49,9 @@ link(NxForceField *materialPtr) {
 void PhysxForceField::
 unlink() {
 
-  // Unlink shapes
-  // --TODO--
+  // Unlink inlcude shape group
+  PT(PhysxForceFieldShapeGroup) group = (PhysxForceFieldShapeGroup *)(_ptr->getIncludeShapeGroup().userData);
+  group->unlink();
 
   // Unlink self
   _ptr->userData = NULL;
@@ -73,18 +77,6 @@ release() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxForceField::get_scene
-//       Access: Published
-//  Description: 
-////////////////////////////////////////////////////////////////////
-PT(PhysxScene) PhysxForceField::
-get_scene() const {
-
-  nassertr(_error_type == ET_ok, NULL);
-  return (PhysxScene *)(_ptr->getScene().userData);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxForceField::set_name
 //       Access: Published
 //  Description: 
@@ -106,5 +98,63 @@ get_name() const {
 
   nassertr(_error_type == ET_ok, "");
   return _ptr->getName();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::get_scene
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxScene) PhysxForceField::
+get_scene() const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  return (PhysxScene *)(_ptr->getScene().userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::get_include_shape_group
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxForceFieldShapeGroup) PhysxForceField::
+get_include_shape_group() const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  return (PhysxForceFieldShapeGroup *)(_ptr->getIncludeShapeGroup().userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::get_num_shape_groups
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxForceField::
+get_num_shape_groups() const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  return _ptr->getNbShapeGroups();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::get_shape_group
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PT(PhysxForceFieldShapeGroup) PhysxForceField::
+get_shape_group(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbShapeGroups(), NULL);
+
+  NxForceFieldShapeGroup *groupPtr;
+  NxU32 nGroups = _ptr->getNbShapeGroups();
+
+  _ptr->resetShapeGroupsIterator();
+  for (NxU32 i=0; i <= idx; i++) {
+    groupPtr = _ptr->getNextShapeGroup();
+  }
+
+  return (PhysxForceFieldShapeGroup *)(groupPtr->userData);
 }
 

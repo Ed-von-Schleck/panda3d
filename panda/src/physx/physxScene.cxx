@@ -16,6 +16,7 @@
 #include "physxManager.h"
 #include "physxActorDesc.h"
 #include "physxForceFieldDesc.h"
+#include "physxForceFieldShapeGroupDesc.h"
 #include "physxControllerDesc.h"
 #include "physxSceneStats2.h"
 
@@ -102,6 +103,16 @@ unlink() {
   for (NxU32 i=0; i < nFields; i++) {
     PT(PhysxForceField) field = (PhysxForceField *)fields[i]->userData;
     field->unlink();
+  }
+
+  // Unlink force field shape groups
+  NxU32 nGroups = _ptr->getNbForceFieldShapeGroups();
+
+  _ptr->resetForceFieldShapeGroupsIterator();
+  for (NxU32 i=0; i < nGroups; i++) {
+    NxForceFieldShapeGroup *groupPtr = _ptr->getNextForceFieldShapeGroup();
+    PT(PhysxForceFieldShapeGroup) group = (PhysxForceFieldShapeGroup *)groupPtr->userData;
+    group->unlink();
   }
 
   // Unlink cloths TODO
@@ -712,8 +723,9 @@ create_force_field(PhysxForceFieldDesc &desc) {
   nassertr(fieldPtr, NULL);
 
   // Create the exclude shape group
-  NxForceFieldShapeGroup *sgPtr = _ptr->createForceFieldShapeGroup(*desc.sg());
-  fieldPtr->addShapeGroup(*sgPtr);
+  //NxForceFieldShapeGroup *sgPtr = _ptr->createForceFieldShapeGroup(*desc.sg());
+  //fieldPtr->addShapeGroup(*sgPtr);
+  //TODO: removed for now... replacing...
 
   field->link(fieldPtr);
 
@@ -736,6 +748,63 @@ get_force_field(unsigned int idx) const {
   NxForceField *fieldPtr = fields[idx];
 
   return (PhysxForceField *)(fieldPtr->userData);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_num_force_field_shape_groups
+//       Access: Published
+//  Description: Gets the number of force field shape groups in
+//               the scene.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxScene::
+get_num_force_field_shape_groups() const {
+
+  nassertr(_error_type == ET_ok, -1);
+  return _ptr->getNbForceFieldShapeGroups();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::create_force_field_shape_group
+//       Access: Published
+//  Description: Creates a new force field shape group in this
+//               scene.
+////////////////////////////////////////////////////////////////////
+PT(PhysxForceFieldShapeGroup) PhysxScene::
+create_force_field_shape_group(PhysxForceFieldShapeGroupDesc &desc) {
+
+  nassertr(_error_type == ET_ok, NULL);
+
+  PT(PhysxForceFieldShapeGroup) group = new PhysxForceFieldShapeGroup();
+  nassertr(group, NULL);
+
+  NxForceFieldShapeGroup *groupPtr = _ptr->createForceFieldShapeGroup(desc._desc);
+  nassertr(groupPtr, NULL);
+
+  group->link(groupPtr);
+
+  return group;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_force_field_shape_group
+//       Access: Published
+//  Description: Returns the n-th force field shape group in this
+//               scene
+////////////////////////////////////////////////////////////////////
+PT(PhysxForceFieldShapeGroup) PhysxScene::
+get_force_field_shape_group(unsigned int idx) const {
+
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbForceFieldShapeGroups(), NULL);
+
+  _ptr->resetForceFieldShapeGroupsIterator();
+  NxForceFieldShapeGroup *groupPtr = NULL;
+  idx++;
+  while (idx-- > 0) {
+    groupPtr = _ptr->getNextForceFieldShapeGroup();
+  }
+
+  return groupPtr ? (PhysxForceFieldShapeGroup *)groupPtr->userData : NULL;
 }
 
 ////////////////////////////////////////////////////////////////////

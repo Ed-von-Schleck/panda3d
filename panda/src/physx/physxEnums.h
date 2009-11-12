@@ -188,6 +188,9 @@
 #define NX_FFC_CYLINDRICAL 2
 #define NX_FFC_TOROIDAL 3
 
+// PhysxForceFieldShapeGroupFlag
+#define NX_FFSG_EXCLUDE_GROUP 1
+
 // PhysxMaterialFlag
 #define NX_MF_ANISOTROPIC 1<<0
 #define NX_MF_DISABLE_FRICTION 1<<4
@@ -455,6 +458,10 @@ PUBLISHED:
     FFC_spherical,
     FFC_cylindrical,
     FFC_toroidal,
+  };
+
+  enum PhysxForceFieldShapeGroupFlag {
+    FFSG_exclude_group = NX_FFSG_EXCLUDE_GROUP
   };
 
   enum PhysxForceMode {
