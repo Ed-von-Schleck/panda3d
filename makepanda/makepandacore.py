@@ -979,12 +979,12 @@ def SdkLocateMacOSX():
 
 def SdkLocatePhysX():
     if (sys.platform == "win32"):
-        path = os.path.join(GetProgramFiles(),"NVIDIA Corporation\\NVIDIA PhysX SDK\\v2.8.1/SDKs")
+        path = os.path.join(GetProgramFiles(),"NVIDIA Corporation\\NVIDIA PhysX SDK\\v2.8.3/SDKs")
         if (os.path.isdir(path)):
             SDK["PHYSX"] = path
     elif (sys.platform.startswith("linux")):
-        incpath = "/usr/include/PhysX/v2.8.1/SDKs"
-        libpath = "/usr/lib/PhysX/v2.8.1"
+        incpath = "/usr/include/PhysX/v2.8.3/SDKs"
+        libpath = "/usr/lib/PhysX/v2.8.3"
         if (os.path.isdir(incpath) and os.path.isdir(libpath)):
             SDK["PHYSX"] = incpath
             SDK["PHYSXLIBS"] = libpath
