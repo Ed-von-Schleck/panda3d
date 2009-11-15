@@ -49,9 +49,9 @@ PUBLISHED:
 
   // Shapes
   unsigned int get_num_shapes() const;
-  //PT(PhysxForceFieldShape) create_shape(PhysxForceFieldShapeDesc &desc);
-  //PT(PhysxForceFieldShape) get_shape(unsigned int idx) const;
-  //MAKE_SEQ(get_shapes, get_num_shapes, get_shape);
+  PT(PhysxForceFieldShape) create_shape(PhysxForceFieldShapeDesc &desc);
+  PT(PhysxForceFieldShape) get_shape(unsigned int idx) const;
+  MAKE_SEQ(get_shapes, get_num_shapes, get_shape);
 
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:
@@ -62,6 +62,8 @@ public:
 
   void link(NxForceFieldShapeGroup *ptr);
   void unlink();
+
+  PhysxObjectCollection<PhysxForceFieldShape> _shapes;
 
 private:
   NxForceFieldShapeGroup *_ptr;

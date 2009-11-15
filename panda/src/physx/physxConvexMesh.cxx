@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxConvexMesh.h"
+#include "physxMeshPool.h"
 
 TypeHandle PhysxConvexMesh::_type_handle;
 
@@ -56,6 +57,8 @@ release() {
   unlink();
   NxGetPhysicsSDK()->releaseConvexMesh(*_ptr);
   _ptr = NULL;
+
+  PhysxMeshPool::release_convex_mesh(this);
 }
 
 ////////////////////////////////////////////////////////////////////

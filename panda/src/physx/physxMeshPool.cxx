@@ -129,3 +129,97 @@ load_triangle_mesh(const Filename &filename) {
   return mesh;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxMeshPool::release_convex_mesh
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxMeshPool::
+release_convex_mesh(PT(PhysxConvexMesh) mesh) {
+
+  ConvexMeshes::iterator it;
+  for (it=_convex_meshes.begin(); it != _convex_meshes.end(); ++it) {
+    if (mesh == (*it).second) {
+      _convex_meshes.erase(it);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxMeshPool::release_triangle_mesh
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+bool PhysxMeshPool::
+release_triangle_mesh(PT(PhysxTriangleMesh) mesh) {
+
+  TriangleMeshes::iterator it;
+  for (it=_triangle_meshes.begin(); it != _triangle_meshes.end(); ++it) {
+    if (mesh == (*it).second) {
+      _triangle_meshes.erase(it);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxMeshPool::list_content
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxMeshPool::
+list_contents() {
+  list_contents( nout );
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxMeshPool::list_content
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxMeshPool::
+list_contents( ostream &out ) {
+
+  out << "PhysX mesh pool contents:\n";
+
+  // Convex meshes
+  {
+    ConvexMeshes::const_iterator it;
+    for (it=_convex_meshes.begin(); it != _convex_meshes.end(); ++it) {
+      Filename fn = (*it).first;
+      PT(PhysxConvexMesh) mesh = (*it).second;
+
+      out << "  " << fn.get_fullpath()
+          << " (convex mesh, " << mesh->ptr()->getReferenceCount() 
+          << " references)" << endl;
+    }
+  }
+
+  // Triangle meshes
+  {
+    TriangleMeshes::const_iterator it;
+    for (it=_triangle_meshes.begin(); it != _triangle_meshes.end(); ++it) {
+      Filename fn = (*it).first;
+      PT(PhysxTriangleMesh) mesh = (*it).second;
+
+      out << "  " << fn.get_fullpath()
+          << " (triangle mesh, " << mesh->ptr()->getReferenceCount() 
+          << " references)\n";
+    }
+  }
+
+  // Summary
+  NxPhysicsSDK *sdk = NxGetPhysicsSDK();
+
+  out << "  Total number of convex meshes: " << sdk->getNbConvexMeshes()
+      << " created, " << _convex_meshes.size() << " registred\n";
+
+  out << "  Total number of triangle meshes: " << sdk->getNbTriangleMeshes() 
+      << " created, " << _triangle_meshes.size() << " registred\n";
+}
+

@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxTriangleMesh.h"
+#include "physxMeshPool.h"
 
 TypeHandle PhysxTriangleMesh::_type_handle;
 
@@ -56,6 +57,8 @@ release() {
   unlink();
   NxGetPhysicsSDK()->releaseTriangleMesh(*_ptr);
   _ptr = NULL;
+
+  PhysxMeshPool::release_triangle_mesh(this);
 }
 
 ////////////////////////////////////////////////////////////////////

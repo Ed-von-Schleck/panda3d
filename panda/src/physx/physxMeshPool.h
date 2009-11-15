@@ -44,22 +44,11 @@ PUBLISHED:
   static PT(PhysxConvexMesh) load_convex_mesh(const Filename &filename);
   static PT(PhysxTriangleMesh) load_triangle_mesh(const Filename &filename);
 
+  static bool release_convex_mesh(PT(PhysxConvexMesh) mesh);
+  static bool release_triangle_mesh(PT(PhysxTriangleMesh) mesh);
 
-
-  //static bool release_convex_mesh(const Filename &Filename);
-  //static bool release_triangle_mesh(const Filename &filename);
-  //static bool release_cloth_mesh(const Filename &filename);
-  //static bool release_softbody_mesh(const Filename &filename);
-
-  //static void garbage_collect();
-
-  //static NxConvexMesh *load_convex_mesh(const Filename &filename);
-  //static NxTriangleMesh *load_triangle_mesh(const Filename &filename);
-  //static NxClothMesh *load_cloth_mesh(const Filename &filename);
-  //static NxSoftBodyMesh *load_softbody_mesh(const Filename &filename);
-
-  //INLINE static void list_contents();
-  //INLINE static void list_contents(ostream &out);
+  static void list_contents();
+  static void list_contents(ostream &out);
 
 private:
   static bool prepare_filename(Filename &fn);

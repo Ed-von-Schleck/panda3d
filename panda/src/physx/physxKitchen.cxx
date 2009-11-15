@@ -13,7 +13,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxKitchen.h"
+#include "physxConvexMesh.h"
 #include "physxConvexMeshDesc.h"
+#include "physxTriangleMesh.h"
 #include "physxTriangleMeshDesc.h"
 #include "physxFileStream.h"
 #include "physxMemoryReadBuffer.h"

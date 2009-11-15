@@ -17,11 +17,14 @@
 
 #include "physxActor.h"
 #include "physxBoxController.h"
+#include "physxBoxForceFieldShape.h"
 #include "physxBoxShape.h"
 #include "physxCapsuleController.h"
+#include "physxCapsuleForceFieldShape.h"
 #include "physxCapsuleShape.h"
 #include "physxController.h"
 #include "physxConvexMesh.h"
+#include "physxConvexForceFieldShape.h"
 #include "physxConvexShape.h"
 #include "physxCylindricalJoint.h"
 #include "physxD6Joint.h"
@@ -29,6 +32,7 @@
 #include "physxDistanceJoint.h"
 #include "physxFixedJoint.h"
 #include "physxForceField.h"
+#include "physxForceFieldShape.h"
 #include "physxForceFieldShapeGroup.h"
 #include "physxHeightField.h"
 #include "physxHeightFieldShape.h"
@@ -43,6 +47,7 @@
 #include "physxRevoluteJoint.h"
 #include "physxScene.h"
 #include "physxShape.h"
+#include "physxSphereForceFieldShape.h"
 #include "physxSphereShape.h"
 #include "physxSphericalJoint.h"
 #include "physxTriangleMesh.h"
@@ -96,11 +101,14 @@ init_libphysx() {
 
   PhysxActor::init_type();
   PhysxBoxController::init_type();
+  PhysxBoxForceFieldShape::init_type();
   PhysxBoxShape::init_type();
   PhysxCapsuleController::init_type();
+  PhysxCapsuleForceFieldShape::init_type();
   PhysxCapsuleShape::init_type();
   PhysxController::init_type();
   PhysxConvexMesh::init_type();
+  PhysxConvexForceFieldShape::init_type();
   PhysxConvexShape::init_type();
   PhysxCylindricalJoint::init_type();
   PhysxD6Joint::init_type();
@@ -108,6 +116,7 @@ init_libphysx() {
   PhysxDistanceJoint::init_type();
   PhysxFixedJoint::init_type();
   PhysxForceField::init_type();
+  PhysxForceFieldShape::init_type();
   PhysxForceFieldShapeGroup::init_type();
   PhysxHeightField::init_type();
   PhysxHeightFieldShape::init_type();
@@ -122,6 +131,7 @@ init_libphysx() {
   PhysxRevoluteJoint::init_type();
   PhysxScene::init_type();
   PhysxShape::init_type();
+  PhysxSphereForceFieldShape::init_type();
   PhysxSphereShape::init_type();
   PhysxSphericalJoint::init_type();
   PhysxTriangleMesh::init_type();

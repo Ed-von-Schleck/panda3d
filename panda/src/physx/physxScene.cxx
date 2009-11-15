@@ -722,11 +722,6 @@ create_force_field(PhysxForceFieldDesc &desc) {
   NxForceField *fieldPtr = _ptr->createForceField(desc._desc);
   nassertr(fieldPtr, NULL);
 
-  // Create the exclude shape group
-  //NxForceFieldShapeGroup *sgPtr = _ptr->createForceFieldShapeGroup(*desc.sg());
-  //fieldPtr->addShapeGroup(*sgPtr);
-  //TODO: removed for now... replacing...
-
   field->link(fieldPtr);
 
   return field;
@@ -735,7 +730,7 @@ create_force_field(PhysxForceFieldDesc &desc) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxScene::get_force_field
 //       Access: Published
-//  Description: Retrieve the n-th force field from the array of
+//  Description: Returns the n-th force field from the array of
 //               all the force fields in the scene.
 ////////////////////////////////////////////////////////////////////
 PT(PhysxForceField) PhysxScene::

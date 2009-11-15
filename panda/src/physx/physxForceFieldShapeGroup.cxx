@@ -15,7 +15,7 @@
 #include "physxForceFieldShapeGroup.h"
 #include "physxForceFieldShapeGroupDesc.h"
 #include "physxForceField.h"
-//#include "physxForceFieldShape.h" // TODO
+#include "physxForceFieldShape.h"
 
 TypeHandle PhysxForceFieldShapeGroup::_type_handle;
 
@@ -28,7 +28,13 @@ void PhysxForceFieldShapeGroup::
 link(NxForceFieldShapeGroup *groupPtr) {
 
   // Link shapes
-  // TODO
+  NxU32 nShapes = _ptr->getNbShapes();
+  ptr()->resetShapesIterator();
+  for (NxU32 i=0; i < nShapes; i++) {
+    NxForceFieldShape *shapePtr = _ptr->getNextShape();
+    PT(PhysxForceFieldShape) shape = PhysxForceFieldShape::factory(shapePtr->getType());
+    shape->link(shapePtr);
+  }
 
   // Link self
   _ptr = groupPtr;
@@ -48,7 +54,13 @@ void PhysxForceFieldShapeGroup::
 unlink() {
 
   // Unlink shapes
-  // TODO
+  NxU32 nShapes = _ptr->getNbShapes();
+  ptr()->resetShapesIterator();
+  for (NxU32 i=0; i < nShapes; i++) {
+    NxForceFieldShape *shapePtr = _ptr->getNextShape();
+    PT(PhysxForceFieldShape) shape = (PhysxForceFieldShape *)shapePtr->userData;
+    shape->unlink();
+  }
 
   // Unlink self
   _ptr->userData = NULL;
@@ -61,7 +73,7 @@ unlink() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxForceFieldShapeGroup::release
 //       Access: Published
-//  Description: 
+//  Description: Releases the force field shape.
 ////////////////////////////////////////////////////////////////////
 void PhysxForceFieldShapeGroup::
 release() {
@@ -159,11 +171,11 @@ get_num_shapes() const {
   return _ptr->getNbShapes();
 }
 
-/*
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxForceFieldShapeGroup::create_shape
 //       Access: Published
-//  Description: 
+//  Description: Creates a force field shape and adds it to the
+//               group.
 ////////////////////////////////////////////////////////////////////
 PT(PhysxForceFieldShape) PhysxForceFieldShapeGroup::
 create_shape(PhysxForceFieldShapeDesc &desc) {
@@ -171,37 +183,36 @@ create_shape(PhysxForceFieldShapeDesc &desc) {
   nassertr(_error_type == ET_ok, NULL);
   nassertr(desc.is_valid(),NULL);
 
-  //PT(PhysxForceFieldShape) shape = PhysxForceFieldShape::factory(desc.ptr()->getType());
-  //nassertr(shape, NULL);
+  PT(PhysxForceFieldShape) shape = PhysxForceFieldShape::factory(desc.ptr()->getType());
+  nassertr(shape, NULL);
 
-  //NxShape *shapePtr = _ptr->createShape(*desc.ptr());
-  //nassertr(shapePtr, NULL);
+  NxForceFieldShape *shapePtr = _ptr->createShape(*desc.ptr());
+  nassertr(shapePtr, NULL);
 
-  //shape->link(shapePtr);
+  shape->link(shapePtr);
 
-  //return shape;
-
-  return NULL; // TODO
+  return shape;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxForceFieldShapeGroup::get_shape
 //       Access: Published
-//  Description: 
+//  Description: Returns the i-th shape in the force field group.
 ////////////////////////////////////////////////////////////////////
 PT(PhysxForceFieldShape) PhysxForceFieldShapeGroup::
 get_shape(unsigned int idx) const {
 
-  //nassertr(_error_type == ET_ok, NULL);
-  //nassertr_always(idx < _ptr->getNbShapes(), NULL);
+  nassertr(_error_type == ET_ok, NULL);
+  nassertr_always(idx < _ptr->getNbShapes(), NULL);
 
-  //NxShape * const *shapes = _ptr->getShapes();
-  //NxShape *shapePtr = shapes[idx];
-  //PhysxShape *shape = (PhysxShape *)(shapePtr->userData);
+  NxForceFieldShape *shapePtr;
+  NxU32 nShapes = _ptr->getNbShapes();
 
-  //return shape;
+  _ptr->resetShapesIterator();
+  for (NxU32 i=0; i <= idx; i++) {
+    shapePtr = _ptr->getNextShape();
+  }
 
-  return NULL; // TODO
+  return (PhysxForceFieldShape *)(shapePtr->userData);
 }
-*/
 
