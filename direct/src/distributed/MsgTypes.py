@@ -85,6 +85,11 @@ MsgName2Id = {
     'CLIENT_GET_FRIEND_LIST_EXTENDED_RESP':          116,
 
     'CLIENT_SET_FIELD_SENDABLE':                     120,
+
+    # new toontown specific login message, adds last logged in, and if child account has parent acount
+    'CLIENT_LOGIN_TOONTOWN':                         125,
+    'CLIENT_LOGIN_TOONTOWN_RESP':                    126,  
+
     }
 
 # create id->name table for debugging
