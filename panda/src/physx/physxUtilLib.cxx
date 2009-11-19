@@ -545,12 +545,13 @@ box_box_intersect(const LVector3f &extents0, const LPoint3f &center0, const LMat
   nassertr_always(!center1.is_nan(), false);
   nassertr_always(!rotation1.is_nan(), false);
 
-  return _ptr->NxBoxBoxIntersect(PhysxManager::vec3_to_nxVec3(extents0),
-                                 PhysxManager::point3_to_nxVec3(center0),
-                                 PhysxManager::mat3_to_nxMat33(rotation0),
-                                 PhysxManager::vec3_to_nxVec3(extents1),
-                                 PhysxManager::point3_to_nxVec3(center1),
-                                 PhysxManager::mat3_to_nxMat33(rotation1), full_test);
+  return _ptr->NxBoxBoxIntersect(
+    PhysxManager::vec3_to_nxVec3(extents0),
+    PhysxManager::point3_to_nxVec3(center0),
+    PhysxManager::mat3_to_nxMat33(rotation0),
+    PhysxManager::vec3_to_nxVec3(extents1),
+    PhysxManager::point3_to_nxVec3(center1),
+    PhysxManager::mat3_to_nxMat33(rotation1), full_test);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -574,11 +575,12 @@ tri_box_intersect(const LPoint3f &vertex0, const LPoint3f &vertex1, const LPoint
   nassertr_always(!center.is_nan(), false);
   nassertr_always(!extents.is_nan(), false);
 
-  return _ptr->NxTriBoxIntersect(PhysxManager::point3_to_nxVec3(vertex0),
-                                 PhysxManager::point3_to_nxVec3(vertex1),
-                                 PhysxManager::point3_to_nxVec3(vertex2),
-                                 PhysxManager::point3_to_nxVec3(center),
-                                 PhysxManager::point3_to_nxVec3(extents));
+  return _ptr->NxTriBoxIntersect(
+    PhysxManager::point3_to_nxVec3(vertex0),
+    PhysxManager::point3_to_nxVec3(vertex1),
+    PhysxManager::point3_to_nxVec3(vertex2),
+    PhysxManager::point3_to_nxVec3(center),
+    PhysxManager::point3_to_nxVec3(extents));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -594,17 +596,11 @@ bool PhysxUtilLib::
 ray_plane_intersect(const PhysxRay &ray, const PhysxPlane &plane, LPoint3f &point_on_plane) {
 
   NxReal dist; // not used
-  NxVec3 pointOnPlane;
+  NxVec3 nPointOnPlane;
 
-  bool result = _ptr->NxRayPlaneIntersect(ray._ray,
-                                          plane._plane,
-                                          dist,
-                                          pointOnPlane);
+  bool result = _ptr->NxRayPlaneIntersect(ray._ray, plane._plane, dist, nPointOnPlane);
 
-  point_on_plane.set_x(pointOnPlane.x);
-  point_on_plane.set_y(pointOnPlane.y);
-  point_on_plane.set_z(pointOnPlane.z);
-
+  update_point3_from_nxVec3(point_on_plane, nPointOnPlane);
   return result;
 }
 
@@ -632,18 +628,16 @@ ray_sphere_intersect(const LPoint3f &origin, const LVector3f &dir, float length,
   NxReal nHitTime; // not used
   NxVec3 nPointOnPlane;
 
-  bool result = _ptr->NxRaySphereIntersect(PhysxManager::point3_to_nxVec3(origin),
-                                           PhysxManager::vec3_to_nxVec3(dir),
-                                           length,
-                                           PhysxManager::point3_to_nxVec3(center),
-                                           radius,
-                                           nHitTime,
-                                           nPointOnPlane);
+  bool result = _ptr->NxRaySphereIntersect(
+    PhysxManager::point3_to_nxVec3(origin),
+    PhysxManager::vec3_to_nxVec3(dir),
+    length,
+    PhysxManager::point3_to_nxVec3(center),
+    radius,
+    nHitTime,
+    nPointOnPlane);
 
-  hit_pos.set_x(nPointOnPlane.x);
-  hit_pos.set_y(nPointOnPlane.y);
-  hit_pos.set_z(nPointOnPlane.z);
-
+  update_point3_from_nxVec3(hit_pos, nPointOnPlane);
   return result;
 }
 
@@ -669,16 +663,14 @@ segment_box_intersect(const LPoint3f &p1, const LPoint3f &p2, const LPoint3f &bb
 
   NxVec3 nIntercept;
 
-  boole result =_ptr->NxSegmentBoxIntersect(PhysxManager::point3_to_nxVec3(p1),
-                                            PhysxManager::point3_to_nxVec3(p2),
-                                            PhysxManager::point3_to_nxVec3(bbox_min),
-                                            PhysxManager::point3_to_nxVec3(bbox_max),
-                                            nIntercept);
+  bool result =_ptr->NxSegmentBoxIntersect(
+    PhysxManager::point3_to_nxVec3(p1),
+    PhysxManager::point3_to_nxVec3(p2),
+    PhysxManager::point3_to_nxVec3(bbox_min),
+    PhysxManager::point3_to_nxVec3(bbox_max),
+    nIntercept);
 
-  intercept.set_x(nIntercept.x);
-  intercept.set_y(nIntercept.y);
-  intercept.set_z(nIntercept.z);
-
+  update_point3_from_nxVec3(intercept, nIntercept);
   return result;
 }
 
@@ -704,16 +696,14 @@ ray_aabb_intersect(const LPoint3f &min, const LPoint3f &max, const LPoint3f &ori
 
   NxVec3 nCoord;
 
-  bool result = _ptr->NxRayAABBIntersect(PhysxManager::point3_to_nxVec3(min),
-                                         PhysxManager::point3_to_nxVec3(max),
-                                         PhysxManager::point3_to_nxVec3(origin),
-                                         PhysxManager::vec3_to_nxVec3(dir),
-                                         nCoord);
+  bool result = _ptr->NxRayAABBIntersect(
+    PhysxManager::point3_to_nxVec3(min),
+    PhysxManager::point3_to_nxVec3(max),
+    PhysxManager::point3_to_nxVec3(origin),
+    PhysxManager::vec3_to_nxVec3(dir),
+    nCoord);
 
-  coord.set_x(nCoord.x);
-  coord.set_y(nCoord.y);
-  coord.set_z(nCoord.z);
-
+  update_point3_from_nxVec3(coord, nCoord);
   return result;
 }
 
@@ -738,11 +728,12 @@ segment_obb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &ce
   nassertr_always(!extents.is_nan(), false);
   nassertr_always(!rot.is_nan(), false);
 
-  return _ptr->NxSegmentOBBIntersect(PhysxManager::point3_to_nxVec3(p0),
-                                     PhysxManager::point3_to_nxVec3(p1),
-                                     PhysxManager::point3_to_nxVec3(center),
-                                     PhysxManager::vec3_to_nxVec3(extents),
-                                     PhysxManager::mat3_to_nxMat33(rot));
+  return _ptr->NxSegmentOBBIntersect(
+    PhysxManager::point3_to_nxVec3(p0),
+    PhysxManager::point3_to_nxVec3(p1),
+    PhysxManager::point3_to_nxVec3(center),
+    PhysxManager::vec3_to_nxVec3(extents),
+    PhysxManager::mat3_to_nxMat33(rot));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -764,141 +755,23 @@ segment_aabb_intersect(const LPoint3f &p0, const LPoint3f &p1, const LPoint3f &m
   nassertr_always(!min.is_nan(), false);
   nassertr_always(!max.is_nan(), false);
 
-  return _ptr->NxSegmentAABBIntersect(PhysxManager::point3_to_nxVec3(p0),
-                                      PhysxManager::point3_to_nxVec3(p1),
-                                      PhysxManager::point3_to_nxVec3(min),
-                                      PhysxManager::point3_to_nxVec3(max));
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::sweep_box_box
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-sweep_box_box(const PhysxBox &box0, const PhysxBox &box1, const LVector3f &dir, float length, LPoint3f &ip, LVector3f &normal, float &min_dist) {
-
-  nassertr_always(!dir.is_nan(), false);
-  nassertr_always(!ip.is_nan(), false);
-  nassertr_always(!normal.is_nan(), false);
-
-  return _ptr->NxSweepBoxBox(box0._box, box1._box,
-                             PhysxManager::vec3_to_nxVec3(dir),
-                             length,
-                             PhysxManager::point3_to_nxVec3(ip),
-                             PhysxManager::vec3_to_nxVec3(normal),
-                             min_dist);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::sweep_box_capsule
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-sweep_box_capsule(const PhysxBox &box, const PhysxCapsule &lss, const LVector3f &dir, float length, float &min_dist, LVector3f &normal) {
-
-  nassertr_always(!dir.is_nan(), false);
-  nassertr_always(!normal.is_nan(), false);
-
-  return _ptr->NxSweepBoxCapsule(box._box, lss._capsule,
-                                 PhysxManager::vec3_to_nxVec3(dir),
-                                 length, min_dist,
-                                 PhysxManager::vec3_to_nxVec3(normal));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::sweep_box_sphere
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-sweep_box_sphere(const PhysxBox &box, const PhysxSphere &sphere, const LVector3f &dir, float length, float &min_dist, LVector3f &normal) {
-
-  nassertr_always(!dir.is_nan(), false);
-  nassertr_always(!normal.is_nan(), false);
-
-  return _ptr->NxSweepBoxSphere(box._box, sphere._sphere,
-                                PhysxManager::vec3_to_nxVec3(dir),
-                                length, min_dist,
-                                PhysxManager::vec3_to_nxVec3(normal));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::sweep_capsule_capsule
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-sweep_capsule_capsule(const PhysxCapsule &lss0, const PhysxCapsule &lss1, const LVector3f &dir, float length, float &min_dist, LPoint3f &ip, LVector3f &normal) {
-
-  nassertr_always(!dir.is_nan(), false);
-  nassertr_always(!ip.is_nan(), false);
-  nassertr_always(!normal.is_nan(), false);
-
-  return _ptr->NxSweepCapsuleCapsule(lss0._capsule, lss1._capsule,
-                                     PhysxManager::vec3_to_nxVec3(dir),
-                                     length, min_dist,
-                                     PhysxManager::point3_to_nxVec3(ip),
-                                     PhysxManager::vec3_to_nxVec3(normal));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::sweep_sphere_capsule
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-sweep_sphere_capsule(const PhysxSphere &sphere, const PhysxCapsule &lss, const LVector3f &dir, float length, float &min_dist, LPoint3f &ip, LVector3f &normal) {
-
-  nassertr_always(!dir.is_nan(), false);
-  nassertr_always(!ip.is_nan(), false);
-  nassertr_always(!normal.is_nan(), false);
-
-  return _ptr->NxSweepSphereCapsule(sphere._sphere, lss._capsule,
-                                    PhysxManager::vec3_to_nxVec3(dir),
-                                    length, min_dist,
-                                    PhysxManager::point3_to_nxVec3(ip),
-                                    PhysxManager::vec3_to_nxVec3(normal));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::swept_spheres_intersect
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-swept_spheres_intersect(const PhysxSphere &sphere0, const LVector3f &velocity0, const PhysxSphere &sphere1, const LVector3f &velocity1) {
-
-  nassertr_always(!velocity0.is_nan(), false);
-  nassertr_always(!velocity1.is_nan(), false);
-
-  return _ptr->NxSweptSpheresIntersect(sphere0._sphere,
-                                       PhysxManager::vec3_to_nxVec3(velocity0),
-                                       sphere1._sphere,
-                                       PhysxManager::vec3_to_nxVec3(velocity1));
+  return _ptr->NxSegmentAABBIntersect(
+    PhysxManager::point3_to_nxVec3(p0),
+    PhysxManager::point3_to_nxVec3(p1),
+    PhysxManager::point3_to_nxVec3(min),
+    PhysxManager::point3_to_nxVec3(max));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::ray_obb_intersect
 //       Access: Published
-//  Description:
+//  Description: Boolean ray-OBB intersection test. Based on
+//               separating axis theorem.
+//
+//               \param [in] ray
+//               \param [in] center
+//               \param [in] extents
+//               \param [in] rot
 ////////////////////////////////////////////////////////////////////
 bool PhysxUtilLib::
 ray_obb_intersect(const PhysxRay &ray, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot) {
@@ -907,19 +780,80 @@ ray_obb_intersect(const PhysxRay &ray, const LPoint3f &center, const LVector3f &
   nassertr_always(!extents.is_nan(), false);
   nassertr_always(!rot.is_nan(), false);
 
-  return _ptr->NxRayOBBIntersect(ray._ray,
-                                 PhysxManager::point3_to_nxVec3(center),
-                                 PhysxManager::point3_to_nxVec3(extents),
-                                 PhysxManager::mat3_to_nxMat33(rot));
+  return _ptr->NxRayOBBIntersect(
+    ray._ray,
+    PhysxManager::point3_to_nxVec3(center),
+    PhysxManager::point3_to_nxVec3(extents),
+    PhysxManager::mat3_to_nxMat33(rot));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::ray_capsule_intersect
+//       Access: Published
+//  Description: Ray-capsule intersection test. Returns number of
+//               intersection points (0,1 or 2) along the ray.
+//
+//               \param [in] origin
+//               \param [in] dir
+//               \param [in] capsule
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxUtilLib::
+ray_capsule_intersect(const LPoint3f &origin, const LVector3f &dir, const PhysxCapsule &capsule) {
+
+  nassertr_always(!origin.is_nan(), -1);
+  nassertr_always(!dir.is_nan(), -1);
+
+  NxReal t[2] = { 0.0f, 0.0f }; // not used
+
+  return _ptr->NxRayCapsuleIntersect(
+    PhysxManager::point3_to_nxVec3(origin),
+    PhysxManager::vec3_to_nxVec3(dir),
+    capsule._capsule, t);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::swept_spheres_intersect
+//       Access: Published
+//  Description: Sphere-sphere sweep test. Returns true if spheres
+//               intersect during their linear motion along
+//               provided velocity vectors.
+//
+//               \param [in] sphere0
+//               \param [in] velocity0
+//               \param [in] sphere1
+//               \param [in] velocity1
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+swept_spheres_intersect(const PhysxSphere &sphere0, const LVector3f &velocity0, const PhysxSphere &sphere1, const LVector3f &velocity1) {
+
+  nassertr_always(!velocity0.is_nan(), false);
+  nassertr_always(!velocity1.is_nan(), false);
+
+  return _ptr->NxSweptSpheresIntersect(
+    sphere0._sphere,
+    PhysxManager::vec3_to_nxVec3(velocity0),
+    sphere1._sphere,
+    PhysxManager::vec3_to_nxVec3(velocity1));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxUtilLib::ray_tri_intersect
 //       Access: Published
-//  Description:
+//  Description: Ray-triangle intersection test. Returns impact 
+//               distance (t) as well as barycentric coordinates
+//               (u,v) of impact point. The test performs back face
+//               culling or not according to 'cull'.
+//
+//               \param [in] orig
+//               \param [in] dir
+//               \param [in] vert0
+//               \param [in] vert1
+//               \param [in] vert2
+//               \param [out] hit, with coordinates (t,u,v)
+//               \param [in] cull
 ////////////////////////////////////////////////////////////////////
 bool PhysxUtilLib::
-ray_tri_intersect(const LPoint3f &orig, const LVector3f &dir, const LPoint3f &vert0, const LPoint3f &vert1, const LPoint3f &vert2, float &t, float &u, float &v, bool cull) {
+ray_tri_intersect(const LPoint3f &orig, const LVector3f &dir, const LPoint3f &vert0, const LPoint3f &vert1, const LPoint3f &vert2, LVector3f &hit, bool cull) {
 
   nassertr_always(!orig.is_nan(), false);
   nassertr_always(!dir.is_nan(), false);
@@ -927,339 +861,238 @@ ray_tri_intersect(const LPoint3f &orig, const LVector3f &dir, const LPoint3f &ve
   nassertr_always(!vert1.is_nan(), false);
   nassertr_always(!vert2.is_nan(), false);
 
-  return _ptr->NxRayTriIntersect(PhysxManager::point3_to_nxVec3(orig),
-                                 PhysxManager::vec3_to_nxVec3(dir),
-                                 PhysxManager::point3_to_nxVec3(vert0),
-                                 PhysxManager::point3_to_nxVec3(vert1),
-                                 PhysxManager::point3_to_nxVec3(vert2),
-                                 t, u, v, cull);
-}
-*/
+  NxReal t, u, v;
 
+  bool result = _ptr->NxRayTriIntersect(
+    PhysxManager::point3_to_nxVec3(orig),
+    PhysxManager::vec3_to_nxVec3(dir),
+    PhysxManager::point3_to_nxVec3(vert0),
+    PhysxManager::point3_to_nxVec3(vert1),
+    PhysxManager::point3_to_nxVec3(vert2),
+    t, u, v, cull);
 
+  hit.set_x(t);
+  hit.set_y(u);
+  hit.set_z(v);
 
-
-
-
-
-
-
-
-
-
-
-
-/*
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::box_vertex_to_quad
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-const unsigned int *PhysxUtilLib::
-box_vertex_to_quad(unsigned int vertex_index) {
-
-  return _ptr->NxBoxVertexToQuad(vertex_index);
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_bounds
-//       Access: Public
-//  Description:
+//     Function: PhysxUtilLib::sweep_box_capsule
+//       Access: Published
+//  Description: Box-vs-capsule sweep test. Sweeps a box against a
+//               capsule, returns true if box hit the capsule. Also
+//               returns contact information.
+//
+//               \param [in] box Box
+//               \param [in] lss Capsule
+//               \param [in] dir Unit-length sweep direction
+//               \param [in] length Length of sweep
+//               \param [out] normal Normal at impact point
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+sweep_box_capsule(const PhysxBox &box, const PhysxCapsule &lss, const LVector3f &dir, float length, LVector3f &normal) {
+
+  nassertr_always(!dir.is_nan(), false);
+
+  NxReal min_dist; // not used
+  NxVec3 nNormal;
+
+  bool result = _ptr->NxSweepBoxCapsule(
+    box._box, lss._capsule,
+    PhysxManager::vec3_to_nxVec3(dir),
+    length, min_dist, nNormal);
+
+  update_vec3_from_nxVec3(normal, nNormal);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::sweep_box_sphere
+//       Access: Published
+//  Description: Box-vs-sphere sweep test. Sweeps a box against a
+//               sphere, returns true if box hit the sphere. Also
+//               returns contact information.
+//
+//               \param [in] box Box
+//               \param [in] sphere Sphere
+//               \param [in] dir Unit-length sweep direction
+//               \param [in] length Length of sweep
+//               \param [out] normal Normal at impact point
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+sweep_box_sphere(const PhysxBox &box, const PhysxSphere &sphere, const LVector3f &dir, float length, LVector3f &normal) {
+
+  nassertr_always(!dir.is_nan(), false);
+
+  NxReal min_dist; // not used
+  NxVec3 nNormal;
+
+  bool result = _ptr->NxSweepBoxSphere(
+    box._box, sphere._sphere,
+    PhysxManager::vec3_to_nxVec3(dir),
+    length, min_dist, nNormal);
+
+  update_vec3_from_nxVec3(normal, nNormal);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::sweep_capsule_capsule
+//       Access: Published
+//  Description: Capsule-vs-capsule sweep test. Sweeps a capsule
+//               against a capsule, returns true if capsule hit the
+//               other capsule. Also returns contact information.
+//
+//               \param [in] lss0
+//               \param [in] lss1
+//               \param [in] dir Unit-length sweep direction
+//               \param [in] length Length of sweep
+//               \param [out] ip Impact point
+//               \param [out] normal Normal at impact point
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+sweep_capsule_capsule(const PhysxCapsule &lss0, const PhysxCapsule &lss1, const LVector3f &dir, float length, LPoint3f &ip, LVector3f &normal) {
+
+  nassertr_always(!dir.is_nan(), false);
+
+  NxReal min_dist; // not used
+  NxVec3 nIp;
+  NxVec3 nNormal;
+
+  bool result = _ptr->NxSweepCapsuleCapsule(
+    lss0._capsule, lss1._capsule,
+    PhysxManager::vec3_to_nxVec3(dir),
+    length, min_dist, nIp, nNormal);
+
+  update_point3_from_nxVec3(ip, nIp);
+  update_vec3_from_nxVec3(normal, nNormal);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::sweep_sphere_capsule
+//       Access: Published
+//  Description: Sphere-vs-capsule sweep test. Sweeps a sphere
+//               against a capsule, returns true if sphere hit the
+//               capsule. Also returns contact information.
+//
+//               \param [in] sphere
+//               \param [in] lss
+//               \param [in] dir Unit-length sweep direction
+//               \param [in] length Length of sweep
+//               \param [out] ip Impact point
+//               \param [out] normal Normal at impact point
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+sweep_sphere_capsule(const PhysxSphere &sphere, const PhysxCapsule &lss, const LVector3f &dir, float length, LPoint3f &ip, LVector3f &normal) {
+
+  nassertr_always(!dir.is_nan(), false);
+
+  NxReal min_dist; // not used
+  NxVec3 nIp;
+  NxVec3 nNormal;
+
+  bool result = _ptr->NxSweepSphereCapsule(
+    sphere._sphere, lss._capsule,
+    PhysxManager::vec3_to_nxVec3(dir),
+    length, min_dist, nIp, nNormal);
+
+  update_point3_from_nxVec3(ip, nIp);
+  update_vec3_from_nxVec3(normal, nNormal);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::sweep_box_box
+//       Access: Published
+//  Description: Box-vs-box sweep test. Sweeps a box against a box,
+//               returns true if box hit the other box. Also returns
+//               contact information.
+//
+//               \param [in] box0
+//               \param [in] box1
+//               \param [in] dir Unit-length sweep direction
+//               \param [in] length Length of sweep
+//               \param [out] ip Impact point
+//               \param [out] normal Normal at impact point
+////////////////////////////////////////////////////////////////////
+bool PhysxUtilLib::
+sweep_box_box(const PhysxBox &box0, const PhysxBox &box1, const LVector3f &dir, float length, LPoint3f &ip, LVector3f &normal) {
+
+  nassertr_always(!dir.is_nan(), false);
+
+  NxReal min_dist; // not used
+  NxVec3 nIp;
+  NxVec3 nNormal;
+
+  bool result = _ptr->NxSweepBoxBox(
+    box0._box, box1._box,
+    PhysxManager::vec3_to_nxVec3(dir),
+    length, nIp, nNormal, min_dist);
+
+  update_point3_from_nxVec3(ip, nIp);
+  update_vec3_from_nxVec3(normal, nNormal);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::point_obb_sqr_dist
+//       Access: Published
+//  Description: Point-vs-OBB distance computation. Returns distance
+//               between a point and an OBB.
+//
+//               \param [in] point The point
+//               \param [in] center OBB center
+//               \param [in] extents OBB extents
+//               \param [in] rot OBB rotation
+//               \param [out] params Closest point on the box, in box space
+////////////////////////////////////////////////////////////////////
+float PhysxUtilLib::
+point_obb_sqr_dist(const LPoint3f &point, const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot, LPoint3f &params) {
+
+  nassertr_always(!point.is_nan(), 0.0f);
+  nassertr_always(!center.is_nan(), 0.0f);
+  nassertr_always(!extents.is_nan(), 0.0f);
+  nassertr_always(!rot.is_nan(), 0.0f);
+
+  NxVec3 nParams;
+
+  float result = _ptr->NxPointOBBSqrDist(
+    PhysxManager::point3_to_nxVec3(point),
+    PhysxManager::point3_to_nxVec3(center),
+    PhysxManager::vec3_to_nxVec3(extents),
+    PhysxManager::mat3_to_nxMat33(rot),
+    &nParams);
+
+  update_point3_from_nxVec3(params, nParams);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxUtilLib::update_vec3_from_nxVec3
+//       Access: Private
+//  Description: 
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
-compute_bounds(LPoint3f &min, LPoint3f &max, unsigned int nb_verts, const LPoint3f *verts) {
+update_vec3_from_nxVec3(LVector3f &v, const NxVec3 &nVec) {
 
-  _ptr->NxComputeBounds(PhysxManager::point3_to_nxVec3(min), PhysxManager::point3_to_nxVec3(max), nb_verts, &PhysxManager::point3_to_nxVec3(*verts));
-}
-*/
-
-/*
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::build_smooth_normals
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-build_smooth_normals(unsigned int nb_tris, unsigned int nb_verts, const LPoint3f *verts, const unsigned int *d_faces, const unsigned short *w_faces, LVector3f *normals, bool flip) {
-
-  return _ptr->NxBuildSmoothNormals(nb_tris, nb_verts, &PhysxManager::lVecBase3_to_nxVec3(*verts), d_faces, w_faces, &PhysxManager::lVecBase3_to_nxVec3(*normals), flip);
-}
-*/
-
-
-/*
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_box_density
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_box_density(const LVecBase3f &extents, float mass) {
-
-  return _ptr->NxComputeBoxDensity(PhysxManager::lVecBase3_to_nxVec3(extents), mass);
+  v.set_x(nVec.x);
+  v.set_y(nVec.y);
+  v.set_z(nVec.z);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_box_mass
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_box_mass(const LVecBase3f &extents, float density) {
-
-  return _ptr->NxComputeBoxMass(PhysxManager::lVecBase3_to_nxVec3(extents), density);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_box_planes
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-compute_box_planes(const PhysxBox &box, PhysxPlane *planes) {
-
-  return _ptr->NxComputeBoxPlanes(*(box.nBox), planes->nPlane);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_box_points
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-compute_box_points(const PhysxBox &box, LVecBase3f *pts) {
-
-  return _ptr->NxComputeBoxPoints(*(box.nBox), &PhysxManager::lVecBase3_to_nxVec3(*pts));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_box_vertex_normals
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-compute_box_vertex_normals(const PhysxBox &box, LVecBase3f *pts) {
-
-  return _ptr->NxComputeBoxVertexNormals(*(box.nBox), &PhysxManager::lVecBase3_to_nxVec3(*pts));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_cone_density
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_cone_density(float radius, float length, float mass) {
-
-  return _ptr->NxComputeConeDensity(radius, length, mass);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_cone_mass
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_cone_mass(float radius, float length, float density) {
-
-  return _ptr->NxComputeConeMass(radius, length, density);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_cylinder_density
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_cylinder_density(float radius, float length, float mass) {
-
-  return _ptr->NxComputeCylinderDensity(radius, length, mass);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_cylinder_mass
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_cylinder_mass(float radius, float length, float density) {
-
-  return _ptr->NxComputeCylinderMass(radius, length, density);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_ellipsoid_density
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_ellipsoid_density(const LVecBase3f &extents, float mass) {
-
-  return _ptr->NxComputeEllipsoidDensity(PhysxManager::lVecBase3_to_nxVec3(extents), mass);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_ellipsoid_mass
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_ellipsoid_mass(const LVecBase3f &extents, float density) {
-
-  return _ptr->NxComputeEllipsoidMass(PhysxManager::lVecBase3_to_nxVec3(extents), density);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_sphere_density
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_sphere_density(float radius, float mass) {
-
-  return _ptr->NxComputeSphereDensity(radius, mass);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::compute_sphere_mass
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-compute_sphere_mass(float radius, float density) {
-
-  return _ptr->NxComputeSphereMass(radius, density);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::crc32
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-unsigned int PhysxUtilLib::
-crc32(const void *buffer, unsigned int nb_bytes) {
-
-  return _ptr->NxCrc32(buffer, nb_bytes);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::diagonalize_inertia_tensor
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-diagonalize_inertia_tensor(const LMatrix3f &dense_inertia, LVecBase3f &diagonal_inertia, LMatrix3f &rotation) {
-
-  return _ptr->NxDiagonalizeInertiaTensor(PhysxManager::lMatrix3_to_nxMat33(dense_inertia), PhysxManager::lVecBase3_to_nxVec3(diagonal_inertia), PhysxManager::lMatrix3_to_nxMat33(rotation));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::fast_compute_sphere
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-bool PhysxUtilLib::
-fast_compute_sphere(PhysxSphere &sphere, unsigned nb_verts, const LVecBase3f *verts) {
-
-  return _ptr->NxFastComputeSphere(*(sphere.nSphere), nb_verts, &PhysxManager::lVecBase3_to_nxVec3(*verts));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::get_box_edges
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-const unsigned int *PhysxUtilLib::
-get_box_edges() {
-
-  return _ptr->NxGetBoxEdges();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::get_box_edges_axes
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-const int *PhysxUtilLib::
-get_box_edges_axes() {
-
-  return _ptr->NxGetBoxEdgesAxes();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::get_box_local_edge_normals
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-const LVecBase3f *PhysxUtilLib::
-get_box_local_edge_normals() {
-
-  return &PhysxManager::nxVec3_to_lVecBase3(*_ptr->NxGetBoxLocalEdgeNormals());
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::get_box_quads
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-const unsigned int *PhysxUtilLib::
-get_box_quads() {
-
-  return _ptr->NxGetBoxQuads();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::get_box_triangles
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-const unsigned int *PhysxUtilLib::
-get_box_triangles() {
-
-  return _ptr->NxGetBoxTriangles();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::joint_desc__set_global_anchor
-//       Access: Published
-//  Description:
+//     Function: PhysxUtilLib::update_point3_from_nxVec3
+//       Access: Private
+//  Description: 
 ////////////////////////////////////////////////////////////////////
 void PhysxUtilLib::
-joint_desc__set_global_anchor(PhysxJointDesc &dis, const LVecBase3f &ws_anchor) {
+update_point3_from_nxVec3(LPoint3f &p, const NxVec3 &nVec) {
 
-  _ptr->NxJointDesc_SetGlobalAnchor(*(dis.nJointDesc), PhysxManager::lVecBase3_to_nxVec3(ws_anchor));
+  p.set_x(nVec.x);
+  p.set_y(nVec.y);
+  p.set_z(nVec.z);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::joint_desc__set_global_axis
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-void PhysxUtilLib::
-joint_desc__set_global_axis(PhysxJointDesc &dis, const LVecBase3f &ws_axis) {
-
-  _ptr->NxJointDesc_SetGlobalAxis(*(dis.nJointDesc), PhysxManager::lVecBase3_to_nxVec3(ws_axis));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::segment_obb_sqr_dist
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-float PhysxUtilLib::
-segment_obb_sqr_dist(const PhysxSegment &segment, const LVecBase3f &c0, const LVecBase3f &e0, const LMatrix3f &r0, float *t, LVecBase3f *p) {
-
-  return _ptr->NxSegmentOBBSqrDist(*(segment.nSegment), PhysxManager::lVecBase3_to_nxVec3(c0), PhysxManager::lVecBase3_to_nxVec3(e0), PhysxManager::lMatrix3_to_nxMat33(r0), t, &PhysxManager::lVecBase3_to_nxVec3(*p));
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::separating_axis
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-PhysxSepAxis PhysxUtilLib::
-separating_axis(const LVecBase3f &extents0, const LVecBase3f &center0, const LMatrix3f &rotation0, const LVecBase3f &extents1, const LVecBase3f &center1, const LMatrix3f &rotation1, bool full_test) {
-  return (PhysxSepAxis)_ptr->NxSeparatingAxis(PhysxManager::lVecBase3_to_nxVec3(extents0), PhysxManager::lVecBase3_to_nxVec3(center0), PhysxManager::lMatrix3_to_nxMat33(rotation0), PhysxManager::lVecBase3_to_nxVec3(extents1), PhysxManager::lVecBase3_to_nxVec3(center1), PhysxManager::lMatrix3_to_nxMat33(rotation1), full_test);
-}
-*/
