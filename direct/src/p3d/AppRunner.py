@@ -529,10 +529,9 @@ class AppRunner(DirectObject):
 
         host = self.getHost(hostUrl)
 
-        if not host.readContentsFile():
-            if not host.downloadContentsFile(self.http):
-                message = "Host %s cannot be downloaded, cannot preload %s." % (hostUrl, name)
-                raise OSError, message
+        if not host.downloadContentsFile(self.http):
+            message = "Host %s cannot be downloaded, cannot preload %s." % (hostUrl, name)
+            raise OSError, message
 
         if not platform:
             platform = None
@@ -729,6 +728,7 @@ class AppRunner(DirectObject):
             if windowType == 'embedded':
                 wp.setParentWindow(parent)
             base.win.requestProperties(wp)
+            self.windowProperties = wp
             return
 
         # If we haven't got a window already, start 'er up.  Apply the
@@ -807,7 +807,7 @@ class AppRunner(DirectObject):
         plugin takes down the splash window when it sees the
         onwindowopen notification. """
 
-        self.sendRequest('notify', message)
+        self.sendRequest('notify', message.lower())
 
     def evalScript(self, expression, needsResponse = False):
         """ Evaluates an arbitrary JavaScript expression in the global

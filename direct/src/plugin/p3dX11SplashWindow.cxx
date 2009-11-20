@@ -52,6 +52,10 @@ P3DX11SplashWindow(P3DInstance *inst, bool make_visible) :
   _screen = 0;
   _graphics_context = None;
   _bar_context = None;
+  _fg_pixel = -1;
+  _bg_pixel = -1;
+  _bar_pixel = -1;
+  _own_display = false;
   _install_progress = 0.0;
 }
 
@@ -108,6 +112,7 @@ set_visible(bool visible) {
 ////////////////////////////////////////////////////////////////////
 void P3DX11SplashWindow::
 set_image_filename(const string &image_filename, ImagePlacement image_placement) {
+  nout << "image_filename = " << image_filename << "\n";
   if (_subprocess_pid == -1) {
     return;
   }
@@ -805,7 +810,9 @@ make_window() {
 
   if (_wparams.get_window_type() == P3D_WT_embedded) {
     // Create an embedded window.
-    parent = _wparams.get_parent_window()._xwindow;
+    const P3D_window_handle &handle = _wparams.get_parent_window();
+    assert(handle._window_handle_type == P3D_WHT_x11_window);
+    parent = handle._handle._x11_window._xwindow;
   } else {
     // Create a toplevel window.
     parent = XRootWindow(_display, _screen);
@@ -821,9 +828,35 @@ make_window() {
     ButtonPressMask | ButtonReleaseMask |
     PointerMotionMask | StructureNotifyMask | ExposureMask;
 
+  // Allocate the foreground and background colors.
+  Colormap colormap = DefaultColormap(_display, _screen);
+
+  XColor fg;
+  fg.red = _fgcolor_r * 0x101;
+  fg.green = _fgcolor_g * 0x101;
+  fg.blue = _fgcolor_b * 0x101;
+  fg.flags = DoRed | DoGreen | DoBlue;
+  _fg_pixel = -1;
+  if (XAllocColor(_display, colormap, &fg)) {
+    _fg_pixel = fg.pixel;
+  }
+
+  XColor bg;
+  bg.red = _bgcolor_r * 0x101;
+  bg.green = _bgcolor_g * 0x101;
+  bg.blue = _bgcolor_b * 0x101;
+  bg.flags = DoRed | DoGreen | DoBlue;
+  _bg_pixel = -1;
+  if (XAllocColor(_display, colormap, &bg)) {
+    _bg_pixel = bg.pixel;
+  }
+
   // Initialize window attributes
   XSetWindowAttributes wa;
   wa.background_pixel = XWhitePixel(_display, _screen);
+  if (_bg_pixel != -1) {
+    wa.background_pixel = _bg_pixel;
+  }
   wa.border_pixel = 0;
   wa.event_mask = event_mask;
 
@@ -856,22 +889,28 @@ setup_gc() {
   gcval.function = GXcopy;
   gcval.plane_mask = AllPlanes;
   gcval.foreground = BlackPixel(_display, _screen);
+  if (_fg_pixel != -1) {
+    gcval.foreground = _fg_pixel;
+  }
   gcval.background = WhitePixel(_display, _screen);
+  if (_bg_pixel != -1) {
+    gcval.background = _bg_pixel;
+  }
   _graphics_context = XCreateGC(_display, _window, 
     GCFont | GCFunction | GCPlaneMask | GCForeground | GCBackground, &gcval); 
 
   // Also create a gc for filling in the interior of the progress bar
-  // in a pleasant blue color.
-  XColor blue;
-  blue.red = 27756;
-  blue.green = 42405;
-  blue.blue = 57568;
-  blue.flags = DoRed | DoGreen | DoBlue;
+  // in a pleasant blue color (or whatever color the user requested).
+  XColor bar;
+  bar.red = _barcolor_r * 0x101;
+  bar.green = _barcolor_g * 0x101;
+  bar.blue = _barcolor_b * 0x101;
+  bar.flags = DoRed | DoGreen | DoBlue;
 
   Colormap colormap = DefaultColormap(_display, _screen);
-  if (XAllocColor(_display, colormap, &blue)) {
-    _blue_pixel = blue.pixel;
-    gcval.foreground = blue.pixel;
+  if (XAllocColor(_display, colormap, &bar)) {
+    _bar_pixel = bar.pixel;
+    gcval.foreground = bar.pixel;
   }
 
   _bar_context = XCreateGC(_display, _window, 
@@ -898,7 +937,17 @@ close_window() {
 
     // Also free the color we allocated.
     Colormap colormap = DefaultColormap(_display, _screen);
-    XFreeColors(_display, colormap, &_blue_pixel, 1, 0);
+    XFreeColors(_display, colormap, &_bar_pixel, 1, 0);
+  }
+  
+  if (_fg_pixel != -1) {
+    Colormap colormap = DefaultColormap(_display, _screen);
+    XFreeColors(_display, colormap, &_fg_pixel, 1, 0);
+  }
+  
+  if (_bg_pixel != -1) {
+    Colormap colormap = DefaultColormap(_display, _screen);
+    XFreeColors(_display, colormap, &_bg_pixel, 1, 0);
   }
   
   if (_graphics_context != None) {

@@ -98,6 +98,7 @@ public:
   bool get_packages_failed() const;
   
   inline bool is_trusted() const;
+  inline bool get_matches_script_origin() const;
   int start_download(P3DDownload *download, bool add_request = true);
   inline bool is_started() const;
   inline bool is_failed() const;
@@ -139,21 +140,31 @@ private:
   enum ImageType {
     // Also update _image_type_names when you update this list.
     IT_download,
+    IT_unauth,
     IT_ready,
     IT_failed,
     IT_launch,
-    IT_play_ready,
-    IT_play_rollover,
-    IT_play_click,
-    IT_unauth,
+    IT_active,
     IT_auth_ready,
     IT_auth_rollover,
     IT_auth_click,
+    IT_play_ready,
+    IT_play_rollover,
+    IT_play_click,
     IT_none,                // Must be the last value
     IT_num_image_types,     // Not a real value
   };
 
-  bool check_p3d_signature();
+  void priv_set_p3d_filename(const string &p3d_filename);
+  void determine_p3d_basename(const string &p3d_url);
+
+  bool check_matches_origin(const string &origin_match);
+  bool check_matches_origin_one(const string &origin_match);
+  bool check_matches_hostname(const string &orig, const string &match);
+  void separate_components(vector<string> &components, const string &str);
+  bool check_matches_component(const string &orig, const string &match);
+
+  void check_p3d_signature();
   void mark_p3d_untrusted();
   void mark_p3d_trusted();
   void scan_app_desc_file(TiXmlDocument *doc);
@@ -184,6 +195,9 @@ private:
 
   void send_notify(const string &message);
 
+  static bool parse_color(int &r, int &g, int &b, const string &color);
+  static bool parse_hexdigit(int &result, char digit);
+
 #ifdef __APPLE__
   static void timer_callback(CFRunLoopTimerRef timer, void *info);
 #endif  // __APPLE__
@@ -191,6 +205,10 @@ private:
   P3D_request_ready_func *_func;
   P3D_object *_browser_script_object;
   P3DMainObject *_panda_script_object;
+  string _p3d_basename;
+  string _origin_protocol;
+  string _origin_hostname;
+  string _origin_port;
 
   P3DTemporaryFile *_temp_p3d_filename;
 
@@ -222,6 +240,10 @@ private:
 
   bool _p3d_trusted;
   TiXmlElement *_xpackage;
+
+  // Holds the list of certificates that are pre-approved by the
+  // plugin vendor.
+  P3DPackage *_certlist_package;
   
   // For downloading the p3dcert authorization program.
   P3DPackage *_p3dcert_package;
@@ -229,12 +251,15 @@ private:
   int _instance_id;
   string _session_key;
   string _log_basename;
-  bool _has_log_basename;
+  string _prc_name;
+  string _start_dir;
   bool _hidden;
+  bool _matches_run_origin;
+  bool _matches_script_origin;
   bool _allow_python_dev;
   bool _keep_user_env;
   bool _auto_start;
-  bool _auth_button_approved;
+  bool _auth_button_clicked;
   bool _failed;
 
   P3DSession *_session;
@@ -274,6 +299,7 @@ private:
   int _download_package_index;
   size_t _total_download_size;
   size_t _total_downloaded;
+  time_t _download_begin;
   bool _download_complete;
 
   // We keep the _panda3d pointer separately because it's so
@@ -298,6 +324,7 @@ private:
   friend class P3DSession;
   friend class P3DAuthSession;
   friend class ImageDownload;
+  friend class InstanceDownload;
   friend class P3DWindowParams;
   friend class P3DPackage;
 };

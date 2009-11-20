@@ -17,25 +17,20 @@
 #include "wx/filename.h"
 
 #include "ca_bundle_data_src.c"
-         
-#ifdef __WXMAC__
-#include <Carbon/Carbon.h>
-extern "C" { void CPSEnableForegroundOperation(ProcessSerialNumber* psn); }
-#endif
 
 static const wxString
 self_signed_cert_text =
-  _T("This Panda3D application has been signed by what's known as a ")
-  _T("self-signed certificate.  This means the name on the certificate can't ")
-  _T("be verified, and you have no way of knowing for sure who wrote it.\n\n")
+  _T("This Panda3D application uses a self-signed certificate.  ")
+  _T("This means the author's name can't be verified, and you have ")
+  _T("no way of knowing for sure who wrote it.\n\n")
 
   _T("We recommend you click Cancel to avoid running this application.");
 
 static const wxString
 unknown_auth_cert_text =
   _T("This Panda3D application has been signed, but we don't recognize ")
-  _T("the authority that verifies the signature.  This means the name ")
-  _T("on the certificate can't be trusted, and you have no way of knowing ")
+  _T("the authority that verifies the signature.  This means the author's ")
+  _T("name can't be trusted, and you have no way of knowing ")
   _T("for sure who wrote it.\n\n")
 
   _T("We recommend you click Cancel to avoid running this application.");
@@ -96,19 +91,11 @@ OnInit() {
 
   OpenSSL_add_all_algorithms();
 
-#ifdef __WXMAC__
-  // Enable the dialog to go to the foreground on Mac, even without
-  // having to wrap it up in a bundle.
-  ProcessSerialNumber psn;
-  
-  GetCurrentProcess(&psn);
-  CPSEnableForegroundOperation(&psn);
-  SetFrontProcess(&psn);
-#endif
-
   AuthDialog *dialog = new AuthDialog(_cert_filename, _cert_dir);
   SetTopWindow(dialog);
   dialog->Show(true);
+  dialog->SetFocus();
+  dialog->Raise();
 
   // Return true to enter the main loop and wait for user input.
   return true;
@@ -155,7 +142,11 @@ END_EVENT_TABLE()
 ////////////////////////////////////////////////////////////////////
 AuthDialog::
 AuthDialog(const wxString &cert_filename, const wxString &cert_dir) : 
-  wxDialog(NULL, wxID_ANY, _T("New Panda3D Application"), wxDefaultPosition),
+  // I hate stay-on-top dialogs, but if we don't set this flag, it
+  // doesn't come to the foreground on OSX, and might be lost behind
+  // the browser window.
+  wxDialog(NULL, wxID_ANY, _T("New Panda3D Application"), wxDefaultPosition,
+           wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP),
   _cert_dir(cert_dir)
 {
   _view_cert_dialog = NULL;
@@ -597,8 +588,8 @@ layout() {
   wxBoxSizer *vsizer = new wxBoxSizer(wxVERTICAL);
 
   wxScrolledWindow *slwin = new wxScrolledWindow
-    (panel, -1, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxBORDER_SUNKEN);
-  slwin->SetScrollRate(0, 20);
+    (panel, -1, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxHSCROLL | wxBORDER_SUNKEN);
+  slwin->SetScrollRate(20, 20);
 
   wxBoxSizer *slsizer = new wxBoxSizer(wxVERTICAL);
 
@@ -624,10 +615,9 @@ layout() {
   panel->SetAutoLayout(true);
   vsizer->Fit(this);
 
-  // Make sure the resulting window is not too wide, and at least a
-  // certain amount tall.
+  // Make sure the resulting window is at least a certain size.
   int width, height;
   GetSize(&width, &height);
-  SetSize(min(width, 600), max(height, 400));
+  SetSize(max(width, 600), max(height, 400));
 }
 

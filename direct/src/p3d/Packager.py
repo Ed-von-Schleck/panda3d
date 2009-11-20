@@ -10,7 +10,6 @@ import marshal
 import new
 import string
 import types
-import hashlib
 import getpass
 import platform
 from direct.p3d.FileSpec import FileSpec
@@ -39,7 +38,8 @@ class Packager:
                      newName = None, deleteTemp = False,
                      explicit = False, compress = None, extract = None,
                      text = None, unprocessed = None,
-                     executable = None, platformSpecific = None):
+                     executable = None, dependencyDir = None,
+                     platformSpecific = None):
             assert isinstance(filename, Filename)
             self.filename = Filename(filename)
             self.newName = newName
@@ -50,6 +50,7 @@ class Packager:
             self.text = text
             self.unprocessed = unprocessed
             self.executable = executable
+            self.dependencyDir = dependencyDir
             self.platformSpecific = platformSpecific
 
             if not self.newName:
@@ -72,6 +73,11 @@ class Packager:
 
             if self.executable is None:
                 self.executable = (ext in packager.executableExtensions)
+
+            if self.executable and self.dependencyDir is None:
+                # By default, install executable dependencies in the
+                # same directory with the executable itself.
+                self.dependencyDir = Filename(self.newName).getDirname()
 
             if self.extract is None:
                 self.extract = self.executable or (ext in packager.extractExtensions)
@@ -212,10 +218,12 @@ class Packager:
 
     class HostEntry:
         def __init__(self, url = None, downloadUrl = None,
-                     descriptiveName = None, mirrors = None):
+                     descriptiveName = None, hostDir = None,
+                     mirrors = None):
             self.url = url
             self.downloadUrl = downloadUrl
             self.descriptiveName = descriptiveName
+            self.hostDir = hostDir
             self.mirrors = mirrors or []
             self.altHosts = {}
 
@@ -223,6 +231,7 @@ class Packager:
             self.url = xhost.Attribute('url')
             self.downloadUrl = xhost.Attribute('download_url')
             self.descriptiveName = xhost.Attribute('descriptive_name')
+            self.hostDir = xhost.Attribute('host_dir')
             self.mirrors = []
             xmirror = xhost.FirstChildElement('mirror')
             while xmirror:
@@ -245,6 +254,8 @@ class Packager:
                 xhost.SetAttribute('download_url', self.downloadUrl)
             if self.descriptiveName:
                 xhost.SetAttribute('descriptive_name', self.descriptiveName)
+            if self.hostDir:
+                xhost.SetAttribute('host_dir', self.hostDir)
 
             for mirror in self.mirrors:
                 xmirror = TiXmlElement('mirror')
@@ -779,7 +790,9 @@ class Packager:
                 for filename in filenames:
                     filename = Filename.fromOsSpecific(filename)
                     filename.resolveFilename(path)
-                    self.addFile(filename, newName = filename.getBasename(),
+
+                    newName = Filename(file.dependencyDir, filename.getBasename())
+                    self.addFile(filename, newName = newName.cStr(),
                                  explicit = False, executable = True)
                     
         def __parseDependenciesWindows(self, tempFile):
@@ -851,13 +864,19 @@ class Packager:
             """ Copies the given library file to a temporary directory,
             and alters the dependencies so that it doesn't contain absolute
             framework dependencies. """
-            
-            # Copy the file to a temporary location because we don't want
-            # to modify the original (there's a big chance that we break it)
-            assert file.filename.exists(), "File doesn't exist: %s" % ffilename
-            tmpfile = Filename.fromOsSpecific("/tmp/p3d_" + hashlib.md5(file.filename.toOsSpecific()).hexdigest())
-            if not tmpfile.exists():
+
+            if not file.deleteTemp:
+                # Copy the file to a temporary location because we
+                # don't want to modify the original (there's a big
+                # chance that we break it).
+
+                # Copy it every time, because the source file might
+                # have changed since last time we ran.
+                assert file.filename.exists(), "File doesn't exist: %s" % ffilename
+                tmpfile = Filename.temporary('', "p3d_" + file.filename.getBasename())
                 file.filename.copyTo(tmpfile)
+                file.filename = tmpfile
+                file.deleteTemp = True
             
             # Alter the dependencies to have a relative path rather than absolute
             for filename in framework_deps:
@@ -865,7 +884,6 @@ class Packager:
                     os.system('install_name_tool -id "%s" "%s"' % (os.path.basename(filename), tmpfile.toOsSpecific()))
                 else:
                     os.system('install_name_tool -change "%s" "%s" "%s"' % (filename, os.path.basename(filename), tmpfile.toOsSpecific()))
-            self.sourceFilenames[file.filename].filename = tmpfile
 
         def __addImplicitDependenciesOSX(self):
             """ Walks through the list of files, looking for dylib's
@@ -915,7 +933,7 @@ class Packager:
                 if len(framework_deps) > 0:
                     # Fixes dependencies like @executable_path/../Library/Frameworks/Cg.framework/Cg
                     self.__alterFrameworkDependencies(file, framework_deps)
-
+                
                 for filename in filenames:
                     if '.framework/' in filename:
                         # It references a framework, and besides the fact
@@ -926,7 +944,9 @@ class Packager:
                         # It's just a normal library - find it on the path.
                         filename = Filename.fromOsSpecific(filename)
                         filename.resolveFilename(path)
-                    self.addFile(filename, newName = filename.getBasename(),
+
+                    newName = Filename(file.dependencyDir, filename.getBasename())
+                    self.addFile(filename, newName = newName.cStr(),
                                  explicit = False, executable = True)
                     
         def __parseDependenciesOSX(self, tempFile):
@@ -998,7 +1018,9 @@ class Packager:
                 for filename in filenames:
                     filename = Filename.fromOsSpecific(filename)
                     filename.resolveFilename(path)
-                    self.addFile(filename, newName = filename.getBasename(),
+
+                    newName = Filename(file.dependencyDir, filename.getBasename())
+                    self.addFile(filename, newName = newName.cStr(),
                                  explicit = False, executable = True)
                     
         def __parseDependenciesPosix(self, tempFile):
@@ -1712,7 +1734,7 @@ class Packager:
 
         # Text files that are copied (and compressed) to the package
         # without processing.
-        self.textExtensions = [ 'prc', 'ptf', 'txt', 'cg', 'sha' ]
+        self.textExtensions = [ 'prc', 'ptf', 'txt', 'cg', 'sha', 'dc' ]
 
         # Binary files that are copied (and compressed) without
         # processing.
@@ -1806,16 +1828,18 @@ class Packager:
         self.contents = {}
 
     def setHost(self, host, downloadUrl = None,
-                descriptiveName = None, mirrors = None):
+                descriptiveName = None, hostDir = None,
+                mirrors = None):
         """ Specifies the URL that will ultimately host these
         contents. """
 
         self.host = host
         self.addHost(host, downloadUrl = downloadUrl,
-                     descriptiveName = descriptiveName, mirrors = mirrors)
+                     descriptiveName = descriptiveName, hostDir = hostDir,
+                     mirrors = mirrors)
 
     def addHost(self, host, downloadUrl = None, descriptiveName = None,
-                mirrors = None):
+                hostDir = None, mirrors = None):
         """ Adds a host to the list of known download hosts.  This
         information will be written into any p3d files that reference
         this host; this can be used to pre-define the possible mirrors
@@ -1836,7 +1860,7 @@ class Packager:
             # Define a new host entry
             he = self.HostEntry(host, downloadUrl = downloadUrl,
                                 descriptiveName = descriptiveName,
-                                mirrors = mirrors)
+                                hostDir = hostDir, mirrors = mirrors)
             self.hosts[host] = he
         else:
             # Update an existing host entry
@@ -1844,14 +1868,16 @@ class Packager:
                 he.downloadUrl = downloadUrl
             if descriptiveName is not None:
                 he.descriptiveName = descriptiveName
+            if hostDir is not None:
+                he.hostDir = hostDir
             if mirrors is not None:
                 he.mirrors = mirrors
 
         return he
         
     def addAltHost(self, keyword, altHost, origHost = None,
-                   downloadUrl = None,
-                   descriptiveName = None, mirrors = None):
+                   downloadUrl = None, descriptiveName = None,
+                   hostDir = None, mirrors = None):
         """ Adds an alternate host to any already-known host.  This
         defines an alternate server that may be contacted, if
         specified on the HTML page, which hosts a different version of
@@ -1863,7 +1889,8 @@ class Packager:
             origHost = self.host
 
         self.addHost(altHost, downloadUrl = downloadUrl,
-                     descriptiveName = descriptiveName, mirrors = mirrors)
+                     descriptiveName = descriptiveName, hostDir = hostDir,
+                     mirrors = mirrors)
         he = self.addHost(origHost)
         he.altHosts[keyword] = altHost
 
@@ -2517,6 +2544,22 @@ class Packager:
         # an associated dynamic library.  Note that the .exe and .dll
         # extensions are automatically replaced with the appropriate
         # platform-specific extensions.
+
+        if self.platform.startswith('osx'):
+            # On Mac, we package up a P3DPython.app bundle.  This
+            # includes specifications in the plist file to avoid
+            # creating a dock icon and stuff.
+
+            # Find p3dpython.plist in the direct source tree.
+            import direct
+            plist = Filename(direct.__path__[0], 'plugin/p3dpython.plist')
+            self.do_makeBundle('P3DPython.app', plist, executable = 'p3dpython',
+                               dependencyDir = '')
+
+        else:
+            # Anywhere else, we just ship the executable file p3dcert.exe.
+            self.do_file('p3dcert.exe')
+
         self.do_file('p3dpython.exe')
         if PandaSystem.getPlatform().startswith('win'):
             self.do_file('p3dpythonw.exe')
@@ -2574,6 +2617,27 @@ class Packager:
         freezer.reset()
         package.mainModule = None
 
+    def do_makeBundle(self, bundleName, plist, executable = None,
+                      resources = None, dependencyDir = None):
+        """ Constructs a minimal OSX "bundle" consisting of an
+        executable and a plist file, with optional resource files
+        (such as icons), and adds it to the package under the given
+        name. """
+
+        contents = bundleName + '/Contents'
+
+        self.addFiles([plist], newName = contents + '/Info.plist',
+                      extract = True)
+        if executable:
+            basename = Filename(executable).getBasename()
+            self.addFiles([executable], newName = contents + '/MacOS/' + basename,
+                          extract = True, executable = True, dependencyDir = dependencyDir)
+        if resources:
+            self.addFiles(resources, newDir = contents + '/Resources',
+                          extract = True, dependencyDir = dependencyDir)
+                
+        
+
     def do_file(self, *args, **kw):
         """ Adds the indicated file or files to the current package.
         See addFiles(). """
@@ -2582,7 +2646,7 @@ class Packager:
 
     def addFiles(self, filenames, text = None, newName = None,
                  newDir = None, extract = None, executable = None,
-                 deleteTemp = False, literal = False):
+                 deleteTemp = False, literal = False, dependencyDir = None):
 
         """ Adds the indicated arbitrary files to the current package.
 
@@ -2705,7 +2769,8 @@ class Packager:
             self.currentPackage.addFile(
                 filename, newName = name, extract = extract,
                 explicit = explicit, executable = executable,
-                text = text, deleteTemp = deleteTemp)
+                text = text, deleteTemp = deleteTemp,
+                dependencyDir = dependencyDir)
 
     def do_exclude(self, filename):
         """ Marks the indicated filename as not to be included.  The
@@ -2745,6 +2810,9 @@ class Packager:
         if not newDir:
             newDir = ''
 
+        # Adding the directory to sys.path is a cheesy way to help the
+        # modulefinder find it.
+        sys.path.append(dirname.toOsSpecific())
         self.__recurseDir(dirname, newDir, unprocessed = unprocessed)
 
     def __recurseDir(self, filename, newName, unprocessed = None):

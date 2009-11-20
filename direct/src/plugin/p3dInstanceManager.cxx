@@ -22,6 +22,7 @@
 #include "p3dUndefinedObject.h"
 #include "p3dNoneObject.h"
 #include "p3dBoolObject.h"
+#include "p3dPackage.h"
 #include "find_root_dir.h"
 #include "fileSpec.h"
 #include "get_tinyxml.h"
@@ -236,7 +237,8 @@ initialize(const string &contents_filename, const string &host_url,
   _log_pathname = _log_directory;
   _log_pathname += _log_basename;
   _log_pathname += ".log";
-  
+
+  logfile.close();
   logfile.clear();
   logfile.open(_log_pathname.c_str(), ios::out | ios::trunc);
   if (logfile) {
@@ -870,6 +872,42 @@ find_cert(X509 *cert) {
 
   // Nothing matched.
   return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstanceManager::read_certlist
+//       Access: Public
+//  Description: Reads the pre-approved certificates in the certlist
+//               package and adds them to the in-memory cache.
+////////////////////////////////////////////////////////////////////
+void P3DInstanceManager::
+read_certlist(P3DPackage *package) {
+  nout << "reading certlist in " << package->get_package_dir() << "\n";
+
+  vector<string> contents;
+  scan_directory(package->get_package_dir(), contents);
+
+  vector<string>::iterator si;
+  for (si = contents.begin(); si != contents.end(); ++si) {
+    const string &basename = (*si);
+    if (basename.length() > 4) {
+      string suffix = basename.substr(basename.length() - 4);
+      if (suffix == ".pem" || suffix == ".crt") {
+        string filename = package->get_package_dir() + "/" + basename;
+        X509 *x509 = NULL;
+        FILE *fp = fopen(filename.c_str(), "r");
+        if (fp != NULL) {
+          x509 = PEM_read_X509(fp, NULL, NULL, (void *)"");
+          fclose(fp);
+        }
+        
+        if (x509 != NULL) {
+          string der2 = cert_to_der(x509);
+          _approved_certs.insert(der2);
+        }
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////

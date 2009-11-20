@@ -268,12 +268,14 @@ begin_info_download() {
 ////////////////////////////////////////////////////////////////////
 void P3DPackage::
 download_contents_file() {
+  /*
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
   if (!_host->has_contents_file() && !inst_mgr->get_verify_contents()) {
     // If we're allowed to read a contents file without checking the
     // server first, try it now.
     _host->read_contents_file();
   }
+  */
 
   if (_host->has_contents_file()) {
     // We've already got a contents.xml file; go straight to the
@@ -331,7 +333,9 @@ contents_file_download_finished(bool success) {
 //       Access: Private
 //  Description: Starts a new download attempt of contents.xml, to
 //               check to see whether our local copy is stale.  This
-//               is called only from Download::download_finished().
+//               is called only from download_desc_file(), or from
+//               Download::download_finished().  If the former, the
+//               download pointer will be NULL.
 //
 //               If it turns out a new version can be downloaded, the
 //               indicated Download object (and the current install
@@ -403,20 +407,30 @@ contents_file_redownload_finished(bool success) {
   delete _temp_contents_file;
   _temp_contents_file = NULL;
 
-  assert(_saved_download != NULL); 
   if (contents_changed) {
     // OK, the contents.xml has changed; this means we have to restart
     // the whole download process from the beginning.
+    nout << "Redownloading contents.xml made a difference.\n";
     set_saved_download(NULL);
     host_got_contents_file();
 
   } else {
     // Nothing's changed.  This was just a useless diversion.  We now
     // return you to our regularly scheduled download.
+    nout << "Redownloading contents.xml didn't help.\n";
     Download *download = _saved_download;
     _saved_download = NULL;
-    download->resume_download_finished(false);
-    unref_delete(download);
+    if (download == NULL) {
+      // But, if _saved_download was NULL (meaning NULL was passed to
+      // redownload_contents_file(), above), it means that we were
+      // called from download_desc_file(), and there's nothing more to
+      // do.  We're just hosed.
+      report_done(false);
+      
+    } else {
+      download->resume_download_finished(false);
+      unref_delete(download);
+    }
   }
 }
 
@@ -485,7 +499,7 @@ download_desc_file() {
                                     _package_name, _package_version)) {
     nout << "Couldn't find package " << _package_fullname
          << " in contents file.\n";
-    report_done(false);
+    redownload_contents_file(NULL);
     return;
   }
 

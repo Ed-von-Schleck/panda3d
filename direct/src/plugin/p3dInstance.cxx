@@ -49,16 +49,17 @@ typedef P3DSplashWindow SplashWindowType;
 // splash window.  This list must match the ImageType enum.
 const char *P3DInstance::_image_type_names[P3DInstance::IT_num_image_types] = {
   "download",
+  "unauth",
   "ready",
   "failed",
   "launch",
-  "play_ready",
-  "play_rollover",
-  "play_click",
-  "unauth",
+  "active",
   "auth_ready",
   "auth_rollover",
   "auth_click",
+  "play_ready",
+  "play_rollover",
+  "play_click",
   "none",  // Not really used.
 };
 
@@ -86,6 +87,7 @@ P3DInstance(P3D_request_ready_func *func,
   _got_wparams = false;
   _p3d_trusted = false;
   _xpackage = NULL;
+  _certlist_package = NULL;
   _p3dcert_package = NULL;
 
   _fparams.set_tokens(tokens, num_tokens);
@@ -93,12 +95,13 @@ P3DInstance(P3D_request_ready_func *func,
 
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
   _instance_id = inst_mgr->get_unique_id();
-  _has_log_basename = false;
   _hidden = (_fparams.lookup_token_int("hidden") != 0);
+  _matches_run_origin = true;
+  _matches_script_origin = false;
   _allow_python_dev = false;
   _keep_user_env = (_fparams.lookup_token_int("keep_user_env") != 0);
   _auto_start = (_fparams.lookup_token_int("auto_start") != 0);
-  _auth_button_approved = false;
+  _auth_button_clicked = false;
   _failed = false;
   _session = NULL;
   _auth_session = NULL;
@@ -128,6 +131,10 @@ P3DInstance(P3D_request_ready_func *func,
   // Set some initial properties.
   _panda_script_object->set_float_property("instanceDownloadProgress", 0.0);
   _panda_script_object->set_float_property("downloadProgress", 0.0);
+  _panda_script_object->set_undefined_property("downloadElapsedSeconds");
+  _panda_script_object->set_undefined_property("downloadElapsedFormatted");
+  _panda_script_object->set_undefined_property("downloadRemainingSeconds");
+  _panda_script_object->set_undefined_property("downloadRemainingFormatted");
   _panda_script_object->set_string_property("downloadPackageName", "");
   _panda_script_object->set_string_property("downloadPackageDisplayName", "");
   _panda_script_object->set_bool_property("downloadComplete", false);
@@ -187,6 +194,7 @@ P3DInstance(P3D_request_ready_func *func,
       (_fparams.lookup_token_int("width") == 0 ||
        _fparams.lookup_token_int("height") == 0)) {
     P3D_window_handle dummy_handle;
+    memset(&dummy_handle, 0, sizeof(dummy_handle));
     P3DWindowParams wparams(P3D_WT_hidden, 0, 0, 0, 0, dummy_handle);
     set_wparams(wparams);
   }
@@ -214,6 +222,10 @@ P3DInstance::
   _panda_script_object->set_instance(NULL);
   P3D_OBJECT_DECREF(_panda_script_object);
 
+  for (int i = 0; i < (int)IT_num_image_types; ++i) {
+    _image_files[i].cleanup();
+  }
+
   // Tell all of the packages that we're no longer in business for
   // them.
   Packages::iterator pi;
@@ -224,6 +236,11 @@ P3DInstance::
   if (_image_package != NULL) {
     _image_package->remove_instance(this);
     _image_package = NULL;
+  }
+
+  if (_certlist_package != NULL) {
+    _certlist_package->remove_instance(this);
+    _certlist_package = NULL;
   }
 
   if (_p3dcert_package != NULL) {
@@ -290,6 +307,10 @@ P3DInstance::
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 set_p3d_url(const string &p3d_url) {
+  // Save the last part of the URL as the p3d_basename, for reporting
+  // purposes or whatever.
+  determine_p3d_basename(p3d_url);
+
   // Make a temporary file to receive the instance data.
   assert(_temp_p3d_filename == NULL);
   _temp_p3d_filename = new P3DTemporaryFile(".p3d");
@@ -325,6 +346,10 @@ set_p3d_url(const string &p3d_url) {
 ////////////////////////////////////////////////////////////////////
 int P3DInstance::
 make_p3d_stream(const string &p3d_url) {
+  // Save the last part of the URL as the p3d_basename, for reporting
+  // purposes or whatever.
+  determine_p3d_basename(p3d_url);
+
   // Make a temporary file to receive the instance data.
   assert(_temp_p3d_filename == NULL);
   _temp_p3d_filename = new P3DTemporaryFile(".p3d");
@@ -359,33 +384,8 @@ make_p3d_stream(const string &p3d_url) {
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 set_p3d_filename(const string &p3d_filename) {
-  if (!_fparams.get_p3d_filename().empty()) {
-    nout << "p3d_filename already set to: " << _fparams.get_p3d_filename()
-         << ", trying to set to " << p3d_filename << "\n";
-    return;
-  }
-
-  _fparams.set_p3d_filename(p3d_filename);
-  _got_fparams = true;
-
-  _panda_script_object->set_float_property("instanceDownloadProgress", 1.0);
-
-  // Generate a special notification: onpluginload, indicating the
-  // plugin has read its parameters and is ready to be queried (even
-  // if Python has not yet started).
-  send_notify("onpluginload");
-
-  if (!_mf_reader.open_read(_fparams.get_p3d_filename())) {
-    nout << "Couldn't read " << _fparams.get_p3d_filename() << "\n";
-    set_failed();
-    return;
-  }
-
-  if (check_p3d_signature()) {
-    mark_p3d_trusted();
-  } else {
-    mark_p3d_untrusted();
-  }
+  determine_p3d_basename(p3d_filename);
+  priv_set_p3d_filename(p3d_filename);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -496,6 +496,7 @@ get_panda_script_object() const {
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 set_browser_script_object(P3D_object *browser_script_object) {
+  nout << "set_browser_script_object\n";
   if (browser_script_object != _browser_script_object) {
     P3D_OBJECT_XDECREF(_browser_script_object);
     _browser_script_object = browser_script_object;
@@ -507,6 +508,69 @@ set_browser_script_object(P3D_object *browser_script_object) {
       send_browser_script_object();
     }
   }
+
+  // Query the origin: protocol, hostname, and port.  We'll use this to
+  // limit access to the scripting interfaces for a particular p3d
+  // file.
+  _origin_protocol.clear();
+  _origin_hostname.clear();
+  _origin_port.clear();
+  if (_browser_script_object != NULL) {
+    P3D_object *location = P3D_OBJECT_GET_PROPERTY(_browser_script_object, "location");
+    if (location != NULL) {
+      P3D_object *protocol = P3D_OBJECT_GET_PROPERTY(location, "protocol");
+      if (protocol != NULL) {
+        int size = P3D_OBJECT_GET_STRING(protocol, NULL, 0);
+        char *buffer = new char[size];
+        P3D_OBJECT_GET_STRING(protocol, buffer, size);
+        _origin_protocol = string(buffer, size);
+        delete [] buffer;
+        P3D_OBJECT_DECREF(protocol);
+      }
+
+      P3D_object *hostname = P3D_OBJECT_GET_PROPERTY(location, "hostname");
+      if (hostname != NULL) {
+        int size = P3D_OBJECT_GET_STRING(hostname, NULL, 0);
+        char *buffer = new char[size];
+        P3D_OBJECT_GET_STRING(hostname, buffer, size);
+        _origin_hostname = string(buffer, size);
+        delete [] buffer;
+        P3D_OBJECT_DECREF(hostname);
+      }
+
+      P3D_object *port = P3D_OBJECT_GET_PROPERTY(location, "port");
+      if (port != NULL) {
+        int size = P3D_OBJECT_GET_STRING(port, NULL, 0);
+        char *buffer = new char[size];
+        P3D_OBJECT_GET_STRING(port, buffer, size);
+        _origin_port = string(buffer, size);
+        delete [] buffer;
+        P3D_OBJECT_DECREF(port);
+      }
+
+      if (_origin_hostname.empty() && _origin_protocol == "file:") {
+        _origin_hostname = "localhost";
+      }
+
+      if (_origin_port.empty()) {
+        // Maybe the actual URL doesn't include the port, in which
+        // case it is implicit.
+        if (_origin_protocol == "http:") {
+          _origin_port = "80";
+        } else if (_origin_protocol == "https:") {
+          _origin_port = "443";
+        }
+      }
+
+      P3D_OBJECT_DECREF(location);
+    }
+  }
+
+  nout << "origin is " << _origin_protocol << "//" << _origin_hostname;
+  if (!_origin_port.empty()) {
+    nout << ":" << _origin_port;
+  }
+  nout << "\n";
 }
 
 
@@ -749,7 +813,9 @@ handle_event(P3D_event_data event) {
   // Need to ensure we have the correct port set, in order to
   // convert the mouse coordinates successfully via
   // GlobalToLocal().
-  GrafPtr out_port = _wparams.get_parent_window()._port;
+  const P3D_window_handle &handle = _wparams.get_parent_window();
+  assert(handle._window_handle_type == P3D_WHT_osx_port);
+  GrafPtr out_port = handle._handle._osx_port._port;
   GrafPtr port_save = NULL;
   Boolean port_changed = QDSwapPort(out_port, &port_save);
   
@@ -1196,38 +1262,272 @@ auth_finished_sub_thread() {
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 auth_finished_main_thread() {
+  // Set this flag to indicate that the user has clicked on the red
+  // "auth" button.  This eliminates the need to click on the green
+  // "start" button.
+  _auth_button_clicked = true;
+
   // After the authorization program has returned, check the signature
   // again.
-  if (check_p3d_signature()) {
-    // Set this flag to indicate that the user has clicked on the red
-    // "auth" button and successfully approved the application's
-    // certificate.  This eliminates the need to click on the green
-    // "start" button.
-    _auth_button_approved = true;
-    mark_p3d_trusted();
+  check_p3d_signature();
+}
 
-  } else {
-    // Still untrusted.
-    mark_p3d_untrusted();
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::priv_set_p3d_filename
+//       Access: Private
+//  Description: The private implementation of set_p3d_filename(),
+//               this does all the work except for updating
+//               p3d_basename.  It is intended to be called
+//               internally, and might be passed a temporary filename.
+////////////////////////////////////////////////////////////////////
+void P3DInstance::
+priv_set_p3d_filename(const string &p3d_filename) {
+  if (!_fparams.get_p3d_filename().empty()) {
+    nout << "p3d_filename already set to: " << _fparams.get_p3d_filename()
+         << ", trying to set to " << p3d_filename << "\n";
+    return;
   }
+
+  _fparams.set_p3d_filename(p3d_filename);
+  _got_fparams = true;
+
+  _panda_script_object->set_float_property("instanceDownloadProgress", 1.0);
+
+  // Generate a special notification: onpluginload, indicating the
+  // plugin has read its parameters and is ready to be queried (even
+  // if Python has not yet started).
+  send_notify("onpluginload");
+
+  if (!_mf_reader.open_read(_fparams.get_p3d_filename())) {
+    nout << "Couldn't read " << _fparams.get_p3d_filename() << "\n";
+    set_failed();
+    return;
+  }
+
+  check_p3d_signature();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::determine_p3d_basename
+//       Access: Private
+//  Description: Determines _p3d_basename from the indicated URL.
+////////////////////////////////////////////////////////////////////
+void P3DInstance::
+determine_p3d_basename(const string &p3d_url) {
+  string file_part = p3d_url;
+  size_t question = file_part.find('?');
+  if (question != string::npos) {
+    file_part = file_part.substr(0, question);
+  }
+  size_t slash = file_part.rfind('/');
+  if (slash != string::npos) {
+    file_part = file_part.substr(slash + 1);
+  }
+  _p3d_basename = file_part;
+
+  nout << "p3d_basename = " << _p3d_basename << "\n";
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::check_matches_origin
+//       Access: Private
+//  Description: Returns true if the indicated origin_match string,
+//               one of either run_origin or script_origin from the
+//               p3d_info.xml file, matches the origin of the page
+//               that embedded the p3d file.
+////////////////////////////////////////////////////////////////////
+bool P3DInstance::
+check_matches_origin(const string &origin_match) {
+  // First, separate the string up at the semicolons.
+  size_t p = 0;
+  size_t semicolon = origin_match.find(';');
+  while (semicolon != string::npos) {
+    if (check_matches_origin_one(origin_match.substr(p, semicolon - p))) {
+      return true;
+    }
+    p = semicolon + 1;
+    semicolon = origin_match.find(';', p);
+  }
+  if (check_matches_origin_one(origin_match.substr(p))) {
+    return true;
+  }
+
+  // It doesn't match any of the semicolon-delimited strings within
+  // origin_match.
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::check_matches_origin_one
+//       Access: Private
+//  Description: Called for each semicolon-delimited string within
+//               origin_match passed to check_matches_origin().
+////////////////////////////////////////////////////////////////////
+bool P3DInstance::
+check_matches_origin_one(const string &origin_match) {
+  // Do we have a protocol?
+  size_t p = 0;
+  size_t colon = origin_match.find(':');
+  if (colon + 1 < origin_match.length() && origin_match[colon + 1] == '/') {
+    // Yes.  It should therefore match the protocol we have in the origin.
+    string protocol = origin_match.substr(0, colon + 1);
+    if (!check_matches_component(_origin_protocol, protocol)) {
+      return false;
+    }
+    p = colon + 2;
+    // We'll support both http://hostname and http:/hostname, in case
+    // the user is sloppy.
+    if (p < origin_match.length() && origin_match[p] == '/') {
+      ++p;
+    }
+    colon = origin_match.find(':', p);
+  }
+
+  // Do we have a port?
+  if (colon < origin_match.length() && isdigit(origin_match[colon + 1])) {
+    // Yes.  It should therefore match the port we have in the origin.
+    string port = origin_match.substr(colon + 1);
+    if (!check_matches_component(_origin_port, port)) {
+      return false;
+    }
+  }
+
+  // The hostname should also match what we have in the origin.
+  string hostname = origin_match.substr(p, colon - p);
+  if (!check_matches_hostname(_origin_hostname, hostname)) {
+    return false;
+  }
+
+  // Everything matches.
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::check_matches_hostname
+//       Access: Private
+//  Description: Matches the hostname of check_matches_origin:
+//               the individual components of the hostname are matched
+//               independently, with '**.' allowed at the beginning to
+//               indicate zero or more prefixes.  Returns true on
+//               match, false on failure.
+////////////////////////////////////////////////////////////////////
+bool P3DInstance::
+check_matches_hostname(const string &orig, const string &match) {
+  // First, separate both strings up at the dots.
+  vector<string> orig_components;
+  separate_components(orig_components, orig);
+
+  vector<string> match_components;
+  separate_components(match_components, match);
+
+  // If the first component of match is "**", it means we accept any
+  // number, zero or more, of components at the beginning of the
+  // hostname.
+  if (!match_components.empty() && match_components[0] == "**") {
+    // Remove the leading "**"
+    match_components.erase(match_components.begin());
+    // Then remove any extra components from the beginning of
+    // orig_components; we won't need to check them.
+    if (orig_components.size() > match_components.size()) {
+      size_t num_to_remove = orig_components.size() - match_components.size();
+      orig_components.erase(orig_components.begin(), orig_components.begin() + num_to_remove);
+    }
+  }
+
+  // Now match the remaining components one-to-one.
+  if (match_components.size() != orig_components.size()) {
+    return false;
+  }
+
+  vector<string>::const_iterator p = orig_components.begin();
+  vector<string>::const_iterator p2 = match_components.begin();
+
+  while (p != orig_components.end()) {
+    assert(p2 != match_components.end());
+    if (!check_matches_component(*p, *p2)) {
+      return false;
+    }
+    ++p;
+    ++p2;
+  }
+
+  assert(p2 == match_components.end());
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::separate_components
+//       Access: Private
+//  Description: Separates the indicated hostname into its components
+//               at the dots.
+////////////////////////////////////////////////////////////////////
+void P3DInstance::
+separate_components(vector<string> &components, const string &str) {
+  size_t p = 0;
+  size_t dot = str.find('.');
+  while (dot != string::npos) {
+    components.push_back(str.substr(p, dot - p));
+    p = dot + 1;
+    dot = str.find('.', p);
+  }
+  components.push_back(str.substr(p));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::check_matches_component
+//       Access: Private
+//  Description: Matches a single component of check_matches_origin:
+//               either protocol or port, or a single component of the
+//               hostname.  Case-insensitive, and supports the '*'
+//               wildcard operator to match the entire component.
+//               Returns true on match, false on failure.
+////////////////////////////////////////////////////////////////////
+bool P3DInstance::
+check_matches_component(const string &orig, const string &match) {
+  if (match == "*") {
+    return true;
+  }
+
+  // Case-insensitive compare.
+  if (orig.length() != match.length()) {
+    return false;
+  }
+
+  string::const_iterator p = orig.begin();
+  string::const_iterator p2 = match.begin();
+
+  while (p != orig.end()) {
+    assert(p2 != match.end());
+    if (tolower(*p) != tolower(*p2)) {
+      return false;
+    }
+    ++p;
+    ++p2;
+  }
+
+  assert(p2 == match.end());
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: P3DInstance::check_p3d_signature
 //       Access: Private
 //  Description: Checks the signature(s) encoded in the p3d file, and
-//               looks to see if any of them are recognized.  Returns
-//               true if the signature is recognized and the file
-//               should be trusted, false otherwise.
+//               looks to see if any of them are recognized.
+//
+//               If the signature is recognized, calls
+//               mark_p3d_trusted(); otherwise, calls
+//               mark_p3d_untrusted().
 ////////////////////////////////////////////////////////////////////
-bool P3DInstance::
+void P3DInstance::
 check_p3d_signature() {
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
   if (inst_mgr->get_trusted_environment()) {
     // If we're in a trusted environment (e.g. the panda3d command
     // line, where we've already downloaded the p3d file separately),
     // then everything is approved.
-    return true;
+    mark_p3d_trusted();
+    return;
   }
 
   // See if we've previously approved the certificate--any
@@ -1242,12 +1542,33 @@ check_p3d_signature() {
     // Look up the certificate to see if we've stored a copy in our
     // certs dir.
     if (inst_mgr->find_cert(cert)) {
-      return true;
+      mark_p3d_trusted();
+      return;
     }
   }
 
+  // Check the list of pre-approved certificates.
+  if (_certlist_package == NULL) {
+    // We have to go download this package.
+    P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
+    P3DHost *host = inst_mgr->get_host(inst_mgr->get_host_url());
+    _certlist_package = host->get_package("certlist", "");
+    if (_certlist_package != NULL) {
+      _certlist_package->add_instance(this);
+    }
+    
+    // When the package finishes downloading, we will come back here.
+    return;
+  }
+
+  if (!_certlist_package->get_ready() && !_certlist_package->get_failed()) {
+    // Wait for it to finish downloading.
+    return;
+  }
+
   // Couldn't find any approved certificates.
-  return false;
+  mark_p3d_untrusted();
+  return;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1373,13 +1694,6 @@ scan_app_desc_file(TiXmlDocument *doc) {
   assert(_xpackage == NULL);
   _xpackage = (TiXmlElement *)xpackage->Clone();
 
-  const char *log_basename = _xpackage->Attribute("log_basename");
-  _has_log_basename = false;
-  if (log_basename != NULL) {
-    _log_basename = log_basename;
-    _has_log_basename = false;
-  }
-
   TiXmlElement *xconfig = _xpackage->FirstChildElement("config");
   if (xconfig != NULL) {
     int hidden = 0;
@@ -1387,6 +1701,31 @@ scan_app_desc_file(TiXmlDocument *doc) {
       if (hidden != 0) {
         _hidden = true;
       }
+    }
+
+    const char *log_basename = xconfig->Attribute("log_basename");
+    if (log_basename != NULL) {
+      _log_basename = log_basename;
+    }
+
+    const char *prc_name = xconfig->Attribute("prc_name");
+    if (prc_name != NULL) {
+      _prc_name = prc_name;
+    }
+
+    const char *start_dir = xconfig->Attribute("start_dir");
+    if (start_dir != NULL) {
+      _start_dir = start_dir;
+    }
+
+    const char *run_origin = xconfig->Attribute("run_origin");
+    if (run_origin != NULL) {
+      _matches_run_origin = check_matches_origin(run_origin);
+    }
+
+    const char *script_origin = xconfig->Attribute("script_origin");
+    if (script_origin != NULL) {
+      _matches_script_origin = check_matches_origin(script_origin);
     }
 
     int allow_python_dev = 0;
@@ -1405,7 +1744,17 @@ scan_app_desc_file(TiXmlDocument *doc) {
     }
   }
 
-  if (_auth_button_approved) {
+  nout << "_matches_run_origin = " << _matches_run_origin << "\n";
+  nout << "_matches_script_origin = " << _matches_script_origin << "\n";
+
+  if (inst_mgr->get_trusted_environment()) {
+    // If we're in a trusted environment, it is as if the origin
+    // always matches.
+    _matches_run_origin = true;
+    _matches_script_origin = true;
+  }
+
+  if (_auth_button_clicked) {
     // But finally, if the user has already clicked through the red
     // "auth" button, no need to present him/her with another green
     // "play" button as well.
@@ -1432,6 +1781,13 @@ scan_app_desc_file(TiXmlDocument *doc) {
     }
 
     xrequires = xrequires->NextSiblingElement("requires");
+  }
+
+  if (!_matches_run_origin) {
+    nout << "Cannot run " << _p3d_basename << " from origin " 
+         << _origin_protocol << "//" << _origin_hostname
+         << ":" << _origin_port << "\n";
+    set_failed();
   }
 }
 
@@ -1582,46 +1938,59 @@ handle_notify_request(const string &message) {
     // Once Python is up and running, we can get the actual main
     // object from the Python side, and merge it with our own.
 
-    TiXmlDocument *doc = new TiXmlDocument;
-    TiXmlElement *xcommand = new TiXmlElement("command");
-    xcommand->SetAttribute("cmd", "pyobj");
-    xcommand->SetAttribute("op", "get_panda_script_object");
-    doc->LinkEndChild(xcommand);
-    TiXmlDocument *response = _session->command_and_response(doc);
-    
-    P3D_object *result = NULL;
-    if (response != NULL) {
-      TiXmlElement *xresponse = response->FirstChildElement("response");
-      if (xresponse != NULL) {
-        TiXmlElement *xvalue = xresponse->FirstChildElement("value");
-        if (xvalue != NULL) {
-          result = _session->xml_to_p3dobj(xvalue);
+    // But only if this web page is allowed to call our scripting
+    // functions.
+    if (_matches_script_origin) {
+      TiXmlDocument *doc = new TiXmlDocument;
+      TiXmlElement *xcommand = new TiXmlElement("command");
+      xcommand->SetAttribute("cmd", "pyobj");
+      xcommand->SetAttribute("op", "get_panda_script_object");
+      doc->LinkEndChild(xcommand);
+      TiXmlDocument *response = _session->command_and_response(doc);
+      
+      P3D_object *result = NULL;
+      if (response != NULL) {
+        TiXmlElement *xresponse = response->FirstChildElement("response");
+        if (xresponse != NULL) {
+          TiXmlElement *xvalue = xresponse->FirstChildElement("value");
+          if (xvalue != NULL) {
+            result = _session->xml_to_p3dobj(xvalue);
+          }
         }
+        delete response;
       }
-      delete response;
-    }
-
-    if (result != NULL) {
-      _panda_script_object->set_pyobj(result);
-      P3D_OBJECT_DECREF(result);
+      
+      if (result != NULL) {
+        _panda_script_object->set_pyobj(result);
+        P3D_OBJECT_DECREF(result);
+      }
     }
 
     _panda_script_object->set_string_property("status", "starting");
 
   } else if (message == "onwindowopen") {
     // The process told us that it just succesfully opened its
-    // window.  Hide the splash window.
+    // window, for the first time.  Hide the splash window.
     _instance_window_opened = true;
     if (_splash_window != NULL) {
       _splash_window->set_visible(false);
     }
 
-    // Guess we won't be using these images any more.
+    // Guess we won't be using (most of) these images any more.
     for (int i = 0; i < (int)IT_num_image_types; ++i) {
-      _image_files[i].cleanup();
+      if (i != IT_active) {
+        _image_files[i].cleanup();
+      }
     }
 
     _panda_script_object->set_string_property("status", "open");
+
+  } else if (message == "onwindowattach") {
+    // The graphics window has been attached to the browser frame
+    // (maybe initially, maybe later).  Hide the splash window.
+    if (_splash_window != NULL) {
+      _splash_window->set_visible(false);
+    }
 
 #ifdef __APPLE__
     // Start a timer to update the frame repeatedly.  This seems to be
@@ -1633,6 +2002,24 @@ handle_notify_request(const string &message) {
       (NULL, 0, 1.0 / 60.0, 0, 0, timer_callback, &timer_context);
     CFRunLoopRef run_loop = CFRunLoopGetCurrent();
     CFRunLoopAddTimer(run_loop, _frame_timer, kCFRunLoopCommonModes);
+#endif  // __APPLE__
+
+  } else if (message == "onwindowdetach") {
+    // The graphics window has been removed from the browser frame.
+    // Restore the splash window.
+    _instance_window_opened = true;
+    set_background_image(IT_active);
+    if (_splash_window != NULL) {
+      _splash_window->set_visible(true);
+    }
+
+#ifdef __APPLE__
+    // Stop the frame timer; we don't need it any more.
+    if (_frame_timer != NULL) {
+      CFRunLoopTimerInvalidate(_frame_timer);
+      CFRelease(_frame_timer);
+      _frame_timer = NULL;
+    }
 #endif  // __APPLE__
 
   } else if (message == "buttonclick") {
@@ -1809,14 +2196,46 @@ make_splash_window() {
   }
 
   _splash_window = new SplashWindowType(this, make_visible);
+
+  // Get the splash window colors.  We must set these *before* we call
+  // set_wparams.
+  if (_fparams.has_token("fgcolor")) {
+    int r, g, b;
+    if (parse_color(r, g, b, _fparams.lookup_token("fgcolor"))) {
+      _splash_window->set_fgcolor(r, g, b);
+    } else {
+      nout << "parse failure on fgcolor " << _fparams.lookup_token("fgcolor") << "\n";
+    }
+  }
+  if (_fparams.has_token("bgcolor")) {
+    int r, g, b;
+    if (parse_color(r, g, b, _fparams.lookup_token("bgcolor"))) {
+      _splash_window->set_bgcolor(r, g, b);
+    } else {
+      nout << "parse failure on bgcolor " << _fparams.lookup_token("bgcolor") << "\n";
+    }
+  }
+  if (_fparams.has_token("barcolor")) {
+    int r, g, b;
+    if (parse_color(r, g, b, _fparams.lookup_token("barcolor"))) {
+      _splash_window->set_barcolor(r, g, b);
+    } else {
+      nout << "parse failure on barcolor " << _fparams.lookup_token("barcolor") << "\n";
+    }
+  }
+
   _splash_window->set_wparams(_wparams);
   _splash_window->set_install_label(_install_label);
+  
     
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
 
   // Go get the required images.
   for (int i = 0; i < (int)IT_none; ++i) {
     string token_keyword = string(_image_type_names[i]) + "_img";
+    if (!_fparams.has_token(token_keyword) && i < (int)IT_auth_ready) {
+      token_keyword = "splash_img";
+    }
     if (!_fparams.has_token(token_keyword)) {
       // No specific image for this type is specified; get the default
       // image.  We do this via the P3DPackage interface, so we can
@@ -1828,6 +2247,7 @@ make_splash_window() {
       // download it directly.  This one won't be cached locally
       // (though the browser might be free to cache it).
       _image_files[i]._use_standard_image = false;
+      _image_files[i]._filename.clear();
       string image_url = _fparams.lookup_token(token_keyword);
       if (image_url.empty()) {
         // No splash image.  Never mind.
@@ -1847,7 +2267,18 @@ make_splash_window() {
     }
   }
 
+  if (_current_background_image != IT_none) {
+    _splash_window->set_image_filename(_image_files[_current_background_image]._filename, P3DSplashWindow::IP_background);
+  }
+  
+  // Update the splash window.
+  if (_splash_window != NULL) {
+  }
+
   if (_current_button_image != IT_none) {
+    _splash_window->set_image_filename(_image_files[_current_button_image]._filename, P3DSplashWindow::IP_button_ready);
+    _splash_window->set_image_filename(_image_files[_current_button_image + 1]._filename, P3DSplashWindow::IP_button_rollover);
+    _splash_window->set_image_filename(_image_files[_current_button_image + 2]._filename, P3DSplashWindow::IP_button_click); 
     _splash_window->set_button_active(true);
   }
 }
@@ -1863,7 +2294,8 @@ make_splash_window() {
 void P3DInstance::
 set_background_image(ImageType image_type) {
   if (image_type != _current_background_image) {
-    nout << "setting background to " << _image_type_names[image_type] << "\n";
+    nout << "setting background to " << _image_type_names[image_type]
+         << ", splash_window = " << _splash_window << "\n";
     // Remove the previous image.
     _image_files[_current_background_image]._image_placement = P3DSplashWindow::IP_none;
 
@@ -1944,15 +2376,21 @@ set_button_image(ImageType image_type) {
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 report_package_info_ready(P3DPackage *package) {
-  if (package == _image_package || package == _p3dcert_package) {
-    // A special case: the image package and the p3dcert package get
-    // immediately downloaded, without waiting for anything else.
-    if (package == _p3dcert_package) {
-      // If we're downloading p3dcert, though, put up a progress bar.
+  if (package == _image_package || package == _certlist_package ||
+      package == _p3dcert_package) {
+    // A special case: these packages get immediately downloaded,
+    // without waiting for anything else.
+    if (package == _certlist_package || package == _p3dcert_package) {
+      // If we're downloading one of the two cert packages, though,
+      // put up a progress bar.
       make_splash_window();
       if (_splash_window != NULL) {
         _splash_window->set_install_progress(0.0);
-        _splash_window->set_install_label("Getting Authorization Dialog");
+        if (package == _certlist_package) {
+          _splash_window->set_install_label("Getting Certificates");
+        } else {          
+          _splash_window->set_install_label("Getting Authorization Dialog");
+        }
       }
     }
 
@@ -1988,6 +2426,7 @@ report_package_info_ready(P3DPackage *package) {
       _download_complete = false;
       _download_package_index = 0;
       _total_downloaded = 0;
+      _download_begin = time(NULL);
       
       nout << "Beginning install of " << _downloading_packages.size()
            << " packages, total " << _total_download_size
@@ -2006,6 +2445,8 @@ report_package_info_ready(P3DPackage *package) {
       _panda_script_object->set_string_property("status", "downloading");
       _panda_script_object->set_int_property("numDownloadingPackages", _downloading_packages.size());
       _panda_script_object->set_int_property("totalDownloadSize", _total_download_size);
+      _panda_script_object->set_int_property("downloadElapsedSeconds", 0);
+      _panda_script_object->set_undefined_property("downloadRemainingSeconds");
       send_notify("ondownloadbegin");
       
       start_next_download();
@@ -2165,7 +2606,7 @@ report_package_progress(P3DPackage *package, double progress) {
     // Ignore this.
     return;
   }
-  if (package == _p3dcert_package) {
+  if (package == _certlist_package || package == _p3dcert_package) {
     // This gets its own progress bar.
     if (_splash_window != NULL) {
       _splash_window->set_install_progress(progress);
@@ -2188,6 +2629,23 @@ report_package_progress(P3DPackage *package, double progress) {
     _splash_window->set_install_progress(progress);
   }
   _panda_script_object->set_float_property("downloadProgress", progress);
+
+  static const size_t buffer_size = 256;
+  char buffer[buffer_size];
+
+  time_t elapsed = time(NULL) - _download_begin;
+  _panda_script_object->set_int_property("downloadElapsedSeconds", elapsed);
+
+  sprintf(buffer, "%d:%02d", (int)(elapsed / 60), (int)(elapsed % 60));
+  _panda_script_object->set_string_property("downloadElapsedFormatted", buffer);
+
+  if (progress > 0 && (elapsed > 5 || progress > 0.2)) {
+    time_t total = (time_t)((double)elapsed / progress);
+    time_t remaining = max(total, elapsed) - elapsed;
+    _panda_script_object->set_int_property("downloadRemainingSeconds", remaining);
+    sprintf(buffer, "%d:%02d", (int)(remaining / 60), (int)(remaining % 60));
+    _panda_script_object->set_string_property("downloadRemainingFormatted", buffer);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2236,6 +2694,23 @@ report_package_done(P3DPackage *package, bool success) {
     return;
   }
 
+  if (package == _certlist_package) {
+    // Another special case: successfully downloading certlist (or
+    // failing to download it) means we can finish checking the
+    // authenticity of the p3d file.
+
+    // Take down the download progress.
+    if (_splash_window != NULL) {
+      _splash_window->set_install_progress(0.0);
+      _splash_window->set_install_label("");
+    }
+
+    P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
+    inst_mgr->read_certlist(package);
+    check_p3d_signature();
+    return;
+  }
+
   if (package == _p3dcert_package) {
     // Another special case: successfully downloading p3dcert means we
     // can enable the auth button.
@@ -2275,25 +2750,6 @@ set_install_label(const string &install_label) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: P3DInstance::send_notify
-//       Access: Private
-//  Description: Generates a synthetic notify message here at the C++
-//               level.
-//
-//               Most notify messages are generated from within the
-//               Python code, and don't use this method; but a few
-//               have to be sent before Python has started, and those
-//               come through this method.
-////////////////////////////////////////////////////////////////////
-void P3DInstance::
-send_notify(const string &message) {
-  P3D_request *request = new P3D_request;
-  request->_request_type = P3D_RT_notify;
-  request->_request._notify._message = strdup(message.c_str());
-  add_baked_request(request);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: P3DInstance::paint_window
 //       Access: Private
 //  Description: Actually paints the rendered image to the browser
@@ -2305,6 +2761,11 @@ void P3DInstance::
 paint_window() {
 #ifdef __APPLE__
   if (_swbuffer == NULL || !_instance_window_opened) {
+    // We don't have a Panda3D window yet.
+    return;
+  }
+  if (_splash_window != NULL && _splash_window->get_visible()) {
+    // If the splash window is up, don't draw the Panda3D window.
     return;
   }
 
@@ -2426,7 +2887,9 @@ paint_window() {
     return;
   }
 
-  GrafPtr out_port = _wparams.get_parent_window()._port;
+  const P3D_window_handle &handle = _wparams.get_parent_window();
+  assert(handle._window_handle_type == P3D_WHT_osx_port);
+  GrafPtr out_port = handle._handle._osx_port._port;
   GrafPtr port_save = NULL;
   Boolean port_changed = QDSwapPort(out_port, &port_save);
 
@@ -2470,6 +2933,87 @@ add_modifier_flags(unsigned int &swb_flags, int modifiers) {
     swb_flags |= SubprocessWindowBuffer::EF_control_held;
   }
 #endif  // __APPLE__
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::send_notify
+//       Access: Private
+//  Description: Generates a synthetic notify message here at the C++
+//               level.
+//
+//               Most notify messages are generated from within the
+//               Python code, and don't use this method; but a few
+//               have to be sent before Python has started, and those
+//               come through this method.
+////////////////////////////////////////////////////////////////////
+void P3DInstance::
+send_notify(const string &message) {
+  P3D_request *request = new P3D_request;
+  request->_request_type = P3D_RT_notify;
+  request->_request._notify._message = strdup(message.c_str());
+  add_baked_request(request);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::parse_color
+//       Access: Private, Static
+//  Description: Parses a HTML color spec of the form #rgb or #rrggbb.
+//               Returns true on success, false on failure.  On
+//               success, fills r, g, b with the color values in the
+//               range 0..255.  On failure, r, g, b are undefined.
+////////////////////////////////////////////////////////////////////
+bool P3DInstance::
+parse_color(int &r, int &g, int &b, const string &color) {
+  if (color.empty() || color[0] != '#') {
+    return false;
+  }
+  if (color.length() == 4) {
+    if (!parse_hexdigit(r, color[1]) || 
+        !parse_hexdigit(g, color[2]) || 
+        !parse_hexdigit(b, color[3])) {
+      return false;
+    }
+    r *= 0x11;
+    g *= 0x11;
+    b *= 0x11;
+    return true;
+  }
+  if (color.length() == 7) {
+    int rh, rl, gh, gl, bh, bl;
+    if (!parse_hexdigit(rh, color[1]) ||
+        !parse_hexdigit(rl, color[2]) ||
+        !parse_hexdigit(gh, color[3]) ||
+        !parse_hexdigit(gl, color[4]) ||
+        !parse_hexdigit(bh, color[5]) ||
+        !parse_hexdigit(bl, color[6])) {
+      return false;
+    }
+    r = (rh << 4) | rl;
+    g = (gh << 4) | gl;
+    b = (bh << 4) | bl;
+    return true;
+  }
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::parse_hexdigit
+//       Access: Private, Static
+//  Description: Parses a single hex digit.  Returns true on success,
+//               false on failure.  On success, fills result with the
+//               parsed value, an integer in the range 0..15.
+////////////////////////////////////////////////////////////////////
+bool P3DInstance::
+parse_hexdigit(int &result, char digit) {
+  if (isdigit(digit)) {
+    result = digit - '0';
+    return true;
+  } else if (isxdigit(digit)) {
+    result = tolower(digit) - 'a' + 10;
+    return true;
+  }
+  return false;
 }
 
 #ifdef __APPLE__
@@ -2562,7 +3106,7 @@ download_finished(bool success) {
   P3DFileDownload::download_finished(success);
   if (success) {
     // We've successfully downloaded the instance data.
-    _inst->set_p3d_filename(get_filename());
+    _inst->priv_set_p3d_filename(get_filename());
   } else {
     // Oops, no joy on the instance data.
     _inst->set_failed();

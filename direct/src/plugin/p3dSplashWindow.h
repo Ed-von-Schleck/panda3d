@@ -42,6 +42,7 @@ public:
   inline const P3DWindowParams &get_wparams() const;
 
   virtual void set_visible(bool visible);
+  inline bool get_visible() const;
 
   enum ImagePlacement {
     IP_background,
@@ -53,6 +54,9 @@ public:
 
   virtual void set_image_filename(const string &image_filename,
                                   ImagePlacement image_placement);
+  virtual void set_fgcolor(int r, int g, int b);
+  virtual void set_bgcolor(int r, int g, int b);
+  virtual void set_barcolor(int r, int g, int b);
   virtual void set_install_label(const string &install_label);
   virtual void set_install_progress(double install_progress);
 
@@ -100,6 +104,10 @@ protected:
   P3DWindowParams _wparams;
   int _win_width, _win_height;
   bool _visible;
+
+  int _fgcolor_r, _fgcolor_g, _fgcolor_b;
+  int _bgcolor_r, _bgcolor_g, _bgcolor_b;
+  int _barcolor_r, _barcolor_g, _barcolor_b;
 
   // The region of the window for accepting button clicks.
   int _button_width, _button_height;
