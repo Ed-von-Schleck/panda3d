@@ -24,3 +24,27 @@ PhysxShape() : PhysxObject() {
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxShape::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxShape::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " " << get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

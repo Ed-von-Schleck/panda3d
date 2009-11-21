@@ -58,6 +58,9 @@ PUBLISHED:
   void start_jump(float v0);
   void stop_jump();
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   void update(float dt);
 

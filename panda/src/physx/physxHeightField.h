@@ -56,6 +56,9 @@ PUBLISHED:
   unsigned int get_reference_count() const;
   float get_height(float x, float y) const;
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   INLINE PhysxHeightField();
   INLINE ~PhysxHeightField();

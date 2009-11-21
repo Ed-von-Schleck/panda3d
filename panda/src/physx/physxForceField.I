@@ -34,3 +34,27 @@ INLINE PhysxForceField::
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxForceField::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceField::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxForceField::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " " << get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

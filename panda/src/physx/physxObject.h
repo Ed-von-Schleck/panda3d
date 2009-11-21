@@ -38,6 +38,10 @@ PUBLISHED:
   INLINE bool has_python_tags() const;
 #endif // HAVE_PYTHON
 
+PUBLISHED:
+  virtual void ls() const = 0;
+  virtual void ls(ostream &out, int indent_level=0) const = 0;
+
 protected:
   INLINE PhysxObject();
   INLINE ~PhysxObject();

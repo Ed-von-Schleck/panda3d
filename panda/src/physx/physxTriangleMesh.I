@@ -34,3 +34,26 @@ INLINE PhysxTriangleMesh::
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxTriangleMesh::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxTriangleMesh::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxTriangleMesh::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxTriangleMesh::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

@@ -34,3 +34,29 @@ INLINE PhysxForceFieldShapeGroup::
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldShapeGroup::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxForceFieldShapeGroup::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldShapeGroup::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxForceFieldShapeGroup::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " " << get_name()
+                            << " (at 0x" << this << ")\n";
+
+  _shapes.ls(out, indent_level);
+}
+

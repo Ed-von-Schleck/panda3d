@@ -88,3 +88,29 @@ operator [] (unsigned int index) const {
   return _objects[index];
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxObjectCollection::ls
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+template <class T>
+void PhysxObjectCollection<T>::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxObjectCollection::ls
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+template <class T>
+void PhysxObjectCollection<T>::
+ls(ostream &out, int indent_level) const {
+
+  for (unsigned int i=0; i < size(); i++) {
+    get(i)->ls(out, indent_level + 2);
+  }
+}
+

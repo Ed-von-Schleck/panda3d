@@ -23,6 +23,13 @@
 #include "physxHeightFieldShape.h"
 #include "physxTriangleMeshShape.h"
 #include "physxWheelShape.h"
+#include "physxGroupsMask.h"
+#include "physxBounds3.h"
+#include "physxSphere.h"
+#include "physxBox.h"
+#include "physxCapsule.h"
+#include "physxRay.h"
+#include "physxRaycastHit.h"
 
 TypeHandle PhysxShape::_type_handle;
 
@@ -333,5 +340,122 @@ set_material_index(unsigned short index) {
 
   nassertv(_error_type == ET_ok);
   ptr()->setMaterial((NxMaterialIndex)index);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::set_groups_mask
+//       Access: Published
+//  Description: Sets 128-bit mask used for collision filtering.
+//               Does NOT wake the associated actor up
+//               automatically.
+////////////////////////////////////////////////////////////////////
+void PhysxShape::
+set_groups_mask(const PhysxGroupsMask &mask) {
+
+  nassertv(_error_type == ET_ok);
+  ptr()->setGroupsMask(mask.get_mask());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_groups_mask
+//       Access: Published
+//  Description: Gets 128-bit mask used for collision filtering.
+////////////////////////////////////////////////////////////////////
+PhysxGroupsMask PhysxShape::
+get_groups_mask() const {
+
+  PhysxGroupsMask mask;
+  nassertr(_error_type == ET_ok, mask);
+  mask.set_mask(ptr()->getGroupsMask());
+  return mask;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::get_world_bounds
+//       Access: Published
+//  Description: Returns a world space AABB enclosing this shape.
+////////////////////////////////////////////////////////////////////
+PhysxBounds3 PhysxShape::
+get_world_bounds() const {
+
+  PhysxBounds3 bounds;
+  nassertr(_error_type == ET_ok, bounds);
+  ptr()->getWorldBounds(bounds._bounds);
+  return bounds;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::check_overlap_aabb
+//       Access: Published
+//  Description: Checks whether the shape overlaps a world-space
+//               AABB or not.
+////////////////////////////////////////////////////////////////////
+bool PhysxShape::
+check_overlap_aabb(const PhysxBounds3 &world_bounds) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return ptr()->checkOverlapAABB(world_bounds._bounds);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::check_overlap_capsule
+//       Access: Published
+//  Description: Checks whether the shape overlaps a world-space
+//               capsule or not.
+////////////////////////////////////////////////////////////////////
+bool PhysxShape::
+check_overlap_capsule(const PhysxCapsule &world_capsule) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return ptr()->checkOverlapCapsule(world_capsule._capsule);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::check_overlap_obb
+//       Access: Published
+//  Description: Checks whether the shape overlaps a world-space
+//               OBB or not.
+////////////////////////////////////////////////////////////////////
+bool PhysxShape::
+check_overlap_obb(const PhysxBox &world_box) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return ptr()->checkOverlapOBB(world_box._box);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::check_overlap_sphere
+//       Access: Published
+//  Description: Checks whether the shape overlaps a world-space
+//               sphere or not.
+////////////////////////////////////////////////////////////////////
+bool PhysxShape::
+check_overlap_sphere(const PhysxSphere &world_sphere) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return ptr()->checkOverlapSphere(world_sphere._sphere);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxShape::raycast
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PhysxRaycastHit PhysxShape::
+raycast(const PhysxRay &worldRay, bool firstHit, bool smoothNormal) const {
+
+  NxRaycastHit hit;
+  nassertr(_error_type == ET_ok, hit);
+
+  NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
+  if (smoothNormal == true) {
+    hints |= NX_RAYCAST_NORMAL;
+  }
+  else {
+    hints |= NX_RAYCAST_FACE_NORMAL;
+  }
+
+  ptr()->raycast(worldRay._ray, worldRay._length, hints, hit, firstHit);
+  return PhysxRaycastHit(hit);
 }
 

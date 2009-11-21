@@ -71,6 +71,9 @@ PUBLISHED:
   PT(PhysxTriangleMesh) get_triangle_mesh(unsigned int idx);
   MAKE_SEQ(get_triangle_meshes, get_num_triangle_meshes, get_triangle_mesh);
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   INLINE NxPhysicsSDK *get_sdk() const;
 

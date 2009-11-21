@@ -34,3 +34,26 @@ INLINE PhysxMaterial::
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxMaterial::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxMaterial::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxMaterial::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxMaterial::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

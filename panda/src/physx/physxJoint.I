@@ -24,3 +24,40 @@ PhysxJoint() : PhysxObject() {
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxJoint::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxJoint::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxJoint::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxJoint::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " " << get_name( )
+                            << " (at 0x" << this << ")";
+
+  NxActor *actorPtr[2];
+  ptr()->getActors(&actorPtr[0], &actorPtr[1]);
+
+  if (actorPtr[0]) {
+    out << " A1:0x" << actorPtr[0]->userData;
+  }
+
+  if (actorPtr[1]) {
+    out << " A2:0x" << actorPtr[1]->userData;
+  }
+
+  out << "\n";
+}
+

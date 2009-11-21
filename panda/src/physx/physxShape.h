@@ -29,6 +29,13 @@
 
 class PhysxActor;
 class PhysxMaterial;
+class PhysxGroupsMask;
+class PhysxBounds3;
+class PhysxSphere;
+class PhysxBox;
+class PhysxCapsule;
+class PhysxRay;
+class PhysxRaycastHit;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxShape
@@ -49,6 +56,7 @@ PUBLISHED:
   void set_local_mat(const LMatrix4f &mat);
   void set_material(const PhysxMaterial &material);
   void set_material_index(unsigned short idx);
+  void set_groups_mask(const PhysxGroupsMask &mask);
 
   const char *get_name() const;
   bool get_flag(const PhysxShapeFlag flag) const;
@@ -57,15 +65,17 @@ PUBLISHED:
   LPoint3f get_local_pos() const;
   LMatrix4f get_local_mat() const;
   unsigned short get_material_index() const;
+  PhysxGroupsMask get_groups_mask() const;
+  PhysxBounds3 get_world_bounds() const;
 
-  //void get_world_bounds(PhysxBounds3 & dest) const;
-  //bool check_overlap_aabb(const PhysxBounds3 & world_bounds) const;
-  //bool check_overlap_capsule(const PhysxCapsule & world_capsule) const;
-  //bool check_overlap_obb(const PhysxBox & world_box) const;
-  //bool check_overlap_sphere(const PhysxSphere & world_sphere) const;
+  bool check_overlap_aabb(const PhysxBounds3 &world_bounds) const;
+  bool check_overlap_capsule(const PhysxCapsule &world_capsule) const;
+  bool check_overlap_obb(const PhysxBox &world_box) const;
+  bool check_overlap_sphere(const PhysxSphere &world_sphere) const;
+  PhysxRaycastHit raycast(const PhysxRay &worldRay, bool firstHit, bool smoothNormal) const;
 
-  //void set_groups_mask(const PhysxMask128 &mask);
-  //PhysxMask128 get_groups_mask() const;
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
 
 public:
   static PT(PhysxShape) factory(NxShapeType shapeType);

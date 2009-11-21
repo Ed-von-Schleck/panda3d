@@ -36,3 +36,33 @@ INLINE PhysxScene::
   _debugNode = NULL;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxScene::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxScene::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " (at 0x" << this << ")\n";
+
+  _materials.ls(out, indent_level);
+  _actors.ls(out, indent_level);
+  _joints.ls(out, indent_level);
+  _forcefields.ls(out, indent_level);
+  _ffgroups.ls(out, indent_level);
+  _controllers.ls(out, indent_level);
+}
+

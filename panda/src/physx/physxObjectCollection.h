@@ -33,6 +33,9 @@ public:
   T *get(unsigned int index) const;
   T *operator [] (unsigned int index) const;
 
+  void ls() const;
+  void ls(ostream &out, int indent_level=0) const;
+
 private:
   pvector<PT(T)> _objects;
 };

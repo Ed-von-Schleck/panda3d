@@ -58,6 +58,9 @@ PUBLISHED:
   float get_solver_extrapolation_factor() const;
   bool get_use_acceleration_spring() const;
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   static PT(PhysxJoint) factory(NxJointType shapeType);
 

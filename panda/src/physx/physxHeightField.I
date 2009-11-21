@@ -34,3 +34,26 @@ INLINE PhysxHeightField::
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxHeightField::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxHeightField::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxHeightField::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxHeightField::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

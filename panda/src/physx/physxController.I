@@ -51,3 +51,29 @@ PhysxController() : PhysxObject() {
   _up_quat_inv.invert();
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxController::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxController::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxController::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " (at 0x" << this << ")";
+
+  out << " A:0x" << get_actor();
+  out << "\n";
+}
+

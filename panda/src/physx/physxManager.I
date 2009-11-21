@@ -188,3 +188,30 @@ nxMat33_to_mat3(const NxMat33 &m) {
                    cells[6], cells[7], cells[8]);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxManager::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxManager::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << "PhysxManager\n";
+
+  _scenes.ls(out, indent_level);
+  _heightfields.ls(out, indent_level);
+  _convex_meshes.ls(out, indent_level);
+  _triangle_meshes.ls(out, indent_level);
+}
+

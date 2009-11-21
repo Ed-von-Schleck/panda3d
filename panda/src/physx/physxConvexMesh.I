@@ -34,3 +34,26 @@ INLINE PhysxConvexMesh::
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxConvexMesh::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxConvexMesh::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxConvexMesh::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxConvexMesh::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

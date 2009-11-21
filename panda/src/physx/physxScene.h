@@ -202,6 +202,9 @@ PUBLISHED:
 PUBLISHED:
   void release();
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   INLINE NxScene *ptr() const { return _ptr; };
   INLINE NxControllerManager *cm() const { return _cm; };
@@ -209,8 +212,8 @@ public:
   void link(NxScene *ptr);
   void unlink();
 
-  PhysxObjectCollection<PhysxActor> _actors;
   PhysxObjectCollection<PhysxMaterial> _materials;
+  PhysxObjectCollection<PhysxActor> _actors;
   PhysxObjectCollection<PhysxJoint> _joints;
   PhysxObjectCollection<PhysxForceField> _forcefields;
   PhysxObjectCollection<PhysxForceFieldShapeGroup> _ffgroups;

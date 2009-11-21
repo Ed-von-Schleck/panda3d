@@ -176,6 +176,9 @@ PUBLISHED:
   void wake_up(float wakeCounterValue=NX_SLEEP_INTERVAL);
   void put_to_sleep();
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   void update_transform(const LMatrix4f m);
 

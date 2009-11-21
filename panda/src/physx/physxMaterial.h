@@ -82,6 +82,9 @@ PUBLISHED:
   PhysxCombineMode get_friction_combine_mode() const;
   PhysxCombineMode get_restitution_combine_mode() const;
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 ////////////////////////////////////////////////////////////////////
 PUBLISHED:
   void release();

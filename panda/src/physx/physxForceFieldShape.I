@@ -24,3 +24,27 @@ PhysxForceFieldShape() : PhysxObject() {
 
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldShape::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxForceFieldShape::
+ls() const {
+
+  ls(nout);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxForceFieldShape::ls
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxForceFieldShape::
+ls(ostream &out, int indent_level) const {
+
+  indent(out, indent_level) << get_type().get_name()
+                            << " " << get_name()
+                            << " (at 0x" << this << ")\n";
+}
+

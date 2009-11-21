@@ -50,6 +50,9 @@ PUBLISHED:
   LMatrix4f get_mat() const;
   LPoint3f get_pos() const;
 
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
+
 public:
   static PT(PhysxForceFieldShape) factory(NxShapeType shapeType);
 
