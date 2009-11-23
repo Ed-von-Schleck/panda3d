@@ -82,7 +82,7 @@ public:
                        const unsigned char *this_data, 
                        size_t this_data_size);
 
-  bool handle_event(P3D_event_data event);
+  bool handle_event(const P3D_event_data &event);
 
   inline int get_instance_id() const;
   inline const string &get_session_key() const;
@@ -169,6 +169,7 @@ private:
   void mark_p3d_trusted();
   void scan_app_desc_file(TiXmlDocument *doc);
   string find_alt_host_url(const string &host_url, const string &alt_host);
+  void get_host_info(P3DHost *host);
 
   void send_browser_script_object();
   P3D_request *make_p3d_request(TiXmlElement *xrequest);
