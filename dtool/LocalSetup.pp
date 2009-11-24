@@ -116,6 +116,11 @@
 #else
 #print - Did not find Freetype
 #endif
+#if $[HAVE_WX]
+#print + WxWidgets
+#else
+#print - Did not find WxWidgets
+#endif
 #if $[HAVE_GL]
 #print + OpenGL
 #elif $[HAVE_GLES2]
@@ -177,6 +182,11 @@
 #print + ODE
 #else
 #print - Did not find ODE
+#endif
+#if $[HAVE_AWESOMIUM]
+#print + AWESOMIUM
+#else
+#print - Did not find AWESOMIUM
 #endif
 #if $[HAVE_MAYA]
 #print + OpenMaya
@@ -354,6 +364,9 @@ $[cdefine HAVE_SWSCALE]
 /* Define if we have ODE installed and want to build for ODE.  */
 $[cdefine HAVE_ODE]
 
+/* Define if we have AWESOMIUM installed and want to build for AWESOMIUM.  */
+$[cdefine HAVE_AWESOMIUM]
+
 /* Define if we have Mesa installed and want to build mesadisplay.  */
 $[cdefine HAVE_MESA]
 $[cdefine MESA_MGL]
@@ -529,7 +542,7 @@ $[cdefine HAVE_IOS_BINARY]
 /* Can we safely call getenv() at static init time? */
 $[cdefine STATIC_INIT_GETENV]
 
-/* Can we read the file /proc/self/* to determine our
+/* Can we read the file /proc/self/[*] to determine our
    environment variables at static init time? */
 $[cdefine HAVE_PROC_SELF_EXE]
 $[cdefine HAVE_PROC_SELF_MAPS]
@@ -686,7 +699,10 @@ $[cdefine IS_OSX]
 $[cdefine IS_LINUX]
 $[cdefine IS_FREEBSD]
 $[cdefine BUILD_IPHONE]
-$[cdefine DTOOL_PLATFORM]
 $[cdefine UNIVERSAL_BINARIES]
+
+#if $[DTOOL_PLATFORM]
+# define DTOOL_PLATFORM "$[DTOOL_PLATFORM]"
+#endif
 
 #end dtool_config.h

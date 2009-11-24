@@ -50,7 +50,7 @@ $[cdefine PANDA_OFFICIAL_VERSION]
 
 /* This is the panda numeric version as a single number, with three
    digits reserved for each component. */
-# define PANDA_VERSION $[+ $[* $[PANDA_MAJOR_VERSION],1000000],$[* $[PANDA_MINOR_VERSION],1000],$[PANDA_SEQUENCE_VERSION]]
+$[cdefine PANDA_NUMERIC_VERSION]
 
 /* This is the panda version expressed as a string.  It ends in the
    letter "c" if this is not an "official" version (e.g. it was checked
@@ -69,6 +69,13 @@ $[cdefine PANDA_OFFICIAL_VERSION]
    distributable package may be downloaded, or empty string if there
    is no associated package. */
 # define PANDA_PACKAGE_HOST_URL "$[PANDA_PACKAGE_HOST_URL]"
+
+#if HAVE_P3D_PLUGIN
+/* Similar definitions for the plugin versioning, if in use. */
+$[cdefine P3D_PLUGIN_MAJOR_VERSION]
+$[cdefine P3D_PLUGIN_MINOR_VERSION]
+$[cdefine P3D_PLUGIN_SEQUENCE_VERSION]
+#endif
 
 #end pandaVersion.h
 

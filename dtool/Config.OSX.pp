@@ -85,13 +85,15 @@
 // $[sources] is the list of .o files.  $[libs] is a space-separated
 // list of dependent libraries, and $[lpath] is a space-separated list
 // of directories in which those libraries can be found.
-#defer LINK_BIN_C $[cc_ld] $[ARCH_FLAGS] $[OSX_CFLAGS] -o $[target] $[sources] $[flags] $[lpath:%=-L%] $[libs:%=-l%]\
- $[fpath:%=-Wl,-F%] $[patsubst %,-framework %, $[bin_frameworks]]
-#defer LINK_BIN_C++ $[cxx_ld] $[ARCH_FLAGS] $[OSX_CFLAGS] \
+#defer link_bin_opts $[ARCH_FLAGS] $[OSX_CFLAGS] \
+ $[if $[not $[LINK_ALL_STATIC]],-undefined dynamic_lookup] \
  -o $[target] $[sources]\
  $[flags]\
  $[lpath:%=-L%] $[libs:%=-l%]\
  $[fpath:%=-Wl,-F%] $[patsubst %,-framework %, $[bin_frameworks]]
+
+#defer LINK_BIN_C $[cc_ld] $[link_bin_opts]
+#defer LINK_BIN_C++ $[cxx_ld] $[link_bin_opts]
 
 // How to generate a static C or C++ library.  $[target] is the
 // name of the library to generate, and $[sources] is the list of .o
@@ -136,7 +138,9 @@
 #define HAVE_GL 1
 
 // What additional flags should we pass to interrogate?
-#define SYSTEM_IGATE_FLAGS -D__FLT_EVAL_METHOD__=0  -D__i386__ -D__const=const -Dvolatile -Dmutable -D__LITTLE_ENDIAN__ -D__inline__=inline -D__GNUC__
+#define BASE_IGATE_FLAGS -D__FLT_EVAL_METHOD__=0  -D__const=const -Dvolatile -Dmutable -D__LITTLE_ENDIAN__ -D__inline__=inline -D__GNUC__
+#define IGATE_ARCH -D__i386__
+#defer SYSTEM_IGATE_FLAGS $[BASE_IGATE_FLAGS] $[IGATE_ARCH]
 
 // We don't need worry about defining WORDS_BIGENDIAN (and we
 // shouldn't anyway, since ppc and intel are different).  We rely on

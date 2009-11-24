@@ -390,6 +390,25 @@ reload_implicit_pages() {
               "or \"mac\"."));
   PandaFileStreamBuf::_newline_mode = newline_mode;
 #endif  // USE_PANDAFILESTREAM
+
+#ifdef WIN32
+  // We don't necessarily want an error dialog when we fail to load a
+  // .dll file.  But sometimes it is useful for debugging.
+  ConfigVariableBool show_dll_error_dialog
+    ("show-dll-error-dialog", false,
+     PRC_DESC("Set this true to enable the Windows system dialog that pops "
+              "up when a DLL fails to load, or false to disable it.  It is "
+              "normally false, but it may be useful to set it true to debug "
+              "why a DLL is not loading.  (Note that this actually disables "
+              "*all* critical error messages, and that it's a global setting "
+              "that some other libraries might un-set.)"));
+  if (show_dll_error_dialog) {
+    SetErrorMode(0);
+  } else {
+    SetErrorMode(SEM_FAILCRITICALERRORS);
+  } 
+#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////

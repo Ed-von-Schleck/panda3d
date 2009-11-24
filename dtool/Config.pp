@@ -321,7 +321,7 @@
 // genPyCode.  You may wish to add to this list to add your own
 // libraries, or if you want to use some of the more obscure
 // interfaces like libpandaegg and libpandafx.
-#defer GENPYCODE_LIBS libpandaexpress libpanda libpandaphysics libdirect libpandafx $[if $[HAVE_ODE],libpandaode]
+#defer GENPYCODE_LIBS libpandaexpress libpanda libpandaphysics libdirect libpandafx libp3vision $[if $[HAVE_ODE],libpandaode] 
 
 // Normally, Python source files are copied into the INSTALL_LIB_DIR
 // defined above, along with the compiled C++ library objects, when
@@ -748,6 +748,16 @@
 #define ODE_LIBS $[if $[WINDOWS_PLATFORM],ode.lib,ode]
 #defer HAVE_ODE $[libtest $[ODE_LPATH],$[ODE_LIBS]]
 
+// Is Awesomium installed, and where?
+#define AWESOMIUM_IPATH
+#define AWESOMIUM_LPATH
+#if $[OSX_PLATFORM]
+  #define AWESOMIUM_LIBS
+#else
+  #define AWESOMIUM_LIBS $[if $[WINDOWS_PLATFORM],awesomium.lib,awesomium]
+#endif
+#defer HAVE_AWESOMIUM $[libtest $[AWESOMIUM_LPATH],$[AWESOMIUM_LIBS]]
+
 // Mozilla's so-called Gecko SDK, a.k.a. Xulrunner SDK, implements
 // NPAPI, Mozilla's semi-standard API to build a web plugin for
 // Firefox and other Mozilla-based browsers.
@@ -755,6 +765,8 @@
 #define NPAPI_LPATH
 #define NPAPI_LIBS
 #define HAVE_NPAPI
+
+#define HAVE_ACTIVEX $[WINDOWS_PLATFORM]
 
 // Do you want to build the DirectD tools for starting Panda clients
 // remotely?  This only affects the direct tree.  Enabling this may
@@ -925,6 +937,18 @@
 // compiled-in font).
 #define COMPILE_IN_DEFAULT_FONT 1
 
+// We use wxWidgets--the C++ library, not the Python library--for
+// building the application p3dcert, which is needed only when
+// building the plugin/runtime system.  This uses a wx-config program,
+// similar to freetype, above.
+#defer WX_CONFIG $[if $[not $[WINDOWS_PLATFORM]],wx-config]
+#defer HAVE_WX $[or $[libtest $[WX_LPATH],$[WX_LIBS]],$[bintest $[WX_CONFIG]]]
+
+#define WX_CFLAGS 
+#define WX_IPATH
+#define WX_LPATH 
+#define WX_LIBS 
+
 // Is Maya installed?  This matters only to programs in PANDATOOL.
 
 // Also, as of Maya 5.0 it seems the Maya library will not compile
@@ -938,6 +962,8 @@
 #defer HAVE_MAYA $[and $[<= $[OPTIMIZE], 3],$[isdir $[MAYA_LOCATION]/include/maya]]
 // Define this if your version of Maya is earlier than 5.0 (e.g. Maya 4.5).
 #define MAYA_PRE_5_0
+
+#define MAYA2EGG maya2egg
 
 // In the same fashion as mayaegg converter above, set softimage to egg converter as well
 #define SOFTIMAGE_LOCATION /c/Softimage/sdk_18sp2/SDK_1.8SP2/SAAPHIRE

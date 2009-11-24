@@ -220,11 +220,19 @@
   #define ode_libs $[ODE_LIBS]
 #endif
 
+#if $[HAVE_AWESOMIUM]
+  #define awesomium_ipath $[wildcard $[AWESOMIUM_IPATH]]
+  #define awesomium_lpath $[wildcard $[AWESOMIUM_LPATH]]
+  #define awesomium_libs $[AWESOMIUM_LIBS]
+  #define awesomium_framework $[AWESOMIUM_FRAMEWORK]
+#endif
+
 #if $[HAVE_NPAPI]
   #define npapi_ipath $[wildcard $[NPAPI_IPATH]]
   #define npapi_lpath $[wildcard $[NPAPI_LPATH]]
   #define npapi_cflags $[NPAPI_CFLAGS]
   #define npapi_libs $[NPAPI_LIBS]
+  #define npapi_framework $[NPAPI_FRAMEWORK]
 #endif
 
 #if $[HAVE_JPEG]
@@ -347,6 +355,15 @@
   #define freetype_cflags $[FREETYPE_CFLAGS]
   #define freetype_libs $[FREETYPE_LIBS]
   #define freetype_framework $[FREETYPE_FRAMEWORK]
+#endif
+
+#if $[HAVE_WX]
+  #define wx_ipath $[wildcard $[WX_IPATH]]
+  #define wx_lpath $[wildcard $[WX_LPATH]]
+  #define wx_cflags $[WX_CFLAGS]
+  #define wx_lflags $[WX_LFLAGS]
+  #define wx_libs $[WX_LIBS]
+  #define wx_framework $[WX_FRAMEWORK]
 #endif
 
 #if $[and $[HAVE_MAYA],$[MAYA_LOCATION]]
@@ -489,10 +506,9 @@
 // into a dylib *and* a bundle.
 #defer bundle_ext $[BUNDLE_EXT]
 #defer link_as_bundle $[and $[OSX_PLATFORM],$[LINK_AS_BUNDLE]]
-//#defer link_extra_bundle $[and $[OSX_PLATFORM],$[LINK_EXTRA_BUNDLE],$[not $[LINK_AS_BUNDLE]]]
 
-// temp hack for people with old OSXTOOLS.
-#defer link_extra_bundle $[and $[OSX_PLATFORM],$[or $[LINK_EXTRA_BUNDLE],$[BUNDLE_EXT]],$[not $[LINK_AS_BUNDLE]]]
+// On OSX 10.4, we need to have both a .dylib and an .so file.
+#defer link_extra_bundle $[and $[OSX_PLATFORM],$[or $[LINK_EXTRA_BUNDLE],$[BUNDLE_EXT]],$[not $[LINK_AS_BUNDLE]],$[not $[LINK_ALL_STATIC]],$[not $[lib_is_static]]]
 
 // The default library extension various based on the OS.
 #defer dynamic_lib_ext $[DYNAMIC_LIB_EXT]

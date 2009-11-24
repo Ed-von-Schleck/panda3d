@@ -19,11 +19,30 @@
 
 // Get the current version info for Panda.
 #include $[THISDIRPREFIX]PandaVersion.pp
-#defer PANDA_MAJOR_VERSION $[word 1,$[PANDA_VERSION]]
-#defer PANDA_MINOR_VERSION $[word 2,$[PANDA_VERSION]]
-#defer PANDA_SEQUENCE_VERSION $[word 3,$[PANDA_VERSION]]
-#defer PANDA_VERSION_STR $[PANDA_MAJOR_VERSION].$[PANDA_MINOR_VERSION].$[PANDA_SEQUENCE_VERSION]$[if $[not $[OFFICIAL_VERSION]],c]
-#defer PANDA_VERSION_SYMBOL panda_version_$[PANDA_MAJOR_VERSION]_$[PANDA_MINOR_VERSION]_$[PANDA_SEQUENCE_VERSION]$[if $[not $[OFFICIAL_VERSION]],c]
+#define PANDA_MAJOR_VERSION $[word 1,$[PANDA_VERSION]]
+#define PANDA_MINOR_VERSION $[word 2,$[PANDA_VERSION]]
+#define PANDA_SEQUENCE_VERSION $[word 3,$[PANDA_VERSION]]
+#define PANDA_VERSION_STR $[PANDA_MAJOR_VERSION].$[PANDA_MINOR_VERSION].$[PANDA_SEQUENCE_VERSION]$[if $[not $[PANDA_OFFICIAL_VERSION]],c]
+#define PANDA_VERSION_SYMBOL panda_version_$[PANDA_MAJOR_VERSION]_$[PANDA_MINOR_VERSION]_$[PANDA_SEQUENCE_VERSION]$[if $[not $[PANDA_OFFICIAL_VERSION]],c]
+
+// The panda version as a single number, with three digits reserved
+// for each component.
+#define PANDA_NUMERIC_VERSION $[+ $[* $[PANDA_MAJOR_VERSION],1000000],$[* $[PANDA_MINOR_VERSION],1000],$[PANDA_SEQUENCE_VERSION]]
+#if $[not $[PANDA_OFFICIAL_VERSION]]
+  // Subtract 1 if we are not an official version.
+  #define PANDA_NUMERIC_VERSION $[- $[PANDA_NUMERIC_VERSION],1]
+#endif
+
+#define P3D_PLUGIN_MAJOR_VERSION $[word 1,$[P3D_PLUGIN_VERSION]]
+#define P3D_PLUGIN_MINOR_VERSION $[word 2,$[P3D_PLUGIN_VERSION]]
+#define P3D_PLUGIN_SEQUENCE_VERSION $[word 3,$[P3D_PLUGIN_VERSION]]
+#define P3D_PLUGIN_VERSION_STR $[P3D_PLUGIN_MAJOR_VERSION].$[P3D_PLUGIN_MINOR_VERSION].$[P3D_PLUGIN_SEQUENCE_VERSION]$[if $[not $[PANDA_OFFICIAL_VERSION]],c]
+
+// The plugin version as a dot-delimited integer quad, according to MS
+// conventions for DLL version numbers.
+#define P3D_PLUGIN_DLL_DOT_VERSION $[word 1,$[P3D_PLUGIN_VERSION]].$[word 2,$[P3D_PLUGIN_VERSION]].$[word 3,$[P3D_PLUGIN_VERSION]].$[if $[PANDA_OFFICIAL_VERSION],1000,0]
+// The same thing as a comma-delimited quad.
+#define P3D_PLUGIN_DLL_COMMA_VERSION $[word 1,$[P3D_PLUGIN_VERSION]],$[word 2,$[P3D_PLUGIN_VERSION]],$[word 3,$[P3D_PLUGIN_VERSION]],$[if $[PANDA_OFFICIAL_VERSION],1000,0]
 
 // What is the name of this source tree?
 #if $[eq $[PACKAGE],]
@@ -256,6 +275,12 @@
 #set ODE_LIBS $[ODE_LIBS]
 #set HAVE_ODE $[HAVE_ODE]
 
+#set AWESOMIUM_IPATH $[unixfilename $[AWESOMIUM_IPATH]]
+#set AWESOMIUM_LPATH $[unixfilename $[AWESOMIUM_LPATH]]
+#set AWESOMIUM_LIBS $[AWESOMIUM_LIBS]
+//#set AWESOMIUM_FRAMEWORK $[unixfilename $[AWESOMIUM_FRAMEWORK]]
+#set HAVE_AWESOMIUM $[HAVE_AWESOMIUM]
+
 #set NPAPI_IPATH $[unixfilename $[NPAPI_IPATH]]
 #set NPAPI_LPATH $[unixfilename $[NPAPI_LPATH]]
 #set NPAPI_LIBS $[NPAPI_LIBS]
@@ -308,6 +333,13 @@
 #set FREETYPE_LPATH $[unixfilename $[FREETYPE_LPATH]]
 #set FREETYPE_LIBS $[FREETYPE_LIBS]
 
+#set WX_CONFIG $[WX_CONFIG]
+#set HAVE_WX $[HAVE_WX]
+#set WX_CFLAGS $[WX_CFLAGS]
+#set WX_IPATH $[unixfilename $[WX_IPATH]]
+#set WX_LPATH $[unixfilename $[WX_LPATH]]
+#set WX_LIBS $[WX_LIBS]
+
 
 #set MAYA_LOCATION $[unixfilename $[MAYA_LOCATION]]
 #set HAVE_MAYA $[HAVE_MAYA]
@@ -346,8 +378,23 @@
   #define FREETYPE_LIBS $[patsubst -l%,%,$[filter -l%,$[libs]]]
 #endif
 
+#if $[and $[HAVE_WX],$[WX_CONFIG]]
+  #define cflags $[shell $[WX_CONFIG] --cflags]
+  #define libs $[shell $[WX_CONFIG] --libs core,base]
+
+  #define WX_CFLAGS $[filter-out -I%,$[cflags]]
+  #define WX_IPATH $[unique $[patsubst -I%,%,$[filter -I%,$[cflags]]]]
+  #define WX_LPATH $[unique $[patsubst -L%,%,$[filter -L%,$[libs]]]]
+  #define WX_LFLAGS $[filter-out -l%,$[libs]]
+  #define WX_LIBS $[patsubst -l%,%,$[filter -l%,$[libs]]]
+#endif
+
 #if $[HAVE_PHYSX]
   #define GENPYCODE_LIBS $[GENPYCODE_LIBS] libpandaphysx
+#endif
+
+#if $[HAVE_AWESOMIUM]
+  #define GENPYCODE_LIBS $[GENPYCODE_LIBS] libpandaawesomium
 #endif
 
 // Finally, include the system configure file.

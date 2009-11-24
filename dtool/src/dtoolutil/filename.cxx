@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 #include <algorithm>
 
-#ifdef HAVE_UTIME_H
+#ifdef PHAVE_UTIME_H
 #include <utime.h>
 
 // We assume we have these too.
@@ -32,20 +32,20 @@
 #include <fcntl.h>
 #endif
 
-#ifdef HAVE_GLOB_H
+#ifdef PHAVE_GLOB_H
   #include <glob.h>
   #ifndef GLOB_NOMATCH
     #define GLOB_NOMATCH -3
   #endif
 #endif
 
-#ifdef HAVE_DIRENT_H
+#ifdef PHAVE_DIRENT_H
 #include <dirent.h>
 #endif
 
 // It's true that dtoolbase.h includes this already, but we include
 // this again in case we are building this file within ppremake.
-#ifdef HAVE_UNISTD_H
+#ifdef PHAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
@@ -62,6 +62,7 @@ TypeHandle Filename::_type_handle;
 #include <direct.h>
 #include <windows.h>
 #include <shlobj.h>
+#include <io.h>
 #endif
 
 // The MSVC 6.0 Win32 SDK lacks the following definitions, so we define them
@@ -576,7 +577,7 @@ get_user_appdata_directory() {
 #ifdef WIN32
     char buffer[MAX_PATH];
 
-    if (SHGetSpecialFolderPath(NULL, buffer, CSIDL_APPDATA, true)) {
+    if (SHGetSpecialFolderPath(NULL, buffer, CSIDL_LOCAL_APPDATA, true)) {
       Filename dirname = from_os_specific(buffer);
       if (dirname.is_directory()) {
         if (dirname.make_canonical()) {
@@ -916,12 +917,19 @@ standardize() {
   while (p < _filename.length()) {
     size_t slash = _filename.find('/', p);
     string component = _filename.substr(p, slash - p);
-    if (component == ".") {
+    if (component == "." && p != 0) {
       // Ignore /./.
     } else if (component == ".." && !components.empty() &&
                !(components.back() == "..")) {
-      // Back up.
-      components.pop_back();
+      if (components.back() == ".") {
+        // To "back up" over a leading ./ means simply to remove the
+        // leading ./
+        components.pop_back();
+        components.push_back(component);
+      } else {
+        // Back up normally.
+        components.pop_back();
+      }
     } else {
       components.push_back(component);
     }
@@ -1755,8 +1763,8 @@ scan_directory(vector_string &contents) const {
   sort(contents.begin() + orig_size, contents.end());
   return scan_ok;
 
-#elif defined(HAVE_DIRENT_H)
-  // Use Posix's opendir() / readir() to walk through the list of
+#elif defined(PHAVE_DIRENT_H)
+  // Use Posix's opendir() / readdir() to walk through the list of
   // files in a directory.
   size_t orig_size = contents.size();
 
@@ -1801,7 +1809,7 @@ scan_directory(vector_string &contents) const {
   sort(contents.begin() + orig_size, contents.end());
   return true;
 
-#elif defined(HAVE_GLOB_H)
+#elif defined(PHAVE_GLOB_H)
   // It's hard to imagine a system that provides glob.h but does not
   // provide openddir() .. readdir(), but this code is leftover from a
   // time when there was an undetected bug in the above readdir()
@@ -2318,7 +2326,7 @@ touch() const {
   CloseHandle(fhandle);
   return true;
 
-#elif defined(HAVE_UTIME_H)
+#elif defined(PHAVE_UTIME_H)
   // Most Unix systems can do this explicitly.
 
   string os_specific = to_os_specific();
@@ -2351,14 +2359,14 @@ touch() const {
     return false;
   }
   return true;
-#else  // WIN32, HAVE_UTIME_H
+#else  // WIN32, PHAVE_UTIME_H
   // Other systems may not have an explicit control over the
   // modification time.  For these systems, we'll just temporarily
   // open the file in append mode, then close it again (it gets closed
   // when the pfstream goes out of scope).
   pfstream file;
   return open_append(file);
-#endif  // WIN32, HAVE_UTIME_H
+#endif  // WIN32, PHAVE_UTIME_H
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2385,6 +2393,10 @@ bool Filename::
 unlink() const {
   assert(!get_pattern());
   string os_specific = to_os_specific();
+#ifdef _WIN32
+  // Windows can't delete a file if it's read-only.  Weird.
+  chmod(os_specific.c_str(), 0644);
+#endif
   return (::unlink(os_specific.c_str()) == 0);
 }
 
@@ -2400,6 +2412,12 @@ unlink() const {
 bool Filename::
 rename_to(const Filename &other) const {
   assert(!get_pattern());
+
+  if (*this == other) {
+    // Trivial success.
+    return true;
+  }
+
   string os_specific = to_os_specific();
   string other_os_specific = other.to_os_specific();
 
@@ -2453,13 +2471,15 @@ rename_to(const Filename &other) const {
 ////////////////////////////////////////////////////////////////////
 bool Filename::
 copy_to(const Filename &other) const {
+  Filename this_filename = Filename::binary_filename(*this);
   pifstream in;
-  if (!open_read(in)) {
+  if (!this_filename.open_read(in)) {
     return false;
   }
 
+  Filename other_filename = Filename::binary_filename(other);
   pofstream out;
-  if (!other.open_write(out)) {
+  if (!other_filename.open_write(out)) {
     return false;
   }
         
