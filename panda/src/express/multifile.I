@@ -378,25 +378,6 @@ get_magic_number() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Multifile::set_header_prefix
-//       Access: Published
-//  Description: Sets the string which is written to the Multifile
-//               before the Multifile header.  This string must begin
-//               with a hash mark and end with a newline character,
-//               and include at least 6 characters; and if it includes
-//               embedded newline characters, each one must be
-//               followed by a hash mark.
-//
-//               This is primarily useful as a simple hack to allow
-//               p3d applications to be run directly from the command
-//               line on Unix-like systems.
-////////////////////////////////////////////////////////////////////
-INLINE void Multifile::
-set_header_prefix(const string &header_prefix) {
-  _header_prefix = header_prefix;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: Multifile::get_header_prefix
 //       Access: Published
 //  Description: Returns the string that preceded the Multifile header
@@ -442,6 +423,20 @@ normalize_streampos(streampos fpos) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Multifile::tohex
+//       Access: Private, Static
+//  Description: Converts a single nibble to a hex digit.
+////////////////////////////////////////////////////////////////////
+INLINE char Multifile::
+tohex(unsigned int nibble) {
+  nibble &= 0xf;
+  if (nibble < 10) {
+    return nibble + '0';
+  }
+  return nibble - 10 + 'a';
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Multifile::Subfile::Constructor
 //       Access: Public
 //  Description: 
@@ -455,15 +450,26 @@ Subfile() {
   _source = (istream *)NULL;
   _flags = 0;
   _compression_level = 0;
+#ifdef HAVE_OPENSSL
+  _pkey = NULL;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Multifile::Subfile::operator <
 //       Access: Public
-//  Description: 
+//  Description: Compares two Subfiles for proper sorting within the
+//               index.
 ////////////////////////////////////////////////////////////////////
 INLINE bool Multifile::Subfile::
 operator < (const Multifile::Subfile &other) const {
+  // This should only be called on normal subfiles, not on certificate
+  // files or signature files.  (We don't attempt to sort these
+  // special signature files.)
+  nassertr(!is_cert_special() && !other.is_cert_special(), false);
+
+  // Normal subfiles are simply sorted in alphabetical order by
+  // filename.
   return _name < other._name;
 }
 
@@ -503,3 +509,76 @@ INLINE bool Multifile::Subfile::
 is_data_invalid() const {
   return (_flags & SF_data_invalid) != 0;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: Multifile::Subfile::is_cert_special
+//       Access: Public
+//  Description: Returns true if this Subfile represents a signature
+//               record, which is treated specially; or false if it is
+//               an ordinary Subfile.
+////////////////////////////////////////////////////////////////////
+INLINE bool Multifile::Subfile::
+is_cert_special() const {
+  return (_flags & SF_signature) != 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Multifile::Subfile::get_last_byte_pos
+//       Access: Public
+//  Description: Returns the byte position within the Multifile of the
+//               last byte that contributes to this Subfile, either in
+//               the index record or in the subfile data.
+////////////////////////////////////////////////////////////////////
+INLINE streampos Multifile::Subfile::
+get_last_byte_pos() const {
+  return max(_index_start + (streampos)_index_length, 
+             _data_start + (streampos)_data_length) - (streampos)1;
+}
+
+#ifdef HAVE_OPENSSL
+////////////////////////////////////////////////////////////////////
+//     Function: Multifile::CertRecord::Constructor
+//       Access: Public
+//  Description: Ownership of the X509 object is passed into the
+//               CertRecord; it will be freed when the CertRecord
+//               destructs.
+////////////////////////////////////////////////////////////////////
+INLINE Multifile::CertRecord::
+CertRecord(X509 *cert) :
+  _cert(cert)
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Multifile::CertRecord::Copy Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE Multifile::CertRecord::
+CertRecord(const Multifile::CertRecord &copy) :
+  _cert(X509_dup(copy._cert))
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Multifile::CertRecord::Destructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE Multifile::CertRecord::
+~CertRecord() {
+  X509_free(_cert);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Multifile::CertRecord::Copy Assignment
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void Multifile::CertRecord::
+operator = (const Multifile::CertRecord &other) {
+  X509_free(_cert);
+  _cert = X509_dup(other._cert);
+}
+#endif
+

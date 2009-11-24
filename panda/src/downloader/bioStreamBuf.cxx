@@ -14,7 +14,7 @@
 
 #include "bioStreamBuf.h"
 #include "config_downloader.h"
-#include "ssl_utils.h"
+#include "openSSLWrapper.h"
 #include <errno.h>
 
 #ifdef HAVE_OPENSSL
@@ -142,7 +142,7 @@ sync() {
 
   size_t n = pptr() - pbase();
 
-  if (downloader_cat.is_spam()) {
+  if (downloader_cat.is_spam() && n != 0) {
     downloader_cat.spam()
       << "BioStreamBuf::sync, " << n << " bytes\n";
   }
@@ -199,7 +199,7 @@ underflow() {
             << "Lost connection to "
             << _source->get_server_name() << ":" 
             << _source->get_port() << " (" << read_count << ").\n";
-          notify_ssl_errors();
+          OpenSSLWrapper::get_global_ptr()->notify_ssl_errors();
 
           SSL *ssl = NULL;
           BIO_get_ssl(*_source, &ssl);
@@ -262,7 +262,7 @@ write_chars(const char *start, size_t length) {
         // without a retry request
         //_write_open = BIO_should_retry(*_source);
         //_write_open = !BIO_eof(*_source);
-        _write_open = (BIO_should_write(*_source) != 0);
+        _write_open = (BIO_should_write(*_source) != 0 || BIO_should_retry(*_source) != 0);
         if (!_write_open) {
           return wrote_so_far;
         }

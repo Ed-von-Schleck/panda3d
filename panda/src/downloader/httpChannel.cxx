@@ -16,17 +16,16 @@
 #include "httpClient.h"
 #include "httpCookie.h"
 #include "bioStream.h"
-#include "ssl_utils.h"
 #include "chunkedStream.h"
 #include "identityStream.h"
 #include "config_downloader.h"
 #include "virtualFileMountHTTP.h"
 #include "ramfile.h"
+#include "globPattern.h"
 
 #include <stdio.h>
 
 #ifdef HAVE_OPENSSL
-#include "openssl/x509.h"
 
 #ifdef WIN32_VC
   #include <WinSock2.h>
@@ -96,6 +95,7 @@ HTTPChannel(HTTPClient *client) :
   _body_stream = NULL;
   _owns_body_stream = false;
   _sbio = NULL;
+  _cipher_list = _client->get_cipher_list();
   _last_status_code = 0;
   _last_run_time = 0.0f;
   _download_to_ramfile = NULL;
@@ -989,7 +989,7 @@ run_connecting() {
     downloader_cat.info()
       << "Could not connect to " << _bio->get_server_name() << ":" 
       << _bio->get_port() << "\n";
-    notify_ssl_errors();
+    OpenSSLWrapper::get_global_ptr()->notify_ssl_errors();
     _status_entry._status_code = SC_no_connection;
     _state = S_try_next_proxy;
     return false;
@@ -1478,7 +1478,17 @@ run_setup_ssl() {
   SSL *ssl = NULL;
   BIO_get_ssl(_sbio, &ssl);
   nassertr(ssl != (SSL *)NULL, false);
-  string cipher_list = _client->get_cipher_list();
+
+  // We only take one word at a time from the _cipher_list.  If that
+  // connection fails, then we take the next word.
+  string cipher_list = _cipher_list;
+  if (!cipher_list.empty()) {
+    size_t space = cipher_list.find(" ");
+    if (space != string::npos) {
+      cipher_list = cipher_list.substr(0, space);
+    }
+  }
+
   if (downloader_cat.is_debug()) {
     downloader_cat.debug()
       << "Setting ssl-cipher-list '" << cipher_list << "'\n";
@@ -1487,7 +1497,7 @@ run_setup_ssl() {
   if (result == 0) {
     downloader_cat.error()
       << "Invalid cipher list: '" << cipher_list << "'\n";
-    notify_ssl_errors();
+    OpenSSLWrapper::get_global_ptr()->notify_ssl_errors();
     _status_entry._status_code = SC_ssl_internal_failure;
     _state = S_failure;
     return false;
@@ -1563,10 +1573,30 @@ run_ssl_handshake() {
     downloader_cat.info()
       << "Could not establish SSL handshake with " 
       << _request.get_url().get_server_and_port() << "\n";
-    notify_ssl_errors();
+    OpenSSLWrapper::get_global_ptr()->notify_ssl_errors();
 
     // It seems to be an error to free sbio at this point; perhaps
     // it's already been freed?
+
+    if (!_cipher_list.empty()) {
+      // If we've got another cipher to try, do so.
+      size_t space = _cipher_list.find(" ");
+      if (space != string::npos) {
+        while (space < _cipher_list.length() && _cipher_list[space] == ' ') {
+          ++space;
+        }
+        _cipher_list = _cipher_list.substr(space);
+        if (!_cipher_list.empty()) {
+          close_connection();
+          reconsider_proxy();
+          _state = S_connecting;
+          return false;
+        }
+      }
+    }
+
+    // All done trying ciphers; they all failed.
+    _cipher_list = _client->get_cipher_list();
     _status_entry._status_code = SC_ssl_no_handshake;
     _state = S_failure;
     return false;
@@ -1596,7 +1626,7 @@ run_ssl_handshake() {
   _bio->set_bio(_sbio);
   _sbio = NULL;
 
-  // Now verify the server is who we expect it to be.
+  // Now verify the server certificate is valid.
   long verify_result = SSL_get_verify_result(ssl);
   if (verify_result == X509_V_ERR_CERT_HAS_EXPIRED) {
     downloader_cat.info()
@@ -1612,6 +1642,16 @@ run_ssl_handshake() {
       << "Premature certificate from " << _request.get_url().get_server_and_port() << "\n";
     if (_client->get_verify_ssl() == HTTPClient::VS_normal) {
       _status_entry._status_code = SC_ssl_invalid_server_certificate;
+      _state = S_failure;
+      return false;
+    }
+
+  } else if (verify_result == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT ||
+             verify_result == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN) {
+    downloader_cat.info()
+      << "Self-signed certificate from " << _request.get_url().get_server_and_port() << "\n";
+    if (_client->get_verify_ssl() == HTTPClient::VS_normal) {
+      _status_entry._status_code = SC_ssl_self_signed_server_certificate;
       _state = S_failure;
       return false;
     }
@@ -1632,8 +1672,7 @@ run_ssl_handshake() {
     downloader_cat.info()
       << "No certificate was presented by server.\n";
     // This shouldn't be possible, per the SSL specs.
-    if (_client->get_verify_ssl() != HTTPClient::VS_no_verify ||
-        !_client->_expected_servers.empty()) {
+    if (_client->get_verify_ssl() != HTTPClient::VS_no_verify) {
       _status_entry._status_code = SC_ssl_invalid_server_certificate;
       _state = S_failure;
       return false;
@@ -1662,9 +1701,7 @@ run_ssl_handshake() {
     if (_client->get_verify_ssl() != HTTPClient::VS_no_verify) {
       // Check that the server is someone we expected to be talking
       // to.
-      if (!verify_server(subject)) {
-        downloader_cat.info()
-          << "Server does not match any expected server.\n";
+      if (!validate_server_name(cert)) {
         _status_entry._status_code = SC_ssl_unexpected_server;
         _state = S_failure;
         return false;
@@ -2216,7 +2253,7 @@ run_download_to_file() {
 
   bool do_throttle = _wanted_nonblocking && _download_throttle;
 
-  static const size_t buffer_size = 1024;
+  static const size_t buffer_size = 4096;
   char buffer[buffer_size];
 
   size_t remaining_this_pass = buffer_size;
@@ -2238,6 +2275,7 @@ run_download_to_file() {
       }
     }
 
+    thread_consider_yield();
     _body_stream->read(buffer, min(buffer_size, remaining_this_pass));
     count = _body_stream->gcount();
   }
@@ -2278,7 +2316,7 @@ run_download_to_ram() {
 
   bool do_throttle = _wanted_nonblocking && _download_throttle;
 
-  static const size_t buffer_size = 1024;
+  static const size_t buffer_size = 4096;
   char buffer[buffer_size];
 
   size_t remaining_this_pass = buffer_size;
@@ -2300,6 +2338,7 @@ run_download_to_ram() {
       }
     }
 
+    thread_consider_yield();
     _body_stream->read(buffer, min(buffer_size, remaining_this_pass));
     count = _body_stream->gcount();
   }
@@ -2327,7 +2366,7 @@ run_download_to_stream() {
 
   bool do_throttle = _wanted_nonblocking && _download_throttle;
 
-  static const size_t buffer_size = 1024;
+  static const size_t buffer_size = 4096;
   char buffer[buffer_size];
 
   size_t remaining_this_pass = buffer_size;
@@ -2349,6 +2388,7 @@ run_download_to_stream() {
       }
     }
 
+    thread_consider_yield();
     _body_stream->read(buffer, min(buffer_size, remaining_this_pass));
     count = _body_stream->gcount();
   }
@@ -2485,7 +2525,7 @@ begin_request(HTTPEnum::Method method, const DocumentSpec &url,
 
     } else {
       // Couldn't read the file.
-      notify_ssl_errors();
+      OpenSSLWrapper::get_global_ptr()->notify_ssl_errors();
       _status_entry._status_code = SC_no_connection;
       _state = S_failure;
     }
@@ -3129,63 +3169,6 @@ check_socket() {
   }
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: HTTPChannel::verify_server
-//       Access: Private
-//  Description: Returns true if the indicated server matches one of
-//               our expected servers (or the list of expected servers
-//               is empty), or false if it does not match any of our
-//               expected servers.
-////////////////////////////////////////////////////////////////////
-bool HTTPChannel::
-verify_server(X509_NAME *subject) const {
-  if (_client->_expected_servers.empty()) {
-    if (downloader_cat.is_debug()) {
-      downloader_cat.debug()
-        << "No expected servers on list; allowing any https connection.\n";
-    }
-    return true;
-  }
-
-  if (downloader_cat.is_debug()) {
-    downloader_cat.debug() << "checking server: " << flush;
-    X509_NAME_print_ex_fp(stderr, subject, 0, 0);
-    fflush(stderr);
-    downloader_cat.debug(false) << "\n";
-  }
-
-  HTTPClient::ExpectedServers::const_iterator ei;
-  for (ei = _client->_expected_servers.begin();
-       ei != _client->_expected_servers.end();
-       ++ei) {
-    X509_NAME *expected_name = (*ei);
-    if (x509_name_subset(expected_name, subject)) {
-      if (downloader_cat.is_debug()) {
-        downloader_cat.debug()
-          << "Match found!\n";
-      }
-      return true;
-    }
-  }
-
-  // None of the lines matched.
-  if (downloader_cat.is_debug()) {
-    downloader_cat.debug()
-      << "No match found against any of the following expected servers:\n";
-
-    for (ei = _client->_expected_servers.begin();
-         ei != _client->_expected_servers.end();
-         ++ei) {
-      X509_NAME *expected_name = (*ei);
-      X509_NAME_print_ex_fp(stderr, expected_name, 0, 0);
-      fputs("\n", stderr);
-    }
-    fflush(stderr);      
-  }
-  
-  return false;
-}
-
 /*
    Certificate verify error codes:
 
@@ -3361,6 +3344,119 @@ certificate signing
 
 */
 
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::validate_server_name
+//       Access: Private
+//  Description: Returns true if the name in the cert matches the
+//               hostname of the server, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool HTTPChannel::
+validate_server_name(X509 *cert) {
+  string hostname = _request.get_url().get_server();
+
+  vector_string cert_names;
+
+  // According to RFC 2818, we should check the DNS name(s) in the
+  // subjectAltName extension first, if that extension exists.
+  STACK_OF(GENERAL_NAME) *subject_alt_names =
+    (STACK_OF(GENERAL_NAME) *)X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
+  if (subject_alt_names != NULL) {
+    int num_alts = sk_GENERAL_NAME_num(subject_alt_names);
+    for (int i = 0; i < num_alts; ++i) {
+      // Get the ith alt name.
+      const GENERAL_NAME *alt_name = 
+        sk_GENERAL_NAME_value(subject_alt_names, i);
+      
+      if (alt_name->type == GEN_DNS) {
+        char *buffer = NULL;
+        int len = ASN1_STRING_to_UTF8((unsigned char**)&buffer,
+                                      alt_name->d.ia5);
+        if (len > 0) {
+          cert_names.push_back(string(buffer, len));
+        }
+        if (buffer != NULL) {
+          OPENSSL_free(buffer);
+        }
+      }
+    }
+  }
+
+  if (cert_names.empty()) {
+    // If there were no DNS names, use the common name instead.
+  
+    X509_NAME *xname = X509_get_subject_name(cert);
+    if (xname != NULL) {
+      string common_name = get_x509_name_component(xname, NID_commonName);
+      cert_names.push_back(common_name);
+    }
+  }
+
+  if (cert_names.empty()) {
+    downloader_cat.info()
+      << "Server certificate from " << hostname
+      << " provides no name.\n";
+    return false;
+  }
+
+  if (downloader_cat.is_debug()) {
+    downloader_cat.debug()
+      << "Server certificate from " << hostname
+      << " provides name(s):";
+    vector_string::const_iterator si;
+    for (si = cert_names.begin(); si != cert_names.end(); ++si) {
+      const string &cert_name = (*si);
+      downloader_cat.debug(false)
+        << " " << cert_name;
+    }
+    downloader_cat.debug(false)
+      << "\n";
+  }
+
+  // Now validate the names we found.  If any of them matches, the
+  // cert matches.
+  vector_string::const_iterator si;
+  for (si = cert_names.begin(); si != cert_names.end(); ++si) {
+    const string &cert_name = (*si);
+
+    if (match_cert_name(cert_name, hostname)) {
+      return true;
+    }
+  }
+
+  downloader_cat.info()
+    << "Server certificate from " << hostname
+    << " provides wrong name(s):";
+  for (si = cert_names.begin(); si != cert_names.end(); ++si) {
+    const string &cert_name = (*si);
+    downloader_cat.info(false)
+      << " " << cert_name;
+  }
+  downloader_cat.info(false)
+    << "\n";
+
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: HTTPChannel::match_cert_name
+//       Access: Private, Static
+//  Description: Returns true if this particular name from the
+//               certificate matches the indicated hostname, false
+//               otherwise.
+////////////////////////////////////////////////////////////////////
+bool HTTPChannel::
+match_cert_name(const string &cert_name, const string &hostname) {
+  // We use GlobPattern to match the name.  This isn't quite
+  // consistent with RFC2818, since it also accepts additional
+  // wildcard characters like "?" and "[]", but I think it's close
+  // enough.
+
+  GlobPattern pattern(cert_name);
+  pattern.set_case_sensitive(false);
+  pattern.set_nomatch_chars(".");
+  return pattern.matches(hostname);
+}
+    
 ////////////////////////////////////////////////////////////////////
 //     Function: HTTPChannel::get_x509_name_component
 //       Access: Private, Static

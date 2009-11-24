@@ -143,7 +143,18 @@ make_output(const string &name,
 //       Access: Published
 //  Description: Gets the pipe's DisplayInformation.
 ////////////////////////////////////////////////////////////////////
-DisplayInformation * GraphicsPipe::
+DisplayInformation *GraphicsPipe::
 get_display_information() {
   return _display_information;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsPipe::lookup_cpu_data
+//       Access: Public, Virtual
+//  Description: Looks up the detailed CPU information and stores it
+//               in _display_information, if supported by the OS.
+//               This may take a second or two.
+////////////////////////////////////////////////////////////////////
+void GraphicsPipe::
+lookup_cpu_data() {
 }

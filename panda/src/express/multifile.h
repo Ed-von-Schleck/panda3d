@@ -25,6 +25,7 @@
 #include "indirectLess.h"
 #include "referenceCount.h"
 #include "pvector.h"
+#include "openSSLWrapper.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : Multifile
@@ -81,6 +82,37 @@ PUBLISHED:
                      int compression_level);
   string update_subfile(const string &subfile_name, const Filename &filename,
                         int compression_level);
+
+#ifdef HAVE_OPENSSL
+  class CertRecord {
+  public:
+    INLINE CertRecord(X509 *cert);
+    INLINE CertRecord(const CertRecord &copy);
+    INLINE ~CertRecord();
+    INLINE void operator = (const CertRecord &other);
+    X509 *_cert;
+  };
+  typedef pvector<CertRecord> CertChain;
+
+  bool add_signature(const Filename &certificate, 
+                     const Filename &chain,
+                     const Filename &pkey,
+                     const string &password = "");
+  bool add_signature(const Filename &composite, 
+                     const string &password = "");
+  bool add_signature(X509 *certificate, STACK *chain, EVP_PKEY *pkey);
+  bool add_signature(const CertChain &chain, EVP_PKEY *pkey);
+
+  int get_num_signatures() const;
+  const CertChain &get_signature(int n) const;
+  string get_signature_subject_name(int n) const;
+  string get_signature_friendly_name(int n) const;
+  string get_signature_public_key(int n) const;
+  void write_signature_certificate(int n, ostream &out) const;
+
+  int validate_signature_certificate(int n) const;
+#endif  // HAVE_OPENSSL
+
   BLOCKING bool flush();
   BLOCKING bool repack();
 
@@ -114,7 +146,7 @@ PUBLISHED:
 
   static INLINE string get_magic_number();
 
-  INLINE void set_header_prefix(const string &header_prefix);
+  void set_header_prefix(const string &header_prefix);
   INLINE const string &get_header_prefix() const;
 
 public:
@@ -128,6 +160,7 @@ private:
     SF_data_invalid   = 0x0004,
     SF_compressed     = 0x0008,
     SF_encrypted      = 0x0010,
+    SF_signature      = 0x0020,
   };
 
   class Subfile {
@@ -145,9 +178,12 @@ private:
     INLINE bool is_deleted() const;
     INLINE bool is_index_invalid() const;
     INLINE bool is_data_invalid() const;
+    INLINE bool is_cert_special() const;
+    INLINE streampos get_last_byte_pos() const;
 
     string _name;
     streampos _index_start;
+    size_t _index_length;
     streampos _data_start;
     size_t _data_length;
     size_t _uncompressed_length;
@@ -156,6 +192,9 @@ private:
     Filename _source_filename;
     int _flags;
     int _compression_level;  // Not preserved on disk.
+#ifdef HAVE_OPENSSL
+    EVP_PKEY *_pkey;         // Not preserved on disk.
+#endif
   };
 
   INLINE streampos word_to_streampos(size_t word) const;
@@ -164,24 +203,36 @@ private:
   streampos pad_to_streampos(streampos fpos);
 
   void add_new_subfile(Subfile *subfile, int compression_level);
+  istream *open_read_subfile(Subfile *subfile);
   string standardize_subfile_name(const string &subfile_name) const;
+  static bool read_to_pvector(pvector<unsigned char> &result, istream &stream);
 
   void clear_subfiles();
   bool read_index();
   bool write_header();
 
+  void check_signatures();
+
+  static INLINE char tohex(unsigned int nibble);
 
   typedef ov_set<Subfile *, IndirectLess<Subfile> > Subfiles;
   Subfiles _subfiles;
   typedef pvector<Subfile *> PendingSubfiles;
   PendingSubfiles _new_subfiles;
   PendingSubfiles _removed_subfiles;
+  PendingSubfiles _cert_special;
+
+#ifdef HAVE_OPENSSL
+  typedef pvector<CertChain> Certificates;
+  Certificates _signatures;
+#endif
 
   IStreamWrapper *_read;
   ostream *_write;
   bool _owns_stream;
   streampos _next_index;
   streampos _last_index;
+  streampos _last_data_byte;
 
   bool _needs_repack;
   time_t _timestamp;

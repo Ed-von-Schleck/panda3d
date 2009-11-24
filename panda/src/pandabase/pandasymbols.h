@@ -24,6 +24,14 @@
 
 #if defined(WIN32_VC) && !defined(CPPPARSER) && !defined(LINK_ALL_STATIC)
 
+#ifdef BUILDING_CFTALK
+  #define EXPCL_CFTALK __declspec(dllexport)
+  #define EXPTP_CFTALK
+#else
+  #define EXPCL_CFTALK __declspec(dllimport)
+  #define EXPTP_CFTALK extern
+#endif
+
 #ifdef BUILDING_FRAMEWORK
   #define EXPCL_FRAMEWORK __declspec(dllexport)
   #define EXPTP_FRAMEWORK
@@ -70,6 +78,14 @@
 #else
   #define EXPCL_PANDA __declspec(dllimport)
   #define EXPTP_PANDA extern
+#endif
+
+#ifdef BUILDING_PANDAAWESOMIUM
+  #define EXPCL_PANDAAWESOMIUM __declspec(dllexport)
+  #define EXPTP_PANDAAWESOMIUM
+#else
+  #define EXPCL_PANDAAWESOMIUM __declspec(dllimport)
+  #define EXPTP_PANDAAWESOMIUM extern
 #endif
 
 #ifdef BUILDING_PANDACR
@@ -224,15 +240,18 @@
   #define EXPTP_TINYDISPLAY extern
 #endif
 
-#ifdef BUILDING_CFTALK
-  #define EXPCL_CFTALK __declspec(dllexport)
-  #define EXPTP_CFTALK
+#ifdef BUILDING_VISION
+  #define EXPCL_VISION __declspec(dllexport)
+  #define EXPTP_VISION
 #else
-  #define EXPCL_CFTALK __declspec(dllimport)
-  #define EXPTP_CFTALK extern
+  #define EXPCL_VISION __declspec(dllimport)
+  #define EXPTP_VISION extern
 #endif
 
 #else   /* !WIN32_VC */
+
+#define EXPCL_CFTALK
+#define EXPTP_CFTALK
 
 #define EXPCL_FRAMEWORK
 #define EXPTP_FRAMEWORK
@@ -251,6 +270,9 @@
 
 #define EXPCL_PANDA
 #define EXPTP_PANDA
+
+#define EXPCL_PANDAAWESOMIUM
+#define EXPTP_PANDAAWESOMIUM
 
 #define EXPCL_PANDACR
 #define EXPTP_PANDACR
@@ -285,6 +307,7 @@
 #define EXPCL_PANDAODE
 #define EXPTP_PANDAODE
 
+
 #define EXPCL_PANDAPHYSICS
 #define EXPTP_PANDAPHYSICS
 
@@ -309,8 +332,8 @@
 #define EXPCL_TINYDISPLAY
 #define EXPTP_TINYDISPLAY
 
-#define EXPCL_CFTALK
-#define EXPTP_CFTALK
+#define EXPCL_VISION
+#define EXPTP_VISION
 
 #endif  /* WIN32_VC */
 

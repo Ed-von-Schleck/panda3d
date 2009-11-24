@@ -17,13 +17,17 @@
 
 #include "pandabase.h"
 #include "graphicsWindow.h"
-#define WIN32_LEAN_AND_MEAN 1
+#ifndef WIN32_LEAN_AND_MEAN
+	#define WIN32_LEAN_AND_MEAN 1
+#endif
 #include <windows.h>
 
 class WinGraphicsPipe;
 
 #define PM_ACTIVE   (WM_APP+123)
+
 #define PM_INACTIVE  (WM_APP+124)
+
 
 
 ////////////////////////////////////////////////////////////////////
@@ -58,6 +62,7 @@ public:
 
   virtual void process_events();
   virtual void set_properties_now(WindowProperties &properties);
+  void receive_windows_message(unsigned int msg, int wparam, int lparam);
   virtual LONG window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
   static LONG WINAPI static_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
   virtual bool handle_mouse_motion(int x, int y);
@@ -84,14 +89,15 @@ protected:
   virtual void support_overlay_window(bool flag);
 
 private:
-  bool open_fullscreen_window();
-  bool open_regular_window();
+  bool open_graphic_window(bool fullscreen);
   void adjust_z_order();
   void adjust_z_order(WindowProperties::ZOrder last_z_order,
                       WindowProperties::ZOrder this_z_order);
   void initialize_input_devices();
   void handle_raw_input(HRAWINPUT hraw);
   void track_mouse_leaving(HWND hwnd);
+
+  void set_focus();
 
   static void process_1_event();
 
@@ -209,6 +215,41 @@ private:
   static int _window_class_index;
 
   static const WindowClass &register_window_class(const WindowProperties &props);
+private:
+  // This subclass of WindowHandle is stored in _window_handle to
+  // represent this particular window.  We use it to add hooks for
+  // communicating with the parent window, in particular to receive
+  // keyboard events from the parent window when necessary.
+  class WinWindowHandle : public WindowHandle {
+  public:
+    WinWindowHandle(WinGraphicsWindow *window,
+                    const WindowHandle &copy);
+    void clear_window();
+
+  protected:
+    virtual void receive_windows_message(unsigned int msg, int wparam, int lparam);
+
+  private:
+    // Not reference-counted, to avoid a circular reference count.
+    WinGraphicsWindow *_window;
+
+  public:
+    static TypeHandle get_class_type() {
+      return _type_handle;
+    }
+    static void init_type() {
+      WindowHandle::init_type();
+      register_type(_type_handle, "WinWindowHandle",
+                    WindowHandle::get_class_type());
+    }
+    virtual TypeHandle get_type() const {
+      return get_class_type();
+    }
+    virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+    
+  private:
+    static TypeHandle _type_handle;
+  };
 
 public:
   static TypeHandle get_class_type() {
@@ -218,6 +259,7 @@ public:
     GraphicsWindow::init_type();
     register_type(_type_handle, "WinGraphicsWindow",
                   GraphicsWindow::get_class_type());
+    WinWindowHandle::init_type();
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

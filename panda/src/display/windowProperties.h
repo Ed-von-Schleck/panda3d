@@ -18,6 +18,7 @@
 #include "pandabase.h"
 #include "filename.h"
 #include "pnotify.h"
+#include "windowHandle.h"
    
 ////////////////////////////////////////////////////////////////////
 //       Class : WindowProperties
@@ -44,7 +45,11 @@ PUBLISHED:
   void operator = (const WindowProperties &copy);
   INLINE ~WindowProperties();
 
+  static WindowProperties get_config_properties();
   static WindowProperties get_default();
+  static void set_default(const WindowProperties &default_properties);
+  static void clear_default();
+
   static WindowProperties size(int x_size, int y_size);
 
   bool operator == (const WindowProperties &other) const;
@@ -130,15 +135,11 @@ PUBLISHED:
   INLINE bool has_z_order() const;
   INLINE void clear_z_order();
 
-  INLINE void set_parent_window(size_t parent);
-  INLINE size_t get_parent_window() const;
+  void set_parent_window(size_t parent);
+  INLINE void set_parent_window(WindowHandle *parent_window = NULL);
+  INLINE WindowHandle *get_parent_window() const;
   INLINE bool has_parent_window() const;
   INLINE void clear_parent_window();
-
-  INLINE void set_subprocess_window(const Filename &filename);
-  INLINE const Filename &get_subprocess_window() const;
-  INLINE bool has_subprocess_window() const;
-  INLINE void clear_subprocess_window();
 
   void add_properties(const WindowProperties &other);
 
@@ -165,7 +166,6 @@ private:
     S_mouse_mode           = 0x02000,
     S_parent_window        = 0x04000,
     S_raw_mice             = 0x08000,
-    S_subprocess_window    = 0x10000,
   };
 
   // This bitmask represents the true/false settings for various
@@ -193,8 +193,9 @@ private:
   Filename _icon_filename;
   ZOrder _z_order;
   unsigned int _flags;
-  size_t _parent_window;  // a HWND or WindowRef or ..
-  Filename _subprocess_window;
+  PT(WindowHandle) _parent_window;
+
+  static WindowProperties *_default_properties;
 };
 
 EXPCL_PANDA_DISPLAY ostream &

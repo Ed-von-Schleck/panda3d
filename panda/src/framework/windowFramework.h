@@ -75,10 +75,14 @@ public:
   INLINE int get_num_cameras() const;
   INLINE Camera *get_camera(int n) const;
 
+  INLINE DisplayRegion *get_display_region_2d() const;
+  INLINE DisplayRegion *get_display_region_3d() const;
+
   NodePath get_render();
   NodePath get_render_2d();
   NodePath get_aspect_2d();
   NodePath get_mouse();
+  NodePath get_button_thrower();
 
   void enable_keyboard();
   void setup_trackball();
@@ -181,6 +185,7 @@ private:
   PT(GenericAsyncTask) _update_anim_controls_task;
 
   NodePath _mouse;
+  NodePath _button_thrower;
   PT(Trackball) _trackball;
 
   NodePath _alight;

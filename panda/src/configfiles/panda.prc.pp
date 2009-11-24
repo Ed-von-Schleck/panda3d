@@ -34,6 +34,16 @@ aux-display pandadx8
 aux-display tinydisplay
 #endif
 
+# Define an appropriate default audio library.
+#if $[HAVE_RAD_MSS]
+audio-library-name miles_audio
+#elif $[HAVE_FMODEX]
+audio-library-name p3fmod_audio
+#elif $[HAVE_OPENAL]
+audio-library-name p3openal_audio
+#endif
+
+
 # The egg loader is handy to have available by default.  This allows
 # clients to load egg files.  (The bam loader is built-in so bam files
 # are always loadable).
@@ -61,6 +71,11 @@ egg-object-type-portal          <Scalar> portal { 1 }
 egg-object-type-polylight       <Scalar> polylight { 1 }
 egg-object-type-seq24           <Switch> { 1 } <Scalar> fps { 24 }
 egg-object-type-seq12           <Switch> { 1 } <Scalar> fps { 12 }
+egg-object-type-seq10           <Switch> { 1 } <Scalar> fps { 10 }
+egg-object-type-seq8            <Switch> { 1 } <Scalar> fps { 8 }
+egg-object-type-seq6            <Switch> { 1} <Scalar>  fps { 6 }
+egg-object-type-seq4            <Switch> { 1} <Scalar>  fps { 4 }
+egg-object-type-seq2            <Switch> { 1} <Scalar>  fps { 2 }
 egg-object-type-indexed         <Scalar> indexed { 1 }
 
 egg-object-type-binary          <Scalar> alpha { binary }
@@ -112,5 +127,9 @@ egg-object-type-ghost           <Scalar> collide-mask { 0 }
 # "glow" is useful for halo effects and things of that ilk.  It
 # renders the object in add mode instead of the normal opaque mode.
 egg-object-type-glow            <Scalar> blend { add }
+
+# This isn't used in the egg loader, it controls a setting only within
+# maya2egg itself.  So if it appears in an egg file, it means nothing.
+egg-object-type-keep-all-uvsets
 
 #end 20_panda.prc

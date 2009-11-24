@@ -23,7 +23,6 @@
 // communications.
 
 #ifdef HAVE_OPENSSL
-#define OPENSSL_NO_KRB5
 
 #include "urlSpec.h"
 #include "httpAuthorization.h"
@@ -35,13 +34,7 @@
 #include "pmap.h"
 #include "pset.h"
 #include "referenceCount.h"
-
-#include "openssl/ssl.h"
-
-// Windows may define this macro inappropriately.
-#ifdef X509_NAME
-#undef X509_NAME
-#endif
+#include "openSSLWrapper.h"
 
 class Filename;
 class HTTPChannel;
@@ -124,9 +117,6 @@ PUBLISHED:
   INLINE void set_cipher_list(const string &cipher_list);
   INLINE const string &get_cipher_list() const;
 
-  bool add_expected_server(const string &server_attributes);
-  void clear_expected_servers();
-
   PT(HTTPChannel) make_channel(bool persistent_connection);
   BLOCKING PT(HTTPChannel) post_form(const URLSpec &url, const string &body);
   BLOCKING PT(HTTPChannel) get_document(const URLSpec &url);
@@ -154,9 +144,6 @@ private:
                                       const string &challenge);
 
   void unload_client_certificate();
-
-  static void initialize_ssl();
-  static int load_verify_locations(SSL_CTX *ctx, const Filename &ca_file);
 
   static X509_NAME *parse_x509_name(const string &source);
 
@@ -196,18 +183,10 @@ private:
   string _client_certificate_pem;
   string _client_certificate_passphrase;
 
-  // List of allowable SSL servers to connect to.  If the list is
-  // empty, any server is acceptable.
-  typedef pvector<X509_NAME *> ExpectedServers;
-  ExpectedServers _expected_servers;
-
   SSL_CTX *_ssl_ctx;
   bool _client_certificate_loaded;
   X509 *_client_certificate_pub;
   EVP_PKEY *_client_certificate_priv;
-
-  static bool _ssl_initialized;
-  static X509_STORE *_x509_store;
 
   static PT(HTTPClient) _global_ptr;
 

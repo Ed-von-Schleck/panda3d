@@ -20,23 +20,12 @@
 #include "graphicsPipe.h"
 #include "lightMutex.h"
 #include "lightReMutex.h"
+#include "windowHandle.h"
 
 class FrameBufferProperties;
 
-#ifdef CPPPARSER
-// A simple hack so interrogate can parse this file.
-typedef int Display;
-typedef int Window;
-typedef int XErrorEvent;
-typedef int XVisualInfo;
-typedef int Atom;
-typedef int Cursor;
-typedef int XIM;
-typedef int XIC;
-#else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#endif
 
 ////////////////////////////////////////////////////////////////////
 //       Class : x11GraphicsPipe

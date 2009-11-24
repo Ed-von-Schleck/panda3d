@@ -16,15 +16,19 @@
 
 #include <Carbon/Carbon.h>
 #include <Cocoa/Cocoa.h>
+#include <ApplicationServices/ApplicationServices.h>
 #include <OpenGL/gl.h>
 #include <AGL/agl.h>
-#include <ApplicationServices/ApplicationServices.h>
+
+// We have to include this before we include the system OpenGL/gl.h
+// file, but after we include all of the above header files.  Deal
+// with this contradiction later.
+#include "glgsg.h"
 
 #include "osxGraphicsWindow.h"
 #include "config_osxdisplay.h"
 #include "osxGraphicsPipe.h"
 #include "pStatTimer.h"
-#include "glgsg.h"
 #include "keyboardButton.h"
 #include "mouseButton.h"
 #include "osxGraphicsStateGuardian.h"
@@ -36,6 +40,7 @@
 #include "pset.h"
 #include "pmutex.h"
 
+
 ////////////////////////////////////
 
 static Mutex &
@@ -43,33 +48,6 @@ osx_global_mutex() {
   static Mutex m("osx_global_mutex");
   return m;
 }
-
-struct work1 {
-  volatile bool work_done;
-};
-
-#define PANDA_CREATE_WINDOW 101
-static void
-post_event_wait(unsigned short type, unsigned int data1, unsigned int data2,
-                int target_window) {
-  work1 w;
-  w.work_done = false;
-  NSEvent *ev = [NSEvent otherEventWithType:NSApplicationDefined 
-                 location:NSZeroPoint 
-                 modifierFlags:0 
-                 timestamp:0.0f 
-                 windowNumber:target_window 
-                 context:nil 
-                 subtype:type
-                 data1:data1
-                 data2:(int)&w]; 
- 
-  [NSApp postEvent:ev atStart:NO];
-  while(!w.work_done) {
-    usleep(10);
-  }
-}
-
 
 
 ////////////////////////// Global Objects .....
@@ -425,9 +403,16 @@ do_resize() {
         << " " << viewRect.size.height << "\n";
     }
 
-    // ping gl
-    aglUpdateContext(aglGetCurrentContext());
-    report_agl_error("aglUpdateContext .. This is a Resize..");
+    AGLContext context = get_gsg_context();
+    if (context != (AGLContext)NULL) {
+      // ping gl
+      if (!aglSetCurrentContext(context)) {
+        report_agl_error("aglSetCurrentContext");
+      }
+      aglUpdateContext(context);
+      report_agl_error("aglUpdateContext .. This is a Resize..");
+    }
+
     if (osxdisplay_cat.is_debug()) {
       osxdisplay_cat.debug() 
         << "Resize Complete.....\n";
@@ -871,23 +856,19 @@ begin_frame(FrameMode mode, Thread *current_thread) {
   if (_is_fullscreen) {
     aglSetFullScreen(get_gsg_context(),0,0,0,0);
     report_agl_error ("aglSetFullScreen"); 
-    
-    if (!aglSetCurrentContext(get_gsg_context())) {
-      report_agl_error ("aglSetCurrentContext"); 
-    }
-    
+   
   } else {
     if (full_screen_window != NULL) {
       return false;
     }
     
-    if (!aglSetDrawable (get_gsg_context(), GetWindowPort (_osx_window))) {
+    if (!aglSetDrawable(get_gsg_context(), GetWindowPort (_osx_window))) {
       report_agl_error("aglSetDrawable");
     }
-    
-    if (!aglSetCurrentContext(get_gsg_context())) {
-      report_agl_error ("aglSetCurrentContext");
-    } 
+  }
+
+  if (!aglSetCurrentContext(get_gsg_context())) {
+    report_agl_error ("aglSetCurrentContext"); 
   }
  
   _gsg->reset_if_new();
@@ -1077,7 +1058,40 @@ os_open_window(WindowProperties &req_properties) {
     GlobalInits = true;
     
     ProcessSerialNumber psn = { 0, kCurrentProcess };
-    TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+
+    // Determine if we're running from a bundle.
+    CFDictionaryRef dref =
+      ProcessInformationCopyDictionary(&psn, kProcessDictionaryIncludeAllInformationMask);
+    // If the dictionary doesn't have "BundlePath" (or the BundlePath
+    // is the same as the executable path), then we're not running
+    // from a bundle, and we need to call TransformProcessType to make
+    // the process a "foreground" application, with its own icon in
+    // the dock and such.
+
+    bool has_bundle = false;
+
+    CFStringRef bundle_path = (CFStringRef)CFDictionaryGetValue(dref, CFSTR("BundlePath"));
+    if (bundle_path != NULL) {
+      // OK, we have a bundle path.  We're probably running in a
+      // bundle . . .
+      has_bundle = true;
+
+      // . . . unless it turns out it's the same as the executable
+      // path.
+      CFStringRef exe_path = (CFStringRef)CFDictionaryGetValue(dref, kCFBundleExecutableKey);
+      if (exe_path != NULL) {
+        if (CFStringCompare(bundle_path, exe_path, kCFCompareCaseInsensitive) == kCFCompareEqualTo) {
+          has_bundle = false;
+        }
+        CFRelease(exe_path);
+      }
+
+      CFRelease(bundle_path);
+    }
+
+    if (!has_bundle) {
+      TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+    }
     SetFrontProcess(&psn);
   }
   
@@ -1142,7 +1156,8 @@ os_open_window(WindowProperties &req_properties) {
       r.right = r.left + 512;
       r.bottom = r.top + 512;
     }
-    
+
+    /*
     if (req_properties.has_parent_window()) {
       if (osxdisplay_cat.is_debug()) {
         osxdisplay_cat.debug()
@@ -1157,7 +1172,8 @@ os_open_window(WindowProperties &req_properties) {
         osxdisplay_cat.debug()
           << "Child window created\n";
       }
-    } else {
+      } else */
+    {
       if (req_properties.has_undecorated() && req_properties.get_undecorated()) { 
         // create a unmovable .. no edge window..
           
@@ -1210,27 +1226,7 @@ os_open_window(WindowProperties &req_properties) {
       gWinEvtHandler = NewEventHandlerUPP(window_event_handler); 
       InstallWindowEventHandler(_osx_window, gWinEvtHandler, GetEventTypeCount(list), list, (void*)this, NULL); // add event handler
  
-      if(!req_properties.has_parent_window()) {
-        ShowWindow (_osx_window);
-      } else {
-        NSWindow *parentWindow = (NSWindow *)req_properties.get_parent_window();
-        // NSView* aView = [[parentWindow contentView] viewWithTag:378];
-        // NSRect aRect = [aView frame];
-        // NSPoint origin = [parentWindow convertBaseToScreen:aRect.origin];
-        
-        // NSWindow* childWindow = [[NSWindow alloc] initWithWindowRef:_osx_window];
-        post_event_wait(PANDA_CREATE_WINDOW,(unsigned long) _osx_window,1,[parentWindow windowNumber]); 
-        
-        // [childWindow setFrameOrigin:origin];
-        // [childWindow setAcceptsMouseMovedEvents:YES];
-        // [childWindow setBackgroundColor:[NSColor blackColor]];
-        // this seems to block till the parent accepts the connection ?
-        // [parentWindow addChildWindow:childWindow ordered:NSWindowAbove];
-        // [childWindow orderFront:nil];
- 
-        _properties.set_parent_window(req_properties.get_parent_window());
-        req_properties.clear_parent_window();
-      } 
+      ShowWindow (_osx_window);
  
       if (osxdisplay_cat.is_debug()) {
         osxdisplay_cat.debug()
@@ -1309,7 +1305,7 @@ process_events() {
     EventRef theEvent;
     EventTargetRef theTarget = GetEventDispatcherTarget();
     
-    if (!_properties.has_parent_window()) {
+    /*if (!_properties.has_parent_window()) */ {
       while (ReceiveNextEvent(0, NULL, kEventDurationNoWait, true, &theEvent)== noErr) {
         SendEventToEventTarget (theEvent, theTarget);
         ReleaseEvent(theEvent);
@@ -1795,6 +1791,7 @@ do_reshape_request(int x_origin, int y_origin, bool has_origin,
     return false;
   }
 
+  /*      
   if (_properties.has_parent_window()) {
     if (has_origin) {
       NSWindow* parentWindow = (NSWindow *)_properties.get_parent_window();
@@ -1802,7 +1799,8 @@ do_reshape_request(int x_origin, int y_origin, bool has_origin,
       
       MoveWindow(_osx_window, x_origin+parentFrame.origin.x, y_origin+parentFrame.origin.y, false);
     }
-  } else {
+    } else */
+  {
     // We sometimes get a bogus origin of (0, 0). As a special hack,
     // treat this as a special case, and ignore it.
     if (has_origin) {

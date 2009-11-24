@@ -803,34 +803,33 @@ clear_mouse_mode() {
 //     Function: WindowProperties::set_parent_window
 //       Access: Published
 //  Description: Specifies the window that this window should be
-//               attached to.  If this is zero or unspecified, the
+//               attached to.  If this is NULL or unspecified, the
 //               window will be created as a toplevel window on the
-//               desktop; if this is nonzero, the window will be bound
-//               as a child window to the indicated parent window.
+//               desktop; if this is non-NULL, the window will be
+//               bound as a child window to the indicated parent
+//               window.
 //
-//               The actual value for "parent" is platform-specific.
-//               On Windows, it is the HWND of the parent window, cast
-//               to an unsigned integer.  On X11, it is the Window
-//               pointer of the parent window, similarly cast (yes,
-//               it's a portability issue).
-//
-//               On OSX, this is the NSWindow pointer, though there
-//               appear to be some compatibility issues (OSX doesn't
-//               easily support the parent-window model).  On OSX,
-//               consider using subprocess_window instead.
+//               You should use GraphicsPipe::make_window_handle() to
+//               create an instance of a WindowHandle object given an
+//               appropriate OS-specific window handle representation.
+//               Each OS-specific GraphicsPipe class defines a
+//               make_window_handle() method that returns an
+//               appropriate WindowHandle object to wrap the
+//               particular OS-specific representation.
 ////////////////////////////////////////////////////////////////////
 INLINE void WindowProperties::
-set_parent_window(size_t parent) {
-  _parent_window=parent;
+set_parent_window(WindowHandle *parent_window) {
+  _parent_window = parent_window;
   _specified |= S_parent_window;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: WindowProperties::get_parent_window
 //       Access: Published
-//  Description: Returns the parent window specification.
+//  Description: Returns the parent window specification, or NULL if
+//               there is no parent window specified.
 ////////////////////////////////////////////////////////////////////
-INLINE size_t WindowProperties::
+INLINE WindowHandle *WindowProperties::
 get_parent_window() const {
  return _parent_window;
 }
@@ -853,71 +852,7 @@ has_parent_window() const {
 INLINE void WindowProperties::
 clear_parent_window() {
   _specified &= ~S_parent_window;
-  _parent_window = (size_t)NULL;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: WindowProperties::set_subprocess_window
-//       Access: Published
-//  Description: Specifies that the window should be created as a
-//               "subprocess window", which is a special concept
-//               needed on OSX, to support windows that may run in a
-//               subprocess and communicate the output of their
-//               rendering to a parent process.
-//
-//               To use it, create a SubprocessWindowBuffer in the
-//               parent process, pass the resulting temporary filename
-//               to the child process, and set that filename here
-//               before opening a window.  Panda will open a
-//               SubprocessWindow instead of a normal window; and that
-//               class will take the output of the rendering and write
-//               it to the SubprocessWindowBuffer for the parent
-//               process to extract.
-//
-//               This is particularly useful for implementing the web
-//               browser plugin on OSX, which requires exactly this
-//               sort of process isolation in order to render to the
-//               browser page.
-//
-//               This feature is not currently available on other
-//               platforms (and they have no need of it).
-////////////////////////////////////////////////////////////////////
-INLINE void WindowProperties::
-set_subprocess_window(const Filename &filename) {
-  _subprocess_window = filename;
-  _specified |= S_subprocess_window;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: WindowProperties::get_subprocess_window
-//       Access: Published
-//  Description: Returns the filename specified to set_subprocess_window().
-////////////////////////////////////////////////////////////////////
-INLINE const Filename &WindowProperties::
-get_subprocess_window() const {
- return _subprocess_window;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: WindowProperties::has_subprocess_window
-//       Access: Published
-//  Description: Returns true if set_subprocess_window() was set.
-////////////////////////////////////////////////////////////////////
-INLINE bool WindowProperties::
-has_subprocess_window() const {
-  return ((_specified & S_subprocess_window) != 0);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: WindowProperties::clear_subprocess_window
-//       Access: Published
-//  Description: Removes the subprocess_window specification from the
-//               properties.
-////////////////////////////////////////////////////////////////////
-INLINE void WindowProperties::
-clear_subprocess_window() {
-  _specified &= ~S_subprocess_window;
-  _subprocess_window = Filename();
+  _parent_window = NULL;
 }
 
 

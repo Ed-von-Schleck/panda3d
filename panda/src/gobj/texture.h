@@ -336,8 +336,11 @@ PUBLISHED:
   INLINE size_t get_expected_ram_mipmap_image_size(int n) const;
   INLINE size_t get_expected_ram_mipmap_page_size(int n) const;
   CPTA_uchar get_ram_mipmap_image(int n);
+  void *get_ram_mipmap_pointer(int n);
   INLINE PTA_uchar modify_ram_mipmap_image(int n);
   INLINE PTA_uchar make_ram_mipmap_image(int n);
+  void set_ram_mipmap_pointer(int n, void *image, size_t page_size = 0);
+  void set_ram_mipmap_pointer_from_int(long long pointer, int n, int page_size);
   INLINE void set_ram_mipmap_image(int n, CPTA_uchar image, size_t page_size = 0);
   void clear_ram_mipmap_image(int n);
   INLINE void clear_ram_mipmap_images();
@@ -556,8 +559,14 @@ protected:
   // This nested class declaration is used below.
   class RamImage {
   public:
+    INLINE RamImage();
+
     PTA_uchar _image;
     size_t _page_size;
+
+    // If _pointer_image is non-NULL, it represents an external block
+    // of memory that is used instead of the above PTA_uchar.
+    void *_pointer_image;
   };
 
 private:

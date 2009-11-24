@@ -276,7 +276,7 @@ next_context() {
   }
 #endif  // DO_PSTATS
 
-  save_thread_context(&_current_thread->_context, st_choose_next_context, this);
+  save_thread_context(_current_thread->_context, st_choose_next_context, this);
   // Pass 2: we have returned into the context, and are now resuming
   // the current thread.
 
@@ -491,6 +491,18 @@ system_yield() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ThreadSimpleManager::get_current_time
+//       Access: Public
+//  Description: Returns elapsed time in seconds from some undefined
+//               epoch, via whatever clock the manager is using for
+//               all thread timing.
+////////////////////////////////////////////////////////////////////
+double ThreadSimpleManager::
+get_current_time() const {
+  return _clock->get_short_raw_time();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ThreadSimpleManager::init_pointers
 //       Access: Private, Static
 //  Description: Should be called at startup to initialize the
@@ -672,7 +684,7 @@ choose_next_context() {
       << " blocked, " << _sleeping.size() << " sleeping)\n";
   }
 
-  switch_to_thread_context(&_current_thread->_context);
+  switch_to_thread_context(_current_thread->_context);
 
   // Shouldn't get here.
   nassertv(false);
@@ -855,7 +867,7 @@ kill_non_joinable(ThreadSimpleManager::FifoThreads &threads) {
         thread_cat.debug()
           << "Killing " << *thread->_parent_obj << "\n";
       }
-      thread->_status = ThreadSimpleImpl::S_killed;
+      thread->_status = ThreadSimpleImpl::TS_killed;
       enqueue_finished(thread);
     }
   }
@@ -882,7 +894,7 @@ kill_non_joinable(ThreadSimpleManager::Sleeping &threads) {
         thread_cat.debug()
           << "Killing " << *thread->_parent_obj << "\n";
       }
-      thread->_status = ThreadSimpleImpl::S_killed;
+      thread->_status = ThreadSimpleImpl::TS_killed;
       enqueue_finished(thread);
     }
   }

@@ -93,18 +93,18 @@ private:
   void begin_thread();
 
 private:
-  enum Status {
-    S_new,
-    S_running,
-    S_finished,
-    S_killed,
+  enum ThreadStatus {
+    TS_new,
+    TS_running,
+    TS_finished,
+    TS_killed,
   };
 
   static int _next_unique_id;
   int _unique_id;
   Thread *_parent_obj;
   bool _joinable;
-  Status _status;
+  ThreadStatus _status;
   ThreadPriority _priority;
 
   // The relative weight of this thread, relative to other threads, in
@@ -125,7 +125,7 @@ private:
   // This records the time at which a sleeping thread should wake up.
   double _wake_time;
 
-  ThreadContext _context;
+  ThreadContext *_context;
   unsigned char *_stack;
   size_t _stack_size;
 

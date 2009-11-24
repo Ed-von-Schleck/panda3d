@@ -25,6 +25,7 @@
 #include "textEncoder.h"
 #include "throw_event.h"
 #include "lightReMutexHolder.h"
+#include "nativeWindowHandle.h"
 
 #include <errno.h>
 #include <sys/time.h>
@@ -664,13 +665,27 @@ open_window() {
   if (!_properties.has_size()) {
     _properties.set_size(100, 100);
   }
-
-  Window root_window;
-  if (!_properties.has_parent_window()) {
-    root_window = egl_pipe->get_root();
-  } else {
-    root_window = (Window) _properties.get_parent_window();
+  
+  Window parent_window = egl_pipe->get_root();
+  WindowHandle *window_handle = _properties.get_parent_window();
+  if (window_handle != NULL) {
+    egldisplay_cat.info()
+      << "Got parent_window " << *window_handle << "\n";
+    WindowHandle::OSHandle *os_handle = window_handle->get_os_handle();
+    if (os_handle != NULL) {
+      egldisplay_cat.info()
+        << "os_handle type " << os_handle->get_type() << "\n";
+      
+      if (os_handle->is_of_type(NativeWindowHandle::X11Handle::get_class_type())) {
+        NativeWindowHandle::X11Handle *x11_handle = DCAST(NativeWindowHandle::X11Handle, os_handle);
+        parent_window = x11_handle->get_handle();
+      } else if (os_handle->is_of_type(NativeWindowHandle::IntHandle::get_class_type())) {
+        NativeWindowHandle::IntHandle *int_handle = DCAST(NativeWindowHandle::IntHandle, os_handle);
+        parent_window = (Window)int_handle->get_handle();
+      }
+    }
   }
+  _parent_window_handle = window_handle;
 
   setup_colormap(visual_info);
 
@@ -693,7 +708,7 @@ open_window() {
     CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
 
   _xwindow = XCreateWindow
-    (_display, root_window,
+    (_display, parent_window,
      _properties.get_x_origin(), _properties.get_y_origin(),
      _properties.get_x_size(), _properties.get_y_size(),
      0, depth, InputOutput, visual, attrib_mask, &wa);
@@ -758,6 +773,14 @@ open_window() {
       egldisplay_cat.debug()
         << "Raw mice not requested.\n";
     }
+  }
+
+  // Create a WindowHandle for ourselves
+  _window_handle = NativeWindowHandle::make_x11(_xwindow);
+
+  // And tell our parent window that we're now its child.
+  if (_parent_window_handle != (WindowHandle *)NULL) {
+    _parent_window_handle->attach_child(_window_handle);
   }
 
   return true;

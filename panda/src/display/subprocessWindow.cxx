@@ -18,6 +18,7 @@
 
 #include "graphicsEngine.h"
 #include "config_display.h"
+#include "nativeWindowHandle.h"
 
 TypeHandle SubprocessWindow::_type_handle;
 
@@ -244,10 +245,22 @@ begin_flip() {
 ////////////////////////////////////////////////////////////////////
 void SubprocessWindow::
 set_properties_now(WindowProperties &properties) {
-  if (properties.has_subprocess_window() && 
-      properties.get_subprocess_window() != _filename) {
+  Filename filename;
+  WindowHandle *window_handle = properties.get_parent_window();
+  if (window_handle != NULL) {
+    WindowHandle::OSHandle *os_handle = window_handle->get_os_handle();
+    if (os_handle != NULL) {
+      if (os_handle->is_of_type(NativeWindowHandle::SubprocessHandle::get_class_type())) {
+        NativeWindowHandle::SubprocessHandle *subprocess_handle = DCAST(NativeWindowHandle::SubprocessHandle, os_handle);
+        filename = subprocess_handle->get_filename();
+      }
+    }
+  }
+
+  if (!filename.empty() && filename != _filename) {
     // We're changing the subprocess buffer filename; that means we
     // might as well completely close and re-open the window.
+    display_cat.info() << "Re-opening SubprocessWindow\n";
     internal_close_window();
 
     _properties.add_properties(properties);
@@ -265,9 +278,9 @@ set_properties_now(WindowProperties &properties) {
     return;
   }
 
-  if (properties.has_subprocess_window()) {
-    // Redundant subprocess specification.
-    properties.clear_subprocess_window();
+  if (properties.has_parent_window()) {
+    // Redundant parent-window specification.
+    properties.clear_parent_window();
   }
 }
 
@@ -332,6 +345,14 @@ internal_close_window() {
     _buffer = NULL;
   }
 
+  // Tell our parent window (if any) that we're no longer its child.
+  if (_window_handle != (WindowHandle *)NULL &&
+      _parent_window_handle != (WindowHandle *)NULL) {
+    _parent_window_handle->detach_child(_window_handle);
+  }
+
+  _window_handle = NULL;
+  _parent_window_handle = NULL;
   _is_valid = false;
 }
 
@@ -371,7 +392,25 @@ internal_open_window() {
   }
 
   _gsg = _buffer->get_gsg();
-  _filename = _properties.get_subprocess_window();
+
+  WindowHandle *window_handle = _properties.get_parent_window();
+  if (window_handle != NULL) {
+    WindowHandle::OSHandle *os_handle = window_handle->get_os_handle();
+    if (os_handle != NULL) {
+      if (os_handle->is_of_type(NativeWindowHandle::SubprocessHandle::get_class_type())) {
+        NativeWindowHandle::SubprocessHandle *subprocess_handle = DCAST(NativeWindowHandle::SubprocessHandle, os_handle);
+        _filename = subprocess_handle->get_filename();
+      }
+    }
+  }
+  _parent_window_handle = window_handle;
+
+  if (_filename.empty()) {
+    _is_valid = false;
+    display_cat.error()
+      << "No filename given to SubprocessWindow.\n";
+    return false;
+  }
 
   _swbuffer = SubprocessWindowBuffer::open_buffer
     (_fd, _mmap_size, _filename.to_os_specific());
@@ -385,6 +424,19 @@ internal_open_window() {
       << "Failed to open SubprocessWindowBuffer's shared-memory buffer "
       << _filename << "\n";
     return false;
+  }
+
+  if (display_cat.is_debug()) {
+    display_cat.debug()
+      << "SubprocessWindow reading " << _filename << "\n";
+  }
+
+  // Create a WindowHandle for ourselves
+  _window_handle = NativeWindowHandle::make_subprocess(_filename);
+
+  // And tell our parent window that we're now its child.
+  if (_parent_window_handle != (WindowHandle *)NULL) {
+    _parent_window_handle->attach_child(_window_handle);
   }
 
   return true;

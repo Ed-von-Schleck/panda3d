@@ -39,7 +39,6 @@ extern ConfigVariableDouble extractor_step_time;
 extern ConfigVariableInt patcher_buffer_size;
 
 extern ConfigVariableList expected_ssl_server;
-extern ConfigVariableList ssl_certificates;
 
 extern ConfigVariableBool http_proxy_tunnel;
 extern ConfigVariableDouble http_connect_timeout;
@@ -47,6 +46,8 @@ extern ConfigVariableDouble http_timeout;
 extern ConfigVariableInt http_skip_body_size;
 extern ConfigVariableDouble http_idle_timeout;
 extern ConfigVariableInt http_max_connect_count;
+
+extern EXPCL_PANDAEXPRESS ConfigVariableInt tcp_header_size;
 
 extern EXPCL_PANDAEXPRESS void init_libdownloader();
 

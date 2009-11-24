@@ -48,6 +48,8 @@
 #include "texGenAttrib.h"
 #include "shaderGenerator.h"
 #include "lightLensNode.h"
+#include "colorAttrib.h"
+#include "colorScaleAttrib.h"
 
 #include <algorithm>
 #include <limits.h>
@@ -2383,11 +2385,17 @@ free_pointers() {
 ////////////////////////////////////////////////////////////////////
 void GraphicsStateGuardian::
 close_gsg() {
+  // Protect from multiple calls, and also inform any other functions
+  // not to try to create new stuff while we're going down.
+  if (_closing_gsg) {
+    return;
+  }
+  _closing_gsg = true;
+
   if (display_cat.is_debug()) {
     display_cat.debug()
       << this << " close_gsg " << get_type() << "\n";
   }
-  _closing_gsg = true;
   free_pointers();
 
   // As tempting as it may be to try to release all the textures and

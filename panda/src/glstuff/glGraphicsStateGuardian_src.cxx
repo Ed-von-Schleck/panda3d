@@ -123,11 +123,13 @@ CPT(Shader::ShaderFile) default_shader_body = new Shader::ShaderFile("\
 uniform mediump mat4 p3d_ModelViewProjectionMatrix;\
 attribute highp vec4 p3d_Vertex;\
 void main(void) {\
-  gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;\}\n",
+  gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;\
+}\n",
 "void main(void) {\
   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\
 }\n");
 #endif
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: uchar_bgr_to_rgb
@@ -941,6 +943,17 @@ reset() {
   }
 #endif
 
+#ifndef OPENGLES
+  if (has_extension("GL_EXT_geometry_shader4")) {
+    _glProgramParameteri = (PFNGLPROGRAMPARAMETERIEXTPROC)
+      get_extension_func(GLPREFIX_QUOTED, "ProgramParameteriEXT");
+  } else {
+    _glProgramParameteri = NULL;
+  }
+#else
+  _glProgramParameteri = NULL;
+#endif
+
 #ifdef OPENGLES_2
   _glAttachShader = glAttachShader;
   _glBindAttribLocation = glBindAttribLocation;
@@ -1127,8 +1140,8 @@ reset() {
   _max_fb_samples = 0;
 #ifndef OPENGLES
   if (_supports_framebuffer_multisample) {
-    GLfloat max_samples;
-    GLP(GetFloatv)(GL_MAX_SAMPLES_EXT, &max_samples);
+    GLint max_samples;
+    GLP(GetIntegerv)(GL_MAX_SAMPLES_EXT, &max_samples);
     _max_fb_samples = max_samples;
   }
 #endif
@@ -4514,7 +4527,7 @@ do_issue_material() {
 
   GLP(Materialfv)(face, GL_SPECULAR, material->get_specular().get_data());
   GLP(Materialfv)(face, GL_EMISSION, material->get_emission().get_data());
-  GLP(Materialf)(face, GL_SHININESS, material->get_shininess());
+  GLP(Materialf)(face, GL_SHININESS, min(material->get_shininess(), 128.0f));
 
   if (material->has_ambient() && material->has_diffuse()) {
     // The material has both an ambient and diffuse specified.  This
@@ -6917,7 +6930,7 @@ set_state_and_transform(const RenderState *target,
   if (_target_shader != _state_shader) {
     //PStatTimer timer(_draw_set_state_shader_pcollector);
 #ifndef OPENGLES_1
-    do_issue_shader();
+    do_issue_shader(true);
 #endif
     _state_shader = _target_shader;
     _state_mask.clear_bit(TextureAttrib::get_class_slot());
@@ -7007,19 +7020,13 @@ set_state_and_transform(const RenderState *target,
     _state_mask.set_bit(stencil_slot);
   }
 
-#ifndef OPENGLES_1
-  if (_current_shader_context == 0) {
-#endif
-    int fog_slot = FogAttrib::get_class_slot();
-    if (_target_rs->get_attrib(fog_slot) != _state_rs->get_attrib(fog_slot) ||
-        !_state_mask.get_bit(fog_slot)) {
-      //PStatTimer timer(_draw_set_state_fog_pcollector);
-      do_issue_fog();
-      _state_mask.set_bit(fog_slot);
-    }
-#ifndef OPENGLES_1
+  int fog_slot = FogAttrib::get_class_slot();
+  if (_target_rs->get_attrib(fog_slot) != _state_rs->get_attrib(fog_slot) ||
+      !_state_mask.get_bit(fog_slot)) {
+    //PStatTimer timer(_draw_set_state_fog_pcollector);
+    do_issue_fog();
+    _state_mask.set_bit(fog_slot);
   }
-#endif
 
   int scissor_slot = ScissorAttrib::get_class_slot();
   if (_target_rs->get_attrib(scissor_slot) != _state_rs->get_attrib(scissor_slot) ||
@@ -8449,13 +8456,20 @@ upload_texture_image(CLP(TextureContext) *gtc,
     }
 
     for (int n = mipmap_bias; n < num_ram_mipmap_levels; ++n) {
-      const unsigned char *image_ptr = tex->get_ram_mipmap_image(n);
+      // we grab the mipmap pointer first, if it is NULL we grab the
+      // normal mipmap image pointer which is a PTA_uchar
+      const unsigned char *image_ptr = (unsigned char*)tex->get_ram_mipmap_pointer(n);
+      CPTA_uchar ptimage;
       if (image_ptr == (const unsigned char *)NULL) {
-        GLCAT.warning()
-          << "No mipmap level " << n << " defined for " << tex->get_name()
-          << "\n";
-        // No mipmap level n; stop here.
-        break;
+        ptimage = tex->get_ram_mipmap_image(n);
+        if (ptimage == (const unsigned char *)NULL) {
+          GLCAT.warning()
+            << "No mipmap level " << n << " defined for " << tex->get_name()
+            << "\n";
+          // No mipmap level n; stop here.
+          break;
+        }
+        image_ptr = ptimage;
       }
 
       size_t image_size = tex->get_ram_mipmap_image_size(n);
@@ -8575,17 +8589,19 @@ upload_texture_image(CLP(TextureContext) *gtc,
     }
     
     for (int n = mipmap_bias; n < num_ram_mipmap_levels; ++n) {
-      CPTA_uchar ptimage = tex->get_ram_mipmap_image(n);
-      if (ptimage == (const unsigned char *)NULL) {
-        if (GLCAT.is_debug()) {
-          GLCAT.debug()
+      const unsigned char *image_ptr = (unsigned char*)tex->get_ram_mipmap_pointer(n);
+      CPTA_uchar ptimage;
+      if (image_ptr == (const unsigned char *)NULL) {
+        ptimage = tex->get_ram_mipmap_image(n);
+        if (ptimage == (const unsigned char *)NULL) {
+          GLCAT.warning()
             << "No mipmap level " << n << " defined for " << tex->get_name()
             << "\n";
+          // No mipmap level n; stop here.
+          break;
         }
-        // No mipmap level n; stop here.
-        break;
+        image_ptr = ptimage;
       }
-      const unsigned char *image_ptr = ptimage;
 
       size_t image_size = tex->get_ram_mipmap_image_size(n);
       if (one_page_only) {

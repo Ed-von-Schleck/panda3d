@@ -64,9 +64,6 @@ ConfigVariableInt patcher_buffer_size
 ConfigVariableList expected_ssl_server
 ("expected-ssl-server");
 
-ConfigVariableList ssl_certificates
-("ssl-certificates");
-
 ConfigVariableBool http_proxy_tunnel
 ("http-proxy-tunnel", false,
  PRC_DESC("This specifies the default value for HTTPChannel::set_proxy_tunnel().  "
@@ -109,6 +106,12 @@ ConfigVariableInt http_max_connect_count
           "prevent the code from attempting runaway connections; this limit "
           "should never be reached in practice."));
 
+ConfigVariableInt tcp_header_size
+("tcp-header-size", 2,
+ PRC_DESC("Specifies the number of bytes to use to specify the datagram "
+          "length when writing a datagram on a TCP stream.  This may be "
+          "0, 2, or 4.  The server and client must agree on this value."));
+
 ConfigureFn(config_downloader) {
   init_libdownloader();
 }
@@ -145,7 +148,7 @@ init_libdownloader() {
               "library is loaded), or false to defer this until it is actually "
               "needed (which will be the first time you open an https connection "
               "or otherwise use encryption services).  You can also call "
-              "HTTPClient::initialize_ssl() to "
+              "HTTPClient::init_random_seed() to "
               "do this when you are ready.  The issue is that on Windows, "
               "OpenSSL will attempt to "
               "randomize its seed by crawling through the entire heap of "

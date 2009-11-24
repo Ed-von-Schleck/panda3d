@@ -14,7 +14,6 @@
 
 #include "config_movies.h"
 #include "dconfig.h"
-#include "webcamVideo.h"
 
 #ifdef HAVE_FFMPEG
 extern "C" {
@@ -53,7 +52,6 @@ init_libmovies() {
   InkblotVideoCursor::init_type();
   UserDataAudio::init_type();
   UserDataAudioCursor::init_type();
-  WebcamVideo::init_type();
   MicrophoneAudio::init_type();
 #ifdef HAVE_FFMPEG
   FfmpegVideo::init_type();

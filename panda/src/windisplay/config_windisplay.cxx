@@ -40,6 +40,12 @@ ConfigVariableBool do_vidmemsize_check
  PRC_DESC("if true, use ddraw's GetAvailVidMem to fail if driver says "
           "it has too little video mem"));
 
+ConfigVariableBool auto_cpu_data
+("auto-cpu-data", false,
+ PRC_DESC("Set this true to automatically get the CPU data at start; false to "
+          "require an explicit call to pipe->lookup_cpu_data().  Setting this "
+          "true may slow down startup time by 1-2 seconds."));
+
 ConfigVariableBool ime_aware
 ("ime-aware", false,
  PRC_DESC("Set this true to show ime texts on the chat panel and hide the "
@@ -49,6 +55,12 @@ ConfigVariableBool ime_aware
 ConfigVariableBool ime_hide
 ("ime-hide", false,
  PRC_DESC("Set this true to hide ime windows."));
+
+ConfigVariableBool request_dxdisplay_information
+("request-dxdisplay-information", true,
+ PRC_DESC("Setting this to false skips some display information discovery "
+          "routines that can speed up initialization when DX support is "
+          "present."));
 
 ConfigVariableBool swapbuffer_framelock
 ("swapbuffer-framelock", false,

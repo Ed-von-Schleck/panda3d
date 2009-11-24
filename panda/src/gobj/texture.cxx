@@ -841,6 +841,7 @@ set_ram_image(CPTA_uchar image, Texture::CompressionMode compression,
       _ram_image_compression != compression) {
     _ram_images[0]._image = image.cast_non_const();
     _ram_images[0]._page_size = page_size;
+    _ram_images[0]._pointer_image = NULL;
     _ram_image_compression = compression;
     ++_image_modified;
   }
@@ -924,6 +925,68 @@ get_ram_mipmap_image(int n) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_ram_mipmap_pointer
+//       Access: Published
+//  Description: Similiar to get_ram_mipmap_image(), however, in this
+//               case the void pointer for the given ram image is
+//               returned.  This will be NULL unless it has been
+//               explicitly set.
+////////////////////////////////////////////////////////////////////
+void *Texture::
+get_ram_mipmap_pointer(int n) {
+  MutexHolder holder(_lock);
+  if (n < (int)_ram_images.size()) {
+    return _ram_images[n]._pointer_image;
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::set_ram_mipmap_pointer
+//       Access: Published
+//  Description: Sets an explicit void pointer as the texture's mipmap
+//               image for the indicated level.  This is a special
+//               call to direct a texture to reference some external
+//               image location, for instance from a webcam input.
+//
+//               The texture will henceforth reference this pointer
+//               directly, instead of its own internal storage; the
+//               user is responsible for ensuring the data at this
+//               address remains allocated and valid, and in the
+//               correct format, during the lifetime of the texture.
+////////////////////////////////////////////////////////////////////
+void Texture::
+set_ram_mipmap_pointer(int n, void *image, size_t page_size) {
+  MutexHolder holder(_lock);
+  nassertv(_ram_image_compression != CM_off || do_get_expected_ram_mipmap_image_size(n));
+
+  while (n >= (int)_ram_images.size()) {
+    _ram_images.push_back(RamImage());
+  }
+
+  _ram_images[n]._page_size = page_size; 
+  //_ram_images[n]._image.clear(); wtf is going on?!
+  _ram_images[n]._pointer_image = image;
+  ++_image_modified;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::set_ram_mipmap_pointer_from_int
+//       Access: Published
+//  Description: Accepts a raw pointer cast as an int, which is then
+//               passed to set_ram_mipmap_pointer(); see the
+//               documentation for that method.
+//
+//               This variant is particularly useful to set an
+//               external pointer from a language like Python, which
+//               doesn't support void pointers directly.
+////////////////////////////////////////////////////////////////////
+void Texture::
+set_ram_mipmap_pointer_from_int(long long pointer, int n, int page_size) {
+  set_ram_mipmap_pointer(n, (void*)pointer, (size_t)page_size);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Texture::clear_ram_mipmap_image
 //       Access: Published
 //  Description: Discards the current system-RAM image for the nth
@@ -935,8 +998,9 @@ clear_ram_mipmap_image(int n) {
   if (n >= (int)_ram_images.size()) {
     return;
   }
-  _ram_images[n]._image.clear();
   _ram_images[n]._page_size = 0;
+  _ram_images[n]._image.clear();
+  _ram_images[n]._pointer_image = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -3064,7 +3128,6 @@ do_unlock_and_reload_ram_image(bool allow_compression) {
         tex->_num_components != _num_components ||
         tex->_component_width != _component_width ||
         tex->_texture_type != _texture_type ||
-        tex->_format != _format ||
         tex->_component_type != _component_type) {
 
       _x_size = tex->_x_size;
@@ -3257,6 +3320,7 @@ do_make_ram_image() {
   _ram_images.push_back(RamImage());
   _ram_images[0]._page_size = do_get_expected_ram_page_size();
   _ram_images[0]._image = PTA_uchar::empty_array(do_get_expected_ram_image_size(), get_class_type());
+  _ram_images[0]._pointer_image = NULL;
   _ram_image_compression = CM_off;
   return _ram_images[0]._image;
 }
@@ -3289,10 +3353,10 @@ do_make_ram_mipmap_image(int n) {
 
   while (n >= (int)_ram_images.size()) {
     _ram_images.push_back(RamImage());
-    _ram_images.back()._page_size = 0;
   }
 
   _ram_images[n]._image = PTA_uchar::empty_array(do_get_expected_ram_mipmap_image_size(n), get_class_type());
+  _ram_images[n]._pointer_image = NULL;
   _ram_images[n]._page_size = do_get_expected_ram_mipmap_page_size(n);
   return _ram_images[n]._image;
 }
@@ -3308,7 +3372,6 @@ do_set_ram_mipmap_image(int n, CPTA_uchar image, size_t page_size) {
 
   while (n >= (int)_ram_images.size()) {
     _ram_images.push_back(RamImage());
-    _ram_images.back()._page_size = 0;
   }
   if (page_size == 0) {
     page_size = image.size();
@@ -3317,6 +3380,7 @@ do_set_ram_mipmap_image(int n, CPTA_uchar image, size_t page_size) {
   if (_ram_images[n]._image != image ||
       _ram_images[n]._page_size != page_size) {
     _ram_images[n]._image = image.cast_non_const();
+    _ram_images[n]._pointer_image = NULL;
     _ram_images[n]._page_size = page_size;
     ++_image_modified;
   }

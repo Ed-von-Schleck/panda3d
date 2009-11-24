@@ -1,5 +1,5 @@
-// Filename: ssl_utils.h
-// Created by:  drose (15Dec03)
+// Filename: copy_stream.h
+// Created by:  drose (27Aug09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,21 +12,14 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef SSL_UTILS_H
-#define SSL_UTILS_H
+#ifndef COPY_STREAM_H
+#define COPY_STREAM_H
 
 #include "pandabase.h"
 
-// This module is not compiled if OpenSSL is not available.
-#ifdef HAVE_OPENSSL
-#define OPENSSL_NO_KRB5
-
-#include "openssl/ssl.h"
-
-EXPCL_PANDAEXPRESS void notify_ssl_errors();
-
-#endif  // HAVE_OPENSSL
+BEGIN_PUBLISH
+EXPCL_PANDAEXPRESS bool
+copy_stream(istream &source, ostream &dest);
+END_PUBLISH
 
 #endif
-
-

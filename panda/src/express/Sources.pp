@@ -10,10 +10,12 @@
 
   #define SOURCES \
     buffer.I buffer.h \
+    ca_bundle_data_src.c \
     checksumHashGenerator.I checksumHashGenerator.h circBuffer.I \
     circBuffer.h \
     config_express.h \
     compress_string.h \
+    copy_stream.h \
     datagram.I datagram.h datagramGenerator.I \
     datagramGenerator.h \
     datagramIterator.I datagramIterator.h datagramSink.I datagramSink.h \
@@ -34,6 +36,7 @@
     nodePointerToBase.h nodePointerToBase.I \
     nodePointerTo.h nodePointerTo.I \
     nodeReferenceCount.h nodeReferenceCount.I \
+    openSSLWrapper.h openSSLWrapper.I \
     ordered_vector.h ordered_vector.I ordered_vector.T \
     password_hash.h \
     patchfile.I patchfile.h \
@@ -74,6 +77,7 @@
     buffer.cxx checksumHashGenerator.cxx \
     config_express.cxx \
     compress_string.cxx \
+    copy_stream.cxx \
     datagram.cxx datagramGenerator.cxx \
     datagramIterator.cxx \
     datagramSink.cxx dcast.cxx \
@@ -86,6 +90,7 @@
     nodePointerToBase.cxx \
     nodePointerTo.cxx \
     nodeReferenceCount.cxx \
+    openSSLWrapper.cxx \
     ordered_vector.cxx \
     password_hash.cxx \
     patchfile.cxx \
@@ -121,10 +126,12 @@
 
   #define INSTALL_HEADERS  \
     buffer.I buffer.h \
+    ca_bundle_data_src.c \
     checksumHashGenerator.I checksumHashGenerator.h circBuffer.I \
     circBuffer.h \
     config_express.h \
     compress_string.h \
+    copy_stream.h \
     datagram.I datagram.h datagramGenerator.I \
     datagramGenerator.h \
     datagramIterator.I datagramIterator.h datagramSink.I datagramSink.h \
@@ -144,6 +151,7 @@
     nodePointerToBase.h nodePointerToBase.I \
     nodePointerTo.h nodePointerTo.I \
     nodeReferenceCount.h nodeReferenceCount.I \
+    openSSLWrapper.h openSSLWrapper.I \
     ordered_vector.h ordered_vector.I ordered_vector.T \
     password_hash.h \
     patchfile.I patchfile.h \
@@ -193,6 +201,20 @@
   #define OSX_SYS_FRAMEWORKS Foundation $[if $[not $[BUILD_IPHONE]],AppKit]
 
 #end lib_target
+
+#begin test_bin_target
+  // Not really a "test" program; this program is used to regenerate
+  // ca_bundle_data_src.c.
+
+  #define TARGET make_ca_bundle
+  #define LOCAL_LIBS $[LOCAL_LIBS] express
+  #define OTHER_LIBS pystub
+
+  #define SOURCES \
+    make_ca_bundle.cxx
+
+#end test_bin_target
+
 
 #begin test_bin_target
   #define TARGET test_types

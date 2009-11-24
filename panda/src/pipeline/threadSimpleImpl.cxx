@@ -36,7 +36,7 @@ ThreadSimpleImpl(Thread *parent_obj) :
   _unique_id = _next_unique_id;
   ++_next_unique_id;
 
-  _status = S_new;
+  _status = TS_new;
   _joinable = false;
   _priority = TP_normal;
   _priority_weight = 1.0;
@@ -45,6 +45,7 @@ ThreadSimpleImpl(Thread *parent_obj) :
   _stop_time = 0.0;
   _wake_time = 0.0;
 
+  _context = alloc_thread_context();
   _stack = NULL;
   _stack_size = 0;
 
@@ -63,7 +64,9 @@ ThreadSimpleImpl::
     thread_cat.debug() 
       << "Deleting thread " << _parent_obj->get_name() << "\n";
   }
-  nassertv(_status != S_running);
+  nassertv(_status != TS_running);
+
+  free_thread_context(_context);
 
   if (_stack != (void *)NULL) {
     memory_hook->mmap_free(_stack, _stack_size);
@@ -80,7 +83,7 @@ ThreadSimpleImpl::
 ////////////////////////////////////////////////////////////////////
 void ThreadSimpleImpl::
 setup_main_thread() {
-  _status = S_running;
+  _status = TS_running;
   _priority = TP_normal;
   _priority_weight = _manager->_simple_thread_normal_weight;
 
@@ -98,14 +101,14 @@ start(ThreadPriority priority, bool joinable) {
     thread_cat.debug() << "Starting " << *_parent_obj << "\n";
   }
 
-  nassertr(_status == S_new, false);
+  nassertr(_status == TS_new, false);
 
   nassertr(_stack == NULL, false);
   _stack_size = memory_hook->round_up_to_page_size((size_t)thread_stack_size);
   _stack = (unsigned char *)memory_hook->mmap_alloc(_stack_size, true);
 
   _joinable = joinable;
-  _status = S_running;
+  _status = TS_running;
   _priority = priority;
 
   switch (priority) {
@@ -136,7 +139,7 @@ start(ThreadPriority priority, bool joinable) {
   PyThreadState_Swap(_python_state);
 #endif  // HAVE_PYTHON
 
-  init_thread_context(&_context, _stack, _stack_size, st_begin_thread, this);
+  init_thread_context(_context, _stack, _stack_size, st_begin_thread, this);
 
   _manager->enqueue_ready(this, false);
   return true;
@@ -152,7 +155,7 @@ start(ThreadPriority priority, bool joinable) {
 void ThreadSimpleImpl::
 join() {
   nassertv(_joinable);
-  if (_status == S_running) {
+  if (_status == TS_running) {
     ThreadSimpleImpl *thread = _manager->get_current_thread();
     if (thread != this) {
       _joining_threads.push_back(thread);
@@ -256,7 +259,7 @@ begin_thread() {
   _parent_obj->thread_main();
 
   // Now we have completed the thread.
-  _status = S_finished;
+  _status = TS_finished;
 
   // Any threads that were waiting to join with this thread now become ready.
   JoiningThreads::iterator jti;

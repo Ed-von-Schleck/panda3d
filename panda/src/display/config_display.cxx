@@ -23,10 +23,12 @@
 #include "graphicsBuffer.h"
 #include "graphicsWindow.h"
 #include "graphicsDevice.h"
+#include "nativeWindowHandle.h"
 #include "parasiteBuffer.h"
 #include "pandaSystem.h"
 #include "stereoDisplayRegion.h"
 #include "subprocessWindow.h"
+#include "windowHandle.h"
 
 ConfigureDef(config_display);
 NotifyCategoryDef(display, "");
@@ -415,12 +417,15 @@ init_libdisplay() {
   GraphicsPipe::init_type();
   GraphicsStateGuardian::init_type();
   GraphicsWindow::init_type();
+  NativeWindowHandle::init_type();
   ParasiteBuffer::init_type();
   StandardMunger::init_type();
   StereoDisplayRegion::init_type();
 #ifdef SUPPORT_SUBPROCESS_WINDOW
   SubprocessWindow::init_type();
 #endif
+  WindowHandle::init_type();
+  WindowHandle::OSHandle::init_type();
 
 #if defined(HAVE_THREADS) && defined(DO_PIPELINING)
   PandaSystem *ps = PandaSystem::get_global_ptr();

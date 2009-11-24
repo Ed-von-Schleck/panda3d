@@ -854,35 +854,68 @@ bool TinyOsxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
   
 	static bool GlobalInits = false;
 	if (!GlobalInits)
-	{
-		//
-		// one time aplication inits.. to get a window open from a standalone aplication..
+          {
+            //
+            // one time aplication inits.. to get a window open from a standalone aplication..
 
-		EventHandlerRef	application_event_ref_ref1;
-		EventTypeSpec	list1[] =
-		{ 
-			//{ kEventClassCommand,  kEventProcessCommand },
-			//{ kEventClassCommand,  kEventCommandUpdateStatus },
-			{ kEventClassMouse, kEventMouseDown },// handle trackball functionality globaly because there is only a single user
-			{ kEventClassMouse, kEventMouseUp }, 
-			{ kEventClassMouse, kEventMouseMoved },
-			{ kEventClassMouse, kEventMouseDragged },
-			{ kEventClassMouse, kEventMouseWheelMoved } ,
-			{ kEventClassKeyboard, kEventRawKeyDown },
-			{ kEventClassKeyboard, kEventRawKeyUp } ,
-			{ kEventClassKeyboard, kEventRawKeyRepeat },
-			{ kEventClassKeyboard, kEventRawKeyModifiersChanged }	,
-			{ kEventClassTextInput,	kEventTextInputUnicodeForKeyEvent},				   
-		};
+            EventHandlerRef	application_event_ref_ref1;
+            EventTypeSpec	list1[] =
+              { 
+                //{ kEventClassCommand,  kEventProcessCommand },
+                //{ kEventClassCommand,  kEventCommandUpdateStatus },
+                { kEventClassMouse, kEventMouseDown },// handle trackball functionality globaly because there is only a single user
+                { kEventClassMouse, kEventMouseUp }, 
+                { kEventClassMouse, kEventMouseMoved },
+                { kEventClassMouse, kEventMouseDragged },
+                { kEventClassMouse, kEventMouseWheelMoved } ,
+                { kEventClassKeyboard, kEventRawKeyDown },
+                { kEventClassKeyboard, kEventRawKeyUp } ,
+                { kEventClassKeyboard, kEventRawKeyRepeat },
+                { kEventClassKeyboard, kEventRawKeyModifiersChanged }	,
+                { kEventClassTextInput,	kEventTextInputUnicodeForKeyEvent},				   
+              };
 
-		EventHandlerUPP	gEvtHandler = NewEventHandlerUPP(appEvtHndlr);
-		err = InstallApplicationEventHandler (gEvtHandler, GetEventTypeCount (list1) , list1, this, &application_event_ref_ref1 );
-		GlobalInits = true;
+            EventHandlerUPP	gEvtHandler = NewEventHandlerUPP(appEvtHndlr);
+            err = InstallApplicationEventHandler (gEvtHandler, GetEventTypeCount (list1) , list1, this, &application_event_ref_ref1 );
+            GlobalInits = true;
 
-		ProcessSerialNumber psn = { 0, kCurrentProcess };
-		TransformProcessType(&psn, kProcessTransformToForegroundApplication);
-		SetFrontProcess(&psn);
-	}
+            ProcessSerialNumber psn = { 0, kCurrentProcess };
+        
+            // Determine if we're running from a bundle.
+            CFDictionaryRef dref =
+              ProcessInformationCopyDictionary(&psn, kProcessDictionaryIncludeAllInformationMask);
+            // If the dictionary doesn't have "BundlePath" (or the BundlePath
+            // is the same as the executable path), then we're not running
+            // from a bundle, and we need to call TransformProcessType to make
+            // the process a "foreground" application, with its own icon in
+            // the dock and such.
+
+            bool has_bundle = false;
+
+            CFStringRef bundle_path = (CFStringRef)CFDictionaryGetValue(dref, CFSTR("BundlePath"));
+            if (bundle_path != NULL) {
+              // OK, we have a bundle path.  We're probably running in a
+              // bundle . . .
+              has_bundle = true;
+
+              // . . . unless it turns out it's the same as the executable
+              // path.
+              CFStringRef exe_path = (CFStringRef)CFDictionaryGetValue(dref, kCFBundleExecutableKey);
+              if (exe_path != NULL) {
+                if (CFStringCompare(bundle_path, exe_path, kCFCompareCaseInsensitive) == kCFCompareEqualTo) {
+                  has_bundle = false;
+                }
+                CFRelease(exe_path);
+              }
+
+              CFRelease(bundle_path);
+            }
+
+            if (!has_bundle) {
+              TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+            }
+            SetFrontProcess(&psn);
+          }
 
 	if (req_properties.has_fullscreen() && req_properties.get_fullscreen())
 	{
@@ -945,7 +978,8 @@ bool TinyOsxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 		  r.right = r.left + 512;
 		  r.bottom = r.top + 512;
 		}
-    
+                
+                /*
 		if (req_properties.has_parent_window())
 		{
 			tinydisplay_cat.info() << "Creating child window\n";
@@ -956,7 +990,7 @@ bool TinyOsxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 			_properties.set_fixed_size(true);
 			tinydisplay_cat.info() << "Child window created\n";
 		}
-		else
+		else */
 		{
 			if (req_properties.has_undecorated() && req_properties.get_undecorated())
 			{ // create a unmovable .. no edge window..
@@ -1008,10 +1042,11 @@ bool TinyOsxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 			gWinEvtHandler = NewEventHandlerUPP(windowEvtHndlr); 
 			InstallWindowEventHandler(_osx_window, gWinEvtHandler, GetEventTypeCount(list), list, (void*)this, NULL); // add event handler
 			
-            if(!req_properties.has_parent_window())
+                        /*if(!req_properties.has_parent_window()) */
 			{
 			    ShowWindow (_osx_window);
 			}
+                        /*
 			else
 			{
 			    
@@ -1036,7 +1071,7 @@ bool TinyOsxGraphicsWindow::OSOpenWindow(WindowProperties &req_properties)
 				_properties.set_parent_window(req_properties.get_parent_window());
 				req_properties.clear_parent_window();
 				
-			}	
+                                }	*/
 
 			if (req_properties.has_fullscreen())
 			{
@@ -1090,7 +1125,7 @@ void TinyOsxGraphicsWindow::process_events()
       EventRef 		 theEvent;
       EventTargetRef theTarget	=	GetEventDispatcherTarget();
       
-      if (!_properties.has_parent_window())
+      /*if (!_properties.has_parent_window())*/
 	  {
           while  (ReceiveNextEvent(0, NULL, kEventDurationNoWait, true, &theEvent)== noErr)
           {
@@ -1582,6 +1617,7 @@ bool TinyOsxGraphicsWindow::do_reshape_request(int x_origin, int y_origin, bool 
     return false;
   }
 
+  /*
   if (_properties.has_parent_window())
   {
     if (has_origin)
@@ -1592,7 +1628,7 @@ bool TinyOsxGraphicsWindow::do_reshape_request(int x_origin, int y_origin, bool 
 		MoveWindow(_osx_window, x_origin+parentFrame.origin.x, y_origin+parentFrame.origin.y, false);
 	 }
   }
-  else
+  else*/
   {
 	  // We sometimes get a bogus origin of (0, 0).  As a special hack,
 	  // treat this as a special case, and ignore it.

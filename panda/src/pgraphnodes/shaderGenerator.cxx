@@ -83,18 +83,40 @@ reset_register_allocator() {
 INLINE char *ShaderGenerator::
 alloc_vreg() {
   switch (_vtregs_used) {
-  case 0: _vtregs_used += 1; return (char*)"TEXCOORD0";
-  case 1: _vtregs_used += 1; return (char*)"TEXCOORD1";
-  case 2: _vtregs_used += 1; return (char*)"TEXCOORD2";
-  case 3: _vtregs_used += 1; return (char*)"TEXCOORD3";
-  case 4: _vtregs_used += 1; return (char*)"TEXCOORD4";
-  case 5: _vtregs_used += 1; return (char*)"TEXCOORD5";
-  case 6: _vtregs_used += 1; return (char*)"TEXCOORD6";
-  case 7: _vtregs_used += 1; return (char*)"TEXCOORD7";
+  case  0: _vtregs_used += 1; return (char*)"TEXCOORD0";
+  case  1: _vtregs_used += 1; return (char*)"TEXCOORD1";
+  case  2: _vtregs_used += 1; return (char*)"TEXCOORD2";
+  case  3: _vtregs_used += 1; return (char*)"TEXCOORD3";
+  case  4: _vtregs_used += 1; return (char*)"TEXCOORD4";
+  case  5: _vtregs_used += 1; return (char*)"TEXCOORD5";
+  case  6: _vtregs_used += 1; return (char*)"TEXCOORD6";
+  case  7: _vtregs_used += 1; return (char*)"TEXCOORD7";
+  case  8: _vtregs_used += 1; return (char*)"TEXCOORD8";
+  case  9: _vtregs_used += 1; return (char*)"TEXCOORD9";
+  case 10: _vtregs_used += 1; return (char*)"TEXCOORD10";
+  case 11: _vtregs_used += 1; return (char*)"TEXCOORD11";
+  case 12: _vtregs_used += 1; return (char*)"TEXCOORD12";
+  case 13: _vtregs_used += 1; return (char*)"TEXCOORD13";
+  case 14: _vtregs_used += 1; return (char*)"TEXCOORD14";
+  case 15: _vtregs_used += 1; return (char*)"TEXCOORD15";
   }
   switch (_vcregs_used) {
-  case 0: _vcregs_used += 1; return (char*)"COLOR0";
-  case 1: _vcregs_used += 1; return (char*)"COLOR1";
+  case  0: _vcregs_used += 1; return (char*)"COLOR0";
+  case  1: _vcregs_used += 1; return (char*)"COLOR1";
+  case  2: _vcregs_used += 1; return (char*)"COLOR2";
+  case  3: _vcregs_used += 1; return (char*)"COLOR3";
+  case  4: _vcregs_used += 1; return (char*)"COLOR4";
+  case  5: _vcregs_used += 1; return (char*)"COLOR5";
+  case  6: _vcregs_used += 1; return (char*)"COLOR6";
+  case  7: _vcregs_used += 1; return (char*)"COLOR7";
+  case  8: _vcregs_used += 1; return (char*)"COLOR8";
+  case  9: _vcregs_used += 1; return (char*)"COLOR9";
+  case 10: _vcregs_used += 1; return (char*)"COLOR10";
+  case 11: _vcregs_used += 1; return (char*)"COLOR11";
+  case 12: _vcregs_used += 1; return (char*)"COLOR12";
+  case 13: _vcregs_used += 1; return (char*)"COLOR13";
+  case 14: _vcregs_used += 1; return (char*)"COLOR14";
+  case 15: _vcregs_used += 1; return (char*)"COLOR15";
   }
   return (char*)"UNKNOWN";
 }
@@ -107,18 +129,40 @@ alloc_vreg() {
 INLINE char *ShaderGenerator::
 alloc_freg() {
   switch (_ftregs_used) {
-  case 0: _ftregs_used += 1; return (char*)"TEXCOORD0";
-  case 1: _ftregs_used += 1; return (char*)"TEXCOORD1";
-  case 2: _ftregs_used += 1; return (char*)"TEXCOORD2";
-  case 3: _ftregs_used += 1; return (char*)"TEXCOORD3";
-  case 4: _ftregs_used += 1; return (char*)"TEXCOORD4";
-  case 5: _ftregs_used += 1; return (char*)"TEXCOORD5";
-  case 6: _ftregs_used += 1; return (char*)"TEXCOORD6";
-  case 7: _ftregs_used += 1; return (char*)"TEXCOORD7";
+  case  0: _ftregs_used += 1; return (char*)"TEXCOORD0";
+  case  1: _ftregs_used += 1; return (char*)"TEXCOORD1";
+  case  2: _ftregs_used += 1; return (char*)"TEXCOORD2";
+  case  3: _ftregs_used += 1; return (char*)"TEXCOORD3";
+  case  4: _ftregs_used += 1; return (char*)"TEXCOORD4";
+  case  5: _ftregs_used += 1; return (char*)"TEXCOORD5";
+  case  6: _ftregs_used += 1; return (char*)"TEXCOORD6";
+  case  7: _ftregs_used += 1; return (char*)"TEXCOORD7";
+  case  8: _ftregs_used += 1; return (char*)"TEXCOORD8";
+  case  9: _ftregs_used += 1; return (char*)"TEXCOORD9";
+  case 10: _ftregs_used += 1; return (char*)"TEXCOORD10";
+  case 11: _ftregs_used += 1; return (char*)"TEXCOORD11";
+  case 12: _ftregs_used += 1; return (char*)"TEXCOORD12";
+  case 13: _ftregs_used += 1; return (char*)"TEXCOORD13";
+  case 14: _ftregs_used += 1; return (char*)"TEXCOORD14";
+  case 15: _ftregs_used += 1; return (char*)"TEXCOORD15";
   }
   switch (_fcregs_used) {
-  case 0: _fcregs_used += 1; return (char*)"COLOR0";
-  case 1: _fcregs_used += 1; return (char*)"COLOR1";
+  case  0: _fcregs_used += 1; return (char*)"COLOR0";
+  case  1: _fcregs_used += 1; return (char*)"COLOR1";
+  case  2: _fcregs_used += 1; return (char*)"COLOR2";
+  case  3: _fcregs_used += 1; return (char*)"COLOR3";
+  case  4: _fcregs_used += 1; return (char*)"COLOR4";
+  case  5: _fcregs_used += 1; return (char*)"COLOR5";
+  case  6: _fcregs_used += 1; return (char*)"COLOR6";
+  case  7: _fcregs_used += 1; return (char*)"COLOR7";
+  case  8: _fcregs_used += 1; return (char*)"COLOR8";
+  case  9: _fcregs_used += 1; return (char*)"COLOR9";
+  case 10: _fcregs_used += 1; return (char*)"COLOR10";
+  case 11: _fcregs_used += 1; return (char*)"COLOR11";
+  case 12: _fcregs_used += 1; return (char*)"COLOR12";
+  case 13: _fcregs_used += 1; return (char*)"COLOR13";
+  case 14: _fcregs_used += 1; return (char*)"COLOR14";
+  case 15: _fcregs_used += 1; return (char*)"COLOR15";
   }
   return (char*)"UNKNOWN";
 }
@@ -591,12 +635,10 @@ synthesize_shader(const RenderState *rs) {
   const TextureAttrib *texture = DCAST(TextureAttrib, rs->get_attrib_def(TextureAttrib::get_class_slot()));
   const TexGenAttrib *tex_gen = DCAST(TexGenAttrib, rs->get_attrib_def(TexGenAttrib::get_class_slot()));
   for (int i=0; i<_num_textures; i++) {
-    if (!tex_gen->has_stage(texture->get_on_stage(i))) {
-      texcoord_vreg.push_back(alloc_vreg());
-      texcoord_freg.push_back(alloc_freg());
-      text << "\t in float4 vtx_texcoord" << i << " : " << texcoord_vreg[i] << ",\n";
-      text << "\t out float4 l_texcoord" << i << " : " << texcoord_freg[i] << ",\n";
-    }
+    texcoord_vreg.push_back(alloc_vreg());
+    texcoord_freg.push_back(alloc_freg());
+    text << "\t in float4 vtx_texcoord" << i << " : " << texcoord_vreg[i] << ",\n";
+    text << "\t out float4 l_texcoord" << i << " : " << texcoord_freg[i] << ",\n";
   }
   if (_vertex_colors) {
     text << "\t in float4 vtx_color : COLOR,\n";
