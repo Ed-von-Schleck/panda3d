@@ -402,7 +402,7 @@ if (COMPILER=="MSVC"):
             LibName(pkg, SDK[pkg] +  '/lib/paramblk2.lib')
     if (PkgSkip("PHYSX")==0):
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/PhysXLoader.lib")
-        LibName("PHYSX",      THIRDPARTYLIBS + "physx/lib/NxCharacterSTATIC.lib")
+        LibName("PHYSX",      GetThirdpartyDir() + "physx/lib/NxCharacterSTATIC.lib")
         DefSymbol("PHYSX", "NXCHARACTER_STATIC", "1")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
