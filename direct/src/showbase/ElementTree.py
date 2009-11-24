@@ -1,6 +1,6 @@
 #
 # ElementTree
-# $Id: ElementTree.py,v 1.1 2009/09/24 01:16:32 dranalli Exp $
+# $Id: ElementTree.py,v 1.2 2009/11/24 23:38:11 drwr Exp $
 #
 # light-weight XML support for Python 1.5.2 and later.
 #
