@@ -93,7 +93,10 @@ onControllerHit(const NxControllersHit& hit) {
 
   _pcollector.start();
 
-  // For now other controllers are unpushable. --TODO--
+  if (1 && hit.other) {
+    // For now other controllers are unpushable. --TODO--
+    //return NX_ACTION_PUSH; is not implemented!
+  }
 
   _pcollector.stop();
 
