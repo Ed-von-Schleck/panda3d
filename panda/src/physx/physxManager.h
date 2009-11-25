@@ -52,6 +52,9 @@ PUBLISHED:
   float get_parameter(PhysxParameter param);
 
   bool is_hardware_available();
+  unsigned int get_num_ppus();
+  unsigned int get_hw_version();
+  const char *get_internal_version();
 
   unsigned int get_num_scenes() const;
   PT(PhysxScene) create_scene(PhysxSceneDesc &desc);

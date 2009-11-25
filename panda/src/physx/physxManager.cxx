@@ -260,12 +260,63 @@ get_triangle_mesh(unsigned int idx) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxManager::is_hardware_available
 //       Access: Published
-//  Description:
+//  Description: Returns TRUE if a physcis hardware is available
+//               on the host system.
 ////////////////////////////////////////////////////////////////////
 bool PhysxManager::
 is_hardware_available() {
 
   return _sdk->getHWVersion() != NX_HW_VERSION_NONE;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_num_ppus
+//       Access: Published
+//  Description: Reports the number of PPUs installed in the host
+//               system.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxManager::
+get_num_ppus() {
+
+  return _sdk->getNbPPUs();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_hw_version
+//       Access: Published
+//  Description: Reports the available revision of the PhysX
+//               Hardware. Returns 0 if there is no hardware present
+//               in the machine, 1 for the PhysX Athena revision
+//               1.0 card.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxManager::
+get_hw_version() {
+
+  return _sdk->getHWVersion();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::get_internal_version
+//       Access: Published
+//  Description: Reports the internal API version number of the SDK.
+////////////////////////////////////////////////////////////////////
+const char *PhysxManager::
+get_internal_version() {
+
+  NxU32 apiRev;
+  NxU32 descRev;
+  NxU32 branchId;
+  NxU32 v;
+
+  v = _sdk->getInternalVersion(apiRev, descRev, branchId);
+
+  stringstream version;
+  version << "version:" << (unsigned int)v
+          << " apiRef:" << (unsigned int)apiRev
+          << " descRev:" << (unsigned int)descRev
+          << " branchId: " << (unsigned int)branchId;
+
+  return version.str().c_str();
 }
 
 ////////////////////////////////////////////////////////////////////
