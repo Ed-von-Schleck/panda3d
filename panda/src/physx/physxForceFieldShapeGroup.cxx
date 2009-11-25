@@ -27,15 +27,6 @@ TypeHandle PhysxForceFieldShapeGroup::_type_handle;
 void PhysxForceFieldShapeGroup::
 link(NxForceFieldShapeGroup *groupPtr) {
 
-  // Link shapes
-  NxU32 nShapes = _ptr->getNbShapes();
-  ptr()->resetShapesIterator();
-  for (NxU32 i=0; i < nShapes; i++) {
-    NxForceFieldShape *shapePtr = _ptr->getNextShape();
-    PT(PhysxForceFieldShape) shape = PhysxForceFieldShape::factory(shapePtr->getType());
-    shape->link(shapePtr);
-  }
-
   // Link self
   _ptr = groupPtr;
   _ptr->userData = this;
@@ -43,6 +34,15 @@ link(NxForceFieldShapeGroup *groupPtr) {
 
   PhysxScene *scene = (PhysxScene *)_ptr->getScene().userData;
   scene->_ffgroups.add(this);
+
+  // Link shapes
+  NxU32 nShapes = _ptr->getNbShapes();
+  _ptr->resetShapesIterator();
+  for (NxU32 i=0; i < nShapes; i++) {
+    NxForceFieldShape *shapePtr = _ptr->getNextShape();
+    PT(PhysxForceFieldShape) shape = PhysxForceFieldShape::factory(shapePtr->getType());
+    shape->link(shapePtr);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ unlink() {
 
   // Unlink shapes
   NxU32 nShapes = _ptr->getNbShapes();
-  ptr()->resetShapesIterator();
+  _ptr->resetShapesIterator();
   for (NxU32 i=0; i < nShapes; i++) {
     NxForceFieldShape *shapePtr = _ptr->getNextShape();
     PT(PhysxForceFieldShape) shape = (PhysxForceFieldShape *)shapePtr->userData;
