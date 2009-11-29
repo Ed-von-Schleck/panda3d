@@ -76,8 +76,6 @@ PUBLISHED:
 
   PT(PhysxDebugGeomNode) get_debug_geom_node();
 
-  PhysxSceneStats2 get_stats2() const;
-
   void enable_contact_reporting(bool enabled);
   bool is_contact_reporting_enabled() const;
   void enable_trigger_reporting(bool enabled);
@@ -86,7 +84,11 @@ PUBLISHED:
   bool is_controller_reporting_enabled() const;
 
   void set_gravity(const LVector3f &gravity);
+
   LVector3f get_gravity() const;
+  PhysxSceneStats2 get_stats2() const;
+  bool get_flag(PhysxSceneFlag flag) const; 
+  bool is_hardware_scene() const;
 
   // Actors
   unsigned int get_num_actors() const;

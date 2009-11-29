@@ -222,6 +222,20 @@
 #define NX_RJF_MOTOR_ENABLED 1<<1
 #define NX_RJF_SPRING_ENABLED 1<<2
 
+// PhysxSceneFlag
+#define NX_SF_DISABLE_SSE 0x1
+#define NX_SF_DISABLE_COLLISIONS 0x2
+#define NX_SF_SIMULATE_SEPARATE_THREAD 0x4
+#define NX_SF_ENABLE_MULTITHREAD 0x8
+#define NX_SF_ENABLE_ACTIVETRANSFORMS 0x10
+#define NX_SF_RESTRICTED_SCENE 0x20
+#define NX_SF_DISABLE_SCENE_MUTEX 0x40
+#define NX_SF_FORCE_CONE_FRICTION 0x80
+#define NX_SF_SEQUENTIAL_PRIMARY 0x80*2
+#define NX_SF_FLUID_PERFORMANCE_HINT 0x80*4
+#define NX_SF_ALTERNATIVE_FLUID_TRIANGLE_COLLISION 0x80*8
+#define NX_SF_MULTITHREADED_FORCEFIELD 0x80*16
+
 // PhysxShapeFlag
 #define NX_TRIGGER_ON_ENTER 1<<0
 #define NX_TRIGGER_ON_LEAVE 1<<1
@@ -499,6 +513,20 @@ PUBLISHED:
     RJF_limit_enabled    = NX_RJF_LIMIT_ENABLED,
     RJF_motor_enabled    = NX_RJF_MOTOR_ENABLED,
     RJF_spring_enabled   = NX_RJF_SPRING_ENABLED
+  };
+
+  enum PhysxSceneFlag {
+    SF_disable_sse        = NX_SF_DISABLE_SSE,
+    SF_disable_collisions = NX_SF_DISABLE_COLLISIONS,
+    SF_restricted_scene = NX_SF_RESTRICTED_SCENE,
+    SF_disable_scene_mutex = NX_SF_DISABLE_SCENE_MUTEX,
+    SF_force_cone_friction = NX_SF_FORCE_CONE_FRICTION,
+    SF_sequential_primary = NX_SF_SEQUENTIAL_PRIMARY,
+    SF_fluid_performance_hint = NX_SF_FLUID_PERFORMANCE_HINT,
+    //SF_alternative_fluid_triangle_collision = NX_SF_ALTERNATIVE_FLUID_TRIANGLE_COLLISION,
+    //SF_multithreaded_forcefield = NX_SF_MULTITHREADED_FORCEFIELD,
+    //SF_simulate_separate_thread = NX_SF_SIMULATE_SEPARATE_THREAD,
+    //SF_enable_multithread = NX_SF_ENABLE_MULTITHREAD,
   };
 
   enum PhysxShapeFlag {

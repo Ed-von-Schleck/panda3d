@@ -1410,3 +1410,29 @@ get_group_collision_flag(unsigned int g1, unsigned int g2) {
   return _ptr->getGroupCollisionFlag((NxCollisionGroup)g1, (NxCollisionGroup)g2);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_flag
+//       Access: Published
+//  Description: Return the specified scene flag flag.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+get_flag(PhysxSceneFlag flag) const {
+
+  nassertr(_error_type == ET_ok, false);
+  return (_ptr->getFlags() & flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::is_hardware_scene
+//       Access: Published
+//  Description: Returns TRUE if the the scene is simulated in
+//               hardware. FALSE if the scene is simulated in
+//               software.
+////////////////////////////////////////////////////////////////////
+bool PhysxScene::
+is_hardware_scene() const {
+
+  nassertr(_error_type == ET_ok, false);
+  return (_ptr->getSimType() & NX_SIMULATION_HW) ? true : false;
+}
+

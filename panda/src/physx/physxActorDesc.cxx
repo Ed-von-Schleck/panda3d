@@ -117,9 +117,11 @@ set_body(PhysxBodyDesc &desc) {
 PhysxBodyDesc PhysxActorDesc::
 get_body() const {
 
-  PhysxBodyDesc value;
-  value._desc = *(_desc.body);
-  return value;
+  throw "Not Implemented";
+
+  //PhysxBodyDesc value;
+  //value._desc = *(_desc.body);
+  //return value;
 }
 
 ////////////////////////////////////////////////////////////////////

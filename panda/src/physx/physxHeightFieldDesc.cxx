@@ -55,9 +55,7 @@ set_image(const PNMImage &image) {
   _desc.format = NX_HF_S16_TM;
   _desc.nbColumns = nbColumns;
   _desc.nbRows = nbRows;
-  _desc.sampleStride = sizeof(NxU32);
 
-  //_desc.samples             = new NxU32[ nbColumns * nbRows ];
   alloc_samples(nbColumns * nbRows);
 
   NxU8 *currentByte = (NxU8 *)(_desc.samples);

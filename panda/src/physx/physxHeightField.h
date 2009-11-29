@@ -39,7 +39,7 @@
 //               sacrifice flexibility in return for improved
 //               performance and decreased memory consumption.
 //
-//               HeightFields are referenced by shape instances of
+//               Height fields are referenced by shape instances of
 //               type PhysxHeightFieldShape.
 //
 //               To create an instance of this class call

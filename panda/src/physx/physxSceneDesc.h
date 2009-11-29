@@ -18,14 +18,18 @@
 #include "pandabase.h"
 #include "lvector3.h"
 
+#include "physxEnums.h"
+
 #include "NoMinMax.h"
 #include "NxPhysics.h"
+
+class PhysxBounds3;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxSceneDesc
 // Description : Descriptor for PhysxScene.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxSceneDesc {
+class EXPCL_PANDAPHYSX PhysxSceneDesc : public PhysxEnums {
 
 PUBLISHED:
   INLINE PhysxSceneDesc();
@@ -35,8 +39,12 @@ PUBLISHED:
   INLINE bool is_valid() const;
 
   void set_gravity(const LVector3f &gravity);
+  void set_flag(PhysxSceneFlag flag, bool value);
+  void set_max_bounds(PhysxBounds3 &bounds);
 
   LVector3f get_gravity() const;
+  bool get_flag(PhysxSceneFlag flag) const;
+  PhysxBounds3 get_max_bounds() const;
 
 public:
   NxSceneDesc _desc;

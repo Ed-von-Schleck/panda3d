@@ -14,6 +14,7 @@
 
 #include "physxSceneDesc.h"
 #include "physxManager.h"
+#include "physxBounds3.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSceneDesc::set_gravity
@@ -36,5 +37,71 @@ LVector3f PhysxSceneDesc::
 get_gravity() const {
 
   return PhysxManager::nxVec3_to_vec3(_desc.gravity);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_flag
+//       Access: Published
+//  Description: Raise or lower individual scene flags.
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_flag(const PhysxSceneFlag flag, bool value) {
+
+  if (value == true) {
+    _desc.flags |= flag;
+  }
+  else {
+    _desc.flags &= ~(flag);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_flag
+//       Access: Published
+//  Description: Returns the specified scene flag.
+////////////////////////////////////////////////////////////////////
+bool PhysxSceneDesc::
+get_flag(const PhysxSceneFlag flag) const {
+
+  return (_desc.flags & flag) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_max_bounds
+//       Access: Published
+//  Description: Set the max scene bounds. 
+//
+//               If scene bounds are provided (maxBounds in the
+//               descriptor), the SDK takes advantage of this
+//               information to accelerate scene-level collision
+//               queries (e.g. raycasting). When using maxBounds,
+//               you have to make sure created objects stay within
+//               the scene bounds. In particular, the position of
+//               dynamic shapes should stay within the provided
+//               bounds. Otherwise the shapes outside the bounds
+//               will not be taken into account by all scene queries
+//               (raycasting, sweep tests, overlap tests, etc). They
+//               will nonetheless still work correctly for the main
+//               physics simulation.
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_max_bounds(PhysxBounds3 &bounds) {
+
+  _desc.maxBounds = &(bounds._bounds);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_max_bounds
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PhysxBounds3 PhysxSceneDesc::
+get_max_bounds() const {
+
+  throw "Not Implemented";
+
+  //PhysxBounds3 value;
+  //value._bounds = *(_desc.maxBounds);
+  //return value;
 }
 

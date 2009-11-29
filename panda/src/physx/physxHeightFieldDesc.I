@@ -72,7 +72,7 @@ alloc_samples(unsigned int n) {
 
   _samples = new NxU32[n];
   _desc.samples = _samples;
-
+  _desc.sampleStride = sizeof(NxU32);
 }
 
 ////////////////////////////////////////////////////////////////////
