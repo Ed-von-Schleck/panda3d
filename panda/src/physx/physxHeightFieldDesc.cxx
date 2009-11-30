@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxHeightFieldDesc.h"
+#include "physxMaterial.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxHeightFieldDesc::set_convex_edge_threshold
@@ -42,9 +43,7 @@ set_thickness(float thickness) {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 void PhysxHeightFieldDesc::
-set_image(const PNMImage &image) {
-
-  dealloc_samples();
+set_image(const PNMImage &image, PT(PhysxMaterial) material) {
 
   NxU32 _32K = 32767; // (1<<15)-1;
   NxU32 _64K = 65535; // (1<<16)-1;
@@ -52,12 +51,9 @@ set_image(const PNMImage &image) {
   NxU32 nbRows = image.get_x_size();
   NxU32 nbColumns = image.get_y_size();
 
-  _desc.format = NX_HF_S16_TM;
-  _desc.nbColumns = nbColumns;
-  _desc.nbRows = nbRows;
+  set_size(nbRows, nbColumns);
 
-  alloc_samples(nbColumns * nbRows);
-
+  NxU8 materialIndex = material->get_material_index();
   NxU8 *currentByte = (NxU8 *)(_desc.samples);
 
   for (NxU32 row=0; row < nbRows; row++) {
@@ -70,11 +66,69 @@ set_image(const PNMImage &image) {
 
       currentSample->height         = (NxI16) ivalue;
       currentSample->tessFlag       = (NxU8) 0;
-      currentSample->materialIndex0 = (NxU8) 1;
-      currentSample->materialIndex1 = (NxU8) 1;
+      currentSample->materialIndex0 = (NxU8) materialIndex;
+      currentSample->materialIndex1 = (NxU8) materialIndex;
 
       currentByte += _desc.sampleStride;
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxHeightFieldDesc::set_material_index
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxHeightFieldDesc::
+set_material_index(unsigned int row, unsigned int column, PT(PhysxMaterial) material0, PT(PhysxMaterial) material1) {
+
+  nassertv(_desc.samples);
+  nassertv(row < _desc.nbRows);
+  nassertv(column < _desc.nbColumns);
+
+  NxU32 idx = row * _desc.nbColumns + column;
+  NxHeightFieldSample* sample = ((NxHeightFieldSample *)_desc.samples) + (_desc.sampleStride * idx);
+
+  nassertv(material0 != NULL);
+  nassertv(material1 != NULL);
+  sample->materialIndex0 = (NxU8)material0->get_material_index();
+  sample->materialIndex1 = (NxU8)material1->get_material_index();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxHeightFieldDesc::set_height
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxHeightFieldDesc::
+set_height(unsigned int row, unsigned int column, short height) {
+
+  nassertv(_desc.samples);
+  nassertv(row < _desc.nbRows);
+  nassertv(column < _desc.nbColumns);
+
+  NxU32 idx = row * _desc.nbColumns + column;
+  NxHeightFieldSample* sample = ((NxHeightFieldSample *)_desc.samples) + (_desc.sampleStride * idx);
+
+  sample->height = (NxI16) height;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxHeightFieldDesc::set_tess_flag
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+void PhysxHeightFieldDesc::
+set_tess_flag(unsigned int row, unsigned int column, unsigned short value) {
+
+  nassertv(_desc.samples);
+  nassertv(row < _desc.nbRows);
+  nassertv(column < _desc.nbColumns);
+
+  NxU32 idx = row * _desc.nbColumns + column;
+  NxHeightFieldSample* sample = ((NxHeightFieldSample *)_desc.samples) + (_desc.sampleStride * idx);
+
+  nassertv(value < 2);
+  sample->tessFlag = (NxU8) value;
 }
 

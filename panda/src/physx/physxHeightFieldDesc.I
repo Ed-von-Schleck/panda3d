@@ -59,31 +59,39 @@ is_valid() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxHeightFieldDesc::alloc_samples
+//     Function: PhysxHeightFieldDesc::set_size
 //       Access: Private
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void PhysxHeightFieldDesc::
-alloc_samples(unsigned int n) {
+set_size(unsigned int num_rows, unsigned int num_columns) {
 
   if (_samples) {
-    dealloc_samples();
+    unset_size();
   }
 
-  _samples = new NxU32[n];
-  _desc.samples = _samples;
+  _desc.format = NX_HF_S16_TM;
+  _desc.nbRows = (NxU32) num_rows;
+  _desc.nbColumns = (NxU32) num_columns;
   _desc.sampleStride = sizeof(NxU32);
+
+  _samples = new NxU32[_desc.nbColumns * _desc.nbRows];
+  _desc.samples = _samples;
+
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxHeightFieldDesc::dealloc_samples
+//     Function: PhysxHeightFieldDesc::unset_size
 //       Access: Private
-//  Description:
+//  Description: Releases the memory allocated for the height field
+//               samples.
 ////////////////////////////////////////////////////////////////////
 INLINE void PhysxHeightFieldDesc::
-dealloc_samples() {
+unset_size() {
 
   if (_samples) {
+    _desc.nbRows = (NxU32) 0;
+    _desc.nbColumns = (NxU32) 0;
     _desc.samples = NULL;
     delete[] _samples;
   }
