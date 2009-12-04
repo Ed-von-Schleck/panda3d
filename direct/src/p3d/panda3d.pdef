@@ -154,29 +154,6 @@ class openal(package):
 plugin-path $OPENAL_ROOT
 audio-library-name p3openal_audio
 """)
-    
-class miles(package):
-    # This package includes the Miles Sound System audio library.
-    # This is closed-source and always requires a licensing fee.
-
-    config(display_name = "Miles Sound System")
-    require('panda3d')
-
-    file('libmiles_audio.dll')
-    if platform.startswith('win'):
-        file('mssmp3.asi', 'avcodec.dll', 'avutil.dll', 'avformat.dll',
-             executable = True)
-
-    elif platform.startswith('osx'):
-        file('libMilesMachO.dylib',
-             'libMilesMachOx86.dylib',
-             'mssmp3.asi', 'mssmixer.mix', 'Miles_MP3_Decoder.asi',
-             executable = True)
-
-    file('miles.prc', extract = True, text = """
-plugin-path $MILES_ROOT
-audio-library-name miles_audio
-""")
 
 class audio(package):
     # This package includes the best audio library for the given
@@ -281,3 +258,16 @@ class ppatcher(p3d):
     require('panda3d')
 
     mainModule('direct.p3d.ppatcher')
+
+
+class pmerge(p3d):
+    # Another handy utility to go along with ppackage.  This
+    # merges multiple directory structures as created by
+    # ppackage into a single one.
+
+    config(display_name = "Panda3D Package Merger",
+           hidden = True, platform_specific = False,
+           keep_user_env = True)
+    require('panda3d')
+
+    mainModule('direct.p3d.pmerge')

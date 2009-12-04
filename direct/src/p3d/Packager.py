@@ -89,7 +89,14 @@ class Packager:
 
             if self.executable:
                 # Look up the filename along the system PATH, if necessary.
-                self.filename.resolveFilename(packager.executablePath)
+                if not self.filename.resolveFilename(packager.executablePath):
+                    # If it wasn't found, try looking it up under its
+                    # basename only.  Sometimes a Mac user will copy
+                    # the library file out of a framework and put that
+                    # along the PATH, instead of the framework itself.
+                    basename = Filename(self.filename.getBasename())
+                    if basename.resolveFilename(packager.executablePath):
+                        self.filename = basename
 
             # Convert the filename to an unambiguous filename for
             # searching.
@@ -414,7 +421,7 @@ class Packager:
             """ Installs the package, either as a p3d application, or
             as a true package.  Either is implemented with a
             Multifile. """
-            
+
             self.multifile = Multifile()
 
             # Write the multifile to a temporary filename until we
@@ -834,8 +841,8 @@ class Packager:
             return filenames
             
         def __locateFrameworkLibrary(self, library):
-            """ Locates the given library inside it's framework on the
-            default framework paths, and returns it's location as Filename. """
+            """ Locates the given library inside its framework on the
+            default framework paths, and returns its location as Filename. """
             
             # If it's already a full existing path, we
             # don't search for it anymore, of course.
@@ -1641,7 +1648,9 @@ class Packager:
             if package not in self.requires:
                 self.requires.append(package)
                 for filename in package.targetFilenames.keys():
-                    self.skipFilenames[filename] = True
+                    ext = Filename(filename).getExtension()
+                    if ext not in self.packager.nonuniqueExtensions:
+                        self.skipFilenames[filename] = True
                 for moduleName, mdef in package.moduleNames.items():
                     self.skipModules[moduleName] = mdef
 
@@ -1673,11 +1682,16 @@ class Packager:
             self.addPosixSearchPath(self.executablePath, "PATH")
             self.executablePath.appendDirectory('/lib')
             self.executablePath.appendDirectory('/usr/lib')
+            self.executablePath.appendDirectory('/usr/local/lib')
         else:
             self.addPosixSearchPath(self.executablePath, "LD_LIBRARY_PATH")
             self.addPosixSearchPath(self.executablePath, "PATH")
             self.executablePath.appendDirectory('/lib')
             self.executablePath.appendDirectory('/usr/lib')
+            self.executablePath.appendDirectory('/usr/local/lib')
+        
+        if platform.uname()[1]=="pcbsd":
+            self.executablePath.appendDirectory('/usr/PCBSD/local/lib')
 
         # Set this flag true to automatically add allow_python_dev to
         # any applications.
@@ -1738,7 +1752,11 @@ class Packager:
 
         # Binary files that are copied (and compressed) without
         # processing.
-        self.binaryExtensions = [ 'ttf', 'wav', 'mid' ]
+        self.binaryExtensions = [ 'ttf', 'mid' ]
+
+        # Files that can have an existence in multiple different
+        # packages simultaneously without conflict.
+        self.nonuniqueExtensions = [ 'prc' ]
 
         # Files that represent an executable or shared library.
         if self.platform.startswith('win'):
@@ -1773,7 +1791,9 @@ class Packager:
 
         # Binary files that are considered uncompressible, and are
         # copied without compression.
-        self.uncompressibleExtensions = [ 'mp3', 'ogg' ]
+        self.uncompressibleExtensions = [ 'mp3', 'ogg', 'wav' ]
+        # wav files are compressible, but p3openal_audio won't load
+        # them compressed.
 
         # Files which are not to be processed further, but which
         # should be added exactly byte-for-byte as they are.
@@ -1792,7 +1812,7 @@ class Packager:
             'oleaut32.dll', 'gdiplus.dll', 'winmm.dll',
 
             'libsystem.b.dylib', 'libmathcommon.a.dylib', 'libmx.a.dylib',
-            'libstdc++.6.dylib',
+            'libstdc++.6.dylib', 'libobjc.a.dylib', 'libauto.dylib',
             ]
 
         # As above, but with filename globbing to catch a range of
@@ -2122,7 +2142,7 @@ class Packager:
     def endPackage(self):
         """ Closes the current package specification.  This actually
         generates the package file.  Returns the finished package."""
-        
+
         if not self.currentPackage:
             raise PackagerError, 'unmatched endPackage'
 
@@ -2150,30 +2170,29 @@ class Packager:
         Returns the Package object, or None if the package cannot be
         located. """
 
-        if not platform:
-            platform = self.platform
-
         # Is it a package we already have resident?
-        package = self.packages.get((packageName, platform, version, host), None)
+        package = self.packages.get((packageName, platform or self.platform, version, host), None)
         if package:
             return package
 
         # Look on the searchlist.
         for dirname in self.installSearch.getDirectories():
-            package = self.__scanPackageDir(dirname, packageName, platform, version, host, requires = requires)
+            package = self.__scanPackageDir(dirname, packageName, platform or self.platform, version, host, requires = requires)
             if not package:
-                package = self.__scanPackageDir(dirname, packageName, None, version, host, requires = requires)
+                package = self.__scanPackageDir(dirname, packageName, platform, version, host, requires = requires)
 
             if package:
                 break
 
         if not package:
             # Query the indicated host.
-            package = self.__findPackageOnHost(packageName, platform, version, host, requires = requires)
+            package = self.__findPackageOnHost(packageName, platform or self.platform, version or None, host, requires = requires)
+            if not package:
+                package = self.__findPackageOnHost(packageName, platform, version, host, requires = requires)
 
         if package:
             package = self.packages.setdefault((package.packageName, package.platform, package.version, package.host), package)
-            self.packages[(packageName, platform, version, host)] = package
+            self.packages[(packageName, platform or self.platform, version, host)] = package
             return package
                 
         return None
@@ -2246,8 +2265,12 @@ class Packager:
             return None
 
         host = appRunner.getHost(hostUrl)
+        if not host.readContentsFile():
+            if not host.downloadContentsFile(appRunner.http):
+                return None
+        
         package = host.getPackage(packageName, version, platform = platform)
-        if not package and version is None:
+        if not package and not version:
             # With no version specified, find the best matching version.
             packages = host.getPackages(packageName, platform = platform)
             self.__sortPackageInfos(packages)
@@ -2261,7 +2284,7 @@ class Packager:
 
         # Now we've retrieved a PackageInfo.  Get the import desc file
         # from it.
-        filename = Filename(host.importsDir, package.importDescFile.basename)
+        filename = Filename(host.hostDir, 'imports/' + package.importDescFile.basename)
         if not appRunner.freshenFile(host, package.importDescFile, filename):
             self.notify.error("Couldn't download import file.")
             return None
@@ -2403,14 +2426,14 @@ class Packager:
 
         for packageName in names:
             # A special case when requiring the "panda3d" package.  We
-            # supply the version number what we've been compiled with as a
-            # default.
+            # supply the version number which we've been compiled with
+            # as a default.
             pversion = version
             phost = host
             if packageName == 'panda3d':
-                if pversion is None:
+                if not pversion:
                     pversion = PandaSystem.getPackageVersionString()
-                if phost is None:
+                if not phost:
                     phost = PandaSystem.getPackageHostUrl()
 
             package = self.findPackage(packageName, version = pversion, host = phost,
