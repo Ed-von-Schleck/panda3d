@@ -16,15 +16,19 @@
 
 #include <Carbon/Carbon.h>
 #include <Cocoa/Cocoa.h>
+#include <ApplicationServices/ApplicationServices.h>
 #include <OpenGL/gl.h>
 #include <AGL/agl.h>
-#include <ApplicationServices/ApplicationServices.h>
+
+// We have to include this before we include the system OpenGL/gl.h
+// file, but after we include all of the above header files.  Deal
+// with this contradiction later.
+#include "glgsg.h"
 
 #include "osxGraphicsWindow.h"
 #include "config_osxdisplay.h"
 #include "osxGraphicsPipe.h"
 #include "pStatTimer.h"
-#include "glgsg.h"
 #include "keyboardButton.h"
 #include "mouseButton.h"
 #include "osxGraphicsStateGuardian.h"
@@ -36,6 +40,7 @@
 #include "pset.h"
 #include "pmutex.h"
 
+
 ////////////////////////////////////
 
 static Mutex &
@@ -43,33 +48,6 @@ osx_global_mutex() {
   static Mutex m("osx_global_mutex");
   return m;
 }
-
-struct work1 {
-  volatile bool work_done;
-};
-
-#define PANDA_CREATE_WINDOW 101
-static void
-post_event_wait(unsigned short type, unsigned int data1, unsigned int data2,
-                int target_window) {
-  work1 w;
-  w.work_done = false;
-  NSEvent *ev = [NSEvent otherEventWithType:NSApplicationDefined 
-                 location:NSZeroPoint 
-                 modifierFlags:0 
-                 timestamp:0.0f 
-                 windowNumber:target_window 
-                 context:nil 
-                 subtype:type
-                 data1:data1
-                 data2:(int)&w]; 
- 
-  [NSApp postEvent:ev atStart:NO];
-  while(!w.work_done) {
-    usleep(10);
-  }
-}
-
 
 
 ////////////////////////// Global Objects .....
@@ -1084,11 +1062,34 @@ os_open_window(WindowProperties &req_properties) {
     // Determine if we're running from a bundle.
     CFDictionaryRef dref =
       ProcessInformationCopyDictionary(&psn, kProcessDictionaryIncludeAllInformationMask);
-    // If the dictionary doesn't have "BundlePath", then we're not
-    // running from a bundle, and we need to call TransformProcessType
-    // to make the process a "foreground" application, with its own
-    // icon in the dock and such.
-    if (!CFDictionaryContainsKey(dref, CFSTR("BundlePath"))) {
+    // If the dictionary doesn't have "BundlePath" (or the BundlePath
+    // is the same as the executable path), then we're not running
+    // from a bundle, and we need to call TransformProcessType to make
+    // the process a "foreground" application, with its own icon in
+    // the dock and such.
+
+    bool has_bundle = false;
+
+    CFStringRef bundle_path = (CFStringRef)CFDictionaryGetValue(dref, CFSTR("BundlePath"));
+    if (bundle_path != NULL) {
+      // OK, we have a bundle path.  We're probably running in a
+      // bundle . . .
+      has_bundle = true;
+
+      // . . . unless it turns out it's the same as the executable
+      // path.
+      CFStringRef exe_path = (CFStringRef)CFDictionaryGetValue(dref, kCFBundleExecutableKey);
+      if (exe_path != NULL) {
+        if (CFStringCompare(bundle_path, exe_path, kCFCompareCaseInsensitive) == kCFCompareEqualTo) {
+          has_bundle = false;
+        }
+        CFRelease(exe_path);
+      }
+
+      CFRelease(bundle_path);
+    }
+
+    if (!has_bundle) {
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
     }
     SetFrontProcess(&psn);
@@ -1225,27 +1226,7 @@ os_open_window(WindowProperties &req_properties) {
       gWinEvtHandler = NewEventHandlerUPP(window_event_handler); 
       InstallWindowEventHandler(_osx_window, gWinEvtHandler, GetEventTypeCount(list), list, (void*)this, NULL); // add event handler
  
-      /*if(!req_properties.has_parent_window())*/ {
-        ShowWindow (_osx_window);
-      } /*else {
-        NSWindow *parentWindow = (NSWindow *)req_properties.get_parent_window();
-        // NSView* aView = [[parentWindow contentView] viewWithTag:378];
-        // NSRect aRect = [aView frame];
-        // NSPoint origin = [parentWindow convertBaseToScreen:aRect.origin];
-        
-        // NSWindow* childWindow = [[NSWindow alloc] initWithWindowRef:_osx_window];
-        post_event_wait(PANDA_CREATE_WINDOW,(unsigned long) _osx_window,1,[parentWindow windowNumber]); 
-        
-        // [childWindow setFrameOrigin:origin];
-        // [childWindow setAcceptsMouseMovedEvents:YES];
-        // [childWindow setBackgroundColor:[NSColor blackColor]];
-        // this seems to block till the parent accepts the connection ?
-        // [parentWindow addChildWindow:childWindow ordered:NSWindowAbove];
-        // [childWindow orderFront:nil];
- 
-        _properties.set_parent_window(req_properties.get_parent_window());
-        req_properties.clear_parent_window();
-        } */
+      ShowWindow (_osx_window);
  
       if (osxdisplay_cat.is_debug()) {
         osxdisplay_cat.debug()
