@@ -21,8 +21,6 @@
 #include "NoMinMax.h"
 #include "NxPhysics.h"
 
-class PhysxMaterial;
-
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxHeightFieldDesc
 // Description : Descriptor class for height fields. The height
@@ -42,14 +40,14 @@ PUBLISHED:
 
   INLINE void set_size(unsigned int num_rows, unsigned int num_columns);
 
-  void set_image(const PNMImage &image, PT(PhysxMaterial) material=NULL);
+  void set_image(const PNMImage &image, unsigned short materialIndex=0);
   void set_thickness(float thickness);
   void set_convex_edge_threshold(float threshold);
 
-  void set_material_index(unsigned int row, unsigned int column,
-    PT(PhysxMaterial) material0, PT(PhysxMaterial) material1);
   void set_height(unsigned int row, unsigned int column, short height);
   void set_tess_flag(unsigned int row, unsigned int column, unsigned short value);
+  void set_material_index(unsigned int row, unsigned int column,
+    unsigned short materialIndex0, unsigned short materialIndex1);
 
 public:
   NxHeightFieldDesc _desc;

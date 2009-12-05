@@ -39,6 +39,11 @@ PUBLISHED:
 
   void set_height_field(const PhysxHeightField &hf);
   void set_dimensions(const LVector3f &dimensions);
+  void set_hole_material(unsigned short index);
+  void set_material_index_high_bits(unsigned short index);
+
+  unsigned short get_hole_material() const;
+  unsigned short get_material_index_hight_bits() const;
 
 public:
   NxShapeDesc *ptr() const { return (NxShapeDesc *)&_desc; };
