@@ -239,6 +239,43 @@ fetch_results() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_timing_variable
+//       Access: Published
+//  Description: Sets simulation timing parameters used in simulate.
+
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_timing_variable() {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setTiming(NULL, NULL, NX_TIMESTEP_VARIABLE);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_timing_fixed
+//       Access: Published
+//  Description: Sets simulation timing parameters used in simulate.
+//               The elapsed time (parameter "dt" in simulate()) is
+//               internally subdivided into up to maxIter substeps
+//               no larger than maxTimestep. If the elapsed time is
+//               not a multiple of maxTimestep then any remaining
+//               time is accumulated to be added onto the elapsed
+//               time for the next time step. If more sub steps than
+//               maxIter are needed to advance the simulation by
+//               elapsed time, then the remaining time is also
+//               accumulated for the next call to simulate().
+//
+//               This timing method is strongly preferred for
+//               stable, reproducible simulation.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_timing_fixed(float maxTimestep, unsigned int maxIter) {
+
+  nassertv(_error_type == ET_ok);
+  _ptr->setTiming(maxTimestep, maxIter, NX_TIMESTEP_FIXED);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxScene::set_gravity
 //       Access: Published
 //  Description: Sets a constant gravity for the entire scene.

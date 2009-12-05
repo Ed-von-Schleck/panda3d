@@ -53,7 +53,13 @@ set_image(const PNMImage &image, PT(PhysxMaterial) material) {
 
   set_size(nbRows, nbColumns);
 
-  NxU8 materialIndex = material->get_material_index();
+  NxU8 materialIndex;
+  if (material == NULL) {
+    materialIndex = 1;
+  } else {
+    materialIndex = (NxU8) material->get_material_index();
+  }
+
   NxU8 *currentByte = (NxU8 *)(_desc.samples);
 
   for (NxU32 row=0; row < nbRows; row++) {

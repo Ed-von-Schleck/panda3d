@@ -135,6 +135,10 @@
 #define NX_BF_FILTER_SLEEP_VEL 1<<10
 #define NX_BF_ENERGY_SLEEP_TEST 1<<11
 
+// PhysxBroadPhaseType
+#define NX_BP_TYPE_SAP_SINGLE 0
+#define NX_BP_TYPE_SAP_MULTI 1
+
 // PhysxContactPairFlag
 #define NX_IGNORE_PAIR 1<<0
 #define NX_NOTIFY_ON_START_TOUCH 1<<1
@@ -212,6 +216,13 @@
 #define NX_JPM_NONE 0
 #define NX_JPM_POINT_MINDIST 1
 #define NX_JPM_LINEAR_MINDIST 2
+
+// PhysxPruningStructure
+#define NX_PRUNING_NONE 0
+#define NX_PRUNING_OCTREE 1
+#define NX_PRUNING_QUADTREE 2
+#define NX_PRUNING_DYNAMIC_AABB_TREE 3
+#define NX_PRUNING_STATIC_AABB_TREE 4
 
 // PhysxPulleyJointFlag
 #define NX_PJF_IS_RIGID 1<<0
@@ -413,6 +424,11 @@ PUBLISHED:
     BF_energy_sleep_test = NX_BF_ENERGY_SLEEP_TEST
   };
 
+  enum PhysxBroadPhaseType {
+    BPT_sap_single = NX_BP_TYPE_SAP_SINGLE,
+    BPT_sap_multi  = NX_BP_TYPE_SAP_MULTI
+  };
+
   enum PhysxContactPairFlag {
     CPF_ignore_pair                     = NX_IGNORE_PAIR,
     CPF_notify_on_start_touch           = NX_NOTIFY_ON_START_TOUCH,
@@ -502,6 +518,14 @@ PUBLISHED:
     PM_none             = NX_JPM_NONE,
     PM_point_mindist    = NX_JPM_POINT_MINDIST,
     PM_linear_mindist   = NX_JPM_LINEAR_MINDIST
+  };
+
+  enum PhysxPruningStructure {
+    PS_none              = NX_PRUNING_NONE,
+    PS_octree            = NX_PRUNING_OCTREE,
+    PS_quadtree          = NX_PRUNING_QUADTREE,
+    PS_dynamic_aabb_tree = NX_PRUNING_DYNAMIC_AABB_TREE,
+    PS_static_aabb_tree  = NX_PRUNING_STATIC_AABB_TREE
   };
 
   enum PhysxPulleyJointFlag {

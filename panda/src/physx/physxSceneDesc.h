@@ -38,13 +38,25 @@ PUBLISHED:
   INLINE void set_to_default();
   INLINE bool is_valid() const;
 
-  void set_gravity(const LVector3f &gravity);
   void set_flag(PhysxSceneFlag flag, bool value);
+  void set_gravity(const LVector3f &gravity);
   void set_max_bounds(PhysxBounds3 &bounds);
+  void set_static_structure(PhysxPruningStructure value);
+  void set_dynamic_structure(PhysxPruningStructure value);
+  void set_bp_type(PhysxBroadPhaseType value);
+  void set_subdivision_level(unsigned int value);
+  void set_num_grid_cells_x(unsigned int value);
+  void set_num_grid_cells_y(unsigned int value);
 
-  LVector3f get_gravity() const;
   bool get_flag(PhysxSceneFlag flag) const;
+  LVector3f get_gravity() const;
   PhysxBounds3 get_max_bounds() const;
+  PhysxPruningStructure get_static_structure() const;
+  PhysxPruningStructure get_dynamic_structure() const;
+  PhysxBroadPhaseType get_bp_type() const;
+  unsigned int get_subdivision_level() const;
+  unsigned int get_num_grid_cells_x() const;
+  unsigned int get_num_grid_cells_y() const;
 
 public:
   NxSceneDesc _desc;

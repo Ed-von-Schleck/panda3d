@@ -73,6 +73,8 @@ PUBLISHED:
 
   void simulate(float dt);
   void fetch_results();
+  void set_timing_variable();
+  void set_timing_fixed(float maxTimestep=1.0f/60.0f, unsigned int maxIter=8);
 
   PT(PhysxDebugGeomNode) get_debug_geom_node();
 

@@ -105,3 +105,174 @@ get_max_bounds() const {
   //return value;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_static_structure
+//       Access: Published
+//  Description: Defines the structure used to store static
+//               objects.
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_static_structure(PhysxPruningStructure value) {
+
+  _desc.staticStructure = (NxPruningStructure)value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_dynamic_structure
+//       Access: Published
+//  Description: Defines the subdivision level for acceleration
+//               structures used for scene queries.
+//               This is only used when maxBounds are defined!
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_dynamic_structure(PhysxPruningStructure value) {
+
+  _desc.dynamicStructure = (NxPruningStructure)value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_static_structure
+//       Access: Published
+//  Description: Returns the structure used to store static
+//               objects.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxPruningStructure PhysxSceneDesc::
+get_static_structure() const {
+
+  return (PhysxPruningStructure)_desc.staticStructure;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_dynamic_structure
+//       Access: Published
+//  Description: Returns the subdivision level for acceleration
+//               structures used for scene queries.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxPruningStructure PhysxSceneDesc::
+get_dynamic_structure() const {
+
+  return (PhysxPruningStructure)_desc.dynamicStructure;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_subdivision_level
+//       Access: Published
+//  Description: Defines the subdivision level for acceleration
+//               structures used for scene queries. 
+//               This is only used when maxBounds are defined!
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_subdivision_level(unsigned int value) {
+
+  _desc.subdivisionLevel = (NxU32)value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_num_grid_cells_x
+//       Access: Published
+//  Description: Defines the number of broadphase cells along the
+//               grid x-axis. Must be power of two. Max is 8 at the
+//               moment. The broadphase type must be set to
+//               BPT_sap_multi for this parameter to have
+//               an effect.
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_num_grid_cells_x(unsigned int value) {
+
+  _desc.nbGridCellsX = (NxU32)value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_num_grid_cells_y
+//       Access: Published
+//  Description: Defines the number of broadphase cells along the
+//               grid y-axis. Must be power of two. Max is 8 at the
+//               moment. The broadphase type must be set to
+//               BPT_sap_multi for this parameter to have
+//               an effect.
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_num_grid_cells_y(unsigned int value) {
+
+  _desc.nbGridCellsY = (NxU32)value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_subdivision_level
+//       Access: Published
+//  Description: Returns the subdivision level for acceleration
+//               structures used for scene queries. 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxSceneDesc::
+get_subdivision_level() const {
+
+  return _desc.subdivisionLevel;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_num_grid_cells_x
+//       Access: Published
+//  Description: Returns the number of broadphase cells along the
+//               grid x-axis.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxSceneDesc::
+get_num_grid_cells_x() const {
+
+  return _desc.nbGridCellsX;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_num_grid_cells_y
+//       Access: Published
+//  Description: Returns the number of broadphase cells along the
+//               grid y-axis.
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxSceneDesc::
+get_num_grid_cells_y() const {
+
+  return _desc.nbGridCellsY;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::set_bp_type
+//       Access: Published
+//  Description: Defines which type of broadphase to use.
+//
+//               (1) BPT_sap_single: A sweep-and-prune (SAP)
+//               algorithm to find pairs of potentially colliding
+//               shapes.
+//
+//               (2) BPT_sap_multi: A multi sweep-and-prune
+//               algorithm to find pairs of potentially colliding
+//               shapes. Uses a configurable 2D grid to divide the
+//               scene space into cells. The potentially overlapping
+//               shape pairs are detected in each cell and the
+//               information is merged together. This approach is
+//               usually faster than BPT_sap_single in scenarios
+//               with many shapes and a high creation/deletion rate
+//               of shapes. However, the amount of memory required
+//               is considerably higher depending on the number of
+//               grid cells used.
+//               The following extra parameters need to be defined: 
+//               - PhysxSceneDesc.set_max_bounds
+//               - PhysxSceneDesc.set_num_grid_cells_x
+//               - PhysxSceneDesc.set_num_grid_cells_y
+//               (the scene up direction is set via config options)
+////////////////////////////////////////////////////////////////////
+void PhysxSceneDesc::
+set_bp_type(PhysxBroadPhaseType value) {
+
+  _desc.bpType = (NxBroadPhaseType)value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxSceneDesc::get_bp_type
+//       Access: Published
+//  Description: Returns the type of broadphase to use.
+////////////////////////////////////////////////////////////////////
+PhysxEnums::PhysxBroadPhaseType PhysxSceneDesc::
+get_bp_type() const {
+
+  return (PhysxBroadPhaseType)_desc.bpType;
+}
+
