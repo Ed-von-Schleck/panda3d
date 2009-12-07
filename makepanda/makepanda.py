@@ -402,8 +402,7 @@ if (COMPILER=="MSVC"):
             LibName(pkg, SDK[pkg] +  '/lib/paramblk2.lib')
     if (PkgSkip("PHYSX")==0):
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/PhysXLoader.lib")
-        LibName("PHYSX",      GetThirdpartyDir() + "physx/lib/NxCharacterSTATIC.lib")
-        DefSymbol("PHYSX", "NXCHARACTER_STATIC", "1")
+        LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/NxCharacter.lib")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/NxCharacter/include")
@@ -539,6 +538,9 @@ if (COMPILER=="LINUX"):
         LibDirectory("PHYSX", SDK["PHYSXLIBS"])
         LibName("PHYSX", "-lPhysXLoader")
         LibName("PHYSX", "-lNxCharacter")
+        DefSymbol("PHYSX", "LINUX", "1")
+        ### ??? DefSymbol("ALWAYS", "LINUX", "1")
+
 
 DefSymbol("WITHINPANDA", "WITHIN_PANDA", "1")
 IncDirectory("ALWAYS", GetOutputDir()+"/tmp")
@@ -1871,6 +1873,16 @@ if (PkgSkip("PANDATOOL")==0):
 if (PkgSkip("PHYSX")==0):
     CopyAllHeaders('panda/src/physx')
     CopyAllHeaders('panda/metalibs/pandaphysx')
+
+########################################################################
+#
+# Copy NxCharacter.dll to the built/bin directory.
+# NxCharacter.dll is part of the PhysX SDK.
+#
+########################################################################
+
+if (PkgSkip("PHYSX")==0):
+    CopyFile(GetOutputDir()+"/bin/NxCharacter.dll", SDK["PHYSX"]+"/../Bin/win32/NxCharacter.dll")
 
 ########################################################################
 # 

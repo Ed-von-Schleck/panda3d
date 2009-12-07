@@ -1388,8 +1388,8 @@ def SdkLocatePhysX():
         if (os.path.isdir(path)):
             SDK["PHYSX"] = path
     elif (sys.platform.startswith("linux")):
-        incpath = "/usr/include/PhysX/v2.8.3/SDKs"
-        libpath = "/usr/lib/PhysX/v2.8.3"
+        incpath = "/usr/include/PhysX/v2.8.1/SDKs"
+        libpath = "/usr/lib/PhysX/v2.8.1"
         if (os.path.isdir(incpath) and os.path.isdir(libpath)):
             SDK["PHYSX"] = incpath
             SDK["PHYSXLIBS"] = libpath
