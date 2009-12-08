@@ -539,8 +539,6 @@ if (COMPILER=="LINUX"):
         LibName("PHYSX", "-lPhysXLoader")
         LibName("PHYSX", "-lNxCharacter")
         DefSymbol("PHYSX", "LINUX", "1")
-        ### ??? DefSymbol("ALWAYS", "LINUX", "1")
-
 
 DefSymbol("WITHINPANDA", "WITHIN_PANDA", "1")
 IncDirectory("ALWAYS", GetOutputDir()+"/tmp")
@@ -1876,12 +1874,12 @@ if (PkgSkip("PHYSX")==0):
 
 ########################################################################
 #
-# Copy NxCharacter.dll to the built/bin directory.
+# On Windows, copy NxCharacter.dll to the built/bin directory.
 # NxCharacter.dll is part of the PhysX SDK.
 #
 ########################################################################
 
-if (PkgSkip("PHYSX")==0):
+if (PkgSkip("PHYSX")==0 and COMPILER=="LINUX"):
     CopyFile(GetOutputDir()+"/bin/NxCharacter.dll", SDK["PHYSX"]+"/../Bin/win32/NxCharacter.dll")
 
 ########################################################################
