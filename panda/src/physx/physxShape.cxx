@@ -206,7 +206,7 @@ void PhysxShape::
 set_group(unsigned short group) {
 
   nassertv(_error_type == ET_ok);
-  nassertv(group >= 0 && group < 32);
+  nassertv(group < 32);
 
   ptr()->setGroup(group);
 }

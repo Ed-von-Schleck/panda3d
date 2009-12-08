@@ -37,7 +37,7 @@ INLINE PhysxConvexMeshDesc::
 ~PhysxConvexMeshDesc() {
 
   if (_vertices) {
-    delete _vertices;
+    delete [] _vertices;
   }
 }
 

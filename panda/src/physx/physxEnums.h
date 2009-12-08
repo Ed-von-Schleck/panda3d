@@ -107,8 +107,11 @@
 #define NX_ASYNCHRONOUS_MESH_CREATION 96
 #define NX_FORCE_FIELD_CUSTOM_KERNEL_EPSILON 97
 #define NX_IMPROVED_SPRING_SOLVER 98
+
+#ifndef LINUX /* The following enums are only defined in SDK version 2.8.1 */
 #define NX_FAST_MASSIVE_BP_VOLUME_DELETION 99
 #define NX_LEGACY_JOINT_DRIVE 100
+#endif /* LINUX */
 
 // PhysxActorFlag
 #define NX_AF_DISABLE_COLLISION 1<<0
@@ -332,8 +335,11 @@ PUBLISHED:
     P_asynchronous_mesh_creation            = NX_ASYNCHRONOUS_MESH_CREATION,
     P_force_field_custom_kernel_epsilon     = NX_FORCE_FIELD_CUSTOM_KERNEL_EPSILON,
     P_improved_spring_solver                = NX_IMPROVED_SPRING_SOLVER,
+
+#ifndef LINUX /* The following enums are only defined in SDK version 2.8.1 */
     P_fast_massive_bp_volume_deletion       = NX_FAST_MASSIVE_BP_VOLUME_DELETION,
     P_legacy_joint_drive                    = NX_LEGACY_JOINT_DRIVE,
+#endif /* LINUX */
 
     P_visualize_world_axes                  = NX_VISUALIZE_WORLD_AXES,
     P_visualize_body_axes                   = NX_VISUALIZE_BODY_AXES,

@@ -27,14 +27,14 @@ template <class T>
 class EXPCL_PANDAPHYSX PhysxObjectCollection {
 
 public:
-  unsigned int size() const;
-  void add(PT(T) object);
-  void remove(PT(T) object);
-  T *get(unsigned int index) const;
-  T *operator [] (unsigned int index) const;
+  INLINE unsigned int size() const;
+  INLINE void add(PT(T) object);
+  INLINE void remove(PT(T) object);
+  INLINE T *get(unsigned int index) const;
+  INLINE T *operator [] (unsigned int index) const;
 
-  void ls() const;
-  void ls(ostream &out, int indent_level=0) const;
+  INLINE void ls() const;
+  INLINE void ls(ostream &out, int indent_level=0) const;
 
 private:
   pvector<PT(T)> _objects;

@@ -106,7 +106,9 @@ compute_direction(LPoint3f &dir) const {
 
   nassertv(!dir.is_nan());
 
-  _capsule.computeDirection(PhysxManager::point3_to_nxVec3(dir));
+  NxVec3 nDir = PhysxManager::point3_to_nxVec3(dir);
+  _capsule.computeDirection(nDir);
+  PhysxManager::update_point3_from_nxVec3(dir, nDir);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -130,7 +132,9 @@ compute_point(LPoint3f &p, float t) const {
 
   nassertv(!p.is_nan());
 
-  _capsule.computePoint(PhysxManager::point3_to_nxVec3(p), t);
+  NxVec3 nP = PhysxManager::point3_to_nxVec3(p);
+  _capsule.computePoint(nP, t);
+  PhysxManager::update_point3_from_nxVec3(p, nP);
 }
 
 ////////////////////////////////////////////////////////////////////

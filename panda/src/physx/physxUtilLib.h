@@ -95,10 +95,6 @@ PUBLISHED:
 
 public:
   NxUtilLib *_ptr;
-
-private:
-  static void update_vec3_from_nxVec3(LVector3f &v, const NxVec3 &nVec);
-  static void update_point3_from_nxVec3(LPoint3f &p, const NxVec3 &nVec);
 };
 
 #include "physxUtilLib.I"

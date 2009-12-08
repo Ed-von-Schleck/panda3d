@@ -20,7 +20,7 @@
 
 #include "physxObject.h"
 #include "physxContactReport.h"
-#include "PhysxControllerReport.h"
+#include "physxControllerReport.h"
 #include "physxTriggerReport.h"
 
 #include "NoMinMax.h"

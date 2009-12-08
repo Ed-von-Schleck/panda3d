@@ -24,7 +24,7 @@ void PhysxTriangleMeshDesc::
 set_num_vertices(unsigned int numVertices) {
 
   if (_desc.points) {
-    delete _desc.points;
+    delete [] _vertices;
   }
 
   _vertices = new NxVec3[numVertices];
@@ -54,7 +54,7 @@ void PhysxTriangleMeshDesc::
 set_num_triangles(unsigned int numTriangles) {
 
   if (_desc.triangles) {
-    delete _desc.triangles;
+    delete [] _triangles;
   }
 
   _triangles = new NxU32[3 * numTriangles];

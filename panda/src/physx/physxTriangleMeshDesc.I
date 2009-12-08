@@ -40,11 +40,11 @@ INLINE PhysxTriangleMeshDesc::
 ~PhysxTriangleMeshDesc() {
 
   if (_vertices) {
-    delete _vertices;
+    delete [] _vertices;
   }
 
   if (_triangles) {
-    delete _triangles;
+    delete [] _triangles;
   }
 }
 

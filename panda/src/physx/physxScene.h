@@ -22,7 +22,7 @@
 #include "physxObjectCollection.h"
 #include "physxEnums.h"
 #include "physxContactReport.h"
-#include "PhysxControllerReport.h"
+#include "physxControllerReport.h"
 #include "physxTriggerReport.h"
 #include "physxOverlapReport.h"
 #include "physxMask.h"

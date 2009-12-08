@@ -100,6 +100,9 @@ public:
   INLINE static NxMat33 mat3_to_nxMat33(const LMatrix3f &m);
   INLINE static LMatrix3f nxMat33_to_mat3(const NxMat33 &m);
 
+  INLINE static void update_vec3_from_nxVec3(LVector3f &v, const NxVec3 &nVec);
+  INLINE static void update_point3_from_nxVec3(LPoint3f &p, const NxVec3 &nVec);
+
 private:
   NxPhysicsSDK *_sdk;
 

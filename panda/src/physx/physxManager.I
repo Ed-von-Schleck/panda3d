@@ -189,6 +189,33 @@ nxMat33_to_mat3(const NxMat33 &m) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::update_vec3_from_nxVec3
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxManager::
+update_vec3_from_nxVec3(LVector3f &v, const NxVec3 &nVec) {
+
+  v.set_x(nVec.x);
+  v.set_y(nVec.y);
+  v.set_z(nVec.z);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxManager::update_point3_from_nxVec3
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxManager::
+update_point3_from_nxVec3(LPoint3f &p, const NxVec3 &nVec) {
+
+  p.set_x(nVec.x);
+  p.set_y(nVec.y);
+  p.set_z(nVec.z);
+}
+
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxManager::ls
 //       Access: Published
 //  Description: 

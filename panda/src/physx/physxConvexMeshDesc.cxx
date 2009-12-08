@@ -24,7 +24,7 @@ void PhysxConvexMeshDesc::
 set_num_vertices(unsigned int numVertices) {
 
   if (_desc.points) {
-    delete _desc.points;
+    delete [] _vertices;
   }
 
   _vertices = new NxVec3[numVertices];

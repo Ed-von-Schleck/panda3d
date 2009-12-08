@@ -600,7 +600,7 @@ ray_plane_intersect(const PhysxRay &ray, const PhysxPlane &plane, LPoint3f &poin
 
   bool result = _ptr->NxRayPlaneIntersect(ray._ray, plane._plane, dist, nPointOnPlane);
 
-  update_point3_from_nxVec3(point_on_plane, nPointOnPlane);
+  PhysxManager::update_point3_from_nxVec3(point_on_plane, nPointOnPlane);
   return result;
 }
 
@@ -637,7 +637,7 @@ ray_sphere_intersect(const LPoint3f &origin, const LVector3f &dir, float length,
     nHitTime,
     nPointOnPlane);
 
-  update_point3_from_nxVec3(hit_pos, nPointOnPlane);
+  PhysxManager::update_point3_from_nxVec3(hit_pos, nPointOnPlane);
   return result;
 }
 
@@ -670,7 +670,7 @@ segment_box_intersect(const LPoint3f &p1, const LPoint3f &p2, const LPoint3f &bb
     PhysxManager::point3_to_nxVec3(bbox_max),
     nIntercept);
 
-  update_point3_from_nxVec3(intercept, nIntercept);
+  PhysxManager::update_point3_from_nxVec3(intercept, nIntercept);
   return result;
 }
 
@@ -703,7 +703,7 @@ ray_aabb_intersect(const LPoint3f &min, const LPoint3f &max, const LPoint3f &ori
     PhysxManager::vec3_to_nxVec3(dir),
     nCoord);
 
-  update_point3_from_nxVec3(coord, nCoord);
+  PhysxManager::update_point3_from_nxVec3(coord, nCoord);
   return result;
 }
 
@@ -904,7 +904,7 @@ sweep_box_capsule(const PhysxBox &box, const PhysxCapsule &lss, const LVector3f 
     PhysxManager::vec3_to_nxVec3(dir),
     length, min_dist, nNormal);
 
-  update_vec3_from_nxVec3(normal, nNormal);
+  PhysxManager::update_vec3_from_nxVec3(normal, nNormal);
   return result;
 }
 
@@ -934,7 +934,7 @@ sweep_box_sphere(const PhysxBox &box, const PhysxSphere &sphere, const LVector3f
     PhysxManager::vec3_to_nxVec3(dir),
     length, min_dist, nNormal);
 
-  update_vec3_from_nxVec3(normal, nNormal);
+  PhysxManager::update_vec3_from_nxVec3(normal, nNormal);
   return result;
 }
 
@@ -966,8 +966,8 @@ sweep_capsule_capsule(const PhysxCapsule &lss0, const PhysxCapsule &lss1, const 
     PhysxManager::vec3_to_nxVec3(dir),
     length, min_dist, nIp, nNormal);
 
-  update_point3_from_nxVec3(ip, nIp);
-  update_vec3_from_nxVec3(normal, nNormal);
+  PhysxManager::update_point3_from_nxVec3(ip, nIp);
+  PhysxManager::update_vec3_from_nxVec3(normal, nNormal);
   return result;
 }
 
@@ -999,8 +999,8 @@ sweep_sphere_capsule(const PhysxSphere &sphere, const PhysxCapsule &lss, const L
     PhysxManager::vec3_to_nxVec3(dir),
     length, min_dist, nIp, nNormal);
 
-  update_point3_from_nxVec3(ip, nIp);
-  update_vec3_from_nxVec3(normal, nNormal);
+  PhysxManager::update_point3_from_nxVec3(ip, nIp);
+  PhysxManager::update_vec3_from_nxVec3(normal, nNormal);
   return result;
 }
 
@@ -1032,8 +1032,8 @@ sweep_box_box(const PhysxBox &box0, const PhysxBox &box1, const LVector3f &dir, 
     PhysxManager::vec3_to_nxVec3(dir),
     length, nIp, nNormal, min_dist);
 
-  update_point3_from_nxVec3(ip, nIp);
-  update_vec3_from_nxVec3(normal, nNormal);
+  PhysxManager::update_point3_from_nxVec3(ip, nIp);
+  PhysxManager::update_vec3_from_nxVec3(normal, nNormal);
   return result;
 }
 
@@ -1066,33 +1066,7 @@ point_obb_sqr_dist(const LPoint3f &point, const LPoint3f &center, const LVector3
     PhysxManager::mat3_to_nxMat33(rot),
     &nParams);
 
-  update_point3_from_nxVec3(params, nParams);
+  PhysxManager::update_point3_from_nxVec3(params, nParams);
   return result;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::update_vec3_from_nxVec3
-//       Access: Private
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void PhysxUtilLib::
-update_vec3_from_nxVec3(LVector3f &v, const NxVec3 &nVec) {
-
-  v.set_x(nVec.x);
-  v.set_y(nVec.y);
-  v.set_z(nVec.z);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PhysxUtilLib::update_point3_from_nxVec3
-//       Access: Private
-//  Description: 
-////////////////////////////////////////////////////////////////////
-void PhysxUtilLib::
-update_point3_from_nxVec3(LPoint3f &p, const NxVec3 &nVec) {
-
-  p.set_x(nVec.x);
-  p.set_y(nVec.y);
-  p.set_z(nVec.z);
 }
 
