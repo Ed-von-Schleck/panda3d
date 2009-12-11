@@ -409,6 +409,8 @@ if (COMPILER=="MSVC"):
         IncDirectory("PHYSX", SDK["PHYSX"] + "/NxExtensions/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Foundation/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Cooking/include")
+        # We need to be able to find NxCharacter.dll when importing code library libpandaphysx
+        AddToPathEnv("PATH", SDK["PHYSX"]+"/../Bin/win32/")
 
 if (COMPILER=="LINUX"):
     if (PkgSkip("PYTHON")==0):
@@ -1871,16 +1873,6 @@ if (PkgSkip("PANDATOOL")==0):
 if (PkgSkip("PHYSX")==0):
     CopyAllHeaders('panda/src/physx')
     CopyAllHeaders('panda/metalibs/pandaphysx')
-
-########################################################################
-#
-# On Windows, copy NxCharacter.dll to the built/bin directory.
-# NxCharacter.dll is part of the PhysX SDK.
-#
-########################################################################
-
-if (PkgSkip("PHYSX")==0 and COMPILER=="LINUX"):
-    CopyFile(GetOutputDir()+"/bin/NxCharacter.dll", SDK["PHYSX"]+"/../Bin/win32/NxCharacter.dll")
 
 ########################################################################
 # 
