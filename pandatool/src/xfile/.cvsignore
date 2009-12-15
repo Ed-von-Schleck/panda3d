@@ -1,6 +1,0 @@
-.cvsignore
-pp.dep
-Makefile
-xLexer.cxx
-xParser.cxx
-xParser.h
