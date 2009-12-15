@@ -108,10 +108,10 @@
 #define NX_FORCE_FIELD_CUSTOM_KERNEL_EPSILON 97
 #define NX_IMPROVED_SPRING_SOLVER 98
 
-#ifndef LINUX /* The following enums are only defined in SDK version 2.8.1 */
+#ifdef PHYSX283
 #define NX_FAST_MASSIVE_BP_VOLUME_DELETION 99
 #define NX_LEGACY_JOINT_DRIVE 100
-#endif /* LINUX */
+#endif /* PHYSX283 */
 
 // PhysxActorFlag
 #define NX_AF_DISABLE_COLLISION 1<<0

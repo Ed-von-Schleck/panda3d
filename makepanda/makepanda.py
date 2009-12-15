@@ -401,6 +401,8 @@ if (COMPILER=="MSVC"):
             LibName(pkg, SDK[pkg] +  '/lib/maxutil.lib')
             LibName(pkg, SDK[pkg] +  '/lib/paramblk2.lib')
     if (PkgSkip("PHYSX")==0):
+        DefSymbol("PHYSX", SDK["PHYSXVERSION"], "1")
+        DefSymbol("PHYSX", "NX32", "1")
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/PhysXLoader.lib")
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/NxCharacter.lib")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
@@ -531,6 +533,11 @@ if (COMPILER=="LINUX"):
             if (sys.platform == "darwin"):
                 LibName(pkg, "-dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
     if (PkgSkip("PHYSX")==0):
+        DefSymbol("PHYSX", SDK["PHYSXVERSION"], "1")
+        DefSymbol("PHYSX", "LINUX", "1")
+        DefSymbol("PHYSX", "CORELIB", "1")
+        DefSymbol("PHYSX", "NX_DISABLE_FLUIDS", "1")
+        DefSymbol("PHYSX", "NX32", "1")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/NxCharacter/include")
@@ -540,7 +547,6 @@ if (COMPILER=="LINUX"):
         LibDirectory("PHYSX", SDK["PHYSXLIBS"])
         LibName("PHYSX", "-lPhysXLoader")
         LibName("PHYSX", "-lNxCharacter")
-        DefSymbol("PHYSX", "LINUX", "1")
 
 DefSymbol("WITHINPANDA", "WITHIN_PANDA", "1")
 IncDirectory("ALWAYS", GetOutputDir()+"/tmp")

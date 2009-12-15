@@ -1382,19 +1382,29 @@ def SdkLocateMacOSX(osxtarget=None):
     else:
         SDK["MACOSX"] = ""
 
+PHYSXVERSIONINFO=[
+    ("PHYSX281","v2.8.1"),
+    ("PHYSX283","v2.8.3"),
+]
+
 def SdkLocatePhysX():
-    if (sys.platform == "win32"):
-        path = os.path.join(GetProgramFiles(),"NVIDIA Corporation\\NVIDIA PhysX SDK\\v2.8.3/SDKs")
-        if (os.path.isdir(path)):
-            SDK["PHYSX"] = path
-    elif (sys.platform.startswith("linux")):
-        incpath = "/usr/include/PhysX/v2.8.1/SDKs"
-        libpath = "/usr/lib/PhysX/v2.8.1"
-        if (os.path.isdir(incpath) and os.path.isdir(libpath)):
-            SDK["PHYSX"] = incpath
-            SDK["PHYSXLIBS"] = libpath
-    else:
-        return
+    for (ver,key) in PHYSXVERSIONINFO:
+        if (sys.platform == "win32"):
+            path = os.path.join(GetProgramFiles(),"NVIDIA Corporation\\NVIDIA PhysX SDK\\%s\\SDKs" % key)
+            if (os.path.isdir(path)):
+                SDK["PHYSX"] = path
+                SDK["PHYSXVERSION"] = ver
+        elif (sys.platform.startswith("linux")):
+            incpath = "/usr/include/PhysX/%s/SDKs" % key
+            libpath = "/usr/lib/PhysX/%s" % key
+            if (os.path.isdir(incpath) and os.path.isdir(libpath)):
+                SDK["PHYSX"] = incpath
+                SDK["PHYSXVERSION"] = ver
+                SDK["PHYSXLIBS"] = libpath
+
+    #                    fullkey="SOFTWARE\\"+dev+"\\Maya\\"+key+"\\Setup\\InstallPath"
+    #                    res = GetRegistryKey(fullkey, "MAYA_INSTALL_LOCATION")
+    #                    if (res != 0):
 
 ########################################################################
 ##
