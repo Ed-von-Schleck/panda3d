@@ -46,7 +46,9 @@ class CompilationEnvironment:
     can create a custom instance of this class (or simply set the
     compile strings directly) to customize the build environment. """
 
-    def __init__(self):
+    def __init__(self, platform):
+        self.platform = platform
+        
         # The command to compile a c to an object file.  Replace %(basename)s
         # with the basename of the source file, and an implicit .c extension.
         self.compileObj = 'error'
@@ -76,10 +78,13 @@ class CompilationEnvironment:
         # The _d extension to add to dll filenames on Windows in debug builds.
         self.dllext = ''
 
+        # Any architecture-specific string.
+        self.arch = ''
+
         self.determineStandardSetup()
 
     def determineStandardSetup(self):
-        if sys.platform == 'win32':
+        if self.platform == 'win32':
             self.Python = PREFIX
 
             if ('VCINSTALLDIR' in os.environ):
@@ -120,11 +125,18 @@ class CompilationEnvironment:
                 self.linkExe = 'link /nologo /MAP:NUL /FIXED:NO /OPT:REF /STACK:4194304 /INCREMENTAL:NO /LIBPATH:"%(PSDK)s\lib" /LIBPATH:"%(MSVC)s\lib" /LIBPATH:"%(python)s\libs"  /out:%(basename)s.exe %(basename)s.obj'
                 self.linkDll = 'link /nologo /DLL /MAP:NUL /FIXED:NO /OPT:REF /INCREMENTAL:NO /LIBPATH:"%(PSDK)s\lib" /LIBPATH:"%(MSVC)s\lib" /LIBPATH:"%(python)s\libs"  /out:%(basename)s%(dllext)s.pyd %(basename)s.obj'
 
-        elif sys.platform == 'darwin':
+        elif self.platform.startswith('osx_'):
             # OSX
-            self.compileObj = "gcc -fPIC -c -o %(basename)s.o -O2 -I%(pythonIPath)s %(filename)s"
-            self.linkExe = "gcc -o %(basename)s %(basename)s.o -framework Python"
-            self.linkDll = "gcc -undefined dynamic_lookup -bundle -o %(basename)s.so %(basename)s.o"
+            proc = self.platform.split('_', 1)[1]
+            if proc == 'i386':
+                self.arch = '-arch i386'
+            elif proc == 'ppc':
+                self.arch = '-arch ppc'
+            elif proc == 'x86_64':
+                self.arch = '-arch x86_x64'
+            self.compileObj = "gcc -fPIC -c %(arch)s -o %(basename)s.o -O2 -I%(pythonIPath)s %(filename)s"
+            self.linkExe = "gcc %(arch)s -o %(basename)s %(basename)s.o -framework Python"
+            self.linkDll = "gcc %(arch)s -undefined dynamic_lookup -bundle -o %(basename)s.so %(basename)s.o"
 
         else:
             # Unix
@@ -144,6 +156,7 @@ class CompilationEnvironment:
             'MD' : self.MD,
             'pythonIPath' : self.PythonIPath,
             'pythonVersion' : self.PythonVersion,
+            'arch' : self.arch,
             'filename' : filename,
             'basename' : basename,
             }
@@ -157,6 +170,7 @@ class CompilationEnvironment:
             'PSDK' : self.PSDK,
             'pythonIPath' : self.PythonIPath,
             'pythonVersion' : self.PythonVersion,
+            'arch' : self.arch,
             'filename' : filename,
             'basename' : basename,
             }
@@ -172,6 +186,7 @@ class CompilationEnvironment:
             'MD' : self.MD,
             'pythonIPath' : self.PythonIPath,
             'pythonVersion' : self.PythonVersion,
+            'arch' : self.arch,
             'filename' : filename,
             'basename' : basename,
             }
@@ -185,6 +200,7 @@ class CompilationEnvironment:
             'PSDK' : self.PSDK,
             'pythonIPath' : self.PythonIPath,
             'pythonVersion' : self.PythonVersion,
+            'arch' : self.arch,
             'filename' : filename,
             'basename' : basename,
             'dllext' : self.dllext,
@@ -520,10 +536,11 @@ class Freezer:
                 args.append('allowChildren = True')
             return 'ModuleDef(%s)' % (', '.join(args))
 
-    def __init__(self, previous = None, debugLevel = 0):
+    def __init__(self, previous = None, debugLevel = 0,
+                 platform = None):
         # Normally, we are freezing for our own platform.  Change this
         # if untrue.
-        self.platform = sys.platform
+        self.platform = platform or PandaSystem.getPlatform()
 
         # This is the compilation environment.  Fill in your own
         # object here if you have custom needs (for instance, for a
@@ -1201,7 +1218,7 @@ class Freezer:
             dllimport = '__declspec(dllimport) '
 
         if not self.cenv:
-            self.cenv = CompilationEnvironment()
+            self.cenv = CompilationEnvironment(platform = self.platform)
             
         if compileToExe:
             code = self.frozenMainCode
