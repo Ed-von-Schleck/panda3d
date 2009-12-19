@@ -9,7 +9,7 @@
   #define USE_PACKAGES physx
   #define LOCAL_LIBS pgraph linmath
   #define COMBINED_SOURCES $[TARGET]_composite.cxx
-  #define INTERROGATE_OPTIONS $[INTERROGATE_OPTIONS] -DNXCHARACTER_STATIC
+  #define INTERROGATE_OPTIONS $[INTERROGATE_OPTIONS]
 
   #define SOURCES \
     NoMinMax.h \
@@ -32,6 +32,7 @@
     physxCapsuleForceFieldShapeDesc.I physxCapsuleForceFieldShapeDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxContactPair.I physxContactPair.h \
     physxContactReport.I physxContactReport.h \
     physxController.I physxController.h \
     physxControllerDesc.I physxControllerDesc.h \
@@ -139,6 +140,7 @@
     physxCapsuleForceFieldShapeDesc.cxx \
     physxCapsuleShape.cxx \
     physxCapsuleShapeDesc.cxx \
+    physxContactPair.cxx \
     physxContactReport.cxx \
     physxController.cxx \
     physxControllerDesc.cxx \
@@ -248,6 +250,7 @@
     physxCapsuleForceFieldShapeDesc.I physxCapsuleForceFieldShapeDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxContactPair.I physxContactPair.h \
     physxContactReport.I physxContactReport.h \
     physxController.I physxController.h \
     physxControllerDesc.I physxControllerDesc.h \

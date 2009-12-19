@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxContactReport.h"
+#include "physxContactPair.h"
 #include "physxManager.h"
 
 #include "event.h"
@@ -91,14 +92,8 @@ onContactNotify(NxContactPair &pair, NxU32 flags) {
     return;
   }
 
-  PT(PhysxActor) pActor0 = (PhysxActor *)pair.actors[0]->userData;
-  PT(PhysxActor) pActor1 = (PhysxActor *)pair.actors[1]->userData;
-  event->add_parameter(EventParameter(pActor0));
-  event->add_parameter(EventParameter(pActor1));
-
-  //LVector3f normal = PhysxManager::nxVec3_to_vec3(pair.sumNormalForce);
-  //LVector3f friction = PhysxManager::nxVec3_to_vec3(pair.sumFrictionForce);
-
+  PT(PhysxContactPair) ppair = new PhysxContactPair(pair);
+  event->add_parameter(EventParameter(ppair));
   EventQueue::get_global_event_queue()->queue_event(event);
 
   _pcollector.stop();
