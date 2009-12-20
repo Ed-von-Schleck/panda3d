@@ -17,6 +17,7 @@
 
 #include "pandabase.h"
 #include "lpoint3.h"
+#include "nodePath.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -38,6 +39,8 @@ PUBLISHED:
 
   void set_num_triangles(unsigned int n);
   void set_triangle(unsigned int idx, unsigned int i1, unsigned int i2, unsigned int i3);
+
+  void set_from_node_path(const NodePath &np);
 
 public:
   const NxTriangleMeshDesc &get_desc() const;

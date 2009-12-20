@@ -37,6 +37,8 @@ PUBLISHED:
   INLINE PhysxKitchen();
   INLINE ~PhysxKitchen();
 
+  void set_cooking_params(float skinWidth, bool hintCollisionSpeed);
+
   bool cook_convex_mesh(PhysxConvexMeshDesc meshDesc, const Filename &filename);
   bool cook_triangle_mesh(PhysxTriangleMeshDesc meshDesc, const Filename &filename);
 

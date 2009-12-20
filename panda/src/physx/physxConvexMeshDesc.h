@@ -17,6 +17,7 @@
 
 #include "pandabase.h"
 #include "lpoint3.h"
+#include "nodePath.h"
 
 #include "NoMinMax.h"
 #include "NxPhysics.h"
@@ -35,6 +36,7 @@ PUBLISHED:
 
   void set_num_vertices(unsigned int n);
   void set_vertex(unsigned int idx, const LPoint3f &vert);
+  void set_from_node_path(const NodePath &np);
 
 public:
   const NxConvexMeshDesc &get_desc() const;
