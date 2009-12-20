@@ -13,7 +13,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "physxContactPair.h"
+#include "physxManager.h"
 #include "physxActor.h"
+#include "physxContactPoint.h"
 
 TypeHandle PhysxContactPair::_type_handle;
 
@@ -41,29 +43,61 @@ get_actor_b() const {
   return (actorPtr == NULL) ? NULL : (PhysxActor *)actorPtr->userData;
 }
 
-/*
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxContactPair::foo
+//     Function: PhysxContactPair::get_sum_normal_force
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-void PhysxContactPair::
-foo() {
+LVector3f PhysxContactPair::
+get_sum_normal_force() const {
 
-  cout << ">>>>>>>>>>>>>>>>>\n";
-  NxContactStreamIterator i(_pair.stream);
-  while(i.goNextPair()) {
-    cout << "..pair\n";
-    while(i.goNextPatch()) {
-      const NxVec3 &contactNormal = i.getPatchNormal();
-      cout << "....patch\n";
-      while(i.goNextPoint()) {
-        const NxVec3 &contactPoint = i.getPoint();
-        cout << "......point" << contactPoint.x << " " << contactPoint.y << " " << contactPoint.z << "\n";
+  return PhysxManager::nxVec3_to_vec3(_pair.sumNormalForce);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxContactPair::get_sum_friction_force
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+LVector3f PhysxContactPair::
+get_sum_friction_force() const {
+
+  return PhysxManager::nxVec3_to_vec3(_pair.sumFrictionForce);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxContactPair::get_num_contact_points
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+unsigned int PhysxContactPair::
+get_num_contact_points() {
+
+  if (_contacts.size() == 0) {
+    NxContactStreamIterator it(_pair.stream);
+    while(it.goNextPair()) {
+      while(it.goNextPatch()) {
+        while(it.goNextPoint()) {
+          PhysxContactPoint cp;
+          cp.set(it);
+          _contacts.push_back(cp);
+        }
       }
     }
   }
-  cout << "<<<<<<<<<<<<<<<<\n";
+
+  return _contacts.size();
 }
-*/
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxContactPair::get_contact_point
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PhysxContactPoint PhysxContactPair::
+get_contact_point(unsigned int idx) const {
+
+  nassertr(idx < _contacts.size(), PhysxContactPoint::empty());
+  return _contacts[idx];
+}
 

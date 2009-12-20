@@ -11,6 +11,7 @@
 #include "physxCapsuleShape.cxx"
 #include "physxCapsuleShapeDesc.cxx"
 #include "physxContactPair.cxx"
+#include "physxContactPoint.cxx"
 #include "physxContactReport.cxx"
 #include "physxController.cxx"
 #include "physxControllerDesc.cxx"

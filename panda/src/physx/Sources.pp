@@ -33,6 +33,7 @@
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxContactPair.I physxContactPair.h \
+    physxContactPoint.I physxContactPoint.h \
     physxContactReport.I physxContactReport.h \
     physxController.I physxController.h \
     physxControllerDesc.I physxControllerDesc.h \
@@ -141,6 +142,7 @@
     physxCapsuleShape.cxx \
     physxCapsuleShapeDesc.cxx \
     physxContactPair.cxx \
+    physxContactPoint.cxx \
     physxContactReport.cxx \
     physxController.cxx \
     physxControllerDesc.cxx \
@@ -251,6 +253,7 @@
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
     physxContactPair.I physxContactPair.h \
+    physxContactPoint.I physxContactPoint.h \
     physxContactReport.I physxContactReport.h \
     physxController.I physxController.h \
     physxControllerDesc.I physxControllerDesc.h \

@@ -1,5 +1,5 @@
-// Filename: physxContactPair.h
-// Created by:  enn0x (19Dec09)
+// Filename: physxContactPoint.h
+// Created by:  enn0x (20Dec09)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,43 +12,48 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSXCONTACTPAIR_H
-#define PHYSXCONTACTPAIR_H
+#ifndef PHYSXCONTACTPOINT_H
+#define PHYSXCONTACTPOINT_H
 
 #include "pandabase.h"
 #include "lvector3.h"
-#include "typedReferenceCount.h"
-#include "pvector.h"
+#include "lpoint3.h"
+#include "typedObject.h"
 
 #include "config_physx.h"
 
 class PhysxShape;
-class PhysxContactPoint;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : PhysxContactPair
-// Description : 
+//       Class : PhysxContactPoint
+// Description : This structure captures results for a single
+//               contact point.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDAPHYSX PhysxContactPair : public TypedReferenceCount {
+class EXPCL_PANDAPHYSX PhysxContactPoint : public TypedObject {
 
 PUBLISHED:
-  INLINE ~PhysxContactPair();
+  INLINE PhysxContactPoint();
+  INLINE ~PhysxContactPoint();
 
-  PT(PhysxActor) get_actor_a() const;
-  PT(PhysxActor) get_actor_b() const;
-  LVector3f get_sum_normal_force() const;
-  LVector3f get_sum_friction_force() const;
-
-  unsigned int get_num_contact_points();
-  PhysxContactPoint get_contact_point(unsigned int idx) const;
-  MAKE_SEQ(get_contact_points, get_num_contact_points, get_contact_point);
+  LPoint3f get_point() const;
+  LVector3f get_normal() const;
+  float get_normal_force() const;
+  float get_separation() const;
+  unsigned int get_feature_index0() const;
+  unsigned int get_feature_index1() const;
 
 public:
-  INLINE PhysxContactPair(const NxContactPair pair);
+  static PhysxContactPoint empty();
+
+  void set(NxContactStreamIterator it);
 
 private:
-  NxContactPair _pair;
-  pvector<PhysxContactPoint> _contacts;
+  NxVec3 _point;
+  NxVec3 _normal;
+  NxReal _normal_force;
+  NxReal _separation;
+  NxU32 _feature_index0;
+  NxU32 _feature_index1;
 
 ////////////////////////////////////////////////////////////////////
 public:
@@ -57,7 +62,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "PhysxContactPair", 
+    register_type(_type_handle, "PhysxContactPoint", 
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -72,6 +77,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "physxContactPair.I"
+#include "physxContactPoint.I"
 
-#endif // PHYSXCONTACTPAIR_H
+#endif // PHYSXCONTACTPOINT_H
