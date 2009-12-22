@@ -32,6 +32,7 @@
     physxCapsuleForceFieldShapeDesc.I physxCapsuleForceFieldShapeDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxConstraintDominance.I physxConstraintDominance.h \
     physxContactPair.I physxContactPair.h \
     physxContactPoint.I physxContactPoint.h \
     physxContactReport.I physxContactReport.h \
@@ -141,6 +142,7 @@
     physxCapsuleForceFieldShapeDesc.cxx \
     physxCapsuleShape.cxx \
     physxCapsuleShapeDesc.cxx \
+    physxConstraintDominance.cxx \
     physxContactPair.cxx \
     physxContactPoint.cxx \
     physxContactReport.cxx \
@@ -252,6 +254,7 @@
     physxCapsuleForceFieldShapeDesc.I physxCapsuleForceFieldShapeDesc.h \
     physxCapsuleShape.I physxCapsuleShape.h \
     physxCapsuleShapeDesc.I physxCapsuleShapeDesc.h \
+    physxConstraintDominance.I physxConstraintDominance.h \
     physxContactPair.I physxContactPair.h \
     physxContactPoint.I physxContactPoint.h \
     physxContactReport.I physxContactReport.h \

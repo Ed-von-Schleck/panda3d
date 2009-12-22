@@ -19,6 +19,7 @@
 #include "physxForceFieldShapeGroupDesc.h"
 #include "physxControllerDesc.h"
 #include "physxSceneStats2.h"
+#include "physxConstraintDominance.h"
 
 TypeHandle PhysxScene::_type_handle;
 
@@ -1471,5 +1472,87 @@ is_hardware_scene() const {
 
   nassertr(_error_type == ET_ok, false);
   return (_ptr->getSimType() & NX_SIMULATION_HW) ? true : false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::set_dominance_group_pair
+//       Access: Published
+//  Description: Specifies the dominance behavior of constraints 
+//               between two actors with two certain dominance
+//               groups. 
+//
+//               It is possible to assign each actor to a dominance
+//               groups using PhysxActor::set_dominance_group().
+//
+//               With dominance groups one can have all constraints
+//               (contacts and joints) created between actors act in
+//               one direction only. This is useful if you want to
+//               make sure that the movement of the rider of a
+//               vehicle or the pony tail of a character doesn't
+//               influence the object it is attached to, while
+//               keeping the motion of both inherently physical.
+//
+//               Whenever a constraint (i.e. joint or contact)
+//               between two actors (a0, a1) needs to be solved, the
+//               groups (g0, g1) of both actors are retrieved. Then
+//               the constraint dominance setting for this group
+//               pair is retrieved.
+//
+//               In the constraint, PhysxConstraintDominance::get_0()
+//               becomes the dominance setting for a0, and
+//               PhysxConstraintDominance::get_1() becomes the
+//               dominance setting for a1. A dominance setting of
+//               1.0f, the default, will permit the actor to be
+//               pushed or pulled by the other actor. A dominance
+//               setting of 0.0f will however prevent the actor to
+//               be pushed or pulled by the other actor. Thus, a
+//               PhysxConstraintDominance of (1.0f, 0.0f) makes the
+//               interaction one-way.
+//
+//               The dominance matrix is initialised by default such
+//               that:
+//               - if g1 == g2, then (1.0f, 1.0f) is returned
+//               - if g1 < g2, then (0.0f, 1.0f) is returned
+//               - if g1 > g2, then (1.0f, 0.0f) is returned
+//
+//               In other words, actors in higher groups can be
+//               pushed around by actors in lower groups by default.
+//
+//               These settings should cover most applications, and
+//               in fact not overriding these settings may likely
+//               result in higher performance.
+//
+//               Dominance settings are currently specified as
+//               floats 0.0f or 1.0f because in the future PhysX may
+//               permit arbitrary fractional settings to express
+//               'partly-one-way' interactions.
+////////////////////////////////////////////////////////////////////
+void PhysxScene::
+set_dominance_group_pair(unsigned int g1, unsigned int g2, PhysxConstraintDominance dominance ) {
+
+  nassertv(_error_type == ET_ok);
+  nassertv(g1 < 32);
+  nassertv(g2 < 32);
+
+  NxConstraintDominance d = dominance.get_dominance();
+  _ptr->setDominanceGroupPair((NxDominanceGroup)g1, (NxDominanceGroup)g2, d);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxScene::get_dominance_group_pair
+//       Access: Published
+//  Description: Samples the dominance matrix.
+////////////////////////////////////////////////////////////////////
+PhysxConstraintDominance PhysxScene::
+get_dominance_group_pair(unsigned int g1, unsigned int g2) {
+
+  PhysxConstraintDominance result(1.0f, 1.0f);
+
+  nassertr(_error_type == ET_ok, result);
+  nassertr(g1 < 32, result);
+  nassertr(g2 < 32, result);
+
+  result.set_dominance(_ptr->getDominanceGroupPair((NxDominanceGroup)g1, (NxDominanceGroup)g2));
+  return result;
 }
 

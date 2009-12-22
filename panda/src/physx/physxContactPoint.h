@@ -26,8 +26,8 @@ class PhysxShape;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxContactPoint
-// Description : This structure captures results for a single
-//               contact point.
+// Description : A helper structure for iterating over contact
+//               streams reported by PhysxContactPair.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxContactPoint : public TypedObject {
 

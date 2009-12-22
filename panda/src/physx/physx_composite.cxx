@@ -16,6 +16,7 @@
 #include "physxController.cxx"
 #include "physxControllerDesc.cxx"
 #include "physxControllerReport.cxx"
+#include "physxConstraintDominance.cxx"
 #include "physxConvexMesh.cxx"
 #include "physxConvexMeshDesc.cxx"
 #include "physxConvexShape.cxx"
