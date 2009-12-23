@@ -570,6 +570,19 @@ def ListRegistryKeys(path):
         _winreg.CloseKey(key)
     return result
 
+def ListRegistryValues(path):
+    result = []
+    index = 0
+    key = TryRegistryKey(path)
+    if (key != 0):
+        try:
+            while (1):
+                result.append(_winreg.EnumValue(key, index)[0])
+                index = index + 1
+        except: pass
+        _winreg.CloseKey(key)
+    return result
+
 def GetRegistryKey(path, subkey):
     if (platform.architecture()[0]=="64bit"):
         path = path.replace("SOFTWARE\\", "SOFTWARE\\Wow6432Node\\")
@@ -1390,10 +1403,11 @@ PHYSXVERSIONINFO=[
 def SdkLocatePhysX():
     for (ver,key) in PHYSXVERSIONINFO:
         if (sys.platform == "win32"):
-            path = os.path.join(GetProgramFiles(),"NVIDIA Corporation\\NVIDIA PhysX SDK\\%s\\SDKs" % key)
-            if (os.path.isdir(path)):
-                SDK["PHYSX"] = path
-                SDK["PHYSXVERSION"] = ver
+            folders = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\Folders"
+            for folder in ListRegistryValues(folders):
+                if folder.endswith("NVIDIA PhysX SDK\\%s\\SDKs\\" % key):
+                    SDK["PHYSX"] = folder
+                    SDK["PHYSXVERSION"] = ver
         elif (sys.platform.startswith("linux")):
             incpath = "/usr/include/PhysX/%s/SDKs" % key
             libpath = "/usr/lib/PhysX/%s" % key
@@ -1401,10 +1415,6 @@ def SdkLocatePhysX():
                 SDK["PHYSX"] = incpath
                 SDK["PHYSXVERSION"] = ver
                 SDK["PHYSXLIBS"] = libpath
-
-    #                    fullkey="SOFTWARE\\"+dev+"\\Maya\\"+key+"\\Setup\\InstallPath"
-    #                    res = GetRegistryKey(fullkey, "MAYA_INSTALL_LOCATION")
-    #                    if (res != 0):
 
 ########################################################################
 ##
