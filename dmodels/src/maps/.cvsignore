@@ -1,7 +1,0 @@
-.cvsignore
-Makefile
-bams
-*.pt
-*.egg
-optchar
-pal_egg
