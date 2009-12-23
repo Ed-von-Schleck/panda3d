@@ -124,6 +124,17 @@ visualize_joint_world_axes(bool value) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxDebugGeomNode::visualize_joint_limits
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void PhysxDebugGeomNode::
+visualize_joint_limits(bool value) {
+
+  NxGetPhysicsSDK()->setParameter(NX_VISUALIZE_JOINT_LIMITS, value);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxDebugGeomNode::visualize_contact_point
 //       Access: Published
 //  Description: 

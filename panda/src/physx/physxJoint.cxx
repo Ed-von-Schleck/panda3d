@@ -25,6 +25,7 @@
 #include "physxPulleyJoint.h"
 #include "physxRevoluteJoint.h"
 #include "physxSphericalJoint.h"
+#include "physxD6Joint.h"
 
 TypeHandle PhysxJoint::_type_handle;
 
@@ -80,7 +81,7 @@ factory(NxJointType shapeType) {
     return new PhysxFixedJoint();
 
   case NX_JOINT_D6:
-    return new PhysxFixedJoint();
+    return new PhysxD6Joint();
   }
 
   physx_cat.error() << "Unknown joint type.\n";
@@ -329,5 +330,17 @@ add_limit_plane(const LVector3f &normal, const LPoint3f &pointInPlane, float res
   ptr()->addLimitPlane(PhysxManager::vec3_to_nxVec3(normal),
                        PhysxManager::point3_to_nxVec3(pointInPlane),
                        restitution);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxJoint::purge_limit_planes
+//       Access: Published
+//  Description: Deletes all limit planes added to the joint.
+////////////////////////////////////////////////////////////////////
+void PhysxJoint::
+purge_limit_planes() {
+
+  nassertv(_error_type == ET_ok);
+  ptr()->purgeLimitPlanes();
 }
 

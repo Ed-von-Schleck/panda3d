@@ -43,6 +43,8 @@ PUBLISHED:
   PT(PhysxActor) get_actor(unsigned int idx) const;
   PT(PhysxScene) get_scene() const;
 
+  void purge_limit_planes();
+
   void set_name(const char *name);
   void set_global_anchor(const LPoint3f &anchor);
   void set_global_axis(const LVector3f &axis);

@@ -50,6 +50,7 @@ PUBLISHED:
   INLINE void visualize_body_joint_groups(bool value);
   INLINE void visualize_joint_local_axes(bool value);
   INLINE void visualize_joint_world_axes(bool value);
+  INLINE void visualize_joint_limits(bool value);
   INLINE void visualize_contact_point(bool value);
   INLINE void visualize_contact_normal(bool value);
   INLINE void visualize_contact_error(bool value);
