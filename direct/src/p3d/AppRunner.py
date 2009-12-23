@@ -742,6 +742,7 @@ class AppRunner(DirectObject):
                 wp.setSize(width, height)
             if windowType == 'embedded':
                 wp.setParentWindow(parent)
+            wp.setFullscreen(False)
             base.win.requestProperties(wp)
             self.windowProperties = wp
             return
@@ -759,11 +760,11 @@ class AppRunner(DirectObject):
 
         wp = WindowProperties.getDefault()
 
-        wp.clearFullscreen()
         wp.clearParentWindow()
         wp.clearOrigin()
         wp.clearSize()
 
+        wp.setFullscreen(False)
         if windowType == 'fullscreen':
             wp.setFullscreen(True)
 
