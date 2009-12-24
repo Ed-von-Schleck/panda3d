@@ -689,6 +689,16 @@
 #define ODE_LIBS $[if $[WINDOWS_PLATFORM],ode.lib,ode]
 #defer HAVE_ODE $[libtest $[ODE_LPATH],$[ODE_LIBS]]
 
+// Is Awesomium installed, and where?
+#define AWESOMIUM_IPATH
+#define AWESOMIUM_LPATH
+#if $[OSX_PLATFORM]
+  #define AWESOMIUM_LIBS
+#else
+  #define AWESOMIUM_LIBS $[if $[WINDOWS_PLATFORM],awesomium.lib,awesomium]
+#endif
+#defer HAVE_AWESOMIUM $[libtest $[AWESOMIUM_LPATH],$[AWESOMIUM_LIBS]]
+
 // Do you want to build the DirectD tools for starting Panda clients
 // remotely?  This only affects the direct tree.  Enabling this may
 // cause libdirect.dll to fail to load on Win98 clients.
