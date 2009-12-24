@@ -378,12 +378,12 @@ stop_jump() {
 
   _jumping = false;
 
-  NxVec3 v = ptr()->getActor()->getLinearVelocity();
-  NxReal velocity = (_up_axis == NX_Z) ? v.z : v.y;
+  //NxVec3 v = ptr()->getActor()->getLinearVelocity();
+  //double velocity = (_up_axis == NX_Z) ? v.z : v.y;
 
   Event *event = new Event("physx-controller-down");
   event->add_parameter(EventParameter(this));
-  event->add_parameter(EventParameter(velocity));
+  //event->add_parameter(EventParameter(velocity));
   EventQueue::get_global_event_queue()->queue_event(event);
 }
 
