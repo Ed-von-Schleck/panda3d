@@ -198,6 +198,13 @@
   #define ode_libs $[ODE_LIBS]
 #endif
 
+#if $[HAVE_AWESOMIUM]
+  #define awesomium_ipath $[wildcard $[AWESOMIUM_IPATH]]
+  #define awesomium_lpath $[wildcard $[AWESOMIUM_LPATH]]
+  #define awesomium_libs $[AWESOMIUM_LIBS]
+  #define awesomium_framework $[AWESOMIUM_FRAMEWORK]
+#endif
+
 #if $[HAVE_JPEG]
   #define jpeg_ipath $[wildcard $[JPEG_IPATH]]
   #define jpeg_lpath $[wildcard $[JPEG_LPATH]]
