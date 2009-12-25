@@ -37,21 +37,22 @@ class NetAddress;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_NET ConnectionWriter {
 PUBLISHED:
-  ConnectionWriter(ConnectionManager *manager, int num_threads);
+  ConnectionWriter(ConnectionManager *manager, int num_threads,
+                   const string &thread_name = string());
   ~ConnectionWriter();
 
   void set_max_queue_size(int max_size);
   int get_max_queue_size() const;
   int get_current_queue_size() const;
 
-  bool send(const Datagram &datagram,
-            const PT(Connection) &connection,
-            bool block = false);
-
-  bool send(const Datagram &datagram,
-            const PT(Connection) &connection,
-            const NetAddress &address,
-            bool block = false);
+  BLOCKING bool send(const Datagram &datagram,
+                     const PT(Connection) &connection,
+                     bool block = false);
+  
+  BLOCKING bool send(const Datagram &datagram,
+                     const PT(Connection) &connection,
+                     const NetAddress &address,
+                     bool block = false);
 
   bool is_valid_for_udp(const Datagram &datagram) const;
 
@@ -65,13 +66,14 @@ PUBLISHED:
   void set_tcp_header_size(int tcp_header_size);
   int get_tcp_header_size() const;
 
+  void shutdown();
+
 protected:
   void clear_manager();
 
 private:
   void thread_run(int thread_index);
   bool send_datagram(const NetDatagram &datagram);
-  void shutdown();
 
 protected:
   ConnectionManager *_manager;
@@ -80,10 +82,12 @@ private:
   bool _raw_mode;
   int _tcp_header_size;
   DatagramQueue _queue;
+  bool _shutdown;
 
   class WriterThread : public Thread {
   public:
-    WriterThread(ConnectionWriter *writer, int thread_index);
+    WriterThread(ConnectionWriter *writer, const string &thread_name,
+                 int thread_index);
     virtual void thread_main();
 
     ConnectionWriter *_writer;

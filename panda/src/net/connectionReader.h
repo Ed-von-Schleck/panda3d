@@ -67,7 +67,8 @@ PUBLISHED:
   // the arrays returned by a previous call to PR_Poll(), or (b)
   // execute (and possibly block on) a new call to PR_Poll().
 
-  ConnectionReader(ConnectionManager *manager, int num_threads);
+  ConnectionReader(ConnectionManager *manager, int num_threads,
+                   const string &thread_name = string());
   virtual ~ConnectionReader();
 
   bool add_connection(Connection *connection);
@@ -86,6 +87,8 @@ PUBLISHED:
   void set_tcp_header_size(int tcp_header_size);
   int get_tcp_header_size() const;
 
+  void shutdown();
+
 protected:
   virtual void flush_read_connection(Connection *connection);
   virtual void receive_datagram(const NetDatagram &datagram)=0;
@@ -102,7 +105,6 @@ protected:
   };
   typedef pvector<SocketInfo *> Sockets;
 
-  void shutdown();
   void clear_manager();
   void finish_socket(SocketInfo *sinfo);
 
@@ -139,7 +141,8 @@ private:
 
   class ReaderThread : public Thread {
   public:
-    ReaderThread(ConnectionReader *reader, int thread_index);
+    ReaderThread(ConnectionReader *reader, const string &thread_name, 
+                 int thread_index);
     virtual void thread_main();
 
     ConnectionReader *_reader;

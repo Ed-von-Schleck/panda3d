@@ -168,6 +168,12 @@ PUBLISHED:
   INLINE NodePath(const NodePath &copy);
   INLINE void operator = (const NodePath &copy);
 
+#ifdef HAVE_PYTHON
+  NodePath __copy__() const;
+  PyObject *__deepcopy__(PyObject *self, PyObject *memo) const;
+  PyObject *__reduce__(PyObject *self) const;
+#endif
+
   INLINE static NodePath not_found();
   INLINE static NodePath removed();
   INLINE static NodePath fail();
@@ -600,10 +606,12 @@ PUBLISHED:
   void set_shader_input(const string &id, double n1=0, double n2=0, double n3=0, double n4=1, int priority=0);
   void clear_shader_input(InternalName *id);
   void clear_shader_input(const string &id);
+  void set_instance_count(int instance_count);
 
   const Shader *get_shader() const;
   const ShaderInput *get_shader_input(InternalName *id) const;
   const ShaderInput *get_shader_input(const string &id) const;
+  const int get_instance_count() const;
   
   void set_tex_transform(TextureStage *stage, const TransformState *transform);
   void clear_tex_transform();
@@ -948,6 +956,12 @@ private:
 };
 
 INLINE ostream &operator << (ostream &out, const NodePath &node_path);
+
+#ifdef HAVE_PYTHON
+BEGIN_PUBLISH
+NodePath py_decode_NodePath_from_bam_stream(const string &data);
+END_PUBLISH
+#endif
 
 #include "nodePath.I"
 

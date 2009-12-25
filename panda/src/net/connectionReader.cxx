@@ -70,8 +70,10 @@ get_socket() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 ConnectionReader::ReaderThread::
-ReaderThread(ConnectionReader *reader, int thread_index) :
-  Thread("ReaderThread", "ReaderThread"),
+ReaderThread(ConnectionReader *reader, const string &thread_name, 
+             int thread_index) :
+  Thread(make_thread_name(thread_name, thread_index), 
+         make_thread_name(thread_name, thread_index)),
   _reader(reader),
   _thread_index(thread_index)
 {
@@ -89,7 +91,7 @@ thread_main() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::Constructor
-//       Access: Public
+//       Access: Published
 //  Description: Creates a new ConnectionReader with the indicated
 //               number of threads to handle requests.  If num_threads
 //               is 0, the sockets will only be read by polling,
@@ -97,7 +99,8 @@ thread_main() {
 //               (QueuedConnectionReader will do this automatically.)
 ////////////////////////////////////////////////////////////////////
 ConnectionReader::
-ConnectionReader(ConnectionManager *manager, int num_threads) :
+ConnectionReader(ConnectionManager *manager, int num_threads,
+                 const string &thread_name) :
   _manager(manager)
 {
   if (!Thread::is_threading_supported()) {
@@ -123,13 +126,17 @@ ConnectionReader(ConnectionManager *manager, int num_threads) :
 
   _currently_polling_thread = -1;
 
+  string reader_thread_name = thread_name;
+  if (thread_name.empty()) {
+    reader_thread_name = "ReaderThread";
+  }
   int i;
   for (i = 0; i < num_threads; i++) {
-    PT(ReaderThread) thread = new ReaderThread(this, i);
+    PT(ReaderThread) thread = new ReaderThread(this, reader_thread_name, i);
     _threads.push_back(thread);
   }
   for (i = 0; i < num_threads; i++) {
-    _threads[i]->start(TP_normal, true);
+    _threads[i]->start(net_thread_priority, true);
   }
 
   _manager->add_reader(this);
@@ -137,7 +144,7 @@ ConnectionReader(ConnectionManager *manager, int num_threads) :
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::Destructor
-//       Access: Public, Virtual
+//       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
 ConnectionReader::
@@ -170,7 +177,7 @@ ConnectionReader::
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::add_connection
-//       Access: Public
+//       Access: Published
 //  Description: Adds a new socket to the list of sockets the
 //               ConnectionReader will monitor.  A datagram that comes
 //               in on any of the monitored sockets will be reported.
@@ -207,7 +214,7 @@ add_connection(Connection *connection) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::remove_connection
-//       Access: Public
+//       Access: Published
 //  Description: Removes a socket from the list of sockets being
 //               monitored.  Returns true if the socket was correctly
 //               removed, false if it was not on the list in the first
@@ -238,7 +245,7 @@ remove_connection(Connection *connection) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::is_connection_ok
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if the indicated connection has been
 //               added to the ConnectionReader and is being monitored
 //               properly, false if it is not known, or if there was
@@ -271,7 +278,7 @@ is_connection_ok(Connection *connection) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::poll
-//       Access: Public
+//       Access: Published
 //  Description: Explicitly polls the available sockets to see if any
 //               of them have any noise.  This function does nothing
 //               unless this is a polling-type ConnectionReader,
@@ -315,7 +322,7 @@ poll() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::get_manager
-//       Access: Public
+//       Access: Published
 //  Description: Returns a pointer to the ConnectionManager object
 //               that serves this ConnectionReader.
 ////////////////////////////////////////////////////////////////////
@@ -326,7 +333,7 @@ get_manager() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::get_num_threads
-//       Access: Public
+//       Access: Published
 //  Description: Returns the number of threads the ConnectionReader
 //               has been created with.
 ////////////////////////////////////////////////////////////////////
@@ -337,7 +344,7 @@ get_num_threads() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::set_raw_mode
-//       Access: Public
+//       Access: Published
 //  Description: Sets the ConnectionReader into raw mode (or turns off
 //               raw mode).  In raw mode, datagram headers are not
 //               expected; instead, all the data available on the pipe
@@ -353,7 +360,7 @@ set_raw_mode(bool mode) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::get_raw_mode
-//       Access: Public
+//       Access: Published
 //  Description: Returns the current setting of the raw mode flag.
 //               See set_raw_mode().
 ////////////////////////////////////////////////////////////////////
@@ -364,7 +371,7 @@ get_raw_mode() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::set_tcp_header_size
-//       Access: Public
+//       Access: Published
 //  Description: Sets the header size of TCP packets.  At the present,
 //               legal values for this are 0, 2, or 4; this specifies
 //               the number of bytes to use encode the datagram length
@@ -378,13 +385,37 @@ set_tcp_header_size(int tcp_header_size) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ConnectionReader::get_tcp_header_size
-//       Access: Public
+//       Access: Published
 //  Description: Returns the current setting of TCP header size.
 //               See set_tcp_header_size().
 ////////////////////////////////////////////////////////////////////
 int ConnectionReader::
 get_tcp_header_size() const {
   return _tcp_header_size;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ConnectionReader::shutdown
+//       Access: Published
+//  Description: Terminates all threads cleanly.  Normally this is
+//               only called by the destructor, but it may be called
+//               explicitly before destruction.
+////////////////////////////////////////////////////////////////////
+void ConnectionReader::
+shutdown() {
+  if (_shutdown) {
+    return;
+  }
+
+  // First, begin the shutdown.  This will tell our threads we want
+  // them to quit.
+  _shutdown = true;
+
+  // Now wait for all of our threads to terminate.
+  Threads::iterator ti;
+  for (ti = _threads.begin(); ti != _threads.end(); ++ti) {
+    (*ti)->join();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -423,29 +454,6 @@ flush_read_connection(Connection *connection) {
     }
     fdset.setForSocket(*(sinfo.get_socket()));
     num_results = fdset.WaitForRead(true, 0);
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ConnectionReader::shutdown
-//       Access: Protected
-//  Description: Terminates all threads cleanly.  Normally this is
-//               only called by the destructor.
-////////////////////////////////////////////////////////////////////
-void ConnectionReader::
-shutdown() {
-  if (_shutdown) {
-    return;
-  }
-
-  // First, begin the shutdown.  This will tell our threads we want
-  // them to quit.
-  _shutdown = true;
-
-  // Now wait for all of our threads to terminate.
-  Threads::iterator ti;
-  for (ti = _threads.begin(); ti != _threads.end(); ++ti) {
-    (*ti)->join();
   }
 }
 
@@ -621,6 +629,7 @@ process_incoming_tcp_data(SocketInfo *sinfo) {
     }
 
     header_bytes_read += bytes_read;
+    Thread::consider_yield();
   }
 
   // Now we must decode the header to determine how big the datagram
@@ -643,15 +652,23 @@ process_incoming_tcp_data(SocketInfo *sinfo) {
   while (!_shutdown && (int)datagram.get_length() < size) {
     int bytes_read;
 
+    int read_bytes = read_buffer_size;
+#ifdef SIMPLE_THREADS
+    // In the SIMPLE_THREADS case, we want to limit the number of
+    // bytes we read in a single epoch, to minimize the impact on the
+    // other threads.
+    read_bytes = min(read_buffer_size, (int)net_max_read_per_epoch);
+#endif
+
     bytes_read =
-      socket->RecvData(buffer, min(read_buffer_size,
+      socket->RecvData(buffer, min(read_bytes,
                                    (int)(size - datagram.get_length())));
 #if defined(HAVE_THREADS) && defined(SIMPLE_THREADS)
     while (bytes_read < 0 && socket->GetLastError() == LOCAL_BLOCKING_ERROR &&
            socket->Active()) {
       Thread::force_yield();
       bytes_read =
-        socket->RecvData(buffer, min(read_buffer_size,
+        socket->RecvData(buffer, min(read_bytes,
                                      (int)(size - datagram.get_length())));
     }
 #endif  // SIMPLE_THREADS
@@ -678,6 +695,7 @@ process_incoming_tcp_data(SocketInfo *sinfo) {
         << "Discarding " << bytes_read - datagram_bytes
         << " bytes following TCP datagram.\n";
     }
+    Thread::consider_yield();
   }
 
   // Now that we've read all the data, it's time to finish the socket
@@ -838,7 +856,7 @@ thread_run(int thread_index) {
 
   while (!_shutdown) {
     SocketInfo *sinfo =
-      get_next_available_socket(false, thread_index);
+      get_next_available_socket(true, thread_index);
     if (sinfo != (SocketInfo *)NULL) {
       process_incoming_data(sinfo);
       Thread::consider_yield();

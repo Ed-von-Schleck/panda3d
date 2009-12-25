@@ -585,6 +585,23 @@ do_reshape_request(int x_origin, int y_origin, bool has_origin,
       << ", " << has_origin << ", " << x_size << ", " << y_size << ")\n";
   }
   if (!is_fullscreen()) {
+    if (has_origin) {
+      // A coordinate of -2 means to center the window in its client area.
+      if (x_origin == -2) {
+        x_origin = 0.5 * (_pipe->get_display_width() - x_size);
+      }
+      if (y_origin == -2) {
+        y_origin = 0.5 * (_pipe->get_display_height() - y_size);
+      }
+      _properties.set_origin(x_origin, y_origin);
+
+      if (x_origin == -1 && y_origin == -1) {
+        x_origin = 0;
+        y_origin = 0;
+        has_origin = false;
+      }
+    }
+    
     // Compute the appropriate size and placement for the window,
     // including decorations.
     RECT view_rect;
@@ -599,7 +616,6 @@ do_reshape_request(int x_origin, int y_origin, bool has_origin,
     if (has_origin) {
       x_origin = view_rect.left;
       y_origin = view_rect.top;
-      
     } else {
       x_origin = CW_USEDEFAULT;
       y_origin = CW_USEDEFAULT;
@@ -770,15 +786,31 @@ open_graphic_window(bool fullscreen) {
     _properties.set_size(640, 480);
   }
 
-  int x_origin = 0;
-  int y_origin = 0;
-  if (!fullscreen && _properties.has_origin()) {
-    x_origin = _properties.get_x_origin();
-    y_origin = _properties.get_y_origin();
-  }
-
   int x_size = _properties.get_x_size();
   int y_size = _properties.get_y_size();
+
+  int x_origin = 0;
+  int y_origin = 0;
+  bool has_origin = _properties.has_origin();
+  if (!fullscreen && has_origin) {
+    x_origin = _properties.get_x_origin();
+    y_origin = _properties.get_y_origin();
+    
+    // A coordinate of -2 means to center the window in its client area.
+    if (x_origin == -2) {
+      x_origin = 0.5 * (_pipe->get_display_width() - x_size);
+    }
+    if (y_origin == -2) {
+      y_origin = 0.5 * (_pipe->get_display_height() - y_size);
+    }
+    _properties.set_origin(x_origin, y_origin);
+
+    if (x_origin == -1 && y_origin == -1) {
+      x_origin = 0;
+      y_origin = 0;
+      has_origin = false;
+    }
+  }
 
   int clientAreaWidth = x_size;
   int clientAreaHeight = y_size;
@@ -788,17 +820,16 @@ open_graphic_window(bool fullscreen) {
     SetRect(&win_rect, x_origin, y_origin,
             x_origin + x_size, y_origin + y_size);
     
-    // compute window size based on desired client area size
+    // Compute window size based on desired client area size
     if (!AdjustWindowRect(&win_rect, window_style, FALSE)) {
       windisplay_cat.error()
         << "AdjustWindowRect failed!" << endl;
       return false;
     }
 
-    if (_properties.has_origin()) {
+    if (has_origin) {
       x_origin = win_rect.left;
       y_origin = win_rect.top;
-
     } else {
       x_origin = CW_USEDEFAULT;
       y_origin = CW_USEDEFAULT;
@@ -846,14 +877,14 @@ open_graphic_window(bool fullscreen) {
     x_origin = 0;
     y_origin = 0;
     
-    if (!fullscreen && _properties.has_origin()) {
+    if (!fullscreen && has_origin) {
       x_origin = _properties.get_x_origin();
       y_origin = _properties.get_y_origin();
     }
 
     _hWnd = CreateWindow(wclass._name.c_str(), title.c_str(), 
                          WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS ,
-                         x_origin,y_origin,
+                         x_origin, y_origin,
                          x_size, y_size,
                          _hparent, NULL, hinstance, 0);
     
@@ -1259,7 +1290,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
     // A button-click in the window means to grab the keyboard focus.
     set_focus();
-    break;
+    return 0;
         
   case WM_MBUTTONDOWN:
     if (_lost_keypresses) {
@@ -1270,9 +1301,10 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     _input_devices[0].button_down(MouseButton::button(1), get_message_time());
     // A button-click in the window means to grab the keyboard focus.
     set_focus();
-    break;
+    return 0;
 
   case WM_RBUTTONDOWN:
+    cerr << "RBUTTONDOWN\n";
     if (_lost_keypresses) {
       resend_lost_keypresses();
     }
@@ -1281,7 +1313,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     _input_devices[0].button_down(MouseButton::button(2), get_message_time());
     // A button-click in the window means to grab the keyboard focus.
     set_focus();
-    break;
+    return 0;
 
   case WM_XBUTTONDOWN:
     {
@@ -1297,7 +1329,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         _input_devices[0].button_down(MouseButton::button(4), get_message_time());
       }
     }
-    break;
+    return 0;
     
   case WM_LBUTTONUP:
     if (_lost_keypresses) {
@@ -1305,7 +1337,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     }
     ReleaseCapture();
     _input_devices[0].button_up(MouseButton::button(0), get_message_time());
-    break;
+    return 0;
 
   case WM_MBUTTONUP:
     if (_lost_keypresses) {
@@ -1313,15 +1345,16 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     }
     ReleaseCapture();
     _input_devices[0].button_up(MouseButton::button(1), get_message_time());
-    break;
+    return 0;
 
   case WM_RBUTTONUP:
+    cerr << "RBUTTONUP\n";
     if (_lost_keypresses) {
       resend_lost_keypresses();
     }
     ReleaseCapture();
     _input_devices[0].button_up(MouseButton::button(2), get_message_time());
-    break;
+    return 0;
 
   case WM_XBUTTONUP:
     {
@@ -1336,7 +1369,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         _input_devices[0].button_up(MouseButton::button(4), get_message_time());
       }
     }
-    break;
+    return 0;
 
   case WM_MOUSEWHEEL:
     {

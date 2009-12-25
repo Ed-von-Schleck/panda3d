@@ -148,6 +148,8 @@ typedef void (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size,
 #endif  // OPENGLES_1
 #ifndef OPENGLES
 typedef void (APIENTRYP PFNGLPROGRAMPARAMETERIEXTPROC) (GLuint program, GLenum pname, GLint value);
+typedef void (APIENTRYP PFNGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint first, GLsizei count, GLsizei primcount);
+typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei primcount);
 #endif  // OPENGLES
 #endif  // __EDG__
 
@@ -625,6 +627,8 @@ public:
 #endif  // OPENGLES_1
 #ifndef OPENGLES
   PFNGLPROGRAMPARAMETERIEXTPROC _glProgramParameteri;
+  PFNGLDRAWARRAYSINSTANCEDPROC _glDrawArraysInstanced;
+  PFNGLDRAWELEMENTSINSTANCEDPROC _glDrawElementsInstanced;
 #endif  // OPENGLES
 
   GLenum _edge_clamp;
@@ -633,6 +637,9 @@ public:
   GLenum _mirror_clamp;
   GLenum _mirror_edge_clamp;
   GLenum _mirror_border_clamp;
+#ifndef OPENGLES
+  GLsizei _instance_count;
+#endif
 
   LightMutex _lock;
   typedef pvector<GLuint> DeletedDisplayLists;

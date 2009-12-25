@@ -52,6 +52,9 @@ operator << (ostream &out, PGFrameStyle::Type type) {
 
   case PGFrameStyle::T_ridge:
     return out << "ridge";
+
+  case PGFrameStyle::T_texture_border:
+    return out << "texture_border";
   }
 
   return out << "**unknown(" << (int)type << ")**";
@@ -138,6 +141,7 @@ xform(const LMatrix4f &mat) {
   case T_bevel_in:
   case T_groove:
   case T_ridge:
+  case T_texture_border:
     return true;
   }
 
@@ -190,6 +194,10 @@ generate_into(const NodePath &parent, const LVecBase4f &frame,
 
   case T_ridge:
     new_node = generate_groove_geom(scaled_frame, false);
+    break;
+
+  case T_texture_border:
+    new_node = generate_texture_border_geom(scaled_frame);
     break;
 
   default:
@@ -255,15 +263,12 @@ generate_flat_geom(const LVecBase4f &frame) {
   strip->close_primitive();
   
   CPT(RenderState) state = RenderState::make(ColorAttrib::make_flat(_color), -1);
+  if (has_texture()) {
+    state = state->set_attrib(TextureAttrib::make(get_texture()));
+  }
   PT(Geom) geom = new Geom(vdata);
   geom->add_primitive(strip);
   gnode->add_geom(geom, state);
-  
-  if (has_texture()) {
-    CPT(RenderState) state = 
-      RenderState::make(TextureAttrib::make(get_texture()));
-    gnode->set_geom_state(0, state);
-  }
   
   return gnode.p();
 }
@@ -271,8 +276,8 @@ generate_flat_geom(const LVecBase4f &frame) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PGFrameStyle::generate_bevel_geom
 //       Access: Private
-//  Description: Generates the GeomNode appropriate to a T_bevel_in or
-//               T_bevel_out frame.
+//  Description: Generates the GeomNode appropriate to a T_bevel_in
+//               or T_bevel_out frame.
 ////////////////////////////////////////////////////////////////////
 PT(PandaNode) PGFrameStyle::
 generate_bevel_geom(const LVecBase4f &frame, bool in) {
@@ -340,10 +345,13 @@ generate_bevel_geom(const LVecBase4f &frame, bool in) {
   float bottom = frame[2];
   float top = frame[3];
 
-  float inner_left = left + _width[0];
-  float inner_right = right - _width[0];
-  float inner_bottom = bottom + _width[1];
-  float inner_top = top - _width[1];
+  float cx = (left + right) * 0.5;
+  float cy = (top + bottom) * 0.5;
+
+  float inner_left = min(left + _width[0], cx);
+  float inner_right = max(right - _width[0], cx);
+  float inner_bottom = min(bottom + _width[1], cy);
+  float inner_top = max(top - _width[1], cy);
 
   float left_color_scale = 1.2;
   float right_color_scale = 0.8;
@@ -378,7 +386,13 @@ generate_bevel_geom(const LVecBase4f &frame, bool in) {
               min(_color[2] * top_color_scale, 1.0f),
               _color[3]);
 
-  CPT(GeomVertexFormat) format = GeomVertexFormat::get_v3cp();
+  CPT(GeomVertexFormat) format;
+  if (has_texture()) {
+    format = GeomVertexFormat::get_v3cpt2();
+  } else {
+    format = GeomVertexFormat::get_v3cp();
+  }
+
   PT(GeomVertexData) vdata = new GeomVertexData
     ("PGFrame", format, Geom::UH_static);
   
@@ -424,16 +438,49 @@ generate_bevel_geom(const LVecBase4f &frame, bool in) {
   strip->add_next_vertices(6);
   strip->close_primitive();
   strip->set_shade_model(Geom::SM_flat_last_vertex);
-  
+
+  if (has_texture()) {
+    // Generate UV's.
+    float left = uv_range[0];
+    float right = uv_range[1];
+    float bottom = uv_range[2];
+    float top = uv_range[3];
+
+    float cx = (left + right) * 0.5;
+    float cy = (top + bottom) * 0.5;
+    
+    float inner_left = min(left + _uv_width[0], cx);
+    float inner_right = max(right - _uv_width[0], cx);
+    float inner_bottom = min(bottom + _uv_width[1], cy);
+    float inner_top = max(top - _uv_width[1], cy);
+
+    GeomVertexWriter texcoord(vdata, InternalName::get_texcoord());
+    texcoord.add_data2f(right, bottom);
+    texcoord.add_data2f(inner_right, inner_bottom);
+    texcoord.add_data2f(left, bottom);
+    texcoord.add_data2f(inner_left, inner_bottom);
+    texcoord.add_data2f(left, top);
+    texcoord.add_data2f(inner_left, inner_top);
+    texcoord.add_data2f(right, top);
+    texcoord.add_data2f(inner_right, inner_top);
+
+    texcoord.add_data2f(right, bottom);
+    texcoord.add_data2f(right, top);
+    texcoord.add_data2f(inner_right, inner_bottom);
+    texcoord.add_data2f(inner_right, inner_top);
+    texcoord.add_data2f(inner_left, inner_bottom);
+    texcoord.add_data2f(inner_left, inner_top);
+  }
   PT(Geom) geom = new Geom(vdata);
   geom->add_primitive(strip);
   
-  CPT(RenderState) state = RenderState::make(ShadeModelAttrib::make(ShadeModelAttrib::M_flat),
-                                             ColorAttrib::make_vertex());
+  CPT(RenderState) state;
+  state = RenderState::make(ShadeModelAttrib::make(ShadeModelAttrib::M_flat),
+                            ColorAttrib::make_vertex());
+  if (has_texture()) {
+    state = state->set_attrib(TextureAttrib::make(get_texture()));
+  }
   gnode->add_geom(geom, state);
-  
-  // For now, beveled and grooved geoms don't support textures.  Easy
-  // to add if anyone really wants this.
   
   return gnode.p();
 }
@@ -551,15 +598,18 @@ generate_groove_geom(const LVecBase4f &frame, bool in) {
   float bottom = frame[2];
   float top = frame[3];
 
-  float mid_left = left + 0.5f * _width[0];
-  float mid_right = right - 0.5f * _width[0];
-  float mid_bottom = bottom + 0.5f * _width[1];
-  float mid_top = top - 0.5f * _width[1];
+  float cx = (left + right) * 0.5;
+  float cy = (top + bottom) * 0.5;
 
-  float inner_left = left + _width[0];
-  float inner_right = right - _width[0];
-  float inner_bottom = bottom + _width[1];
-  float inner_top = top - _width[1];
+  float mid_left = min(left + 0.5f * _width[0], cx);
+  float mid_right = max(right - 0.5f * _width[0], cx);
+  float mid_bottom = min(bottom + 0.5f * _width[1], cy);
+  float mid_top = max(top - 0.5f * _width[1], cy);
+
+  float inner_left = min(left + _width[0], cx);
+  float inner_right = max(right - _width[0], cx);
+  float inner_bottom = min(bottom + _width[1], cy);
+  float inner_top = max(top - _width[1], cy);
 
   float left_color_scale = 1.2f;
   float right_color_scale = 0.8f;
@@ -676,6 +726,161 @@ generate_groove_geom(const LVecBase4f &frame, bool in) {
   
   // For now, beveled and grooved geoms don't support textures.  Easy
   // to add if anyone really wants this.
+  
+  return gnode.p();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PGFrameStyle::generate_texture_border_geom
+//       Access: Private
+//  Description: Generates the GeomNode appropriate to a
+//               T_texture_border frame.
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) PGFrameStyle::
+generate_texture_border_geom(const LVecBase4f &frame) {
+  //
+  // Vertices:
+  //
+  //  tristrip 1:
+  //  0 * * * 2 * * * * * * * * * * * * * 4 * * * 6
+  //  *     * *                     * * * *     * *
+  //  *   *   *         * * * * * *       *   *   *
+  //  * *     * * * * *                   * *     *
+  //  1 * * * 3 * * * * * * * * * * * * * 5 * * * 7
+  //
+  //  tristrip 2:
+  //  1 * * * 3 * * * * * * * * * * * * * 5 * * * 7
+  //  *       *                         * *       *
+  //  *     * *                     * *   *     * *
+  //  *   *   *               * * *       *   *   *
+  //  *   *   *         * * *             *   *   *
+  //  * *     *     * *                   * *     *
+  //  *       * * *                       *       *
+  //  8 * * *10 * * * * * * * * * * * * *12 * * *14
+  // 
+  //  tristrip 3:
+  //  8 * * *10 * * * * * * * * * * * * *12 * * *14
+  //  *     * *                     * * * *     * *
+  //  *   *   *         * * * * * *       *   *   *
+  //  * *     * * * * *                   * *     *
+  //  9 * * *11 * * * * * * * * * * * * *13 * * *15
+
+  PT(GeomNode) gnode = new GeomNode("flat");
+
+  float left = frame[0];
+  float right = frame[1];
+  float bottom = frame[2];
+  float top = frame[3];
+
+  float cx = (left + right) * 0.5;
+  float cy = (top + bottom) * 0.5;
+
+  float inner_left = min(left + _width[0], cx);
+  float inner_right = max(right - _width[0], cx);
+  float inner_bottom = min(bottom + _width[1], cy);
+  float inner_top = max(top - _width[1], cy);
+
+  CPT(GeomVertexFormat) format;
+  if (has_texture()) {
+    format = GeomVertexFormat::get_v3t2();
+  } else {
+    format = GeomVertexFormat::get_v3();
+  }
+  
+  PT(GeomVertexData) vdata = new GeomVertexData
+    ("PGFrame", format, Geom::UH_static);
+  
+  GeomVertexWriter vertex(vdata, InternalName::get_vertex());
+  
+  // verts 0,1,2,3
+  vertex.add_data3f(left, 0.0f, top);
+  vertex.add_data3f(left, 0.0f, inner_top);
+  vertex.add_data3f(inner_left, 0.0f, top);
+  vertex.add_data3f(inner_left, 0.0f, inner_top);
+  // verts 4,5,6,7
+  vertex.add_data3f(inner_right, 0.0f, top);
+  vertex.add_data3f(inner_right, 0.0f, inner_top);
+  vertex.add_data3f(right, 0.0f, top);
+  vertex.add_data3f(right, 0.0f, inner_top);
+  // verts 8,9,10,11
+  vertex.add_data3f(left, 0.0f, inner_bottom);
+  vertex.add_data3f(left, 0.0f, bottom);
+  vertex.add_data3f(inner_left, 0.0f, inner_bottom);
+  vertex.add_data3f(inner_left, 0.0f, bottom);
+  // verts 12,13,14,15
+  vertex.add_data3f(inner_right, 0.0f, inner_bottom);
+  vertex.add_data3f(inner_right, 0.0f, bottom);
+  vertex.add_data3f(right, 0.0f, inner_bottom);
+  vertex.add_data3f(right, 0.0f, bottom);
+
+  if (has_texture()) {
+    // Generate UV's.
+    float left = uv_range[0];
+    float right = uv_range[1];
+    float bottom = uv_range[2];
+    float top = uv_range[3];
+
+    float cx = (left + right) * 0.5;
+    float cy = (top + bottom) * 0.5;
+    
+    float inner_left = min(left + _uv_width[0], cx);
+    float inner_right = max(right - _uv_width[0], cx);
+    float inner_bottom = min(bottom + _uv_width[1], cy);
+    float inner_top = max(top - _uv_width[1], cy);
+
+    GeomVertexWriter texcoord(vdata, InternalName::get_texcoord());
+  
+    // verts 0,1,2,3
+    texcoord.add_data2f(left, top);
+    texcoord.add_data2f(left, inner_top);
+    texcoord.add_data2f(inner_left, top);
+    texcoord.add_data2f(inner_left, inner_top);
+    // verts 4,5,6,7
+    texcoord.add_data2f(inner_right, top);
+    texcoord.add_data2f(inner_right, inner_top);
+    texcoord.add_data2f(right, top);
+    texcoord.add_data2f(right, inner_top);
+    // verts 8,9,10,11
+    texcoord.add_data2f(left, inner_bottom);
+    texcoord.add_data2f(left, bottom);
+    texcoord.add_data2f(inner_left, inner_bottom);
+    texcoord.add_data2f(inner_left, bottom);
+    // verts 12,13,14,15
+    texcoord.add_data2f(inner_right, inner_bottom);
+    texcoord.add_data2f(inner_right, bottom);
+    texcoord.add_data2f(right, inner_bottom);
+    texcoord.add_data2f(right, bottom);
+  }
+  
+  PT(GeomTristrips) strip = new GeomTristrips(Geom::UH_static);
+  
+  // tristrip #1
+  strip->add_consecutive_vertices(0, 8);
+  strip->close_primitive();
+  
+  // tristrip #2
+  strip->add_vertex(1);
+  strip->add_vertex(8);
+  strip->add_vertex(3);
+  strip->add_vertex(10);
+  strip->add_vertex(5);
+  strip->add_vertex(12);
+  strip->add_vertex(7);
+  strip->add_vertex(14);
+  strip->close_primitive();
+  
+  // tristrip #3
+  strip->add_consecutive_vertices(8, 8);
+  strip->close_primitive();
+  
+  CPT(RenderState) state = RenderState::make(ColorAttrib::make_flat(_color), -1);
+  if (has_texture()) {
+    state = state->set_attrib(TextureAttrib::make(get_texture()));
+  }
+
+  PT(Geom) geom = new Geom(vdata);
+  geom->add_primitive(strip);
+  gnode->add_geom(geom, state);
   
   return gnode.p();
 }

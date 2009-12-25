@@ -27,8 +27,10 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 ConnectionWriter::WriterThread::
-WriterThread(ConnectionWriter *writer, int thread_index) :
-  Thread("WriterThread", "WriterThread"),
+WriterThread(ConnectionWriter *writer, const string &thread_name,
+             int thread_index) :
+  Thread(make_thread_name(thread_name, thread_index), 
+         make_thread_name(thread_name, thread_index)),
   _writer(writer),
   _thread_index(thread_index)
 {
@@ -55,7 +57,8 @@ thread_main() {
 //               transmission by a thread.
 ////////////////////////////////////////////////////////////////////
 ConnectionWriter::
-ConnectionWriter(ConnectionManager *manager, int num_threads) :
+ConnectionWriter(ConnectionManager *manager, int num_threads,
+                 const string &thread_name) :
   _manager(manager)
 {
   if (!Thread::is_threading_supported()) {
@@ -73,14 +76,19 @@ ConnectionWriter(ConnectionManager *manager, int num_threads) :
   _raw_mode = false;
   _tcp_header_size = tcp_header_size;
   _immediate = (num_threads <= 0);
+  _shutdown = false;
 
+  string writer_thread_name = thread_name;
+  if (thread_name.empty()) {
+    writer_thread_name = "WriterThread";
+  }
   int i;
   for (i = 0; i < num_threads; i++) {
-    PT(WriterThread) thread = new WriterThread(this, i);
+    PT(WriterThread) thread = new WriterThread(this, writer_thread_name, i);
     _threads.push_back(thread);
   }
   for (i = 0; i < num_threads; i++) {
-    _threads[i]->start(TP_normal, true);
+    _threads[i]->start(net_thread_priority, true);
   }
 
   _manager->add_writer(this);
@@ -156,6 +164,7 @@ get_current_queue_size() const {
 ////////////////////////////////////////////////////////////////////
 bool ConnectionWriter::
 send(const Datagram &datagram, const PT(Connection) &connection, bool block) {
+  nassertr(!_shutdown, false);
   nassertr(connection != (Connection *)NULL, false);
   nassertr(connection->get_socket()->is_exact_type(Socket_TCP::get_class_type()), false);
 
@@ -196,6 +205,7 @@ send(const Datagram &datagram, const PT(Connection) &connection, bool block) {
 bool ConnectionWriter::
 send(const Datagram &datagram, const PT(Connection) &connection,
      const NetAddress &address, bool block) {
+  nassertr(!_shutdown, false);
   nassertr(connection != (Connection *)NULL, false);
   nassertr(connection->get_socket()->is_exact_type(Socket_UDP::get_class_type()), false);
 
@@ -322,6 +332,32 @@ get_tcp_header_size() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ConnectionWriter::shutdown
+//       Access: Published
+//  Description: Stops all the threads and cleans them up.  This is
+//               called automatically by the destructor, but it may be
+//               called explicitly before destruction.
+////////////////////////////////////////////////////////////////////
+void ConnectionWriter::
+shutdown() {
+  if (_shutdown) {
+    return;
+  }
+  _shutdown = true;
+
+  // First, shutdown the queue.  This will tell our threads they're
+  // done.
+  _queue.shutdown();
+
+  // Now wait for all threads to terminate.
+  Threads::iterator ti;
+  for (ti = _threads.begin(); ti != _threads.end(); ++ti) {
+    (*ti)->join();
+  }
+  _threads.clear();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ConnectionWriter::clear_manager
 //       Access: Protected
 //  Description: This should normally only be called when the
@@ -356,23 +392,4 @@ thread_run(int thread_index) {
     }
     Thread::consider_yield();
   }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ConnectionWriter::shutdown
-//       Access: Private
-//  Description: Stops all the threads and cleans them up.
-////////////////////////////////////////////////////////////////////
-void ConnectionWriter::
-shutdown() {
-  // First, shutdown the queue.  This will tell our threads they're
-  // done.
-  _queue.shutdown();
-
-  // Now wait for all threads to terminate.
-  Threads::iterator ti;
-  for (ti = _threads.begin(); ti != _threads.end(); ++ti) {
-    (*ti)->join();
-  }
-  _threads.clear();
 }

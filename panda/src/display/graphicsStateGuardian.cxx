@@ -210,6 +210,7 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   _supports_stencil = false;
   _supports_stencil_wrap = false;
   _supports_two_sided_stencil = false;
+  _supports_geometry_instancing = false;
 
   _maximum_simultaneous_render_targets = 1;
 
@@ -2592,10 +2593,10 @@ make_shadow_buffer(const NodePath &light_np, GraphicsOutputBase *host) {
   
   // Create a texture and fill it in with some data to workaround an OpenGL error
   PT(Texture) tex = new Texture(light->get_name());
-  tex->setup_2d_texture(light->_sb_xsize, light->_sb_ysize, Texture::T_float, Texture::F_depth_stencil);
+  tex->setup_2d_texture(light->_sb_xsize, light->_sb_ysize, Texture::T_float, Texture::F_depth_component);
   tex->make_ram_image();
   sbuffer->add_render_texture(tex, GraphicsOutput::RTM_bind_or_copy,
-                                   GraphicsOutput::RTP_depth_stencil);
+                                   GraphicsOutput::RTP_depth);
   // Set the wrap mode to BORDER_COLOR
   tex->set_wrap_u(Texture::WM_border_color);
   tex->set_wrap_v(Texture::WM_border_color);
