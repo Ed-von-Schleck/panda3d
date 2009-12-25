@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::is_valid
 //       Access: Published
-//  Description:
+//  Description: Returns TRUE if this sphere is valid.
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 is_valid() const {
@@ -29,7 +29,7 @@ is_valid() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::contains
 //       Access: Published
-//  Description:
+//  Description: Tests if a point is contained within the sphere.
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const LPoint3f &p) const {
@@ -42,7 +42,7 @@ contains(const LPoint3f &p) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::contains
 //       Access: Published
-//  Description:
+//  Description: Tests if a sphere is contained within the sphere.
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const PhysxSphere &sphere) const {
@@ -53,7 +53,9 @@ contains(const PhysxSphere &sphere) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::contains
 //       Access: Published
-//  Description:
+//  Description: Tests if an axis aligned box is contained within
+//               the sphere. The axis aligned box is defined by the
+//               minimum corner and the maximum corner.
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 contains(const LPoint3f &min, const LPoint3f &max) const {
@@ -68,7 +70,8 @@ contains(const LPoint3f &min, const LPoint3f &max) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::intersect
 //       Access: Published
-//  Description:
+//  Description: Tests if the sphere intersects another sphere.
+//               Returns TRUE if the spheres overlap.
 ////////////////////////////////////////////////////////////////////
 bool PhysxSphere::
 intersect(const PhysxSphere &sphere) const {
@@ -79,7 +82,7 @@ intersect(const PhysxSphere &sphere) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::get_center
 //       Access: Published
-//  Description:
+//  Description: Returns the center of the sphere.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSphere::
 get_center() const {
@@ -90,7 +93,7 @@ get_center() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::set_center
 //       Access: Published
-//  Description:
+//  Description: Sets the center of the sphere.
 ////////////////////////////////////////////////////////////////////
 void PhysxSphere::
 set_center(LPoint3f center) {
@@ -103,7 +106,7 @@ set_center(LPoint3f center) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::get_radius
 //       Access: Published
-//  Description:
+//  Description: Returns the sphere's radius.
 ////////////////////////////////////////////////////////////////////
 float PhysxSphere::
 get_radius() const {
@@ -114,7 +117,7 @@ get_radius() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSphere::set_radius
 //       Access: Published
-//  Description:
+//  Description: Sets the sphere's radius.
 ////////////////////////////////////////////////////////////////////
 void PhysxSphere::
 set_radius(float radius) {

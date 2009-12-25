@@ -30,7 +30,7 @@ PhysxSegment(const LPoint3f &p0, const LPoint3f &p1) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::get_p0
 //       Access: Published
-//  Description:
+//  Description: Returns the start point of the segment.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSegment::
 get_p0() const {
@@ -41,7 +41,7 @@ get_p0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::set_p0
 //       Access: Published
-//  Description:
+//  Description: Sets the start point of the segment.
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_p0(LPoint3f p) {
@@ -54,7 +54,7 @@ set_p0(LPoint3f p) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::get_p1
 //       Access: Published
-//  Description:
+//  Description: Returns the end point of the segment.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSegment::
 get_p1() const {
@@ -65,7 +65,7 @@ get_p1() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::set_p1
 //       Access: Published
-//  Description:
+//  Description: Sets the end point of the segment.
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_p1(LPoint3f p) {
@@ -78,7 +78,7 @@ set_p1(LPoint3f p) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::get_origin
 //       Access: Published
-//  Description:
+//  Description: Returns the start point of the segment.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxSegment::
 get_origin() const {
@@ -89,7 +89,8 @@ get_origin() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::compute_direction
 //       Access: Published
-//  Description:
+//  Description: Returns the direction vector from the segment's
+//               start point to it's end point.
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 compute_direction(LPoint3f &dir) const {
@@ -104,7 +105,8 @@ compute_direction(LPoint3f &dir) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::compute_length
 //       Access: Published
-//  Description:
+//  Description: Returns the distance from the segment's start point
+//               to it's end point.
 ////////////////////////////////////////////////////////////////////
 float PhysxSegment::
 compute_length() const {
@@ -115,7 +117,7 @@ compute_length() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::compute_point
 //       Access: Published
-//  Description:
+//  Description: Computes a point on the segment.
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 compute_point(LPoint3f &p, float t) const {
@@ -130,7 +132,8 @@ compute_point(LPoint3f &p, float t) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::compute_square_length
 //       Access: Published
-//  Description:
+//  Description: Returns the square distance from the segment's
+//               start point to it's end point.
 ////////////////////////////////////////////////////////////////////
 float PhysxSegment::
 compute_square_length() const {
@@ -141,7 +144,8 @@ compute_square_length() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxSegment::set_origin_direction
 //       Access: Published
-//  Description:
+//  Description: Setup this segment from origin (start point) and
+//               direction vector.
 ////////////////////////////////////////////////////////////////////
 void PhysxSegment::
 set_origin_direction(const LPoint3f &origin, const LVector3f &direction) {

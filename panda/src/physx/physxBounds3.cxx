@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::get_max
 //       Access: Published
-//  Description:
+//  Description: Returns the minimum corner of the bounding box.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxBounds3::
 get_max() const {
@@ -29,7 +29,7 @@ get_max() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::get_min
 //       Access: Published
-//  Description:
+//  Description: Returns the maximum corner of the bounding box.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxBounds3::
 get_min() const {
@@ -38,9 +38,35 @@ get_min() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PhysxBounds3::get_center
+//       Access: Published
+//  Description: Returns the center of the bounding box.
+////////////////////////////////////////////////////////////////////
+LPoint3f PhysxBounds3::
+get_center() const {
+
+  NxVec3 center;
+  _bounds.getCenter(center);
+  return PhysxManager::nxVec3_to_point3(center);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PhysxBounds3::get_dimensions
+//       Access: Published
+//  Description: Returns the extents of the bounding box.
+////////////////////////////////////////////////////////////////////
+LVector3f PhysxBounds3::
+get_dimensions() const {
+
+  NxVec3 dims;
+  _bounds.getDimensions(dims);
+  return PhysxManager::nxVec3_to_vec3(dims);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::set_max
 //       Access: Published
-//  Description:
+//  Description: Sets the maximum corner of the bounding box.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_max(LPoint3f value) {
@@ -53,7 +79,7 @@ set_max(LPoint3f value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::set_min
 //       Access: Published
-//  Description:
+//  Description: Sets the minimum corner of the bounding box.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_min(LPoint3f value) {
@@ -66,7 +92,10 @@ set_min(LPoint3f value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::bounds_of_obb
 //       Access: Published
-//  Description:
+//  Description: Sets this to the AABB (axis ligned bounding box)
+//               of the OBB (oriented bounding box). The OBB is
+//               described by orientation, translation and half
+//               dimensions.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 bounds_of_obb(const LMatrix3f &orientation, const LPoint3f &translation, const LVector3f &half_dims) {
@@ -83,7 +112,7 @@ bounds_of_obb(const LMatrix3f &orientation, const LPoint3f &translation, const L
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::combine
 //       Access: Published
-//  Description:
+//  Description: Sets this to the union of this and b2. 
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 combine(const PhysxBounds3 &b2) {
@@ -94,7 +123,7 @@ combine(const PhysxBounds3 &b2) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::contain
 //       Access: Published
-//  Description:
+//  Description: Returns TRUE if these bounds contain the point v.
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 contain(const LPoint3f &p) const {
@@ -107,7 +136,8 @@ contain(const LPoint3f &p) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::fatten
 //       Access: Published
-//  Description:
+//  Description: Fattens the AABB in all three dimensions by the
+//               given distance.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 fatten(float distance) {
@@ -116,23 +146,9 @@ fatten(float distance) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PhysxBounds3::get_dimensions
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-LVector3f PhysxBounds3::
-get_dimensions() const {
-
-  NxVec3 dims;
-  _bounds.getDimensions(dims);
-
-  return PhysxManager::nxVec3_to_vec3(dims);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::include
 //       Access: Published
-//  Description:
+//  Description: Expands the volume to include the point v.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 include(const LPoint3f &p) {
@@ -144,7 +160,8 @@ include(const LPoint3f &p) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::intersects
 //       Access: Published
-//  Description:
+//  Description: Returns TRUE if the intersection of this and b is
+//               is not empty.
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 intersects(const PhysxBounds3 &b) const {
@@ -156,8 +173,8 @@ intersects(const PhysxBounds3 &b) const {
 //     Function: PhysxBounds3::intersects2d
 //       Access: Published
 //  Description: Indicates whether the intersection of this and b
-//                is empty or not in the plane orthogonal to the
-//                axis passed (X = 0, Y = 1 or Z = 2). 
+//               is empty or not in the plane orthogonal to the
+//               axis passed (X = 0, Y = 1 or Z = 2). 
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 intersects2d(const PhysxBounds3 &b, unsigned axis_to_ignore) const {
@@ -168,7 +185,7 @@ intersects2d(const PhysxBounds3 &b, unsigned axis_to_ignore) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::is_empty
 //       Access: Published
-//  Description:
+//  Description: Returns TRUE if the bounding box is empty.
 ////////////////////////////////////////////////////////////////////
 bool PhysxBounds3::
 is_empty() const {
@@ -179,7 +196,7 @@ is_empty() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::scale
 //       Access: Published
-//  Description:
+//  Description: Scales the AABB by the given factor.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 scale(float scale) {
@@ -190,7 +207,8 @@ scale(float scale) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::set
 //       Access: Published
-//  Description:
+//  Description: Setup this AABB from minimum corner and maximum
+//               corner.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set(const LPoint3f &min, const LPoint3f &max) {
@@ -205,7 +223,8 @@ set(const LPoint3f &min, const LPoint3f &max) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::set_center_extents
 //       Access: Published
-//  Description:
+//  Description: Setup this AABB from center point and extents
+//               vector.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_center_extents(const LPoint3f &center, const LVector3f &extents) {
@@ -220,7 +239,7 @@ set_center_extents(const LPoint3f &center, const LVector3f &extents) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::set_empty
 //       Access: Published
-//  Description:
+//  Description: Sets empty to TRUE.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_empty() {
@@ -231,7 +250,7 @@ set_empty() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::set_infinite
 //       Access: Published
-//  Description:
+//  Description: Sets infinite bounds.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 set_infinite() {
@@ -242,7 +261,10 @@ set_infinite() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBounds3::transform
 //       Access: Published
-//  Description:
+//  Description: Transforms this volume as if it was an axis aligned
+//               bounding box, and then assigns the results' bounds
+//               to this. The orientation is applied first, then the
+//               translation.
 ////////////////////////////////////////////////////////////////////
 void PhysxBounds3::
 transform(const LMatrix3f &orientation, const LPoint3f &translation) {

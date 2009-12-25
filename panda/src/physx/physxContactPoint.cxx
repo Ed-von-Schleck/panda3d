@@ -49,7 +49,7 @@ empty() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPoint::get_point
 //       Access: Published
-//  Description: 
+//  Description: Returns the contact point position.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxContactPoint::
 get_point() const {
@@ -60,7 +60,7 @@ get_point() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPoint::get_normal
 //       Access: Published
-//  Description: 
+//  Description: Retrieves the patch normal.
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxContactPoint::
 get_normal() const {
@@ -71,7 +71,7 @@ get_normal() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPoint::get_normal_force
 //       Access: Published
-//  Description: 
+//  Description: Retrieves the point normal force.
 ////////////////////////////////////////////////////////////////////
 float PhysxContactPoint::
 get_normal_force() const {
@@ -82,7 +82,7 @@ get_normal_force() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPoint::get_separation
 //       Access: Published
-//  Description: 
+//  Description: Return the separation for the contact point.
 ////////////////////////////////////////////////////////////////////
 float PhysxContactPoint::
 get_separation() const {
@@ -93,7 +93,7 @@ get_separation() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPoint::get_feature_index0
 //       Access: Published
-//  Description: 
+//  Description: Retrieves the feature index.
 ////////////////////////////////////////////////////////////////////
 unsigned int PhysxContactPoint::
 get_feature_index0() const {
@@ -104,7 +104,7 @@ get_feature_index0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPoint::get_feature_index1
 //       Access: Published
-//  Description: 
+//  Description: Retrieves the feature index.
 ////////////////////////////////////////////////////////////////////
 unsigned int PhysxContactPoint::
 get_feature_index1() const {

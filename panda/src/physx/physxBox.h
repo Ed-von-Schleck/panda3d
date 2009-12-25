@@ -22,7 +22,11 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxBox
-// Description : 
+// Description : Represents an oriented bounding box, as a center
+//               point, extents(radii) and a rotation. i.e. the
+//               center of the box is at the center point, the box
+//               is rotated around this point with the rotation and
+//               it is 2*extents in width, height and depth.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxBox {
 

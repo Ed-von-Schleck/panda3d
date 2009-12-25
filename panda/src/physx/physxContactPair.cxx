@@ -22,7 +22,8 @@ TypeHandle PhysxContactPair::_type_handle;
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPair::get_actor_a
 //       Access: Published
-//  Description: 
+//  Description: Returns the first of the two actors that makes up
+//               this pair.
 ////////////////////////////////////////////////////////////////////
 PT(PhysxActor) PhysxContactPair::
 get_actor_a() const {
@@ -34,7 +35,8 @@ get_actor_a() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPair::get_actor_b
 //       Access: Published
-//  Description: 
+//  Description: Returns the second of the two actors that make up
+//               his pair.
 ////////////////////////////////////////////////////////////////////
 PT(PhysxActor) PhysxContactPair::
 get_actor_b() const {
@@ -46,7 +48,15 @@ get_actor_b() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPair::get_sum_normal_force
 //       Access: Published
-//  Description: 
+//  Description: Returns the total contact normal force that was
+//               applied for this pair, to maintain nonpenetration
+//               constraints.
+//
+//               You should set the ContactPairFlag 
+//               CPF_notify_forces in order to receive this value.
+//
+//               @see PhysxScene::set_actor_pair_flag
+//               @see PhysxScene::set_actor_group_pair_flag
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxContactPair::
 get_sum_normal_force() const {
@@ -57,7 +67,14 @@ get_sum_normal_force() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPair::get_sum_friction_force
 //       Access: Published
-//  Description: 
+//  Description: Returns the total tangential force that was applied
+//               for this pair.
+//
+//               You should set the ContactPairFlag 
+//               CPF_notify_forces in order to receive this value.
+//
+//               @see PhysxScene::set_actor_pair_flag
+//               @see PhysxScene::set_actor_group_pair_flag
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxContactPair::
 get_sum_friction_force() const {
@@ -68,7 +85,11 @@ get_sum_friction_force() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPair::get_num_contact_points
 //       Access: Published
-//  Description: 
+//  Description: Returns the total number of contact points reported
+//               in this pair's contact stream.
+//
+//               This method is a helper for iterating over the
+//               pair's contact stream.
 ////////////////////////////////////////////////////////////////////
 unsigned int PhysxContactPair::
 get_num_contact_points() {
@@ -92,7 +113,12 @@ get_num_contact_points() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxContactPair::get_contact_point
 //       Access: Published
-//  Description: 
+//  Description: Returns an instance of PhysxContactPoint, which
+//               represents a single entry of this pair's contact
+//               stream.
+//
+//               This method is a helper for iterating over the
+//               pair's contact stream.
 ////////////////////////////////////////////////////////////////////
 PhysxContactPoint PhysxContactPair::
 get_contact_point(unsigned int idx) const {

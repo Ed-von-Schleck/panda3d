@@ -27,7 +27,9 @@ class PhysxContactPoint;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxContactPair
-// Description : 
+// Description : An instance of this class is send with contact
+//               reporting events. It contains detailed information
+//               on the contact.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxContactPair : public TypedReferenceCount {
 

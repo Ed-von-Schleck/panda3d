@@ -22,8 +22,8 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxControllerReport
-// Description : Implementation of the user callback class for
-//               character controller callbacks.
+// Description : Implementation of the NxUserControllerHitReport
+//               interface.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxControllerReport : public NxUserControllerHitReport {
 

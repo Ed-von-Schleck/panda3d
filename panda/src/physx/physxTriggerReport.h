@@ -23,7 +23,8 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxTriggerReport
-// Description :
+// Description : Implementation of the NxUserTriggerReport
+//               interface.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxTriggerReport : public NxUserTriggerReport {
 

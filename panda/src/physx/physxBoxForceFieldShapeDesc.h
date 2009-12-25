@@ -25,7 +25,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxBoxForceFieldShapeDesc
-// Description : A descriptor for box a force field shape.
+// Description : Descriptor for a box force field shape.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxBoxForceFieldShapeDesc : public PhysxForceFieldShapeDesc {
 

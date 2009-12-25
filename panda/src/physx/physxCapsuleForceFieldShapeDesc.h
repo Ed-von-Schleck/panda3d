@@ -24,7 +24,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxCapsuleForceFieldShapeDesc
-// Description : A descriptor for a capsule force field shape.
+// Description : Descriptor for a capsule force field shape.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxCapsuleForceFieldShapeDesc : public PhysxForceFieldShapeDesc {
 

@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::get_radius
 //       Access: Published
-//  Description:
+//  Description: Returns the capsule's radius.
 ////////////////////////////////////////////////////////////////////
 float PhysxCapsule::
 get_radius() const {
@@ -29,7 +29,7 @@ get_radius() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::set_radius
 //       Access: Published
-//  Description:
+//  Description: Sets the capsule's radius.
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_radius(float radius) {
@@ -40,7 +40,7 @@ set_radius(float radius) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::get_p0
 //       Access: Published
-//  Description:
+//  Description: Returns the start point of the segment.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxCapsule::
 get_p0() const {
@@ -51,7 +51,7 @@ get_p0() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::set_p0
 //       Access: Published
-//  Description:
+//  Description: Sets the start point of the segment.
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_p0(LPoint3f p) {
@@ -64,7 +64,7 @@ set_p0(LPoint3f p) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::get_p1
 //       Access: Published
-//  Description:
+//  Description: Returns the end point of the segment.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxCapsule::
 get_p1() const {
@@ -75,7 +75,7 @@ get_p1() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::set_p1
 //       Access: Published
-//  Description:
+//  Description: Sets the end point of the segment.
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_p1(LPoint3f p) {
@@ -88,7 +88,7 @@ set_p1(LPoint3f p) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::get_origin
 //       Access: Published
-//  Description:
+//  Description: Returns the start point of the segment.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxCapsule::
 get_origin() const {
@@ -99,7 +99,8 @@ get_origin() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::compute_direction
 //       Access: Published
-//  Description:
+//  Description: Returns the direction vector from the segment's
+//               start point to it's end point.
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 compute_direction(LPoint3f &dir) const {
@@ -114,7 +115,8 @@ compute_direction(LPoint3f &dir) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::compute_length
 //       Access: Published
-//  Description:
+//  Description: Returns the distance from the segment's start point
+//               to it's end point.
 ////////////////////////////////////////////////////////////////////
 float PhysxCapsule::
 compute_length() const {
@@ -125,7 +127,7 @@ compute_length() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::compute_point
 //       Access: Published
-//  Description:
+//  Description: Computes a point on the segment. 
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 compute_point(LPoint3f &p, float t) const {
@@ -140,7 +142,8 @@ compute_point(LPoint3f &p, float t) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::compute_square_length
 //       Access: Published
-//  Description:
+//  Description: Returns the square distance from the segment's
+//               start point to it's end point.
 ////////////////////////////////////////////////////////////////////
 float PhysxCapsule::
 compute_square_length() const {
@@ -151,7 +154,8 @@ compute_square_length() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxCapsule::set_origin_direction
 //       Access: Published
-//  Description:
+//  Description: Setup this capsule from origin (start point) and
+//               direction vector.
 ////////////////////////////////////////////////////////////////////
 void PhysxCapsule::
 set_origin_direction(const LPoint3f &origin, const LVector3f &direction) {

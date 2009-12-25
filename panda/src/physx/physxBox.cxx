@@ -31,7 +31,7 @@ PhysxBox(const LPoint3f &center, const LVector3f &extents, const LMatrix3f &rot)
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::is_valid
 //       Access: Published
-//  Description:
+//  Description: Returns TRUE if the box is valid.
 ////////////////////////////////////////////////////////////////////
 bool PhysxBox::
 is_valid() const {
@@ -42,7 +42,8 @@ is_valid() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::rotate
 //       Access: Published
-//  Description:
+//  Description: Recomputes the box after an arbitrary transform by
+//               a 4x4 matrix.
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 rotate(const LMatrix4f &m, PhysxBox &obb) const {
@@ -55,7 +56,7 @@ rotate(const LMatrix4f &m, PhysxBox &obb) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::set_empty
 //       Access: Published
-//  Description:
+//  Description: Setups an empty box.
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_empty() {
@@ -66,7 +67,7 @@ set_empty() {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::get_center
 //       Access: Published
-//  Description:
+//  Description: Return center of the box.
 ////////////////////////////////////////////////////////////////////
 LPoint3f PhysxBox::
 get_center() const {
@@ -77,7 +78,7 @@ get_center() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::get_extents
 //       Access: Published
-//  Description:
+//  Description: Returns the extents (radii) of the box.
 ////////////////////////////////////////////////////////////////////
 LVector3f PhysxBox::
 get_extents() const {
@@ -88,7 +89,7 @@ get_extents() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::get_rot
 //       Access: Published
-//  Description:
+//  Description: Return the rotation of the box.
 ////////////////////////////////////////////////////////////////////
 LMatrix3f PhysxBox::
 get_rot() const {
@@ -99,7 +100,7 @@ get_rot() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::set_center
 //       Access: Published
-//  Description:
+//  Description: Sets the center of the box.
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_center(LPoint3f center) {
@@ -112,7 +113,7 @@ set_center(LPoint3f center) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::set_extents
 //       Access: Published
-//  Description:
+//  Description: Sets the extents of the box.
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_extents(LVector3f extents) {
@@ -125,7 +126,7 @@ set_extents(LVector3f extents) {
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxBox::set_rot
 //       Access: Published
-//  Description:
+//  Description: Sets the rotation of the box.
 ////////////////////////////////////////////////////////////////////
 void PhysxBox::
 set_rot(LMatrix3f rot) {

@@ -24,7 +24,11 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxBounds3
-// Description : 
+// Description : Represention of a axis aligned bounding box. 
+//               The box is stored as minimum and maximum extent
+//               corners. Alternate representation would be center
+//               and dimensions. May be empty or nonempty. If not
+//               empty, min <= max has to hold.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxBounds3 {
 
@@ -36,7 +40,6 @@ PUBLISHED:
   void combine(const PhysxBounds3 &b2);
   bool contain(const LPoint3f &p) const;
   void fatten(float distance);
-  LVector3f get_dimensions() const;
   void include(const LPoint3f &v);
   bool intersects(const PhysxBounds3 &b) const;
   bool intersects2d(const PhysxBounds3 &b, unsigned axis_to_ignore) const;
@@ -50,6 +53,8 @@ PUBLISHED:
 
   LPoint3f get_max() const;
   LPoint3f get_min() const;
+  LPoint3f get_center() const;
+  LVector3f get_dimensions() const;
 
   void set_max(LPoint3f value);
   void set_min(LPoint3f value);

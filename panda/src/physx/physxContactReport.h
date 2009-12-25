@@ -23,7 +23,8 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxContactReport
-// Description :
+// Description : Implementation of the NxUserContactReport
+//               interface.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxContactReport : public NxUserContactReport {
 

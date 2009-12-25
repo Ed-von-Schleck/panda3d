@@ -27,7 +27,7 @@ class PhysxBoxForceFieldShapeDesc;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PhysxBoxForceFieldShape
-// Description : A box shaped region used to define force field.
+// Description : A box shaped region used to define a force field.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDAPHYSX PhysxBoxForceFieldShape : public PhysxForceFieldShape {
 

@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: PhysxConvexForceFieldShapeDesc::set_mesh
 //       Access: Published
-//  Description: 
+//  Description: Sets the convex mesh for this force field shape.
 ////////////////////////////////////////////////////////////////////
 void PhysxConvexForceFieldShapeDesc::
 set_mesh(PT(PhysxConvexMesh) mesh) {
