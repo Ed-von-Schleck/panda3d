@@ -54,7 +54,6 @@ public:
   INLINE NxGroupsMask get_mask() const;
   INLINE void set_mask(NxGroupsMask mask);
 
-private:
   NxGroupsMask _mask;
 };
 

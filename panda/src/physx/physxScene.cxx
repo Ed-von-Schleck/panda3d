@@ -866,7 +866,7 @@ raycast_any_shape(const PhysxRay &ray,
 
   nassertr(_error_type == ET_ok, false);
 
-  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+  NxGroupsMask *groupsPtr = groups ? &(groups->_mask) : NULL;
 
   return _ptr->raycastAnyShape(ray._ray, (NxShapesType)shapesType, 
                                mask.get_mask(), ray._length, groupsPtr);
@@ -889,7 +889,7 @@ raycast_closest_shape(const PhysxRay &ray,
 
   nassertr(_error_type == ET_ok, hit);
 
-  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+  NxGroupsMask *groupsPtr = groups ? &(groups->_mask) : NULL;
 
   NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
   if (smoothNormal == true) {
@@ -923,7 +923,7 @@ raycast_all_shapes(const PhysxRay &ray,
 
   nassertr(_error_type == ET_ok, report);
 
-  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+  NxGroupsMask *groupsPtr = groups ? &(groups->_mask) : NULL;
 
   NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
   if (smoothNormal == true) {
@@ -953,7 +953,7 @@ raycast_any_bounds(const PhysxRay &ray,
 
   nassertr(_error_type == ET_ok, false);
 
-  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+  NxGroupsMask *groupsPtr = groups ? &(groups->_mask) : NULL;
 
   return _ptr->raycastAnyBounds(ray._ray, (NxShapesType)shapesType, 
                                 mask.get_mask(), ray._length, groupsPtr);
@@ -974,7 +974,7 @@ raycast_closest_bounds(const PhysxRay &ray, PhysxShapesType shapesType, PhysxMas
 
   nassertr(_error_type == ET_ok, hit);
 
-  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+  NxGroupsMask *groupsPtr = groups ? &(groups->_mask) : NULL;
 
   NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
   if (smoothNormal == true) {
@@ -1009,7 +1009,7 @@ raycast_all_bounds(const PhysxRay &ray,
 
   nassertr(_error_type == ET_ok, report);
 
-  NxGroupsMask *groupsPtr = groups ? &(groups->get_mask()) : NULL;
+  NxGroupsMask *groupsPtr = groups ? &(groups->_mask) : NULL;
 
   NxU32 hints = NX_RAYCAST_SHAPE | NX_RAYCAST_IMPACT | NX_RAYCAST_DISTANCE;
   if (smoothNormal == true) {
