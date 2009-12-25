@@ -302,6 +302,30 @@ Filename(const Filename &dirname, const Filename &basename) {
   }
 }
 
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::__reduce__
+//       Access: Published
+//  Description: This special Python method is implement to provide
+//               support for the pickle module.
+////////////////////////////////////////////////////////////////////
+PyObject *Filename::
+__reduce__(PyObject *self) const {
+  // We should return at least a 2-tuple, (Class, (args)): the
+  // necessary class object whose constructor we should call
+  // (e.g. this), and the arguments necessary to reconstruct this
+  // object.
+  PyObject *this_class = PyObject_Type(self);
+  if (this_class == NULL) {
+    return NULL;
+  }
+
+  PyObject *result = Py_BuildValue("(O(s))", this_class, c_str());
+  Py_DECREF(this_class);
+  return result;
+}
+#endif  // HAVE_PYTHON
+
 ////////////////////////////////////////////////////////////////////
 //     Function: Filename::from_os_specific
 //       Access: Published, Static
@@ -461,7 +485,7 @@ temporary(const string &dirname, const string &prefix, const string &suffix,
 ////////////////////////////////////////////////////////////////////
 const Filename &Filename::
 get_home_directory() {
-  if (AtomicAdjust::get_ptr(_home_directory) == NULL) {
+  if (AtomicAdjust::get_ptr((void * TVOLATILE &)_home_directory) == NULL) {
     Filename home_directory;
 
     // In all environments, check $HOME first.
@@ -522,7 +546,7 @@ get_home_directory() {
 ////////////////////////////////////////////////////////////////////
 const Filename &Filename::
 get_temp_directory() {
-  if (AtomicAdjust::get_ptr(_temp_directory) == NULL) {
+  if (AtomicAdjust::get_ptr((void * TVOLATILE &)_temp_directory) == NULL) {
     Filename temp_directory;
 
 #ifdef WIN32
@@ -571,7 +595,7 @@ get_temp_directory() {
 ////////////////////////////////////////////////////////////////////
 const Filename &Filename::
 get_user_appdata_directory() {
-  if (AtomicAdjust::get_ptr(_user_appdata_directory) == NULL) {
+  if (AtomicAdjust::get_ptr((void * TVOLATILE &)_user_appdata_directory) == NULL) {
     Filename user_appdata_directory;
 
 #ifdef WIN32
@@ -620,7 +644,7 @@ get_user_appdata_directory() {
 ////////////////////////////////////////////////////////////////////
 const Filename &Filename::
 get_common_appdata_directory() {
-  if (AtomicAdjust::get_ptr(_common_appdata_directory) == NULL) {
+  if (AtomicAdjust::get_ptr((void * TVOLATILE &)_common_appdata_directory) == NULL) {
     Filename common_appdata_directory;
 
 #ifdef WIN32

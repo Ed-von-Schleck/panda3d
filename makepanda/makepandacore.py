@@ -120,6 +120,10 @@ try:
   HAVE_COLORS=sys.stdout.isatty()
 except: pass
 
+def DisableColors():
+    global HAVE_COLORS
+    HAVE_COLORS = False
+
 def GetColor(color = None):
     if not HAVE_COLORS: return ""
     if color != None: color = color.lower()
@@ -921,7 +925,8 @@ def PkgConfigHavePkg(pkgname, tool = "pkg-config"):
     else:
         return bool(LocateBinary(tool) != None)
     result = handle.read().strip()
-    if handle.close() != 0:
+    returnval = handle.close()
+    if returnval != None and returnval != 0:
         return False
     return bool(len(result) > 0)
 
@@ -1022,12 +1027,13 @@ def GetLibCache():
             result = handle.read().strip().split("\n")
             for line in result:
                 lib = line.strip().split(" ", 1)[0]
-                lib = lib.split(".so", 1)[0][3:]
-                LD_CACHE.append(lib)
-        libs = glob.glob("/lib/*.so*") + glob.glob("/usr/lib/*.so*") + glob.glob("/usr/local/lib/*.so*") + glob.glob("/usr/PCBSD/local/lib/*.so*")
+                if (".so " in lib):
+                    lib = lib.split(".so", 1)[0][3:]
+                    LD_CACHE.append(lib)
+        libs = glob.glob("/lib/*.so") + glob.glob("/usr/lib/*.so") + glob.glob("/usr/local/lib/*.so") + glob.glob("/usr/PCBSD/local/lib/*.so")
         libs += glob.glob("/lib/*.a") + glob.glob("/usr/lib/*.a") + glob.glob("/usr/local/lib/*.a") + glob.glob("/usr/PCBSD/local/lib/*.a")
         if platform.architecture()[0] == "64bit":
-            libs += glob.glob("/lib64/*.so*") + glob.glob("/usr/lib64/*.so*")
+            libs += glob.glob("/lib64/*.so") + glob.glob("/usr/lib64/*.so")
             libs += glob.glob("/lib64/*.a") + glob.glob("/usr/lib64/*.a")
         if (sys.platform == "darwin"):
             libs += glob.glob("/lib/*.dylib*") + glob.glob("/usr/lib/*.dylib*") + glob.glob("/usr/local/lib/*.dylib*")
@@ -1048,9 +1054,9 @@ def ChooseLib(*libs):
             libname = l[3:]
         if (libname in GetLibCache()):
             return libname
-        else:
-            print GetColor("cyan") + "Couldn't find library lib" + libname + GetColor()
     if (len(libs) > 0):
+        if (VERBOSE):
+            print GetColor("cyan") + "Couldn't find any of the libraries " + ", ".join(libs) + GetColor()
         return libs[0]
 
 def SmartPkgEnable(pkg, pkgconfig = None, libs = None, incs = None, defs = None, framework = None, target_pkg = None, tool = "pkg-config"):
@@ -1138,12 +1144,12 @@ def SmartPkgEnable(pkg, pkgconfig = None, libs = None, incs = None, defs = None,
             if (have_all_pkgs):
                 return
     
-    if (pkgconfig != None and libs == None):
+    if (pkgconfig != None and (libs == None or len(libs) == 0)):
         if (pkg in PkgListGet()):
-            print "%sWARNING:%s Could not locate package %s, excluding from build" % (GetColor("red"), GetColor(), pkgconfig)
+            print "%sWARNING:%s Could not locate pkg-config package %s, excluding from build" % (GetColor("red"), GetColor(), pkgconfig)
             PkgDisable(pkg)
         else:
-            print "%sERROR:%s Could not locate package %s, aborting build" % (GetColor("red"), GetColor(), pkgconfig)
+            print "%sERROR:%s Could not locate pkg-config package %s, aborting build" % (GetColor("red"), GetColor(), pkgconfig)
             exit()
     else:
         # Okay, our pkg-config attempts failed. Let's try locating the libs by ourselves.
@@ -1308,9 +1314,9 @@ def SdkLocateMax():
                         if (os.path.isdir(top + "\\" + subdir)!=0):
                             SDK[version+"CS"] = top + subdir
 
-def SdkLocatePython():
+def SdkLocatePython(force_use_sys_executable = False):
     if (PkgSkip("PYTHON")==0):
-        if (sys.platform == "win32"):
+        if (sys.platform == "win32" and not force_use_sys_executable):
             SDK["PYTHON"] = "thirdparty/win-python"
             if (GetOptimize() <= 2):
                 SDK["PYTHON"] += "-dbg"
@@ -1331,6 +1337,10 @@ def SdkLocatePython():
             pv = pv[7:10]
             SDK["PYTHONVERSION"]="python"+pv
 
+        elif (sys.platform == "win32"):
+            SDK["PYTHON"] = os.path.dirname(sysconfig.get_python_inc())
+            SDK["PYTHONVERSION"] = "python" + sysconfig.get_python_version()
+            SDK["PYTHONEXEC"] = sys.executable
         else:
             SDK["PYTHON"] = sysconfig.get_python_inc()
             SDK["PYTHONVERSION"] = "python" + sysconfig.get_python_version()
