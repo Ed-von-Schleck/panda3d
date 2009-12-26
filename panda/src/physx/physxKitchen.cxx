@@ -57,7 +57,7 @@ set_cooking_params(float skinWidth, bool hintCollisionSpeed) {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 bool PhysxKitchen::
-cook_convex_mesh(PhysxConvexMeshDesc meshDesc, const Filename &filename) {
+cook_convex_mesh(const PhysxConvexMeshDesc &meshDesc, const Filename &filename) {
 
   nassertr_always(!filename.empty(), false);
   nassertr_always(filename.touch(), false);
@@ -73,7 +73,7 @@ cook_convex_mesh(PhysxConvexMeshDesc meshDesc, const Filename &filename) {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 bool PhysxKitchen::
-cook_triangle_mesh(PhysxTriangleMeshDesc meshDesc, const Filename &filename) {
+cook_triangle_mesh(const PhysxTriangleMeshDesc &meshDesc, const Filename &filename) {
 
   nassertr_always(!filename.empty(), false);
   nassertr_always(filename.touch(), false);
@@ -89,7 +89,7 @@ cook_triangle_mesh(PhysxTriangleMeshDesc meshDesc, const Filename &filename) {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 PT(PhysxConvexMesh) PhysxKitchen::
-cook_convex_mesh(PhysxConvexMeshDesc meshDesc) {
+cook_convex_mesh(const PhysxConvexMeshDesc &meshDesc) {
 
   nassertr_always(meshDesc.is_valid(), false);
 
@@ -117,7 +117,7 @@ cook_convex_mesh(PhysxConvexMeshDesc meshDesc) {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 PT(PhysxTriangleMesh) PhysxKitchen::
-cook_triangle_mesh(PhysxTriangleMeshDesc meshDesc) {
+cook_triangle_mesh(const PhysxTriangleMeshDesc &meshDesc) {
 
   nassertr_always(meshDesc.is_valid(), false);
 

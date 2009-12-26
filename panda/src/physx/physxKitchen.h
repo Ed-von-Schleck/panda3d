@@ -39,11 +39,11 @@ PUBLISHED:
 
   void set_cooking_params(float skinWidth, bool hintCollisionSpeed);
 
-  bool cook_convex_mesh(PhysxConvexMeshDesc meshDesc, const Filename &filename);
-  bool cook_triangle_mesh(PhysxTriangleMeshDesc meshDesc, const Filename &filename);
+  bool cook_convex_mesh(const PhysxConvexMeshDesc &meshDesc, const Filename &filename);
+  bool cook_triangle_mesh(const PhysxTriangleMeshDesc &meshDesc, const Filename &filename);
 
-  PT(PhysxConvexMesh) cook_convex_mesh(PhysxConvexMeshDesc meshDesc);
-  PT(PhysxTriangleMesh) cook_triangle_mesh(PhysxTriangleMeshDesc meshDesc);
+  PT(PhysxConvexMesh) cook_convex_mesh(const PhysxConvexMeshDesc &meshDesc);
+  PT(PhysxTriangleMesh) cook_triangle_mesh(const PhysxTriangleMeshDesc &meshDesc);
 
 private:
   NxCookingInterface *_cooking;
