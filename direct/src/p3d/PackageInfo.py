@@ -2,6 +2,8 @@ from pandac.PandaModules import Filename, URLSpec, DocumentSpec, Ramfile, Multif
 from pandac import PandaModules
 from direct.p3d.FileSpec import FileSpec
 from direct.showbase import VFSImporter
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.task.TaskManagerGlobal import taskMgr
 import os
 import sys
 import random
@@ -12,6 +14,8 @@ class PackageInfo:
     """ This class represents a downloadable Panda3D package file that
     can be (or has been) installed into the current runtime.  It is
     the Python equivalent of the P3DPackage class in the core API. """
+
+    notify = directNotify.newCategory("PackageInfo")
 
     # Weight factors for computing download progress.  This
     # attempts to reflect the relative time-per-byte of each of
@@ -169,7 +173,7 @@ class PackageInfo:
 
         if not self.hasDescFile:
             filename = Filename(self.getPackageDir(), self.descFileBasename)
-            if self.descFile.quickVerify(self.getPackageDir(), pathname = filename):
+            if self.descFile.quickVerify(self.getPackageDir(), pathname = filename, notify = self.notify):
                 if self.__readDescFile():
                     # Successfully read.  We don't need to call
                     # checkArchiveStatus again, since readDescFile()
@@ -221,7 +225,7 @@ class PackageInfo:
         if not self.__readDescFile():
             # Weird, it passed the hash check, but we still can't read
             # it.
-            print "Failure reading %s" % (filename)
+            self.notify.warning("Failure reading %s" % (filename))
             return False
 
         return True
@@ -354,12 +358,12 @@ class PackageInfo:
         # If the uncompressed archive file is good, that's all we'll
         # need to do.
         self.uncompressedArchive.actualFile = None
-        if self.uncompressedArchive.quickVerify(self.getPackageDir()):
+        if self.uncompressedArchive.quickVerify(self.getPackageDir(), notify = self.notify):
             self.installPlans = [planA]
             return
 
         # Maybe the compressed archive file is good.
-        if self.compressedArchive.quickVerify(self.getPackageDir()):
+        if self.compressedArchive.quickVerify(self.getPackageDir(), notify = self.notify):
             uncompressSize = self.uncompressedArchive.size
             step = self.InstallStep(self.__uncompressArchive, uncompressSize, self.uncompressFactor)
             planA = [step] + planA
@@ -446,16 +450,16 @@ class PackageInfo:
         # case there is a problem with ambiguous filenames or
         # something (e.g. case insensitivity).
         for filename in contents:
-            print "Removing %s" % (filename)
+            self.notify.info("Removing %s" % (filename))
             pathname = Filename(self.getPackageDir(), filename)
             pathname.unlink()
 
         if self.asMirror:
-            return self.compressedArchive.quickVerify(self.getPackageDir())
+            return self.compressedArchive.quickVerify(self.getPackageDir(), notify = self.notify)
             
         allExtractsOk = True
-        if not self.uncompressedArchive.quickVerify(self.getPackageDir()):
-            #print "File is incorrect: %s" % (self.uncompressedArchive.filename)
+        if not self.uncompressedArchive.quickVerify(self.getPackageDir(), notify = self.notify):
+            self.notify.debug("File is incorrect: %s" % (self.uncompressedArchive.filename))
             allExtractsOk = False
 
         if allExtractsOk:
@@ -465,14 +469,14 @@ class PackageInfo:
             pathname.unlink()
             
             for file in self.extracts:
-                if not file.quickVerify(self.getPackageDir()):
-                    #print "File is incorrect: %s" % (file.filename)
+                if not file.quickVerify(self.getPackageDir(), notify = self.notify):
+                    self.notify.debug("File is incorrect: %s" % (file.filename))
                     allExtractsOk = False
                     break
 
-##         if allExtractsOk:
-##             print "All %s extracts of %s seem good." % (
-##                 len(self.extracts), self.packageName)
+        if allExtractsOk:
+            self.notify.debug("All %s extracts of %s seem good." % (
+                len(self.extracts), self.packageName))
 
         return allExtractsOk
 
@@ -550,6 +554,9 @@ class PackageInfo:
             if not planFailed:
                 # Successfully downloaded!
                 return self.stepComplete
+
+            if taskMgr.destroyed:
+                return self.stepFailed
 
         # All plans failed.
         return self.stepFailed
@@ -634,7 +641,7 @@ class PackageInfo:
                 request = DocumentSpec(url)
                 request.setCacheControl(DocumentSpec.CCNoCache)
              
-            print "%s downloading %s" % (self.packageName, url)
+            self.notify.info("%s downloading %s" % (self.packageName, url))
 
             if not filename:
                 filename = fileSpec.filename
@@ -657,7 +664,7 @@ class PackageInfo:
                 bytesStarted = 0
 
             if bytesStarted:
-                print "Resuming %s after %s bytes already downloaded" % (url, bytesStarted)
+                self.notify.info("Resuming %s after %s bytes already downloaded" % (url, bytesStarted))
                 # Make sure the file is writable.
                 os.chmod(targetPathname.toOsSpecific(), 0644)
                 channel.beginGetSubdocument(request, bytesStarted, 0)
@@ -677,6 +684,13 @@ class PackageInfo:
                         break
                     
                     self.__updateStepProgress(step)
+
+                if taskMgr.destroyed:
+                    # If the task manager has been destroyed, we must
+                    # be shutting down.  Get out of here.
+                    self.notify.warning("Task Manager destroyed, aborting %s" % (url))
+                    return self.stepFailed
+                    
                 Thread.considerYield()
                 
             if step:
@@ -684,10 +698,10 @@ class PackageInfo:
                 self.__updateStepProgress(step)
 
             if not channel.isValid():
-                print "Failed to download %s" % (url)
+                self.notify.warning("Failed to download %s" % (url))
 
-            elif not fileSpec.fullVerify(self.getPackageDir(), pathname = targetPathname):
-                print "After downloading, %s incorrect" % (Filename(fileSpec.filename).getBasename())
+            elif not fileSpec.fullVerify(self.getPackageDir(), pathname = targetPathname, notify = self.notify):
+                self.notify.warning("After downloading, %s incorrect" % (Filename(fileSpec.filename).getBasename()))
 
                 # This attempt failed.  Maybe the original contents.xml
                 # file is stale.  Try re-downloading it now, just to be
@@ -722,7 +736,7 @@ class PackageInfo:
         origPathname = Filename(self.getPackageDir(), self.uncompressedArchive.filename)
         patchPathname = Filename(self.getPackageDir(), patchfile.file.filename)
         result = Filename.temporary('', 'patch_')
-        print "Patching %s with %s" % (origPathname, patchPathname)
+        self.notify.info("Patching %s with %s" % (origPathname, patchPathname))
 
         p = PandaModules.Patchfile()  # The C++ class
 
@@ -732,18 +746,24 @@ class PackageInfo:
         while ret == EUOk:
             step.bytesDone = step.bytesNeeded * p.getProgress()
             self.__updateStepProgress(step)
+            if taskMgr.destroyed:
+                # If the task manager has been destroyed, we must
+                # be shutting down.  Get out of here.
+                self.notify.warning("Task Manager destroyed, aborting patch %s" % (origPathname))
+                return self.stepFailed
+
             Thread.considerYield()
             ret = p.run()
         del p
         patchPathname.unlink()
         
         if ret < 0:
-            print "Patching failed."
+            self.notify.warning("Patching of %s failed." % (origPathname))
             result.unlink()
             return self.stepFailed
 
         if not result.renameTo(origPathname):
-            print "Couldn't rename %s to %s" % (result, origPathname)
+            self.notify.warning("Couldn't rename %s to %s" % (result, origPathname))
             return self.stepFailed
             
         return self.stepComplete
@@ -756,7 +776,7 @@ class PackageInfo:
         sourcePathname = Filename(self.getPackageDir(), self.compressedArchive.filename)
         targetPathname = Filename(self.getPackageDir(), self.uncompressedArchive.filename)
         targetPathname.unlink()
-        print "Uncompressing %s to %s" % (sourcePathname, targetPathname)
+        self.notify.info("Uncompressing %s to %s" % (sourcePathname, targetPathname))
         decompressor = Decompressor()
         decompressor.initiate(sourcePathname, targetPathname)
         totalBytes = self.uncompressedArchive.size
@@ -765,6 +785,12 @@ class PackageInfo:
             step.bytesDone = int(totalBytes * decompressor.getProgress())
             self.__updateStepProgress(step)
             result = decompressor.run()
+            if taskMgr.destroyed:
+                # If the task manager has been destroyed, we must
+                # be shutting down.  Get out of here.
+                self.notify.warning("Task Manager destroyed, aborting decompresss %s" % (sourcePathname))
+                return self.stepFailed
+
             Thread.considerYield()
 
         if result != EUSuccess:
@@ -773,9 +799,9 @@ class PackageInfo:
         step.bytesDone = totalBytes
         self.__updateStepProgress(step)
 
-        if not self.uncompressedArchive.quickVerify(self.getPackageDir()):
-            print "after uncompressing, %s still incorrect" % (
-                self.uncompressedArchive.filename)
+        if not self.uncompressedArchive.quickVerify(self.getPackageDir(), notify= self.notify):
+            self.notify.warning("after uncompressing, %s still incorrect" % (
+                self.uncompressedArchive.filename))
             return self.stepFailed
 
         # Now that we've verified the archive, make it read-only.
@@ -796,10 +822,10 @@ class PackageInfo:
             return self.stepComplete
 
         mfPathname = Filename(self.getPackageDir(), self.uncompressedArchive.filename)
-        print "Unpacking %s" % (mfPathname)
+        self.notify.info("Unpacking %s" % (mfPathname))
         mf = Multifile()
         if not mf.openRead(mfPathname):
-            print "Couldn't open %s" % (mfPathname)
+            self.notify.warning("Couldn't open %s" % (mfPathname))
             return self.stepFailed
         
         allExtractsOk = True
@@ -807,19 +833,19 @@ class PackageInfo:
         for file in self.extracts:
             i = mf.findSubfile(file.filename)
             if i == -1:
-                print "Not in Multifile: %s" % (file.filename)
+                self.notify.warning("Not in Multifile: %s" % (file.filename))
                 allExtractsOk = False
                 continue
 
             targetPathname = Filename(self.getPackageDir(), file.filename)
             targetPathname.unlink()
             if not mf.extractSubfile(i, targetPathname):
-                print "Couldn't extract: %s" % (file.filename)
+                self.notify.warning("Couldn't extract: %s" % (file.filename))
                 allExtractsOk = False
                 continue
             
-            if not file.quickVerify(self.getPackageDir()):
-                print "After extracting, still incorrect: %s" % (file.filename)
+            if not file.quickVerify(self.getPackageDir(), notify = self.notify):
+                self.notify.warning("After extracting, still incorrect: %s" % (file.filename))
                 allExtractsOk = False
                 continue
 
@@ -828,6 +854,12 @@ class PackageInfo:
 
             step.bytesDone += file.size
             self.__updateStepProgress(step)
+            if taskMgr.destroyed:
+                # If the task manager has been destroyed, we must
+                # be shutting down.  Get out of here.
+                self.notify.warning("Task Manager destroyed, aborting unpacking %s" % (mfPathname))
+                return self.stepFailed
+
             Thread.considerYield()
 
         if not allExtractsOk:
@@ -849,7 +881,7 @@ class PackageInfo:
         mfPathname = Filename(self.getPackageDir(), self.uncompressedArchive.filename)
         mf = Multifile()
         if not mf.openRead(mfPathname):
-            print "Couldn't open %s" % (mfPathname)
+            self.notify.warning("Couldn't open %s" % (mfPathname))
             return False
 
         # We mount it under its actual location on disk.
