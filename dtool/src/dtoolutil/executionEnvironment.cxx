@@ -167,7 +167,9 @@ get_cwd() {
     assert(buffer != (char *)NULL);
   }
 
-  return Filename::from_os_specific(buffer);
+  Filename cwd = Filename::from_os_specific(buffer);
+  cwd.make_true_case();
+  return cwd;
 }
 
 ////////////////////////////////////////////////////////////////////
