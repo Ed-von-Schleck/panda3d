@@ -1290,7 +1290,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
     // A button-click in the window means to grab the keyboard focus.
     set_focus();
-    break;
+    return 0;
         
   case WM_MBUTTONDOWN:
     if (_lost_keypresses) {
@@ -1301,7 +1301,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     _input_devices[0].button_down(MouseButton::button(1), get_message_time());
     // A button-click in the window means to grab the keyboard focus.
     set_focus();
-    break;
+    return 0;
 
   case WM_RBUTTONDOWN:
     if (_lost_keypresses) {
@@ -1312,7 +1312,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     _input_devices[0].button_down(MouseButton::button(2), get_message_time());
     // A button-click in the window means to grab the keyboard focus.
     set_focus();
-    break;
+    return 0;
 
   case WM_XBUTTONDOWN:
     {
@@ -1328,7 +1328,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         _input_devices[0].button_down(MouseButton::button(4), get_message_time());
       }
     }
-    break;
+    return 0;
     
   case WM_LBUTTONUP:
     if (_lost_keypresses) {
@@ -1336,7 +1336,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     }
     ReleaseCapture();
     _input_devices[0].button_up(MouseButton::button(0), get_message_time());
-    break;
+    return 0;
 
   case WM_MBUTTONUP:
     if (_lost_keypresses) {
@@ -1344,7 +1344,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     }
     ReleaseCapture();
     _input_devices[0].button_up(MouseButton::button(1), get_message_time());
-    break;
+    return 0;
 
   case WM_RBUTTONUP:
     if (_lost_keypresses) {
@@ -1352,7 +1352,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     }
     ReleaseCapture();
     _input_devices[0].button_up(MouseButton::button(2), get_message_time());
-    break;
+    return 0;
 
   case WM_XBUTTONUP:
     {
@@ -1367,7 +1367,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         _input_devices[0].button_up(MouseButton::button(4), get_message_time());
       }
     }
-    break;
+    return 0;
 
   case WM_MOUSEWHEEL:
     {
