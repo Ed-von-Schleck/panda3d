@@ -431,6 +431,7 @@ class ConnectionRepository(
     def getServerAddress(self):
         return self._serverAddress
 
+    @report(types = ['args', 'deltaStamp'], dConfigParam = 'teleport')
     def connect(self, serverList,
                 successCallback = None, successArgs = [],
                 failureCallback = None, failureArgs = []):
@@ -526,10 +527,12 @@ class ConnectionRepository(
         CConnectionRepository.disconnect(self)
         self.stopReaderPollTask()
 
+    @report(types = ['args', 'deltaStamp'], dConfigParam = 'teleport')
     def shutdown(self):
         self.ignoreAll()
         CConnectionRepository.shutdown(self)
 
+    @report(types = ['args', 'deltaStamp'], dConfigParam = 'teleport')
     def httpConnectCallback(self, ch, serverList, serverIndex,
                             successCallback, successArgs,
                             failureCallback, failureArgs):
@@ -590,6 +593,7 @@ class ConnectionRepository(
 
         return self.http
 
+    @report(types = ['args', 'deltaStamp'], dConfigParam = 'teleport')
     def startReaderPollTask(self):
         # Stop any tasks we are running now
         self.stopReaderPollTask()

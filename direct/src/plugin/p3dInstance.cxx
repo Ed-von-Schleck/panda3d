@@ -131,6 +131,7 @@ P3DInstance(P3D_request_ready_func *func,
   _allow_python_dev = false;
   _keep_user_env = (_fparams.lookup_token_int("keep_user_env") != 0);
   _auto_start = (_fparams.lookup_token_int("auto_start") != 0);
+  _stop_on_ready = (_fparams.lookup_token_int("stop_on_ready") != 0);
   _auto_install = true;
   if (_fparams.has_token("auto_install")) {
     _auto_install = (_fparams.lookup_token_int("auto_install") != 0);
@@ -211,7 +212,7 @@ P3DInstance(P3D_request_ready_func *func,
   _panda_script_object->set_string_property("pluginDistributor", inst_mgr->get_plugin_distributor());
   _panda_script_object->set_string_property("coreapiHostUrl", inst_mgr->get_coreapi_host_url());
   time_t timestamp = inst_mgr->get_coreapi_timestamp();
-  _panda_script_object->set_int_property("coreapiTimestamp", timestamp);
+  _panda_script_object->set_int_property("coreapiTimestamp", (int)timestamp);
   _panda_script_object->set_string_property("coreapiTimestampString", ctime(&timestamp));
 
 
@@ -1244,6 +1245,8 @@ make_xml() {
 
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
   xinstance->SetAttribute("root_dir", inst_mgr->get_root_dir());
+  xinstance->SetAttribute("log_directory", inst_mgr->get_log_directory());
+
   if (!inst_mgr->get_super_mirror().empty()) {
     xinstance->SetAttribute("super_mirror", inst_mgr->get_super_mirror());
   }
@@ -1960,7 +1963,9 @@ scan_app_desc_file(TiXmlDocument *doc) {
   }
 
   nout << "_auto_install = " << _auto_install 
-       << ", _auto_start = " << _auto_start << "\n";
+       << ", _auto_start = " << _auto_start 
+       << ", _stop_on_ready = " << _stop_on_ready
+       << "\n";
 
   if (_hidden && _got_wparams) {
     _wparams.set_window_type(P3D_WT_hidden);
@@ -2465,7 +2470,8 @@ make_splash_window() {
   }
 
   if (_wparams.get_window_type() != P3D_WT_embedded && 
-      !_stuff_to_download && _auto_install && _auto_start && _p3d_trusted) {
+      !_stuff_to_download && _auto_install &&
+      (_auto_start || _stop_on_ready) && _p3d_trusted) {
     // If it's a toplevel or fullscreen window, then we don't want a
     // splash window unless we have stuff to download, or a button to
     // display.
@@ -2869,9 +2875,17 @@ ready_to_start() {
 
   _panda_script_object->set_string_property("status", "ready");
   send_notify("onready");
+
+  P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
+  if (_stop_on_ready) {
+    // If we've got the "stop_on_ready" token, then exit abruptly
+    // now, instead of displaying the splash window.
+    request_stop_main_thread();
+    return;
+  }
+
   if (_auto_start) {
     set_background_image(IT_launch);
-    P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
     inst_mgr->start_instance(this);
 
   } else {
@@ -2964,7 +2978,7 @@ report_package_progress(P3DPackage *package, double progress) {
   char buffer[buffer_size];
 
   time_t elapsed = time(NULL) - _download_begin;
-  _panda_script_object->set_int_property("downloadElapsedSeconds", elapsed);
+  _panda_script_object->set_int_property("downloadElapsedSeconds", (int)elapsed);
 
   sprintf(buffer, "%d:%02d", (int)(elapsed / 60), (int)(elapsed % 60));
   _panda_script_object->set_string_property("downloadElapsedFormatted", buffer);
@@ -2972,7 +2986,7 @@ report_package_progress(P3DPackage *package, double progress) {
   if (progress > 0 && (elapsed > 5 || progress > 0.2)) {
     time_t total = (time_t)((double)elapsed / progress);
     time_t remaining = max(total, elapsed) - elapsed;
-    _panda_script_object->set_int_property("downloadRemainingSeconds", remaining);
+    _panda_script_object->set_int_property("downloadRemainingSeconds", (int)remaining);
     sprintf(buffer, "%d:%02d", (int)(remaining / 60), (int)(remaining % 60));
     _panda_script_object->set_string_property("downloadRemainingFormatted", buffer);
   }

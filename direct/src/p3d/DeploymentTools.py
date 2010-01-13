@@ -27,7 +27,7 @@ class Standalone:
         
         hostDir = Filename(Filename.getTempDirectory(), 'pdeploy/')
         hostDir.makeDir()
-        self.host = HostInfo("http://runtime.panda3d.org/", hostDir = hostDir, asMirror = False, perPlatform = True)
+        self.host = HostInfo(PandaSystem.getPackageHostUrl(), hostDir = hostDir, asMirror = False, perPlatform = True)
         
         self.http = HTTPClient.getGlobalPtr()
         if not self.host.readContentsFile():
@@ -193,7 +193,7 @@ class Installer:
         if not self.includeRequires:
             return
         
-        host = HostInfo(self.hostUrl, rootDir = rootDir, asMirror = False)
+        host = HostInfo(self.hostUrl, rootDir = rootDir, asMirror = True, perPlatform = False)
         if not host.readContentsFile():
             if not host.downloadContentsFile(self.http):
                 Installer.notify.error("couldn't read host")
@@ -209,7 +209,7 @@ class Installer:
                 continue
         
         # Also install the 'images' package from the same host that p3dembed was downloaded from.
-        host = HostInfo(self.standalone.host.hostUrl, rootDir = rootDir, asMirror = False)
+        host = HostInfo(self.standalone.host.hostUrl, rootDir = rootDir, asMirror = False, perPlatform = False)
         if not host.readContentsFile():
             if not host.downloadContentsFile(self.http):
                 Installer.notify.error("couldn't read host")
@@ -223,12 +223,6 @@ class Installer:
                 Standalone.notify.warning("  -> %s failed for platform %s" % (package.packageName, package.platform))
                 continue
             break
-        
-        # Remove the original multifiles. We don't need them and they take up space.
-        for mf in glob.glob(Filename(rootDir, "hosts/*/*/*.mf").toOsSpecific()):
-            os.remove(mf)
-        for mf in glob.glob(Filename(rootDir, "hosts/*/*/*/*.mf").toOsSpecific()):
-            os.remove(mf)
 
     def buildAll(self, outputDir = "."):
         """ Creates a (graphical) installer for every known platform.
@@ -290,8 +284,15 @@ class Installer:
         print >>controlfile, "Priority: optional"
         print >>controlfile, "Architecture: %s" % arch
         print >>controlfile, "Description: %s" % self.fullname
-        print >>controlfile, "Depends: libc6, libgcc1, libstdc++6, libx11-6"
+        print >>controlfile, "Depends: libc6, libgcc1, libstdc++6, libx11-6 libssl0.9.8"
         controlfile.close()
+        postinst = open(Filename(tempdir, "postinst").toOsSpecific(), "w")
+        print >>postinst, "#!/bin/sh"
+        print >>postinst, "/usr/bin/%s --prep" % self.shortname.lower()
+        print >>postinst, "chmod -R 777 /usr/share/%s" % self.shortname.lower()
+        print >>postinst, "chmod -R 555 /usr/share/%s/hosts" % self.shortname.lower()
+        postinst.close()
+        os.chmod(Filename(tempdir, "postinst").toOsSpecific(), 0755)
         postrmfile = open(Filename(tempdir, "postrm").toOsSpecific(), "w")
         print >>postrmfile, "#!/bin/sh"
         print >>postrmfile, "rm -rf /usr/share/%s" % self.shortname.lower()
@@ -313,13 +314,16 @@ class Installer:
 
         # Create a control.tar.gz file in memory
         controlfile = Filename(tempdir, "control")
+        postinstfile = Filename(tempdir, "postinst")
         postrmfile = Filename(tempdir, "postrm")
         controltargz = CachedFile()
         controltarfile = tarfile.TarFile.gzopen("control.tar.gz", "w", controltargz, 9)
         controltarfile.add(controlfile.toOsSpecific(), "control")
+        controltarfile.add(postinstfile.toOsSpecific(), "postinst")
         controltarfile.add(postrmfile.toOsSpecific(), "postrm")
         controltarfile.close()
         controlfile.unlink()
+        postinstfile.unlink()
         postrmfile.unlink()
 
         # Create the data.tar.gz file in the temporary directory
@@ -615,7 +619,6 @@ class Installer:
         for root, dirs, files in os.walk(rootDir.toOsSpecific()):
             for name in files:
                 file = Filename.fromOsSpecific(os.path.join(root, name))
-                if file.getExtension().lower() == "mf": continue
                 file.makeAbsolute()
                 file.makeRelativeTo(rootDir)
                 outdir = file.getDirname().replace('/', '\\')

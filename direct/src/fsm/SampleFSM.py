@@ -76,6 +76,11 @@ class NewStyle(FSM.FSM):
     def exitGreen(self):
         print "exitGreen(self, '%s', '%s')" % (self.oldState, self.newState)
 
+    def fromYellowToRed(self):
+        self.exitYellow()
+        print "Taking snapshot of redlight runners!"
+        self.enterRed()
+    
 
 class ToonEyes(FSM.FSM):
     def __init__(self):

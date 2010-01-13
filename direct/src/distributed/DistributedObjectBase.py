@@ -95,3 +95,45 @@ class DistributedObjectBase(DirectObject):
 
     def hasParentingRules(self):
         return self.dclass.getFieldByName('setParentingRules') != None
+
+    def getAutoInterests(self):
+        
+        # returns the sub-zones under this object that are automatically
+        # opened for us by the server.
+        # have we already cached it?
+        def _getAutoInterests(cls):
+            # returns set of auto-interests for this class and all derived
+            # have we already computed this class's autoInterests?
+            if 'autoInterests' in cls.__dict__:
+                autoInterests = cls.autoInterests
+            else:
+                autoInterests = set()
+                # grab autoInterests from base classes
+                for base in cls.__bases__:
+                    autoInterests.update(_getAutoInterests(base))
+                # grab autoInterests from this class
+                repos = getattr(self,'cr', getattr(self, 'air'))
+                if cls.__name__ in repos.dclassesByName:
+                    dclass = repos.dclassesByName[cls.__name__]
+                    field = dclass.getFieldByName('AutoInterest')
+                    if field is not None:
+                        from pandac.PandaModules import DCPacker
+                        p = DCPacker()
+                        p.setUnpackData(field.getDefaultValue())
+                        len = p.rawUnpackUint16()/4
+                        for i in xrange(len):
+                            zone = int(p.rawUnpackUint32())
+                            autoInterests.add(zone)
+                    autoInterests.update(autoInterests)
+                    cls.autoInterests = autoInterests
+            return set(autoInterests)
+        autoInterests = _getAutoInterests(self.__class__)
+        # if the server starts supporting multiple auto-interest per class, this check
+        # should be removed
+        if len(autoInterests) > 1:
+            self.notify.error(
+                'only one auto-interest allowed per DC class, %s has %s autoInterests (%s)' %
+                (self.dclass.getName(), len(autoInterests), list(autoInterests)))
+        _getAutoInterests = None
+        return list(autoInterests)
+

@@ -534,6 +534,13 @@ class MetaInterval(CMetaInterval):
         self.__updateIvals()
         return CMetaInterval.getDuration(self)
 
+    def getRemainingT(self):
+        """
+        Returns the remaining time left on this interval,
+        adjusted for the current playRate.
+        """
+        return (self.getDuration() - self.getT())/float(self.getPlayRate())
+
     def __repr__(self, *args, **kw): 
         # This function overrides from the parent level to force it to
         # update the interval list first, if necessary.

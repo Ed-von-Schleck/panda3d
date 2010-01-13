@@ -104,7 +104,6 @@ class LerpPosInterval(LerpNodePathInterval):
                  bakeInStart = 1, fluid = 0, name = None):
         LerpNodePathInterval.__init__(self, name, duration, blendType,
                                       bakeInStart, fluid, nodePath, other)
-
         # Check for functors in the input parameters.
         self.paramSetup = self.anyCallable(pos, startPos)
         if self.paramSetup:

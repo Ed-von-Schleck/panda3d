@@ -110,7 +110,7 @@ class DistributedObjectAI(DistributedObjectBase):
         """
         self.__generates -= 1
         if self.__generates < 0:
-            self.notify.debug('DistributedObjectAI: delete() called more times than generate()')
+            assert self.notify.debug('DistributedObjectAI: delete() called more times than generate()')
         if self.__generates == 0:
             # prevent this code from executing multiple times
             if self.air is not None:
@@ -582,4 +582,9 @@ class DistributedObjectAI(DistributedObjectBase):
     def _retrieveCachedData(self):
         """ This is a no-op on the AI. """
         pass
-    
+
+    def printDoTree(self):
+        self.air.printDoTree(self.doId)
+        pass
+
+

@@ -288,14 +288,19 @@ class GravityWalker(DirectObject.DirectObject):
             self.cRayNodePath.node().setFromCollideMask(self.floorBitmask)
 
     def setGravity(self, gravity):
+        if gravity < 0:
+            import pdb;pdb.set_trace()
         self.__gravity = gravity
         self.lifter.setGravity(self.__gravity)
 
-    def getGravity(self, gravity):
+    def getGravity(self):
         return self.__gravity
 
+    def setVelocity(self, velocity):
+        self.lifter.setVelocity(velocity)
+
     def initializeCollisions(self, collisionTraverser, avatarNodePath,
-            avatarRadius = 1.4, floorOffset = 1.0, reach = 1.0):
+                             avatarRadius = 1.4, floorOffset = 1.0, reach = 1.0):
         """
         floorOffset is how high the avatar can reach.  I.e. if the avatar
             walks under a ledge that is <= floorOffset above the ground (a
@@ -360,7 +365,7 @@ class GravityWalker(DirectObject.DirectObject):
             self.collisionsActive = active
             # Each time we change the collision geometry, make one
             # more pass to ensure we aren't standing in a wall.
-            self.oneTimeCollide()
+            self.oneTimeCollide() # Hey, here's a great idea! When I'm disabling collisions, I really want to run them again one more time. WTF?
             # make sure we have a shadow traverser
             base.initShadowTrav()
             if active:
@@ -485,7 +490,7 @@ class GravityWalker(DirectObject.DirectObject):
         """
         # get the button states:
         run = inputState.isSet("run")
-        forward = inputState.isSet("forward")
+        forward = inputState.sSet("forward")
         reverse = inputState.isSet("reverse")
         turnLeft = inputState.isSet("turnLeft")
         turnRight = inputState.isSet("turnRight")

@@ -418,42 +418,8 @@ class DoCollectionManager:
            if oldParentObj:
                oldParentObj.handleChildLeave(do, oldZoneId)
         self.deleteObjectLocation(do, do.parentId, do.zoneId)
-        ## location = do.getLocation()
-        ## if location is not None:
-        ##     if location not in self.zoneId2doIds:
-        ##         self.notify.warning(
-        ##             'dobj %s (%s) has invalid location: %s' %
-        ##             (do, do.doId, location))
-        ##     else:
-        ##         assert do.doId in self.zoneId2doIds[location]
-        ##         del self.zoneId2doIds[location][do.doId]
-        ##         if len(self.zoneId2doIds[location]) == 0:
-        ##             del self.zoneId2doIds[location]
         if do.doId in self.doId2do:
             del self.doId2do[do.doId]
-
-    ## def changeDOZoneInTables(self, do, newParentId, newZoneId, oldParentId, oldZoneId):
-    ##     if 1:
-    ##         self.storeObjectLocation(do.doId, newParentId, newZoneId)
-    ##     else:
-    ##         #assert not hasattr(do, "isQueryAllResponse") or not do.isQueryAllResponse
-    ##         oldLocation = (oldParentId, oldZoneId)
-    ##         newLocation = (newParentId, newZoneId)
-    ##         # HACK: DistributedGuildMemberUD starts in -1, -1, which isnt ever put in the
-    ##         # zoneId2doIds table
-    ##         if self.isValidLocationTuple(oldLocation):
-    ##             assert self.notify.debugStateCall(self)
-    ##             assert oldLocation in self.zoneId2doIds
-    ##             assert do.doId in self.zoneId2doIds[oldLocation]
-    ##             assert do.doId not in self.zoneId2doIds.get(newLocation, {})
-    ##             # remove from old zone
-    ##             del(self.zoneId2doIds[oldLocation][do.doId])
-    ##             if len(self.zoneId2doIds[oldLocation]) == 0:
-    ##                 del self.zoneId2doIds[oldLocation]
-    ##         if self.isValidLocationTuple(newLocation):
-    ##             # add to new zone
-    ##             self.zoneId2doIds.setdefault(newLocation, {})
-    ##             self.zoneId2doIds[newLocation][do.doId]=do
 
     def getObjectsInZone(self, parentId, zoneId):
         """
@@ -476,3 +442,8 @@ class DoCollectionManager:
         for doId in self.getDoIdList(parentId, zoneId, objClass):
             doDict[doId] = self.getDo(doId)
         return doDict
+
+    def printDoTree(self, doId = None, depth = 0):
+        self._doHierarchy.printTree(doId, depth)
+        pass
+    

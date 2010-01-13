@@ -114,7 +114,6 @@ class ControlManager:
         if __debug__ and hasattr(self, "ignoreUse"):
             return
         controls = self.controls.get(name)
-
         if controls is not None:
             if controls is not self.currentControls:
                 if self.currentControls is not None:

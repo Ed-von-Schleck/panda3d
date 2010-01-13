@@ -8,6 +8,7 @@ from direct.gui import DirectGuiGlobals
 from direct.showbase.EventGroup import EventGroup
 from direct.showbase.PythonUtil import report
 from direct.distributed.GridParent import GridParent
+from direct.distributed.StagedObject import StagedObject
 
 if __debug__:
     # For grid drawing
@@ -20,7 +21,7 @@ from CartesianGridBase import CartesianGridBase
 # above water level
 GRID_Z_OFFSET = 0.0
 
-class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
+class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject):
     notify = directNotify.newCategory("DistributedCartesianGrid")
     notify.setDebug(0)
     
@@ -29,12 +30,14 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
     RuleSeparator = ":"
 
     def __init__(self, cr):
-        DistributedNode.__init__(self, cr)
         # Let the derived classes instantiate the NodePath
+        DistributedNode.__init__(self, cr)
+        StagedObject.__init__(self, StagedObject.OFF)
+
         self.visAvatar = None
         self.gridVisContext = None
+
         # Do we have grid lines visualized?
-        self._onOffState = False
         if __debug__:
             self.haveGridLines = 0
 
@@ -104,9 +107,11 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
             
     @report(types = ['deltaStamp', 'avLocation', 'args'], dConfigParam = ['connector','shipboard'])
     def startProcessVisibility(self, avatar):
-        if not self._onOffState:
+        if not self.isOnStage():
             # if we've been told that we're OFF, don't try
             # to process visibilty
+            assert self.notify.error(
+                'startProcessVisibility(%s): tried to start while off-stage' % self)
             return
         
         assert not self.cr._noNewInterests
@@ -120,9 +125,10 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
         self.visAvatar = avatar
         self.visZone = None
         self.visDirty = True
-        taskMgr.add(
+        t = taskMgr.add(
             self.processVisibility, self.taskName("processVisibility"))
         self.processVisibility(0)
+        return t
 
     @report(types = ['deltaStamp', 'avLocation', 'args'], dConfigParam = ['connector','shipboard'])
     def stopProcessVisibility(self, clearAll=False, event=None):
@@ -136,7 +142,7 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
                 removeEvent = eventGroup.newEvent('%s.removeInterest' % self.doId)
             else:
                 removeEvent = None
-            self.cr.removeInterest(self.gridVisContext, removeEvent)
+            self.cr.removeTaggedInterest(self.gridVisContext, event = removeEvent)
             self.gridVisContext = None
         else:
             # if we were given an event but we have not interest open,
@@ -182,7 +188,7 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
             # If we are viewingRadius away from this entire grid,
             # remove interest in any current visZone we may have
             if self.gridVisContext:
-                self.cr.removeInterest(self.gridVisContext)
+                self.cr.removeTaggedInterest(self.gridVisContext)
                 self.visZone = None
                 self.gridVisContext = None
             return Task.cont
@@ -202,10 +208,11 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
                 "processVisibility: %s: new interest" % (self.doId))
             self.visZone = zoneId
             if not self.gridVisContext:
-                self.gridVisContext = self.cr.addInterest(
+                self.gridVisContext = self.cr.addTaggedInterest(
                     self.getDoId(), self.visZone,
-                    self.uniqueName("visibility"),
-                    event = self.uniqueName("visibility"))
+                    self.cr.ITAG_GAME,
+                    self.uniqueName('gridvis'),
+                    event = self.uniqueName('visibility'))
             else:
                 assert self.notify.debug(
                     "processVisibility: %s: altering interest to zoneId: %s" %
@@ -214,9 +221,9 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
                 event = None
                 if self.visDirty:
                     event = self.uniqueName("visibility")                    
-                self.cr.alterInterest(
-                    self.gridVisContext, self.getDoId(), self.visZone,
-                    event = event)
+                self.cr.alterInterest(self.gridVisContext,
+                                      self.getDoId(), self.visZone,
+                                      event = event)
                 
                 # If the visAvatar is parented to this grid, also do a
                 # setLocation
@@ -269,15 +276,19 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase):
         # Set the location on the server
         av.b_setLocation(self.doId, zoneId)
 
-    def turnOff(self):
-        self._onOffState = False
+
+    def handleOffStage(self):
         self.stopProcessVisibility()
-        
-    def turnOn(self, av = None):
-        self._onOffState = True
+        StagedObject.handleOffStage(self)
+        pass
+    
+    def handleOnStage(self, av = None):
+        StagedObject.handleOnStage(self)
         if av:
             self.startProcessVisibility(av)
-        
+            pass
+        pass
+    
     ##################################################
     # Visualization Tools
     ##################################################

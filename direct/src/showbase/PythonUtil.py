@@ -46,7 +46,6 @@ import random
 import time
 import new
 import gc
-#if __debug__:
 import traceback
 import __builtin__
 from StringIO import StringIO
@@ -3098,7 +3097,6 @@ class ClassTree:
     def __repr__(self):
         return self._getStr()
 
-
 class PStatScope:
     collectors = {}
     
@@ -3988,7 +3986,15 @@ def isInteger(n):
     return type(n) in (types.IntType, types.LongType)
 
 def configIsToday(configName):
+    """
+    Returns True if the config string indicated by configName
+    is of the formats (m/d/Y, m-d-Y, or m.d.Y) and matches the
+    current date. Otherwise returns false.
+    """
     # TODO: replace usage of strptime with something else
+    if not __dev__:
+        return False
+
     # returns true if config string is a valid representation of today's date
     today = time.localtime()
     confStr = config.GetString(configName, '')
@@ -4002,6 +4008,8 @@ def configIsToday(configName):
                 confDate.tm_mon == today.tm_mon and
                 confDate.tm_mday == today.tm_mday):
                 return True
+            pass
+        pass
     return False
 
 def typeName(o):

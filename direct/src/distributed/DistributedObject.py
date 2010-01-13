@@ -305,8 +305,6 @@ class DistributedObject(DistributedObjectBase):
         """
         assert self.notify.debugStateCall(self)
         self.activeState = ESGenerating
-        # this has already been set at this point
-        #self.cr.storeObjectLocation(self, self.parentId, self.zoneId)
         # semi-hack: we seem to be calling generate() more than once for objects that multiply-inherit
         if not hasattr(self, '_autoInterestHandle'):
             self.cr.openAutoInterests(self)
@@ -519,4 +517,8 @@ class DistributedObject(DistributedObjectBase):
         return 0
 
     def execCommand(self, string, mwMgrId, avId, zoneId):
+        pass
+
+    def printDoTree(self):
+        self.cr.printDoTree(self.doId)
         pass
