@@ -4,11 +4,15 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
 //
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
+// All use of this software is subject to the terms of the Panda 3d
+// Software license.  You should have received a copy of this license
+// along with this source code; you will also find a current copy of
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
+//
+// To contact the maintainers of this program write to
+// panda3d-general@lists.sourceforge.net .
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -205,9 +209,7 @@ INLINE size_t sequence_hash<Key, Compare>::
 add_hash(size_t hash, const Key &key) {
 #ifdef _DEBUG
   // We assume that the sequence is laid out sequentially in memory.
-  if (key.size() > 0) {
-    assert(&key[key.size() - 1] - &key[0] == key.size() - 1);
-  }
+  assert(&(*key.end()) - &key[0] == key.size());
 #endif
   size_t num_bytes = (key.size() * sizeof(key[0]));
   return AddHash::add_hash(hash, (const PN_uint8 *)&key[0], num_bytes);
