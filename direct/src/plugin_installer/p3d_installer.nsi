@@ -99,6 +99,9 @@ Section "MainSection" SEC01
 !ifdef DEP6P
   File "${DEP6P}"
 !endif
+!ifdef DEP7P
+  File "${DEP7P}"
+!endif
 
   ${registerExtension} "$INSTDIR\${PANDA3DW}" ".p3d" "Panda3D applet"
  
@@ -183,6 +186,9 @@ Mozilla-Install-Loop:
 !ifdef NPAPI_DEP6
      CopyFiles $INSTDIR\${NPAPI_DEP6} "$2"
 !endif
+!ifdef NPAPI_DEP7
+     CopyFiles $INSTDIR\${NPAPI_DEP7} "$2"
+!endif
  ${EndIf}
 
   goto Mozilla-Install-Loop
@@ -220,6 +226,9 @@ Section Uninstall
 !endif
 !ifdef DEP6
   Delete "$INSTDIR\${DEP6}"
+!endif
+!ifdef DEP7
+  Delete "$INSTDIR\${DEP7}"
 !endif
 
 StrCpy $1 "0"
@@ -262,3 +271,4 @@ Mozilla-Uninstall-End:
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
   SetAutoClose true
 SectionEnd
+
