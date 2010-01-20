@@ -4,11 +4,15 @@
 ////////////////////////////////////////////////////////////////////
 //
 // PANDA 3D SOFTWARE
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
+// Copyright (c) 2001 - 2004, Disney Enterprises, Inc.  All rights reserved
 //
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
+// All use of this software is subject to the terms of the Panda 3d
+// Software license.  You should have received a copy of this license
+// along with this source code; you will also find a current copy of
+// the license at http://etc.cmu.edu/panda3d/docs/license/ .
+//
+// To contact the maintainers of this program write to
+// panda3d-general@lists.sourceforge.net .
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -31,8 +35,8 @@ class CPPInstance;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_DTOOLCONFIG InterrogateFunction : public InterrogateComponent {
 public:
-  InterrogateFunction(InterrogateModuleDef *def = NULL);
-  InterrogateFunction(const InterrogateFunction &copy);
+  INLINE InterrogateFunction(InterrogateModuleDef *def = NULL);
+  INLINE InterrogateFunction(const InterrogateFunction &copy);
   void operator = (const InterrogateFunction &copy);
 
   INLINE bool is_global() const;
