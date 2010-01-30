@@ -2634,9 +2634,9 @@ except:
     # we're in production, there is no pdb module. assign these to something so that the
     # __builtin__ exports will work
     # references in the code should either be if __dev__'d or asserted
-    set_trace = None
-    setTrace = None
-    pm = None
+    set_trace = (lambda:None)
+    setTrace = (lambda:None)
+    pm = (lambda:None)
 
 
 class ScratchPad:

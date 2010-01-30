@@ -63,9 +63,14 @@ class ObjectMgr:
         if parent is None:
             parent = render
 
-        objDef = self.editor.objectPalette.findItem(typeName)
-        if objDef is None:
-            objDef = self.editor.protoPalette.findItem(typeName)
+        if self.editor:
+            objDef = self.editor.objectPalette.findItem(typeName)
+            if objDef is None:
+                objDef = self.editor.protoPalette.findItem(typeName)
+        else: # when loaded outside of LE
+            objDef = base.objectPalette.findItem(typeName)
+            if objDef is None:
+                objDef = base.protoPalette.findItem(typeName)
         newobj = None
         if objDef and type(objDef) != dict:
             if objDef.createFunction:
@@ -73,7 +78,10 @@ class ObjectMgr:
                 funcArgs = objDef.createFunction[OG.FUNC_ARGS]
                 if funcName.startswith('.'):
                     # when it's using default objectHandler
-                    func = Functor(eval("base.le.objectHandler%s"%funcName))
+                    if self.editor:
+                        func = Functor(eval("base.le.objectHandler%s"%funcName))
+                    else: # when loaded outside of LE
+                        func = Functor(eval("base.objectHandler%s"%funcName))                        
                 else:
                     # when it's not using default objectHandler, whole name of the handling obj
                     # should be included in function name
@@ -122,13 +130,13 @@ class ObjectMgr:
                 properties[key] = objDef.properties[key][OG.PROP_DEFAULT]
 
             # insert obj data to main repository
-            self.objects[uid] = [uid, newobj, objDef, model, anim, properties]
+            self.objects[uid] = [uid, newobj, objDef, model, anim, properties, (1,1,1,1)]
             self.npIndex[NodePath(newobj)] = uid
 
-            if fSelectObject:
-                base.direct.select(newobj)
-                
-            self.editor.ui.sceneGraphUI.add(newobj)
+            if self.editor:
+                if fSelectObject:
+                    base.direct.select(newobj)
+                self.editor.ui.sceneGraphUI.add(newobj)
 
         return newobj
 
@@ -142,7 +150,7 @@ class ObjectMgr:
         return self.objects.get(uid)
 
     def findObjectByNodePath(self, nodePath):
-        uid = self.npIndex.get(nodePath)
+        uid = self.npIndex.get(NodePath(nodePath))
         if uid is None:
             return None
         else:
@@ -159,6 +167,7 @@ class ObjectMgr:
             return
 
         self.currNodePath = obj[OG.OBJ_NP]
+        # [gjeon] to connect transform UI with nodepath's transform
         self.spawnUpdateObjectUITask()
         self.updateObjectPropertyUI(obj)
 
@@ -255,6 +264,20 @@ class ObjectMgr:
         np.setSx(float(self.editor.ui.objectPropertyUI.propSX.getValue()))
         np.setSy(float(self.editor.ui.objectPropertyUI.propSY.getValue()))
         np.setSz(float(self.editor.ui.objectPropertyUI.propSZ.getValue()))        
+        
+    def updateObjectColor(self, r, g, b, a, np=None):
+        if np is None:
+            np = self.currNodePath
+
+        obj = self.findObjectByNodePath(np)
+        if not obj:
+            return
+        obj[OG.OBJ_RGBA] = (r,g,b,a)
+        for child in np.getChildren():
+            if not child.hasTag('OBJRoot') and\
+               child.getName() != 'bboxLines':
+                child.setTransparency(1)
+                child.setColorScale(r, g, b, a)
 
     def updateObjectModel(self, model, obj, fSelectObject=True):
         """ replace object's model """
@@ -397,7 +420,10 @@ class ObjectMgr:
         funcArgs = propDef[OG.PROP_FUNC][OG.FUNC_ARGS]
 
         if funcName.startswith('.'):
-            func = Functor(eval("base.le.objectHandler%s"%funcName))
+            if self.editor:
+                func = Functor(eval("base.le.objectHandler%s"%funcName))
+            else: # when loaded outside of LE
+                func = Functor(eval("base.objectHandler%s"%funcName))                
         else:
             func = Functor(eval(funcName))
 
@@ -414,7 +440,7 @@ class ObjectMgr:
         # finally call update function
         func(**kwargs)
 
-        if fSelectObject:
+        if self.editor and fSelectObject:
             base.direct.select(obj[OG.OBJ_NP])
 
     def updateObjectProperties(self, nodePath, propValues):
@@ -444,6 +470,7 @@ class ObjectMgr:
                     objDef = obj[OG.OBJ_DEF]
                     objModel = obj[OG.OBJ_MODEL]
                     objProp = obj[OG.OBJ_PROP]
+                    objRGBA = obj[OG.OBJ_RGBA]
 
                     if parentId:
                         parentStr = "objects['%s']"%parentId
@@ -458,6 +485,7 @@ class ObjectMgr:
                     self.saveData.append("    objects['%s'].setPos(%s)"%(uid, np.getPos()))
                     self.saveData.append("    objects['%s'].setHpr(%s)"%(uid, np.getHpr()))
                     self.saveData.append("    objects['%s'].setScale(%s)"%(uid, np.getScale()))
+                    self.saveData.append("    objectMgr.updateObjectColor(%f, %f, %f, %f, objects['%s'])"%(objRGBA[0], objRGBA[1], objRGBA[2], objRGBA[3], uid))
                     self.saveData.append("    objectMgr.updateObjectProperties(objects['%s'], %s)"%(uid,objProp))
                     
                 self.traverse(child, uid)
