@@ -60,9 +60,7 @@ class ShowBase(DirectObject.DirectObject):
             ExceptionVarDump.install()
 
         # Locate the directory containing the main program
-        maindir=os.path.abspath(sys.path[0])
-        self.mainDir = Filename.fromOsSpecific(maindir).getFullpath()
-        ExecutionEnvironment.setEnvironmentVariable("MAIN_DIR", self.mainDir)
+        self.mainDir = ExecutionEnvironment.getEnvironmentVariable("MAIN_DIR")
 
         # The appRunner should have been created by the time ShowBase
         # has been.

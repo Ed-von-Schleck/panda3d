@@ -234,6 +234,17 @@ private:
   string _origin_hostname;
   string _origin_port;
 
+  // We need a list of previous time reports so we can average the
+  // predicted download time over the past few seconds.
+  class TimeReport {
+  public:
+    double _total;
+    double _report_time;
+  };
+  typedef deque<TimeReport> TimeReports;
+  TimeReports _time_reports;
+  double _total_time_reports;
+
   P3DTemporaryFile *_temp_p3d_filename;
 
   // For downloading the various images used by the splash window.
@@ -318,13 +329,17 @@ private:
   bool _instance_window_attached;
   bool _stuff_to_download;
 
-  // Members for deciding whether and when to display the progress bar
-  // for downloading the initial instance data.
+  // Keep track of when the download was started, for reporting
+  // purposes.  These members are used both for the instance download,
+  // and for the later package download.
 #ifdef _WIN32
-  int _start_dl_instance_tick;
+  int _start_dl_tick;
 #else
-  struct timeval _start_dl_instance_timeval;
+  struct timeval _start_dl_timeval;
 #endif
+
+  // This is set false initially, but true if the instance download
+  // continues for more than a couple of seconds.
   bool _show_dl_instance_progress;
 
   typedef vector<P3DPackage *> Packages;
@@ -333,7 +348,6 @@ private:
   int _download_package_index;
   size_t _total_download_size;
   size_t _total_downloaded;
-  time_t _download_begin;
   bool _download_started;
   bool _download_complete;
   bool _instance_started;

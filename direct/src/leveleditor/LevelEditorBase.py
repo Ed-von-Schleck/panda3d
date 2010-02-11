@@ -16,6 +16,7 @@ from ObjectMgr import *
 from FileMgr import *
 from ActionMgr import *
 from ProtoPalette import *
+from MayaConverter import *
 
 class LevelEditorBase(DirectObject):
     """ Base Class for Panda3D LevelEditor """ 
@@ -33,11 +34,35 @@ class LevelEditorBase(DirectObject):
         
     def initialize(self):
         """ You should call this in your __init__ method of inherited LevelEditor class """
-        fTk = base.config.GetBool('want-tk', 0)
+        fTk = 0
         fWx = 0
         base.startDirect(fWantTk = fTk, fWantWx = fWx)
         base.closeWindow(base.win)
         base.win = base.winList[3]
+
+        base.direct.disableMouseEvents()
+        newMouseEvents = map(lambda x: "_le_per_%s"%x, base.direct.mouseEvents) +\
+                         map(lambda x: "_le_fro_%s"%x, base.direct.mouseEvents) +\
+                         map(lambda x: "_le_lef_%s"%x, base.direct.mouseEvents) +\
+                         map(lambda x: "_le_top_%s"%x, base.direct.mouseEvents)
+        base.direct.mouseEvents = newMouseEvents
+        base.direct.enableMouseEvents()
+
+        base.direct.disableKeyEvents()
+        keyEvents = map(lambda x: "_le_per_%s"%x, base.direct.keyEvents) +\
+                         map(lambda x: "_le_fro_%s"%x, base.direct.keyEvents) +\
+                         map(lambda x: "_le_lef_%s"%x, base.direct.keyEvents) +\
+                         map(lambda x: "_le_top_%s"%x, base.direct.keyEvents)
+        base.direct.keyEvents = keyEvents
+        base.direct.enableKeyEvents()
+
+        base.direct.disableModifierEvents()
+        modifierEvents = map(lambda x: "_le_per_%s"%x, base.direct.modifierEvents) +\
+                         map(lambda x: "_le_fro_%s"%x, base.direct.modifierEvents) +\
+                         map(lambda x: "_le_lef_%s"%x, base.direct.modifierEvents) +\
+                         map(lambda x: "_le_top_%s"%x, base.direct.modifierEvents)
+        base.direct.modifierEvents = modifierEvents
+        base.direct.enableModifierEvents()
 
         base.direct.cameraControl.lockRoll = True
         base.direct.setFScaleWidgetByCam(1)
@@ -67,9 +92,15 @@ class LevelEditorBase(DirectObject):
         base.direct.manipulationControl.fAllowMarquee = 1
         base.direct.manipulationControl.supportMultiView()
         base.direct.cameraControl.useMayaCamControls = 1
-        
-        # [gjeon] to handle delete here first
+
+        for widget in base.direct.manipulationControl.widgetList:
+            widget.setBin('gui-popup', 0)
+            widget.setDepthTest(0)
+
+        # [gjeon] to intercept messages here
         base.direct.ignore('DIRECT-delete')
+        base.direct.ignore('DIRECT-select')
+        base.direct.ignore('DIRECT-preDeselectAll')
         
         # [gjeon] do not use the old way of finding current DR
         base.direct.drList.tryToGetCurrentDr = False
@@ -79,12 +110,17 @@ class LevelEditorBase(DirectObject):
 
         self.actionEvents.extend([
             # Node path events
+            ('DIRECT-select', self.select),
             ('DIRECT-delete', self.handleDelete),
+            ('DIRECT-preDeselectAll', self.deselectAll),
+            ('DIRECT_deselectAll', self.deselectAllCB),
             ('preRemoveNodePath', self.removeNodePathHook),
-            ('DIRECT_selectedNodePath_fMulti_fTag', self.selectedNodePathHook),
+            ('DIRECT_deselectedNodePath', self.deselectAllCB),
+            ('DIRECT_selectedNodePath_fMulti_fTag_fLEPane', self.selectedNodePathHook),
             ('DIRECT_deselectAll', self.deselectAll),
             ('LE-Undo', self.actionMgr.undo),
             ('LE-Redo', self.actionMgr.redo),
+            ('DIRECT_manipulateObjectCleanup', self.cleanUpManipulating),
             ])
 
         # Add all the action events
@@ -112,30 +148,73 @@ class LevelEditorBase(DirectObject):
             base.direct.selected.last = None
 
     def handleDelete(self):
-        reply = wx.MessageBox("Do you want to delete selected?", "Delete?",
-                              wx.YES_NO | wx.ICON_QUESTION)
-        if reply == wx.YES:
-            base.direct.removeAllSelected()
-            self.objectMgr.deselectAll()
-        else:
-            # need to reset COA
-            dnp = base.direct.selected.last
-            # Update camera controls coa to this point
-            # Coa2Camera = Coa2Dnp * Dnp2Camera
-            mCoa2Camera = dnp.mCoa2Dnp * dnp.getMat(base.direct.camera)
-            row = mCoa2Camera.getRow(3)
-            coa = Vec3(row[0], row[1], row[2])
-            base.direct.cameraControl.updateCoa(coa)
+        oldSelectedNPs = base.direct.selected.getSelectedAsList()
+        for oldNP in oldSelectedNPs:
+            obj = self.objectMgr.findObjectByNodePath(oldNP)
+            if obj:
+               self.ui.sceneGraphUI.delete(obj[OG.OBJ_UID])
+        action = ActionDeleteObj(self)
+        self.actionMgr.push(action)
+        action()
 
-    def selectedNodePathHook(self, nodePath, fMultiSelect = 0, fSelectTag = 1):
+##         reply = wx.MessageBox("Do you want to delete selected?", "Delete?",
+##                               wx.YES_NO | wx.ICON_QUESTION)
+##         if reply == wx.YES:
+##             base.direct.removeAllSelected()
+##         else:
+##             # need to reset COA
+##             dnp = base.direct.selected.last
+##             # Update camera controls coa to this point
+##             # Coa2Camera = Coa2Dnp * Dnp2Camera
+##             mCoa2Camera = dnp.mCoa2Dnp * dnp.getMat(base.direct.camera)
+##             row = mCoa2Camera.getRow(3)
+##             coa = Vec3(row[0], row[1], row[2])
+##             base.direct.cameraControl.updateCoa(coa)
+
+    def cleanUpManipulating(self, selectedNPs):
+        for np in selectedNPs:
+            obj = self.objectMgr.findObjectByNodePath(np)
+            if obj:
+                action = ActionTransformObj(self, obj[OG.OBJ_UID], Mat4(np.getMat()))
+                self.actionMgr.push(action)
+                action()                
+
+    def select(self, nodePath, fMultiSelect=0, fSelectTag=1, fResetAncestry=1, fLEPane=0, fUndo=1):
+        if fUndo:
+            # Select tagged object if present
+            if fSelectTag:
+                for tag in base.direct.selected.tagList:
+                    if nodePath.hasNetTag(tag):
+                        nodePath = nodePath.findNetTag(tag)
+                        break
+            action = ActionSelectObj(self, nodePath, fMultiSelect)
+            self.actionMgr.push(action)
+            action()
+        else:
+            base.direct.selectCB(nodePath, fMultiSelect, fSelectTag, fResetAncestry, fLEPane, fUndo)
+
+    def selectedNodePathHook(self, nodePath, fMultiSelect = 0, fSelectTag = 1, fLEPane = 0):
         # handle unpickable nodepath
         if nodePath.getName() in base.direct.iRay.unpickable:
             base.direct.deselect(nodePath)
             return
 
-        self.objectMgr.selectObject(nodePath)
+        if fMultiSelect == 0 and fLEPane == 0:
+           oldSelectedNPs = base.direct.selected.getSelectedAsList()
+           for oldNP in oldSelectedNPs:
+              obj = self.objectMgr.findObjectByNodePath(oldNP)
+              if obj:
+                 self.ui.sceneGraphUI.deSelect(obj[OG.OBJ_UID])
+        self.objectMgr.selectObject(nodePath, fLEPane)
 
-    def deselectAll(self):
+    def deselectAll(self, np=None):
+        if len(base.direct.selected.getSelectedAsList()) ==0:
+            return
+        action = ActionDeselectAll(self)
+        self.actionMgr.push(action)
+        action()
+
+    def deselectAllCB(self, dnp=None):
         self.objectMgr.deselectAll()
 
     def reset(self):
@@ -193,3 +272,15 @@ class LevelEditorBase(DirectObject):
         except:
             pass
 
+
+    def convertMaya(self, modelname, obj=None, isAnim=False):
+        if obj and isAnim:
+            mayaConverter = MayaConverter(self.ui, self, modelname, obj, isAnim)
+        else:
+            reply = wx.MessageBox("Is it an animation file?", "Animation?",
+                              wx.YES_NO | wx.ICON_QUESTION)
+            if reply == wx.YES:
+                mayaConverter = MayaConverter(self.ui, self, modelname, None, True)
+            else:        
+                mayaConverter = MayaConverter(self.ui, self, modelname, None, False)
+        mayaConverter.Show()

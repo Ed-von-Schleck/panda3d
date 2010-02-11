@@ -7,7 +7,7 @@ import os, time, wx
 from direct.task import Task
 from direct.actor.Actor import Actor
 from pandac.PandaModules import *
-
+from ActionMgr import *
 import ObjectGlobals as OG
 
 class ObjectMgr:
@@ -20,13 +20,14 @@ class ObjectMgr:
         self.objects = {}
         self.npIndex = {}
         self.saveData = []
+        self.objectsLastXform = {}
 
         self.lastUid = ''
         self.lastUidMode = 0
         self.currNodePath = None   
 
     def reset(self):
-        self.deselectAll()
+        base.direct.deselectAllCB()
 
         for id in self.objects.keys():
             self.objects[id][OG.OBJ_NP].removeNode()
@@ -58,7 +59,7 @@ class ObjectMgr:
             self.lastUidMod = 0
         return newUid
 
-    def addNewObject(self, typeName, uid = None, model = None, parent=None, fSelectObject=True):
+    def addNewObject(self, typeName, uid = None, model = None, parent=None, anim = None, fSelectObject=True):
         """ function to add new obj to the scene """
         if parent is None:
             parent = render
@@ -105,7 +106,6 @@ class ObjectMgr:
                 except:
                     newobj = loader.loadModel(Filename.fromOsSpecific(model).getFullpath())
 
-            anim = ''
             i = 0
             for i in range(len(objDef.anims)):
                 animFile = objDef.anims[i]
@@ -114,9 +114,14 @@ class ObjectMgr:
                 if i < len(objDef.animNames):
                     animName = objDef.animNames[i]
                 newAnim = newobj.loadAnims({animName:animFile})
-                if i == 0:
-                    anim = animFile
-                    newobj.loop(animName)
+
+                if anim:
+                    if anim == animFile:
+                        newobj.loop(animName)
+                else:
+                    if i == 0:
+                        anim = animFile
+                        newobj.loop(animName)
 
             if newobj is None:
                 return None
@@ -126,8 +131,6 @@ class ObjectMgr:
 
             if uid is None:
                 uid = self.genUniqueId()
-            else:
-                fSelectObject = False
 
             # populate obj data using default values
             properties = {}
@@ -140,7 +143,7 @@ class ObjectMgr:
 
             if self.editor:
                 if fSelectObject:
-                    base.direct.select(newobj)
+                    self.editor.select(newobj, fUndo=0)
                 self.editor.ui.sceneGraphUI.add(newobj)
 
         return newobj
@@ -150,6 +153,11 @@ class ObjectMgr:
         if uid:
             del self.objects[uid]
             del self.npIndex[nodePath]
+
+        # remove children also
+        for child in nodePath.getChildren():
+            if child.hasTag('OBJRoot'):
+                self.removeObjectByNodePath(child)
 
     def findObjectById(self, uid):
         return self.objects.get(uid)
@@ -165,16 +173,21 @@ class ObjectMgr:
         self.currNodePath = None
         taskMgr.remove('_le_updateObjectUITask')
         self.editor.ui.objectPropertyUI.clearPropUI()
+        self.editor.ui.sceneGraphUI.tree.UnselectAll()
 
-    def selectObject(self, nodePath):
+    def selectObject(self, nodePath, fLEPane=0):
         obj = self.findObjectByNodePath(nodePath)
         if obj is None:
             return
 
         self.currNodePath = obj[OG.OBJ_NP]
+        self.objectsLastXform[obj[OG.OBJ_UID]] = Mat4(self.currNodePath.getMat())
         # [gjeon] to connect transform UI with nodepath's transform
         self.spawnUpdateObjectUITask()
         self.updateObjectPropertyUI(obj)
+        #import pdb;pdb.set_trace()
+        if fLEPane == 0:
+           self.editor.ui.sceneGraphUI.select(obj[OG.OBJ_UID])
 
     def updateObjectPropertyUI(self, obj):
         objDef = obj[OG.OBJ_DEF]
@@ -183,7 +196,7 @@ class ObjectMgr:
 
     def onEnterObjectPropUI(self, event):
         taskMgr.remove('_le_updateObjectUITask')        
-        
+
     def onLeaveObjectPropUI(self, event):
         self.spawnUpdateObjectUITask()
         
@@ -236,7 +249,7 @@ class ObjectMgr:
         if self.currNodePath is None:
             return
 
-        np = self.currNodePath
+        np = hidden.attachNewNode('temp')
         np.setX(float(self.editor.ui.objectPropertyUI.propX.getValue()))
         np.setY(float(self.editor.ui.objectPropertyUI.propY.getValue()))
         np.setZ(float(self.editor.ui.objectPropertyUI.propZ.getValue()))
@@ -269,6 +282,18 @@ class ObjectMgr:
         np.setSx(float(self.editor.ui.objectPropertyUI.propSX.getValue()))
         np.setSy(float(self.editor.ui.objectPropertyUI.propSY.getValue()))
         np.setSz(float(self.editor.ui.objectPropertyUI.propSZ.getValue()))        
+
+        obj = self.findObjectByNodePath(self.currNodePath)
+        action = ActionTransformObj(self.editor, obj[OG.OBJ_UID], Mat4(np.getMat()))
+        self.editor.actionMgr.push(action)
+        np.remove()
+        action()
+
+    def setObjectTransform(self, uid, xformMat):
+        obj = self.findObjectById(uid)
+        if obj:
+            print obj[OG.OBJ_NP], xformMat
+            obj[OG.OBJ_NP].setMat(xformMat)
         
     def updateObjectColor(self, r, g, b, a, np=None):
         if np is None:
@@ -287,10 +312,11 @@ class ObjectMgr:
     def updateObjectModel(self, model, obj, fSelectObject=True):
         """ replace object's model """
         if obj[OG.OBJ_MODEL] != model:
-            base.direct.deselectAll()
+            base.direct.deselectAllCB()
 
             objNP = obj[OG.OBJ_NP]
-
+            objRGBA = obj[OG.OBJ_RGBA]
+            
             # load new model
             newobj = loader.loadModel(model)
             newobj.setTag('OBJRoot','1')
@@ -306,6 +332,9 @@ class ObjectMgr:
             newobj.setHpr(objNP.getHpr())
             newobj.setScale(objNP.getScale())
 
+            # copy RGBA data
+            self.updateObjectColor(objRGBA[0], objRGBA[1], objRGBA[2], objRGBA[3], newobj)
+
             # delete old geom
             del self.npIndex[NodePath(objNP)]
             objNP.removeNode()
@@ -316,12 +345,12 @@ class ObjectMgr:
             self.npIndex[NodePath(newobj)] = obj[OG.OBJ_UID]
 
             if fSelectObject:
-                base.direct.select(newobj)        
+                base.direct.select(newobj, fUndo=0)        
 
     def updateObjectAnim(self, anim, obj, fSelectObject=True):
         """ replace object's anim """
         if obj[OG.OBJ_ANIM] != anim:
-            base.direct.deselectAll()
+            base.direct.deselectAllCB()
             objNP = obj[OG.OBJ_NP]
 
             # load new anim
@@ -330,7 +359,7 @@ class ObjectMgr:
             objNP.loop(animName)
             obj[OG.OBJ_ANIM] = anim
             if fSelectObject:
-                base.direct.select(objNP)
+                base.direct.select(objNP, fUndo=0)
 
     def updateObjectModelFromUI(self, event, obj):
         """ replace object's model with one selected from UI """
@@ -416,37 +445,50 @@ class ObjectMgr:
         propDataType = propDef[OG.PROP_DATATYPE]
 
         val = OG.TYPE_CONV[propDataType](val)
-        objProp[propName] = val
-
-        if propDef[OG.PROP_FUNC] is None:
-            return
+        oldVal = objProp[propName]
+        #objProp[propName] = val
         
-        funcName = propDef[OG.PROP_FUNC][OG.FUNC_NAME]
-        funcArgs = propDef[OG.PROP_FUNC][OG.FUNC_ARGS]
-
-        if funcName.startswith('.'):
-            if self.editor:
-                func = Functor(eval("base.le.objectHandler%s"%funcName))
-            else: # when loaded outside of LE
-                func = Functor(eval("base.objectHandler%s"%funcName))                
+        if propDef[OG.PROP_FUNC] is None:
+            func = None
+            undoFunc = None
         else:
-            func = Functor(eval(funcName))
+            funcName = propDef[OG.PROP_FUNC][OG.FUNC_NAME]
+            funcArgs = propDef[OG.PROP_FUNC][OG.FUNC_ARGS]
 
-        # populate keyword arguments
-        kwargs = {}
-        for key in funcArgs.keys():
-            if funcArgs[key] == OG.ARG_VAL:
-                kwargs[key] = val
-            elif funcArgs[key] == OG.ARG_OBJ:
-                kwargs[key] = obj
+            # populate keyword arguments
+            kwargs = {}
+            undoKwargs = {}
+            for key in funcArgs.keys():
+                if funcArgs[key] == OG.ARG_VAL:
+                    kwargs[key] = val
+                    undoKwargs[key] = oldVal
+                elif funcArgs[key] == OG.ARG_OBJ:
+                    undoKwargs[key] = obj
+                    objProp[propName] = val
+                    kwargs[key] = obj
+                else:
+                    kwargs[key] = funcArgs[key]
+                    undoKwargs[key] = funcArgs[key]
+
+            if funcName.startswith('.'):
+                if self.editor:
+                    func = Functor(eval("base.le.objectHandler%s"%funcName), **kwargs)
+                    undoFunc = Functor(eval("base.le.objectHandler%s"%funcName), **undoKwargs)
+                else: # when loaded outside of LE
+                    func = Functor(eval("base.objectHandler%s"%funcName), **kwargs)
+                    undoFunc = Functor(eval("base.objectHandler%s"%funcName), **undoKwargs)                    
             else:
-                kwargs[key] = funcArgs[key]
-
-        # finally call update function
-        func(**kwargs)
+                func = Functor(eval(funcName), **kwargs)
+                undoFunc = Functor(eval(funcName), **undoKwargs)
+                
+            # finally call update function
+            #func(**kwargs)
+        action = ActionUpdateObjectProp(self.editor, fSelectObject, obj, propName, val, oldVal, func, undoFunc)
+        self.editor.actionMgr.push(action)
+        action()
 
         if self.editor and fSelectObject:
-            base.direct.select(obj[OG.OBJ_NP])
+            base.direct.select(obj[OG.OBJ_NP], fUndo=0)
 
     def updateObjectProperties(self, nodePath, propValues):
         """
@@ -474,6 +516,7 @@ class ObjectMgr:
                     np = obj[OG.OBJ_NP]
                     objDef = obj[OG.OBJ_DEF]
                     objModel = obj[OG.OBJ_MODEL]
+                    objAnim = obj[OG.OBJ_ANIM]
                     objProp = obj[OG.OBJ_PROP]
                     objRGBA = obj[OG.OBJ_RGBA]
 
@@ -482,10 +525,17 @@ class ObjectMgr:
                     else:
                         parentStr = "None"
 
-                    if objModel is None:
-                        self.saveData.append("\nobjects['%s'] = objectMgr.addNewObject('%s', '%s', None, %s)"%(uid, objDef.name, uid, parentStr))
+                    if objModel:
+                        modelStr = "'%s'"%objModel
                     else:
-                        self.saveData.append("\nobjects['%s'] = objectMgr.addNewObject('%s', '%s', '%s', %s)"%(uid, objDef.name, uid, objModel, parentStr))
+                        modelStr = "None"
+
+                    if objAnim:
+                        animStr = "'%s'"%objAnim
+                    else:
+                        animStr = "None"
+
+                    self.saveData.append("\nobjects['%s'] = objectMgr.addNewObject('%s', '%s', %s, %s, %s, fSelectObject=False)"%(uid, objDef.name, uid, modelStr, parentStr, animStr))
                     self.saveData.append("if objects['%s']:"%uid)
                     self.saveData.append("    objects['%s'].setPos(%s)"%(uid, np.getPos()))
                     self.saveData.append("    objects['%s'].setHpr(%s)"%(uid, np.getHpr()))
@@ -505,6 +555,10 @@ class ObjectMgr:
         if obj is None:
             return None
         objDef = obj[OG.OBJ_DEF]
+        objModel = obj[OG.OBJ_MODEL]
+        objAnim = obj[OG.OBJ_ANIM]
+        objRGBA = obj[OG.OBJ_RGBA]
+
         if parent is None:
             parent = nodePath.getParent()
 
@@ -520,6 +574,9 @@ class ObjectMgr:
             return None
         # copy model info
         self.updateObjectModel(obj[OG.OBJ_MODEL], newObj, fSelectObject=False)
+
+        # copy anim info
+        self.updateObjectAnim(obj[OG.OBJ_ANIM], newObj, fSelectObject=False)
 
         # copy other properties
         for key in obj[OG.OBJ_PROP]:
@@ -543,7 +600,7 @@ class ObjectMgr:
                 self.duplicateChild(nodePath, newObjNP)
                 duplicatedNPs.append(newObjNP)
 
-        base.direct.deselectAll()
+        base.direct.deselectAllCB()
         print duplicatedNPs
         for newNodePath in duplicatedNPs:
-            base.direct.select(newNodePath, fMultiSelect = 1)
+            base.direct.select(newNodePath, fMultiSelect = 1, fUndo=0)
