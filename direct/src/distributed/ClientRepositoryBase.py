@@ -120,6 +120,29 @@ class ClientRepositoryBase(ConnectionRepository):
             self.disconnect()
         self.stopHeartbeat()
 
+    # override per-game
+    def _isPlayerDclass(self, dclass):
+        return False
+    
+    # check if this is a player avatar in a location where they should not be
+    def _isValidPlayerLocation(self, parentId, zoneId):
+        return True
+
+    # since the client is able to set the location of their avatar at will, we need
+    # to make sure we don't try to generate a player at the wrong time
+    # in particular this is a response to a hack where a player put their avatar in the
+    # zone that is set aside for DistributedDistricts; the avatar generate crashed when
+    # referencing localAvatar (since localAvatar hadn't been set up yet)
+    def _isInvalidPlayerAvatarGenerate(self, doId, dclass, parentId, zoneId):
+        if self._isPlayerDclass(dclass):
+            if not self._isValidPlayerLocation(parentId, zoneId):
+                base.cr.centralLogger.writeClientEvent(
+                    'got generate for player avatar %s in invalid location (%s, %s)' % (
+                    doId, parentId, zoneId,
+                    ))
+                return True
+        return False
+
     def allocateContext(self):
         self.context+=1
         return self.context
@@ -163,6 +186,10 @@ class ClientRepositoryBase(ConnectionRepository):
         doId = di.getUint32()
         # Look up the dclass
         dclass = self.dclassesByNumber[classId]
+
+        if self._isInvalidPlayerAvatarGenerate(doId, dclass, parentId, zoneId):
+            return
+
         dclass.startGenerate()
         # Create a new distributed object, and put it in the dictionary
         distObj = self.generateWithRequiredFields(dclass, doId, di, parentId, zoneId)
@@ -178,6 +205,9 @@ class ClientRepositoryBase(ConnectionRepository):
         doId = di.getUint32()
 
         dclass = self.dclassesByNumber[classId]
+
+        if self._isInvalidPlayerAvatarGenerate(doId, dclass, parentId, zoneId):
+            return
 
         deferrable = getattr(dclass.getClassDef(), 'deferrable', False)
         if not self.deferInterval or self.noDefer:
