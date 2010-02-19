@@ -87,7 +87,7 @@ close() {
 ////////////////////////////////////////////////////////////////////
 bool P3DMultifileReader::
 extract_all(const string &to_dir, P3DPackage *package, 
-            P3DPackage::InstallStep *step) {
+            P3DPackage::InstallStepThreaded *step) {
   assert(_is_open);
   if (_in.fail()) {
     return false;
@@ -131,8 +131,7 @@ extract_all(const string &to_dir, P3DPackage *package,
     chmod(output_pathname.c_str(), 0555);
 
     if (step != NULL && package != NULL) {
-      step->_bytes_done += s._data_length;
-      step->report_step_progress();
+      step->thread_add_bytes_done(s._data_length);
     }
   }
 
@@ -184,8 +183,10 @@ extract_one(ostream &out, const string &filename) {
 ////////////////////////////////////////////////////////////////////
 int P3DMultifileReader::
 get_num_signatures() const {
-  assert(_is_open);
-  ((P3DMultifileReader *)this)->check_signatures();
+  if (_is_open) {
+    ((P3DMultifileReader *)this)->check_signatures();
+  }
+
   return _signatures.size();
 }
 
