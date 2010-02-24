@@ -35,7 +35,7 @@ else:
 from direct.showbase.DirectObject import DirectObject
 from pandac.PandaModules import VirtualFileSystem, Filename, Multifile, loadPrcFileData, unloadPrcFile, getModelPath, Thread, WindowProperties, ExecutionEnvironment, PandaSystem, Notify, StreamWriter, ConfigVariableString, initAppForGui
 from pandac import PandaModules
-from direct.stdpy import file
+from direct.stdpy import file, glob
 from direct.task.TaskManagerGlobal import taskMgr
 from direct.showbase.MessengerGlobal import messenger
 from direct.showbase import AppRunnerGlobal
@@ -86,6 +86,7 @@ class AppRunner(DirectObject):
         self.guiApp = False
         self.interactiveConsole = False
         self.initialAppImport = False
+        self.trueFileIO = False
 
         self.sessionId = 0
         self.packedAppEnvironmentInitialized = False
@@ -149,9 +150,10 @@ class AppRunner(DirectObject):
         self.downloadTask = None
 
         # The mount point for the multifile.  For now, this is always
-        # the same, but when we move to multiple-instance sessions, it
-        # may have to be different for each instance.
-        self.multifileRoot = '/mf'
+        # the current working directory, for convenience; but when we
+        # move to multiple-instance sessions, it may have to be
+        # different for each instance.
+        self.multifileRoot = ExecutionEnvironment.getCwd().cStr()
 
         # The "main" object will be exposed to the DOM as a property
         # of the plugin object; that is, document.pluginobject.main in
@@ -405,7 +407,7 @@ class AppRunner(DirectObject):
         exception handler.  This is generally the program's main loop
         when running in a p3d environment (except on unusual platforms
         like the iPhone, which have to hand the main loop off to the
-        OS, and don't use this interface. """
+        OS, and don't use this interface). """
 
         try:
             taskMgr.run()
@@ -448,16 +450,28 @@ class AppRunner(DirectObject):
         VFSImporter.register()
         sys.path.append(self.multifileRoot)
 
+        # Make sure that $MAIN_DIR is set to the p3d root before we
+        # start executing the code in this file.
+        ExecutionEnvironment.setEnvironmentVariable("MAIN_DIR", Filename(self.multifileRoot).toOsSpecific())
+
         # Put our root directory on the model-path, too.
         getModelPath().appendDirectory(self.multifileRoot)
 
-        # Replace the builtin open and file symbols so user code will get
-        # our versions by default, which can open and read files out of
-        # the multifile.
-        __builtin__.file = file.file
-        __builtin__.open = file.open
-        os.listdir = file.listdir
-        os.walk = file.walk
+        if not self.trueFileIO:
+            # Replace the builtin open and file symbols so user code will get
+            # our versions by default, which can open and read files out of
+            # the multifile.
+            __builtin__.file = file.file
+            __builtin__.open = file.open
+            os.listdir = file.listdir
+            os.walk = file.walk
+            os.path.isfile = file.isfile
+            os.path.isdir = file.isdir
+            os.path.exists = file.exists
+            os.path.lexists = file.lexists
+            os.path.getmtime = file.getmtime
+            os.path.getsize = file.getsize
+            sys.modules['glob'] = glob
 
     def __startIfReady(self):
         """ Called internally to start the application. """
@@ -473,7 +487,7 @@ class AppRunner(DirectObject):
             # Hang a hook so we know when the window is actually opened.
             self.acceptOnce('window-event', self.__windowEvent)
 
-            # Look for the startup Python file.  This may be a magic
+            # Look for the startup Python file.  This might be a magic
             # filename (like "__main__", or any filename that contains
             # invalid module characters), so we can't just import it
             # directly; instead, we go through the low-level importer.
@@ -660,6 +674,10 @@ class AppRunner(DirectObject):
             guiApp = self.p3dConfig.Attribute('gui_app')
             if guiApp:
                 self.guiApp = int(guiApp)
+
+            trueFileIO = self.p3dConfig.Attribute('true_file_io')
+            if trueFileIO:
+                self.trueFileIO = int(trueFileIO)
 
         # The interactiveConsole flag can only be set true if the
         # application has allow_python_dev set.
@@ -952,11 +970,6 @@ def dummyAppRunner(tokens = [], argv = None):
     vfs.mount(cwd, appRunner.multifileRoot, vfs.MFReadOnly)
 
     appRunner.initPackedAppEnvironment()
-
-    __builtin__.file = file.file
-    __builtin__.open = file.open
-    os.listdir = file.listdir
-    os.walk = file.walk
-
+    
     return appRunner
 
