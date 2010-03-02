@@ -34,17 +34,46 @@ class PandaTextDropTarget(wx.TextDropTarget):
         # create ray from the camera to detect 3d position
         iRay = SelectionRay(self.view.camera)
         iRay.collider.setFromLens(self.view.camNode, mx, my)
-        iRay.collideWithBitMask(1)
-        iRay.ct.traverse(self.view.collPlane)
+        hitPt = None
+        if self.editor.objectMgr.currLiveNP:
+            iRay.collideWithGeom()
+            iRay.ct.traverse(self.editor.objectMgr.currLiveNP)
 
-        if iRay.getNumEntries() > 0:
-            entry = iRay.getEntry(0)
-            hitPt = entry.getSurfacePoint(entry.getFromNodePath())
+            def isEntryBackfacing(iRay, entry):
+                if not entry.hasSurfaceNormal():
+                    # Well, no way to tell.  Assume we're not backfacing.
+                    return 0
 
+                fromNodePath = entry.getFromNodePath()
+                v = Vec3(entry.getSurfacePoint(fromNodePath))
+                n = entry.getSurfaceNormal(fromNodePath)
+                # Convert to camera space for backfacing test
+                p2cam = iRay.collisionNodePath.getParent().getMat(self.view.camera)
+                v = Vec3(p2cam.xformPoint(v))
+                n = p2cam.xformVec(n)
+                # Normalize and check angle between to vectors
+                v.normalize()
+                return v.dot(n) >= 0                
+
+            iRay.sortEntries()
+            for entry in iRay.getEntries():
+                if isEntryBackfacing(iRay, entry):
+                    pass
+                else:
+                    hitPt = entry.getSurfacePoint(entry.getFromNodePath())
+                    break
+
+        if hitPt is None:
+            iRay.collideWithBitMask(1)
+            iRay.ct.traverse(self.view.collPlane)
+            if iRay.getNumEntries() > 0:
+                entry = iRay.getEntry(0)
+                hitPt = entry.getSurfacePoint(entry.getFromNodePath())
+
+        if hitPt:
             # create a temp nodePath to get the position
             np = NodePath('temp')
             np.setPos(self.view.camera, hitPt)
-
             # update temp nodePath's HPR and scale with newobj's
             np.setHpr(newobj.getHpr())
             np.setScale(newobj.getScale())
@@ -57,8 +86,39 @@ class PandaTextDropTarget(wx.TextDropTarget):
             action()
         del iRay
 
+ID_NEW = 101
+ID_OPEN = 102
+ID_SAVE = 103
+ID_SAVE_AS = 104
+ID_DUPLICATE = 201
+ID_MAKE_LIVE = 202
+ID_UNDO = 203
+ID_REDO = 204
+ID_SHOW_GRID = 301
+ID_GRID_SIZE = 302
+ID_GRID_SNAP = 303
+ID_SHOW_PANDA_OBJECT = 304
+ID_HOT_KEYS = 305
+
 class LevelEditorUIBase(WxAppShell):
     """ Class for Panda3D LevelEditor """ 
+
+    MENU_TEXTS = {
+        ID_NEW : ("&New", "LE-NewScene"),
+        ID_OPEN : ("&Open", "LE-OpenScene"),
+        ID_SAVE : ("&Save", "LE-SaveScene"),
+        ID_SAVE_AS : ("Save &As", None),
+        wx.ID_EXIT : ("&Quit", "LE-Quit"),
+        ID_DUPLICATE : ("&Duplicate", "LE-Duplicate"),
+        ID_MAKE_LIVE : ("Make &Live", "LE-MakeLive"),
+        ID_UNDO : ("&Undo", "LE-Undo"),
+        ID_REDO : ("&Redo", "LE-Redo"),
+        ID_SHOW_GRID : ("&Show Grid", None),
+        ID_GRID_SIZE : ("&Grid Size", None),
+        ID_GRID_SNAP : ("Grid S&nap", None),
+        ID_SHOW_PANDA_OBJECT : ("Show &Panda Objects", None),
+        ID_HOT_KEYS : ("&Hot Keys", None),
+        }
     
     def __init__(self, editor, *args, **kw):
         # Create the Wx app
@@ -70,50 +130,78 @@ class LevelEditorUIBase(WxAppShell):
         if not kw.get('size'):
             kw['size'] = wx.Size(self.frameWidth, self.frameHeight)
         WxAppShell.__init__(self, *args, **kw)        
-
+        self.bindKeyEvents(True)
         self.initialize()
-        self.Bind(wx.EVT_SET_FOCUS, self.onSetFocus)
-        self.Bind(wx.EVT_KEY_DOWN, self.onSetFocus)
+
+    def bindKeyEvents(self, toBind=True):
+        if toBind:
+            self.wxApp.Bind(wx.EVT_CHAR, self.onKeyEvent)
+            self.wxApp.Bind(wx.EVT_KEY_DOWN, self.onKeyDownEvent)
+            self.wxApp.Bind(wx.EVT_KEY_UP, self.onKeyUpEvent)
+        else:
+            self.wxApp.Unbind(wx.EVT_CHAR)
+            self.wxApp.Unbind(wx.EVT_KEY_DOWN)
+            self.wxApp.Unbind(wx.EVT_KEY_UP)
 
     def createMenu(self):
-        menuItem = self.menuFile.Insert(0, -1 , "&New")
+        menuItem = self.menuFile.Insert(0, ID_NEW, self.MENU_TEXTS[ID_NEW][0])
         self.Bind(wx.EVT_MENU, self.onNew, menuItem)
         
-        menuItem = self.menuFile.Insert(1, -1 , "&Load")
-        self.Bind(wx.EVT_MENU, self.onLoad, menuItem)
+        menuItem = self.menuFile.Insert(1, ID_OPEN, self.MENU_TEXTS[ID_OPEN][0])
+        self.Bind(wx.EVT_MENU, self.onOpen, menuItem)
 
-        menuItem = self.menuFile.Insert(2, -1 , "&Save")
+        menuItem = self.menuFile.Insert(2, ID_SAVE, self.MENU_TEXTS[ID_SAVE][0])
         self.Bind(wx.EVT_MENU, self.onSave, menuItem)
 
-        menuItem = self.menuFile.Insert(3, -1 , "Save &As")
+        menuItem = self.menuFile.Insert(3, ID_SAVE_AS, self.MENU_TEXTS[ID_SAVE_AS][0])
         self.Bind(wx.EVT_MENU, self.onSaveAs, menuItem)
 
         self.menuEdit = wx.Menu()
         self.menuBar.Insert(1, self.menuEdit, "&Edit")
 
-        menuItem = self.menuEdit.Append(-1, "&Duplicate")
+        menuItem = self.menuEdit.Append(ID_DUPLICATE, self.MENU_TEXTS[ID_DUPLICATE][0])
         self.Bind(wx.EVT_MENU, self.onDuplicate, menuItem)
 
-        menuItem = self.menuEdit.Append(-1, "&Undo")
+        menuItem = self.menuEdit.Append(ID_MAKE_LIVE, self.MENU_TEXTS[ID_MAKE_LIVE][0])
+        self.Bind(wx.EVT_MENU, self.onMakeLive, menuItem)
+
+        menuItem = self.menuEdit.Append(ID_UNDO, self.MENU_TEXTS[ID_UNDO][0])
         self.Bind(wx.EVT_MENU, self.editor.actionMgr.undo, menuItem)
 
-        menuItem = self.menuEdit.Append(-1, "&Redo")
+        menuItem = self.menuEdit.Append(ID_REDO, self.MENU_TEXTS[ID_REDO][0])
         self.Bind(wx.EVT_MENU, self.editor.actionMgr.redo, menuItem)
 
         self.menuOptions = wx.Menu()
         self.menuBar.Insert(2, self.menuOptions, "&Options")
 
-        self.gridSizeMenuItem = self.menuOptions.Append(-1, "&Grid Size")
+        self.showGridMenuItem = self.menuOptions.Append(ID_SHOW_GRID, self.MENU_TEXTS[ID_SHOW_GRID][0], kind = wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.toggleGrid, self.showGridMenuItem)
+
+        self.gridSizeMenuItem = self.menuOptions.Append(ID_GRID_SIZE, self.MENU_TEXTS[ID_GRID_SIZE][0])
         self.Bind(wx.EVT_MENU, self.onGridSize, self.gridSizeMenuItem)
 
-        self.gridSnapMenuItem = self.menuOptions.Append(-1, "Grid &Snap", kind = wx.ITEM_CHECK)
+        self.gridSnapMenuItem = self.menuOptions.Append(ID_GRID_SNAP, self.MENU_TEXTS[ID_GRID_SNAP][0], kind = wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.toggleGridSnap, self.gridSnapMenuItem)
 
-        self.showPandaObjectsMenuItem = self.menuOptions.Append(-1, "Show &Panda Objects", kind = wx.ITEM_CHECK)
+        self.showPandaObjectsMenuItem = self.menuOptions.Append(ID_SHOW_PANDA_OBJECT, self.MENU_TEXTS[ID_SHOW_PANDA_OBJECT][0], kind = wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.onShowPandaObjects, self.showPandaObjectsMenuItem)
 
-        self.hotKeysMenuItem = self.menuOptions.Append(-1, "&Hot Keys")
+        self.hotKeysMenuItem = self.menuOptions.Append(ID_HOT_KEYS, self.MENU_TEXTS[ID_HOT_KEYS][0])
         self.Bind(wx.EVT_MENU, self.onHotKeys, self.hotKeysMenuItem)
+
+    def updateMenu(self):
+        hotKeyDict = {}
+        for hotKey in base.direct.hotKeyMap.keys():
+            desc = base.direct.hotKeyMap[hotKey]
+            hotKeyDict[desc[1]] = hotKey
+            
+        for id in self.MENU_TEXTS.keys():
+            desc = self.MENU_TEXTS[id]
+            if desc[1]:
+                menuItem = self.menuBar.FindItemById(id)
+                hotKey = hotKeyDict.get(desc[1])
+                if hotKey:
+                    menuItem.SetText(desc[0] + "\t%s"%hotKey)
 
     def createInterface(self):
         self.createMenu()
@@ -185,8 +273,56 @@ class LevelEditorUIBase(WxAppShell):
         self.sceneGraphUI = SceneGraphUI(self.leftBarDownPane0, self.editor)
         self.layerEditorUI = LayerEditorUI(self.rightBarDownPane0, self.editor)
 
-    def onSetFocus(self):
-        print 'wx got focus'
+        self.showGridMenuItem.Check(True)
+
+    def onKeyDownEvent(self, evt):
+        if evt.GetKeyCode() == wx.WXK_ALT:
+            base.direct.fAlt = 1
+        elif evt.GetKeyCode() == wx.WXK_CONTROL:
+            base.direct.fControl = 1
+        elif evt.GetKeyCode() == wx.WXK_SHIFT:
+            base.direct.fShift = 1
+        else:
+            evt.Skip()
+
+    def onKeyUpEvent(self, evt):
+        if evt.GetKeyCode() == wx.WXK_ALT:
+            base.direct.fAlt = 0
+        elif evt.GetKeyCode() == wx.WXK_CONTROL:
+            base.direct.fControl = 0
+        elif evt.GetKeyCode() == wx.WXK_SHIFT:
+            base.direct.fShift = 0
+        else:
+            evt.Skip()
+        
+    def onKeyEvent(self, evt):
+        input = ''
+        if evt.GetKeyCode() in range(97, 123): # for keys from a to z
+            if evt.GetModifiers() == 4: # when shift is pressed while caps lock is on
+                input = 'shift-%s'%chr(evt.GetKeyCode())
+            else:
+                input = chr(evt.GetKeyCode())
+        elif evt.GetKeyCode() in range(65, 91):
+            if evt.GetModifiers() == 4: # when shift is pressed
+                input = 'shift-%s'%chr(evt.GetKeyCode() + 32)
+            else:
+                input = chr(evt.GetKeyCode() + 32)
+        elif evt.GetKeyCode() in range(1, 27): # for keys from a to z with control
+            input = 'control-%s'%chr(evt.GetKeyCode()+96)
+        elif evt.GetKeyCode() == wx.WXK_DELETE:
+            input = 'delete'
+        elif evt.GetKeyCode() == wx.WXK_ESCAPE:
+            input = 'escape'
+        else:
+            if evt.GetModifiers() == 4:
+                input = 'shift-%s'%chr(evt.GetKeyCode())
+            elif evt.GetModifiers() == 2:
+                input = 'control-%s'%chr(evt.GetKeyCode())
+            elif evt.GetKeyCode() < 256:
+                input = chr(evt.GetKeyCode())
+        if input in base.direct.hotKeyMap.keys():
+            keyDesc = base.direct.hotKeyMap[input]
+            messenger.send(keyDesc[1])
 
     def appInit(self):
         """Overridden from WxAppShell.py."""
@@ -214,32 +350,49 @@ class LevelEditorUIBase(WxAppShell):
         self.wxApp.ProcessIdle()
         if task != None: return task.cont
 
-    def onNew(self, evt):
+    def onNew(self, evt=None):
         self.editor.reset()
         self.sceneGraphUI.reset()
         self.layerEditorUI.reset()
 
-    def onLoad(self, evt):
+    def onOpen(self, evt=None):
         dialog = wx.FileDialog(None, "Choose a file", os.getcwd(), "", "*.py", wx.OPEN)
         if dialog.ShowModal() == wx.ID_OK:
             self.editor.load(dialog.GetPath())
         dialog.Destroy()
 
-    def onSave(self, evt):
+    def onSave(self, evt=None):
         if self.editor.currentFile is None:
-            self.onSaveAs(evt)
+            return self.onSaveAs(evt)
         else:
             self.editor.save()
 
     def onSaveAs(self, evt):
         dialog = wx.FileDialog(None, "Choose a file", os.getcwd(), "", "*.py", wx.SAVE)
+        result = True
         if dialog.ShowModal() == wx.ID_OK:
             self.editor.saveAs(dialog.GetPath())
+        else:
+            result = False
         dialog.Destroy()
+        return result
 
     def onDuplicate(self, evt):
         self.editor.objectMgr.duplicateSelected()
 
+    def onMakeLive(self, evt):
+        self.editor.objectMgr.makeSelectedLive()
+
+    def toggleGrid(self, evt):
+        if self.showGridMenuItem.IsChecked():
+            for grid in [self.perspView.grid, self.topView.grid, self.frontView.grid, self.leftView.grid]:
+                if grid.isHidden():
+                    grid.show()
+        else:
+            for grid in [self.perspView.grid, self.topView.grid, self.frontView.grid, self.leftView.grid]:
+                if not grid.isHidden():
+                    grid.hide()
+                
     def toggleGridSnap(self, evt):
         if self.gridSnapMenuItem.IsChecked():
             base.direct.manipulationControl.fGridSnap = 1
@@ -257,6 +410,7 @@ class LevelEditorUIBase(WxAppShell):
     def onDestroy(self, evt):
         self.editor.protoPalette.saveToFile()
         self.editor.saveSettings()
+        self.editor.reset()
 
     def updateGrids(self, newSize, newSpacing):
         self.perspView.grid.gridSize = newSize
@@ -308,9 +462,11 @@ class GridSizeUI(wx.Dialog):
         vbox.Add(okButton, 1, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 5)
 
         self.SetSizer(vbox)
+        base.le.ui.bindKeyEvents(False)
 
     def onApply(self, evt):
         newSize = self.gridSizeSlider.GetValue()
         newSpacing = self.gridSpacingSlider.GetValue()
         self.parent.updateGrids(newSize, newSpacing)
+        base.le.ui.bindKeyEvents(True)
         self.Destroy()

@@ -26,11 +26,16 @@ class ObjectMgr:
         self.lastUidMode = 0
         self.currNodePath = None   
 
+        self.currLiveNP = None
+
     def reset(self):
         base.direct.deselectAllCB()
 
         for id in self.objects.keys():
-            self.objects[id][OG.OBJ_NP].removeNode()
+            try:
+                self.objects[id][OG.OBJ_NP].removeNode()
+            except:
+                pass
             del self.objects[id]
 
         for np in self.npIndex.keys():
@@ -145,7 +150,7 @@ class ObjectMgr:
                 if fSelectObject:
                     self.editor.select(newobj, fUndo=0)
                 self.editor.ui.sceneGraphUI.add(newobj)
-
+                self.editor.fNeedToSave = True
         return newobj
 
     def removeObjectByNodePath(self, nodePath):
@@ -158,6 +163,7 @@ class ObjectMgr:
         for child in nodePath.getChildren():
             if child.hasTag('OBJRoot'):
                 self.removeObjectByNodePath(child)
+        self.editor.fNeedToSave = True
 
     def findObjectById(self, uid):
         return self.objects.get(uid)
@@ -193,13 +199,16 @@ class ObjectMgr:
         objDef = obj[OG.OBJ_DEF]
         objProp = obj[OG.OBJ_PROP]
         self.editor.ui.objectPropertyUI.updateProps(obj)
-
+        self.editor.fNeedToSave = True
+        
     def onEnterObjectPropUI(self, event):
         taskMgr.remove('_le_updateObjectUITask')        
+        self.editor.ui.bindKeyEvents(False)
 
     def onLeaveObjectPropUI(self, event):
         self.spawnUpdateObjectUITask()
-        
+        self.editor.ui.bindKeyEvents(True)
+
     def spawnUpdateObjectUITask(self):
         if self.currNodePath is None:
             return
@@ -288,11 +297,13 @@ class ObjectMgr:
         self.editor.actionMgr.push(action)
         np.remove()
         action()
-
+        self.editor.fNeedToSave = True
+        
     def setObjectTransform(self, uid, xformMat):
         obj = self.findObjectById(uid)
         if obj:
             obj[OG.OBJ_NP].setMat(xformMat)
+        self.editor.fNeedToSave = True
         
     def updateObjectColor(self, r, g, b, a, np=None):
         if np is None:
@@ -307,7 +318,8 @@ class ObjectMgr:
                child.getName() != 'bboxLines':
                 child.setTransparency(1)
                 child.setColorScale(r, g, b, a)
-
+        self.editor.fNeedToSave = True
+        
     def updateObjectModel(self, model, obj, fSelectObject=True):
         """ replace object's model """
         if obj[OG.OBJ_MODEL] != model:
@@ -346,6 +358,8 @@ class ObjectMgr:
             if fSelectObject:
                 base.direct.select(newobj, fUndo=0)        
 
+            self.editor.fNeedToSave = True
+
     def updateObjectAnim(self, anim, obj, fSelectObject=True):
         """ replace object's anim """
         if obj[OG.OBJ_ANIM] != anim:
@@ -359,6 +373,8 @@ class ObjectMgr:
             obj[OG.OBJ_ANIM] = anim
             if fSelectObject:
                 base.direct.select(objNP, fUndo=0)
+
+            self.editor.fNeedToSave = True
 
     def updateObjectModelFromUI(self, event, obj):
         """ replace object's model with one selected from UI """
@@ -486,8 +502,10 @@ class ObjectMgr:
         self.editor.actionMgr.push(action)
         action()
 
-        if self.editor and fSelectObject:
-            base.direct.select(obj[OG.OBJ_NP], fUndo=0)
+        if self.editor:
+            self.editor.fNeedToSave = True
+            if fSelectObject:
+                base.direct.select(obj[OG.OBJ_NP], fUndo=0)
 
     def updateObjectProperties(self, nodePath, propValues):
         """
@@ -580,7 +598,6 @@ class ObjectMgr:
         # copy other properties
         for key in obj[OG.OBJ_PROP]:
             self.updateObjectPropValue(newObj, key, obj[OG.OBJ_PROP][key])
-
         return newObjNP
 
     def duplicateChild(self, nodePath, parent):
@@ -602,3 +619,17 @@ class ObjectMgr:
         base.direct.deselectAllCB()
         for newNodePath in duplicatedNPs:
             base.direct.select(newNodePath, fMultiSelect = 1, fUndo=0)
+
+        self.editor.fNeedToSave = True
+
+    def makeSelectedLive(self):
+        obj = self.findObjectByNodePath(base.direct.selected.last)
+        if obj:
+            if self.currLiveNP:
+                self.currLiveNP.clearColorScale()
+                if self.currLiveNP == obj[OG.OBJ_NP]:
+                    self.currLiveNP = None
+                    return
+
+            self.currLiveNP = obj[OG.OBJ_NP]
+            self.currLiveNP.setColorScale(0, 1, 0, 1)

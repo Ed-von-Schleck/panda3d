@@ -5,7 +5,8 @@ SIMPLE_THREADS model, by avoiding blocking all threads while waiting
 for I/O to complete. """
 
 __all__ = [
-    'file', 'open', 'listdir', 'walk', 'join'
+    'file', 'open', 'listdir', 'walk', 'join',
+    'isfile', 'isdir', 'exists', 'lexists', 'getmtime', 'getsize',
     ]
 
 from pandac import PandaModules as pm
@@ -45,7 +46,8 @@ class file:
             # We can also "open" a VirtualFile object for reading.
             self.__stream = filename.openReadFile(autoUnwrap)
             if not self.__stream:
-                raise IOError
+                message = 'Could not read virtual file %s' % (repr(filename))
+                raise IOError, message
             self.__needsVfsClose = True
             readMode = True
 
@@ -91,35 +93,41 @@ class file:
             if mode == 'w':
                 self.__stream = pm.OFileStream()
                 if not filename.openWrite(self.__stream, True):
-                    raise IOError
+                    message = 'Could not open %s for writing' % (filename)
+                    raise IOError, message
                 writeMode = True
                 
             elif mode == 'a':
                 self.__stream = pm.OFileStream()
                 if not filename.openAppend(self.__stream):
-                    raise IOError
+                    message = 'Could not open %s for writing' % (filename)
+                    raise IOError, message
                 writeMode = True
 
             elif mode == 'w+':
                 self.__stream = pm.FileStream()
                 if not filename.openReadWrite(self.__stream, True):
-                    raise IOError
+                    message = 'Could not open %s for writing' % (filename)
+                    raise IOError, message
                 readMode = True
                 writeMode = True
 
             elif mode == 'a+':
                 self.__stream = pm.FileStream()
                 if not filename.openReadAppend(self.__stream):
-                    raise IOError
+                    message = 'Could not open %s for writing' % (filename)
+                    raise IOError, message
                 readMode = True
                 writeMode = True
 
             elif mode == 'r+':
                 self.__stream = pm.FileStream()
                 if not filename.exists():
-                    raise IOError
+                    message = 'No such file: %s' % (filename)
+                    raise IOError, message
                 if not filename.openReadWrite(self.__stream, False):
-                    raise IOError
+                    message = 'Could not open %s for writing' % (filename)
+                    raise IOError, message
                 readMode = True
                 writeMode = True
 
@@ -129,7 +137,11 @@ class file:
                 
                 self.__stream = _vfs.openReadFile(filename, autoUnwrap)
                 if not self.__stream:
-                    raise IOError
+                    if not filename.exists():
+                        message = 'No such file: %s' % (filename)
+                    else:
+                        message = 'Could not open %s for reading' % (filename)
+                    raise IOError, message
                 self.__needsVfsClose = True
                 readMode = True
 
@@ -169,7 +181,8 @@ class file:
                 # The stream is not even open at all.
                 raise ValueError
             # The stream is open only in write mode.
-            raise IOError
+            message = 'Attempt to read from write-only stream'
+            raise IOError, message
         
         self.__lastWrite = False
         if size >= 0:
@@ -187,7 +200,8 @@ class file:
                 # The stream is not even open at all.
                 raise ValueError
             # The stream is open only in write mode.
-            raise IOError
+            message = 'Attempt to read from write-only stream'
+            raise IOError, message
 
         self.__lastWrite = False
         return self.__reader.readline()
@@ -228,7 +242,8 @@ class file:
                 # The stream is not even open at all.
                 raise ValueError
             # The stream is open only in read mode.
-            raise IOError
+            message = 'Attempt to write to read-only stream'
+            raise IOError, message
         self.__writer.appendData(str)
         self.__lastWrite = True
 
@@ -238,7 +253,8 @@ class file:
                 # The stream is not even open at all.
                 raise ValueError
             # The stream is open only in read mode.
-            raise IOError
+            message = 'Attempt to write to read-only stream'
+            raise IOError, message
         for line in lines:
             self.__writer.appendData(line)
         self.__lastWrite = True
@@ -286,3 +302,28 @@ def walk(top, topdown = True, onerror = None, followlinks = True):
 
 def join(a, b):
     return '%s/%s' % (a, b)
+
+def isfile(path):
+    return _vfs.isRegularFile(pm.Filename.fromOsSpecific(path))
+
+def isdir(path):
+    return _vfs.isDirectory(pm.Filename.fromOsSpecific(path))
+
+def exists(path):
+    return _vfs.exists(pm.Filename.fromOsSpecific(path))
+
+def lexists(path):
+    return _vfs.exists(pm.Filename.fromOsSpecific(path))
+    
+def getmtime(path):
+    file = _vfs.getFile(pm.Filename.fromOsSpecific(path), True)
+    if not file:
+        raise os.error
+    return file.getTimestamp()
+    
+def getsize(path):
+    file = _vfs.getFile(pm.Filename.fromOsSpecific(path), True)
+    if not file:
+        raise os.error
+    return file.getFileSize()
+

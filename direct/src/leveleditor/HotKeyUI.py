@@ -111,6 +111,7 @@ class EditHotKeyDialog(wx.Dialog):
 class HotKeyPanel(ScrolledPanel):
     def __init__(self, parent):
         ScrolledPanel.__init__(self, parent, -1)
+        self.parent = parent
         self.updateUI()
 
     def updateUI(self):
@@ -121,22 +122,24 @@ class HotKeyPanel(ScrolledPanel):
             keyDesc = base.direct.hotKeyMap[key]
             itemPanel = wx.Panel(self)
             sizer = wx.BoxSizer(wx.HORIZONTAL)
-            space = wx.StaticText(itemPanel, label='', size=(5,20))
+            space = wx.StaticText(itemPanel, label='', size=(10,20))
             hotKey = wx.StaticText(itemPanel, label=key, size=(100, 20))
             desc = wx.StaticText(itemPanel, label=keyDesc[0], size=(380, 20))
             button = wx.Button(itemPanel, -1, 'Edit', size=(40, 20))
             button.Bind(wx.EVT_BUTTON, lambda p0 = None, p1 = key: self.onEdit(p0, p1))
+            sizer.Add(button)
             sizer.Add(space)
             sizer.Add(hotKey)
             sizer.Add(desc, 1, wx.EXPAND)
-            sizer.Add(button)
             itemPanel.SetSizer(sizer)
             vbox.Add(itemPanel)
         self.SetSizer(vbox)
         self.Layout()
         self.SetupScrolling(self, scroll_y=True, rate_y=20)
+        self.parent.parent.updateMenu()
 
     def onEdit(self, evt, key):
+        base.le.ui.bindKeyEvents(False)
         editUI = EditHotKeyDialog(self, -1, 'Edit Hot Key', key)
         editUI.ShowModal()
         editUI.Destroy()
@@ -145,13 +148,13 @@ class HotKeyPanel(ScrolledPanel):
         if sizer is not None:
             sizer.DeleteWindows()
             self.SetSizer(None)
-
+        base.le.ui.bindKeyEvents(True)
         self.updateUI()
 
 class HotKeyUI(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, size=(550, 500))
-
+        self.parent = parent
         panel = HotKeyPanel(self)
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(panel, 1, wx.EXPAND, 0)

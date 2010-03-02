@@ -142,7 +142,7 @@ for opt, arg in opts:
     elif opt == '-p':
         buildPatches = True
     elif opt == '-s':
-        installSearch.appendDirectory(Filename.fromOsSpecific(arg))
+        installSearch.append(Filename.fromOsSpecific(arg))
     elif opt == '-S':
         tokens = arg.split(',')
         while len(tokens) < 4:
@@ -172,9 +172,13 @@ packageNames = None
 if len(args) > 1:
     packageNames = args[1:]
 
-if not installDir:
-    print '\nYou must name the target install directory with the -i parameter.\n'
-    sys.exit(1)
+# Add the directory containing the pdef file itself to sys.path, to
+# help the Packager locate modules where a pathname isn't specified.
+dirname = packageDef.getDirname()
+if dirname:
+    sys.path.append(Filename(dirname).toOsSpecific())
+else:
+    sys.path.append('.')
 
 if universalBinaries:
     if platforms:
@@ -190,7 +194,9 @@ if not platforms:
 for platform in platforms:
     packager = Packager.Packager(platform = platform)
     packager.installDir = installDir
-    packager.installSearch = [installDir] + installSearch + packager.installSearch
+    packager.installSearch = installSearch + packager.installSearch
+    if installDir is not None:
+        packager.installSearch = [installDir] + packager.installSearch
     packager.signParams = signParams
     packager.allowPythonDev = allowPythonDev
     packager.systemRoot = systemRoot

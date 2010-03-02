@@ -9,6 +9,8 @@ from pandac.PandaModules import *
 from direct.showbase.ShowBase import *
 from direct.showbase.DirectObject import *
 from direct.directtools.DirectGlobals import *
+from direct.directtools.DirectUtil import *
+from direct.gui.DirectGui import *
 
 base = ShowBase(False)
 
@@ -22,6 +24,7 @@ class LevelEditorBase(DirectObject):
     def __init__(self):
         #loadPrcFileData('startup', 'window-type none')
         self.currentFile = None
+        self.fNeedToSave = False
         self.actionEvents = []
         self.objectMgr = ObjectMgr(self)
         self.fileMgr = FileMgr(self)
@@ -91,7 +94,7 @@ class LevelEditorBase(DirectObject):
         base.direct.manipulationControl.fAllowMarquee = 1
         base.direct.manipulationControl.supportMultiView()
         base.direct.cameraControl.useMayaCamControls = 1
-
+        base.direct.cameraControl.perspCollPlane = self.ui.perspView.collPlane
         for widget in base.direct.manipulationControl.widgetList:
             widget.setBin('gui-popup', 0)
             widget.setDepthTest(0)
@@ -120,7 +123,13 @@ class LevelEditorBase(DirectObject):
             ('DIRECT_deselectAll', self.deselectAll),
             ('LE-Undo', self.actionMgr.undo),
             ('LE-Redo', self.actionMgr.redo),
+            ('LE-Duplicate', self.objectMgr.duplicateSelected),
             ('DIRECT_manipulateObjectCleanup', self.cleanUpManipulating),
+            ('LE-MakeLive', self.objectMgr.makeSelectedLive),
+            ('LE-NewScene', self.ui.onNew),
+            ('LE-SaveScene', self.ui.onSave),
+            ('LE-OpenScene', self.ui.onOpen),
+            ('LE-Quit', self.ui.quit),
             ])
 
         # Add all the action events
@@ -129,6 +138,18 @@ class LevelEditorBase(DirectObject):
                 self.accept(event[0], event[1], event[2])
             else:
                 self.accept(event[0], event[1])        
+
+        # editor state text display such as edit mode
+        self.statusReadout = OnscreenText(
+            pos = (-1.2, 0.9), bg=Vec4(1,1,1,1),
+            scale = 0.05, align = TextNode.ALeft,
+            mayChange = 1, font = TextNode.getDefaultFont())
+        self.statusReadout.setText("")
+        # Make sure readout is never lit or drawn in wireframe
+        useDirectRenderStyle(self.statusReadout)
+        self.statusReadout.reparentTo(hidden)
+        self.statusLines = []
+        taskMgr.doMethodLater(5, self.updateStatusReadoutTimeouts, 'updateStatus')
 
         self.loadSettings()
         
@@ -149,13 +170,18 @@ class LevelEditorBase(DirectObject):
 
     def handleDelete(self):
         oldSelectedNPs = base.direct.selected.getSelectedAsList()
+        oldUIDs = []
         for oldNP in oldSelectedNPs:
             obj = self.objectMgr.findObjectByNodePath(oldNP)
             if obj:
-               self.ui.sceneGraphUI.delete(obj[OG.OBJ_UID])
+                oldUIDs.append(obj[OG.OBJ_UID])
+
         action = ActionDeleteObj(self)
         self.actionMgr.push(action)
         action()
+
+        for uid in oldUIDs:
+            self.ui.sceneGraphUI.delete(uid)
 
 ##         reply = wx.MessageBox("Do you want to delete selected?", "Delete?",
 ##                               wx.YES_NO | wx.ICON_QUESTION)
@@ -218,16 +244,26 @@ class LevelEditorBase(DirectObject):
         self.objectMgr.deselectAll()
 
     def reset(self):
+        if self.fNeedToSave:
+            reply = wx.MessageBox("Do you want to save current scene?", "Save?",
+                               wx.YES_NO | wx.ICON_QUESTION)
+            if reply == wx.YES:
+                result = self.ui.onSave()
+                if result == False:
+                    return
+
         base.direct.deselectAll()
         self.objectMgr.reset()
         self.actionMgr.reset()
         self.ui.perspView.camera.setPos(-19, -19, 19)
+        self.ui.perspView.camera.lookAt(Point3(0, 0, 0))
         self.ui.leftView.camera.setPos(600, 0, 0)
         self.ui.frontView.camera.setPos(0, -600, 0)
         self.ui.topView.camera.setPos(0, 0, 600)
         self.resetOrthoCam(self.ui.topView)
         self.resetOrthoCam(self.ui.frontView)
         self.resetOrthoCam(self.ui.leftView)
+        self.fNeedToSave = False
         
     def resetOrthoCam(self, view):
         base.direct.drList[base.camList.index(NodePath(view.camNode))].orthoFactor = 0.1
@@ -279,9 +315,25 @@ class LevelEditorBase(DirectObject):
                 elif line.startswith('gridSpacing'):
                     gridSpacing = float(configLines[i])
                 elif line.startswith('hotKey'):
-                    base.direct.hotKeyMap.update(eval(configLines[i]))
+                    customHotKeyMap = eval(configLines[i])
+                    customHotKeyDict = {}
+                    for hotKey in customHotKeyMap.keys():
+                        desc = customHotKeyMap[hotKey]
+                        customHotKeyDict[desc[1]] = hotKey
+
+                    overriddenKeys = []
+                    for key in base.direct.hotKeyMap.keys():
+                        desc = base.direct.hotKeyMap[key]
+                        if desc[1] in customHotKeyDict.keys():
+                            overriddenKeys.append(key)
+
+                    for key in overriddenKeys:
+                        del base.direct.hotKeyMap[key]
+                            
+                    base.direct.hotKeyMap.update(customHotKeyMap)
 
             self.ui.updateGrids(gridSize, gridSpacing)
+            self.ui.updateMenu()
         except:
             pass
 
@@ -297,3 +349,45 @@ class LevelEditorBase(DirectObject):
             else:        
                 mayaConverter = MayaConverter(self.ui, self, modelname, None, False)
         mayaConverter.Show()
+
+    def updateStatusReadout(self, status, color=None):
+        if status:
+            # add new status line, first check to see if it already exists
+            alreadyExists = False
+            for currLine in self.statusLines:
+                if (status == currLine[1]):
+                    alreadyExists = True
+                    break
+            if (alreadyExists == False):
+                time = globalClock.getRealTime() + 15
+                self.statusLines.append([time,status,color])
+
+        # update display of new status lines
+        self.statusReadout.reparentTo(aspect2d)
+        statusText = ""
+        lastColor = None
+        for currLine in self.statusLines:
+            statusText += currLine[1] + '\n'
+            lastColor = currLine[2]
+        self.statusReadout.setText(statusText)
+        if (lastColor):
+            self.statusReadout.textNode.setCardColor(
+                lastColor[0], lastColor[1], lastColor[2], lastColor[3])
+            self.statusReadout.textNode.setCardAsMargin(0.1, 0.1, 0.1, 0.1)
+        else:
+            self.statusReadout.textNode.setCardColor(1,1,1,1)
+            self.statusReadout.textNode.setCardAsMargin(0.1, 0.1, 0.1, 0.1)
+            
+    def updateStatusReadoutTimeouts(self,task=None):
+        removalList = []
+        for currLine in self.statusLines:
+            if (globalClock.getRealTime() >= currLine[0]):
+                removalList.append(currLine)
+        for currRemoval in removalList:
+            self.statusLines.remove(currRemoval)
+        self.updateStatusReadout(None)
+        # perform doMethodLater again after delay
+        # This crashes when CTRL-C'ing, so this is a cheap hack.
+        #return 2
+        from direct.task import Task
+        return Task.again
