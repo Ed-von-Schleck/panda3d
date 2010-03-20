@@ -17,60 +17,19 @@
 
 TypeHandle AwWebView::_type_handle;
 
-AwWebView::
-AwWebView(Awesomium::WebView * webViewPtr)  {  
-  _myWebView = webViewPtr;
-
-}
-
-AwWebView::
-~AwWebView() {
-}
-
-
-void AwWebView::
-loadURL2(const string& url, const string& frameName , const string& username , const string& password )
+AwWebView::AwWebView():
+_web_view(NULL)
 {
-  _myWebView->loadURL2(url, frameName, username, password);
-
+  //empty
 }
-
-void AwWebView::
-loadHTML2(const std::string& html, const std::string& frameName )
+AwWebView::AwWebView(Awesomium::WebView * web_view):
+_web_view(web_view)
 {
-  _myWebView->loadHTML2(html, frameName);
+  //empty
 }
 
-
-void AwWebView::
-loadFile2(const std::string& file, const std::string& frameName )
-{
-  _myWebView->loadFile2(file, frameName);
+AwWebView::~AwWebView(){
+  //since this is a reference counted object we can just call destroy here.
+  //technically Awesomium::Webcore should take care of the rest
+  destroy();
 }
-
-
-void AwWebView::
-render(size_t destination, int destRowSpan, int destDepth, AwWebView::Rect * renderedRect) {
-  if (renderedRect) {
-    Awesomium::Rect rect(renderedRect->x, renderedRect->y, renderedRect->width, renderedRect->height);
-    _myWebView->Awesomium::WebView::render( reinterpret_cast<unsigned char *>(destination), destRowSpan, destDepth, &rect);    
-  }
-  else
-  {
-    AwWebView::render(destination, destRowSpan, destDepth, 0);
-  }
-}
-
-void AwWebView::
-injectMouseDown(AwWebView::MouseButton button) {
-  awesomium_cat.debug() <<"got mouse down " << button << "\n";
-  _myWebView->injectMouseDown(static_cast<Awesomium::MouseButton>(button));
-}
-
-
-void AwWebView::
-injectMouseMove(int x, int y) {
-  //awesomium_cat.debug() <<"got mouse move " << x << " " << y << "\n";
-  _myWebView->injectMouseMove(x,y);
-}
-

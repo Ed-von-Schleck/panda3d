@@ -28,16 +28,6 @@ class AwWebView;
 class EXPCL_PANDAAWESOMIUM AwWebCore : public TypedReferenceCount, public Awesomium::WebCore {
 PUBLISHED:
   /**
-  * An enumeration of the three verbosity settings for the Awesomium Log.
-  */
-  enum LogLevel
-  {
-	LOG_NONE , 		// No log is created
-	LOG_NORMAL ,		// Logs only errors
-	LOG_VERBOSE 		// Logs everything
-  };
-
-  /**
   * An enumeration of the two output pixel formats that WebView::render will use.
   */
   enum PixelFormat
@@ -46,30 +36,18 @@ PUBLISHED:
 	PF_RGBA		// RGBA byte ordering [Red, Green, Blue, Alpha]
   };
 
-  AwWebCore(LogLevel level = LOG_NORMAL, bool enablePlugins = true, PixelFormat pixelFormat = PF_BGRA);
-
+  AwWebCore(const string& cache_path = "", const string& cookie_path = "", const string& plugin_path = "", 
+		const string& log_path = "", bool enable_plugins = false, PixelFormat pixel_format = PF_BGRA,
+		const std::string& user_agent_override = "");
   virtual ~AwWebCore();
 
-  static Awesomium::WebCore& Get();
-
-  static Awesomium::WebCore* GetPointer();
-
-  INLINE void setBaseDirectory(const std::string& baseDirectory);
-
-  AwWebView * createWebView(int width, int height, bool isTransparent = false, bool enableAsyncRendering = false, int maxAsyncRenderPerSec = 70);
-
-  INLINE void setCustomResponsePage(int statusCode, const std::string& filePath);
-
+  INLINE void set_base_directory(const string& baseDirectory);
+  INLINE AwWebView* create_web_view(int width, int height, bool is_transparent = false, bool enable_async_rendering = false, int max_async_render_per_sec = 70);
+  INLINE void set_custom_response_page(int status_code, const std::string& file_path);
   INLINE void update();
-
-  INLINE const std::string& getBaseDirectory() const;
-
-  AwWebCore::PixelFormat getPixelFormat() const;
-
-  INLINE bool arePluginsEnabled() const;
-
+  INLINE AwWebCore::PixelFormat get_pixel_format() const;
+  INLINE bool are_plugins_enabled() const;
   INLINE void pause();
-
   INLINE void resume();
 
 public:

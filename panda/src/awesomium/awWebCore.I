@@ -13,40 +13,30 @@
 ////////////////////////////////////////////////////////////////////
 
 
-INLINE void AwWebCore::
-setBaseDirectory(const std::string& baseDirectory) {
-  WebCore::setBaseDirectory(baseDirectory);
+INLINE void AwWebCore::set_base_directory(const string& baseDirectory) {
+	Awesomium::WebCore::setBaseDirectory(baseDirectory);
 }
 
-INLINE void AwWebCore::
-setCustomResponsePage(int statusCode, const std::string& filePath) {
-  WebCore::setCustomResponsePage(statusCode, filePath);
-}
-
-INLINE void AwWebCore::
-update() {
-  WebCore::update();
-}
-
-INLINE const std::string& AwWebCore::
-getBaseDirectory() const {
-  return WebCore::getBaseDirectory();
-}
-
-INLINE bool AwWebCore::
-arePluginsEnabled() const {
-  return WebCore::arePluginsEnabled();
+INLINE AwWebView* AwWebCore::create_web_view(int width, int height, 
+											 bool is_transparent, bool enable_async_rendering, 
+											 int max_async_render_per_sec)
+{
+	return new AwWebView(Awesomium::WebCore::createWebView(width, height, is_transparent, enable_async_rendering, max_async_render_per_sec));
 }
 
 
-INLINE void AwWebCore::
-pause(){
-  WebCore::pause();
+INLINE void AwWebCore::set_custom_response_page(int status_code, const string& file_path) {
+	Awesomium::WebCore::setCustomResponsePage(status_code, file_path);
 }
 
-INLINE void AwWebCore::
-resume() {
-  WebCore::resume();
-}
+INLINE void AwWebCore::update() {  Awesomium::WebCore::update(); }
+
+
+INLINE AwWebCore::PixelFormat AwWebCore::get_pixel_format() const { return (AwWebCore::PixelFormat)Awesomium::WebCore::getPixelFormat(); }
+INLINE bool AwWebCore::are_plugins_enabled() const { return Awesomium::WebCore::arePluginsEnabled(); }
+
+
+INLINE void AwWebCore::pause(){  WebCore::pause(); }
+INLINE void AwWebCore::resume() { WebCore::resume(); }
 
 

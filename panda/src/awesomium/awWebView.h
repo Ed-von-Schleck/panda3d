@@ -18,7 +18,7 @@
 #include "typedReferenceCount.h"
 #include "luse.h"
 
-#include "awesomium_includes.h"
+#include "WebCore.h"
 
 class WebViewListener;
 
@@ -29,81 +29,100 @@ class WebViewListener;
 class EXPCL_PANDAAWESOMIUM AwWebView : public TypedReferenceCount{
 PUBLISHED:
 
-  /**
-  * Mouse button enumerations, used with WebView::injectMouseDown 
-  * and WebView::injectMouseUp
-  */
-  enum MouseButton {
-  	LEFT_MOUSE_BTN,
-  	MIDDLE_MOUSE_BTN,
-  	RIGHT_MOUSE_BTN
-  };
+/**
+* Mouse button enumerations, used with WebView::injectMouseDown 
+* and WebView::injectMouseUp
+*/
+enum MouseButton {
+	LEFT_MOUSE_BTN,
+	MIDDLE_MOUSE_BTN,
+	RIGHT_MOUSE_BTN
+};
 
-  /**
-   * A simple rectangle class, used with WebView::render
-   */
-  struct Rect {
-    int x, y, width, height;
-    
-    Rect();
-    Rect(int x, int y, int width, int height);
-    bool isEmpty() const;
-  };
+/**
+* URL Filtering mode enumerations, used by WebView::setURLFilteringMode
+*/
+enum URLFilteringMode {
+	/**
+	* All resource requests and page navigations are ALLOWED 
+	* except those that match the URL filters specified.
+	*/
+	UFM_BLACKLIST, 
 
+	/**
+	* All resource requests and page navigations are DENIED 
+	* except those that match the URL filters specified.
+	*/
+	UFM_WHITELIST,
+
+	// No filtering
+	UFM_NONE
+};
+
+public:
+  INLINE void render(void* destination, int destRowSpan, int destDepth);
+  INLINE bool is_dirty();
 
 PUBLISHED:
-  AwWebView(Awesomium::WebView * webView);
-  
+  AwWebView(Awesomium::WebView* web_view);
+  AwWebView();
   virtual ~AwWebView();
-  
+
   INLINE void destroy(void);
+  //INLINE void setListener(Awesomium::WebViewListener* listener);
+  //INLINE Awesomium::WebViewListener* getListener();
+  INLINE void load_URL(const string& url, const string& frame_name ="", const string& username="" , const string& password="");
+  INLINE void load_HTML(const string& html, const string& frame_name = "");
+  INLINE void load_file(const string& file, const string& frame_name = "" );
+  INLINE void go_to_history_offset(int offset);
+  INLINE void execute_javascript(const std::string& javascript, const std::string& frame_name = "" );
+  //TODO: implement javascript calling commented blocks properly
+  /*
+  Awesomium::FutureJSValue execute_javascript_with_result(const std::string& javascript, const std::string& frame_name = "");
+  void call_javascript_function(const string& function, const JSArguments& args, const string frame_name="");
+  void create_object(const string& object_name);
+  void destroy_object(const string& object_name);
+  void set_object_property(const string& object_name, const string& prop_name, const JSValue& value);
+  void set_object_callback(const string& object_name, const string& callback_name);
+  */
+
+  void inject_mouse_move(int x, int y);
+  void inject_mouse_down(AwWebView::MouseButton button);
+  void inject_mouse_up(AwWebView::MouseButton button);
+  void inject_mouse_wheel(int scroll_amount);
+  //TODO: implement inject_keyboard_event
+  //void inject_keyboard_event(const );
+  void cut();
+  void copy();
+  void paste();
+  void select_all();
+  void deselect_all()
   
-  INLINE void setListener(Awesomium::WebViewListener * listener);
-
-  INLINE Awesomium::WebViewListener* getListener();
+  //TODO: implement these non-critical methods
+  /*
+  void get_content_as_text(int max_chars);
+  void zoom_in();
+  void zoom_out();
+  void reset_zoom();
+  void resize(int width, int height);
+  void unfocus();
+  void focus();
+  */
+  void set_transparent(bool is_transparent);
+  /*
+  void set_URL_filter_mode(URLFilteringMode mode);
+  void add_URL_filter(const string& filter);
+  void clear_all_URL_filters();
+  void set_header_definition(const string& name, const HeaderDefinition& definition);
+  void add_header_rewrite_rule(const string& rule, const string& name);
+  void remove_header_rewrite_rule(const string& rule);
+  void remove_header_rewrite_rules_by_definition_name(const string& name);
+  void set_opens_external_links_in_calling_frame(bool is_enabled);
+  */
   
-  // VC7 linker doesn't like wstring from VS2008, hence using the all regular string version
-  void loadURL2(const string& url, const string& frameName ="", const string& username="" , const string& password="");
-  
-  // VC7 linker doesn't like wstring from VS2008, hence using the all regular string version
-  void loadHTML2(const std::string& html, const std::string& frameName = "");
-  
-  // VC7 linker doesn't like wstring from VS2008, hence using the all regular string version
-  void loadFile2(const std::string& file, const std::string& frameName = "" );
-  
-  INLINE void goToHistoryOffset(int offset);
+protected:
+  Awesomium::WebView* _web_view
 
-  // VC7 linker doesn't like wstring from VS2008, hence using the all regular string version
-  INLINE void executeJavascript2(const std::string& javascript, const std::string& frameName = "" );
-
-  INLINE Awesomium::FutureJSValue executeJavascriptWithResult2(const std::string& javascript, const std::string& frameName = "");
-
-  INLINE void setProperty(const std::string& name, const Awesomium::JSValue& value);
-
-  INLINE void setCallback(const std::string& name);
-
-  INLINE bool isDirty();
-
-  INLINE void render(size_t destination, int destRowSpan, int destDepth);
-
-  void render(size_t destination, int destRowSpan, int destDepth, AwWebView::Rect * renderedRect);
-
-  void injectMouseMove(int x, int y);
-
-  void injectMouseDown(AwWebView::MouseButton button);
-
-  INLINE void injectMouseUp(AwWebView::MouseButton button);
-
-  INLINE void injectMouseWheelXY(int scrollAmountX, int scrollAmountY);
-
-  INLINE void injectMouseWheel(int scrollAmountY) {
-    injectMouseWheelXY(0, scrollAmountY);
-  }
-
-  INLINE void injectKeyEvent(bool press, int modifiers, int windowsCode, int nativeCode=0);
-  
-private:
-  Awesomium::WebView * _myWebView;
 
 public:
   static TypeHandle get_class_type() {

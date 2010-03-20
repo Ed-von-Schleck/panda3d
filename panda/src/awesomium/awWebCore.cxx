@@ -18,40 +18,20 @@
 
 TypeHandle AwWebCore::_type_handle;
 
-AwWebCore::
-AwWebCore(AwWebCore::LogLevel level, bool enablePlugins , AwWebCore::PixelFormat pixelFormat) 
-#ifndef CPPPARSER
-:
-  WebCore(static_cast<Awesomium::LogLevel>(level), enablePlugins, static_cast<Awesomium::PixelFormat>(pixelFormat)) 
-#endif
-  {  
-  awesomium_cat.info() << "constructing webcore\n";
+std::wstring convert_to_wide_string(string& s){
+	return wstring(s.begin(), s.end());
 }
 
-AwWebCore::
-~AwWebCore() {
-  awesomium_cat.info() << "destructor webcore\n";
+AwWebCore::AwWebCore(const string& cache_path, const string& cookie_path, const string& plugin_path, 
+		const string& log_path, bool enable_plugins, PixelFormat pixel_format,
+		const std::string& user_agent_override):
+Awesomium::WebCore(convert_to_wide_string(cache_path), convert_to_wide_string(cookie_path),
+				   convert_to_wide_string(plugin_path), convert_to_wide_string(log_path),
+				   enable_plugins, pixel_format, convert_to_wide_string(user_agent_override))
+{
+	//do nothing
 }
 
-Awesomium::WebCore& AwWebCore::
-Get() {
-  return WebCore::Get();
+AwWebCore::~AwWebCore() {
+	//do nothing
 }
-
-Awesomium::WebCore* AwWebCore::
-GetPointer() {
-  return WebCore::GetPointer();
-}
-
-AwWebView *  AwWebCore::
-createWebView(int width, int height, bool isTransparent , bool enableAsyncRendering , int maxAsyncRenderPerSec ) {
-  Awesomium::WebView * newView = WebCore::createWebView(width, height, isTransparent, enableAsyncRendering, maxAsyncRenderPerSec);
-  AwWebView * result = new AwWebView(newView);
-  return result;
-}
-
-AwWebCore::PixelFormat AwWebCore::
-getPixelFormat() const {
-  return ( static_cast<AwWebCore::PixelFormat>( WebCore::getPixelFormat()) );
-}
-
