@@ -18,9 +18,10 @@
 #include "typedReferenceCount.h"
 #include "luse.h"
 
-#include "WebCore.h"
+#include "WebView.h"
 
-class WebViewListener;
+#define DEFAULT_WEBVIEW_WIDTH 512
+#define DEFAULT_WEBVIEW_HEIGHT 512
 
 ////////////////////////////////////////////////////////////////////
 //       Class : AwWebView
@@ -60,22 +61,21 @@ enum URLFilteringMode {
 };
 
 public:
-  INLINE void render(void* destination, int destRowSpan, int destDepth);
-  INLINE bool is_dirty();
+  void render(void* destination, int destRowSpan, int destDepth);
+  bool is_dirty();
 
 PUBLISHED:
-  AwWebView(Awesomium::WebView* web_view);
-  AwWebView();
+  AwWebView(Awesomium::WebView* web_view=NULL, unsigned int width=DEFAULT_WEBVIEW_WIDTH, unsigned int height=DEFAULT_WEBVIEW_HEIGHT);
   virtual ~AwWebView();
 
-  INLINE void destroy(void);
-  //INLINE void setListener(Awesomium::WebViewListener* listener);
-  //INLINE Awesomium::WebViewListener* getListener();
-  INLINE void load_URL(const string& url, const string& frame_name ="", const string& username="" , const string& password="");
-  INLINE void load_HTML(const string& html, const string& frame_name = "");
-  INLINE void load_file(const string& file, const string& frame_name = "" );
-  INLINE void go_to_history_offset(int offset);
-  INLINE void execute_javascript(const std::string& javascript, const std::string& frame_name = "" );
+  void destroy(void);
+  //void setListener(Awesomium::WebViewListener* listener);
+  //Awesomium::WebViewListener* getListener();
+  void load_URL(const string& url, const string& frame_name ="", const string& username="" , const string& password="");
+  void load_HTML(const string& html, const string& frame_name = "");
+  void load_file(const string& file, const string& frame_name = "" );
+  void go_to_history_offset(int offset);
+  void execute_javascript(const std::string& javascript, const std::string& frame_name = "" );
   //TODO: implement javascript calling commented blocks properly
   /*
   Awesomium::FutureJSValue execute_javascript_with_result(const std::string& javascript, const std::string& frame_name = "");
@@ -96,19 +96,19 @@ PUBLISHED:
   void copy();
   void paste();
   void select_all();
-  void deselect_all()
+  void deselect_all();
+  void resize(int width, int height);
+  unsigned int get_width() const;
+  unsigned int get_height() const;
   
-  //TODO: implement these non-critical methods
-  /*
-  void get_content_as_text(int max_chars);
+  //void get_content_as_text(int max_chars);
   void zoom_in();
   void zoom_out();
   void reset_zoom();
-  void resize(int width, int height);
   void unfocus();
   void focus();
-  */
   void set_transparent(bool is_transparent);
+
   /*
   void set_URL_filter_mode(URLFilteringMode mode);
   void add_URL_filter(const string& filter);
@@ -121,7 +121,9 @@ PUBLISHED:
   */
   
 protected:
-  Awesomium::WebView* _web_view
+  Awesomium::WebView* _web_view;
+  unsigned int _width;
+  unsigned int _height;
 
 
 public:
@@ -141,7 +143,5 @@ public:
 private:
   static TypeHandle _type_handle;
 };
-
-#include "awWebView.I"
 
 #endif

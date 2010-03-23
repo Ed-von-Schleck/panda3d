@@ -2,3 +2,4 @@
 #include "awWebCore.cxx"
 #include "awWebView.cxx"
 #include "awWebViewListener.cxx"
+#include "WebBrowserTexture.cxx"

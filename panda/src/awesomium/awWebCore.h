@@ -19,8 +19,9 @@
 #include "luse.h"
 
 #include "awesomium_includes.h"
+#include "awWebView.h"
 
-class AwWebView;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : AwWebCore
 // Description : Thin wrappings arround WebCore.h
@@ -42,7 +43,7 @@ PUBLISHED:
   virtual ~AwWebCore();
 
   INLINE void set_base_directory(const string& baseDirectory);
-  INLINE AwWebView* create_web_view(int width, int height, bool is_transparent = false, bool enable_async_rendering = false, int max_async_render_per_sec = 70);
+  AwWebView* create_web_view(int width, int height, bool is_transparent = false, bool enable_async_rendering = false, int max_async_render_per_sec = 70);
   INLINE void set_custom_response_page(int status_code, const std::string& file_path);
   INLINE void update();
   INLINE AwWebCore::PixelFormat get_pixel_format() const;

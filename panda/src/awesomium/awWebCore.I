@@ -17,12 +17,6 @@ INLINE void AwWebCore::set_base_directory(const string& baseDirectory) {
 	Awesomium::WebCore::setBaseDirectory(baseDirectory);
 }
 
-INLINE AwWebView* AwWebCore::create_web_view(int width, int height, 
-											 bool is_transparent, bool enable_async_rendering, 
-											 int max_async_render_per_sec)
-{
-	return new AwWebView(Awesomium::WebCore::createWebView(width, height, is_transparent, enable_async_rendering, max_async_render_per_sec));
-}
 
 
 INLINE void AwWebCore::set_custom_response_page(int status_code, const string& file_path) {

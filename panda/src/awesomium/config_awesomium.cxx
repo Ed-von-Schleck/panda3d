@@ -16,6 +16,7 @@
 #include "awWebCore.h"
 #include "awWebView.h"
 #include "awWebViewListener.h"
+#include "WebBrowserTexture.h"
 #include "dconfig.h"
 
 
@@ -35,8 +36,7 @@ ConfigureFn(config_awesomium) {
 //               called by the static initializers and need not be
 //               called explicitly, but special cases exist.
 ////////////////////////////////////////////////////////////////////
-void
-init_libawesomium() {
+void init_libawesomium() {
   static bool initialized = false;
   if (initialized) {
     return;
@@ -46,5 +46,5 @@ init_libawesomium() {
   AwWebCore::init_type();
   AwWebView::init_type();
   AwWebViewListener::init_type();
-
+  WebBrowserTexture::init_type();
 }
