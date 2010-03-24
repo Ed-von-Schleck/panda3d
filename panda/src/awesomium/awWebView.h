@@ -109,16 +109,15 @@ PUBLISHED:
   void focus();
   void set_transparent(bool is_transparent);
 
-  /*
+  
   void set_URL_filter_mode(URLFilteringMode mode);
-  void add_URL_filter(const string& filter);
+  void add_URL_filter(const wstring& filter);
   void clear_all_URL_filters();
   void set_header_definition(const string& name, const HeaderDefinition& definition);
-  void add_header_rewrite_rule(const string& rule, const string& name);
-  void remove_header_rewrite_rule(const string& rule);
+  void add_header_rewrite_rule(const wstring& rule, const string& name);
+  void remove_header_rewrite_rule(const wstring& rule);
   void remove_header_rewrite_rules_by_definition_name(const string& name);
   void set_opens_external_links_in_calling_frame(bool is_enabled);
-  */
   
 protected:
   Awesomium::WebView* _web_view;

@@ -102,3 +102,30 @@ void AwWebView::reset_zoom(){ _web_view->resetZoom(); }
 void AwWebView::unfocus(){ _web_view->unfocus(); } 
 void AwWebView::focus(){ _web_view->focus(); }
 void AwWebView::set_transparent(bool is_transparent){ _web_view->setTransparent(is_transparent); }
+
+  
+void AwWebView::set_URL_filter_mode(URLFilteringMode mode){
+	_web_view->setURLFilterMode((Awesomium::URLFilterMode)mode);
+}
+void AwWebView::add_URL_filter(const wstring& filter){
+	_web_view->addURLFilter(filter);
+}
+
+void AwWebView::clear_all_URL_filters(){
+	_web_view->clearAllURLFilters();
+}
+void AwWebView::set_header_definition(const string& name, const HeaderDefinition& definition){
+	_web_view->setHeaderDefinition(name, (Awesomium::HeaderDefinition)definition);
+}
+void AwWebView::add_header_rewrite_rule(const wstring& rule, const string& name){
+	_web_view->addHeaderRewriteRule(rule,name);
+}
+void AwWebView::remove_header_rewrite_rule(const wstring& rule){
+	_web_view->removeHeaderRewriteRule(rule);
+}
+void AwWebView::remove_header_rewrite_rules_by_definition_name(const string& name){
+	_web_view->removeHeaderRewriteRulesByDefinitionName(name);
+}
+void AwWebView::set_opens_external_links_in_calling_frame(bool is_enabled){
+	_web_view->setOpensExternalLinksInCallingFrame(isEnabled);
+}
