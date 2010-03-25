@@ -17,6 +17,7 @@
 #include "awWebView.h"
 #include "awWebViewListener.h"
 #include "WebBrowserTexture.h"
+#include "AwMouseAndKeyboard.h"
 #include "dconfig.h"
 
 
@@ -47,4 +48,5 @@ void init_libawesomium() {
   AwWebView::init_type();
   AwWebViewListener::init_type();
   WebBrowserTexture::init_type();
+  AwMouseAndKeyboard::init_type();
 }
