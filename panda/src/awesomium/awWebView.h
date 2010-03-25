@@ -71,11 +71,11 @@ PUBLISHED:
   void destroy(void);
   //void setListener(Awesomium::WebViewListener* listener);
   //Awesomium::WebViewListener* getListener();
-  void load_URL(const string& url, const string& frame_name ="", const string& username="" , const string& password="");
-  void load_HTML(const string& html, const string& frame_name = "");
-  void load_file(const string& file, const string& frame_name = "" );
+  void load_URL(const string& url, const wstring& frame_name = wstring(), const string& username="" , const string& password="");
+  void load_HTML(const string& html, const wstring& frame_name = wstring());
+  void load_file(const string& file, const wstring& frame_name = wstring() );
   void go_to_history_offset(int offset);
-  void execute_javascript(const std::string& javascript, const std::string& frame_name = "" );
+  void execute_javascript(const std::string& javascript, const wstring& frame_name = wstring() );
   //TODO: implement javascript calling commented blocks properly
   /*
   Awesomium::FutureJSValue execute_javascript_with_result(const std::string& javascript, const std::string& frame_name = "");
@@ -113,7 +113,7 @@ PUBLISHED:
   void set_URL_filter_mode(URLFilteringMode mode);
   void add_URL_filter(const wstring& filter);
   void clear_all_URL_filters();
-  void set_header_definition(const string& name, const HeaderDefinition& definition);
+  void set_header_definition(const string& name, const std::map<std::string, std::string>& definition);
   void add_header_rewrite_rule(const wstring& rule, const string& name);
   void remove_header_rewrite_rule(const wstring& rule);
   void remove_header_rewrite_rules_by_definition_name(const string& name);

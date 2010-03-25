@@ -17,21 +17,11 @@
 
 TypeHandle AwWebCore::_type_handle;
 
-std::wstring convert_to_wide_string(const string& s){
-	return wstring(s.begin(), s.end());
-}
-
-AwWebCore::AwWebCore(const string& cache_path, const string& cookie_path, const string& plugin_path, 
-		const string& log_path, bool enable_plugins, PixelFormat pixel_format,
-		const std::string& user_agent_override):
-Awesomium::WebCore(convert_to_wide_string(cache_path), 
-				   convert_to_wide_string(cookie_path),
-				   convert_to_wide_string(plugin_path), 
-				   convert_to_wide_string(log_path), 
-				   Awesomium::LOG_NORMAL,
-				   enable_plugins, 
-				   Awesomium::PF_BGRA, //WTF? Interrogate can't handle casting with namespaces?!
-				   user_agent_override)
+AwWebCore::AwWebCore(const wstring& cache_path, const wstring& cookie_path, const wstring& plugin_path, 
+					 const wstring& log_path, bool enable_plugins,
+					 const string& user_agent_override):
+Awesomium::WebCore(cache_path, cookie_path, plugin_path, log_path, Awesomium::LOG_NORMAL, enable_plugins, 
+				   Awesomium::PF_BGRA, user_agent_override)
 {
 	//do nothing
 }
@@ -51,3 +41,29 @@ AwWebView* AwWebCore::create_web_view(int width, int height,
 		is_transparent, enable_async_rendering, max_async_render_per_sec), width, height);
 	return new_view;
 }
+
+
+void AwWebCore::set_base_directory(const wstring& baseDirectory) {
+	Awesomium::WebCore::setBaseDirectory(baseDirectory);
+}
+
+
+const wstring& AwWebCore::get_base_directory() const{
+	return Awesomium::WebCore::getBaseDirectory();
+}
+
+
+void AwWebCore::set_custom_response_page(int status_code, const string& file_path) {
+	Awesomium::WebCore::setCustomResponsePage(status_code, file_path);
+}
+
+void AwWebCore::update() {  Awesomium::WebCore::update(); }
+
+
+AwWebCore::PixelFormat AwWebCore::get_pixel_format() const { return (AwWebCore::PixelFormat)Awesomium::WebCore::getPixelFormat(); }
+bool AwWebCore::are_plugins_enabled() const { return Awesomium::WebCore::arePluginsEnabled(); }
+
+
+void AwWebCore::pause(){  WebCore::pause(); }
+void AwWebCore::resume() { WebCore::resume(); }
+

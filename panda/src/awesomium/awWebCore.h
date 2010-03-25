@@ -37,20 +37,23 @@ PUBLISHED:
 	PF_RGBA		// RGBA byte ordering [Red, Green, Blue, Alpha]
   };
 
-  AwWebCore(const string& cache_path = "", const string& cookie_path = "", const string& plugin_path = "", 
-		const string& log_path = "", bool enable_plugins = false, PixelFormat pixel_format = PF_BGRA,
-		const std::string& user_agent_override = "");
+  AwWebCore(const wstring& cache_path = wstring(), 
+	  const wstring& cookie_path = wstring(), 
+	  const wstring& plugin_path = wstring(), 
+	  const wstring& log_path = wstring(), 
+	  bool enable_plugins = false,
+	  const string& user_agent_override = "");
   virtual ~AwWebCore();
 
-  INLINE void set_base_directory(const string& baseDirectory);
+  void set_base_directory(const wstring& baseDirectory);
   AwWebView* create_web_view(int width, int height, bool is_transparent = false, bool enable_async_rendering = false, int max_async_render_per_sec = 70);
-  INLINE void set_custom_response_page(int status_code, const std::string& file_path);
-  INLINE void update();
-  INLINE AwWebCore::PixelFormat get_pixel_format() const;
-  INLINE bool are_plugins_enabled() const;
-  INLINE void pause();
-  INLINE void resume();
-
+  void set_custom_response_page(int status_code, const string& file_path);
+  const wstring& get_base_directory() const;
+  void update();
+  AwWebCore::PixelFormat get_pixel_format() const;
+  bool are_plugins_enabled() const;
+  void pause();
+  void resume();
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
@@ -68,7 +71,5 @@ public:
 private:
   static TypeHandle _type_handle;
 };
-
-#include "awWebCore.I"
 
 #endif

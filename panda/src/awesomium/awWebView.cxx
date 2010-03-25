@@ -46,28 +46,24 @@ void AwWebView::destroy(void){
   _web_view->destroy();
 }
 
-void AwWebView::load_URL(const string& url, const string& frame_name, const string& username, const string& password){
-	wstring wide_frame_name(frame_name.begin(), frame_name.end());
-	_web_view->loadURL(url, wide_frame_name, username, password);
+void AwWebView::load_URL(const string& url, const wstring& frame_name, const string& username, const string& password){
+	_web_view->loadURL(url, frame_name, username, password);
 }
 
-void AwWebView::load_HTML(const string& html, const string& frame_name){
-	wstring wide_frame_name(frame_name.begin(), frame_name.end());
-	_web_view->loadHTML(html, wide_frame_name);
+void AwWebView::load_HTML(const string& html, const wstring& frame_name){
+	_web_view->loadHTML(html, frame_name);
 }
 
-void AwWebView::load_file(const string& file, const string& frame_name){
-	wstring wide_frame_name(frame_name.begin(), frame_name.end());
-	_web_view->loadFile(file, wide_frame_name);
+void AwWebView::load_file(const string& file, const wstring& frame_name){
+	_web_view->loadFile(file, frame_name);
 }
 
 void AwWebView::go_to_history_offset(int offset) {
   _web_view->goToHistoryOffset(offset);
 }
 
-void AwWebView::execute_javascript(const std::string& javascript, const std::string& frame_name ) {
-	wstring wide_frame_name(frame_name.begin(), frame_name.end());
-	_web_view->executeJavascript(javascript, wide_frame_name);
+void AwWebView::execute_javascript(const std::string& javascript, const wstring& frame_name ) {
+	_web_view->executeJavascript(javascript, frame_name);
 }
 
 
@@ -105,7 +101,7 @@ void AwWebView::set_transparent(bool is_transparent){ _web_view->setTransparent(
 
   
 void AwWebView::set_URL_filter_mode(URLFilteringMode mode){
-	_web_view->setURLFilterMode((Awesomium::URLFilterMode)mode);
+	_web_view->setURLFilteringMode((Awesomium::URLFilteringMode)mode);
 }
 void AwWebView::add_URL_filter(const wstring& filter){
 	_web_view->addURLFilter(filter);
@@ -114,7 +110,7 @@ void AwWebView::add_URL_filter(const wstring& filter){
 void AwWebView::clear_all_URL_filters(){
 	_web_view->clearAllURLFilters();
 }
-void AwWebView::set_header_definition(const string& name, const HeaderDefinition& definition){
+void AwWebView::set_header_definition(const string& name, const std::map<std::string, std::string>& definition){
 	_web_view->setHeaderDefinition(name, (Awesomium::HeaderDefinition)definition);
 }
 void AwWebView::add_header_rewrite_rule(const wstring& rule, const string& name){
@@ -127,5 +123,5 @@ void AwWebView::remove_header_rewrite_rules_by_definition_name(const string& nam
 	_web_view->removeHeaderRewriteRulesByDefinitionName(name);
 }
 void AwWebView::set_opens_external_links_in_calling_frame(bool is_enabled){
-	_web_view->setOpensExternalLinksInCallingFrame(isEnabled);
+	_web_view->setOpensExternalLinksInCallingFrame(is_enabled);
 }
