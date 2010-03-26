@@ -73,7 +73,7 @@ class AppRunner(DirectObject):
     ConfigBasename = 'config.xml'
 
     # Default values for parameters that are absent from the config file:
-    maxDiskUsage = 1073741824  # 1 GB
+    maxDiskUsage = 2048 * 1048576  # 2 GB
     
     def __init__(self):
         DirectObject.__init__(self)
@@ -584,7 +584,7 @@ class AppRunner(DirectObject):
             else:
                 # If it's an unknown package, just delete it directly.
                 print "Deleting unknown package %s" % (packageData.pathname)
-                self.rmtree(packageData.pathname())
+                self.rmtree(packageData.pathname)
 
         packages = self.deletePackages(packages)
         if packages:
@@ -721,7 +721,7 @@ class AppRunner(DirectObject):
 
             __import__(moduleName)
             main = sys.modules[moduleName]
-            if hasattr(main, 'main') and callable(main.main):
+            if hasattr(main, 'main') and hasattr(main.main, '__call__'):
                 main.main(self)
 
             # Now clear this flag.
