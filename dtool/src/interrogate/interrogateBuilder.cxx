@@ -595,22 +595,22 @@ make_module_def(int file_identifier) {
 ////////////////////////////////////////////////////////////////////
 string InterrogateBuilder::
 clean_identifier(const string &name) {
-  string result;
+  string result = name;
 
-  bool last_invalid = false;
+  //bool last_invalid = false;
 
-  string::const_iterator ni;
-  for (ni = name.begin(); ni != name.end(); ++ni) {
-    if (isalnum(*ni)) {
-      if (last_invalid) {
-        result += '_';
-        last_invalid = false;
-      }
-      result += (*ni);
-    } else {
-      last_invalid = true;
-    }
-  }
+  //string::const_iterator ni;
+  //for (ni = name.begin(); ni != name.end(); ++ni) {
+  //  if (isalnum(*ni)) {
+  //    if (last_invalid) {
+  //      result += '_';
+  //      last_invalid = false;
+  //    }
+  //    result += (*ni);
+  //  } else {
+  //    last_invalid = true;
+  //  }
+  //}
 
   return result;
 }
