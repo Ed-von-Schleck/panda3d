@@ -1,3 +1,5 @@
 #include "config_framework.cxx"
 #include "pandaFramework.cxx"
 #include "windowFramework.cxx"
+#include "panda.cxx"
+#include "window.cxx"

@@ -34,10 +34,14 @@
     config_framework.cxx config_framework.h \
     pandaFramework.cxx pandaFramework.I pandaFramework.h \
     windowFramework.cxx windowFramework.I windowFramework.h \
+    panda.cxx panda.I panda.h \
+    window.cxx window.I window.h \
     shuttle_controls.bam.c
 
   #define INSTALL_HEADERS \
     pandaFramework.I pandaFramework.h \
-    windowFramework.I windowFramework.h    
+    windowFramework.I windowFramework.h \
+    panda.I panda.h \
+    window.I window.h
 
 #end lib_target

@@ -16,6 +16,7 @@
 
 #include "dconfig.h"
 #include "windowFramework.h"
+#include "window.h"
 
 // By including checkPandaVersion.h, we guarantee that runtime
 // attempts to load libframework.so/.dll will fail if they
