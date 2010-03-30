@@ -1876,16 +1876,6 @@ if (PkgSkip("PHYSX")==0):
     CopyAllHeaders('panda/src/physx')
     CopyAllHeaders('panda/metalibs/pandaphysx')
 
-CopyAllHeaders('direct/src/directbase')
-CopyAllHeaders('direct/src/dcparser')
-CopyAllHeaders('direct/src/deadrec')
-CopyAllHeaders('direct/src/distributed')
-CopyAllHeaders('direct/src/interval')
-CopyAllHeaders('direct/src/showbase')
-CopyAllHeaders('direct/metalibs/direct')
-CopyAllHeaders('direct/src/dcparse')
-CopyAllHeaders('direct/src/heapq')
-
 if (RUNTIME or RTDIST):
     CopyAllHeaders('direct/src/plugin', skip=["p3d_plugin_config.h"])
 if (RUNTIME):
@@ -4537,43 +4527,6 @@ if (PkgSkip("PYTHON")==0 and not RUNTIME):
     TargetAdd('PandaModules.py', input='libpandaode.dll')
 
 #
-# Generate the models directory and samples directory
-#
-
-if (not RUNTIME):
-  model_extensions = ["*.egg"]
-  if (PkgSkip("PANDATOOL")==0):
-      model_extensions.append("*.flt")
-
-  for model in GetDirectoryContents("dmodels/src/misc", model_extensions):
-      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
-      else: newname = model[:-4] + ".egg"
-      TargetAdd(GetOutputDir()+"/models/misc/"+newname, input="dmodels/src/misc/"+model)
-
-  for model in GetDirectoryContents("dmodels/src/gui", model_extensions):
-      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
-      else: newname = model[:-4] + ".egg"
-      TargetAdd(GetOutputDir()+"/models/gui/"+newname, input="dmodels/src/gui/"+model)
-
-  for model in GetDirectoryContents("models", model_extensions):
-      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
-      else: newname = model[:-4] + ".egg"
-      TargetAdd(GetOutputDir()+"/models/"+newname, input="models/"+model)
-
-  CopyAllFiles(GetOutputDir()+"/models/audio/sfx/",  "dmodels/src/audio/sfx/", ".wav")
-  CopyAllFiles(GetOutputDir()+"/models/icons/",      "dmodels/src/icons/",     ".gif")
-
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".jpg")
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".png")
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".rgb")
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".rgba")
-
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".jpg")
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".png")
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".rgb")
-  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".rgba")
-
-#
 # Build the rtdist.
 #
 
@@ -4587,23 +4540,23 @@ if (RTDIST):
 # Distribute prebuilt .p3d files as executable.
 #
 
-if (not RUNTIME and not RTDIST):
-  if (sys.platform.startswith("win")):
-    OPTS=['DIR:direct/src/p3d']
-    TargetAdd('p3dWrapper.obj', opts=OPTS, input='p3dWrapper.c')
-    TargetAdd('p3dWrapper.exe', input='p3dWrapper.obj')
-    TargetAdd('p3dWrapper.exe', opts=["ADVAPI"])
-  
-  for g in glob.glob("direct/src/p3d/*.p3d"):
-    base = os.path.basename(g)
-    base = base.split(".", 1)[0]
-    
-    if (sys.platform.startswith("win")):
-      TargetAdd(base+".exe", input='p3dWrapper.exe')
-      CopyFile(GetOutputDir()+"/bin/"+base+".p3d", g)
-    else:
-      CopyFile(GetOutputDir()+"/bin/"+base, g)
-      oscmd("chmod +x "+GetOutputDir()+"/bin/"+base)
+#if (not RUNTIME and not RTDIST):
+#  if (sys.platform.startswith("win")):
+#    OPTS=['DIR:direct/src/p3d']
+#    TargetAdd('p3dWrapper.obj', opts=OPTS, input='p3dWrapper.c')
+#    TargetAdd('p3dWrapper.exe', input='p3dWrapper.obj')
+#    TargetAdd('p3dWrapper.exe', opts=["ADVAPI"])
+#  
+#  for g in glob.glob("direct/src/p3d/*.p3d"):
+#    base = os.path.basename(g)
+#    base = base.split(".", 1)[0]
+#    
+#    if (sys.platform.startswith("win")):
+#      TargetAdd(base+".exe", input='p3dWrapper.exe')
+#      CopyFile(GetOutputDir()+"/bin/"+base+".p3d", g)
+#    else:
+#      CopyFile(GetOutputDir()+"/bin/"+base, g)
+#      oscmd("chmod +x "+GetOutputDir()+"/bin/"+base)
 
 ##########################################################################################
 #
