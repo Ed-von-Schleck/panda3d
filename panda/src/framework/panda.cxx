@@ -41,6 +41,7 @@ Panda() :
   _event_handler(*EventHandler::get_global_event_handler()),
   _task_mgr(*AsyncTaskManager::get_global_ptr())
 {
+  _is_open = false;
   _made_default_pipe = false;
   _engine = (GraphicsEngine *)NULL;
 
@@ -50,7 +51,6 @@ Panda() :
 
   _exit_flag = false;
 
-  do_initialize();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -60,7 +60,9 @@ Panda() :
 ////////////////////////////////////////////////////////////////////
 Panda::
 ~Panda() {
-  do_finalize();
+  if (_is_open) {
+    close();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -70,7 +72,13 @@ Panda::
 //               initialization.
 ////////////////////////////////////////////////////////////////////
 void Panda::
-do_initialize() {
+init() {
+
+  if (_is_open) {
+    return;
+  }
+
+  _is_open = true;
 
 #ifdef LINK_ALL_STATIC
   // If we're statically linking, we need to explicitly link with
@@ -125,10 +133,11 @@ do_initialize() {
 //  Description: Called by the destructor to close Panda.
 ////////////////////////////////////////////////////////////////////
 void Panda::
-do_finalize() {
+close() {
 
-  framework_cat.info()
-    << "Closing Panda.\n";
+  if (!_is_open) {
+    return;
+  }
 
   close_all_windows();
   // Also close down any other windows that might have been opened.
@@ -160,6 +169,7 @@ do_finalize() {
 ////////////////////////////////////////////////////////////////////
 GraphicsPipe *Panda::
 get_default_pipe() {
+  nassertr(_is_open, NULL);
   if (!_made_default_pipe) {
     make_default_pipe();
     _made_default_pipe = true;
@@ -227,6 +237,9 @@ void Panda::
 register_event(const string &event_name,
                EventHandler::EventCallbackFunction *function,
                void *data) {
+  if (!_is_open) {
+    init();
+  }
 
   _event_handler.add_hook(event_name, function, data);
 }
@@ -241,27 +254,11 @@ register_event(const string &event_name,
 ////////////////////////////////////////////////////////////////////
 void Panda::
 unregister_event(const string &event_name) {
+  if (!_is_open) {
+    init();
+  }
   _event_handler.remove_hooks(event_name);
 }
-
-//////////////////////////////////////////////////////////////////////
-////     Function: Panda::get_default_window_props
-////       Access: Public, Virtual
-////  Description: Fills in the indicated window properties structure
-////               according to the normal window properties for this
-////               application.
-//////////////////////////////////////////////////////////////////////
-//void Panda::
-//get_default_window_props(WindowProperties &props) {
-//  // This function is largely vestigial and will be removed soon.  We
-//  // have moved the default window properties into
-//  // WindowProperties::get_default().
-//
-//  props.add_properties(WindowProperties::get_default());
-//  if (!_window_title.empty()) {
-//    props.set_title(_window_title);
-//  }
-//}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Panda::open_window
@@ -275,6 +272,11 @@ unregister_event(const string &event_name) {
 ////////////////////////////////////////////////////////////////////
 Window *Panda::
 open_window(const string &window_title) {
+
+  if (!_is_open){
+    init();
+  }
+
   GraphicsPipe *pipe = get_default_pipe();
   if (pipe == (GraphicsPipe *)NULL) {
     // Can't get a pipe.
@@ -320,6 +322,10 @@ open_window(const string &window_title) {
 Window *Panda::
 open_window(GraphicsPipe *pipe, GraphicsStateGuardian *gsg, const string &window_title) {
 
+  if (!_is_open){
+    init();
+  }
+
   WindowProperties props = WindowProperties::get_default();
   props.set_title(window_title);
 
@@ -344,6 +350,11 @@ open_window(GraphicsPipe *pipe, GraphicsStateGuardian *gsg, const string &window
 Window *Panda::
 open_window(const WindowProperties &props, int flags,
             GraphicsPipe *pipe, GraphicsStateGuardian *gsg) {
+
+  if (!_is_open){
+    init();
+  }
+
   if (pipe == (GraphicsPipe *)NULL) {
     pipe = get_default_pipe();
     if (pipe == (GraphicsPipe *)NULL) {
@@ -402,10 +413,10 @@ find_window(const GraphicsOutput *win) const {
 //               window opened with this Panda.
 ////////////////////////////////////////////////////////////////////
 int Panda::
-find_window(const Window *wf) const {
+find_window(const Window *w) const {
   int n;
   for (n = 0; n < (int)_windows.size(); n++) {
-    if (_windows[n] == wf) {
+    if (_windows[n] == w) {
       return n;
     }
   }
@@ -422,14 +433,14 @@ find_window(const Window *wf) const {
 void Panda::
 close_window(int n) {
   nassertv(n >= 0 && n < (int)_windows.size());
-  Window *wf = _windows[n];
+  Window *w = _windows[n];
 
-  GraphicsOutput *win = wf->get_graphics_output();
+  GraphicsOutput *win = w->get_graphics_output();
   if (win != (GraphicsOutput *)NULL) {
     _engine->remove_window(win);
   }
   
-  wf->close_window();
+  w->close_window();
   _windows.erase(_windows.begin() + n);
 }
 
@@ -443,14 +454,14 @@ void Panda::
 close_all_windows() {
   Windows::iterator wi;
   for (wi = _windows.begin(); wi != _windows.end(); ++wi) {
-    Window *wf = (*wi);
+    Window *w = (*wi);
 
-    GraphicsOutput *win = wf->get_graphics_output();
+    GraphicsOutput *win = w->get_graphics_output();
     if (win != (GraphicsOutput *)NULL) {
       _engine->remove_window(win);
     }
     
-    wf->close_window();
+    w->close_window();
   }
 
   Mouses::iterator mi;
@@ -473,8 +484,8 @@ get_num_open_windows() const {
   Windows::const_iterator wi;
   int count = 0;
   for (wi = _windows.begin(); wi != _windows.end(); ++wi) {
-    Window *wf = (*wi);
-    if (wf->get_graphics_output()->is_valid()) {
+    Window *w = (*wi);
+    if (w->get_graphics_output()->is_valid()) {
       count++;
     }
   }
@@ -523,7 +534,7 @@ reset_frame_rate() {
 ////////////////////////////////////////////////////////////////////
 bool Panda::
 do_frame(Thread *current_thread) {
-
+  nassertr(_is_open, false);
   _task_mgr.poll();
 
   return !_exit_flag;

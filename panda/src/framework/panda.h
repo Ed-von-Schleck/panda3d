@@ -44,6 +44,9 @@ public:
   Panda();
   virtual ~Panda();
 
+  void init();
+  void close();
+
   GraphicsPipe *get_default_pipe();
   INLINE GraphicsEngine *get_graphics_engine();
   INLINE const NodePath &get_data_root() const;
@@ -102,8 +105,8 @@ public:
 
 private:
 
-  void do_initialize();
-  void do_finalize();
+
+  bool _is_open;
 
   bool _made_default_pipe;
 
