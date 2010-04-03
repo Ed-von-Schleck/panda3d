@@ -85,7 +85,8 @@ public:
   NodePath get_mouse();
   NodePath get_button_thrower();
 
-  void enable_keyboard();
+  void enable_input();
+  void disable_input();
   void setup_trackball();
   void center_trackball(const NodePath &object);
 

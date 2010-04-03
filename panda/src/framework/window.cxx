@@ -177,6 +177,8 @@ open_window(const WindowProperties &props, int flags, GraphicsEngine *engine,
     }
   }
 
+  enable_input();
+
   return _window;
 }
 
@@ -375,13 +377,13 @@ get_button_thrower() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Window::enable_keyboard
+//     Function: Window::enable_input
 //       Access: Public
 //  Description: Creates a ButtonThrower to listen to button presses
 //               and throw them as events.
 ////////////////////////////////////////////////////////////////////
 void Window::
-enable_keyboard() {
+enable_input() {
   if (_got_keyboard) {
     return;
   }
@@ -404,6 +406,26 @@ enable_keyboard() {
   }
 
   _got_keyboard = true;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: Window::disable_input
+//       Access: Public
+//  Description: Removes the ButtonThrower that listens to button
+//               presses them as events, if present.
+////////////////////////////////////////////////////////////////////
+void Window::
+disable_input() {
+  if (!_got_keyboard) {
+    return;
+  }
+
+  if (!_button_thrower.is_empty()){
+    _button_thrower.remove_node();
+  }
+
+  _got_keyboard = false;
 }
 
 ////////////////////////////////////////////////////////////////////
