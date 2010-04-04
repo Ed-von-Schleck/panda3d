@@ -33,7 +33,7 @@ else:
     from direct.showbase import VFSImporter
 
 from direct.showbase.DirectObject import DirectObject
-from pandac.PandaModules import VirtualFileSystem, Filename, Multifile, loadPrcFileData, unloadPrcFile, getModelPath, Thread, WindowProperties, ExecutionEnvironment, PandaSystem, Notify, StreamWriter, ConfigVariableString, initAppForGui, TiXmlDocument
+from pandac.PandaModules import VirtualFileSystem, Filename, Multifile, loadPrcFileData, unloadPrcFile, getModelPath, Thread, WindowProperties, ExecutionEnvironment, PandaSystem, Notify, StreamWriter, ConfigVariableString, initAppForGui
 from pandac import PandaModules
 from direct.stdpy import file, glob
 from direct.task.TaskManagerGlobal import taskMgr
@@ -73,7 +73,7 @@ class AppRunner(DirectObject):
     ConfigBasename = 'config.xml'
 
     # Default values for parameters that are absent from the config file:
-    maxDiskUsage = 1073741824  # 1 GB
+    maxDiskUsage = 2048 * 1048576  # 2 GB
     
     def __init__(self):
         DirectObject.__init__(self)
@@ -503,6 +503,7 @@ class AppRunner(DirectObject):
 
         if not hasattr(PandaModules, 'TiXmlDocument'):
             return
+        from pandac.PandaModules import TiXmlDocument
 
         filename = Filename(self.rootDir, self.ConfigBasename)
         doc = TiXmlDocument(filename.toOsSpecific())
@@ -516,7 +517,30 @@ class AppRunner(DirectObject):
                 self.maxDiskUsage = int(maxDiskUsage or '')
             except ValueError:
                 pass
-            
+
+    def writeConfigXml(self):
+        """ Rewrites the config.xml to the root directory.  This isn't
+        called automatically; an application may call this after
+        adjusting some parameters (such as self.maxDiskUsage). """
+
+        from pandac.PandaModules import TiXmlDocument, TiXmlDeclaration, TiXmlElement
+
+        filename = Filename(self.rootDir, self.ConfigBasename)
+        doc = TiXmlDocument(filename.toOsSpecific())
+        decl = TiXmlDeclaration("1.0", "utf-8", "")
+        doc.InsertEndChild(decl)
+
+        xconfig = TiXmlElement('config')
+        xconfig.SetAttribute('max_disk_usage', str(self.maxDiskUsage))
+        doc.InsertEndChild(xconfig)
+
+        # Write the file to a temporary filename, then atomically move
+        # it to its actual filename, to avoid race conditions when
+        # updating this file.
+        tfile = Filename.temporary(self.rootDir.cStr(), '.xml')
+        if doc.SaveFile(tfile.toOsSpecific()):
+            tfile.renameTo(filename)
+        
 
     def checkDiskUsage(self):
         """ Checks the total disk space used by all packages, and
@@ -560,7 +584,7 @@ class AppRunner(DirectObject):
             else:
                 # If it's an unknown package, just delete it directly.
                 print "Deleting unknown package %s" % (packageData.pathname)
-                self.rmtree(packageData.pathname())
+                self.rmtree(packageData.pathname)
 
         packages = self.deletePackages(packages)
         if packages:
@@ -697,7 +721,7 @@ class AppRunner(DirectObject):
 
             __import__(moduleName)
             main = sys.modules[moduleName]
-            if hasattr(main, 'main') and callable(main.main):
+            if hasattr(main, 'main') and hasattr(main.main, '__call__'):
                 main.main(self)
 
             # Now clear this flag.

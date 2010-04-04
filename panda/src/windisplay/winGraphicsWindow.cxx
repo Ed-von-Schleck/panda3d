@@ -723,9 +723,10 @@ do_fullscreen_resize(int x_size, int y_size) {
   if (chg_result != DISP_CHANGE_SUCCESSFUL) {
     windisplay_cat.error()
       << "resize ChangeDisplaySettings failed (error code: " 
-      << chg_result << ") for specified res (" << x_size << " x "
-      << y_size << " x " << dwFullScreenBitDepth << "), " 
-      << dm.dmDisplayFrequency << "Hz\n";
+      << chg_result << ") for specified res: "
+      << dm.dmPelsWidth << " x " << dm.dmPelsHeight
+      << " x " << dm.dmBitsPerPel << ", " 
+      << dm.dmDisplayFrequency << " Hz\n";
     return false;
   }
 
@@ -1065,11 +1066,14 @@ do_fullscreen_enable() {
   if (chg_result != DISP_CHANGE_SUCCESSFUL) {
     windisplay_cat.error()
       << "ChangeDisplaySettings failed (error code: "
-      << chg_result << ") for specified res (" << dwWidth
-      << " x " << dwHeight << " x " << dwFullScreenBitDepth
-      << "), " << _fullscreen_display_mode.dmDisplayFrequency  << "Hz\n";
+      << chg_result << ") for specified res: "
+      << dm.dmPelsWidth << " x " << dm.dmPelsHeight
+      << " x " << dm.dmBitsPerPel << ", " 
+      << dm.dmDisplayFrequency << " Hz\n";
     return false;
   }
+
+  _fullscreen_display_mode = dm;
 
   _properties.set_origin(0, 0);
   _properties.set_size(dwWidth, dwHeight);
@@ -1360,7 +1364,18 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
           {
             // When a fullscreen window goes active, it automatically gets
             // un-minimized.
-            ChangeDisplaySettings(&_fullscreen_display_mode, CDS_FULLSCREEN);
+            int chg_result =
+              ChangeDisplaySettings(&_fullscreen_display_mode, CDS_FULLSCREEN);
+            if (chg_result != DISP_CHANGE_SUCCESSFUL) {
+              const DEVMODE &dm = _fullscreen_display_mode;
+              windisplay_cat.error()
+                << "restore ChangeDisplaySettings failed (error code: " 
+                << chg_result << ") for specified res: "
+                << dm.dmPelsWidth << " x " << dm.dmPelsHeight
+                << " x " << dm.dmBitsPerPel << ", " 
+                << dm.dmDisplayFrequency << " Hz\n";
+            }
+
             GdiFlush();
             SetWindowPos(_hWnd, HWND_TOP, 0,0,0,0, SWP_NOMOVE | SWP_NOSENDCHANGING | SWP_NOSIZE | SWP_NOOWNERZORDER);
             fullscreen_restored(properties);
@@ -2304,21 +2319,7 @@ find_acceptable_display_mode(DWORD dwWidth, DWORD dwHeight, DWORD bpp,
     
     if ((dm.dmPelsWidth == dwWidth) && (dm.dmPelsHeight == dwHeight) &&
         (dm.dmBitsPerPel == bpp)) {
-      // cout << "[FS FOUND] " << dwWidth << "x" << dwHeight << "@" << bpp << endl;
-      // We want to modify the current DEVMODE rather than using a fresh one in order
-      // to work around a Windows 7 bug.
-      ZeroMemory(&dm, sizeof(dm));
-      dm.dmSize = sizeof(dm);
-      if (0 != EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)){
-        dm.dmPelsWidth = dwWidth;
-        dm.dmPelsHeight = dwHeight;
-        dm.dmBitsPerPel = bpp;
-        return true;
-      } else {
-        windisplay_cat.error() 
-          << "Couldn't retrieve active device mode.\n";
-        return false;
-      }
+      return true;
     }
     modenum++;
   }
