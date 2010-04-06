@@ -30,7 +30,7 @@ BEGIN_PUBLISH
 //               returns the root of a scene graph.  Returns NULL if
 //               the file cannot be read for some reason.
 ////////////////////////////////////////////////////////////////////
-EXPCL_PANDACOLLADA PT(PandaNode)
+EXPCL_COLLADA PT(PandaNode)
 load_collada_file(const Filename &filename, CoordinateSystem cs = CS_default,
                   BamCacheRecord *record = NULL);
 END_PUBLISH

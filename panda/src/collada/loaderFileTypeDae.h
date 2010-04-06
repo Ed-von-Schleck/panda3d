@@ -23,7 +23,7 @@
 //       Class : LoaderFileTypeDae
 // Description : This defines the Loader interface to read Dae files.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDACOLLADA LoaderFileTypeDae : public LoaderFileType {
+class EXPCL_COLLADA LoaderFileTypeDae : public LoaderFileType {
 public:
   LoaderFileTypeDae();
 

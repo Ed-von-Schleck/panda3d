@@ -21,15 +21,15 @@
 #include "notifyCategoryProxy.h"
 #include "dconfig.h"
 
-ConfigureDecl(config_collada, EXPCL_PANDACOLLADA, EXPTP_PANDACOLLADA);
-NotifyCategoryDecl(collada, EXPCL_PANDACOLLADA, EXPTP_PANDACOLLADA);
+ConfigureDecl(config_collada, EXPCL_COLLADA, EXPTP_COLLADA);
+NotifyCategoryDecl(collada, EXPCL_COLLADA, EXPTP_COLLADA);
 
-extern EXPCL_PANDACOLLADA ConfigVariableBool collada_flatten;
-extern EXPCL_PANDACOLLADA ConfigVariableBool collada_unify;
-extern EXPCL_PANDACOLLADA ConfigVariableDouble collada_flatten_radius;
-extern EXPCL_PANDACOLLADA ConfigVariableBool collada_combine_geoms;
-extern EXPCL_PANDACOLLADA ConfigVariableBool collada_accept_errors;
+extern EXPCL_COLLADA ConfigVariableBool collada_flatten;
+extern EXPCL_COLLADA ConfigVariableBool collada_unify;
+extern EXPCL_COLLADA ConfigVariableDouble collada_flatten_radius;
+extern EXPCL_COLLADA ConfigVariableBool collada_combine_geoms;
+extern EXPCL_COLLADA ConfigVariableBool collada_accept_errors;
 
-extern EXPCL_PANDACOLLADA void init_libcollada();
+extern EXPCL_COLLADA void init_libcollada();
 
 #endif
