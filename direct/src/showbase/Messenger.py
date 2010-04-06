@@ -5,7 +5,7 @@ __all__ = ['Messenger']
 
 from PythonUtil import *
 from direct.directnotify import DirectNotifyGlobal
-from direct.stdpy.threading import Lock
+from threading import Lock
 import types
 
 class Messenger:
