@@ -1,0 +1,2 @@
+forcetype ColladaLibrary<ColladaVisualScene>
+renametype ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes

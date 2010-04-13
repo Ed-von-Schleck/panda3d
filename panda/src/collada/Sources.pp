@@ -13,7 +13,7 @@
   #define SOURCES \
     colladaAsset.h colladaAsset.I \
     colladaData.h colladaData.I \
-    colladaLibrary.h \
+    colladaLibrary.h colladaLibrary.N \
     colladaLoader.h colladaLoader.I \
     colladaVisualScene.h \
     config_collada.h \

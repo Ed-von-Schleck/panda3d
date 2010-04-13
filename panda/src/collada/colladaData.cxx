@@ -185,7 +185,10 @@ load_xml(const TiXmlElement *xelement) {
 ////////////////////////////////////////////////////////////////////
 TiXmlElement * ColladaData::
 make_xml() const {
+  // Currently, we write valid 1.5.0 collada
   TiXmlElement * xelement = new TiXmlElement("COLLADA");
+  xelement->SetAttribute("version", "1.5.0");
+  xelement->SetAttribute("xmlns", "http://www.collada.org/2008/03/COLLADASchema");
 
   if (_asset) {
     xelement->LinkEndChild(_asset->make_xml());
