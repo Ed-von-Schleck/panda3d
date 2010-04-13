@@ -139,12 +139,18 @@ read(istream &in) {
 //               string.
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
-load_xml(TiXmlElement *xelement) {
+load_xml(const TiXmlElement *xelement) {
   nassertr (xelement != NULL, false);
 
   if (xelement->ValueStr() != "COLLADA") {
     collada_cat.error() << "Root element must be <COLLADA>, not <" << xelement->Value() << ">\n";
     return false;
+  }
+  
+  const TiXmlElement *xasset = xelement->FirstChildElement("asset");
+  if (xasset != NULL) {
+    _asset = new ColladaAsset();
+    _asset->load_xml(xasset);
   }
 
   return true;

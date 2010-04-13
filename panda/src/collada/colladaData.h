@@ -23,6 +23,8 @@
 #include "pnotify.h"
 #include "dSearchPath.h"
 #include "typedReferenceCount.h"
+#include "colladaAsset.h"
+#include "pointerTo.h"
 
 class ColladaLoader;
 
@@ -36,8 +38,6 @@ class ColladaLoader;
 class EXPCL_COLLADA ColladaData : public TypedReferenceCount {
 PUBLISHED:
   INLINE ColladaData();
-  INLINE ColladaData(const ColladaData &copy);
-  INLINE ColladaData &operator = (const ColladaData &copy);
 
   static bool resolve_dae_filename(Filename &dae_filename,
                                    const DSearchPath &searchpath = DSearchPath());
@@ -45,7 +45,7 @@ PUBLISHED:
   bool read(Filename filename, string display_name = string());
   bool read(istream &in);
 
-  bool load_xml(TiXmlElement *xelement);
+  bool load_xml(const TiXmlElement *xelement);
 
   bool write_dae(Filename filename) const;
   bool write_dae(ostream &out, int indent_level = 0) const;
@@ -56,8 +56,8 @@ PUBLISHED:
   INLINE const Filename &get_filename() const;
 
 private:
-  CoordinateSystem _coordsys;
   Filename _filename;
+  PT(ColladaAsset) _asset;
 
 public:
   static TypeHandle get_class_type() {
@@ -82,4 +82,3 @@ private:
 #include "colladaData.I"
 
 #endif
-

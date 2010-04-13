@@ -20,31 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 INLINE ColladaData::
 ColladaData() {
-  _coordsys = CS_yup_right;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::Copy constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE ColladaData::
-ColladaData(const ColladaData &copy) :
-  _coordsys(copy._coordsys),
-  _filename(copy._filename)
-{
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::Copy assignment operator
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE ColladaData &ColladaData::
-operator = (const ColladaData &copy) {
-  _coordsys = copy._coordsys;
-  _filename = copy._filename;
-  return *this;
+  _asset = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -55,7 +31,7 @@ operator = (const ColladaData &copy) {
 ////////////////////////////////////////////////////////////////////
 INLINE CoordinateSystem ColladaData::
 get_coordinate_system() const {
-  return _coordsys;
+  return _asset ? _asset->get_coordinate_system() : CS_yup_right;
 }
 
 

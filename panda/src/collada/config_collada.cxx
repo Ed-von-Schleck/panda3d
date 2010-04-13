@@ -15,6 +15,7 @@
 #include "config_collada.h"
 
 #include "dconfig.h"
+#include "colladaAsset.h"
 #include "colladaData.h"
 #include "loaderFileTypeDae.h"
 #include "loaderFileTypeRegistry.h"
@@ -81,6 +82,7 @@ init_libcollada() {
   }
   initialized = true;
 
+  ColladaAsset::init_type();
   ColladaData::init_type();
   LoaderFileTypeDae::init_type();
 
