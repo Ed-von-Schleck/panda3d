@@ -34,7 +34,6 @@ get_coordinate_system() const {
   return _asset ? _asset->get_coordinate_system() : CS_yup_right;
 }
 
-
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaData::set_filename
 //       Access: Public

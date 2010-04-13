@@ -49,9 +49,10 @@ PUBLISHED:
   bool read(istream &in);
 
   bool load_xml(const TiXmlElement *xelement);
+  TiXmlElement * make_xml() const;
 
   bool write_dae(Filename filename) const;
-  bool write_dae(ostream &out, int indent_level = 0) const;
+  bool write_dae(ostream &out) const;
 
   INLINE CoordinateSystem get_coordinate_system() const;
 

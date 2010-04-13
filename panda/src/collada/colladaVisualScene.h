@@ -28,9 +28,11 @@ PUBLISHED:
 
 public:
   bool load_xml(const TiXmlElement *xelement);
+  TiXmlElement * make_xml() const;
 
   // Needed by ColladaLibrary to validate the element names
   static const string _element_name;
+  static const string _library_name;
 
 public:
   static TypeHandle get_class_type() {

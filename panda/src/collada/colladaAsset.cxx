@@ -19,10 +19,11 @@ TypeHandle ColladaAsset::_type_handle;
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 ColladaAsset::
 ColladaAsset() {
+  _coordsys = CS_default;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -35,8 +36,9 @@ load_xml(const TiXmlElement *xelement) {
   nassertr(xelement != NULL, false);
   nassertr(xelement->ValueStr() == "asset", false);
 
-  const char* coordsys = xelement->Attribute("up_axis");
-  if (coordsys) {
+  const TiXmlElement *up_axis = xelement->FirstChildElement("up_axis");
+  if (up_axis) {
+    const char* coordsys = up_axis->GetText();
     _coordsys = parse_coordinate_system_string(coordsys);
     if (_coordsys == CS_invalid || _coordsys == CS_default) {
       collada_cat.error()
@@ -44,7 +46,45 @@ load_xml(const TiXmlElement *xelement) {
       return false;
     }
   }
-  
+
   return true;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::make_xml
+//       Access: Public
+//  Description: Returns a new TiXmlElement representing
+//               the asset.
+////////////////////////////////////////////////////////////////////
+TiXmlElement * ColladaAsset::
+make_xml() const {
+  TiXmlElement * xelement = new TiXmlElement("asset");
+
+  TiXmlElement * up_axis = NULL;
+
+  switch (_coordsys) {
+    case CS_default:
+      break;
+    case CS_yup_right:
+      up_axis = new TiXmlElement("up_axis");
+      up_axis->LinkEndChild(new TiXmlText("Y_UP"));
+      break;
+    case CS_zup_right:
+      up_axis = new TiXmlElement("up_axis");
+      up_axis->LinkEndChild(new TiXmlText("Z_UP"));
+      break;
+    case CS_zup_left:
+    case CS_yup_left:
+    case CS_invalid:
+    default:
+      collada_cat.error() << "Invalid coordinate system value!\n";
+  }
+
+  if (up_axis) {
+    xelement->LinkEndChild(up_axis);
+  }
+
+  //FIXME: add required <created> and <modified> elements
+
+  return xelement;
+}

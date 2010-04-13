@@ -34,14 +34,14 @@ TypeHandle ColladaData::_type_handle;
 bool ColladaData::
 resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  
+
   if (dae_filename.is_fully_qualified() && vfs->exists(dae_filename)) {
     return true;
   }
-  
+
   vfs->resolve_filename(dae_filename, searchpath, "dae") ||
     vfs->resolve_filename(dae_filename, get_model_path(), "dae");
-  
+
   return vfs->exists(dae_filename);
 }
 
@@ -53,9 +53,9 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
 ////////////////////////////////////////////////////////////////////
 void ColladaData::
 clear() {
-	_filename = "";
-	_asset = NULL;
-	_library_visual_scenes.clear();
+  _filename = "";
+  _asset = NULL;
+  _library_visual_scenes.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,16 +80,16 @@ read(Filename filename, string display_name) {
   }
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-    
+
   istream *file = vfs->open_read_file(filename, true);
   if (file == (istream *)NULL) {
     collada_cat.error() << "Unable to open " << display_name << "\n";
     return false;
   }
-  
+
   collada_cat.info()
     << "Reading " << display_name << "\n";
-  
+
   bool read_ok = read(*file);
   vfs->close_read_file(file);
   return read_ok;
@@ -121,14 +121,14 @@ read(istream &in) {
 
   TiXmlElement *elem = doc->RootElement();
   bool okflag;
-  
+
   if (elem == NULL) {
     collada_cat.error() << "Empty COLLADA document!\n";
     okflag = false;
   } else {
     okflag = load_xml (elem);
   }
-  
+
   delete doc;
   return okflag;
 }
@@ -152,28 +152,51 @@ load_xml(const TiXmlElement *xelement) {
   // First, dispense with any data we had previously.  We will
   // replace them with the new data.
   clear();
-	
+
   nassertr (xelement != NULL, false);
 
   if (xelement->ValueStr() != "COLLADA") {
     collada_cat.error() << "Root element must be <COLLADA>, not <" << xelement->Value() << ">\n";
     return false;
   }
-  
+
   const TiXmlElement *xchild;
-  
+
   xchild = xelement->FirstChildElement("asset");
   if (xchild != NULL) {
     _asset = new ColladaAsset();
     _asset->load_xml(xchild);
   }
-  
+
   xchild = xelement->FirstChildElement("library_visual_scenes");
   if (xchild != NULL) {
     _library_visual_scenes.load_xml(xchild);
   }
 
   return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::make_xml
+//       Access: Public
+//  Description: Returns the root <COLLADA> element of the COLLADA
+//               document as new TiXmlElement. This contains the
+//               entire structure of the COLLADA document.
+////////////////////////////////////////////////////////////////////
+TiXmlElement * ColladaData::
+make_xml() const {
+  TiXmlElement * xelement = new TiXmlElement("COLLADA");
+
+  if (_asset) {
+    xelement->LinkEndChild(_asset->make_xml());
+    //FIXME: what to do when there is no asset?
+  }
+
+  if (_library_visual_scenes.size() > 0) {
+    xelement->LinkEndChild(_library_visual_scenes.make_xml());
+  }
+
+  return xelement;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -218,8 +241,14 @@ write_dae(Filename filename) const {
 //  Description: The main interface for writing complete dae files.
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
-write_dae(ostream &out, int indent_level) const {
-  //write(out, 0);
+write_dae(ostream &out) const {
+  const TiXmlElement * xelement = make_xml();
+  if (xelement == NULL) {
+    return false;
+  }
+  TiXmlPrinter printer;
+  printer.SetIndent("  ");
+  xelement->Accept(&printer);
+  out << printer.CStr();
   return true;
 }
-

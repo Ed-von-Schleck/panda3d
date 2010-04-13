@@ -17,6 +17,7 @@
 
 #include "pandabase.h"
 
+#include "config_collada.h"
 #include "pvector.h"
 #include "pointerTo.h"
 
@@ -31,6 +32,7 @@ template <class T>
 class EXPCL_COLLADA ColladaLibrary : public pvector<PointerTo<T> > {
 PUBLISHED:
   bool load_xml(const TiXmlElement *xelement);
+  TiXmlElement * make_xml() const;
 
 };
 

@@ -16,11 +16,12 @@
 
 TypeHandle ColladaVisualScene::_type_handle;
 const string ColladaVisualScene::_element_name ("visual_scene");
+const string ColladaVisualScene::_library_name ("library_visual_scenes");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVisualScene::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 ColladaVisualScene::
 ColladaVisualScene() {
@@ -35,7 +36,19 @@ bool ColladaVisualScene::
 load_xml(const TiXmlElement *xelement) {
   nassertr(xelement != NULL, false);
   nassertr(xelement->ValueStr() == "visual_scene", false);
-  
+
   return true;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaVisualScene::make_xml
+//       Access: Public
+//  Description: Returns a new TiXmlElement representing
+//               the visual scene.
+////////////////////////////////////////////////////////////////////
+TiXmlElement * ColladaVisualScene::
+make_xml() const {
+  TiXmlElement * xelement = new TiXmlElement("visual_scene");
+
+  return xelement;
+}

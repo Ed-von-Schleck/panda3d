@@ -6,6 +6,7 @@
 #begin lib_target
   #define TARGET p3collada
   #define USE_PACKAGES tinyxml
+  #define LOCAL_LIBS display express putil pandabase
 
   #define COMBINED_SOURCES collada_composite1.cxx
 
@@ -38,6 +39,8 @@
     config_collada.h \
     load_collada_file.h \
     loaderFileTypeDae.h
+
+  #define IGATESCAN all
 
 #end lib_target
 

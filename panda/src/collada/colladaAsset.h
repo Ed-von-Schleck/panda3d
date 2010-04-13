@@ -22,19 +22,19 @@
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaAsset
 // Description : Object that represents the <asset> COLLADA tag.
-//               
+//
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaAsset : public TypedReferenceCount {
 PUBLISHED:
   ColladaAsset();
   INLINE CoordinateSystem get_coordinate_system() const;
 
-public:
   bool load_xml(const TiXmlElement *xelement);
+  TiXmlElement * make_xml() const;
 
 private:
   CoordinateSystem _coordsys;
-  
+
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
