@@ -20,11 +20,8 @@
 ////////////////////////////////////////////////////////////////////
 INLINE ColladaData::
 ColladaData() {
-  _auto_resolve_externals = false;
-  _had_absolute_pathnames = false;
-  _coordsys = CS_default;
+  _coordsys = CS_yup_right;
 }
-
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaData::Copy constructor
@@ -34,7 +31,7 @@ ColladaData() {
 INLINE ColladaData::
 ColladaData(const ColladaData &copy) :
   _coordsys(copy._coordsys),
-  _filename(copy._filename) 
+  _filename(copy._filename)
 {
 }
 

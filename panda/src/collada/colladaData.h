@@ -23,6 +23,11 @@
 #include "dSearchPath.h"
 #include "typedReferenceCount.h"
 
+#ifndef TIXML_USE_STL
+#define TIXML_USE_STL
+#endif
+#include <tinyxml.h>
+
 class ColladaLoader;
 
 ////////////////////////////////////////////////////////////////////
@@ -43,7 +48,8 @@ PUBLISHED:
 
   bool read(Filename filename, string display_name = string());
   bool read(istream &in);
-  void merge(ColladaData &other);
+
+  bool load_xml(TiXmlElement *xelement);
 
   bool write_dae(Filename filename) const;
   bool write_dae(ostream &out, int indent_level = 0) const;
@@ -54,11 +60,6 @@ PUBLISHED:
   INLINE const Filename &get_filename() const;
 
 private:
-  void post_read();
-  void pre_write();
-
-  bool _auto_resolve_externals;
-  bool _had_absolute_pathnames;
   CoordinateSystem _coordsys;
   Filename _filename;
 

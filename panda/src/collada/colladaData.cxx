@@ -103,7 +103,49 @@ read(istream &in) {
   // replace them with the new data.
   //clear();
 
-  // PARSE HERE
+  TiXmlDocument *doc = new TiXmlDocument;
+  in >> *doc;
+  if (in.fail() && !in.eof()) {
+    delete doc;
+    return false;
+  }
+
+  TiXmlElement *elem = doc->RootElement();
+  bool okflag;
+  
+  if (elem == NULL) {
+    collada_cat.error() << "Empty COLLADA document!\n";
+    okflag = false;
+  } else {
+    okflag = load_xml (elem);
+  }
+  
+  delete doc;
+  return okflag;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::load_xml
+//       Access: Public
+//  Description: Parses the dae syntax contained in the indicated
+//               TiXmlNode.  Returns true if the stream was a
+//               completely valid dae file, false if there were some
+//               errors, in which case the data may be partially read.
+//
+//               Before you call this routine, you should probably
+//               call set_filename() to set the name of the dae
+//               file we're processing, if at all possible.  If there
+//               is no such filename, you may set it to the empty
+//               string.
+////////////////////////////////////////////////////////////////////
+bool ColladaData::
+load_xml(TiXmlElement *xelement) {
+  nassertr (xelement != NULL, false);
+
+  if (xelement->ValueStr() != "COLLADA") {
+    collada_cat.error() << "Root element must be <COLLADA>, not <" << xelement->Value() << ">\n";
+    return false;
+  }
 
   return true;
 }
