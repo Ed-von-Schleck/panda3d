@@ -10,18 +10,21 @@
   #define COMBINED_SOURCES collada_composite1.cxx
 
   #define SOURCES \
+    colladaData.h \
     colladaLoader.h \
     config_collada.h \
     load_collada_file.h \
     loaderFileTypeDae.h
 
   #define INCLUDED_SOURCES \
+    colladaData.cxx \
     colladaLoader.cxx \
     config_collada.cxx \
     load_collada_file.cxx \
     loaderFileTypeDae.cxx
 
   #define INSTALL_HEADERS \
+    colladaData.h \
     colladaLoader.h \
     config_collada.h \
     load_collada_file.h \

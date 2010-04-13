@@ -87,9 +87,8 @@ load_collada_file(const Filename &filename, CoordinateSystem cs,
   }
 
   ColladaLoader loader;
-  loader._filename = collada_filename;
+  loader._data->set_filename(collada_filename);
   loader._record = record;
-  loader._error = false;
 
   bool okflag;
   istream *istr = vfs->open_read_file(collada_filename, true);
@@ -100,7 +99,7 @@ load_collada_file(const Filename &filename, CoordinateSystem cs,
   collada_cat.info()
     << "Reading " << collada_filename << "\n";
 
-  //okflag = loader._data->read(*istr);
+  okflag = loader._data->read(*istr);
   vfs->close_read_file(istr);
 
   if (!okflag) {

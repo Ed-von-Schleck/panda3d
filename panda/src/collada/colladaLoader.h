@@ -28,15 +28,15 @@ class ColladaLoader {
 public:
   ColladaLoader();
   INLINE virtual ~ColladaLoader() {};
-  INLINE static ColladaLoader *make() { return new ColladaLoader; };
   
   virtual void build_graph();
 
 public:
+  PT(ColladaData) _data;
   PT(PandaNode) _root;
   PT(BamCacheRecord) _record;
-  Filename _filename;
   bool _error;
+
 };
 
 #endif

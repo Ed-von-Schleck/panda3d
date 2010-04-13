@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "colladaLoader.h"
+#include "colladaData.h"
 #include "config_collada.h"
 
 #include "string_utils.h"
@@ -26,6 +27,7 @@
 ////////////////////////////////////////////////////////////////////
 ColladaLoader::
 ColladaLoader() : _error(false), _root(NULL), _record(NULL) {
+  _data = new ColladaData;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -35,6 +37,6 @@ ColladaLoader() : _error(false), _root(NULL), _record(NULL) {
 ////////////////////////////////////////////////////////////////////
 void ColladaLoader::
 build_graph() {
-  _root = new ModelRoot(_filename.get_basename());
+  _root = new ModelRoot(_data->_filename.get_basename());
 }
 

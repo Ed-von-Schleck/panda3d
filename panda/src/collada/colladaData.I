@@ -1,0 +1,87 @@
+// Filename: colladaData.I
+// Created by:  rdb (13Apr10)
+//
+////////////////////////////////////////////////////////////////////
+//
+// PANDA 3D SOFTWARE
+// Copyright (c) Carnegie Mellon University.  All rights reserved.
+//
+// All use of this software is subject to the terms of the revised BSD
+// license.  You should have received a copy of this license along
+// with this source code in a file named "LICENSE."
+//
+////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE ColladaData::
+ColladaData() {
+  _auto_resolve_externals = false;
+  _had_absolute_pathnames = false;
+  _coordsys = CS_default;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::Copy constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE ColladaData::
+ColladaData(const ColladaData &copy) :
+  _coordsys(copy._coordsys),
+  _filename(copy._filename) 
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::Copy assignment operator
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE ColladaData &ColladaData::
+operator = (const ColladaData &copy) {
+  _coordsys = copy._coordsys;
+  _filename = copy._filename;
+  return *this;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::get_coordinate_system
+//       Access: Public
+//  Description: Returns the coordinate system in which the file
+//               is defined.
+////////////////////////////////////////////////////////////////////
+INLINE CoordinateSystem ColladaData::
+get_coordinate_system() const {
+  return _coordsys;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::set_filename
+//       Access: Public
+//  Description: Sets the filename--especially the directory part--in
+//               which the file is considered to reside.  This is
+//               also implicitly set by read().
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaData::
+set_filename(const Filename &filename) {
+  _filename = filename;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::get_filename
+//       Access: Public
+//  Description: Returns the directory in which the collada file is
+//               considered to reside.
+////////////////////////////////////////////////////////////////////
+INLINE const Filename &ColladaData::
+get_filename() const {
+  return _filename;
+}
+
