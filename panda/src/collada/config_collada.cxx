@@ -15,6 +15,7 @@
 #include "config_collada.h"
 
 #include "dconfig.h"
+#include "colladaData.h"
 #include "loaderFileTypeDae.h"
 #include "loaderFileTypeRegistry.h"
 
@@ -80,6 +81,7 @@ init_libcollada() {
   }
   initialized = true;
 
+  ColladaData::init_type();
   LoaderFileTypeDae::init_type();
 
   LoaderFileTypeRegistry *reg = LoaderFileTypeRegistry::get_global_ptr();

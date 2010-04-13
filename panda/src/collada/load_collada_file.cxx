@@ -20,10 +20,6 @@
 #include "bamCacheRecord.h"
 
 #include "colladaLoader.h"
-#ifndef TIXML_USE_STL
-#define TIXML_USE_STL
-#endif
-#include "tinyxml.h"
 
 static PT(PandaNode)
 load_from_loader(ColladaLoader &loader) {

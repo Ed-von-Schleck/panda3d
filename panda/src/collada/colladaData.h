@@ -17,16 +17,12 @@
 
 #include "pandabase.h"
 
+#include "config_collada.h"
 #include "filename.h"
 #include "coordinateSystem.h"
 #include "pnotify.h"
 #include "dSearchPath.h"
 #include "typedReferenceCount.h"
-
-#ifndef TIXML_USE_STL
-#define TIXML_USE_STL
-#endif
-#include <tinyxml.h>
 
 class ColladaLoader;
 

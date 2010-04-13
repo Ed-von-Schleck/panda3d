@@ -21,6 +21,11 @@
 #include "notifyCategoryProxy.h"
 #include "dconfig.h"
 
+#ifndef TIXML_USE_STL
+#define TIXML_USE_STL
+#endif
+#include <tinyxml.h>
+
 ConfigureDecl(config_collada, EXPCL_COLLADA, EXPTP_COLLADA);
 NotifyCategoryDecl(collada, EXPCL_COLLADA, EXPTP_COLLADA);
 
