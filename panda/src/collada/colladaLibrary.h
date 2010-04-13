@@ -1,5 +1,5 @@
-// Filename: colladaLoader.h
-// Created by:  rdb (23Aug09)
+// Filename: colladaLibrary.h
+// Created by:  rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,31 +12,28 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADALOADER_H
-#define COLLADALOADER_H
+#ifndef COLLADALIBRARY_H
+#define COLLADALIBRARY_H
 
-#include "pmap.h"
-#include "filename.h"
-#include "pandaNode.h"
-#include "bamCacheRecord.h"
+#include "pandabase.h"
+
+#include "pvector.h"
+#include "pointerTo.h"
+
+class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaLoader
-// Description : 
+//       Class : ColladaLibrary
+// Description : This is the template class for libraries in the
+//               COLLADA document.
 ////////////////////////////////////////////////////////////////////
-class ColladaLoader {
-public:
-  ColladaLoader();
-  INLINE virtual ~ColladaLoader() {};
-  
-  virtual void build_graph();
+template <class T>
+class EXPCL_COLLADA ColladaLibrary : public pvector<PointerTo<T> > {
+PUBLISHED:
+  bool load_xml(const TiXmlElement *xelement);
 
-public:
-  PT(ColladaData) _data;
-  PT(PandaNode) _root;
-  PT(BamCacheRecord) _record;
-  bool _error;
 };
 
-#endif
+typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;
 
+#endif

@@ -17,13 +17,14 @@
 
 #include "pandabase.h"
 
+#include "colladaAsset.h"
+#include "colladaLibrary.h"
 #include "config_collada.h"
 #include "filename.h"
 #include "coordinateSystem.h"
 #include "pnotify.h"
 #include "dSearchPath.h"
 #include "typedReferenceCount.h"
-#include "colladaAsset.h"
 #include "pointerTo.h"
 
 class ColladaLoader;
@@ -42,6 +43,8 @@ PUBLISHED:
   static bool resolve_dae_filename(Filename &dae_filename,
                                    const DSearchPath &searchpath = DSearchPath());
 
+  void clear();
+
   bool read(Filename filename, string display_name = string());
   bool read(istream &in);
 
@@ -58,6 +61,7 @@ PUBLISHED:
 private:
   Filename _filename;
   PT(ColladaAsset) _asset;
+  ColladaLibraryVisualScenes _library_visual_scenes;
 
 public:
   static TypeHandle get_class_type() {

@@ -1,5 +1,5 @@
-// Filename: colladaAsset.cxx
-// Created by: Xidram (13Apr10)
+// Filename: colladaVisualScene.cxx
+// Created by: rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,38 +12,29 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaAsset.h"
+#include "colladaVisualScene.h"
 
-TypeHandle ColladaAsset::_type_handle;
+TypeHandle ColladaVisualScene::_type_handle;
+const string ColladaVisualScene::_element_name ("visual_scene");
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaAsset::Constructor
+//     Function: ColladaVisualScene::Constructor
 //       Access: Public
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-ColladaAsset::
-ColladaAsset() {
+ColladaVisualScene::
+ColladaVisualScene() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaAsset::load_xml
+//     Function: ColladaVisualScene::load_xml
 //       Access: Public
-//  Description: Loads <asset> data from a TiXmlElement.
+//  Description: Loads <visual_scene> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
-bool ColladaAsset::
+bool ColladaVisualScene::
 load_xml(const TiXmlElement *xelement) {
   nassertr(xelement != NULL, false);
-  nassertr(xelement->ValueStr() == "asset", false);
-
-  const char* coordsys = xelement->Attribute("up_axis");
-  if (coordsys) {
-    _coordsys = parse_coordinate_system_string(coordsys);
-    if (_coordsys == CS_invalid || _coordsys == CS_default) {
-      collada_cat.error()
-        << "Invalid coordinate system value: " << coordsys << "\n";
-      return false;
-    }
-  }
+  nassertr(xelement->ValueStr() == "visual_scene", false);
   
   return true;
 }

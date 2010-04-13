@@ -46,6 +46,19 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::clear
+//       Access: Public
+//  Description: Resets the stored data of this ColladaData,
+//               and makes it as if it were a new instance.
+////////////////////////////////////////////////////////////////////
+void ColladaData::
+clear() {
+	_filename = "";
+	_asset = NULL;
+	_library_visual_scenes.clear();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaData::read
 //       Access: Public
 //  Description: Opens the indicated filename and reads the dae data
@@ -99,10 +112,6 @@ read(Filename filename, string display_name) {
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
 read(istream &in) {
-  // First, dispense with any children we had previously.  We will
-  // replace them with the new data.
-  //clear();
-
   TiXmlDocument *doc = new TiXmlDocument;
   in >> *doc;
   if (in.fail() && !in.eof()) {
@@ -128,7 +137,7 @@ read(istream &in) {
 //     Function: ColladaData::load_xml
 //       Access: Public
 //  Description: Parses the dae syntax contained in the indicated
-//               TiXmlNode.  Returns true if the stream was a
+//               TiXmlElement.  Returns true if the stream was a
 //               completely valid dae file, false if there were some
 //               errors, in which case the data may be partially read.
 //
@@ -140,6 +149,10 @@ read(istream &in) {
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
 load_xml(const TiXmlElement *xelement) {
+  // First, dispense with any data we had previously.  We will
+  // replace them with the new data.
+  clear();
+	
   nassertr (xelement != NULL, false);
 
   if (xelement->ValueStr() != "COLLADA") {
@@ -147,10 +160,17 @@ load_xml(const TiXmlElement *xelement) {
     return false;
   }
   
-  const TiXmlElement *xasset = xelement->FirstChildElement("asset");
-  if (xasset != NULL) {
+  const TiXmlElement *xchild;
+  
+  xchild = xelement->FirstChildElement("asset");
+  if (xchild != NULL) {
     _asset = new ColladaAsset();
-    _asset->load_xml(xasset);
+    _asset->load_xml(xchild);
+  }
+  
+  xchild = xelement->FirstChildElement("library_visual_scenes");
+  if (xchild != NULL) {
+    _library_visual_scenes.load_xml(xchild);
   }
 
   return true;

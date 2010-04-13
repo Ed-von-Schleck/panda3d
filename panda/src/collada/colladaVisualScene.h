@@ -1,5 +1,5 @@
-// Filename: colladaAsset.h
-// Created by: Xidram (13Apr10)
+// Filename: colladaVisualScene.h
+// Created by: rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,36 +12,33 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAASSET_H
-#define COLLADAASSET_H
+#ifndef COLLADAVISUALSCENE_H
+#define COLLADAVISUALSCENE_H
 
 #include "typedReferenceCount.h"
 #include "config_collada.h"
-#include "coordinateSystem.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaAsset
-// Description : Object that represents the <asset> COLLADA tag.
-//               
+//       Class : ColladaVisualScene
+// Description : Object that represents the <visual_scene> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaAsset : public TypedReferenceCount {
+class EXPCL_COLLADA ColladaVisualScene : public TypedReferenceCount {
 PUBLISHED:
-  ColladaAsset();
-  INLINE CoordinateSystem get_coordinate_system() const;
+  ColladaVisualScene();
 
 public:
   bool load_xml(const TiXmlElement *xelement);
 
-private:
-  CoordinateSystem _coordsys;
-  
+  // Needed by ColladaLibrary to validate the element names
+  static const string _element_name;
+
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaAsset",
+    register_type(_type_handle, "ColladaVisualScene",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -53,7 +50,4 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "colladaAsset.I"
-
 #endif
-

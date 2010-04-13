@@ -12,7 +12,9 @@
   #define SOURCES \
     colladaAsset.h colladaAsset.I \
     colladaData.h colladaData.I \
+    colladaLibrary.h \
     colladaLoader.h colladaLoader.I \
+    colladaVisualScene.h \
     config_collada.h \
     load_collada_file.h \
     loaderFileTypeDae.h
@@ -20,7 +22,9 @@
   #define INCLUDED_SOURCES \
     colladaAsset.cxx \
     colladaData.cxx \
+    colladaLibrary.cxx \
     colladaLoader.cxx \
+    colladaVisualScene.cxx \
     config_collada.cxx \
     load_collada_file.cxx \
     loaderFileTypeDae.cxx
@@ -28,7 +32,9 @@
   #define INSTALL_HEADERS \
     colladaAsset.h colladaAsset.I \
     colladaData.h colladaData.I \
+    colladaLibrary.h \
     colladaLoader.h colladaLoader.I \
+    colladaVisualScene.h \
     config_collada.h \
     load_collada_file.h \
     loaderFileTypeDae.h
