@@ -26,6 +26,7 @@ const string ColladaVisualScene::_library_name ("library_visual_scenes");
 ColladaVisualScene::
 ColladaVisualScene() {
   _asset = NULL;
+  clear_name();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -38,7 +39,14 @@ load_xml(const TiXmlElement *xelement) {
   nassertr(xelement != NULL, false);
   nassertr(xelement->ValueStr() == "visual_scene", false);
 
+  clear_name();
   _nodes.clear();
+
+  const char* name = xelement->Attribute("name");
+  if (name) {
+    set_name(name);
+  }
+
   const TiXmlElement* xnode = xelement->FirstChildElement("node");
   while (xnode != NULL) {
     PT(ColladaNode) node = new ColladaNode;
@@ -66,6 +74,10 @@ TiXmlElement * ColladaVisualScene::
 make_xml() const {
   TiXmlElement * xelement = new TiXmlElement("visual_scene");
 
+  if (has_name()) {
+    xelement->SetAttribute("name", get_name());
+  }
+
   if (_asset) {
     xelement->LinkEndChild(_asset->make_xml());
   }
@@ -75,4 +87,21 @@ make_xml() const {
   }
 
   return xelement;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaVisualScene::make_node
+//       Access: Public
+//  Description: Returns a new ModelRoot representing this
+//               COLLADA visual scene and the nodes below it.
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) ColladaVisualScene::
+make_node() const {
+  PT(ModelRoot) pnode = new ModelRoot(get_name());
+
+  for (int i = 0; i < _nodes.size(); ++i) {
+    pnode->add_child(_nodes.at(i)->make_node());
+  }
+
+  return DCAST(PandaNode, pnode);
 }

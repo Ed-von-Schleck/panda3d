@@ -55,6 +55,7 @@ void ColladaData::
 clear() {
   _filename = "";
   _asset = NULL;
+  _instance_visual_scene.clear();
   _library_nodes.clear();
   _library_visual_scenes.clear();
 }
@@ -179,6 +180,15 @@ load_xml(const TiXmlElement *xelement) {
     _library_visual_scenes.load_xml(xchild);
   }
 
+  xchild = xelement->FirstChildElement("scene");
+  if (xchild != NULL) {
+    const TiXmlElement *xinst;
+    xinst = xchild->FirstChildElement("instance_visual_scene");
+    if (xinst != NULL) {
+      _instance_visual_scene.load_xml(xinst);
+    }
+  }
+
   return true;
 }
 
@@ -207,6 +217,12 @@ make_xml() const {
   if (_library_visual_scenes.size() > 0) {
     xelement->LinkEndChild(_library_visual_scenes.make_xml());
   }
+
+  TiXmlElement * xscene = new TiXmlElement("scene");
+  if (!_instance_visual_scene.is_empty()) {
+    xscene->LinkEndChild(_instance_visual_scene.make_xml());
+  }
+  xelement->LinkEndChild(xscene);
 
   return xelement;
 }

@@ -18,6 +18,7 @@
 #include "pandabase.h"
 
 #include "colladaAsset.h"
+#include "colladaInstance.h"
 #include "colladaLibrary.h"
 #include "config_collada.h"
 #include "filename.h"
@@ -62,6 +63,7 @@ PUBLISHED:
 private:
   Filename _filename;
   PT(ColladaAsset) _asset;
+  ColladaInstanceVisualScene _instance_visual_scene;
   ColladaLibraryNodes _library_nodes;
   ColladaLibraryVisualScenes _library_visual_scenes;
 

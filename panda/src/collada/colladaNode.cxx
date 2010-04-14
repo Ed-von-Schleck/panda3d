@@ -201,3 +201,23 @@ make_xml() const {
 
   return xelement;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaNode::make_node
+//       Access: Public
+//  Description: Returns a new PandaNode representing this
+//               COLLADA node and the children below it.
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) ColladaNode::
+make_node() const {
+  PT(PandaNode) pnode = new PandaNode(get_name());
+
+  //TODO: coordinate system conversion
+  pnode->set_transform(TransformState::make_mat(LCAST(float, _transform)));
+
+  for (int i = 0; i < _nodes.size(); ++i) {
+    pnode->add_child(_nodes.at(i)->make_node());
+  }
+
+  return pnode;
+}

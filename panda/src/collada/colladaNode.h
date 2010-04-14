@@ -18,6 +18,7 @@
 #include "typedReferenceCount.h"
 #include "config_collada.h"
 #include "lmatrix.h"
+#include "pandaNode.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaNode
@@ -36,6 +37,7 @@ PUBLISHED:
 public:
   bool load_xml(const TiXmlElement *xelement);
   TiXmlElement * make_xml() const;
+  PT(PandaNode) make_node() const;
 
   // Needed by ColladaLibrary to validate the element names
   static const string _element_name;

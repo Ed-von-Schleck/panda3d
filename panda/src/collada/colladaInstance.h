@@ -1,5 +1,5 @@
-// Filename: colladaLibrary.h
-// Created by:  rdb (13Apr10)
+// Filename: colladaInstance.h
+// Created by:  rdb (14Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,38 +12,40 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADALIBRARY_H
-#define COLLADALIBRARY_H
+#ifndef COLLADAINSTANCE_H
+#define COLLADAINSTANCE_H
 
 #include "pandabase.h"
 
 #include "config_collada.h"
-#include "colladaAsset.h"
-#include "pvector.h"
 #include "pointerTo.h"
+#include "namable.h"
 
-class ColladaNode;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaLibrary
+//       Class : ColladaInstance
 // Description : This is the template class for libraries in the
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaLibrary : public pvector<PointerTo<T> > {
+class EXPCL_COLLADA ColladaInstance : public Namable {
 PUBLISHED:
   INLINE void clear();
+  INLINE bool is_empty() const;
+  INLINE const string &get_url() const;
+  INLINE void set_url(const string &url);
+
   INLINE bool load_xml(const TiXmlElement *xelement);
   INLINE TiXmlElement * make_xml() const;
 
 private:
-  PT(ColladaAsset) _asset;
+  string _url;
+
 };
 
-typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;
-typedef ColladaLibrary<ColladaNode> ColladaLibraryNodes;
+typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 
-#include "colladaLibrary.I"
+#include "colladaInstance.I"
 
 #endif

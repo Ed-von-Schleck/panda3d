@@ -1,5 +1,5 @@
-// Filename: colladaLibrary.cxx
-// Created by:  rdb (13Apr10)
+// Filename: colladaLibrary.I
+// Created by:  rdb (14Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,7 +12,17 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaLibrary.h"
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaLibrary::clear
+//       Access: Public
+//  Description: Resets the ColladaLibrary to its initial state.
+////////////////////////////////////////////////////////////////////
+template<class T>
+INLINE void ColladaLibrary<T>::
+clear () {
+  pvector<PointerTo<T> >::clear();
+  _asset = NULL;
+}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLibrary::load_xml
@@ -20,14 +30,15 @@
 //  Description: Loads the items in the library from the given
 //               XML element.
 ////////////////////////////////////////////////////////////////////
-template<class T> bool ColladaLibrary<T>::
+template<class T>
+INLINE bool ColladaLibrary<T>::
 load_xml(const TiXmlElement *xelement) {
   // First, dispense with any items we had previously.  We will
   // replace them with the new items.
-  pvector<PointerTo<T> >::clear();
-  _asset = NULL;
+  clear();
 
   nassertr(xelement != NULL, false);
+  nassertr(xelement->ValueStr() == T::_library_name, false);
 
   const TiXmlElement* xchild = xelement->FirstChildElement(T::_element_name);
   while (xchild != NULL) {
@@ -52,7 +63,8 @@ load_xml(const TiXmlElement *xelement) {
 //  Description: Returns a new TiXmlElement representing
 //               the library and its children.
 ////////////////////////////////////////////////////////////////////
-template<class T> TiXmlElement * ColladaLibrary<T>::
+template<class T>
+INLINE TiXmlElement * ColladaLibrary<T>::
 make_xml() const {
   TiXmlElement * xelement = new TiXmlElement(T::_library_name);
 

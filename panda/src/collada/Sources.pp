@@ -13,7 +13,8 @@
   #define SOURCES \
     colladaAsset.h colladaAsset.I \
     colladaData.h colladaData.I \
-    colladaLibrary.h colladaLibrary.N \
+    colladaInstance.h colladaInstance.I colladaInstance.N \
+    colladaLibrary.h colladaLibrary.I colladaLibrary.N \
     colladaLoader.h colladaLoader.I \
     colladaNode.h \
     colladaVisualScene.h \
@@ -24,7 +25,6 @@
   #define INCLUDED_SOURCES \
     colladaAsset.cxx \
     colladaData.cxx \
-    colladaLibrary.cxx \
     colladaLoader.cxx \
     colladaNode.cxx \
     colladaVisualScene.cxx \
@@ -35,7 +35,8 @@
   #define INSTALL_HEADERS \
     colladaAsset.h colladaAsset.I \
     colladaData.h colladaData.I \
-    colladaLibrary.h \
+    colladaInstance.h colladaInstance.I \
+    colladaLibrary.h colladaLibrary.I \
     colladaLoader.h colladaLoader.I \
     colladaNode.h \
     colladaVisualScene.h \

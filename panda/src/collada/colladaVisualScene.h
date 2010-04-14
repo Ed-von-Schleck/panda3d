@@ -22,13 +22,14 @@
 //       Class : ColladaVisualScene
 // Description : Object that represents the <visual_scene> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaVisualScene : public TypedReferenceCount {
+class EXPCL_COLLADA ColladaVisualScene : public Namable, public TypedReferenceCount {
 PUBLISHED:
   ColladaVisualScene();
 
 public:
   bool load_xml(const TiXmlElement *xelement);
   TiXmlElement * make_xml() const;
+  PT(PandaNode) make_node() const;
 
   // Needed by ColladaLibrary to validate the element names
   static const string _element_name;
