@@ -270,7 +270,7 @@ write_dae(Filename filename) const {
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
 write_dae(ostream &out) const {
-  const TiXmlElement * xelement = make_xml();
+  TiXmlElement * xelement = make_xml();
   if (xelement == NULL) {
     return false;
   }
@@ -278,5 +278,6 @@ write_dae(ostream &out) const {
   printer.SetIndent("  ");
   xelement->Accept(&printer);
   out << printer.CStr();
+  delete xelement;
   return true;
 }

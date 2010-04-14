@@ -16,6 +16,9 @@
 
 TypeHandle ColladaAsset::_type_handle;
 
+// Representation in an ISO 8601 format as per xs:dateTime
+#define TIME_FORMAT "%Y-%m-%dT%H:%M:%S"
+
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::Constructor
 //       Access: Public
@@ -24,6 +27,9 @@ TypeHandle ColladaAsset::_type_handle;
 ColladaAsset::
 ColladaAsset() {
   _coordsys = CS_default;
+  time_t now = time(NULL);
+  _created = *localtime(&now);
+  _modified = *localtime(&now);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -36,18 +42,33 @@ load_xml(const TiXmlElement *xelement) {
   nassertr(xelement != NULL, false);
   nassertr(xelement->ValueStr() == "asset", false);
 
-  const TiXmlElement *up_axis = xelement->FirstChildElement("up_axis");
-  if (up_axis) {
-    const char* coordsys = up_axis->GetText();
+  _coordsys = CS_default;
+  bool okflag;
+  const TiXmlElement *xchild;
+
+  xchild = xelement->FirstChildElement("up_axis");
+  if (xchild != NULL) {
+    const char* coordsys = xchild->GetText();
     _coordsys = parse_coordinate_system_string(coordsys);
     if (_coordsys == CS_invalid || _coordsys == CS_default) {
       collada_cat.error()
         << "Invalid coordinate system value: " << coordsys << "\n";
-      return false;
+      okflag = false;
     }
   }
 
-  return true;
+  // Get the created & modified timestamps
+  xchild = xelement->FirstChildElement("created");
+  if (xchild != NULL) {
+    okflag &= (strptime(xchild->GetText(), TIME_FORMAT, &_created) != NULL);
+  }
+
+  xchild = xelement->FirstChildElement("modified");
+  if (xchild != NULL) {
+    okflag &= (strptime(xchild->GetText(), TIME_FORMAT, &_modified) != NULL);
+  }
+
+  return okflag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -84,7 +105,18 @@ make_xml() const {
     xelement->LinkEndChild(up_axis);
   }
 
-  //FIXME: add required <created> and <modified> elements
+  // Add the required <created> and <modified> elements
+  time_t now = time(NULL);
+  char created[512];
+  char modified[512];
+  strftime(created, 512, TIME_FORMAT, &_created);
+  strftime(modified, 512, TIME_FORMAT, localtime(&now));
+  TiXmlElement * xcreated = new TiXmlElement("created");
+  TiXmlElement * xmodified = new TiXmlElement("modified");
+  xcreated->LinkEndChild(new TiXmlText(created));
+  xmodified->LinkEndChild(new TiXmlText(modified));
+  xelement->LinkEndChild(xcreated);
+  xelement->LinkEndChild(xmodified);
 
   return xelement;
 }

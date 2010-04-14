@@ -34,6 +34,8 @@ PUBLISHED:
 
 private:
   CoordinateSystem _coordsys;
+  struct tm _created;
+  struct tm _modified;
 
 public:
   static TypeHandle get_class_type() {
