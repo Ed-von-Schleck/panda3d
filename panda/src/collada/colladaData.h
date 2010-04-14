@@ -62,6 +62,7 @@ PUBLISHED:
 private:
   Filename _filename;
   PT(ColladaAsset) _asset;
+  ColladaLibraryNodes _library_nodes;
   ColladaLibraryVisualScenes _library_visual_scenes;
 
 public:

@@ -1,4 +1,4 @@
-// Filename: colladaVisualScene.h
+// Filename: colladaNode.h
 // Created by: rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,19 +12,26 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAVISUALSCENE_H
-#define COLLADAVISUALSCENE_H
+#ifndef COLLADANODE_H
+#define COLLADANODE_H
 
 #include "typedReferenceCount.h"
 #include "config_collada.h"
+#include "lmatrix.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaVisualScene
-// Description : Object that represents the <visual_scene> COLLADA tag.
+//       Class : ColladaNode
+// Description : Object that represents the <node> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaVisualScene : public TypedReferenceCount {
+class EXPCL_COLLADA ColladaNode : public Namable, public TypedReferenceCount {
 PUBLISHED:
-  ColladaVisualScene();
+  ColladaNode();
+
+  enum NodeType {
+    NT_default,
+    NT_node,
+    NT_joint
+  };
 
 public:
   bool load_xml(const TiXmlElement *xelement);
@@ -36,7 +43,9 @@ public:
 
 private:
   PT(ColladaAsset) _asset;
+  NodeType _node_type;
   pvector<PT(ColladaNode)> _nodes;
+  LMatrix4d _transform;
 
 public:
   static TypeHandle get_class_type() {
@@ -44,7 +53,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaVisualScene",
+    register_type(_type_handle, "ColladaNode",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {

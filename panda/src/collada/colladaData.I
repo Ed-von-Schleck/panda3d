@@ -27,7 +27,10 @@ ColladaData() {
 //     Function: ColladaData::get_coordinate_system
 //       Access: Public
 //  Description: Returns the coordinate system in which the file
-//               is defined.
+//               is defined. Note that this returns the global
+//               coordinate system for the entire file - it is
+//               possible that elements in the document override
+//               this value.
 ////////////////////////////////////////////////////////////////////
 INLINE CoordinateSystem ColladaData::
 get_coordinate_system() const {
@@ -56,4 +59,3 @@ INLINE const Filename &ColladaData::
 get_filename() const {
   return _filename;
 }
-

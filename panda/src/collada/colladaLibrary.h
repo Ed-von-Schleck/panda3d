@@ -18,9 +18,11 @@
 #include "pandabase.h"
 
 #include "config_collada.h"
+#include "colladaAsset.h"
 #include "pvector.h"
 #include "pointerTo.h"
 
+class ColladaNode;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
@@ -34,8 +36,11 @@ PUBLISHED:
   bool load_xml(const TiXmlElement *xelement);
   TiXmlElement * make_xml() const;
 
+private:
+  PT(ColladaAsset) _asset;
 };
 
 typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;
+typedef ColladaLibrary<ColladaNode> ColladaLibraryNodes;
 
 #endif

@@ -15,6 +15,7 @@
     colladaData.h colladaData.I \
     colladaLibrary.h colladaLibrary.N \
     colladaLoader.h colladaLoader.I \
+    colladaNode.h \
     colladaVisualScene.h \
     config_collada.h \
     load_collada_file.h \
@@ -25,6 +26,7 @@
     colladaData.cxx \
     colladaLibrary.cxx \
     colladaLoader.cxx \
+    colladaNode.cxx \
     colladaVisualScene.cxx \
     config_collada.cxx \
     load_collada_file.cxx \
@@ -35,6 +37,7 @@
     colladaData.h colladaData.I \
     colladaLibrary.h \
     colladaLoader.h colladaLoader.I \
+    colladaNode.h \
     colladaVisualScene.h \
     config_collada.h \
     load_collada_file.h \

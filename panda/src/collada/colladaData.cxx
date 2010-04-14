@@ -55,6 +55,7 @@ void ColladaData::
 clear() {
   _filename = "";
   _asset = NULL;
+  _library_nodes.clear();
   _library_visual_scenes.clear();
 }
 
@@ -168,6 +169,11 @@ load_xml(const TiXmlElement *xelement) {
     _asset->load_xml(xchild);
   }
 
+  xchild = xelement->FirstChildElement("library_nodes");
+  if (xchild != NULL) {
+    _library_nodes.load_xml(xchild);
+  }
+
   xchild = xelement->FirstChildElement("library_visual_scenes");
   if (xchild != NULL) {
     _library_visual_scenes.load_xml(xchild);
@@ -195,6 +201,9 @@ make_xml() const {
     //FIXME: what to do when there is no asset?
   }
 
+  if (_library_nodes.size() > 0) {
+    xelement->LinkEndChild(_library_nodes.make_xml());
+  }
   if (_library_visual_scenes.size() > 0) {
     xelement->LinkEndChild(_library_visual_scenes.make_xml());
   }
