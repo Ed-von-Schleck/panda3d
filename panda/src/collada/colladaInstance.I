@@ -67,14 +67,17 @@ set_url(const string &url) {
 template<class T>
 INLINE bool ColladaInstance<T>::
 load_xml(const TiXmlElement *xelement) {
-  clear();
+  if (!ColladaElement::load_xml(xelement)) {
+    return false;
+  }
 
-  nassertr(xelement != NULL, false);
   nassertr(xelement->ValueStr() == "instance_" + T::_element_name, false);
 
   const char* url = xelement->Attribute("url");
   if (url) {
     _url = url;
+  } else {
+    _url = "";
   }
 
   return true;
@@ -88,7 +91,8 @@ load_xml(const TiXmlElement *xelement) {
 template<class T>
 INLINE TiXmlElement * ColladaInstance<T>::
 make_xml() const {
-  TiXmlElement * xelement = new TiXmlElement("instance_" + T::_element_name);
+  TiXmlElement * xelement = ColladaElement::make_xml();
+  xelement->SetValue("instance_" + T::_element_name);
 
   xelement->SetAttribute("url", _url);
 

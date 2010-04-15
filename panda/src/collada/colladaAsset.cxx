@@ -17,6 +17,7 @@
 TypeHandle ColladaAsset::_type_handle;
 
 // Representation in an ISO 8601 format as per xs:dateTime
+//TODO: handle local time vs UTC
 #define TIME_FORMAT "%Y-%m-%dT%H:%M:%S"
 
 ////////////////////////////////////////////////////////////////////
@@ -26,10 +27,7 @@ TypeHandle ColladaAsset::_type_handle;
 ////////////////////////////////////////////////////////////////////
 ColladaAsset::
 ColladaAsset() {
-  _coordsys = CS_default;
-  time_t now = time(NULL);
-  _created = *localtime(&now);
-  _modified = *localtime(&now);
+  clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -39,7 +37,10 @@ ColladaAsset() {
 ////////////////////////////////////////////////////////////////////
 bool ColladaAsset::
 load_xml(const TiXmlElement *xelement) {
-  nassertr(xelement != NULL, false);
+  if (!ColladaElement::load_xml(xelement)) {
+    return false;
+  }
+
   nassertr(xelement->ValueStr() == "asset", false);
 
   _coordsys = CS_default;
@@ -68,6 +69,8 @@ load_xml(const TiXmlElement *xelement) {
     okflag &= (strptime(xchild->GetText(), TIME_FORMAT, &_modified) != NULL);
   }
 
+  //FIXME
+  return true;
   return okflag;
 }
 
@@ -79,7 +82,8 @@ load_xml(const TiXmlElement *xelement) {
 ////////////////////////////////////////////////////////////////////
 TiXmlElement * ColladaAsset::
 make_xml() const {
-  TiXmlElement * xelement = new TiXmlElement("asset");
+  TiXmlElement * xelement = ColladaElement::make_xml();
+  xelement->SetValue("asset");
 
   TiXmlElement * up_axis = NULL;
 

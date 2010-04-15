@@ -53,8 +53,8 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
 ////////////////////////////////////////////////////////////////////
 void ColladaData::
 clear() {
+  ColladaAssetElement::clear();
   _filename = "";
-  _asset = NULL;
   _instance_visual_scene.clear();
   _library_nodes.clear();
   _library_visual_scenes.clear();
@@ -151,24 +151,20 @@ read(istream &in) {
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
 load_xml(const TiXmlElement *xelement) {
-  // First, dispense with any data we had previously.  We will
-  // replace them with the new data.
   clear();
 
-  nassertr (xelement != NULL, false);
+  nassertr(xelement != NULL, false);
 
   if (xelement->ValueStr() != "COLLADA") {
     collada_cat.error() << "Root element must be <COLLADA>, not <" << xelement->Value() << ">\n";
     return false;
   }
 
-  const TiXmlElement *xchild;
-
-  xchild = xelement->FirstChildElement("asset");
-  if (xchild != NULL) {
-    _asset = new ColladaAsset();
-    _asset->load_xml(xchild);
+  if (!ColladaAssetElement::load_xml(xelement)) {
+    return false;
   }
+
+  const TiXmlElement *xchild;
 
   xchild = xelement->FirstChildElement("library_nodes");
   if (xchild != NULL) {
@@ -201,14 +197,18 @@ load_xml(const TiXmlElement *xelement) {
 ////////////////////////////////////////////////////////////////////
 TiXmlElement * ColladaData::
 make_xml() const {
+  TiXmlElement * xelement = ColladaAssetElement::make_xml();
+  if (xelement == NULL) {
+    return NULL;
+  }
+  xelement->SetValue("COLLADA");
+
   // Currently, we write valid 1.5.0 collada
-  TiXmlElement * xelement = new TiXmlElement("COLLADA");
   xelement->SetAttribute("version", "1.5.0");
   xelement->SetAttribute("xmlns", "http://www.collada.org/2008/03/COLLADASchema");
 
-  if (_asset) {
-    xelement->LinkEndChild(_asset->make_xml());
-    //FIXME: what to do when there is no asset?
+  if (!_asset) {
+    //FIXME: what to do when there is no asset? collada spec requires one, I'm pretty certain
   }
 
   if (_library_nodes.size() > 0) {

@@ -37,9 +37,9 @@ PUBLISHED:
   };
 
 public:
-  bool load_xml(const TiXmlElement *xelement);
-  TiXmlElement * make_xml() const;
-  PT(PandaNode) make_node() const;
+  bool load_xml(const TiXmlElement *xelement, const CoordinateSystem cs = CS_default);
+  virtual TiXmlElement * make_xml() const;
+  virtual PT(PandaNode) make_node() const;
 
   // Needed by ColladaLibrary to validate the element names
   static const string _element_name;

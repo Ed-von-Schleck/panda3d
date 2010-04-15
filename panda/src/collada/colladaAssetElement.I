@@ -45,3 +45,43 @@ clear() {
   _asset = NULL;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAssetElement::load_xml
+//       Access: Public
+//  Description: Loads <asset> data from a TiXmlElement.
+////////////////////////////////////////////////////////////////////
+bool ColladaAssetElement::
+load_xml(const TiXmlElement *xelement) {
+  if (!ColladaElement::load_xml(xelement)) {
+    return false;
+  }
+
+  const TiXmlElement *xchild;
+
+  xchild = xelement->FirstChildElement("asset");
+  if (xchild != NULL) {
+    _asset = new ColladaAsset();
+    return _asset->load_xml(xchild);
+  } else {
+    _asset = NULL;
+    return true;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAssetElement::make_xml
+//       Access: Public
+//  Description: Returns a new TiXmlElement representing
+//               this element.
+////////////////////////////////////////////////////////////////////
+TiXmlElement * ColladaAssetElement::
+make_xml() const {
+  TiXmlElement * xelement = ColladaElement::make_xml();
+
+  if (_asset) {
+    xelement->LinkEndChild(_asset->make_xml());
+  }
+
+  return xelement;
+}
+

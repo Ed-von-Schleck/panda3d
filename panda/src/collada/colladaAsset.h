@@ -30,8 +30,8 @@ PUBLISHED:
   INLINE CoordinateSystem get_coordinate_system() const;
   INLINE virtual void clear();
 
-  bool load_xml(const TiXmlElement *xelement);
-  TiXmlElement *make_xml() const;
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
 
 private:
   CoordinateSystem _coordsys;

@@ -25,8 +25,7 @@ const string ColladaVisualScene::_library_name ("library_visual_scenes");
 ////////////////////////////////////////////////////////////////////
 ColladaVisualScene::
 ColladaVisualScene() {
-  _asset = NULL;
-  clear_name();
+  clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -36,16 +35,11 @@ ColladaVisualScene() {
 ////////////////////////////////////////////////////////////////////
 bool ColladaVisualScene::
 load_xml(const TiXmlElement *xelement) {
-  nassertr(xelement != NULL, false);
-  nassertr(xelement->ValueStr() == "visual_scene", false);
-
-  clear_name();
-  _nodes.clear();
-
-  const char* name = xelement->Attribute("name");
-  if (name) {
-    set_name(name);
+  if (!ColladaAssetElement::load_xml(xelement)) {
+    return false;
   }
+
+  nassertr(xelement->ValueStr() == "visual_scene", false);
 
   const TiXmlElement* xnode = xelement->FirstChildElement("node");
   while (xnode != NULL) {
@@ -53,12 +47,6 @@ load_xml(const TiXmlElement *xelement) {
     node->load_xml(xnode);
     _nodes.push_back(node);
     xnode = xnode->NextSiblingElement("node");
-  }
-
-  const TiXmlElement* xasset = xelement->FirstChildElement("asset");
-  if (xasset != NULL) {
-    _asset = new ColladaAsset();
-    _asset->load_xml(xasset);
   }
 
   return true;
@@ -72,15 +60,8 @@ load_xml(const TiXmlElement *xelement) {
 ////////////////////////////////////////////////////////////////////
 TiXmlElement * ColladaVisualScene::
 make_xml() const {
-  TiXmlElement * xelement = new TiXmlElement("visual_scene");
-
-  if (has_name()) {
-    xelement->SetAttribute("name", get_name());
-  }
-
-  if (_asset) {
-    xelement->LinkEndChild(_asset->make_xml());
-  }
+  TiXmlElement * xelement = ColladaAssetElement::make_xml();
+  xelement->SetValue("visual_scene");
 
   for (int i = 0; i < _nodes.size(); ++i) {
     xelement->LinkEndChild(_nodes.at(i)->make_xml());

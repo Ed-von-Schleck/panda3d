@@ -27,9 +27,7 @@ const string ColladaNode::_library_name ("library_nodes");
 ////////////////////////////////////////////////////////////////////
 ColladaNode::
 ColladaNode() {
-  _asset = NULL;
-  _node_type = NT_default;
-  _transform = LMatrix4d::ident_mat();
+  clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -38,33 +36,27 @@ ColladaNode() {
 //  Description: Loads <node> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaNode::
-load_xml(const TiXmlElement *xelement) {
-  nassertr(xelement != NULL, false);
+load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
+  if (!ColladaAssetElement::load_xml(xelement)) {
+    return false;
+  }
   nassertr(xelement->ValueStr() == "node", false);
 
-  _nodes.clear();
-  clear_name();
-  _node_type = NT_default;
-  _transform = LMatrix4d::ident_mat();
+  CoordinateSystem newcs (cs);
   bool okflag = true;
 
-  const char* name = xelement->Attribute("name");
-  if (name) {
-    set_name(name);
+  if (_asset != NULL) {
+    if (_asset->get_coordinate_system() != CS_default) {
+      newcs = _asset->get_coordinate_system();
+    }
   }
 
   const TiXmlElement* xnode = xelement->FirstChildElement("node");
   while (xnode != NULL) {
     PT(ColladaNode) node = new ColladaNode;
-    node->load_xml(xnode);
+    node->load_xml(xnode, newcs);
     _nodes.push_back(node);
     xnode = xnode->NextSiblingElement("node");
-  }
-
-  const TiXmlElement* xasset = xelement->FirstChildElement("asset");
-  if (xasset != NULL) {
-    _asset = new ColladaAsset();
-    okflag &= _asset->load_xml(xasset);
   }
 
   const char* type = xelement->Attribute("type");
@@ -79,6 +71,8 @@ load_xml(const TiXmlElement *xelement) {
       okflag = false;
     }
   }
+
+  //TODO: handle layers (binning?)
 
   // Iterate over the elements to apply the transforms one by one
   //TODO: coordinate system conversion
@@ -149,11 +143,8 @@ load_xml(const TiXmlElement *xelement) {
 ////////////////////////////////////////////////////////////////////
 TiXmlElement * ColladaNode::
 make_xml() const {
-  TiXmlElement * xelement = new TiXmlElement("node");
-
-  if (has_name()) {
-    xelement->SetAttribute("name", get_name());
-  }
+  TiXmlElement * xelement = ColladaAssetElement::make_xml();
+  xelement->SetValue("node");
 
   switch (_node_type) {
     case NT_node:

@@ -33,11 +33,10 @@ clear () {
 template<class T>
 INLINE bool ColladaLibrary<T>::
 load_xml(const TiXmlElement *xelement) {
-  // First, dispense with any items we had previously.  We will
-  // replace them with the new items.
-  clear();
+  if (!ColladaAssetElement::load_xml(xelement)) {
+    return false;
+  }
 
-  nassertr(xelement != NULL, false);
   nassertr(xelement->ValueStr() == T::_library_name, false);
 
   const TiXmlElement* xchild = xelement->FirstChildElement(T::_element_name);
@@ -46,12 +45,6 @@ load_xml(const TiXmlElement *xelement) {
     item->load_xml(xchild);
     pvector<PointerTo<T> >::push_back(item);
     xchild = xchild->NextSiblingElement(T::_element_name);
-  }
-
-  xchild = xelement->FirstChildElement("asset");
-  if (xchild != NULL) {
-    _asset = new ColladaAsset();
-    _asset->load_xml(xchild);
   }
 
   return true;
@@ -66,11 +59,8 @@ load_xml(const TiXmlElement *xelement) {
 template<class T>
 INLINE TiXmlElement * ColladaLibrary<T>::
 make_xml() const {
-  TiXmlElement * xelement = new TiXmlElement(T::_library_name);
-
-  if (_asset) {
-    xelement->LinkEndChild(_asset->make_xml());
-  }
+  TiXmlElement * xelement = ColladaAssetElement::make_xml();
+  xelement->SetValue(T::_library_name);
 
   for (int i = 0; i < pvector<PointerTo<T> >::size(); ++i) {
     xelement->LinkEndChild(pvector<PointerTo<T> >::at(i)->make_xml());

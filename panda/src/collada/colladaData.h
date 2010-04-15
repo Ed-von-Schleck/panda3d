@@ -37,20 +37,20 @@ class ColladaLoader;
 //               ColladaData structure corresponds exactly with
 //               a collada file on the disk.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaData : public TypedReferenceCount {
+class EXPCL_COLLADA ColladaData : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
   INLINE ColladaData();
 
   static bool resolve_dae_filename(Filename &dae_filename,
                                    const DSearchPath &searchpath = DSearchPath());
 
-  void clear();
+  virtual void clear();
 
   bool read(Filename filename, string display_name = string());
   bool read(istream &in);
 
-  bool load_xml(const TiXmlElement *xelement);
-  TiXmlElement * make_xml() const;
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement * make_xml() const;
 
   bool write_dae(Filename filename) const;
   bool write_dae(ostream &out) const;
@@ -62,7 +62,6 @@ PUBLISHED:
 
 private:
   Filename _filename;
-  PT(ColladaAsset) _asset;
   ColladaInstanceVisualScene _instance_visual_scene;
   ColladaLibraryNodes _library_nodes;
   ColladaLibraryVisualScenes _library_visual_scenes;

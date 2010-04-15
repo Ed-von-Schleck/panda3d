@@ -15,6 +15,7 @@
 #ifndef COLLADAELEMENT_H
 #define COLLADAELEMENT_H
 
+#include "config_collada.h"
 #include "namable.h"
 
 ////////////////////////////////////////////////////////////////////
@@ -24,6 +25,8 @@
 class EXPCL_COLLADA ColladaElement : public Namable {
 PUBLISHED:
   INLINE virtual void clear();
+  INLINE virtual bool load_xml(const TiXmlElement *element);
+  INLINE virtual TiXmlElement *make_xml() const;
 };
 
 #include "colladaElement.I"

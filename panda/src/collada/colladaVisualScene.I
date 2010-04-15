@@ -20,5 +20,6 @@
 INLINE void ColladaVisualScene::
 clear() {
   ColladaAssetElement::clear();
+  _nodes.clear();
 }
 

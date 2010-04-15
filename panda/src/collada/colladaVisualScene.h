@@ -29,8 +29,8 @@ PUBLISHED:
   INLINE virtual void clear();
 
 public:
-  bool load_xml(const TiXmlElement *xelement);
-  TiXmlElement * make_xml() const;
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement * make_xml() const;
   PT(PandaNode) make_node() const;
 
   // Needed by ColladaLibrary to validate the element names
