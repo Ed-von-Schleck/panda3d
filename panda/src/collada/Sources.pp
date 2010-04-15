@@ -12,7 +12,9 @@
 
   #define SOURCES \
     colladaAsset.h colladaAsset.I \
+    colladaAssetElement.h colladaAssetElement.I \
     colladaData.h colladaData.I \
+    colladaElement.h colladaElement.I \
     colladaInstance.h colladaInstance.I colladaInstance.N \
     colladaLibrary.h colladaLibrary.I colladaLibrary.N \
     colladaLoader.h colladaLoader.I \
@@ -34,7 +36,9 @@
 
   #define INSTALL_HEADERS \
     colladaAsset.h colladaAsset.I \
+    colladaAssetElement.h colladaAssetElement.I \
     colladaData.h colladaData.I \
+    colladaElement.h colladaElement.I \
     colladaInstance.h colladaInstance.I \
     colladaLibrary.h colladaLibrary.I \
     colladaLoader.h colladaLoader.I \
