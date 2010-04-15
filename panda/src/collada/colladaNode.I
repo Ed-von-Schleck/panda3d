@@ -1,4 +1,4 @@
-// Filename: colladaAssetElement.h
+// Filename: colladaNode.I
 // Created by: Xidram (15Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,28 +12,13 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAASSETELEMENT_H
-#define COLLADAASSETELEMENT_H
-
-#include "colladaAsset.h"
-#include "colladaElement.h"
-#include "pointerTo.h"
-
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaAssetElement
-// Description : Element that can have an <asset> tag.
+//     Function: ColladaNode::clear
+//       Access: Public
+//  Description: Resets the ColladaNode to its initial state.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaAssetElement : public ColladaElement {
-PUBLISHED:
-  INLINE PT(ColladaAsset) get_asset() const;
-  INLINE void set_asset(PT(ColladaAsset) asset);
-  INLINE virtual void clear();
-
-protected:
-  PT(ColladaAsset) _asset;
-};
-
-#include "colladaAssetElement.I"
-
-#endif
+INLINE void ColladaNode::
+clear() {
+  ColladaAssetElement::clear();
+}
 

@@ -16,6 +16,7 @@
 #define COLLADAASSET_H
 
 #include "typedReferenceCount.h"
+#include "colladaElement.h"
 #include "config_collada.h"
 #include "coordinateSystem.h"
 
@@ -23,13 +24,14 @@
 //       Class : ColladaAsset
 // Description : Object that represents the <asset> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaAsset : public TypedReferenceCount {
+class EXPCL_COLLADA ColladaAsset : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
   ColladaAsset();
   INLINE CoordinateSystem get_coordinate_system() const;
+  INLINE virtual void clear();
 
   bool load_xml(const TiXmlElement *xelement);
-  TiXmlElement * make_xml() const;
+  TiXmlElement *make_xml() const;
 
 private:
   CoordinateSystem _coordsys;

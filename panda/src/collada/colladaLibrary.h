@@ -19,6 +19,7 @@
 
 #include "config_collada.h"
 #include "colladaAsset.h"
+#include "colladaAssetElement.h"
 #include "pvector.h"
 #include "pointerTo.h"
 
@@ -31,14 +32,11 @@ class ColladaVisualScene;
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaLibrary : public pvector<PointerTo<T> > {
+class EXPCL_COLLADA ColladaLibrary : public ColladaAssetElement, public pvector<PointerTo<T> > {
 PUBLISHED:
-  INLINE void clear();
+  INLINE virtual void clear();
   INLINE bool load_xml(const TiXmlElement *xelement);
   INLINE TiXmlElement * make_xml() const;
-
-private:
-  PT(ColladaAsset) _asset;
 };
 
 typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;
@@ -47,3 +45,4 @@ typedef ColladaLibrary<ColladaNode> ColladaLibraryNodes;
 #include "colladaLibrary.I"
 
 #endif
+

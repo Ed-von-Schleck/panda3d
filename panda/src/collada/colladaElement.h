@@ -22,6 +22,11 @@
 // Description : Object that represents the <element> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaElement : public Namable {
+PUBLISHED:
+  INLINE virtual void clear();
 };
+
+#include "colladaElement.I"
+
 #endif
 

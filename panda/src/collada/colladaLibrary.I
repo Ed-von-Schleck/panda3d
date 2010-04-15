@@ -20,8 +20,8 @@
 template<class T>
 INLINE void ColladaLibrary<T>::
 clear () {
+  ColladaAssetElement::clear();
   pvector<PointerTo<T> >::clear();
-  _asset = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,3 +78,4 @@ make_xml() const {
 
   return xelement;
 }
+

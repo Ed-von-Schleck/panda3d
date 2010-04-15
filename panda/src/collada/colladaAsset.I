@@ -23,3 +23,18 @@ INLINE CoordinateSystem ColladaAsset::
 get_coordinate_system() const {
   return _coordsys;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::clear
+//       Access: Public
+//  Description: Resets the ColladaAsset to its initial state.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaAsset::
+clear() {
+  ColladaElement::clear();
+  _coordsys = CS_default;
+  time_t now = time(NULL);
+  _created = *localtime(&now);
+  _modified = *localtime(&now);
+}
+

@@ -20,8 +20,8 @@
 template<class T>
 INLINE void ColladaInstance<T>::
 clear () {
+  ColladaElement::clear();
   _url.clear();
-  clear_name();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -94,3 +94,4 @@ make_xml() const {
 
   return xelement;
 }
+

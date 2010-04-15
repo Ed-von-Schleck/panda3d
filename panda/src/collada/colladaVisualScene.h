@@ -17,14 +17,16 @@
 
 #include "typedReferenceCount.h"
 #include "config_collada.h"
+#include "colladaAssetElement.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaVisualScene
 // Description : Object that represents the <visual_scene> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaVisualScene : public Namable, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaVisualScene : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
   ColladaVisualScene();
+  INLINE virtual void clear();
 
 public:
   bool load_xml(const TiXmlElement *xelement);
@@ -56,5 +58,7 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaVisualScene.I"
 
 #endif

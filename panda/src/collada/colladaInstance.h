@@ -19,7 +19,7 @@
 
 #include "config_collada.h"
 #include "pointerTo.h"
-#include "namable.h"
+#include "colladaElement.h"
 
 class ColladaVisualScene;
 
@@ -29,9 +29,9 @@ class ColladaVisualScene;
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaInstance : public Namable {
+class EXPCL_COLLADA ColladaInstance : public ColladaElement {
 PUBLISHED:
-  INLINE void clear();
+  INLINE virtual void clear();
   INLINE bool is_empty() const;
   INLINE const string &get_url() const;
   INLINE void set_url(const string &url);
@@ -49,3 +49,4 @@ typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 #include "colladaInstance.I"
 
 #endif
+

@@ -281,3 +281,4 @@ write_dae(ostream &out) const {
   delete xelement;
   return true;
 }
+

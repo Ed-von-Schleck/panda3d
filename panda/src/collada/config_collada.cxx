@@ -94,3 +94,4 @@ init_libcollada() {
 
   reg->register_type(new LoaderFileTypeDae);
 }
+

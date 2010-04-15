@@ -59,3 +59,4 @@ INLINE const Filename &ColladaData::
 get_filename() const {
   return _filename;
 }
+

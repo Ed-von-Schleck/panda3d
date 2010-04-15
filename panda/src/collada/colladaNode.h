@@ -19,14 +19,16 @@
 #include "config_collada.h"
 #include "lmatrix.h"
 #include "pandaNode.h"
+#include "colladaAssetElement.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaNode
 // Description : Object that represents the <node> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaNode : public Namable, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaNode : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
   ColladaNode();
+  INLINE virtual void clear();
 
   enum NodeType {
     NT_default,
@@ -66,5 +68,7 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaNode.I"
 
 #endif

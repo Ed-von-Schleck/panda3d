@@ -34,3 +34,14 @@ set_asset(PT(ColladaAsset) asset) {
   _asset = asset;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAssetElement::clear
+//       Access: Public
+//  Description: Resets the ColladaLibrary to its initial state.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaAssetElement::
+clear() {
+  ColladaElement::clear();
+  _asset = NULL;
+}
+
