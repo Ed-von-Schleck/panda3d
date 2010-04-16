@@ -17,7 +17,7 @@
 TypeHandle ColladaAsset::_type_handle;
 
 // Representation in an ISO 8601 format as per xs:dateTime
-//TODO: handle local time vs UTC
+// Don't append the trailing 'Z' here.
 #define TIME_FORMAT "%Y-%m-%dT%H:%M:%S"
 
 ////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ load_xml(const TiXmlElement *xelement) {
   nassertr(xelement->ValueStr() == "asset", false);
 
   _coordsys = CS_default;
-  bool okflag;
+  bool okflag = true;
   const TiXmlElement *xchild;
 
   xchild = xelement->FirstChildElement("up_axis");
@@ -59,18 +59,43 @@ load_xml(const TiXmlElement *xelement) {
   }
 
   // Get the created & modified timestamps
+  // Note: we're assuming the time is stored as UTC.
   xchild = xelement->FirstChildElement("created");
   if (xchild != NULL) {
-    okflag &= (strptime(xchild->GetText(), TIME_FORMAT, &_created) != NULL);
+    string datetime (xchild->GetText());
+    if (datetime[datetime.size() - 1] == 'Z') {
+      datetime = datetime.substr(0, datetime.size() - 1);
+    }
+    const char* result = strptime(datetime.c_str(), TIME_FORMAT, &_created);
+    if (result == NULL || strlen(result) != 0) {
+      collada_cat.error()
+        << "Invalid <created> time: '" << xchild->GetText() << "'\n";
+      if (result != NULL) {
+        collada_cat.error()
+          << "Unprocessed characters: '" << result << "'\n";
+      }
+      okflag = false;
+    }
   }
 
   xchild = xelement->FirstChildElement("modified");
   if (xchild != NULL) {
-    okflag &= (strptime(xchild->GetText(), TIME_FORMAT, &_modified) != NULL);
+    string datetime (xchild->GetText());
+    if (datetime[datetime.size() - 1] == 'Z') {
+      datetime = datetime.substr(0, datetime.size() - 1);
+    }
+    const char* result = strptime(datetime.c_str(), TIME_FORMAT, &_modified);
+    if (result == NULL || strlen(result) != 0) {
+      collada_cat.error()
+        << "Invalid <modified> time: '" << xchild->GetText() << "'\n";
+      if (result != NULL) {
+        collada_cat.error()
+          << "Unprocessed characters: '" << result << "'\n";
+      }
+      okflag = false;
+    }
   }
 
-  //FIXME
-  return true;
   return okflag;
 }
 
@@ -114,7 +139,9 @@ make_xml() const {
   char created[512];
   char modified[512];
   strftime(created, 512, TIME_FORMAT, &_created);
-  strftime(modified, 512, TIME_FORMAT, localtime(&now));
+  strftime(modified, 512, TIME_FORMAT, gmtime(&now));
+  strcat(created, "Z");
+  strcat(modified, "Z");
   TiXmlElement * xcreated = new TiXmlElement("created");
   TiXmlElement * xmodified = new TiXmlElement("modified");
   xcreated->LinkEndChild(new TiXmlText(created));

@@ -34,7 +34,7 @@ clear() {
   ColladaElement::clear();
   _coordsys = CS_default;
   time_t now = time(NULL);
-  _created = *localtime(&now);
-  _modified = *localtime(&now);
+  _created = *gmtime(&now);
+  _modified = *gmtime(&now);
 }
 
