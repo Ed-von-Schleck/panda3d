@@ -27,14 +27,33 @@
 class EXPCL_COLLADA ColladaAsset : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
   ColladaAsset();
-  INLINE CoordinateSystem get_coordinate_system() const;
   INLINE virtual void clear();
+
+  INLINE const string &get_title() const;
+  INLINE void set_title(const string &title);
+
+  INLINE const string &get_subject() const;
+  INLINE void set_subject(const string &subject);
+
+  INLINE const string &get_keywords() const;
+  INLINE void set_keywords(const string &keywords);
+
+  INLINE const string &get_revision() const;
+  INLINE void set_revision(const string &revision);
+
+  INLINE CoordinateSystem get_coordinate_system() const;
 
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
 private:
+  string _title;
+  string _subject;
+  string _keywords;
+  string _revision;
+
   CoordinateSystem _coordsys;
+
   struct tm _created;
   struct tm _modified;
 
