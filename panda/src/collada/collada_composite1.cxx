@@ -1,4 +1,5 @@
 #include "colladaAsset.cxx"
+#include "colladaContributor.cxx"
 #include "colladaData.cxx"
 #include "colladaLoader.cxx"
 #include "colladaNode.cxx"

@@ -22,11 +22,11 @@
 //       Class : ColladaContributor
 // Description : Object that represents the <contributor> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaContributor : public ColladaElement {
+class EXPCL_COLLADA ColladaContributor : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
-  INLINE virtual void clear();
-  INLINE virtual bool load_xml(const TiXmlElement *xelement);
-  INLINE virtual TiXmlElement *make_xml() const;
+  virtual void clear();
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
 
   INLINE const string &get_author() const;
   INLINE void set_author(const string &author);
@@ -57,6 +57,23 @@ private:
   string _comments;
   string _copyright;
   string _source_data;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    TypedReferenceCount::init_type();
+    register_type(_type_handle, "ColladaContributor",
+                  TypedReferenceCount::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+
+private:
+  static TypeHandle _type_handle;
 };
 
 #include "colladaContributor.I"

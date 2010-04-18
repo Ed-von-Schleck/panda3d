@@ -16,6 +16,7 @@
 
 #include "dconfig.h"
 #include "colladaAsset.h"
+#include "colladaContributor.h"
 #include "colladaData.h"
 #include "colladaNode.h"
 #include "colladaVisualScene.h"
@@ -85,6 +86,7 @@ init_libcollada() {
   initialized = true;
 
   ColladaAsset::init_type();
+  ColladaContributor::init_type();
   ColladaData::init_type();
   ColladaNode::init_type();
   ColladaVisualScene::init_type();

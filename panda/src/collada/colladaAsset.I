@@ -14,32 +14,6 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaAsset::clear
-//       Access: Public
-//  Description: Resets the ColladaAsset to its initial state.
-////////////////////////////////////////////////////////////////////
-INLINE void ColladaAsset::
-clear() {
-  ColladaElement::clear();
-  _title.clear();
-  _subject.clear();
-  _keywords.clear();
-  _revision.clear();
-  _has_geographic_location = false;
-  _longitude = NULL;
-  _latitude = NULL;
-  _altitude = NULL;
-  _altitude_mode = "relativeToGround";
-  _has_unit = false;
-  _unit_meter = 1.0;
-  _unit_name = "meter";
-  _coordsys = CS_default;
-  time_t now = time(NULL);
-  _created = *gmtime(&now);
-  _modified = *gmtime(&now);
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_title
 //       Access: Public
 //  Description: Returns title information for the asset.
@@ -136,7 +110,7 @@ has_geographic_location() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_longitude
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE const double ColladaAsset::
 get_longitude() const {
@@ -146,7 +120,7 @@ get_longitude() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_latitude
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE const double ColladaAsset::
 get_latitude() const {
@@ -156,7 +130,7 @@ get_latitude() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_altitude
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE const double ColladaAsset::
 get_altitude() const {
@@ -166,27 +140,38 @@ get_altitude() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_altitude_mode
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE const string &ColladaAsset::
+INLINE const ColladaAsset::AltitudeMode ColladaAsset::
 get_altitude_mode() const {
-  nassertr(_has_geographic_location, "relativeToGround");
+  nassertr(_has_geographic_location, AM_relativeToGround);
   return _altitude_mode;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::set_geographic_location
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaAsset::
 set_geographic_location(const double longitude, const double latitude,
-  const double altitude, const string &altitude_mode) {
+  const double altitude, const AltitudeMode altitude_mode) {
   _longitude = longitude;
   _latitude = latitude;
   _altitude = altitude;
   _altitude_mode = altitude_mode;
   _has_geographic_location = true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::clear_geographic_location
+//       Access: Public
+//  Description: Disables the association of the asset to a
+//               certain geographical location.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaAsset::
+clear_geographic_location() {
+  _has_geographic_location = false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -221,7 +206,7 @@ get_unit_meter() const {
 //  Description: Returns the name of the unit of distance for elements
 //               and objects.
 ////////////////////////////////////////////////////////////////////
-INLINE const string &ColladaAsset::
+INLINE const string ColladaAsset::
 get_unit_name() const {
   nassertr(_has_unit, "meter");
   return _unit_name;
@@ -236,10 +221,20 @@ get_unit_name() const {
 //               name of the unit of distance.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaAsset::
-set_unit_meter(const double unit_meter, const string &unit_name) {
+set_unit(const double unit_meter, const string &unit_name) {
   _unit_meter = unit_meter;
   _unit_name = unit_name;
   _has_unit = true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::clear_unit
+//       Access: Public
+//  Description: Disables the custom unit specification.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaAsset::
+clear_unit() {
+  _has_unit = false;
 }
 
 ////////////////////////////////////////////////////////////////////

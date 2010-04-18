@@ -31,6 +31,33 @@ ColladaAsset() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::clear
+//       Access: Public
+//  Description: Resets the ColladaAsset to its initial state.
+////////////////////////////////////////////////////////////////////
+void ColladaAsset::
+clear() {
+  ColladaElement::clear();
+  _title.clear();
+  _subject.clear();
+  _keywords.clear();
+  _revision.clear();
+  _has_geographic_location = false;
+  _longitude = NULL;
+  _latitude = NULL;
+  _altitude = NULL;
+  _altitude_mode = AM_relativeToGround;
+  _has_unit = false;
+  _unit_meter = 1.0;
+  _unit_name = "meter";
+  _coordsys = CS_default;
+  time_t now = time(NULL);
+  _created = *gmtime(&now);
+  _modified = *gmtime(&now);
+  _contributors.clear();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::load_xml
 //       Access: Public
 //  Description: Loads <asset> data from a TiXmlElement.
@@ -46,6 +73,40 @@ load_xml(const TiXmlElement *xelement) {
   _coordsys = CS_default;
   bool okflag = true;
   const TiXmlElement *xchild;
+
+  xchild = xelement->FirstChildElement("title");
+  if (xchild != NULL) {
+    _title = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("subject");
+  if (xchild != NULL) {
+    _subject = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("keywords");
+  if (xchild != NULL) {
+    _keywords = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("revision");
+  if (xchild != NULL) {
+    _revision = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("unit");
+  if (xchild != NULL) {
+    _has_unit = true;
+    if (xchild->Attribute("name")) {
+      _unit_name = xchild->Attribute("name");
+    }
+    if (xchild->QueryDoubleAttribute("meter", &_unit_meter) == TIXML_WRONG_TYPE) {
+      collada_cat.error()
+        << "Invalid value " << xchild->Attribute("name") << " for unit name\n";
+    }
+  }
+
+  //TODO: read out geographic_location
 
   xchild = xelement->FirstChildElement("up_axis");
   if (xchild != NULL) {
@@ -96,6 +157,15 @@ load_xml(const TiXmlElement *xelement) {
     }
   }
 
+  // Now the list of contributors
+  xchild = xelement->FirstChildElement("contributor");
+  while (xchild != NULL) {
+    PT(ColladaContributor) contrib = new ColladaContributor;
+    contrib->load_xml(xchild);
+    _contributors.push_back(contrib);
+    xchild = xchild->NextSiblingElement("contributor");
+  }
+
   return okflag;
 }
 
@@ -105,13 +175,92 @@ load_xml(const TiXmlElement *xelement) {
 //  Description: Returns a new TiXmlElement representing
 //               the asset.
 ////////////////////////////////////////////////////////////////////
-TiXmlElement * ColladaAsset::
+TiXmlElement *ColladaAsset::
 make_xml() const {
-  TiXmlElement * xelement = ColladaElement::make_xml();
+  TiXmlElement *xelement = ColladaElement::make_xml();
   xelement->SetValue("asset");
 
-  TiXmlElement * up_axis = NULL;
+  TiXmlElement *xchild;
 
+  if (!_title.empty()) {
+    xchild = new TiXmlElement("title");
+    xchild->LinkEndChild(new TiXmlText(_title));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_subject.empty()) {
+    xchild = new TiXmlElement("subject");
+    xchild->LinkEndChild(new TiXmlText(_subject));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_keywords.empty()) {
+    xchild = new TiXmlElement("keywords");
+    xchild->LinkEndChild(new TiXmlText(_keywords));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_revision.empty()) {
+    xchild = new TiXmlElement("revision");
+    xchild->LinkEndChild(new TiXmlText(_revision));
+    xelement->LinkEndChild(xchild);
+  }
+
+  // Specify the <unit> and <geographic_location> if requested
+  if (_has_unit) {
+    xchild = new TiXmlElement("unit");
+    xchild->SetDoubleAttribute("meter", _unit_meter);
+    xchild->SetAttribute("name", _unit_name);
+    xelement->LinkEndChild(xchild);
+  }
+  if (_has_geographic_location) {
+    xchild = new TiXmlElement("coverage");
+    TiXmlElement *xgloc = new TiXmlElement("geographic_location");
+    TiXmlElement *xglocchild;
+    ostringstream slong, slat, salt;
+    slong << _longitude;
+    xglocchild = new TiXmlElement("longitude");
+    xglocchild->LinkEndChild(new TiXmlText(slong.str()));
+    xgloc->LinkEndChild(xglocchild);
+    slat << _latitude;
+    xglocchild = new TiXmlElement("latitude");
+    xglocchild->LinkEndChild(new TiXmlText(slat.str()));
+    xgloc->LinkEndChild(xglocchild);
+    salt << _altitude;
+    xglocchild = new TiXmlElement("altitude");
+    switch (_altitude_mode) {
+      case AM_absolute:
+        xglocchild->SetAttribute("mode", "absolute");
+        break;
+      case AM_relativeToGround:
+        xglocchild->SetAttribute("mode", "relativeToGround");
+        break;
+      default:
+        collada_cat.error() << "Invalid altitude mode!\n";
+    }
+    xglocchild->LinkEndChild(new TiXmlText(salt.str()));
+    xgloc->LinkEndChild(xglocchild);
+    xchild->LinkEndChild(xgloc);
+    xelement->LinkEndChild(xchild);
+  }
+
+  // Add the required <created> and <modified> elements
+  time_t now = time(NULL);
+  char created[512];
+  char modified[512];
+  strftime(created, 512, TIME_FORMAT, &_created);
+  strftime(modified, 512, TIME_FORMAT, gmtime(&now));
+  strcat(created, "Z");
+  strcat(modified, "Z");
+  TiXmlElement * xcreated = new TiXmlElement("created");
+  TiXmlElement * xmodified = new TiXmlElement("modified");
+  xcreated->LinkEndChild(new TiXmlText(created));
+  xmodified->LinkEndChild(new TiXmlText(modified));
+  xelement->LinkEndChild(xcreated);
+  xelement->LinkEndChild(xmodified);
+
+  // Add the coordinate system (via the <up_axis> element)
+  TiXmlElement * up_axis = NULL;
   switch (_coordsys) {
     case CS_default:
       break;
@@ -134,20 +283,9 @@ make_xml() const {
     xelement->LinkEndChild(up_axis);
   }
 
-  // Add the required <created> and <modified> elements
-  time_t now = time(NULL);
-  char created[512];
-  char modified[512];
-  strftime(created, 512, TIME_FORMAT, &_created);
-  strftime(modified, 512, TIME_FORMAT, gmtime(&now));
-  strcat(created, "Z");
-  strcat(modified, "Z");
-  TiXmlElement * xcreated = new TiXmlElement("created");
-  TiXmlElement * xmodified = new TiXmlElement("modified");
-  xcreated->LinkEndChild(new TiXmlText(created));
-  xmodified->LinkEndChild(new TiXmlText(modified));
-  xelement->LinkEndChild(xcreated);
-  xelement->LinkEndChild(xmodified);
+  for (int i = 0; i < _contributors.size(); ++i) {
+    xelement->LinkEndChild(_contributors.at(i)->make_xml());
+  }
 
   return xelement;
 }

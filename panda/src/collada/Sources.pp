@@ -27,6 +27,7 @@
 
   #define INCLUDED_SOURCES \
     colladaAsset.cxx \
+    colladaContributor.cxx \
     colladaData.cxx \
     colladaLoader.cxx \
     colladaNode.cxx \

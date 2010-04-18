@@ -16,8 +16,11 @@
 #define COLLADAASSET_H
 
 #include "typedReferenceCount.h"
+#include "colladaContributor.h"
 #include "colladaElement.h"
 #include "config_collada.h"
+#include "pvector.h"
+#include "pointerTo.h"
 #include "coordinateSystem.h"
 
 ////////////////////////////////////////////////////////////////////
@@ -27,7 +30,7 @@
 class EXPCL_COLLADA ColladaAsset : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
   ColladaAsset();
-  INLINE virtual void clear();
+  virtual void clear();
 
   INLINE const string &get_title() const;
   INLINE void set_title(const string &title);
@@ -41,18 +44,25 @@ PUBLISHED:
   INLINE const string &get_revision() const;
   INLINE void set_revision(const string &revision);
 
+  enum AltitudeMode {
+    AM_absolute,
+    AM_relativeToGround
+  };
+
   INLINE const bool has_geographic_location() const;
   INLINE const double get_longitude() const;
   INLINE const double get_latitude() const;
   INLINE const double get_altitude() const;
-  INLINE const string &get_altitude_mode() const;
+  INLINE const AltitudeMode get_altitude_mode() const;
   INLINE void set_geographic_location(const double longitude,
-    const double latitude, const double altitude, const string &altitude_mode);
+    const double latitude, const double altitude, const AltitudeMode altitude_mode);
+  INLINE void clear_geographic_location();
 
   INLINE const bool has_unit() const;
   INLINE const double get_unit_meter() const;
-  INLINE const string &get_unit_name() const;
-  INLINE void set_unit_meter(const double unit_meter, const string &unit_name);
+  INLINE const string get_unit_name() const;
+  INLINE void set_unit(const double unit_meter, const string &unit_name);
+  INLINE void clear_unit();
 
   INLINE CoordinateSystem get_coordinate_system() const;
 
@@ -69,7 +79,7 @@ private:
   double _longitude;
   double _latitude;
   double _altitude;
-  string _altitude_mode;
+  AltitudeMode _altitude_mode;
 
   bool _has_unit;
   double _unit_meter;
@@ -79,6 +89,9 @@ private:
 
   struct tm _created;
   struct tm _modified;
+
+  //TODO: add accessors and mutators for _contributors
+  pvector<PT(ColladaContributor)> _contributors;
 
 public:
   static TypeHandle get_class_type() {
