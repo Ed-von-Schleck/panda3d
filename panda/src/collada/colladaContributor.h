@@ -25,6 +25,8 @@
 class EXPCL_COLLADA ColladaContributor : public ColladaElement {
 PUBLISHED:
   INLINE virtual void clear();
+  INLINE virtual bool load_xml(const TiXmlElement *xelement);
+  INLINE virtual TiXmlElement *make_xml() const;
 
   INLINE const string &get_author() const;
   INLINE void set_author(const string &author);

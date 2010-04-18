@@ -13,9 +13,134 @@
 ////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaContributor::clear
+//       Access: Public
+//  Description: Resets the ColladaContributor to its initial state.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaContributor::
+clear() {
+  ColladaElement::clear();
+  _author.clear();
+  _author_email.clear();
+  _author_website.clear();
+  _authoring_tool.clear();
+  _comments.clear();
+  _copyright.clear();
+  _source_data.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaContributor::load_xml
+//       Access: Public
+//  Description: Loads <asset> data from a TiXmlElement.
+////////////////////////////////////////////////////////////////////
+bool ColladaContributor::
+load_xml(const TiXmlElement *xelement) {
+  if (!ColladaElement::load_xml(xelement)) {
+    return false;
+  }
+
+  const TiXmlElement *xchild;
+
+  xchild = xelement->FirstChildElement("author");
+  if (xchild != NULL) {
+    _author = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("author_email");
+  if (xchild != NULL) {
+    _author_email = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("author_website");
+  if (xchild != NULL) {
+    _author_website = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("authoring_tool");
+  if (xchild != NULL) {
+    _authoring_tool = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("comments");
+  if (xchild != NULL) {
+    _comments = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("copyright");
+  if (xchild != NULL) {
+    _copyright = xchild->GetText();
+  }
+
+  xchild = xelement->FirstChildElement("source_data");
+  if (xchild != NULL) {
+    _source_data = xchild->GetText();
+  }
+
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaContributor::make_xml
+//       Access: Public
+//  Description: Returns a new TiXmlElement representing
+//               this element.
+////////////////////////////////////////////////////////////////////
+TiXmlElement * ColladaContributor::
+make_xml() const {
+  TiXmlElement *xelement = ColladaElement::make_xml();
+
+  TiXmlElement *xchild;
+
+  if (!_author.empty()) {
+    xchild = new TiXmlElement("author");
+    xchild->LinkEndChild(new TiXmlText(_author));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_author_email.empty()) {
+    xchild = new TiXmlElement("author_email");
+    xchild->LinkEndChild(new TiXmlText(_author_email));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_author_website.empty()) {
+    xchild = new TiXmlElement("author_website");
+    xchild->LinkEndChild(new TiXmlText(_author_website));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_authoring_tool.empty()) {
+    xchild = new TiXmlElement("authoring_tool");
+    xchild->LinkEndChild(new TiXmlText(_authoring_tool));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_comments.empty()) {
+    xchild = new TiXmlElement("comments");
+    xchild->LinkEndChild(new TiXmlText(_comments));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_copyright.empty()) {
+    xchild = new TiXmlElement("copyright");
+    xchild->LinkEndChild(new TiXmlText(_copyright));
+    xelement->LinkEndChild(xchild);
+  }
+
+  if (!_source_data.empty()) {
+    xchild = new TiXmlElement("source_data");
+    xchild->LinkEndChild(new TiXmlText(_source_data));
+    xelement->LinkEndChild(xchild);
+  }
+
+  return xelement;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_author
 //       Access: Public
-//  Description: Returns a pointer to the name of the contributor.
+//  Description: Returns the name of the contributor.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
 get_author() const {
@@ -35,7 +160,7 @@ set_author(const string &author) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_author_email
 //       Access: Public
-//  Description: Returns a pointer to the e-mail of the contributor.
+//  Description: Returns the e-mail of the contributor.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
 get_author_email() const {
@@ -55,7 +180,7 @@ set_author_email(const string &author_email) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_author_website
 //       Access: Public
-//  Description: Returns a pointer to the URI of the contributor's
+//  Description: Returns the URI of the contributor's
 //               website.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
@@ -76,7 +201,7 @@ set_author_website(const string &author_website) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_authoring_tool
 //       Access: Public
-//  Description: Returns a pointer to the name of the tool used to
+//  Description: Returns the name of the tool used to
 //               author the asset in the file.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
@@ -98,7 +223,7 @@ set_authoring_tool(const string &authoring_tool) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_comments
 //       Access: Public
-//  Description: Returns a pointer to the comments written by the
+//  Description: Returns the comments written by the
 //               contributor in the file.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
@@ -120,7 +245,7 @@ set_comments(const string &comments) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_copyright
 //       Access: Public
-//  Description: Returns a pointer to the contributor's copyright
+//  Description: Returns the contributor's copyright
 //               information.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
@@ -141,7 +266,7 @@ set_copyright(const string &copyright) {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::get_source_data
 //       Access: Public
-//  Description: Returns a pointer to the URI of the source data used
+//  Description: Returns the URI of the source data used
 //               for the asset in this file.
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaContributor::
@@ -152,28 +277,11 @@ get_source_data() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::set_source_data
 //       Access: Public
-//  Description: Sets the URI of the source data used for the asset in
-//               this file.
+//  Description: Sets the URI of the source data used for the asset
+//               in this file.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaContributor::
 set_source_data(const string &source_data) {
   _source_data = source_data;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaContributor::clear
-//       Access: Public
-//  Description: Resets the ColladaContributor to its initial state.
-////////////////////////////////////////////////////////////////////
-INLINE void ColladaContributor::
-clear() {
-  ColladaElement::clear();
-  _author.clear();
-  _author_email.clear();
-  _author_website.clear();
-  _authoring_tool.clear();
-  _comments.clear();
-  _copyright.clear();
-  _source_data.clear();
 }
 
