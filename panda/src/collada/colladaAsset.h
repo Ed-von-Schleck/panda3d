@@ -41,6 +41,19 @@ PUBLISHED:
   INLINE const string &get_revision() const;
   INLINE void set_revision(const string &revision);
 
+  INLINE const bool has_geographic_location() const;
+  INLINE const double get_longitude() const;
+  INLINE const double get_latitude() const;
+  INLINE const double get_altitude() const;
+  INLINE const string &get_altitude_mode() const;
+  INLINE void set_geographic_location(const double longitude,
+    const double latitude, const double altitude, const string &altitude_mode);
+
+  INLINE const bool has_unit() const;
+  INLINE const double get_unit_meter() const;
+  INLINE const string &get_unit_name() const;
+  INLINE void set_unit_meter(const double unit_meter, const string &unit_name);
+
   INLINE CoordinateSystem get_coordinate_system() const;
 
   virtual bool load_xml(const TiXmlElement *xelement);
@@ -51,6 +64,16 @@ private:
   string _subject;
   string _keywords;
   string _revision;
+
+  bool _has_geographic_location;
+  double _longitude;
+  double _latitude;
+  double _altitude;
+  string _altitude_mode;
+
+  bool _has_unit;
+  double _unit_meter;
+  string _unit_name;
 
   CoordinateSystem _coordsys;
 

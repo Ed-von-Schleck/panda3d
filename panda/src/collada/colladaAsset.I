@@ -25,6 +25,14 @@ clear() {
   _subject.clear();
   _keywords.clear();
   _revision.clear();
+  _has_geographic_location = false;
+  _longitude = NULL;
+  _latitude = NULL;
+  _altitude = NULL;
+  _altitude_mode = "relativeToGround";
+  _has_unit = false;
+  _unit_meter = 1.0;
+  _unit_name = "meter";
   _coordsys = CS_default;
   time_t now = time(NULL);
   _created = *gmtime(&now);
@@ -115,6 +123,126 @@ set_revision(const string &revision) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::has_geographic_location
+//       Access: Public
+//  Description: Returns true if <geographic_location> is defined in
+//               this asset and false if it is not.
+////////////////////////////////////////////////////////////////////
+INLINE const bool ColladaAsset::
+has_geographic_location() const {
+  return _has_geographic_location;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_longitude
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE const double ColladaAsset::
+get_longitude() const {
+  return _longitude;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_latitude
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE const double ColladaAsset::
+get_latitude() const {
+  return _latitude;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_altitude
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE const double ColladaAsset::
+get_altitude() const {
+  return _altitude;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_altitude_mode
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE const string &ColladaAsset::
+get_altitude_mode() const {
+  nassertr(_has_geographic_location, "relativeToGround");
+  return _altitude_mode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::set_geographic_location
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaAsset::
+set_geographic_location(const double longitude, const double latitude,
+  const double altitude, const string &altitude_mode) {
+  _longitude = longitude;
+  _latitude = latitude;
+  _altitude = altitude;
+  _altitude_mode = altitude_mode;
+  _has_geographic_location = true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::has_unit_meter
+//       Access: Public
+//  Description: Returns true if <unit> is defined in this asset and
+//               false if it is not.
+////////////////////////////////////////////////////////////////////
+INLINE const bool ColladaAsset::
+has_unit() const {
+  return _has_unit;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_unit_meter
+//       Access: Public
+//  Description: Returns the number of real-world meters in one unit of
+//               distance for elements and objects. This unit of distance
+//               applies to all spatial measurements within the scope of
+//               the <asset>'s parent element unless overridden by a more
+//               local <asset>/<unit>. The default value is 1.0.
+////////////////////////////////////////////////////////////////////
+INLINE const double ColladaAsset::
+get_unit_meter() const {
+  nassertr(_has_unit, 1.0);
+  return _unit_meter;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_unit_name
+//       Access: Public
+//  Description: Returns the name of the unit of distance for elements
+//               and objects.
+////////////////////////////////////////////////////////////////////
+INLINE const string &ColladaAsset::
+get_unit_name() const {
+  nassertr(_has_unit, "meter");
+  return _unit_name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::set_unit
+//       Access: Public
+//  Description: Sets the unit of distance for elements and objects.
+//               The first parameter is the number of real-world meters
+//               in one unit of distance. The second parameter is the
+//               name of the unit of distance.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaAsset::
+set_unit_meter(const double unit_meter, const string &unit_name) {
+  _unit_meter = unit_meter;
+  _unit_name = unit_name;
+  _has_unit = true;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_coordinate_system
 //       Access: Public
 //  Description: Returns the coordinate system in which the file
@@ -124,3 +252,4 @@ INLINE CoordinateSystem ColladaAsset::
 get_coordinate_system() const {
   return _coordsys;
 }
+
