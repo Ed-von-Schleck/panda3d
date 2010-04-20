@@ -1,4 +1,4 @@
-// Filename: colladaEffect.cxx
+// Filename: colladaMesh.cxx
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,8 +12,6 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaEffect.h"
+#include "colladaMesh.h"
 
-const string ColladaEffect::_element_name ("effect");
-const string ColladaEffect::_library_name ("library_effects");
-
+TypeHandle ColladaMesh::_type_handle;
