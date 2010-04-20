@@ -29,7 +29,7 @@ ColladaMaterial() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE ColladaMaterial::
-ColladaMaterial(ColladaInstanceEffect &effect) {
+ColladaMaterial(PT(ColladaInstanceEffect) effect) {
   clear();
   set_effect(effect);
 }
@@ -42,16 +42,16 @@ ColladaMaterial(ColladaInstanceEffect &effect) {
 INLINE void ColladaMaterial::
 clear() {
   ColladaAssetElement::clear();
-  _effect.clear();
+  _effect = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMaterial::get_effect
 //       Access: Public
-//  Description: Returns the ColladaInstanceEffect associated with this
-//               ColladaMaterial.
+//  Description: Returns the ColladaInstanceEffect associated with
+//               this ColladaMaterial.
 ////////////////////////////////////////////////////////////////////
-INLINE const ColladaInstanceEffect &ColladaMaterial::
+INLINE PT(ColladaInstanceEffect) ColladaMaterial::
 get_effect() const {
   return _effect;
 }
@@ -63,7 +63,7 @@ get_effect() const {
 //               ColladaMaterial.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaMaterial::
-set_effect(const ColladaInstanceEffect &effect) {
+set_effect(PT(ColladaInstanceEffect) effect) {
   _effect = effect;
 }
 

@@ -43,6 +43,9 @@ PUBLISHED:
   INLINE PT(T) get_element_by_id(const string &id) const;
 };
 
+// Specialize for ColladaNode to search recursively
+template<> INLINE PT(ColladaNode) ColladaLibrary<ColladaNode>::get_element_by_id(const string &id) const;
+
 typedef ColladaLibrary<ColladaEffect> ColladaLibraryEffects;
 typedef ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries;
 typedef ColladaLibrary<ColladaMaterial> ColladaLibraryMaterials;

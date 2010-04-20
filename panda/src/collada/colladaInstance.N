@@ -1,6 +1,12 @@
-forcetype ColladaInstance<ColladaVisualScene>
-renametype ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene
-
 forcetype ColladaInstance<ColladaEffect>
 renametype ColladaInstance<ColladaEffect> ColladaInstanceEffect
+
+forcetype ColladaInstance<ColladaGeometry>
+renametype ColladaInstance<ColladaGeometry> ColladaInstanceGeometry
+
+forcetype ColladaInstance<ColladaNode>
+renametype ColladaInstance<ColladaNode> ColladaInstanceNode
+
+forcetype ColladaInstance<ColladaVisualScene>
+renametype ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene
 

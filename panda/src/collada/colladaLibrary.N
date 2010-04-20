@@ -1,5 +1,15 @@
-forcetype ColladaLibrary<ColladaVisualScene>
-renametype ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes
+forcetype ColladaLibrary<ColladaEffect>
+renametype ColladaLibrary<ColladaEffect> ColladaLibraryEffects
+
+forcetype ColladaLibrary<ColladaGeometry>
+renametype ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries
+
+forcetype ColladaLibrary<ColladaMaterial>
+renametype ColladaLibrary<ColladaMaterial> ColladaLibraryMaterials
 
 forcetype ColladaLibrary<ColladaNode>
 renametype ColladaLibrary<ColladaNode> ColladaLibraryNodes
+
+forcetype ColladaLibrary<ColladaVisualScene>
+renametype ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes
+

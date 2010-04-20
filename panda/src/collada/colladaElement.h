@@ -16,17 +16,23 @@
 #define COLLADAELEMENT_H
 
 #include "config_collada.h"
-#include "namable.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaElement
 // Description : Object that represents the <element> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaElement : public Namable {
+class EXPCL_COLLADA ColladaElement {
 PUBLISHED:
+  INLINE ColladaElement();
+
   INLINE virtual void clear();
   INLINE virtual bool load_xml(const TiXmlElement *element);
   INLINE virtual TiXmlElement *make_xml() const;
+
+  INLINE void set_name(const string &name);
+  INLINE void clear_name();
+  INLINE bool has_name() const;
+  INLINE const string &get_name() const;
 
   INLINE void set_id(const string &id);
   INLINE void clear_id();
@@ -34,6 +40,7 @@ PUBLISHED:
   INLINE const string &get_id() const;
 
 private:
+  string _name;
   string _id;
 
 };

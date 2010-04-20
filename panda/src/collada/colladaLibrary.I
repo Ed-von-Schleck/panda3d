@@ -87,3 +87,28 @@ get_element_by_id(const string &id) const {
   }
   return NULL;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaLibraryNodes::get_element_by_id
+//       Access: Public
+//  Description: Returns the element in the nodes library that has
+//               the given ID, or NULL if none found.
+//               Searches recursively for subnodes as well.
+////////////////////////////////////////////////////////////////////
+template<>
+INLINE PT(ColladaNode) ColladaLibrary<ColladaNode>::
+get_element_by_id(const string &id) const {
+  PT(ColladaNode) res;
+  for (int i = 0; i < pvector<PT(ColladaNode) >::size(); ++i) {
+    res = pvector<PT(ColladaNode) >::at(i);
+    if (res->get_id() == id) {
+      return res;
+    } else {
+      res = res->get_element_by_id(id);
+      if (res != NULL) {
+        return res;
+      }
+    }
+  }
+  return NULL;
+}

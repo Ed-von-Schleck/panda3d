@@ -51,14 +51,9 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
     }
   }
 
-  const TiXmlElement* xnode = xelement->FirstChildElement("node");
-  while (xnode != NULL) {
-    PT(ColladaNode) node = new ColladaNode;
-    node->load_xml(xnode, newcs);
-    _nodes.push_back(node);
-    xnode = xnode->NextSiblingElement("node");
-  }
+  const TiXmlElement* xchild;
 
+  // Read out the node type
   const char* type = xelement->Attribute("type");
   if (type) {
     if (cmp_nocase(type, "NODE") == 0) {
@@ -72,19 +67,38 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
     }
   }
 
+  // Read out the child nodes
+  xchild = xelement->FirstChildElement("node");
+  while (xchild != NULL) {
+    PT(ColladaNode) node = new ColladaNode;
+    node->load_xml(xchild, newcs);
+    _nodes.push_back(node);
+    xchild = xchild->NextSiblingElement("node");
+  }
+
+  // Read out any instances to nodes
+  xchild = xelement->FirstChildElement("instance_node");
+  while (xchild != NULL) {
+    PT(ColladaInstanceNode) inst = new ColladaInstanceNode;
+    //TODO: figure out what to do with newcs here
+    inst->load_xml(xchild);
+    _instance_nodes.push_back(inst);
+    xchild = xchild->NextSiblingElement("instance_node");
+  }
+
   //TODO: handle layers (binning?)
 
   // Iterate over the elements to apply the transforms one by one
   //TODO: coordinate system conversion
-  const TiXmlElement* xtransform = xelement->FirstChildElement();
-  while (xtransform != NULL) {
-    const string ttype (xtransform->Value());
+  xchild = xelement->FirstChildElement();
+  while (xchild != NULL) {
+    const string ttype (xchild->Value());
     if (ttype == "lookat") {
       collada_cat.error() << "<lookat> elements are not supported yet!\n";
       okflag = false;
     } else if (ttype == "matrix") {
       vector_string m;
-      tokenize(trim(xtransform->GetText()), m, " ", true);
+      tokenize(trim(xchild->GetText()), m, " ", true);
       if (m.size() == 16) {
         _transform *= LMatrix4d(
           patof(m[0].c_str()), patof(m[4].c_str()), patof(m[8].c_str()), patof(m[12].c_str()),
@@ -97,7 +111,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       }
     } else if (ttype == "rotate") {
       vector_string r;
-      tokenize(trim(xtransform->GetText()), r, " ", true);
+      tokenize(trim(xchild->GetText()), r, " ", true);
       if (r.size() == 4) {
         _transform *= LMatrix4d::rotate_mat(patof(r[3].c_str()), LVecBase3d(
           patof(r[0].c_str()), patof(r[1].c_str()), patof(r[2].c_str())));
@@ -107,7 +121,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       }
     } else if (ttype == "scale") {
       vector_string v;
-      tokenize(trim(xtransform->GetText()), v, " ", true);
+      tokenize(trim(xchild->GetText()), v, " ", true);
       if (v.size() == 3) {
         _transform *= LMatrix4d::scale_mat(
           patof(v[0].c_str()), patof(v[1].c_str()), patof(v[2].c_str()));
@@ -120,7 +134,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       okflag = false;
     } else if (ttype == "translate") {
       vector_string v;
-      tokenize(trim(xtransform->GetText()), v, " ", true);
+      tokenize(trim(xchild->GetText()), v, " ", true);
       if (v.size() == 3) {
         _transform *= LMatrix4d::translate_mat(
           patof(v[0].c_str()), patof(v[1].c_str()), patof(v[2].c_str()));
@@ -129,7 +143,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
         okflag = false;
       }
     }
-    xtransform = xtransform->NextSiblingElement();
+    xchild = xchild->NextSiblingElement();
   }
 
   return okflag;
@@ -210,5 +224,41 @@ make_node() const {
     pnode->add_child(_nodes.at(i)->make_node());
   }
 
+  for (int i = 0; i < _instance_nodes.size(); ++i) {
+    PT(ColladaNode) target = _instance_nodes.at(i)->_target;
+    nassertd(target != NULL) continue;
+    // Make sure that we re-use the same node, for the sake of instancing
+    PT(PandaNode) targetnode = target->_cached_node;
+    if (targetnode == NULL) {
+      targetnode = target->make_node();
+    }
+    pnode->add_child(targetnode);
+  }
+
+  ((ColladaNode*)this)->_cached_node = pnode;
   return pnode;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaNode::get_element_by_id
+//       Access: Public
+//  Description: Returns the element in the node hierarchy that has
+//               the given ID, or NULL if none found.
+//               Searches recursively for subnodes as well.
+////////////////////////////////////////////////////////////////////
+INLINE PT(ColladaNode) ColladaNode::
+get_element_by_id(const string &id) const {
+  PT(ColladaNode) res;
+  for (int i = 0; i < _nodes.size(); ++i) {
+    res = _nodes.at(i);
+    if (res->get_id() == id) {
+      return res;
+    } else {
+      res = res->get_element_by_id(id);
+      if (res != NULL) {
+        return res;
+      }
+    }
+  }
+  return NULL;
 }

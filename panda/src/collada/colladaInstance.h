@@ -23,6 +23,8 @@
 
 class ColladaData;
 class ColladaEffect;
+class ColladaGeometry;
+class ColladaNode;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
@@ -31,7 +33,7 @@ class ColladaVisualScene;
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaInstance : public ColladaElement {
+class EXPCL_COLLADA ColladaInstance : public ReferenceCount, public ColladaElement {
 PUBLISHED:
   INLINE virtual void clear();
   INLINE bool is_empty() const;
@@ -41,6 +43,9 @@ PUBLISHED:
   INLINE virtual bool load_xml(const TiXmlElement *xelement);
   INLINE virtual TiXmlElement *make_xml() const;
 
+public:
+  PT(T) _target;
+
 private:
   string _url;
 
@@ -48,6 +53,8 @@ private:
 };
 
 typedef ColladaInstance<ColladaEffect> ColladaInstanceEffect;
+typedef ColladaInstance<ColladaGeometry> ColladaInstanceGeometry;
+typedef ColladaInstance<ColladaNode> ColladaInstanceNode;
 typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 
 #include "colladaInstance.I"

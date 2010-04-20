@@ -37,9 +37,11 @@ PUBLISHED:
   };
 
 public:
-  bool load_xml(const TiXmlElement *xelement, const CoordinateSystem cs = CS_default);
+  virtual bool load_xml(const TiXmlElement *xelement, const CoordinateSystem cs = CS_default);
   virtual TiXmlElement * make_xml() const;
   virtual PT(PandaNode) make_node() const;
+
+  PT(ColladaNode) get_element_by_id(const string &id) const;
 
   // Needed by ColladaLibrary to validate the element names
   static const string _element_name;
@@ -49,7 +51,11 @@ private:
   PT(ColladaAsset) _asset;
   NodeType _node_type;
   pvector<PT(ColladaNode)> _nodes;
+  pvector<PT(ColladaInstanceNode)> _instance_nodes;
   LMatrix4d _transform;
+
+  // Used for instancing purposes
+  PT(PandaNode) _cached_node;
 
 public:
   static TypeHandle get_class_type() {

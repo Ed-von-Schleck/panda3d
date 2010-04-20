@@ -26,14 +26,14 @@
 class EXPCL_COLLADA ColladaMaterial : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
   INLINE ColladaMaterial();
-  INLINE ColladaMaterial(ColladaInstanceEffect &effect);
+  INLINE ColladaMaterial(PT(ColladaInstanceEffect) effect);
   INLINE virtual void clear();
 
-  INLINE const ColladaInstanceEffect &get_effect() const;
-  INLINE void set_effect(const ColladaInstanceEffect &effect);
+  INLINE PT(ColladaInstanceEffect) get_effect() const;
+  INLINE void set_effect(PT(ColladaInstanceEffect) effect);
 
 private:
-  ColladaInstanceEffect _effect;
+  PT(ColladaInstanceEffect) _effect;
 
 public:
   // Needed by ColladaLibrary to validate the element names.

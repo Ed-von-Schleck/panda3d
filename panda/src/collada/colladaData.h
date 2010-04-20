@@ -66,11 +66,11 @@ PUBLISHED:
   INLINE const Filename &get_filename() const;
 
 public:
-  template<class T> INLINE PT(T) resolve_instance(const ColladaInstance<T> &inst) const;
+  template<class T> INLINE PT(T) resolve_instance(CPT(ColladaInstance<T>) inst) const;
 
 private:
   Filename _filename;
-  ColladaInstanceVisualScene _instance_visual_scene;
+  PT(ColladaInstanceVisualScene) _instance_visual_scene;
   ColladaLibraryEffects _library_effects;
   ColladaLibraryGeometries _library_geometries;
   ColladaLibraryMaterials _library_materials;

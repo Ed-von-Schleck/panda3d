@@ -21,16 +21,6 @@ TypeHandle ColladaAsset::_type_handle;
 #define TIME_FORMAT "%Y-%m-%dT%H:%M:%S"
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaAsset::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-ColladaAsset::
-ColladaAsset() {
-  clear();
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::clear
 //       Access: Public
 //  Description: Resets the ColladaAsset to its initial state.

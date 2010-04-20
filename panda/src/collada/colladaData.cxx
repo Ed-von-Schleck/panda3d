@@ -56,7 +56,7 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
 void ColladaData::
 clear() {
   ColladaAssetElement::clear();
-  _instance_visual_scene.clear();
+  _instance_visual_scene = NULL;
   _library_effects.clear();
   _library_geometries.clear();
   _library_materials.clear();
@@ -197,7 +197,8 @@ load_xml(const TiXmlElement *xelement) {
     const TiXmlElement *xinst;
     xinst = xchild->FirstChildElement("instance_visual_scene");
     if (xinst != NULL) {
-      _instance_visual_scene.load_xml(xinst);
+      _instance_visual_scene = new ColladaInstanceVisualScene;
+      _instance_visual_scene->load_xml(xinst);
     }
   }
 
@@ -244,8 +245,8 @@ make_xml() const {
   }
 
   TiXmlElement * xscene = new TiXmlElement("scene");
-  if (!_instance_visual_scene.is_empty()) {
-    xscene->LinkEndChild(_instance_visual_scene.make_xml());
+  if (_instance_visual_scene != NULL) {
+    xscene->LinkEndChild(_instance_visual_scene->make_xml());
   }
   xelement->LinkEndChild(xscene);
 
@@ -263,7 +264,7 @@ PT(PandaNode) ColladaData::
 make_node() const {
   PT(ModelRoot) node = new ModelRoot(_filename.get_basename());
 
-  if (!_instance_visual_scene.is_empty()) {
+  if (_instance_visual_scene != NULL) {
     CPT(ColladaVisualScene) vis_scene;
     vis_scene = resolve_instance<ColladaVisualScene>(_instance_visual_scene);
     if (vis_scene != NULL) {

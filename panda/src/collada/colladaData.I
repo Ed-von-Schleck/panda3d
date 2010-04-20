@@ -69,17 +69,17 @@ get_filename() const {
 ////////////////////////////////////////////////////////////////////
 template<class T>
 INLINE PT(T) ColladaData::
-resolve_instance(const ColladaInstance<T> &inst) const {
-  if (inst._url.empty()) {
+resolve_instance(CPT(ColladaInstance<T>) inst) const {
+  if (inst->_url.empty()) {
     return NULL;
   }
 
-  if (inst._url[0] != '#') {
-    collada_cat.warning() << "URL '" << inst._url << "' is not local, cannot resolve\n";
+  if (inst->_url[0] != '#') {
+    collada_cat.warning() << "URL '" << inst->_url << "' is not local, cannot resolve\n";
     return NULL;
   }
 
-  string id = inst._url.substr(1);
+  string id = inst->_url.substr(1);
   const TypeHandle &handle = T::get_class_type();
   if (handle == ColladaEffect::get_class_type()) {
     return DCAST(T, _library_effects.get_element_by_id(id));

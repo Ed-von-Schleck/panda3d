@@ -29,7 +29,6 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaAsset : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
-  ColladaAsset();
   virtual void clear();
 
   INLINE const string &get_title() const;

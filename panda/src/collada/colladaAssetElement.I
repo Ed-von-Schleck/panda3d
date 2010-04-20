@@ -60,7 +60,7 @@ load_xml(const TiXmlElement *xelement) {
 
   xchild = xelement->FirstChildElement("asset");
   if (xchild != NULL) {
-    _asset = new ColladaAsset();
+    _asset = new ColladaAsset;
     return _asset->load_xml(xchild);
   } else {
     _asset = NULL;

@@ -23,6 +23,7 @@ template<class T>
 INLINE void ColladaInstance<T>::
 clear () {
   ColladaElement::clear();
+  _target = NULL;
   _url.clear();
 }
 
