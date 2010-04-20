@@ -28,6 +28,7 @@ public:
   static const string _element_name;
   static const string _library_name;
 
+public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }

@@ -20,9 +20,9 @@
 #include "config_collada.h"
 #include "pointerTo.h"
 #include "colladaElement.h"
-#include "colladaEffect.h"
 
-//class ColladaEffect;
+class ColladaData;
+class ColladaEffect;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
@@ -41,13 +41,15 @@ PUBLISHED:
   INLINE bool load_xml(const TiXmlElement *xelement);
   INLINE TiXmlElement *make_xml() const;
 
+  //INLINE PT(T) resolve(const ColladaData &data) const;
+
 private:
   string _url;
 
 };
 
-typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 typedef ColladaInstance<ColladaEffect> ColladaInstanceEffect;
+typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 
 #include "colladaInstance.I"
 

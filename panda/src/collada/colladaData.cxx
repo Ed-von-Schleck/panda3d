@@ -56,6 +56,9 @@ clear() {
   ColladaAssetElement::clear();
   _filename = "";
   _instance_visual_scene.clear();
+  _library_effects.clear();
+  _library_geometries.clear();
+  _library_materials.clear();
   _library_nodes.clear();
   _library_visual_scenes.clear();
 }
@@ -166,6 +169,21 @@ load_xml(const TiXmlElement *xelement) {
 
   const TiXmlElement *xchild;
 
+  xchild = xelement->FirstChildElement("library_effects");
+  if (xchild != NULL) {
+    _library_effects.load_xml(xchild);
+  }
+
+  xchild = xelement->FirstChildElement("library_geometries");
+  if (xchild != NULL) {
+    _library_geometries.load_xml(xchild);
+  }
+
+  xchild = xelement->FirstChildElement("library_materials");
+  if (xchild != NULL) {
+    _library_materials.load_xml(xchild);
+  }
+
   xchild = xelement->FirstChildElement("library_nodes");
   if (xchild != NULL) {
     _library_nodes.load_xml(xchild);
@@ -208,9 +226,18 @@ make_xml() const {
   xelement->SetAttribute("xmlns", "http://www.collada.org/2008/03/COLLADASchema");
 
   if (!_asset) {
-    //FIXME: what to do when there is no asset? collada spec requires one, I'm pretty certain
+    //FIXME: what to do when there is no asset? collada spec requires one, I'm fairly certain
   }
 
+  if (_library_effects.size() > 0) {
+    xelement->LinkEndChild(_library_effects.make_xml());
+  }
+  if (_library_geometries.size() > 0) {
+    xelement->LinkEndChild(_library_geometries.make_xml());
+  }
+  if (_library_materials.size() > 0) {
+    xelement->LinkEndChild(_library_materials.make_xml());
+  }
   if (_library_nodes.size() > 0) {
     xelement->LinkEndChild(_library_nodes.make_xml());
   }

@@ -12,6 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+#include "colladaGeometry.h"
+
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInstance::clear
 //       Access: Public
@@ -89,7 +91,7 @@ load_xml(const TiXmlElement *xelement) {
 //  Description: Returns a new TiXmlElement representing the instance.
 ////////////////////////////////////////////////////////////////////
 template<class T>
-INLINE TiXmlElement * ColladaInstance<T>::
+INLINE TiXmlElement *ColladaInstance<T>::
 make_xml() const {
   TiXmlElement * xelement = ColladaElement::make_xml();
   xelement->SetValue("instance_" + T::_element_name);
@@ -99,3 +101,13 @@ make_xml() const {
   return xelement;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaLibrary::resolve
+//       Access: Public
+//  Description: Returns a pointer to the class that this
+//               instance points at, or NULL if it was not found.
+////////////////////////////////////////////////////////////////////
+/*template<>
+INLINE PT(ColladaGeometry) ColladaInstance<ColladaGeometry>::
+resolve(const ColladaData &data) const {
+}*/

@@ -16,6 +16,7 @@
 #define COLLADAMATERIAL_H
 
 #include "colladaAssetElement.h"
+#include "colladaInstance.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
@@ -24,6 +25,7 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaMaterial : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
+  INLINE ColladaMaterial();
   INLINE ColladaMaterial(ColladaInstanceEffect &effect);
   INLINE virtual void clear();
 
@@ -38,6 +40,7 @@ public:
   static const string _element_name;
   static const string _library_name;
 
+public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }

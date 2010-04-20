@@ -29,7 +29,7 @@ public:
   static void init_type() {
     ColladaGeometry::init_type();
     register_type(_type_handle, "ColladaMesh",
-                  TypedReferenceCount::get_class_type());
+                  ColladaGeometry::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

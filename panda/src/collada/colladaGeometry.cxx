@@ -1,5 +1,5 @@
-// Filename: colladaEffect.cxx
-// Created by: Xidram (20Apr10)
+// Filename: colladaGeometry.cxx
+// Created by: rdb (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,9 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaEffect.h"
+#include "colladaGeometry.h"
 
-TypeHandle ColladaEffect::_type_handle;
-const string ColladaEffect::_element_name ("effect");
-const string ColladaEffect::_library_name ("library_effects");
-
+TypeHandle ColladaGeometry::_type_handle;
+const string ColladaGeometry::_element_name ("geometry");
+const string ColladaGeometry::_library_name ("library_geometries");

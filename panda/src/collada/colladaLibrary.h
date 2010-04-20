@@ -23,7 +23,10 @@
 #include "pvector.h"
 #include "pointerTo.h"
 
+class ColladaEffect;
+class ColladaGeometry;
 class ColladaNode;
+class ColladaMaterial;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
@@ -39,10 +42,12 @@ PUBLISHED:
   INLINE TiXmlElement * make_xml() const;
 };
 
-typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;
+typedef ColladaLibrary<ColladaEffect> ColladaLibraryEffects;
+typedef ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries;
+typedef ColladaLibrary<ColladaMaterial> ColladaLibraryMaterials;
 typedef ColladaLibrary<ColladaNode> ColladaLibraryNodes;
+typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;
 
 #include "colladaLibrary.I"
 
 #endif
-

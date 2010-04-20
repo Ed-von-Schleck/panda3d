@@ -68,4 +68,3 @@ make_xml() const {
 
   return xelement;
 }
-
