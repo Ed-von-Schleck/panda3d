@@ -73,12 +73,12 @@ make_xml() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVisualScene::make_node
 //       Access: Public
-//  Description: Returns a new ModelRoot representing this
+//  Description: Returns a new ModelNode representing this
 //               COLLADA visual scene and the nodes below it.
 ////////////////////////////////////////////////////////////////////
 PT(PandaNode) ColladaVisualScene::
 make_node() const {
-  PT(ModelRoot) pnode = new ModelRoot(get_name());
+  PT(ModelNode) pnode = new ModelNode(get_name());
 
   for (int i = 0; i < _nodes.size(); ++i) {
     pnode->add_child(_nodes.at(i)->make_node());

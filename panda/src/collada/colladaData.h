@@ -55,6 +55,7 @@ PUBLISHED:
 
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement * make_xml() const;
+  virtual PT(PandaNode) make_node() const;
 
   bool write_dae(Filename filename) const;
   bool write_dae(ostream &out) const;
@@ -65,7 +66,7 @@ PUBLISHED:
   INLINE const Filename &get_filename() const;
 
 public:
-  template<class T> INLINE PT(T) resolve_instance(ColladaInstance<T> &inst) const;
+  template<class T> INLINE PT(T) resolve_instance(const ColladaInstance<T> &inst) const;
 
 private:
   Filename _filename;

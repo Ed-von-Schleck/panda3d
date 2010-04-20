@@ -17,6 +17,7 @@
 #include "config_util.h"
 #include "config_express.h"
 #include "string_utils.h"
+#include "modelRoot.h"
 #include "dSearchPath.h"
 #include "virtualFileSystem.h"
 #include "zStream.h"
@@ -50,11 +51,11 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
 //       Access: Public
 //  Description: Resets the stored data of this ColladaData,
 //               and makes it as if it were a new instance.
+//               Note that the filename value is not cleared.
 ////////////////////////////////////////////////////////////////////
 void ColladaData::
 clear() {
   ColladaAssetElement::clear();
-  _filename = "";
   _instance_visual_scene.clear();
   _library_effects.clear();
   _library_geometries.clear();
@@ -71,9 +72,6 @@ clear() {
 //               successfully opened and read, false if there were
 //               some errors, in which case the data may be partially
 //               read.
-//
-//               error is the output stream to which to write error
-//               messages.
 ////////////////////////////////////////////////////////////////////
 bool ColladaData::
 read(Filename filename, string display_name) {
@@ -252,6 +250,28 @@ make_xml() const {
   xelement->LinkEndChild(xscene);
 
   return xelement;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaData::make_node
+//       Access: Public
+//  Description: The main interface for loading COLLADA data
+//               into the scene graph. Returns a ModelRoot
+//               representing the ColladaData and its children.
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) ColladaData::
+make_node() const {
+  PT(ModelRoot) node = new ModelRoot(_filename.get_basename());
+
+  if (!_instance_visual_scene.is_empty()) {
+    CPT(ColladaVisualScene) vis_scene;
+    vis_scene = resolve_instance<ColladaVisualScene>(_instance_visual_scene);
+    if (vis_scene != NULL) {
+      node->add_child(vis_scene->make_node());
+    }
+  }
+
+  return DCAST(PandaNode, node);
 }
 
 ////////////////////////////////////////////////////////////////////

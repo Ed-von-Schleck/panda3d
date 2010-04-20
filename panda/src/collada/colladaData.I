@@ -69,7 +69,7 @@ get_filename() const {
 ////////////////////////////////////////////////////////////////////
 template<class T>
 INLINE PT(T) ColladaData::
-resolve_instance(ColladaInstance<T> &inst) const {
+resolve_instance(const ColladaInstance<T> &inst) const {
   if (inst._url.empty()) {
     return NULL;
   }
@@ -80,7 +80,7 @@ resolve_instance(ColladaInstance<T> &inst) const {
   }
 
   string id = inst._url.substr(1);
-  TypeHandle &handle = T::get_class_type();
+  const TypeHandle &handle = T::get_class_type();
   if (handle == ColladaEffect::get_class_type()) {
     return DCAST(T, _library_effects.get_element_by_id(id));
   } else if (handle == ColladaGeometry::get_class_type()) {
