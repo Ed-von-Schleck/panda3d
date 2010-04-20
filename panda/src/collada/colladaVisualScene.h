@@ -21,7 +21,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaVisualScene
-// Description : Object that represents the <visual_scene> COLLADA tag.
+// Description : Object that represents the <visual_scene> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaVisualScene : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:

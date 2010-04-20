@@ -23,7 +23,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaNode
-// Description : Object that represents the <node> COLLADA tag.
+// Description : Object that represents the <node> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaNode : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:

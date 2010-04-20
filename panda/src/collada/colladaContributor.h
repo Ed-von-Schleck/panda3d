@@ -20,7 +20,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaContributor
-// Description : Object that represents the <contributor> COLLADA tag.
+// Description : Object that represents the <contributor> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaContributor : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:

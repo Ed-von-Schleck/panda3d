@@ -25,7 +25,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaAsset
-// Description : Object that represents the <asset> COLLADA tag.
+// Description : Object that represents the <asset> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaAsset : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
