@@ -14,6 +14,7 @@
 
 #include "colladaMaterial.h"
 
-const string ColladaEffect::_element_name ("material");
-const string ColladaEffect::_library_name ("library_materials");
+TypeHandle ColladaMaterial::_type_handle;
+const string ColladaMaterial::_element_name ("material");
+const string ColladaMaterial::_library_name ("library_materials");
 

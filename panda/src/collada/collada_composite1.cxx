@@ -4,6 +4,7 @@
 #include "colladaEffect.cxx"
 #include "colladaGeometry.cxx"
 #include "colladaLoader.cxx"
+#include "colladaMaterial.cxx"
 #include "colladaMesh.cxx"
 #include "colladaNode.cxx"
 #include "colladaVisualScene.cxx"

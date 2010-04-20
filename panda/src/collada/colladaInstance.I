@@ -107,7 +107,7 @@ make_xml() const {
 //  Description: Returns a pointer to the class that this
 //               instance points at, or NULL if it was not found.
 ////////////////////////////////////////////////////////////////////
-/*template<>
-INLINE PT(ColladaGeometry) ColladaInstance<ColladaGeometry>::
+template<class T>
+INLINE PT(T) ColladaInstance<T>::
 resolve(const ColladaData &data) const {
-}*/
+}

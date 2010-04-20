@@ -18,3 +18,12 @@ TypeHandle ColladaEffect::_type_handle;
 const string ColladaEffect::_element_name ("effect");
 const string ColladaEffect::_library_name ("library_effects");
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaEffect::clear
+//       Access: Public
+//  Description: Resets the ColladaEffect to its initial state.
+////////////////////////////////////////////////////////////////////
+void ColladaEffect::
+clear () {
+  ColladaAssetElement::clear();
+}

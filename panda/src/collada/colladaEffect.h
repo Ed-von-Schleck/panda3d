@@ -23,6 +23,9 @@
 // Description : Object that represents the <effect> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement, public TypedReferenceCount {
+PUBLISHED:
+  virtual void clear();
+
 public:
   // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
