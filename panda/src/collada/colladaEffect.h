@@ -1,4 +1,4 @@
-// Filename: colladaGeometry.h
+// Filename: colladaEffect.h
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,24 +12,28 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAGEOMETRY_H
-#define COLLADAGEOMETRY_H
+#ifndef COLLADAEFFECT_H
+#define COLLADAEFFECT_H
 
 #include "colladaAssetElement.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaGeometry
-// Description : Object that represents the <geometry> COLLADA element.
+//       Class : ColladaEffect
+// Description : Object that represents the <effect> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement, public TypedReferenceCount {
 public:
+  // Needed by ColladaLibrary to validate the element names.
+  static const string _element_name;
+  static const string _library_name;
+
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaGeometry",
+    register_type(_type_handle, "ColladaAsset",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {

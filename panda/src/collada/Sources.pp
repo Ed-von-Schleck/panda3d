@@ -15,6 +15,7 @@
     colladaAssetElement.h colladaAssetElement.I \
     colladaContributor.h colladaContributor.I \
     colladaData.h colladaData.I \
+    colladaEffect.h \
     colladaElement.h colladaElement.I \
     colladaGeometry.h \
     colladaInstance.h colladaInstance.I colladaInstance.N \
@@ -32,7 +33,10 @@
     colladaAsset.cxx \
     colladaContributor.cxx \
     colladaData.cxx \
+    colladaEffect.cxx \
+    colladaGeometry.cxx \
     colladaLoader.cxx \
+    colladaMesh.cxx \
     colladaNode.cxx \
     colladaVisualScene.cxx \
     config_collada.cxx \
@@ -44,6 +48,7 @@
     colladaAssetElement.h colladaAssetElement.I \
     colladaContributor.h colladaContributor.I \
     colladaData.h colladaData.I \
+    colladaEffect.h \
     colladaElement.h colladaElement.I \
     colladaGeometry.h \
     colladaInstance.h colladaInstance.I \

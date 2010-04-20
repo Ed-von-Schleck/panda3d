@@ -18,6 +18,9 @@
 #include "colladaAsset.h"
 #include "colladaContributor.h"
 #include "colladaData.h"
+#include "colladaEffect.h"
+#include "colladaGeometry.h"
+#include "colladaMesh.h"
 #include "colladaNode.h"
 #include "colladaVisualScene.h"
 #include "loaderFileTypeDae.h"
@@ -88,6 +91,9 @@ init_libcollada() {
   ColladaAsset::init_type();
   ColladaContributor::init_type();
   ColladaData::init_type();
+  ColladaEffect::init_type();
+  ColladaGeometry::init_type();
+  ColladaMesh::init_type();
   ColladaNode::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();

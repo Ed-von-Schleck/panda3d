@@ -33,7 +33,7 @@ public:
   virtual TiXmlElement * make_xml() const;
   PT(PandaNode) make_node() const;
 
-  // Needed by ColladaLibrary to validate the element names
+  // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
   static const string _library_name;
 
