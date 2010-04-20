@@ -23,6 +23,7 @@
     colladaMaterial.h \
     colladaMesh.h \
     colladaNode.h \
+    colladaProfile.h colladaProfile.I \
     colladaSource.h \
     colladaVisualScene.h \
     config_collada.h \
@@ -38,6 +39,7 @@
     colladaMaterial.cxx \
     colladaMesh.cxx \
     colladaNode.cxx \
+    colladaProfile.cxx \
     colladaVisualScene.cxx \
     config_collada.cxx \
     load_collada_file.cxx \
@@ -56,6 +58,7 @@
     colladaMaterial.h \
     colladaMesh.h \
     colladaNode.h \
+    colladaProfile.h colladaProfile.I \
     colladaSource.h \
     colladaVisualScene.h \
     config_collada.h \

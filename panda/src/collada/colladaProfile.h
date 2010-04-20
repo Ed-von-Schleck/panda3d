@@ -1,4 +1,4 @@
-// Filename: colladaEffect.h
+// Filename: colladaProfile.h
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,32 +12,19 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAEFFECT_H
-#define COLLADAEFFECT_H
+#ifndef COLLADAPROFILE_H
+#define COLLADAPROFILE_H
 
 #include "colladaAssetElement.h"
-#include "colladaProfile.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaEffect
-// Description : Object that represents the <effect> COLLADA element.
+//       Class : ColladaProfile
+// Description : Base class for all the different COLLADA profiles.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaProfile : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
   virtual void clear();
-
-  INLINE void add_profile(PT(ColladaProfile) profile);
-  INLINE PT(ColladaProfile) get_profile(int index) const;
-  INLINE int get_num_profiles() const;
-
-private:
-  pvector<PT(ColladaProfile)> _profiles;
-
-public:
-  // Needed by ColladaLibrary to validate the element names.
-  static const string _element_name;
-  static const string _library_name;
 
 public:
   static TypeHandle get_class_type() {
@@ -45,7 +32,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaEffect",
+    register_type(_type_handle, "ColladaProfile",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -57,7 +44,7 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "colladaEffect.I"
+#include "colladaProfile.I"
 
 #endif
 

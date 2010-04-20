@@ -102,7 +102,7 @@ set_revision(const string &revision) {
 //  Description: Returns true if <geographic_location> is defined in
 //               this asset and false if it is not.
 ////////////////////////////////////////////////////////////////////
-INLINE const bool ColladaAsset::
+INLINE bool ColladaAsset::
 has_geographic_location() const {
   return _has_geographic_location;
 }
@@ -112,7 +112,7 @@ has_geographic_location() const {
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE const double ColladaAsset::
+INLINE double ColladaAsset::
 get_longitude() const {
   return _longitude;
 }
@@ -122,7 +122,7 @@ get_longitude() const {
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE const double ColladaAsset::
+INLINE double ColladaAsset::
 get_latitude() const {
   return _latitude;
 }
@@ -132,7 +132,7 @@ get_latitude() const {
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE const double ColladaAsset::
+INLINE double ColladaAsset::
 get_altitude() const {
   return _altitude;
 }
@@ -142,7 +142,7 @@ get_altitude() const {
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE const ColladaAsset::AltitudeMode ColladaAsset::
+INLINE ColladaAsset::AltitudeMode ColladaAsset::
 get_altitude_mode() const {
   nassertr(_has_geographic_location, AM_relativeToGround);
   return _altitude_mode;
@@ -154,8 +154,8 @@ get_altitude_mode() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaAsset::
-set_geographic_location(const double longitude, const double latitude,
-  const double altitude, const AltitudeMode altitude_mode) {
+set_geographic_location(double longitude, double latitude, double altitude,
+                        AltitudeMode altitude_mode) {
   _longitude = longitude;
   _latitude = latitude;
   _altitude = altitude;
@@ -180,7 +180,7 @@ clear_geographic_location() {
 //  Description: Returns true if <unit> is defined in this asset and
 //               false if it is not.
 ////////////////////////////////////////////////////////////////////
-INLINE const bool ColladaAsset::
+INLINE bool ColladaAsset::
 has_unit() const {
   return _has_unit;
 }
@@ -194,7 +194,7 @@ has_unit() const {
 //               the <asset>'s parent element unless overridden by a more
 //               local <asset>/<unit>. The default value is 1.0.
 ////////////////////////////////////////////////////////////////////
-INLINE const double ColladaAsset::
+INLINE double ColladaAsset::
 get_unit_meter() const {
   nassertr(_has_unit, 1.0);
   return _unit_meter;
@@ -221,7 +221,7 @@ get_unit_name() const {
 //               name of the unit of distance.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaAsset::
-set_unit(const double unit_meter, const string &unit_name) {
+set_unit(double unit_meter, const string &unit_name) {
   _unit_meter = unit_meter;
   _unit_name = unit_name;
   _has_unit = true;

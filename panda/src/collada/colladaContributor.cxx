@@ -34,7 +34,7 @@ clear() {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::load_xml
 //       Access: Public
-//  Description: Loads <asset> data from a TiXmlElement.
+//  Description: Loads <contributor> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaContributor::
 load_xml(const TiXmlElement *xelement) {
@@ -88,7 +88,7 @@ load_xml(const TiXmlElement *xelement) {
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////
-TiXmlElement * ColladaContributor::
+TiXmlElement *ColladaContributor::
 make_xml() const {
   TiXmlElement *xelement = ColladaElement::make_xml();
   xelement->SetValue("contributor");
@@ -139,3 +139,4 @@ make_xml() const {
 
   return xelement;
 }
+

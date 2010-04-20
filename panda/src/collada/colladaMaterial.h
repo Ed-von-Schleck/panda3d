@@ -29,6 +29,9 @@ PUBLISHED:
   INLINE ColladaMaterial(PT(ColladaInstanceEffect) effect);
   INLINE virtual void clear();
 
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
+
   INLINE PT(ColladaInstanceEffect) get_effect() const;
   INLINE void set_effect(PT(ColladaInstanceEffect) effect);
 

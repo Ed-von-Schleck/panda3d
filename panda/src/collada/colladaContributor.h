@@ -25,6 +25,7 @@
 class EXPCL_COLLADA ColladaContributor : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
   virtual void clear();
+
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
@@ -79,3 +80,4 @@ private:
 #include "colladaContributor.I"
 
 #endif
+

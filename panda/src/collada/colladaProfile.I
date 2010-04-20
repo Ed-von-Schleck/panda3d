@@ -1,4 +1,4 @@
-// Filename: colladaEffect.cxx
+// Filename: colladaProfile.I
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,19 +12,14 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaEffect.h"
-
-TypeHandle ColladaEffect::_type_handle;
-const string ColladaEffect::_element_name ("effect");
-const string ColladaEffect::_library_name ("library_effects");
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaEffect::clear
+//     Function: ColladaProfile::clear
 //       Access: Public
-//  Description: Resets the ColladaEffect to its initial state.
+//  Description: Resets the ColladaProfile to its initial state.
 ////////////////////////////////////////////////////////////////////
-void ColladaEffect::
-clear () {
+INLINE void ColladaProfile::
+clear() {
   ColladaAssetElement::clear();
 }
 

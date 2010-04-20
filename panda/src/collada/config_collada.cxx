@@ -23,6 +23,7 @@
 #include "colladaMaterial.h"
 #include "colladaMesh.h"
 #include "colladaNode.h"
+#include "colladaProfile.h"
 #include "colladaVisualScene.h"
 #include "loaderFileTypeDae.h"
 #include "loaderFileTypeRegistry.h"
@@ -97,6 +98,7 @@ init_libcollada() {
   ColladaMaterial::init_type();
   ColladaMesh::init_type();
   ColladaNode::init_type();
+  ColladaProfile::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();
 

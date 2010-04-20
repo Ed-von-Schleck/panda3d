@@ -48,19 +48,19 @@ PUBLISHED:
     AM_relativeToGround
   };
 
-  INLINE const bool has_geographic_location() const;
-  INLINE const double get_longitude() const;
-  INLINE const double get_latitude() const;
-  INLINE const double get_altitude() const;
-  INLINE const AltitudeMode get_altitude_mode() const;
-  INLINE void set_geographic_location(const double longitude,
-    const double latitude, const double altitude, const AltitudeMode altitude_mode);
+  INLINE bool has_geographic_location() const;
+  INLINE double get_longitude() const;
+  INLINE double get_latitude() const;
+  INLINE double get_altitude() const;
+  INLINE AltitudeMode get_altitude_mode() const;
+  INLINE void set_geographic_location(double longitude, double latitude,
+    double altitude, AltitudeMode altitude_mode);
   INLINE void clear_geographic_location();
 
-  INLINE const bool has_unit() const;
-  INLINE const double get_unit_meter() const;
+  INLINE bool has_unit() const;
+  INLINE double get_unit_meter() const;
   INLINE const string get_unit_name() const;
-  INLINE void set_unit(const double unit_meter, const string &unit_name);
+  INLINE void set_unit(double unit_meter, const string &unit_name);
   INLINE void clear_unit();
 
   INLINE CoordinateSystem get_coordinate_system() const;

@@ -25,9 +25,11 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaAssetElement : public ColladaElement {
 PUBLISHED:
+  INLINE virtual void clear();
+
   INLINE PT(ColladaAsset) get_asset() const;
   INLINE void set_asset(PT(ColladaAsset) asset);
-  INLINE virtual void clear();
+
   INLINE virtual bool load_xml(const TiXmlElement *element);
   INLINE virtual TiXmlElement *make_xml() const;
 
