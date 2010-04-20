@@ -21,6 +21,7 @@
     colladaGeometry.h \
     colladaInstance.h colladaInstance.I colladaInstance.N \
     colladaLibrary.h colladaLibrary.I colladaLibrary.N \
+    colladaLight.h colladaLight.I \
     colladaMaterial.h colladaMaterial.I \
     colladaMesh.h \
     colladaNode.h colladaNode.I \
@@ -39,6 +40,7 @@
     colladaData.cxx \
     colladaEffect.cxx \
     colladaGeometry.cxx \
+    colladaLight.cxx \
     colladaMaterial.cxx \
     colladaMesh.cxx \
     colladaNode.cxx \
@@ -60,6 +62,7 @@
     colladaGeometry.h \
     colladaInstance.h colladaInstance.I \
     colladaLibrary.h colladaLibrary.I \
+    colladaLight.h colladaLight.I \
     colladaMaterial.h colladaMaterial.I \
     colladaMesh.h \
     colladaNode.h colladaNode.I \

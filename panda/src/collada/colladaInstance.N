@@ -7,6 +7,9 @@ renametype ColladaInstance<ColladaEffect> ColladaInstanceEffect
 forcetype ColladaInstance<ColladaGeometry>
 renametype ColladaInstance<ColladaGeometry> ColladaInstanceGeometry
 
+forcetype ColladaInstance<ColladaLight>
+renametype ColladaInstance<ColladaLight> ColladaInstanceLight
+
 forcetype ColladaInstance<ColladaNode>
 renametype ColladaInstance<ColladaNode> ColladaInstanceNode
 

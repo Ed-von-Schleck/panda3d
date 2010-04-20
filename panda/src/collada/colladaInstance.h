@@ -25,6 +25,7 @@ class ColladaCamera;
 class ColladaData;
 class ColladaEffect;
 class ColladaGeometry;
+class ColladaLight;
 class ColladaNode;
 class ColladaVisualScene;
 
@@ -56,6 +57,7 @@ private:
 typedef ColladaInstance<ColladaCamera> ColladaInstanceCamera;
 typedef ColladaInstance<ColladaEffect> ColladaInstanceEffect;
 typedef ColladaInstance<ColladaGeometry> ColladaInstanceGeometry;
+typedef ColladaInstance<ColladaLight> ColladaInstanceLight;
 typedef ColladaInstance<ColladaNode> ColladaInstanceNode;
 typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 
