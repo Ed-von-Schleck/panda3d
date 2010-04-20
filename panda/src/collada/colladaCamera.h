@@ -1,4 +1,4 @@
-// Filename: colladaGeometry.h
+// Filename: colladaCamera.h
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,21 +12,22 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAGEOMETRY_H
-#define COLLADAGEOMETRY_H
+#ifndef COLLADACAMERA_H
+#define COLLADACAMERA_H
 
 #include "colladaAssetElement.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaGeometry
-// Description : Object that represents the <geometry> COLLADA element.
+//       Class : ColladaCamera
+// Description : Object that represents the <camera> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaCamera : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
-  virtual void clear();
+  INLINE virtual void clear();
 
 public:
+  // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
   static const string _library_name;
 
@@ -35,7 +36,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaGeometry",
+    register_type(_type_handle, "ColladaCamera",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -47,5 +48,6 @@ private:
   static TypeHandle _type_handle;
 };
 
-#endif
+#include "colladaCamera.I"
 
+#endif

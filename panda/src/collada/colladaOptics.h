@@ -1,4 +1,4 @@
-// Filename: colladaGeometry.h
+// Filename: colladaOptics.h
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,30 +12,27 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAGEOMETRY_H
-#define COLLADAGEOMETRY_H
+#ifndef COLLADAOPTICS_H
+#define COLLADAOPTICS_H
 
-#include "colladaAssetElement.h"
+#include "colladaElement.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaGeometry
-// Description : Object that represents the <geometry> COLLADA element.
+//       Class : ColladaOptics
+// Description : Object that represents the <optics> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaOptics : public ColladaElement, public TypedReferenceCount {
 PUBLISHED:
-  virtual void clear();
+  INLINE virtual void clear();
 
 public:
-  static const string _element_name;
-  static const string _library_name;
-
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaGeometry",
+    register_type(_type_handle, "ColladaOptics",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -46,6 +43,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaOptics.I"
 
 #endif
 

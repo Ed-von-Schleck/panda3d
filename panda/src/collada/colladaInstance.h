@@ -17,10 +17,11 @@
 
 #include "pandabase.h"
 
+#include "colladaElement.h"
 #include "config_collada.h"
 #include "pointerTo.h"
-#include "colladaElement.h"
 
+class ColladaCamera;
 class ColladaData;
 class ColladaEffect;
 class ColladaGeometry;
@@ -52,6 +53,7 @@ private:
   friend class ColladaData;
 };
 
+typedef ColladaInstance<ColladaCamera> ColladaInstanceCamera;
 typedef ColladaInstance<ColladaEffect> ColladaInstanceEffect;
 typedef ColladaInstance<ColladaGeometry> ColladaInstanceGeometry;
 typedef ColladaInstance<ColladaNode> ColladaInstanceNode;

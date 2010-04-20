@@ -38,12 +38,12 @@ PUBLISHED:
 
 public:
   virtual bool load_xml(const TiXmlElement *xelement, const CoordinateSystem cs = CS_default);
-  virtual TiXmlElement * make_xml() const;
+  virtual TiXmlElement *make_xml() const;
   virtual PT(PandaNode) make_node() const;
 
   PT(ColladaNode) get_element_by_id(const string &id) const;
 
-  // Needed by ColladaLibrary to validate the element names
+  // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
   static const string _library_name;
 

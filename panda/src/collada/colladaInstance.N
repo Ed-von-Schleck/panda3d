@@ -1,3 +1,6 @@
+forcetype ColladaInstance<ColladaCamera>
+renametype ColladaInstance<ColladaCamera> ColladaInstanceCamera
+
 forcetype ColladaInstance<ColladaEffect>
 renametype ColladaInstance<ColladaEffect> ColladaInstanceEffect
 

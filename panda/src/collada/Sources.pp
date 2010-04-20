@@ -13,25 +13,28 @@
   #define SOURCES \
     colladaAsset.h colladaAsset.I \
     colladaAssetElement.h colladaAssetElement.I \
+    colladaCamera.h colladaCamera.I \
     colladaContributor.h colladaContributor.I \
     colladaData.h colladaData.I \
-    colladaEffect.h \
+    colladaEffect.h colladaEffect.I \
     colladaElement.h colladaElement.I \
     colladaGeometry.h \
     colladaInstance.h colladaInstance.I colladaInstance.N \
     colladaLibrary.h colladaLibrary.I colladaLibrary.N \
-    colladaMaterial.h \
+    colladaMaterial.h colladaMaterial.I \
     colladaMesh.h \
-    colladaNode.h \
+    colladaNode.h colladaNode.I \
+    colladaOptics.h colladaOptics.I \
     colladaProfile.h colladaProfile.I \
     colladaSource.h \
-    colladaVisualScene.h \
+    colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \
     load_collada_file.h \
     loaderFileTypeDae.h
 
   #define INCLUDED_SOURCES \
     colladaAsset.cxx \
+    colladaCamera.cxx \
     colladaContributor.cxx \
     colladaData.cxx \
     colladaEffect.cxx \
@@ -39,6 +42,7 @@
     colladaMaterial.cxx \
     colladaMesh.cxx \
     colladaNode.cxx \
+    colladaOptics.cxx \
     colladaProfile.cxx \
     colladaVisualScene.cxx \
     config_collada.cxx \
@@ -48,19 +52,21 @@
   #define INSTALL_HEADERS \
     colladaAsset.h colladaAsset.I \
     colladaAssetElement.h colladaAssetElement.I \
+    colladaCamera.h colladaCamera.I \
     colladaContributor.h colladaContributor.I \
     colladaData.h colladaData.I \
-    colladaEffect.h \
+    colladaEffect.h colladaEffect.I \
     colladaElement.h colladaElement.I \
     colladaGeometry.h \
     colladaInstance.h colladaInstance.I \
     colladaLibrary.h colladaLibrary.I \
-    colladaMaterial.h \
+    colladaMaterial.h colladaMaterial.I \
     colladaMesh.h \
-    colladaNode.h \
+    colladaNode.h colladaNode.I \
+    colladaOptics.h colladaNode.I \
     colladaProfile.h colladaProfile.I \
     colladaSource.h \
-    colladaVisualScene.h \
+    colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \
     load_collada_file.h \
     loaderFileTypeDae.h
