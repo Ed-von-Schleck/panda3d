@@ -1,4 +1,4 @@
-// Filename: colladaEffect.h
+// Filename: colladaMaterial.h
 // Created by: Xidram (20Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,17 +12,27 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAEFFECT_H
-#define COLLADAEFFECT_H
+#ifndef COLLADAMATERIAL_H
+#define COLLADAMATERIAL_H
 
 #include "colladaAssetElement.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaEffect
-// Description : Object that represents the <effect> COLLADA element.
+//       Class : ColladaMaterial
+// Description : Object that represents the <material> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaMaterial : public ColladaAssetElement, public TypedReferenceCount {
+PUBLISHED:
+  INLINE ColladaMaterial(ColladaInstanceEffect &effect);
+  INLINE virtual void clear();
+
+  INLINE const ColladaInstanceEffect &get_effect() const;
+  INLINE void set_effect(const ColladaInstanceEffect &effect);
+
+private:
+  ColladaInstanceEffect _effect;
+
 public:
   // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
@@ -33,7 +43,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaEffect",
+    register_type(_type_handle, "ColladaMaterial",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -44,6 +54,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaMaterial.I"
 
 #endif
 
