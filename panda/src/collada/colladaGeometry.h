@@ -23,6 +23,9 @@
 // Description : Object that represents the <geometry> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement, public TypedReferenceCount {
+PUBLISHED:
+  virtual void clear();
+
 public:
   static const string _element_name;
   static const string _library_name;

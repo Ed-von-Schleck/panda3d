@@ -20,7 +20,7 @@
 #include "colladaData.h"
 #include "colladaEffect.h"
 #include "colladaGeometry.h"
-//#include "colladaMaterial.h"
+#include "colladaMaterial.h"
 #include "colladaMesh.h"
 #include "colladaNode.h"
 #include "colladaVisualScene.h"
@@ -94,7 +94,7 @@ init_libcollada() {
   ColladaData::init_type();
   ColladaEffect::init_type();
   ColladaGeometry::init_type();
-  //ColladaMaterial::init_type();
+  ColladaMaterial::init_type();
   ColladaMesh::init_type();
   ColladaNode::init_type();
   ColladaVisualScene::init_type();

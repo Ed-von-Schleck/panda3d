@@ -68,3 +68,22 @@ make_xml() const {
 
   return xelement;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaLibrary::get_element_by_id
+//       Access: Public
+//  Description: Returns the element in the library that has
+//               the given ID, or NULL if none found.
+////////////////////////////////////////////////////////////////////
+template<class T>
+INLINE PT(T) ColladaLibrary<T>::
+get_element_by_id(const string &id) const {
+  PT(T) res;
+  for (int i = 0; i < pvector<PointerTo<T> >::size(); ++i) {
+    res = pvector<PointerTo<T> >::at(i);
+    if (res->get_id() == id) {
+      return res;
+    }
+  }
+  return NULL;
+}

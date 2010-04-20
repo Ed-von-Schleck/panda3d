@@ -27,7 +27,7 @@ class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaInstance
-// Description : This is the template class for libraries in the
+// Description : This is the template class for instances in the
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
@@ -38,14 +38,13 @@ PUBLISHED:
   INLINE const string &get_url() const;
   INLINE void set_url(const string &url);
 
-  INLINE bool load_xml(const TiXmlElement *xelement);
-  INLINE TiXmlElement *make_xml() const;
-
-  INLINE PT(T) resolve(const ColladaData &data) const;
+  INLINE virtual bool load_xml(const TiXmlElement *xelement);
+  INLINE virtual TiXmlElement *make_xml() const;
 
 private:
   string _url;
 
+  friend class ColladaData;
 };
 
 typedef ColladaInstance<ColladaEffect> ColladaInstanceEffect;

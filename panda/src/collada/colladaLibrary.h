@@ -38,8 +38,9 @@ template <class T>
 class EXPCL_COLLADA ColladaLibrary : public ColladaAssetElement, public pvector<PointerTo<T> > {
 PUBLISHED:
   INLINE virtual void clear();
-  INLINE bool load_xml(const TiXmlElement *xelement);
-  INLINE TiXmlElement * make_xml() const;
+  INLINE virtual bool load_xml(const TiXmlElement *xelement);
+  INLINE virtual TiXmlElement *make_xml() const;
+  INLINE PT(T) get_element_by_id(const string &id) const;
 };
 
 typedef ColladaLibrary<ColladaEffect> ColladaLibraryEffects;

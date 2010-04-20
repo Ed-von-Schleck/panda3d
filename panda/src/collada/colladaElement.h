@@ -27,6 +27,15 @@ PUBLISHED:
   INLINE virtual void clear();
   INLINE virtual bool load_xml(const TiXmlElement *element);
   INLINE virtual TiXmlElement *make_xml() const;
+
+  INLINE void set_id(const string &id);
+  INLINE void clear_id();
+  INLINE bool has_id() const;
+  INLINE const string &get_id() const;
+
+private:
+  string _id;
+
 };
 
 #include "colladaElement.I"

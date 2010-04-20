@@ -18,9 +18,12 @@
 #include "pandabase.h"
 
 #include "colladaAsset.h"
+#include "colladaEffect.h"
 #include "colladaMaterial.h"
+#include "colladaNode.h"
 #include "colladaInstance.h"
 #include "colladaLibrary.h"
+#include "colladaVisualScene.h"
 #include "config_collada.h"
 #include "filename.h"
 #include "coordinateSystem.h"
@@ -60,6 +63,9 @@ PUBLISHED:
 
   INLINE void set_filename(const Filename &filename);
   INLINE const Filename &get_filename() const;
+
+public:
+  template<class T> INLINE PT(T) resolve_instance(ColladaInstance<T> &inst) const;
 
 private:
   Filename _filename;
