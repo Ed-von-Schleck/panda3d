@@ -43,7 +43,9 @@ get_asset() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaAssetElement::
 set_asset(PT(ColladaAsset) asset) {
+  detach(_asset);
   _asset = asset;
+  attach(_asset);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -62,6 +64,7 @@ load_xml(const TiXmlElement *xelement) {
   xchild = xelement->FirstChildElement("asset");
   if (xchild != NULL) {
     _asset = new ColladaAsset;
+    _asset->_parent = this;
     return _asset->load_xml(xchild);
   } else {
     _asset = NULL;

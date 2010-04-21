@@ -1,4 +1,4 @@
-// Filename: colladaData.cxx
+// Filename: colladaDocument.cxx
 // Created by:  rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -12,7 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaData.h"
+#include "colladaDocument.h"
 #include "config_collada.h"
 #include "config_util.h"
 #include "config_express.h"
@@ -22,17 +22,17 @@
 #include "virtualFileSystem.h"
 #include "zStream.h"
 
-TypeHandle ColladaData::_type_handle;
+TypeHandle ColladaDocument::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::resolve_dae_filename
+//     Function: ColladaDocument::resolve_dae_filename
 //       Access: Public, Static
 //  Description: Looks for the indicated filename, first along the
 //               indicated searchpath, and then along the model_path.
 //               If found, updates the filename to the full path and
 //               returns true; otherwise, returns false.
 ////////////////////////////////////////////////////////////////////
-bool ColladaData::
+bool ColladaDocument::
 resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
 
@@ -47,13 +47,13 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::clear
+//     Function: ColladaDocument::clear
 //       Access: Public
-//  Description: Resets the stored data of this ColladaData,
+//  Description: Resets the stored data of this ColladaDocument,
 //               and makes it as if it were a new instance.
 //               Note that the filename value is not cleared.
 ////////////////////////////////////////////////////////////////////
-void ColladaData::
+void ColladaDocument::
 clear() {
   ColladaAssetElement::clear();
   _instance_visual_scene = NULL;
@@ -65,7 +65,7 @@ clear() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::read
+//     Function: ColladaDocument::read
 //       Access: Public
 //  Description: Opens the indicated filename and reads the dae data
 //               contents from it.  Returns true if the file was
@@ -73,7 +73,7 @@ clear() {
 //               some errors, in which case the data may be partially
 //               read.
 ////////////////////////////////////////////////////////////////////
-bool ColladaData::
+bool ColladaDocument::
 read(Filename filename, string display_name) {
   filename.set_text();
   set_filename(filename);
@@ -100,7 +100,7 @@ read(Filename filename, string display_name) {
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::read
+//     Function: ColladaDocument::read
 //       Access: Public
 //  Description: Parses the dae syntax contained in the indicated
 //               input stream.  Returns true if the stream was a
@@ -113,7 +113,7 @@ read(Filename filename, string display_name) {
 //               is no such filename, you may set it to the empty
 //               string.
 ////////////////////////////////////////////////////////////////////
-bool ColladaData::
+bool ColladaDocument::
 read(istream &in) {
   TiXmlDocument *doc = new TiXmlDocument;
   in >> *doc;
@@ -137,7 +137,7 @@ read(istream &in) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::load_xml
+//     Function: ColladaDocument::load_xml
 //       Access: Public
 //  Description: Parses the dae syntax contained in the indicated
 //               TiXmlElement.  Returns true if the stream was a
@@ -150,7 +150,7 @@ read(istream &in) {
 //               is no such filename, you may set it to the empty
 //               string.
 ////////////////////////////////////////////////////////////////////
-bool ColladaData::
+bool ColladaDocument::
 load_xml(const TiXmlElement *xelement) {
   clear();
 
@@ -198,6 +198,7 @@ load_xml(const TiXmlElement *xelement) {
     xinst = xchild->FirstChildElement("instance_visual_scene");
     if (xinst != NULL) {
       _instance_visual_scene = new ColladaInstanceVisualScene;
+      _instance_visual_scene->_parent = this;
       _instance_visual_scene->load_xml(xinst);
     }
   }
@@ -206,13 +207,13 @@ load_xml(const TiXmlElement *xelement) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::make_xml
+//     Function: ColladaDocument::make_xml
 //       Access: Public
 //  Description: Returns the root <COLLADA> element of the COLLADA
 //               document as new TiXmlElement. This contains the
 //               entire structure of the COLLADA document.
 ////////////////////////////////////////////////////////////////////
-TiXmlElement * ColladaData::
+TiXmlElement * ColladaDocument::
 make_xml() const {
   TiXmlElement * xelement = ColladaAssetElement::make_xml();
   if (xelement == NULL) {
@@ -254,13 +255,13 @@ make_xml() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::make_node
+//     Function: ColladaDocument::make_node
 //       Access: Public
 //  Description: The main interface for loading COLLADA data
 //               into the scene graph. Returns a ModelRoot
-//               representing the ColladaData and its children.
+//               representing the ColladaDocument and its children.
 ////////////////////////////////////////////////////////////////////
-PT(PandaNode) ColladaData::
+PT(PandaNode) ColladaDocument::
 make_node() const {
   PT(ModelRoot) node = new ModelRoot(_filename.get_basename());
 
@@ -276,11 +277,11 @@ make_node() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::write_dae
+//     Function: ColladaDocument::write_dae
 //       Access: Public
 //  Description: The main interface for writing complete dae files.
 ////////////////////////////////////////////////////////////////////
-bool ColladaData::
+bool ColladaDocument::
 write_dae(Filename filename) const {
   filename.unlink();
   filename.set_text();
@@ -312,11 +313,11 @@ write_dae(Filename filename) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::write_dae
+//     Function: ColladaDocument::write_dae
 //       Access: Public
 //  Description: The main interface for writing complete dae files.
 ////////////////////////////////////////////////////////////////////
-bool ColladaData::
+bool ColladaDocument::
 write_dae(ostream &out) const {
   TiXmlElement * xelement = make_xml();
   if (xelement == NULL) {

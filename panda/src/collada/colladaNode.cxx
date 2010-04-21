@@ -71,6 +71,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
   xchild = xelement->FirstChildElement("node");
   while (xchild != NULL) {
     PT(ColladaNode) node = new ColladaNode;
+    node->_parent = this;
     node->load_xml(xchild, newcs);
     _nodes.push_back(node);
     xchild = xchild->NextSiblingElement("node");
@@ -80,6 +81,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
   xchild = xelement->FirstChildElement("instance_node");
   while (xchild != NULL) {
     PT(ColladaInstanceNode) inst = new ColladaInstanceNode;
+    inst->_parent = this;
     //TODO: figure out what to do with newcs here
     inst->load_xml(xchild);
     _instance_nodes.push_back(inst);

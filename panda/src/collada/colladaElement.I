@@ -20,6 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 INLINE ColladaElement::
 ColladaElement() {
+  _parent = NULL;
   clear();
 }
 
@@ -159,3 +160,34 @@ INLINE const string &ColladaElement::
 get_id() const {
   return _id;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaElement::attach
+//       Access: Protected
+//  Description: If not NULL, attaches the given child node to
+//               this node by simply setting its _parent member.
+//               This is a convenience method for internal use only.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaElement::
+attach(ColladaElement *child) const {
+  if (child == NULL) {
+    return;
+  }
+  child->_parent = this;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaElement::detach
+//       Access: Protected
+//  Description: If not NULL, detaches the given child node from
+//               this node by simply unsetting its _parent member.
+//               This is a convenience method for internal use only.
+////////////////////////////////////////////////////////////////////
+INLINE void ColladaElement::
+detach(ColladaElement *child) const {
+  if (child == NULL) {
+    return;
+  }
+  child->_parent = NULL;
+}
+

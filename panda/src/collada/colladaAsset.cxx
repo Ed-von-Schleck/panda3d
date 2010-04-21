@@ -151,6 +151,7 @@ load_xml(const TiXmlElement *xelement) {
   xchild = xelement->FirstChildElement("contributor");
   while (xchild != NULL) {
     PT(ColladaContributor) contrib = new ColladaContributor;
+    contrib->_parent = this;
     contrib->load_xml(xchild);
     _contributors.push_back(contrib);
     xchild = xchild->NextSiblingElement("contributor");

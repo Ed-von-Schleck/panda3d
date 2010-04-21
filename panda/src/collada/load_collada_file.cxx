@@ -19,7 +19,7 @@
 #include "config_util.h"
 #include "bamCacheRecord.h"
 
-#include "colladaLoader.h"
+#include "colladaDocument.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: load_collada_file
@@ -38,7 +38,7 @@ load_collada_file(const Filename &filename, CoordinateSystem cs,
     record->add_dependent_file(collada_filename);
   }
 
-  PT(ColladaData) data = new ColladaData;
+  PT(ColladaDocument) data = new ColladaDocument;
   data->set_filename(collada_filename);
 
   bool okflag;

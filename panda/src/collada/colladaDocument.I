@@ -1,4 +1,4 @@
-// Filename: colladaData.I
+// Filename: colladaDocument.I
 // Created by:  rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -15,17 +15,18 @@
 #include "dcast.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::Constructor
+//     Function: ColladaDocument::Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE ColladaData::
-ColladaData() {
+INLINE ColladaDocument::
+ColladaDocument() {
+  _parent = NULL;
   clear();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::get_coordinate_system
+//     Function: ColladaDocument::get_coordinate_system
 //       Access: Public
 //  Description: Returns the coordinate system in which the file
 //               is defined. Note that this returns the global
@@ -33,42 +34,42 @@ ColladaData() {
 //               possible that elements in the document override
 //               this value.
 ////////////////////////////////////////////////////////////////////
-INLINE CoordinateSystem ColladaData::
+INLINE CoordinateSystem ColladaDocument::
 get_coordinate_system() const {
   return _asset ? _asset->get_coordinate_system() : CS_yup_right;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::set_filename
+//     Function: ColladaDocument::set_filename
 //       Access: Public
 //  Description: Sets the filename--especially the directory part--in
 //               which the file is considered to reside.  This is
 //               also implicitly set by read().
 ////////////////////////////////////////////////////////////////////
-INLINE void ColladaData::
+INLINE void ColladaDocument::
 set_filename(const Filename &filename) {
   _filename = filename;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::get_filename
+//     Function: ColladaDocument::get_filename
 //       Access: Public
 //  Description: Returns the directory in which the collada file is
 //               considered to reside.
 ////////////////////////////////////////////////////////////////////
-INLINE const Filename &ColladaData::
+INLINE const Filename &ColladaDocument::
 get_filename() const {
   return _filename;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaData::resolve_instance
+//     Function: ColladaDocument::resolve_instance
 //       Access: Public
 //  Description: Resolves the URL in the given instance, returns
 //               the right element, or NULL if it wasn't found.
 ////////////////////////////////////////////////////////////////////
 template<class T>
-INLINE PT(T) ColladaData::
+INLINE PT(T) ColladaDocument::
 resolve_instance(CPT(ColladaInstance<T>) inst) const {
   if (inst->_url.empty()) {
     return NULL;
@@ -93,7 +94,7 @@ resolve_instance(CPT(ColladaInstance<T>) inst) const {
     return DCAST(T, _library_visual_scenes.get_element_by_id(id));
   } else {
     collada_cat.error()
-      << "ColladaData::resolve_instance invoked with unknown type "
+      << "ColladaDocument::resolve_instance invoked with unknown type "
       << T::get_class_type().get_name() << "\n";
   }
   return NULL;

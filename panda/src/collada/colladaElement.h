@@ -17,6 +17,8 @@
 
 #include "config_collada.h"
 
+class ColladaDocument;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaElement
 // Description : Object that represents the <element> COLLADA tag.
@@ -38,6 +40,13 @@ PUBLISHED:
   INLINE void clear_id();
   INLINE bool has_id() const;
   INLINE const string &get_id() const;
+
+protected:
+  INLINE void attach(ColladaElement *child) const;
+  INLINE void detach(ColladaElement *child) const;
+
+public:
+  const ColladaElement *_parent;
 
 private:
   string _name;

@@ -22,7 +22,7 @@
 #include "pointerTo.h"
 
 class ColladaCamera;
-class ColladaData;
+class ColladaDocument;
 class ColladaEffect;
 class ColladaGeometry;
 class ColladaLight;
@@ -51,7 +51,7 @@ public:
 private:
   string _url;
 
-  friend class ColladaData;
+  friend class ColladaDocument;
 };
 
 typedef ColladaInstance<ColladaCamera> ColladaInstanceCamera;

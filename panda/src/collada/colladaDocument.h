@@ -1,4 +1,4 @@
-// Filename: colladaData.h
+// Filename: colladaDocument.h
 // Created by:  rdb (13Apr10)
 //
 ////////////////////////////////////////////////////////////////////
@@ -35,15 +35,15 @@
 class ColladaLoader;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaData
+//       Class : ColladaDocument
 // Description : This is the primary interface into all the data,
 //               and the root of the collada file structure.  A
-//               ColladaData structure corresponds exactly with
+//               ColladaDocument structure corresponds exactly with
 //               a collada file on the disk.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaData : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaDocument : public ColladaAssetElement, public TypedReferenceCount {
 PUBLISHED:
-  INLINE ColladaData();
+  INLINE ColladaDocument();
 
   static bool resolve_dae_filename(Filename &dae_filename,
                                    const DSearchPath &searchpath = DSearchPath());
@@ -83,7 +83,7 @@ public:
   }
   static void init_type() {
     TypedReferenceCount::init_type();
-    register_type(_type_handle, "ColladaData",
+    register_type(_type_handle, "ColladaDocument",
                   TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -97,7 +97,7 @@ private:
   friend class ColladaLoader;
 };
 
-#include "colladaData.I"
+#include "colladaDocument.I"
 
 #endif
 

@@ -1,7 +1,7 @@
 #include "colladaAsset.cxx"
 #include "colladaCamera.cxx"
 #include "colladaContributor.cxx"
-#include "colladaData.cxx"
+#include "colladaDocument.cxx"
 #include "colladaEffect.cxx"
 #include "colladaGeometry.cxx"
 #include "colladaLight.cxx"

@@ -64,6 +64,8 @@ get_effect() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaMaterial::
 set_effect(PT(ColladaInstanceEffect) effect) {
+  detach(_effect);
   _effect = effect;
+  attach(_effect);
 }
 

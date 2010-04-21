@@ -44,6 +44,7 @@ load_xml(const TiXmlElement *xelement) {
   const TiXmlElement* xnode = xelement->FirstChildElement("node");
   while (xnode != NULL) {
     PT(ColladaNode) node = new ColladaNode;
+    node->_parent = this;
     node->load_xml(xnode);
     _nodes.push_back(node);
     xnode = xnode->NextSiblingElement("node");

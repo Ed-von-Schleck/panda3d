@@ -18,7 +18,7 @@
 #include "colladaAsset.h"
 #include "colladaCamera.h"
 #include "colladaContributor.h"
-#include "colladaData.h"
+#include "colladaDocument.h"
 #include "colladaEffect.h"
 #include "colladaGeometry.h"
 #include "colladaMaterial.h"
@@ -94,7 +94,7 @@ init_libcollada() {
   ColladaAsset::init_type();
   ColladaCamera::init_type();
   ColladaContributor::init_type();
-  ColladaData::init_type();
+  ColladaDocument::init_type();
   ColladaEffect::init_type();
   ColladaGeometry::init_type();
   ColladaMaterial::init_type();

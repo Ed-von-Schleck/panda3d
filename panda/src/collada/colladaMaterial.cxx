@@ -33,6 +33,8 @@ load_xml(const TiXmlElement *xelement) {
 
   xchild = xelement->FirstChildElement("instance_effect");
   if (xchild != NULL) {
+    _effect = new ColladaInstanceEffect;
+    _effect->_parent = this;
     _effect->load_xml(xchild);
   }
 
@@ -49,7 +51,10 @@ TiXmlElement *ColladaMaterial::
 make_xml() const {
   TiXmlElement *xelement = ColladaAssetElement::make_xml();
   xelement->SetValue("material");
-  xelement->LinkEndChild(_effect->make_xml());
+
+  if (_effect != NULL) {
+    xelement->LinkEndChild(_effect->make_xml());
+  }
 
   return xelement;
 }
