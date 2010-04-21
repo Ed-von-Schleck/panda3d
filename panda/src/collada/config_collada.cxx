@@ -21,9 +21,11 @@
 #include "colladaDocument.h"
 #include "colladaEffect.h"
 #include "colladaGeometry.h"
+#include "colladaLight.h"
 #include "colladaMaterial.h"
 #include "colladaMesh.h"
 #include "colladaNode.h"
+#include "colladaOptics.h"
 #include "colladaProfile.h"
 #include "colladaVisualScene.h"
 #include "loaderFileTypeDae.h"
@@ -97,9 +99,11 @@ init_libcollada() {
   ColladaDocument::init_type();
   ColladaEffect::init_type();
   ColladaGeometry::init_type();
+  ColladaLight::init_type();
   ColladaMaterial::init_type();
   ColladaMesh::init_type();
   ColladaNode::init_type();
+  ColladaOptics::init_type();
   ColladaProfile::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();
