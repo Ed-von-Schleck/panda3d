@@ -30,12 +30,36 @@ class ColladaMaterial;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
+//       Class : ColladaLibraryBase
+// Description : This is the abstract base class for libraries in
+//               the COLLADA document.
+////////////////////////////////////////////////////////////////////
+class EXPCL_COLLADA ColladaLibraryBase : public ColladaAssetElement {
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ColladaAssetElement::init_type();
+    register_type(_type_handle, "ColladaLibraryBase",
+                  ColladaAssetElement::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+
+private:
+  static TypeHandle _type_handle;
+};
+
+////////////////////////////////////////////////////////////////////
 //       Class : ColladaLibrary
 // Description : This is the template class for libraries in the
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaLibrary : public ColladaAssetElement, public pvector<PointerTo<T> > {
+class EXPCL_COLLADA ColladaLibrary : public ColladaLibraryBase, public pvector<PointerTo<T> > {
 PUBLISHED:
   INLINE virtual void clear();
   INLINE virtual bool load_xml(const TiXmlElement *xelement);

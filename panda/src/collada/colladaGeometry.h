@@ -22,7 +22,7 @@
 //       Class : ColladaGeometry
 // Description : Object that represents the <geometry> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement {
 PUBLISHED:
   virtual void clear();
 
@@ -34,9 +34,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
+    ColladaAssetElement::init_type();
     register_type(_type_handle, "ColladaGeometry",
-                  TypedReferenceCount::get_class_type());
+                  ColladaAssetElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

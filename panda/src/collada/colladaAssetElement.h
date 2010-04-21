@@ -30,11 +30,28 @@ PUBLISHED:
   INLINE PT(ColladaAsset) get_asset() const;
   INLINE void set_asset(PT(ColladaAsset) asset);
 
-  INLINE virtual bool load_xml(const TiXmlElement *element);
-  INLINE virtual TiXmlElement *make_xml() const;
+  virtual bool load_xml(const TiXmlElement *element);
+  virtual TiXmlElement *make_xml() const;
 
 protected:
   PT(ColladaAsset) _asset;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ColladaElement::init_type();
+    register_type(_type_handle, "ColladaAssetElement",
+                  ColladaElement::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+
+private:
+  static TypeHandle _type_handle;
 };
 
 #include "colladaAssetElement.I"

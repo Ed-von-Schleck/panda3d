@@ -16,10 +16,12 @@
 
 #include "dconfig.h"
 #include "colladaAsset.h"
+#include "colladaAssetElement.h"
 #include "colladaCamera.h"
 #include "colladaContributor.h"
 #include "colladaDocument.h"
 #include "colladaEffect.h"
+#include "colladaElement.h"
 #include "colladaGeometry.h"
 #include "colladaLight.h"
 #include "colladaMaterial.h"
@@ -94,10 +96,12 @@ init_libcollada() {
   initialized = true;
 
   ColladaAsset::init_type();
+  ColladaAssetElement::init_type();
   ColladaCamera::init_type();
   ColladaContributor::init_type();
   ColladaDocument::init_type();
   ColladaEffect::init_type();
+  ColladaElement::init_type();
   ColladaGeometry::init_type();
   ColladaLight::init_type();
   ColladaMaterial::init_type();

@@ -21,6 +21,7 @@
 INLINE void ColladaEffect::
 add_profile(PT(ColladaProfile) profile) {
   _profiles.push_back(profile);
+  attach(profile);
 }
 
 ////////////////////////////////////////////////////////////////////

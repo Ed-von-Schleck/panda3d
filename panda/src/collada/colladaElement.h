@@ -16,20 +16,21 @@
 #define COLLADAELEMENT_H
 
 #include "config_collada.h"
-
-class ColladaDocument;
+#include "pointerTo.h"
+#include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaElement
 // Description : Object that represents the <element> COLLADA tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaElement {
+class EXPCL_COLLADA ColladaElement : public TypedReferenceCount {
 PUBLISHED:
   INLINE ColladaElement();
+  virtual ~ColladaElement() {};
 
   INLINE virtual void clear();
-  INLINE virtual bool load_xml(const TiXmlElement *element);
-  INLINE virtual TiXmlElement *make_xml() const;
+  virtual bool load_xml(const TiXmlElement *element);
+  virtual TiXmlElement *make_xml() const;
 
   INLINE void set_name(const string &name);
   INLINE void clear_name();
@@ -46,11 +47,28 @@ protected:
   INLINE void detach(ColladaElement *child) const;
 
 public:
-  const ColladaElement *_parent;
+  CPT(ColladaElement) _parent;
 
 private:
   string _name;
   string _id;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    TypedReferenceCount::init_type();
+    register_type(_type_handle, "ColladaElement",
+                  TypedReferenceCount::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+
+private:
+  static TypeHandle _type_handle;
 
 };
 

@@ -35,7 +35,7 @@ class ColladaVisualScene;
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaInstance : public ReferenceCount, public ColladaElement {
+class EXPCL_COLLADA ColladaInstance : public ColladaElement {
 PUBLISHED:
   INLINE virtual void clear();
   INLINE bool is_empty() const;

@@ -36,50 +36,6 @@ clear() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaElement::load_xml
-//       Access: Public
-//  Description: Loads data from a TiXmlElement.
-////////////////////////////////////////////////////////////////////
-bool ColladaElement::
-load_xml(const TiXmlElement *xelement) {
-  clear();
-  nassertr (xelement != NULL, false);
-
-  const char* name = xelement->Attribute("name");
-  if (name) {
-    set_name(name);
-  }
-
-  const char* id = xelement->Attribute("id");
-  if (id) {
-    set_id(id);
-  }
-
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaElement::make_xml
-//       Access: Public
-//  Description: Returns a new TiXmlElement representing
-//               this element.
-////////////////////////////////////////////////////////////////////
-TiXmlElement * ColladaElement::
-make_xml() const {
-  TiXmlElement * xelement = new TiXmlElement("");
-
-  if (has_name()) {
-    xelement->SetAttribute("name", get_name());
-  }
-
-  if (has_id()) {
-    xelement->SetAttribute("id", get_id());
-  }
-
-  return xelement;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::set_name
 //       Access: Public
 //  Description:

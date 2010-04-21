@@ -22,7 +22,7 @@
 //       Class : ColladaProfile
 // Description : Base class for all the different COLLADA profiles.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaProfile : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaProfile : public ColladaAssetElement {
 PUBLISHED:
   virtual void clear();
 
@@ -31,9 +31,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
+    ColladaAssetElement::init_type();
     register_type(_type_handle, "ColladaProfile",
-                  TypedReferenceCount::get_class_type());
+                  ColladaAssetElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

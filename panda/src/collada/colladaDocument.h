@@ -41,7 +41,7 @@ class ColladaLoader;
 //               ColladaDocument structure corresponds exactly with
 //               a collada file on the disk.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaDocument : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaDocument : public ColladaAssetElement {
 PUBLISHED:
   INLINE ColladaDocument();
 
@@ -82,9 +82,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
+    ColladaAssetElement::init_type();
     register_type(_type_handle, "ColladaDocument",
-                  TypedReferenceCount::get_class_type());
+                  ColladaAssetElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

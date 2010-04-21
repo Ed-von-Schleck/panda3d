@@ -23,7 +23,7 @@
 //       Class : ColladaEffect
 // Description : Object that represents the <effect> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement {
 PUBLISHED:
   virtual void clear();
 
@@ -44,9 +44,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
+    ColladaAssetElement::init_type();
     register_type(_type_handle, "ColladaEffect",
-                  TypedReferenceCount::get_class_type());
+                  ColladaAssetElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

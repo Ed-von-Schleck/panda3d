@@ -35,11 +35,13 @@
 
   #define INCLUDED_SOURCES \
     colladaAsset.cxx \
+    colladaAssetElement.cxx \
     colladaCamera.cxx \
     colladaContributor.cxx \
     colladaDocument.cxx \
     colladaEffect.cxx \
     colladaGeometry.cxx \
+    colladaLibrary.cxx \
     colladaLight.cxx \
     colladaMaterial.cxx \
     colladaMesh.cxx \

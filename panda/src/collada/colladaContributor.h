@@ -22,7 +22,7 @@
 //       Class : ColladaContributor
 // Description : Object that represents the <contributor> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaContributor : public ColladaElement, public TypedReferenceCount {
+class EXPCL_COLLADA ColladaContributor : public ColladaElement {
 PUBLISHED:
   virtual void clear();
 
@@ -64,9 +64,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    TypedReferenceCount::init_type();
+    ColladaElement::init_type();
     register_type(_type_handle, "ColladaContributor",
-                  TypedReferenceCount::get_class_type());
+                  ColladaElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
