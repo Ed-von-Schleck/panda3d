@@ -41,6 +41,7 @@ load_xml(const TiXmlElement *xelement) {
   if (!ColladaAssetElement::load_xml(xelement)) {
     return false;
   }
+  nassertr(xelement->ValueStr() == "geometry", false);
 
   const TiXmlElement *xchild;
 
@@ -71,8 +72,9 @@ make_xml() const {
   TiXmlElement *xelement = ColladaAssetElement::make_xml();
   xelement->SetValue("geometry");
 
-  TiXmlElement *xchild;
-
+  if (_geometric_element != NULL) {
+    xelement->LinkEndChild(_geometric_element->make_xml());
+  }
 
   return xelement;
 }

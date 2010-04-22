@@ -15,13 +15,22 @@
 #ifndef COLLADAMESH_H
 #define COLLADAMESH_H
 
-#include "colladaGeometry.h"
+#include "colladaElement.h"
+#include "colladaPrimitive.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaMesh
 // Description : Object that represents the <mesh> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaMesh : public ColladaElement {
+PUBLISHED:
+  virtual void clear();
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
+
+private:
+  pvector<PT(ColladaPrimitive)> _primitives;
+
 public:
   static TypeHandle get_class_type() {
     return _type_handle;

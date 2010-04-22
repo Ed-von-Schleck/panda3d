@@ -30,6 +30,7 @@ TypeHandle ColladaPrimitive::_type_handle;
 ColladaPrimitive::
 ColladaPrimitive(PrimitiveType primitive_type) {
   _primitive_type = primitive_type;
+  clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -42,6 +43,7 @@ clear() {
   ColladaElement::clear();
   _count = 0;
   _inputs.clear();
+  _p.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -56,6 +58,14 @@ load_xml(const TiXmlElement *xelement) {
   }
 
   bool okflag = true;
+
+  if (xelement->QueryIntAttribute("count", &_count) != TIXML_SUCCESS) {
+    _count = 0;
+    collada_cat.error()
+      << "Invalid count attribute in " << xelement->Value() << "\n";
+    okflag = false;
+  }
+
   const TiXmlElement* xchild;
 
   // Read out the input specifiers
@@ -74,6 +84,18 @@ load_xml(const TiXmlElement *xelement) {
     }
     _inputs.push_back(newinput);
     xchild = xchild->NextSiblingElement("input");
+  }
+
+  // Read out the <p> element
+  xchild = xelement->FirstChildElement("p");
+  while (xchild != NULL) {
+    vector_string p;
+    tokenize(trim(xchild->GetText()), p, " ", true);
+    vector_string::iterator it;
+    for (it = p.begin(); it != p.end(); ++it) {
+      _p.push_back(atoi(it->c_str()));
+    }
+    xchild = xchild->NextSiblingElement("p");
   }
 
   return okflag;
@@ -114,6 +136,7 @@ make_xml() const {
       collada_cat.error() << "Invalid primitive type!\n";
       return NULL;
   }
+  xelement->SetAttribute("count", _count);
 
   for (int i = 0; i < _inputs.size(); ++i) {
     const Input &input = _inputs[i];

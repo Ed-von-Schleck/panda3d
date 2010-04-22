@@ -18,6 +18,7 @@
 #include "pointerTo.h"
 #include "colladaElement.h"
 #include "geomPrimitive.h"
+#include "pta_int.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaPrimitive
@@ -54,7 +55,8 @@ PUBLISHED:
 private:
   PrimitiveType _primitive_type;
   pvector<Input> _inputs;
-  unsigned int _count;
+  PTA_int _p;
+  int _count;
 
 public:
   static TypeHandle get_class_type() {
