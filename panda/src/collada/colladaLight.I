@@ -21,5 +21,6 @@
 INLINE void ColladaLight::
 clear() {
   ColladaAssetElement::clear();
+  _light_type = LT_invalid;
 }
 

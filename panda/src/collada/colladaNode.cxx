@@ -18,7 +18,7 @@
 
 TypeHandle ColladaNode::_type_handle;
 const string ColladaNode::_element_name ("node");
-const string ColladaNode::_library_name ("library_nodes");
+const string ColladaNode::_library_name ("library_cameras");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaNode::Constructor
@@ -75,6 +75,26 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
     node->load_xml(xchild, newcs);
     _nodes.push_back(node);
     xchild = xchild->NextSiblingElement("node");
+  }
+
+  // Read out any instances to cameras.
+  xchild = xelement->FirstChildElement("instance_camera");
+  while (xchild != NULL) {
+    PT(ColladaInstanceCamera) inst = new ColladaInstanceCamera;
+    inst->_parent = this;
+    inst->load_xml(xchild);
+    _instance_cameras.push_back(inst);
+    xchild = xchild->NextSiblingElement("instance_camera");
+  }
+
+  // Read out any instances to lights.
+  xchild = xelement->FirstChildElement("instance_light");
+  while (xchild != NULL) {
+    PT(ColladaInstanceLight) inst = new ColladaInstanceLight;
+    inst->_parent = this;
+    inst->load_xml(xchild);
+    _instance_lights.push_back(inst);
+    xchild = xchild->NextSiblingElement("instance_light");
   }
 
   // Read out any instances to nodes
@@ -155,11 +175,11 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
 //     Function: ColladaNode::make_xml
 //       Access: Public
 //  Description: Returns a new TiXmlElement representing
-//               the visual scene.
+//               the node.
 ////////////////////////////////////////////////////////////////////
-TiXmlElement * ColladaNode::
+TiXmlElement *ColladaNode::
 make_xml() const {
-  TiXmlElement * xelement = ColladaAssetElement::make_xml();
+  TiXmlElement *xelement = ColladaAssetElement::make_xml();
   xelement->SetValue("node");
 
   switch (_node_type) {
@@ -171,10 +191,6 @@ make_xml() const {
       break;
     default:
       break;
-  }
-
-  if (_asset) {
-    xelement->LinkEndChild(_asset->make_xml());
   }
 
   //TODO: coordinate system conversion
@@ -202,8 +218,16 @@ make_xml() const {
     xelement->LinkEndChild(matrix);
   }
 
-  for (int i = 0; i < _nodes.size(); ++i) {
-    xelement->LinkEndChild(_nodes.at(i)->make_xml());
+  for (int i = 0; i < _instance_cameras.size(); ++i) {
+    xelement->LinkEndChild(_instance_cameras.at(i)->make_xml());
+  }
+
+  for (int i = 0; i < _instance_lights.size(); ++i) {
+    xelement->LinkEndChild(_instance_lights.at(i)->make_xml());
+  }
+
+  for (int i = 0; i < _instance_nodes.size(); ++i) {
+    xelement->LinkEndChild(_instance_nodes.at(i)->make_xml());
   }
 
   return xelement;

@@ -21,6 +21,8 @@ INLINE void ColladaNode::
 clear() {
   ColladaAssetElement::clear();
   _nodes.clear();
+  _instance_cameras.clear();
+  _instance_lights.clear();
   _instance_nodes.clear();
   _node_type = NT_default;
   _transform = LMatrix4d::ident_mat();

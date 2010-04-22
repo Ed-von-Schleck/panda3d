@@ -17,16 +17,33 @@
 
 #include "colladaAssetElement.h"
 #include "typedReferenceCount.h"
+#include "ambientLight.h"
+#include "directionalLight.h"
+#include "pointLight.h"
+#include "spotlight.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaLight
-// Description : Object that represents the <camera> COLLADA element.
+// Description : Object that represents the <light> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaLight : public ColladaAssetElement {
 PUBLISHED:
+  ColladaLight();
   INLINE virtual void clear();
 
+  enum LightType {
+    LT_invalid,
+    LT_ambient,
+    LT_directional,
+    LT_point,
+    LT_spot
+  };
+
 public:
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
+  virtual PT(PandaNode) make_node() const;
+
   // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
   static const string _library_name;
@@ -45,6 +62,7 @@ public:
   virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
 
 private:
+  LightType _light_type;
   static TypeHandle _type_handle;
 };
 

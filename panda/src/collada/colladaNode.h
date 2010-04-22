@@ -48,9 +48,10 @@ public:
   static const string _library_name;
 
 private:
-  PT(ColladaAsset) _asset;
   NodeType _node_type;
   pvector<PT(ColladaNode)> _nodes;
+  pvector<PT(ColladaInstanceCamera)> _instance_cameras;
+  pvector<PT(ColladaInstanceLight)> _instance_lights;
   pvector<PT(ColladaInstanceNode)> _instance_nodes;
   LMatrix4d _transform;
 
