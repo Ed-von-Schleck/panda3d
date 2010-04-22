@@ -227,7 +227,7 @@ make_node() const {
   }
 
   for (int i = 0; i < _instance_nodes.size(); ++i) {
-    PT(ColladaNode) target = _instance_nodes.at(i)->_target;
+    PT(ColladaNode) target = DCAST(ColladaNode, _instance_nodes.at(i)->get_target());
     nassertd(target != NULL) continue;
     // Make sure that we re-use the same node, for the sake of instancing
     PT(PandaNode) targetnode = target->_cached_node;

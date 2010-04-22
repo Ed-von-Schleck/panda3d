@@ -1,5 +1,5 @@
-// Filename: colladaDocument.I
-// Created by:  rdb (13Apr10)
+// Filename: colladaRoot.I
+// Created by:  rdb (21Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -15,25 +15,30 @@
 #include "dcast.h"
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaDocument::set_filename
+//     Function: ColladaRoot::Constructor
 //       Access: Public
-//  Description: Sets the filename--especially the directory part--in
-//               which the file is considered to reside.  This is
-//               also implicitly set by read().
+//  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE void ColladaDocument::
-set_filename(const Filename &filename) {
-  _filename = filename;
+INLINE ColladaRoot::
+ColladaRoot(PT(ColladaDocument) document) {
+  _document = document;
+  clear();
+  _library_effects._parent = this;
+  _library_geometries._parent = this;
+  _library_materials._parent = this;
+  _library_nodes._parent = this;
+  _library_visual_scenes._parent = this;
+  nassertv(document != NULL);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaDocument::get_filename
+//     Function: ColladaRoot::get_document
 //       Access: Public
-//  Description: Returns the directory in which the collada file is
-//               considered to reside.
+//  Description: Returns the document that this root belongs to.
+//               This can never be NULL.
 ////////////////////////////////////////////////////////////////////
-INLINE const Filename &ColladaDocument::
-get_filename() const {
-  return _filename;
+INLINE PT(ColladaDocument) ColladaRoot::
+get_document() const {
+  return _document;
 }
 

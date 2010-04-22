@@ -29,6 +29,7 @@
 #include "colladaNode.h"
 #include "colladaOptics.h"
 #include "colladaProfile.h"
+#include "colladaRoot.h"
 #include "colladaVisualScene.h"
 #include "loaderFileTypeDae.h"
 #include "loaderFileTypeRegistry.h"
@@ -109,6 +110,7 @@ init_libcollada() {
   ColladaNode::init_type();
   ColladaOptics::init_type();
   ColladaProfile::init_type();
+  ColladaRoot::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();
 

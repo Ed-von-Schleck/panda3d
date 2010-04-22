@@ -118,6 +118,34 @@ get_id() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaElement::get_parent
+//       Access: Public
+//  Description: Returns the parent element of this element, if
+//               it is attached to a parent. Returns NULL if
+//               otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE PT(ColladaElement) ColladaElement::
+get_parent() const {
+  return _parent;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaElement::get_document
+//       Access: Public
+//  Description: Returns the ColladaDocument that this element
+//               resides in, or NULL if it is not part of any
+//               document.
+////////////////////////////////////////////////////////////////////
+INLINE PT(ColladaDocument) ColladaElement::
+get_document() const {
+  if (_parent == NULL) {
+    return NULL;
+  } else {
+    return _parent->get_document();
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::attach
 //       Access: Protected
 //  Description: If not NULL, attaches the given child node to
@@ -125,7 +153,7 @@ get_id() const {
 //               This is a convenience method for internal use only.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaElement::
-attach(ColladaElement *child) const {
+attach(ColladaElement *child) {
   if (child == NULL) {
     return;
   }

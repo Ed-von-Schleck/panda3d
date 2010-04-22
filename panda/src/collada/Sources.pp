@@ -27,6 +27,7 @@
     colladaNode.h colladaNode.I \
     colladaOptics.h colladaOptics.I \
     colladaProfile.h colladaProfile.I \
+    colladaRoot.h colladaRoot.I \
     colladaSource.h \
     colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \
@@ -48,6 +49,7 @@
     colladaNode.cxx \
     colladaOptics.cxx \
     colladaProfile.cxx \
+    colladaRoot.cxx \
     colladaVisualScene.cxx \
     config_collada.cxx \
     load_collada_file.cxx \
@@ -70,6 +72,7 @@
     colladaNode.h colladaNode.I \
     colladaOptics.h colladaNode.I \
     colladaProfile.h colladaProfile.I \
+    colladaRoot.h colladaRoot.I \
     colladaSource.h \
     colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \

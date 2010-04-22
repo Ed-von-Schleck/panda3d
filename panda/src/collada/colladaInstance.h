@@ -17,7 +17,6 @@
 
 #include "pandabase.h"
 
-#include "colladaElement.h"
 #include "config_collada.h"
 #include "pointerTo.h"
 
@@ -30,27 +29,42 @@ class ColladaNode;
 class ColladaVisualScene;
 
 ////////////////////////////////////////////////////////////////////
+//       Class : ColladaInstanceBase
+// Description : This is the base class for instances in the
+//               COLLADA document.
+////////////////////////////////////////////////////////////////////
+class EXPCL_COLLADA ColladaInstanceBase : public ColladaElement {
+PUBLISHED:
+  INLINE virtual TypeHandle get_target_type() const
+    { return _target_type; };
+
+protected:
+  string _url;
+  TypeHandle _target_type;
+
+  friend class ColladaDocument;
+};
+
+////////////////////////////////////////////////////////////////////
 //       Class : ColladaInstance
 // Description : This is the template class for instances in the
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 template <class T>
-class EXPCL_COLLADA ColladaInstance : public ColladaElement {
+class EXPCL_COLLADA ColladaInstance : public ColladaInstanceBase {
 PUBLISHED:
+  INLINE virtual TypeHandle get_target_type() const;
   INLINE virtual void clear();
   INLINE bool is_empty() const;
   INLINE const string &get_url() const;
   INLINE void set_url(const string &url);
 
+  INLINE PT(ColladaElement) get_target() const;
+
   INLINE virtual bool load_xml(const TiXmlElement *xelement);
   INLINE virtual TiXmlElement *make_xml() const;
 
-public:
-  PT(T) _target;
-
 private:
-  string _url;
-
   friend class ColladaDocument;
 };
 

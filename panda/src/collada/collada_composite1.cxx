@@ -13,6 +13,7 @@
 #include "colladaNode.cxx"
 #include "colladaOptics.cxx"
 #include "colladaProfile.cxx"
+#include "colladaRoot.cxx"
 #include "colladaVisualScene.cxx"
 #include "config_collada.cxx"
 #include "load_collada_file.cxx"

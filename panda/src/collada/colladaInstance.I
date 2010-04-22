@@ -15,6 +15,18 @@
 #include "colladaGeometry.h"
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaInstance::get_target_type
+//       Access: Public
+//  Description: Returns a TypeHandle value containing the
+//               type of the target that this instance points to.
+////////////////////////////////////////////////////////////////////
+template<class T>
+INLINE TypeHandle ColladaInstance<T>::
+get_target_type() const {
+  return T::get_class_type();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaInstance::clear
 //       Access: Public
 //  Description: Resets the ColladaInstance to its initial state.
@@ -23,7 +35,6 @@ template<class T>
 INLINE void ColladaInstance<T>::
 clear () {
   ColladaElement::clear();
-  _target = NULL;
   _url.clear();
 }
 
@@ -59,6 +70,23 @@ template<class T>
 INLINE void ColladaInstance<T>::
 set_url(const string &url) {
   _url = url;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaInstance::get_target
+//       Access: Public
+//  Description: Returns the element of which this is an instance,
+//               or NULL if it failed to resolve.
+//               The instance needs to be in a document in order
+//               to resolve itself - that is, get_document()
+//               should not return NULL;
+////////////////////////////////////////////////////////////////////
+template<class T>
+INLINE PT(ColladaElement) ColladaInstance<T>::
+get_target() const {
+  CPT(ColladaDocument) doc = get_document();
+  nassertr(doc != NULL, NULL);
+  return doc->resolve_instance(this);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -12,18 +12,11 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADADATA_H
-#define COLLADADATA_H
+#ifndef COLLADADOCUMENT_H
+#define COLLADADOCUMENT_H
 
 #include "pandabase.h"
 
-#include "colladaAsset.h"
-#include "colladaEffect.h"
-#include "colladaMaterial.h"
-#include "colladaNode.h"
-#include "colladaInstance.h"
-#include "colladaLibrary.h"
-#include "colladaVisualScene.h"
 #include "config_collada.h"
 #include "filename.h"
 #include "coordinateSystem.h"
@@ -31,8 +24,11 @@
 #include "dSearchPath.h"
 #include "typedReferenceCount.h"
 #include "pointerTo.h"
+#include "pandaNode.h"
 
-class ColladaLoader;
+class ColladaElement;
+class ColladaInstanceBase;
+class ColladaRoot;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaDocument
@@ -41,50 +37,39 @@ class ColladaLoader;
 //               ColladaDocument structure corresponds exactly with
 //               a collada file on the disk.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaDocument : public ColladaAssetElement {
+class EXPCL_COLLADA ColladaDocument : public TypedReferenceCount {
 PUBLISHED:
-  INLINE ColladaDocument();
+  ColladaDocument();
+  virtual ~ColladaDocument();
 
   static bool resolve_dae_filename(Filename &dae_filename,
                                    const DSearchPath &searchpath = DSearchPath());
 
-  virtual void clear();
+  virtual PT(PandaNode) make_node() const;
 
   bool read(Filename filename, string display_name = string());
   bool read(istream &in);
 
-  virtual bool load_xml(const TiXmlElement *xelement);
-  virtual TiXmlElement * make_xml() const;
-  virtual PT(PandaNode) make_node() const;
-
   bool write_dae(Filename filename) const;
   bool write_dae(ostream &out) const;
-
-  INLINE CoordinateSystem get_coordinate_system() const;
 
   INLINE void set_filename(const Filename &filename);
   INLINE const Filename &get_filename() const;
 
-public:
-  template<class T> INLINE PT(T) resolve_instance(CPT(ColladaInstance<T>) inst) const;
+  ColladaElement *resolve_instance(const ColladaInstanceBase *inst) const;
 
 private:
+  ColladaRoot *_root;
   Filename _filename;
-  PT(ColladaInstanceVisualScene) _instance_visual_scene;
-  ColladaLibraryEffects _library_effects;
-  ColladaLibraryGeometries _library_geometries;
-  ColladaLibraryMaterials _library_materials;
-  ColladaLibraryNodes _library_nodes;
-  ColladaLibraryVisualScenes _library_visual_scenes;
 
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
-    ColladaAssetElement::init_type();
+    TypedReferenceCount::init_type();
     register_type(_type_handle, "ColladaDocument",
-                  ColladaAssetElement::get_class_type());
+                  TypedReferenceCount::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
@@ -93,8 +78,6 @@ public:
 
 private:
   static TypeHandle _type_handle;
-
-  friend class ColladaLoader;
 };
 
 #include "colladaDocument.I"

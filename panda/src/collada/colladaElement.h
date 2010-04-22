@@ -16,6 +16,7 @@
 #define COLLADAELEMENT_H
 
 #include "config_collada.h"
+#include "colladaDocument.h"
 #include "pointerTo.h"
 #include "typedReferenceCount.h"
 
@@ -42,12 +43,15 @@ PUBLISHED:
   INLINE bool has_id() const;
   INLINE const string &get_id() const;
 
+  INLINE PT(ColladaElement) get_parent() const;
+  INLINE virtual PT(ColladaDocument) get_document() const;
+
 protected:
-  INLINE void attach(ColladaElement *child) const;
+  INLINE void attach(ColladaElement *child);
   INLINE void detach(ColladaElement *child) const;
 
 public:
-  CPT(ColladaElement) _parent;
+  PT(ColladaElement) _parent;
 
 private:
   string _name;

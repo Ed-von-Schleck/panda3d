@@ -12,8 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "load_collada_file.h"
 #include "config_collada.h"
+#include "load_collada_file.h"
 #include "sceneGraphReducer.h"
 #include "virtualFileSystem.h"
 #include "config_util.h"

@@ -18,14 +18,13 @@
 #include "pandabase.h"
 
 #include "config_collada.h"
-#include "colladaAsset.h"
 #include "colladaAssetElement.h"
+#include "colladaNode.h"
 #include "pvector.h"
 #include "pointerTo.h"
 
 class ColladaEffect;
 class ColladaGeometry;
-class ColladaNode;
 class ColladaMaterial;
 class ColladaVisualScene;
 
@@ -64,11 +63,11 @@ PUBLISHED:
   INLINE virtual void clear();
   INLINE virtual bool load_xml(const TiXmlElement *xelement);
   INLINE virtual TiXmlElement *make_xml() const;
-  INLINE PT(T) get_element_by_id(const string &id) const;
+  INLINE PT(ColladaElement) get_element_by_id(const string &id) const;
 };
 
 // Specialize for ColladaNode to search recursively
-template<> INLINE PT(ColladaNode) ColladaLibrary<ColladaNode>::get_element_by_id(const string &id) const;
+template<> INLINE PT(ColladaElement) ColladaLibrary<ColladaNode>::get_element_by_id(const string &id) const;
 
 typedef ColladaLibrary<ColladaEffect> ColladaLibraryEffects;
 typedef ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries;

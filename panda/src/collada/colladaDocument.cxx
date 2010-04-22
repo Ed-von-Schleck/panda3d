@@ -14,6 +14,11 @@
 
 #include "colladaDocument.h"
 #include "config_collada.h"
+#include "colladaEffect.h"
+#include "colladaInstance.h"
+#include "colladaMaterial.h"
+#include "colladaRoot.h"
+#include "colladaVisualScene.h"
 #include "config_util.h"
 #include "config_express.h"
 #include "string_utils.h"
@@ -23,6 +28,27 @@
 #include "zStream.h"
 
 TypeHandle ColladaDocument::_type_handle;
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaDocument::Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+ColladaDocument::
+ColladaDocument() {
+  _root = new ColladaRoot(this);
+  _root->ref();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaDocument::Destructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+ColladaDocument::
+~ColladaDocument() {
+  _root->unref();
+}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaDocument::resolve_dae_filename
@@ -44,24 +70,6 @@ resolve_dae_filename(Filename &dae_filename, const DSearchPath &searchpath) {
     vfs->resolve_filename(dae_filename, get_model_path(), "dae");
 
   return vfs->exists(dae_filename);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaDocument::clear
-//       Access: Public
-//  Description: Resets the stored data of this ColladaDocument,
-//               and makes it as if it were a new instance.
-//               Note that the filename value is not cleared.
-////////////////////////////////////////////////////////////////////
-void ColladaDocument::
-clear() {
-  ColladaAssetElement::clear();
-  _instance_visual_scene = NULL;
-  _library_effects.clear();
-  _library_geometries.clear();
-  _library_materials.clear();
-  _library_nodes.clear();
-  _library_visual_scenes.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -129,151 +137,11 @@ read(istream &in) {
     collada_cat.error() << "Empty COLLADA document!\n";
     okflag = false;
   } else {
-    okflag = load_xml (elem);
+    okflag = _root->load_xml (elem);
   }
 
   delete doc;
   return okflag;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaDocument::load_xml
-//       Access: Public
-//  Description: Parses the dae syntax contained in the indicated
-//               TiXmlElement.  Returns true if the stream was a
-//               completely valid dae file, false if there were some
-//               errors, in which case the data may be partially read.
-//
-//               Before you call this routine, you should probably
-//               call set_filename() to set the name of the dae
-//               file we're processing, if at all possible.  If there
-//               is no such filename, you may set it to the empty
-//               string.
-////////////////////////////////////////////////////////////////////
-bool ColladaDocument::
-load_xml(const TiXmlElement *xelement) {
-  clear();
-
-  nassertr(xelement != NULL, false);
-
-  if (xelement->ValueStr() != "COLLADA") {
-    collada_cat.error() << "Root element must be <COLLADA>, not <" << xelement->Value() << ">\n";
-    return false;
-  }
-
-  if (!ColladaAssetElement::load_xml(xelement)) {
-    return false;
-  }
-
-  const TiXmlElement *xchild;
-
-  xchild = xelement->FirstChildElement("library_effects");
-  if (xchild != NULL) {
-    _library_effects.load_xml(xchild);
-  }
-
-  xchild = xelement->FirstChildElement("library_geometries");
-  if (xchild != NULL) {
-    _library_geometries.load_xml(xchild);
-  }
-
-  xchild = xelement->FirstChildElement("library_materials");
-  if (xchild != NULL) {
-    _library_materials.load_xml(xchild);
-  }
-
-  xchild = xelement->FirstChildElement("library_nodes");
-  if (xchild != NULL) {
-    _library_nodes.load_xml(xchild);
-  }
-
-  xchild = xelement->FirstChildElement("library_visual_scenes");
-  if (xchild != NULL) {
-    _library_visual_scenes.load_xml(xchild);
-  }
-
-  xchild = xelement->FirstChildElement("scene");
-  if (xchild != NULL) {
-    const TiXmlElement *xinst;
-    xinst = xchild->FirstChildElement("instance_visual_scene");
-    if (xinst != NULL) {
-      _instance_visual_scene = new ColladaInstanceVisualScene;
-      _instance_visual_scene->_parent = this;
-      _instance_visual_scene->load_xml(xinst);
-    }
-  }
-
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaDocument::make_xml
-//       Access: Public
-//  Description: Returns the root <COLLADA> element of the COLLADA
-//               document as new TiXmlElement. This contains the
-//               entire structure of the COLLADA document.
-////////////////////////////////////////////////////////////////////
-TiXmlElement * ColladaDocument::
-make_xml() const {
-  TiXmlElement * xelement = ColladaAssetElement::make_xml();
-  if (xelement == NULL) {
-    return NULL;
-  }
-  xelement->SetValue("COLLADA");
-
-  // Currently, we write valid 1.5.0 collada
-  xelement->SetAttribute("version", "1.5.0");
-  xelement->SetAttribute("xmlns", "http://www.collada.org/2008/03/COLLADASchema");
-
-  if (!_asset) {
-    //FIXME: what to do when there is no asset? collada spec requires one, I'm fairly certain
-  }
-
-  if (_library_effects.size() > 0) {
-    xelement->LinkEndChild(_library_effects.make_xml());
-  }
-  if (_library_geometries.size() > 0) {
-    xelement->LinkEndChild(_library_geometries.make_xml());
-  }
-  if (_library_materials.size() > 0) {
-    xelement->LinkEndChild(_library_materials.make_xml());
-  }
-  if (_library_nodes.size() > 0) {
-    xelement->LinkEndChild(_library_nodes.make_xml());
-  }
-  if (_library_visual_scenes.size() > 0) {
-    xelement->LinkEndChild(_library_visual_scenes.make_xml());
-  }
-
-  TiXmlElement * xscene = new TiXmlElement("scene");
-  if (_instance_visual_scene != NULL) {
-    xscene->LinkEndChild(_instance_visual_scene->make_xml());
-  }
-  xelement->LinkEndChild(xscene);
-
-  return xelement;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaDocument::make_node
-//       Access: Public
-//  Description: The main interface for loading COLLADA data
-//               into the scene graph. Returns a ModelRoot
-//               representing the ColladaDocument and its children.
-////////////////////////////////////////////////////////////////////
-PT(PandaNode) ColladaDocument::
-make_node() const {
-  PT(ModelRoot) node = new ModelRoot(_filename.get_basename());
-
-  if (_instance_visual_scene != NULL) {
-    CPT(ColladaVisualScene) vis_scene;
-    vis_scene = resolve_instance<ColladaVisualScene>(_instance_visual_scene);
-    if (vis_scene != NULL) {
-      node->add_child(vis_scene->make_node());
-    }
-  }
-
-  return DCAST(PandaNode, node);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -319,7 +187,7 @@ write_dae(Filename filename) const {
 ////////////////////////////////////////////////////////////////////
 bool ColladaDocument::
 write_dae(ostream &out) const {
-  TiXmlElement * xelement = make_xml();
+  TiXmlElement * xelement = _root->make_xml();
   if (xelement == NULL) {
     return false;
   }
@@ -329,5 +197,52 @@ write_dae(ostream &out) const {
   out << printer.CStr();
   delete xelement;
   return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaDocument::make_node
+//       Access: Public
+//  Description: Simply calls get_root()->make_node().
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) ColladaDocument::
+make_node() const {
+  return _root->make_node();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaDocument::resolve_instance
+//       Access: Public
+//  Description: Resolves the URL in the given instance, returns
+//               the right element, or NULL if it wasn't found.
+////////////////////////////////////////////////////////////////////
+ColladaElement *ColladaDocument::
+resolve_instance(const ColladaInstanceBase *inst) const {
+  if (inst->_url.empty()) {
+    return NULL;
+  }
+
+  if (inst->_url[0] != '#') {
+    collada_cat.warning() << "URL '" << inst->_url << "' is not local, cannot resolve\n";
+    return NULL;
+  }
+
+  string id = inst->_url.substr(1);
+  const TypeHandle &handle = inst->get_target_type();
+  if (handle == ColladaEffect::get_class_type()) {
+    return _root->_library_effects.get_element_by_id(id);
+  } else if (handle == ColladaGeometry::get_class_type()) {
+    return _root->_library_geometries.get_element_by_id(id);
+  } else if (handle == ColladaMaterial::get_class_type()) {
+    return _root->_library_materials.get_element_by_id(id);
+  } else if (handle == ColladaNode::get_class_type()) {
+    return _root->_library_nodes.get_element_by_id(id);
+  } else if (handle == ColladaVisualScene::get_class_type()) {
+    return _root->_library_visual_scenes.get_element_by_id(id);
+  } else {
+    collada_cat.error()
+      << "ColladaDocument::resolve_instance invoked with unknown type "
+      << handle.get_name() << "\n";
+  }
+  return NULL;
 }
 

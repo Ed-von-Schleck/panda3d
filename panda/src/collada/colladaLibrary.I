@@ -77,13 +77,13 @@ make_xml() const {
 //               the given ID, or NULL if none found.
 ////////////////////////////////////////////////////////////////////
 template<class T>
-INLINE PT(T) ColladaLibrary<T>::
+INLINE PT(ColladaElement) ColladaLibrary<T>::
 get_element_by_id(const string &id) const {
   PT(T) res;
   for (int i = 0; i < pvector<PointerTo<T> >::size(); ++i) {
     res = pvector<PointerTo<T> >::at(i);
     if (res->get_id() == id) {
-      return res;
+      return DCAST(ColladaElement, res);
     }
   }
   return NULL;
@@ -97,17 +97,17 @@ get_element_by_id(const string &id) const {
 //               Searches recursively for subnodes as well.
 ////////////////////////////////////////////////////////////////////
 template<>
-INLINE PT(ColladaNode) ColladaLibrary<ColladaNode>::
+INLINE PT(ColladaElement) ColladaLibrary<ColladaNode>::
 get_element_by_id(const string &id) const {
   PT(ColladaNode) res;
   for (int i = 0; i < pvector<PT(ColladaNode) >::size(); ++i) {
     res = pvector<PT(ColladaNode) >::at(i);
     if (res->get_id() == id) {
-      return res;
+      return DCAST(ColladaElement, res);
     } else {
       res = res->get_element_by_id(id);
       if (res != NULL) {
-        return res;
+        return DCAST(ColladaElement, res);
       }
     }
   }

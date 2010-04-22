@@ -15,10 +15,10 @@
 #ifndef COLLADAASSET_H
 #define COLLADAASSET_H
 
+#include "config_collada.h"
 #include "typedReferenceCount.h"
 #include "colladaContributor.h"
 #include "colladaElement.h"
-#include "config_collada.h"
 #include "pvector.h"
 #include "pointerTo.h"
 #include "coordinateSystem.h"
