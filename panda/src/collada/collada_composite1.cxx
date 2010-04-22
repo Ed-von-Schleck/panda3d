@@ -12,6 +12,7 @@
 #include "colladaMesh.cxx"
 #include "colladaNode.cxx"
 #include "colladaOptics.cxx"
+#include "colladaPrimitive.cxx"
 #include "colladaProfile.cxx"
 #include "colladaRoot.cxx"
 #include "colladaVisualScene.cxx"

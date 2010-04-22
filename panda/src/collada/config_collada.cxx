@@ -28,6 +28,7 @@
 #include "colladaMesh.h"
 #include "colladaNode.h"
 #include "colladaOptics.h"
+#include "colladaPrimitive.h"
 #include "colladaProfile.h"
 #include "colladaRoot.h"
 #include "colladaVisualScene.h"
@@ -109,6 +110,7 @@ init_libcollada() {
   ColladaMesh::init_type();
   ColladaNode::init_type();
   ColladaOptics::init_type();
+  ColladaPrimitive::init_type();
   ColladaProfile::init_type();
   ColladaRoot::init_type();
   ColladaVisualScene::init_type();

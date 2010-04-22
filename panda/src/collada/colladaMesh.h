@@ -21,15 +21,15 @@
 //       Class : ColladaMesh
 // Description : Object that represents the <mesh> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaMesh : public ColladaGeometry {
+class EXPCL_COLLADA ColladaMesh : public ColladaElement {
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
-    ColladaGeometry::init_type();
+    ColladaElement::init_type();
     register_type(_type_handle, "ColladaMesh",
-                  ColladaGeometry::get_class_type());
+                  ColladaElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

@@ -26,6 +26,7 @@
     colladaMesh.h \
     colladaNode.h colladaNode.I \
     colladaOptics.h colladaOptics.I \
+    colladaPrimitive.h \
     colladaProfile.h colladaProfile.I \
     colladaRoot.h colladaRoot.I \
     colladaSource.h \
@@ -48,6 +49,7 @@
     colladaMesh.cxx \
     colladaNode.cxx \
     colladaOptics.cxx \
+    colladaPrimitive.cxx \
     colladaProfile.cxx \
     colladaRoot.cxx \
     colladaVisualScene.cxx \
@@ -71,6 +73,7 @@
     colladaMesh.h \
     colladaNode.h colladaNode.I \
     colladaOptics.h colladaNode.I \
+    colladaPrimitive.h \
     colladaProfile.h colladaProfile.I \
     colladaRoot.h colladaRoot.I \
     colladaSource.h \

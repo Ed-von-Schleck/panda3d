@@ -1,5 +1,5 @@
-// Filename: colladaGeometry.h
-// Created by: Xidram (20Apr10)
+// Filename: colladaPrimitive.h
+// Created by: rdb (22Apr10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,48 +12,58 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAGEOMETRY_H
-#define COLLADAGEOMETRY_H
+#ifndef COLLADAPRIMITIVE_H
+#define COLLADAPRIMITIVE_H
 
-#include "colladaAssetElement.h"
-#include "typedReferenceCount.h"
+#include "pointerTo.h"
+#include "colladaElement.h"
+#include "geomPrimitive.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaGeometry
-// Description : Object that represents the <geometry> COLLADA element.
+//       Class : ColladaPrimitive
+// Description : Object that represents the COLLADA primitive
+//               elements, e.g. <vertices>, <lines>, etc.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaGeometry : public ColladaAssetElement {
+class EXPCL_COLLADA ColladaPrimitive : public ColladaElement {
 PUBLISHED:
+  enum PrimitiveType {
+    PT_lines,
+    PT_linestrips,
+    PT_polygons,
+    PT_polylist,
+    PT_triangles,
+    PT_trifans,
+    PT_tristrips
+  };
+
+  ColladaPrimitive(PrimitiveType primitive_type);
+  virtual ~ColladaPrimitive() {};
+
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
+  virtual PT(GeomPrimitive) make_primitive() const;
 
-  PT(ColladaElement) get_geometric_element() const;
-
-  enum GeometryType {
-    GT_none = 0,
-    GT_convex_mesh,
-    GT_mesh,
-    GT_spline,
-    GT_brep
+  struct Input {
+    string _semantic;
+    string _source;
+    int _offset;
+    int _set;
   };
 
 private:
-  GeometryType _geometry_type;
-  PT(ColladaElement) _geometric_element;
-
-public:
-  static const string _element_name;
-  static const string _library_name;
+  PrimitiveType _primitive_type;
+  pvector<Input> _inputs;
+  unsigned int _count;
 
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
-    ColladaAssetElement::init_type();
-    register_type(_type_handle, "ColladaGeometry",
-                  ColladaAssetElement::get_class_type());
+    ColladaElement::init_type();
+    register_type(_type_handle, "ColladaPrimitive",
+                  ColladaElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();
