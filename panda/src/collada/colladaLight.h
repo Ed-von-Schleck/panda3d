@@ -17,10 +17,6 @@
 
 #include "colladaAssetElement.h"
 #include "typedReferenceCount.h"
-#include "ambientLight.h"
-#include "directionalLight.h"
-#include "pointLight.h"
-#include "spotlight.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaLight

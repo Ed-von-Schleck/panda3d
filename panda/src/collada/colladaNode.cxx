@@ -18,7 +18,7 @@
 
 TypeHandle ColladaNode::_type_handle;
 const string ColladaNode::_element_name ("node");
-const string ColladaNode::_library_name ("library_cameras");
+const string ColladaNode::_library_name ("library_nodes");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaNode::Constructor

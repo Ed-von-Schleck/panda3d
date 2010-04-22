@@ -13,6 +13,10 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "colladaLight.h"
+#include "ambientLight.h"
+#include "directionalLight.h"
+#include "pointLight.h"
+#include "spotlight.h"
 
 TypeHandle ColladaLight::_type_handle;
 const string ColladaLight::_element_name ("light");

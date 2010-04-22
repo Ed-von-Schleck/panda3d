@@ -50,9 +50,16 @@ public:
 private:
   NodeType _node_type;
   pvector<PT(ColladaNode)> _nodes;
-  pvector<PT(ColladaInstanceCamera)> _instance_cameras;
-  pvector<PT(ColladaInstanceLight)> _instance_lights;
-  pvector<PT(ColladaInstanceNode)> _instance_nodes;
+
+  // The following ifndef is a workaround to a major Interrogate issue.
+  // Without it, Interrogate starts leaking virtual biochemical waste all over
+  // memory like it has a severe gastrointestinal disorder. Memory gets filled,
+  // the system comes to a crawl, and we don't get to eat Pandette Scout treats.
+  #ifndef CPPPARSER
+    pvector<PT(ColladaInstanceCamera)> _instance_cameras;
+    pvector<PT(ColladaInstanceLight)> _instance_lights;
+    pvector<PT(ColladaInstanceNode)> _instance_nodes;
+  #endif
   LMatrix4d _transform;
 
   // Used for instancing purposes
