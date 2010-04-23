@@ -53,6 +53,8 @@ public:
 protected:
   void cleanup();
 
+  bool _opened;
+
 	unsigned char _bytes_per_sample;
 	unsigned int _num_samples;
 
