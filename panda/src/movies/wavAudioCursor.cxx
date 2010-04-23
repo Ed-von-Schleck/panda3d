@@ -67,17 +67,16 @@ WavAudioCursor(WavAudio *src) :
   // Read riff header
 	WavChunkHeader header;
   wav_stream->read((char *)&header, sizeof(header));
-  if (wav_stream->fail()){
-    movies_cat.error() << "Failure while reading file: " << src->_filename << "\n";    
-    cleanup(); return;
-  }
-  if (wav_stream->eof()){
-    movies_cat.error() << "Unexpected end of file while reading file: " << src->_filename << "\n";    
+
+  if (wav_stream->fail() || wav_stream->eof()){
+    file->close_read_file(wav_stream);
+    movies_cat.error() << (wav_stream->eof()?"Unexpected end of file":"Failure")
+      << " while reading file: " << src->_filename << "\n";
     cleanup(); return;
   }
 
-	if(header.chunk_id[0] != 'R' || header.chunk_id[1] != 'I' ||
-	   header.chunk_id[2] != 'F' || header.chunk_id[3] != 'F') {
+	if(header.chunks[0] != 'R' || header.chunks[1] != 'I' ||
+	   header.chunks[2] != 'F' || header.chunks[3] != 'F') {
     file->close_read_file(wav_stream);
     movies_cat.error()
       << "Invalid file: " << src->_filename << "\n";
@@ -87,12 +86,11 @@ WavAudioCursor(WavAudio *src) :
 	// Read riff type
 	char tmp[4];
   wav_stream->read(tmp, sizeof(tmp));
-  if (wav_stream->fail()){
-    movies_cat.error() << "Failure while reading file: " << src->_filename << "\n";    
-    cleanup(); return;
-  }
-  if (wav_stream->eof()){
-    movies_cat.error() << "Unexpected end of file while reading file: " << src->_filename << "\n";    
+
+  if (wav_stream->fail() || wav_stream->eof()){
+    file->close_read_file(wav_stream);
+    movies_cat.error() << (wav_stream->eof()?"Unexpected end of file":"Failure")
+      << " while reading file: " << src->_filename << "\n";
     cleanup(); return;
   }
 
@@ -105,17 +103,16 @@ WavAudioCursor(WavAudio *src) :
 
   // Read format header
   wav_stream->read((char *)&header, sizeof(header));
-  if (wav_stream->fail()){
-    movies_cat.error() << "Failure while reading file: " << src->_filename << "\n";    
-    cleanup(); return;
-  }
-  if (wav_stream->eof()){
-    movies_cat.error() << "Unexpected end of file while reading file: " << src->_filename << "\n";    
+
+  if (wav_stream->fail() || wav_stream->eof()){
+    file->close_read_file(wav_stream);
+    movies_cat.error() << (wav_stream->eof()?"Unexpected end of file":"Failure")
+      << " while reading file: " << src->_filename << "\n";
     cleanup(); return;
   }
 
-	if(header.chunk_id[0] != 'f' || header.chunk_id[1] != 'm' ||
-	   header.chunk_id[2] != 't' || header.chunk_id[3] != ' ') {
+	if(header.chunks[0] != 'f' || header.chunks[1] != 'm' ||
+	   header.chunks[2] != 't' || header.chunks[3] != ' ') {
     file->close_read_file(wav_stream);
     movies_cat.error()
       << "Invalid file format: " << src->_filename << "\n";
@@ -125,12 +122,11 @@ WavAudioCursor(WavAudio *src) :
   // Read format chunk
 	WavFormatChunk format;
   wav_stream->read((char *)&format, sizeof(format));
-  if (wav_stream->fail()){
-    movies_cat.error() << "Failure while reading file: " << src->_filename << "\n";
-    cleanup(); return;
-  }
-  if (wav_stream->eof()){
-    movies_cat.error() << "Unexpected end of file while reading file: " << src->_filename << "\n";
+  
+  if (wav_stream->fail() || wav_stream->eof()){
+    file->close_read_file(wav_stream);
+    movies_cat.error() << (wav_stream->eof()?"Unexpected end of file":"Failure")
+      << " while reading file: " << src->_filename << "\n";
     cleanup(); return;
   }
 
@@ -146,13 +142,13 @@ WavAudioCursor(WavAudio *src) :
 	_audio_rate = format.rate;
 
 	// Look for data chunk
-	bool dataFound = false;
+	bool data_chunk_found = false;
   wav_stream->read((char *)&header, sizeof(header));
 
 	while(!wav_stream->fail() && !wav_stream->eof()) {
-		if(header.chunk_id[0] == 'd' && header.chunk_id[1] == 'a' &&
-		   header.chunk_id[2] == 't' && header.chunk_id[3] == 'a') {
-			dataFound = true;
+		if(header.chunks[0] == 'd' && header.chunks[1] == 'a' &&
+		   header.chunks[2] == 't' && header.chunks[3] == 'a') {
+			data_chunk_found = true;
 			break;
 		} else {
       wav_stream->seekg(header.chunk_size, std::ios::cur);
@@ -163,7 +159,8 @@ WavAudioCursor(WavAudio *src) :
     wav_stream->read((char *)&header, sizeof(header));
 	}
 
-	if(!dataFound) {
+	if(!data_chunk_found) {
+    file->close_read_file(wav_stream);
     movies_cat.error()
       << "Invalid WAV file. Couldn't find data chunk in file " << src->_filename << "\n";
     cleanup(); return;
@@ -178,20 +175,14 @@ WavAudioCursor(WavAudio *src) :
   _audio_buffer = new PN_uint8 [_audio_buffer_size];
   wav_stream->read((char *)_audio_buffer, sizeof(PN_uint8)*_audio_buffer_size);
 
-  if (wav_stream->fail()){
-    movies_cat.error() << "Failure while reading file: " << src->_filename << "\n";
-    cleanup(); return;
-  }
-  if (wav_stream->eof()){
-    movies_cat.error() << "Unexpected end of file while reading file: " << src->_filename << "\n";
+  if (wav_stream->fail() || wav_stream->eof()){
+    file->close_read_file(wav_stream);
+    movies_cat.error() << (wav_stream->eof()?"Unexpected end of file":"Failure")
+      << " while reading file: " << src->_filename << "\n";
     cleanup(); return;
   }
 
-  // FIXME: I think I should do the following now, and also before cleaning up
-  // after errors when the istream has already been open:
-  // file->close_read_file(wav_stream);
-  // But it crashes. Looking into it.
-
+  file->close_read_file(wav_stream);
   _opened = true;
 
 }

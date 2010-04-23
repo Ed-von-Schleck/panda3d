@@ -29,7 +29,7 @@ class EXPCL_PANDA_MOVIES WavAudioCursor : public MovieAudioCursor {
   friend class WavAudio;
 
   struct WavChunkHeader {
-	  PN_uint8 chunk_id[4];
+	  PN_uint8 chunks[4];
 	  PN_uint32 chunk_size;
   };
 
