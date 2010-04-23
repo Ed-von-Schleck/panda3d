@@ -19,6 +19,8 @@ except:
     print "Please install the development package of Python 2.x and try again."
     exit(1)
 
+os.chdir(os.path.join(sys.path[0], '..'))
+
 from makepandacore import *
 from installpanda import *
 
