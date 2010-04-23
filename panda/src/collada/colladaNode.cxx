@@ -87,6 +87,16 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
     xchild = xchild->NextSiblingElement("instance_camera");
   }
 
+  // Read out any instances to geometries.
+  xchild = xelement->FirstChildElement("instance_geometry");
+  while (xchild != NULL) {
+    PT(ColladaInstanceGeometry) inst = new ColladaInstanceGeometry;
+    inst->_parent = this;
+    inst->load_xml(xchild);
+    _instance_geometries.push_back(inst);
+    xchild = xchild->NextSiblingElement("instance_geometry");
+  }
+
   // Read out any instances to lights.
   xchild = xelement->FirstChildElement("instance_light");
   while (xchild != NULL) {
@@ -222,6 +232,10 @@ make_xml() const {
     xelement->LinkEndChild(_instance_cameras.at(i)->make_xml());
   }
 
+  for (int i = 0; i < _instance_geometries.size(); ++i) {
+    xelement->LinkEndChild(_instance_geometries.at(i)->make_xml());
+  }
+
   for (int i = 0; i < _instance_lights.size(); ++i) {
     xelement->LinkEndChild(_instance_lights.at(i)->make_xml());
   }
@@ -266,21 +280,21 @@ make_node() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaNode::get_element_by_id
+//     Function: ColladaNode::get_node_by_id
 //       Access: Public
-//  Description: Returns the element in the node hierarchy that has
+//  Description: Returns the node in the node hierarchy that has
 //               the given ID, or NULL if none found.
 //               Searches recursively for subnodes as well.
 ////////////////////////////////////////////////////////////////////
 INLINE PT(ColladaNode) ColladaNode::
-get_element_by_id(const string &id) const {
+get_node_by_id(const string &id) const {
   PT(ColladaNode) res;
   for (int i = 0; i < _nodes.size(); ++i) {
     res = _nodes.at(i);
     if (res->get_id() == id) {
       return res;
     } else {
-      res = res->get_element_by_id(id);
+      res = res->get_node_by_id(id);
       if (res != NULL) {
         return res;
       }

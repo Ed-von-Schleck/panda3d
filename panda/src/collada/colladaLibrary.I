@@ -105,7 +105,7 @@ get_element_by_id(const string &id) const {
     if (res->get_id() == id) {
       return DCAST(ColladaElement, res);
     } else {
-      res = res->get_element_by_id(id);
+      res = res->get_node_by_id(id);
       if (res != NULL) {
         return DCAST(ColladaElement, res);
       }

@@ -41,7 +41,7 @@ public:
   virtual TiXmlElement *make_xml() const;
   virtual PT(PandaNode) make_node() const;
 
-  PT(ColladaNode) get_element_by_id(const string &id) const;
+  PT(ColladaNode) get_node_by_id(const string &id) const;
 
   // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;
@@ -57,6 +57,7 @@ private:
   // the system comes to a crawl, and we don't get to eat Pandette Scout treats.
   #ifndef CPPPARSER
     pvector<PT(ColladaInstanceCamera)> _instance_cameras;
+    pvector<PT(ColladaInstanceGeometry)> _instance_geometries;
     pvector<PT(ColladaInstanceLight)> _instance_lights;
     pvector<PT(ColladaInstanceNode)> _instance_nodes;
   #endif
