@@ -35,15 +35,15 @@ TypeHandle WavAudioCursor::_type_handle;
 WavAudioCursor::
 WavAudioCursor(WavAudio *src) :
   MovieAudioCursor(src),
-  _filename(src->_filename)
+  _filename(src->_filename),
+  _opened(false),
+  _audio_buffer(0),
+  _audio_buffer_size(0)
 {
 
-  _opened = false;
-  _can_seek = false;
-  _can_seek_fast = false;
+  _can_seek = 0;
+  _can_seek_fast = true;
   _samples_read = 0;
-  _audio_buffer = 0;
-  _audio_buffer_size = 0;
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
 
@@ -216,7 +216,16 @@ WavAudioCursor::
 ////////////////////////////////////////////////////////////////////
 void WavAudioCursor::
 seek(double t) {
-
+  if (_opened){
+    if (_num_samples < 1){
+      return;
+    }
+    PN_uint16 desired_sample = _length * _audio_rate;
+    if (desired_sample > _num_samples - 1){
+      desired_sample = _num_samples - 1;
+    }
+    _samples_read = desired_sample;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -266,7 +275,7 @@ read_samples(int n, PN_int16 *data) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: FfmpegAudioCursor::cleanup
+//     Function: WavAudioCursor::cleanup
 //       Access: Protected
 //  Description: Reset to a standard inactive state.
 ////////////////////////////////////////////////////////////////////

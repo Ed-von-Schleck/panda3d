@@ -49,6 +49,7 @@ PUBLISHED:
   
 public:
   virtual void read_samples(int n, PN_int16 *data);
+  INLINE bool is_valid() const;
 
 protected:
   void cleanup();
@@ -61,9 +62,6 @@ protected:
   PN_uint32 _audio_buffer_size;
   PN_uint8 *_audio_buffer;
 
-  bool is_valid(){
-    return true;
-  }
   Filename _filename;
 
 public:
