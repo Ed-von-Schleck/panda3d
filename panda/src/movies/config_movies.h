@@ -36,6 +36,9 @@
 #include "ffmpegAudio.h"
 #include "ffmpegAudioCursor.h"
 
+#include "wavAudio.h"
+#include "wavAudioCursor.h"
+
 ConfigureDecl(config_movies, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
 NotifyCategoryDecl(movies, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
 

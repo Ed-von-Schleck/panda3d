@@ -60,6 +60,9 @@ init_libmovies() {
   FfmpegAudioCursor::init_type();
   av_register_all();
   FfmpegVirtualFile::register_protocol();
+#else
+  WavAudio::init_type();
+  WavAudioCursor::init_type();
 #endif
 }
 

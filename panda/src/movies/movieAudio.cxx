@@ -62,6 +62,12 @@ get(const Filename &name) {
   // But for now, just hardwire it to go to FFMPEG.
   return new FfmpegAudio(name);
 #else
-  return new MovieAudio("Load-Failure Stub");
+  std::string extension = name.get_extension();
+  std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
+  if (extension == "wav"){
+    return new WavAudio(name);
+  } else {
+    return new MovieAudio("Load-Failure Stub");
+  }
 #endif
 }

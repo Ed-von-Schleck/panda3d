@@ -15,6 +15,9 @@
 
 #include "ffmpegVirtualFile.cxx"
 
+#include "wavAudio.cxx"
+#include "wavAudioCursor.cxx"
+
 #include "userDataAudio.cxx"
 #include "userDataAudioCursor.cxx"
 
