@@ -51,13 +51,20 @@ OSXTARGET=None
 if "MACOSX_DEPLOYMENT_TARGET" in os.environ:
     OSXTARGET=os.environ["MACOSX_DEPLOYMENT_TARGET"]
 
-PkgListSet(MAYAVERSIONS + MAXVERSIONS + DXVERSIONS + [
-  "PYTHON","ZLIB","PNG","JPEG","TIFF","VRPN","TINYXML",
-  "FMODEX","OPENAL","NVIDIACG","OPENSSL","FREETYPE","WX",
-  "FFTW","ARTOOLKIT","SQUISH","ODE","DIRECTCAM","NPAPI",
-  "OPENCV","FFMPEG","SWSCALE","FCOLLADA","GTK2","OPENGL",
-  "OSMESA","X11","XF86DGA","XRANDR","PHYSX",
-  "PANDATOOL","CONTRIB","AWESOMIUM"
+PkgListSet(["PYTHON", "DIRECT",                        # Python support
+  "OPENGL"] + DXVERSIONS + ["TINYDISPLAY", "NVIDIACG", # 3D graphics
+  "OPENAL", "FMODEX", "FFMPEG",                        # Multimedia
+  "ODE", "PHYSX",                                      # Physics
+  "ZLIB", "PNG", "JPEG", "TIFF", "SQUISH", "FREETYPE", # 2D Formats support
+  ] + MAYAVERSIONS + MAXVERSIONS + [ "FCOLLADA",       # 3D Formats support
+  "VRPN", "OPENSSL",                                   # Transport
+  "FFTW", "SWSCALE",                                   # Algorithm helpers
+  "ARTOOLKIT", "OPENCV", "DIRECTCAM",                  # Augmented Reality
+  "NPAPI", "AWESOMIUM",                                # Browser embedding
+  "GTK2", "WX",                                        # Toolkit support
+  "OSMESA", "X11", "XF86DGA", "XRANDR",                # Unix platform support
+  "PANDATOOL", "TINYXML", "PVIEW", "DEPLOYTOOLS",      # Toolchain                             
+  "CONTRIB"                                            # Experimental
 ])
 
 CheckPandaSourceTree()
@@ -92,6 +99,7 @@ def usage(problem):
     print "  --threads N       (use the multithreaded build system. see manual)"
     print "  --osxtarget N     (the OSX version number to build for (OSX only))"
     print "  --override \"O=V\"  (override dtool_config/prc option value)"
+    print "  --static          (builds libraries for static linking)"
     print ""
     for pkg in PkgListGet():
         p = pkg.lower()
@@ -112,7 +120,8 @@ def parseopts(args):
     longopts = [
         "help","distributor=","verbose","runtime","osxtarget=",
         "optimize=","everything","nothing","installer","rtdist","nocolor",
-        "version=","lzma","no-python","threads=","outputdir=","override="]
+        "version=","lzma","no-python","threads=","outputdir=","override=",
+        "static"]
     anything = 0
     optimize = ""
     for pkg in PkgListGet(): longopts.append("no-"+pkg.lower())
@@ -139,6 +148,7 @@ def parseopts(args):
                 if (len(VERSION.split(".")) != 3): raise "usage"
             elif (option=="--lzma"): COMPRESSOR="lzma"
             elif (option=="--override"): AddOverride(value.strip())
+            elif (option=="--static"): SetLinkAllStatic(True)
             else:
                 for pkg in PkgListGet():
                     if (option=="--use-"+pkg.lower()):
@@ -242,6 +252,12 @@ if (INSTALLER) and (PkgSkip("PYTHON")) and (not RUNTIME):
 
 if (RTDIST or RUNTIME) and (PkgSkip("TINYXML")):
     exit("Cannot build rtdist or runtime without tinyxml")
+
+if (RTDIST) and (PkgSkip("JPEG")):
+    exit("Cannot build rtdist without jpeg")
+
+if (RTDIST) and (PkgSkip("WX")):
+    exit("Cannot build rtdist without wx")
 
 if (RUNTIME):
     SetLinkAllStatic(True)
@@ -760,13 +776,13 @@ def CompileIgate(woutd,wsrc,opts):
     #FIXME: allow 64-bits on OSX
     if (COMPILER=="LINUX") and (platform.architecture()[0]=="64bit") and (sys.platform!="darwin"):
         cmd += ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -D__inline -D__const=const -D_LP64'
-    if (COMPILER=="LINUX") and (platform.architecture()[0]=="32bit"):
+    if (COMPILER=="LINUX") and (platform.architecture()[0]=="32bit" or sys.platform=="darwin"):
         cmd += ' -DCPPPARSER -D__STDC__=1 -D__cplusplus -D__inline -D__const=const -D__i386__'
     optlevel=GetOptimizeOption(opts)
     if (optlevel==1): cmd += ' -D_DEBUG'
     if (optlevel==2): cmd += ' -D_DEBUG'
-    if (optlevel==3): cmd += ' -DFORCE_INLINING'
-    if (optlevel==4): cmd += ' -DNDEBUG -DFORCE_INLINING'
+    if (optlevel==3): pass
+    if (optlevel==4): cmd += ' -DNDEBUG'
     cmd += ' -oc ' + woutc + ' -od ' + woutd
     cmd += ' -fnames -string -refcount -assert -python-native'
     cmd += ' -S' + GetOutputDir() + '/include/parser-inc'
@@ -1305,6 +1321,7 @@ DTOOL_CONFIG=[
     ("PHAVE_DIRENT_H",                 'UNDEF',                  '1'),
     ("PHAVE_SYS_SOUNDCARD_H",          'UNDEF',                  '1'),
     ("PHAVE_UCONTEXT_H",               'UNDEF',                  '1'),
+    ("PHAVE_STDINT_H",                 'UNDEF',                  '1'),
     ("HAVE_RTTI",                      '1',                      '1'),
     ("HAVE_X11",                       'UNDEF',                  '1'),
     ("HAVE_XRANDR",                    'UNDEF',                  '1'),
@@ -1704,16 +1721,16 @@ else:
   configprc=ReadFile("makepanda/config.in")
 
 if (sys.platform.startswith("win")):
-    configprc = configprc.replace(".panda3d","Panda3D-%s" % VERSION)
+    configprc = configprc.replace("$HOME/.panda3d", "$USER_APPDATA/Panda3D-%s" % MAJOR_VERSION)
 else:
-    configprc = configprc.replace("aux-display pandadx9","")
-    configprc = configprc.replace("aux-display pandadx8","")
+    configprc = configprc.replace("aux-display pandadx9", "")
+    configprc = configprc.replace("aux-display pandadx8", "")
 
 if (sys.platform == "darwin"):
-    configprc = configprc.replace(".panda3d","Library/Caches/Panda3D-%s" % VERSION)
+    configprc = configprc.replace(".panda3d/cache", "Library/Caches/Panda3D-%s" % MAJOR_VERSION)
     
     # OpenAL is not yet working well on OSX for us, so let's do this for now.
-    configprc = configprc.replace("p3openal_audio","p3fmod_audio")
+    configprc = configprc.replace("p3openal_audio", "p3fmod_audio")
 
 ConditionalWriteFile(GetOutputDir()+"/etc/Config.prc", configprc)
 ConditionalWriteFile(GetOutputDir()+"/etc/Confauto.prc", confautoprc)
@@ -1875,6 +1892,17 @@ CopyAllHeaders('panda/src/testbed')
 if (PkgSkip("PHYSX")==0):
     CopyAllHeaders('panda/src/physx')
     CopyAllHeaders('panda/metalibs/pandaphysx')
+
+if (PkgSkip("DIRECT")==0):
+    CopyAllHeaders('direct/src/directbase')
+    CopyAllHeaders('direct/src/dcparser')
+    CopyAllHeaders('direct/src/deadrec')
+    CopyAllHeaders('direct/src/distributed')
+    CopyAllHeaders('direct/src/interval')
+    CopyAllHeaders('direct/src/showbase')
+    CopyAllHeaders('direct/metalibs/direct')
+    CopyAllHeaders('direct/src/dcparse')
+    CopyAllHeaders('direct/src/heapq')
 
 if (RUNTIME or RTDIST):
     CopyAllHeaders('direct/src/plugin', skip=["p3d_plugin_config.h"])
@@ -2109,7 +2137,7 @@ if (not RUNTIME):
 # DIRECTORY: dtool/src/prckeys/
 #
 
-if (PkgSkip("OPENSSL")==0 and not RUNTIME):
+if (PkgSkip("OPENSSL")==0 and not RUNTIME and not RTDIST):
   OPTS=['DIR:dtool/src/prckeys', 'OPENSSL']
   TargetAdd('make-prc-key_makePrcKey.obj', opts=OPTS, input='makePrcKey.cxx')
   TargetAdd('make-prc-key.exe', input='make-prc-key_makePrcKey.obj')
@@ -2859,8 +2887,8 @@ if PkgSkip("OPENAL") == 0 and not RUNTIME:
 # DIRECTORY: panda/src/downloadertools/
 #
 
-if (PkgSkip("OPENSSL")==0 and not RTDIST and not RUNTIME):
-  OPTS=['DIR:panda/src/downloadertools', 'OPENSSL', 'ZLIB', 'ADVAPI']
+if (PkgSkip("OPENSSL")==0 and not RTDIST and not RUNTIME and PkgSkip("DEPLOYTOOLS")==0):
+  OPTS=['DIR:panda/src/downloadertools', 'OPENSSL', 'ZLIB', 'ADVAPI', 'WINSOCK2', 'WINSHELL']
 
   TargetAdd('apply_patch_apply_patch.obj', opts=OPTS, input='apply_patch.cxx')
   TargetAdd('apply_patch.exe', input=['apply_patch_apply_patch.obj'])
@@ -2906,8 +2934,8 @@ if (PkgSkip("OPENSSL")==0 and not RTDIST and not RUNTIME):
 # DIRECTORY: panda/src/downloadertools/
 #
 
-if (PkgSkip("ZLIB")==0 and not RTDIST and not RUNTIME):
-  OPTS=['DIR:panda/src/downloadertools', 'ZLIB', 'OPENSSL', 'ADVAPI']
+if (PkgSkip("ZLIB")==0 and not RTDIST and not RUNTIME and PkgSkip("DEPLOYTOOLS")==0):
+  OPTS=['DIR:panda/src/downloadertools', 'ZLIB', 'OPENSSL', 'ADVAPI', 'WINSOCK2', 'WINSHELL']
 
   TargetAdd('multify_multify.obj', opts=OPTS, input='multify.cxx')
   TargetAdd('multify.exe', input=['multify_multify.obj'])
@@ -3261,7 +3289,7 @@ if (not RUNTIME):
 # DIRECTORY: panda/src/testbed/
 #
 
-if (not RTDIST and not RUNTIME):
+if (not RTDIST and not RUNTIME and PkgSkip("PVIEW")==0):
   OPTS=['DIR:panda/src/testbed']
   TargetAdd('pview_pview.obj', opts=OPTS, input='pview.cxx')
   TargetAdd('pview.exe', input='pview_pview.obj')
@@ -3277,7 +3305,7 @@ if (not RTDIST and not RUNTIME):
 # DIRECTORY: panda/src/tinydisplay/
 #
 
-if (not RUNTIME and (sys.platform == "win32" or sys.platform == "darwin" or PkgSkip("X11")==0)):
+if (not RUNTIME and (sys.platform == "win32" or sys.platform == "darwin" or PkgSkip("X11")==0) and PkgSkip("TINYDISPLAY")==0):
   OPTS=['DIR:panda/src/tinydisplay', 'BUILDING:TINYDISPLAY']
   TargetAdd('tinydisplay_composite1.obj', opts=OPTS, input='tinydisplay_composite1.cxx')
   TargetAdd('tinydisplay_composite2.obj', opts=OPTS, input='tinydisplay_composite2.cxx')
@@ -4527,6 +4555,43 @@ if (PkgSkip("PYTHON")==0 and not RUNTIME):
     TargetAdd('PandaModules.py', input='libpandaode.dll')
 
 #
+# Generate the models directory and samples directory
+#
+
+if (PkgSkip("DIRECT")==0 and not RUNTIME):
+  model_extensions = ["*.egg"]
+  if (PkgSkip("PANDATOOL")==0):
+      model_extensions.append("*.flt")
+
+  for model in GetDirectoryContents("dmodels/src/misc", model_extensions):
+      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
+      else: newname = model[:-4] + ".egg"
+      TargetAdd(GetOutputDir()+"/models/misc/"+newname, input="dmodels/src/misc/"+model)
+
+  for model in GetDirectoryContents("dmodels/src/gui", model_extensions):
+      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
+      else: newname = model[:-4] + ".egg"
+      TargetAdd(GetOutputDir()+"/models/gui/"+newname, input="dmodels/src/gui/"+model)
+
+  for model in GetDirectoryContents("models", model_extensions):
+      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
+      else: newname = model[:-4] + ".egg"
+      TargetAdd(GetOutputDir()+"/models/"+newname, input="models/"+model)
+
+  CopyAllFiles(GetOutputDir()+"/models/audio/sfx/",  "dmodels/src/audio/sfx/", ".wav")
+  CopyAllFiles(GetOutputDir()+"/models/icons/",      "dmodels/src/icons/",     ".gif")
+
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".jpg")
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".png")
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".rgb")
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "models/maps/",           ".rgba")
+
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".jpg")
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".png")
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".rgb")
+  CopyAllFiles(GetOutputDir()+"/models/maps/",       "dmodels/src/maps/",      ".rgba")
+
+#
 # Build the rtdist.
 #
 
@@ -4540,23 +4605,23 @@ if (RTDIST):
 # Distribute prebuilt .p3d files as executable.
 #
 
-#if (not RUNTIME and not RTDIST):
-#  if (sys.platform.startswith("win")):
-#    OPTS=['DIR:direct/src/p3d']
-#    TargetAdd('p3dWrapper.obj', opts=OPTS, input='p3dWrapper.c')
-#    TargetAdd('p3dWrapper.exe', input='p3dWrapper.obj')
-#    TargetAdd('p3dWrapper.exe', opts=["ADVAPI"])
-#  
-#  for g in glob.glob("direct/src/p3d/*.p3d"):
-#    base = os.path.basename(g)
-#    base = base.split(".", 1)[0]
-#    
-#    if (sys.platform.startswith("win")):
-#      TargetAdd(base+".exe", input='p3dWrapper.exe')
-#      CopyFile(GetOutputDir()+"/bin/"+base+".p3d", g)
-#    else:
-#      CopyFile(GetOutputDir()+"/bin/"+base, g)
-#      oscmd("chmod +x "+GetOutputDir()+"/bin/"+base)
+if (PkgSkip("DIRECT")==0 and not RUNTIME and not RTDIST):
+  if (sys.platform.startswith("win")):
+    OPTS=['DIR:direct/src/p3d']
+    TargetAdd('p3dWrapper.obj', opts=OPTS, input='p3dWrapper.c')
+    TargetAdd('p3dWrapper.exe', input='p3dWrapper.obj')
+    TargetAdd('p3dWrapper.exe', opts=["ADVAPI"])
+  
+  for g in glob.glob("direct/src/p3d/*.p3d"):
+    base = os.path.basename(g)
+    base = base.split(".", 1)[0]
+    
+    if (sys.platform.startswith("win")):
+      TargetAdd(base+".exe", input='p3dWrapper.exe')
+      CopyFile(GetOutputDir()+"/bin/"+base+".p3d", g)
+    else:
+      CopyFile(GetOutputDir()+"/bin/"+base, g)
+      oscmd("chmod +x "+GetOutputDir()+"/bin/"+base)
 
 ##########################################################################################
 #
