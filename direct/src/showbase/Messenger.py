@@ -5,8 +5,71 @@ __all__ = ['Messenger']
 
 from PythonUtil import *
 from direct.directnotify import DirectNotifyGlobal
-from direct.stdpy.threading import Lock
 import types
+
+# This one line will replace the cheesy hack below, when we remove the
+# hack.
+#from direct.stdpy.threading import Lock
+
+class Lock:
+    """ This is a cheesy delayed implementation of Lock, designed to
+    support the Toontown ActiveX launch, which must import Messenger
+    before it has downloaded the rest of Panda.  This is a TEMPORARY
+    HACK, to be removed when the ActiveX launch is retired. """
+
+    notify = DirectNotifyGlobal.directNotify.newCategory("Messenger.Lock")
+
+    def __init__(self):
+        self.locked = 0
+
+    def acquire(self):
+        # Before we download Panda, we can't use any threading
+        # interfaces.  So don't, until we observe that we have some
+        # actual contention on the lock.
+
+        if self.locked:
+            # We have contention.
+            return self.__getLock()
+        
+        # This relies on the fact that any individual Python statement
+        # is atomic.
+        self.locked += 1
+        if self.locked > 1:
+            # Whoops, we have contention.
+            self.locked -= 1
+            return self.__getLock()
+
+    def release(self):
+        if self.locked:
+            # Still using the old, cheesy lock.
+            self.locked -= 1
+            return
+
+        # The new lock must have been put in place.
+        self.release = self.lock.release
+        return self.lock.release()
+
+    def __getLock(self):
+        # Now that we've started Panda, it's safe to import the Mutex
+        # class, which becomes our actual lock.
+        # From now on, this lock will be used.
+
+        self.notify.info("Acquiring Panda lock for the first time.")
+
+        from pandac.PandaModules import Thread, Mutex
+        self.__dict__.setdefault('lock', Mutex('Messenger'))
+        self.lock.acquire()
+        
+        self.acquire = self.lock.acquire
+
+        # Wait for the cheesy lock to be released before we return.
+        self.notify.info("Waiting for cheesy lock to be released.")
+        while self.locked:
+            Thread.forceYield()
+        self.notify.info("Got cheesy lock.")
+
+        # We return with the lock acquired.
+            
 
 class Messenger:
 
@@ -125,7 +188,7 @@ class Messenger:
                  safeRepr(extraArgs), persistent))
 
         # Make sure that the method is callable
-        assert callable(method), (
+        assert hasattr(method, '__call__'), (
             "method not callable in accept (ignoring): %s %s"%
             (safeRepr(method), safeRepr(extraArgs)))
 
@@ -141,7 +204,7 @@ class Messenger:
 
             # Make sure we are not inadvertently overwriting an existing event
             # on this particular object.
-            if acceptorDict.has_key(id):
+            if id in acceptorDict:
                 # TODO: we're replacing the existing callback. should this be an error?
                 if notifyDebug:        
                     oldMethod = acceptorDict[id][0]
@@ -180,7 +243,7 @@ class Messenger:
             # Find the dictionary of all the objects accepting this event
             acceptorDict = self.__callbacks.get(event)
             # If this object is there, delete it from the dictionary
-            if acceptorDict and acceptorDict.has_key(id):
+            if acceptorDict and id in acceptorDict:
                 del acceptorDict[id]
                 # If this dictionary is now empty, remove the event
                 # entry from the Messenger alltogether
@@ -189,7 +252,7 @@ class Messenger:
 
             # This object is no longer listening for this event
             eventDict = self.__objectEvents.get(id)
-            if eventDict and eventDict.has_key(event):
+            if eventDict and event in eventDict:
                 del eventDict[event]
                 if (len(eventDict) == 0):
                     del self.__objectEvents[id]
@@ -217,7 +280,7 @@ class Messenger:
                     # Find the dictionary of all the objects accepting this event
                     acceptorDict = self.__callbacks.get(event)
                     # If this object is there, delete it from the dictionary
-                    if acceptorDict and acceptorDict.has_key(id):
+                    if acceptorDict and id in acceptorDict:
                         del acceptorDict[id]
                         # If this dictionary is now empty, remove the event
                         # entry from the Messenger alltogether
@@ -252,7 +315,7 @@ class Messenger:
         try:
             acceptorDict = self.__callbacks.get(event)
             id = self._getMessengerId(object)
-            if acceptorDict and acceptorDict.has_key(id):
+            if acceptorDict and id in acceptorDict:
                 # Found it, return true
                 return 1
             # If we looked in both dictionaries and made it here
@@ -373,7 +436,7 @@ class Messenger:
                 if not persistent:
                     # This object is no longer listening for this event
                     eventDict = self.__objectEvents.get(id)
-                    if eventDict and eventDict.has_key(event):
+                    if eventDict and event in eventDict:
                         del eventDict[event]
                         if (len(eventDict) == 0):
                             del self.__objectEvents[id]
@@ -382,7 +445,7 @@ class Messenger:
                     del acceptorDict[id]
                     # If the dictionary at this event is now empty, remove
                     # the event entry from the Messenger altogether
-                    if (self.__callbacks.has_key(event) \
+                    if (event in self.__callbacks \
                             and (len(self.__callbacks[event]) == 0)):
                         del self.__callbacks[event]
 
@@ -402,7 +465,7 @@ class Messenger:
                 # we have cleaned up the accept hook, because the
                 # method itself might call accept() or acceptOnce()
                 # again.
-                assert callable(method)
+                assert hasattr(method, '__call__')
 
                 # Release the lock temporarily while we call the method.
                 self.lock.release()
@@ -445,10 +508,10 @@ class Messenger:
                     function = method.im_func
                 else:
                     function = method
-                #print ('function: ' + `function` + '\n' +
-                #       'method: ' + `method` + '\n' +
-                #       'oldMethod: ' + `oldMethod` + '\n' +
-                #       'newFunction: ' + `newFunction` + '\n')
+                #print ('function: ' + repr(function) + '\n' +
+                #       'method: ' + repr(method) + '\n' +
+                #       'oldMethod: ' + repr(oldMethod) + '\n' +
+                #       'newFunction: ' + repr(newFunction) + '\n')
                 if (function == oldMethod):
                     newMethod = new.instancemethod(
                         newFunction, method.im_self, method.im_class)
@@ -530,7 +593,7 @@ class Messenger:
         keys = self.__callbacks.keys()
         keys.sort()
         for event in keys:
-            if `event`.find(needle) >= 0:
+            if repr(event).find(needle) >= 0:
                 print self.__eventRepr(event),
                 return {event: self.__callbacks[event]}
 
@@ -544,7 +607,7 @@ class Messenger:
         keys = self.__callbacks.keys()
         keys.sort()
         for event in keys:
-            if `event`.find(needle) >= 0:
+            if repr(event).find(needle) >= 0:
                 print self.__eventRepr(event),
                 matches[event] = self.__callbacks[event]
                 # if the limit is not None, decrement and
@@ -620,16 +683,16 @@ class Messenger:
                 str = (str + '\t' +
                        'Acceptor:     ' + className + ' instance' + '\n\t' +
                        'Function name:' + functionName + '\n\t' +
-                       'Extra Args:   ' + `extraArgs` + '\n\t' +
-                       'Persistent:   ' + `persistent` + '\n')
+                       'Extra Args:   ' + repr(extraArgs) + '\n\t' +
+                       'Persistent:   ' + repr(persistent) + '\n')
                 # If this is a class method, get its actual function
                 if (type(function) == types.MethodType):
                     str = (str + '\t' +
-                           'Method:       ' + `function` + '\n\t' +
-                           'Function:     ' + `function.im_func` + '\n')
+                           'Method:       ' + repr(function) + '\n\t' +
+                           'Function:     ' + repr(function.im_func) + '\n')
                 else:
                     str = (str + '\t' +
-                           'Function:     ' + `function` + '\n')
+                           'Function:     ' + repr(function) + '\n')
         str = str + '='*50 + '\n'
         return str
 

@@ -8,17 +8,23 @@ class ObjectGen:
 
 class ObjectBase(ObjectGen):
     """ Base class for obj definitions """
-    def __init__(self, name='', createFunction = None, model = None, models= [], anims = [], animNames = [], properties={},
-                 movable = True, actor = False):
+    def __init__(self, name='', createFunction = None, model = None, models= [], anims = [], animNames = [], animDict = {}, properties={},
+                 movable = True, actor = False, named=False, orderedProperties=[], propertiesMask={}):
         ObjectGen.__init__(self, name)
         self.createFunction = createFunction
         self.model = model
         self.models = models[:]
         self.anims = anims[:]
         self.animNames = animNames[:]
+        self.animDict = copy.deepcopy(animDict)
         self.properties = copy.deepcopy(properties)
         self.movable = movable
         self.actor = actor
+        self.named = named
+        # to maintain order of properties in UI
+        self.orderedProperties = orderedProperties[:]
+        # to show/hide properties per editor mode
+        self.propertiesMask = copy.deepcopy(propertiesMask)
 
 class ObjectPaletteBase:
     """
@@ -57,6 +63,10 @@ class ObjectPaletteBase:
            self.insertItem(ObjectGen(name = item), parentName)
         else:
            self.insertItem(item, parentName)
+
+    def addHidden(self, item):
+        if hasattr(item, 'name'):
+            self.data[item.name] = item        
 
     def deleteStruct(self, name, deleteItems):
         try:

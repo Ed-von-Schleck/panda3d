@@ -55,14 +55,14 @@ class DirectCameraControl(DirectObject):
 ##             ['n', self.pickNextCOA],
 ##             ['u', self.orbitUprightCam],
 ##             ['shift-u', self.uprightCam],
-##             [`1`, self.spawnMoveToView, 1],
-##             [`2`, self.spawnMoveToView, 2],
-##             [`3`, self.spawnMoveToView, 3],
-##             [`4`, self.spawnMoveToView, 4],
-##             [`5`, self.spawnMoveToView, 5],
-##             [`6`, self.spawnMoveToView, 6],
-##             [`7`, self.spawnMoveToView, 7],
-##             [`8`, self.spawnMoveToView, 8],
+##             [repr(1), self.spawnMoveToView, 1],
+##             [repr(2), self.spawnMoveToView, 2],
+##             [repr(3), self.spawnMoveToView, 3],
+##             [repr(4), self.spawnMoveToView, 4],
+##             [repr(5), self.spawnMoveToView, 5],
+##             [repr(6), self.spawnMoveToView, 6],
+##             [repr(7), self.spawnMoveToView, 7],
+##             [repr(8), self.spawnMoveToView, 8],
 ##             ['9', self.swingCamAboutWidget, -90.0, t],
 ##             ['0', self.swingCamAboutWidget,  90.0, t],
 ##             ['`', self.removeManipulateCameraTask],
@@ -296,11 +296,13 @@ class DirectCameraControl(DirectObject):
         # create ray from the camera to detect 3d position
         iRay = SelectionRay(base.direct.camera)
         iRay.collider.setFromLens(base.direct.camNode, base.direct.dr.mouseX, base.direct.dr.mouseY)
-        iRay.collideWithBitMask(1)
+        #iRay.collideWithBitMask(1)
+        iRay.collideWithBitMask(BitMask32.bit(21))
         iRay.ct.traverse(base.direct.grid)
 
         entry = iRay.getEntry(0)
         hitPt = entry.getSurfacePoint(entry.getFromNodePath())
+        iRay.collisionNodePath.removeNode()
         del iRay
         if hasattr(state, 'prevPt'):
             base.direct.camera.setPos(base.direct.camera, (state.prevPt - hitPt))
@@ -383,6 +385,9 @@ class DirectCameraControl(DirectObject):
                 self.coaMarkerPos = np.getPos()
                 np.remove()
                 self.coaMarker.setPos(self.coaMarkerPos)
+
+            iRay.collisionNodePath.removeNode()
+            del iRay
 
         # Set at markers position in render coordinates
         self.camManipRef.setPos(self.coaMarkerPos)
@@ -520,7 +525,7 @@ class DirectCameraControl(DirectObject):
             # MRM: Would be nice to be able to control this
             # At least display it
             dist = pow(10.0, self.nullHitPointCount)
-            base.direct.message('COA Distance: ' + `dist`)
+            base.direct.message('COA Distance: ' + repr(dist))
             coa.set(0, dist, 0)
         # Compute COA Dist
         coaDist = Vec3(coa - ZERO_POINT).length()

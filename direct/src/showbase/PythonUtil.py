@@ -1,3 +1,4 @@
+
 """Undocumented Module"""
 
 __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
@@ -11,7 +12,7 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'closestDestAngle2', 'closestDestAngle', 'binaryRepr', 'profileFunc',
 'profiled', 'startProfile', 'printProfile', 'getSetterName',
 'getSetter', 'Functor', 'Stack', 'Queue', 'ParamObj', 
-'POD', 'bound', 'lerp', 'average', 'addListsByValue',
+'POD', 'bound', 'clamp', 'lerp', 'average', 'addListsByValue',
 'boolEqual', 'lineupPos', 'formatElapsedSeconds', 'solveQuadratic',
 'stackEntryInfo', 'lineInfo', 'callerInfo', 'lineTag',
 'findPythonModule', 'describeException', 'mostDerivedLast',
@@ -32,7 +33,7 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'pandaBreak','pandaTrace','formatTimeCompact','DestructiveScratchPad',
 'deeptype','getProfileResultString','StdoutCapture','StdoutPassthrough',
 'Averager', 'getRepository', 'formatTimeExact', 'startSuperLog', 'endSuperLog',
-'typeName', 'safeTypeName', 'histogramDict', 'unescapeHtmlString', ]
+'typeName', 'safeTypeName', 'histogramDict', 'unescapeHtmlString', 'bpdb', ]
 
 import types
 import string
@@ -52,6 +53,8 @@ from StringIO import StringIO
 import marshal
 import ElementTree as ET
 from HTMLParser import HTMLParser
+
+__report_indent = 3
 
 from direct.directutil import Verify
 # Don't import libpandaexpressModules, which doesn't get built until
@@ -315,7 +318,7 @@ def traceFunctionCall(frame):
     if co.co_flags & 4: n = n+1
     if co.co_flags & 8: n = n+1
     r=''
-    if dict.has_key('self'):
+    if 'self' in dict:
         r = '%s.'%(dict['self'].__class__.__name__,)
     r+="%s("%(f.f_code.co_name,)
     comma=0 # formatting, whether we should type a comma.
@@ -330,7 +333,7 @@ def traceFunctionCall(frame):
             comma=1
         r+=name
         r+='='
-        if dict.has_key(name):
+        if name in dict:
             v=str(dict[name])
             if len(v)>2000:
                 # r+="<too big for debug>"
@@ -506,13 +509,13 @@ def _pdir(obj, str = None, width = None,
         keys = aproposKeys + privateKeys + remainingKeys
     else:
         keys = aproposKeys + remainingKeys
-    format = '%-' + `maxWidth` + 's'
+    format = '%-' + repr(maxWidth) + 's'
     for key in keys:
         value = dict[key]
         if callable(value):
-            strvalue = `Signature(value)`
+            strvalue = repr(Signature(value))
         else:
-            strvalue = `value`
+            strvalue = repr(value)
         if fTruncate:
             # Cut off line (keeping at least 1 char)
             strvalue = strvalue[:max(1, lineWidth - maxWidth)]
@@ -568,7 +571,7 @@ def _getcode(f):
     try:
         return codedict[type(f)](f)
     except KeyError:
-        if callable(f): # eg, built-in functions and methods
+        if hasattr(f, '__call__'): # eg, built-in functions and methods
             # raise ValueError, "type %s not supported yet." % type(f)
             return f.__name__, None
         else:
@@ -598,9 +601,9 @@ class Signature:
     def full_arglist(self):
         base = list(self.ordinary_args())
         x = self.special_args()
-        if x.has_key('positional'):
+        if 'positional' in x:
             base.append(x['positional'])
-        if x.has_key('keyword'):
+        if 'keyword' in x:
             base.append(x['keyword'])
         return base
     def defaults(self):
@@ -619,13 +622,13 @@ class Signature:
             specials = self.special_args()
             l = []
             for arg in self.ordinary_args():
-                if defaults.has_key(arg):
+                if arg in defaults:
                     l.append(arg + '=' + str(defaults[arg]))
                 else:
                     l.append(arg)
-            if specials.has_key('positional'):
+            if 'positional' in specials:
                 l.append('*' + specials['positional'])
-            if specials.has_key('keyword'):
+            if 'keyword' in specials:
                 l.append('**' + specials['keyword'])
             return "%s(%s)" % (self.name, string.join(l, ', '))
         else:
@@ -1431,12 +1434,12 @@ class ParamObj:
         def getDefaultValue(cls, param):
             cls._compileDefaultParams()
             dv = cls._Params[param]
-            if callable(dv):
+            if hasattr(dv, '__call__'):
                 dv = dv()
             return dv
         @classmethod
         def _compileDefaultParams(cls):
-            if cls.__dict__.has_key('_Params'):
+            if '_Params' in cls.__dict__:
                 # we've already compiled the defaults for this class
                 return
             bases = list(cls.__bases__)
@@ -1446,7 +1449,7 @@ class ParamObj:
             for c in (bases + [cls]):
                 # make sure this base has its dict of param defaults
                 c._compileDefaultParams()
-                if c.__dict__.has_key('Params'):
+                if 'Params' in c.__dict__:
                     # apply this class' default param values to our dict
                     cls._Params.update(c.Params)
         def __repr__(self):
@@ -1777,16 +1780,16 @@ class POD:
         # as the default value itself; we need a way to specify that the
         # callable *is* the default value and not a default-value creation
         # function
-        if callable(dv):
+        if hasattr(dv, '__call__'):
             dv = dv()
         return dv
     @classmethod
     def _compileDefaultDataSet(cls):
-        if cls.__dict__.has_key('_DataSet'):
+        if '_DataSet' in cls.__dict__:
             # we've already compiled the defaults for this class
             return
         # create setters & getters for this class
-        if cls.__dict__.has_key('DataSet'):
+        if 'DataSet' in cls.__dict__:
             for name in cls.DataSet:
                 setterName = getSetterName(name)
                 if not hasattr(cls, setterName):
@@ -1868,6 +1871,7 @@ def bound(value, bound1, bound2):
         return min(max(value, bound2), bound1)
     else:
         return min(max(value, bound1), bound2)
+clamp = bound
 
 def lerp(v0, v1, t):
     """
@@ -2453,7 +2457,7 @@ def printListEnumGen(l):
     n = len(l)
     while n > 0:
         digits += 1
-        n /= 10
+        n //= 10
     format = '%0' + '%s' % digits + 'i:%s'
     for i in range(len(l)):
         print format % (i, l[i])
@@ -2579,6 +2583,159 @@ def fastRepr(obj, maxLen=200, strFactor=10, _visitedIds=None):
     except:
         return '<** FAILED REPR OF %s **>' % obj.__class__.__name__
 
+baseLine = {}
+
+def baseLineCheck():
+    global baseLine
+    import gc
+    obj = gc.get_objects()
+    baseLine = {}
+    for i in obj:
+        baseLine[str(itype(i))] = 0
+    for i in obj:
+        baseLine[str(itype(i))] += 1
+
+def diffSinceBaseLine():
+    import copy
+    import gc
+    obj = gc.get_objects()    
+    since = copy.deepcopy(baseLine)
+    for i in obj:
+        since.setdefault(str(itype(i)), 0)
+    for i in obj:
+        since[str(itype(i))] -= 1
+    for i in since.keys():
+        if not since[i]:
+            del since[i]
+        else:
+            since[i] = abs(since[i])
+
+    final = [(since[x],x) for x in since]
+    final.sort()
+    final.reverse()
+    for i in final:
+        print i
+
+    final = []
+    since = []
+
+
+# Recursively expand slist's objects
+# into olist, using seen to track
+# already processed objects.
+def _getr(slist, olist, seen):
+  for e in slist:
+    if id(e) in seen:
+      continue
+    seen[id(e)] = None
+    olist.append(e)
+    tl = gc.get_referents(e)
+    if tl:
+      _getr(tl, olist, seen)
+
+# The public function.
+def get_all_objects():
+  """Return a list of all live Python
+  objects, not including the list itself."""
+  gcl = gc.get_objects()
+  olist = []
+  seen = {}
+  # Just in case:
+  seen[id(gcl)] = None
+  seen[id(olist)] = None
+  seen[id(seen)] = None
+  # _getr does the real work.
+  _getr(gcl, olist, seen)
+  return olist    
+
+def getIdList():
+    baseList = get_all_objects()
+    idList = {}
+    for i in baseList:
+        idList[id(i)] = i
+
+    return idList
+
+
+ftype = None
+
+def getTree(obj):
+    global ftype
+    if not ftype:
+        ftype = itype(sys._getframe())
+    objId = id(obj)
+    obj = None
+    idList = getIdList()
+    objList = [objId]
+    objTree = {objId:{}}
+    r_add_chain(objId, objList, objTree[objId], idList, 0 )
+    
+    return convertTree(objTree, idList)
+
+def convertTree(objTree, idList):
+    newTree = {}
+    for key in objTree.keys():
+        obj = (idList[key],)
+        newTree[obj] = {}
+        r_convertTree(objTree[key], newTree[obj], idList)
+    return newTree
+
+def r_convertTree(oldTree, newTree, idList):
+    for key in oldTree.keys():
+        
+        obj = idList.get(key)
+        if(not obj):
+            continue
+        obj = str(obj)[:100]
+        
+        newTree[obj] = {}
+        r_convertTree(oldTree[key], newTree[obj], idList)        
+
+
+def pretty_print(tree):
+    for name in tree.keys():
+        print name
+        r_pretty_print(tree[name], 0)
+        
+            
+
+def r_pretty_print(tree, num):
+    num+=1
+    for name in tree.keys():
+        print "  "*num,name
+        r_pretty_print(tree[name],num)
+        
+def r_add_chain(objId, objList, objTree, idList, num):
+    num+=1
+    obj = idList.get(objId)
+    if(not obj):
+        return
+    
+    refList = gc.get_referrers(obj)
+    for ref in refList:
+        refId = id(ref)
+        if ref == __builtins__:
+            continue
+        if ref == objList:
+            continue
+        if refId in objList:
+            continue
+        if(ref == idList):
+            continue
+        if(itype(ref) == ftype):
+            continue
+        if(itype(ref) == itype(sys)):
+            continue
+
+        objList.append(refId)
+        
+        objTree[refId] = {}
+    refList = None
+    for refId in objTree:
+        r_add_chain(refId, objList, objTree[refId], idList, num)
+                    
+        
+    
 def tagRepr(obj, tag):
     """adds a string onto the repr output of an instance"""
     def reprWithTag(oldRepr, tag, self):
@@ -2795,7 +2952,7 @@ def getNumberedTypedString(items, maxLen=5000, numPrefix=''):
     n = len(items)
     while n > 0:
         digits += 1
-        n /= 10
+        n //= 10
     digits = digits
     format = numPrefix + '%0' + '%s' % digits + 'i:%s \t%s'
     first = True
@@ -2819,7 +2976,7 @@ def getNumberedTypedSortedString(items, maxLen=5000, numPrefix=''):
     n = len(items)
     while n > 0:
         digits += 1
-        n /= 10
+        n //= 10
     digits = digits
     format = numPrefix + '%0' + '%s' % digits + 'i:%s \t%s'
     snip = '<SNIP>'
@@ -2848,7 +3005,7 @@ def getNumberedTypedSortedStringWithReferrersGen(items, maxLen=10000, numPrefix=
     n = len(items)
     while n > 0:
         digits += 1
-        n /= 10
+        n //= 10
     digits = digits
     format = numPrefix + '%0' + '%s' % digits + 'i:%s @ %s \t%s'
     snip = '<SNIP>'
@@ -2884,7 +3041,7 @@ def printNumberedTyped(items, maxLen=5000):
     n = len(items)
     while n > 0:
         digits += 1
-        n /= 10
+        n //= 10
     digits = digits
     format = '%0' + '%s' % digits + 'i:%s \t%s'
     for i in xrange(len(items)):
@@ -2899,7 +3056,7 @@ def printNumberedTypesGen(items, maxLen=5000):
     n = len(items)
     while n > 0:
         digits += 1
-        n /= 10
+        n //= 10
     digits = digits
     format = '%0' + '%s' % digits + 'i:%s'
     for i in xrange(len(items)):
@@ -3281,8 +3438,8 @@ def report(types = [], prefix = '', xform = None, notifyFunc = None, dConfigPara
                 rArgs = []
 
             if 'args' in types:
-                rArgs += [`x`+', ' for x in args[1:]] + \
-                         [ x + ' = ' + '%s, ' % `y` for x,y in kwargs.items()]
+                rArgs += [repr(x)+', ' for x in args[1:]] + \
+                         [ x + ' = ' + '%s, ' % repr(y) for x,y in kwargs.items()]
             
             if not rArgs:
                 rArgs = '()'
@@ -3467,7 +3624,7 @@ def logMethodCalls(cls):
         raise 'logMethodCalls: class \'%s\' must have a notify' % cls.__name__
     for name in dir(cls):
         method = getattr(cls, name)
-        if callable(method):
+        if hasattr(method, '__call__'):
             def getLoggedMethodCall(method):
                 def __logMethodCall__(obj, *args, **kArgs):
                     s = '%s(' % method.__name__
@@ -3708,8 +3865,8 @@ class MiniLog:
                ('*'*50, self.name, '-'*50, '\n'.join(self.lines), '*'*50)
     
     def enterFunction(self, funcName, *args, **kw):
-        rArgs = [`x`+', ' for x in args] + \
-                [ x + ' = ' + '%s, ' % `y` for x,y in kw.items()]
+        rArgs = [repr(x)+', ' for x in args] + \
+                [ x + ' = ' + '%s, ' % repr(y) for x,y in kw.items()]
             
         if not rArgs:
             rArgs = '()'
@@ -3784,13 +3941,13 @@ def formatTimeCompact(seconds):
     result = ''
     a = int(seconds)
     seconds = a % 60
-    a /= 60
+    a //= 60
     if a > 0:
         minutes = a % 60
-        a /= 60
+        a //= 60
         if a > 0:
             hours = a % 24
-            a /= 24
+            a //= 24
             if a > 0:
                 days = a
                 result += '%sd' % days
@@ -3817,13 +3974,13 @@ def formatTimeExact(seconds):
     result = ''
     a = int(seconds)
     seconds = a % 60
-    a /= 60
+    a //= 60
     if a > 0:
         minutes = a % 60
-        a /= 60
+        a //= 60
         if a > 0:
             hours = a % 24
-            a /= 24
+            a //= 24
             if a > 0:
                 days = a
                 result += '%sd' % days
@@ -3961,17 +4118,22 @@ def startSuperLog(customFunction = None):
         def trace_dispatch(a,b,c):
             if(b=='call' and a.f_code.co_name != '?' and a.f_code.co_name.find("safeRepr")<0):
                 vars = dict(a.f_locals)
-                if(vars.has_key('self')):
+                if 'self' in vars:
                     del vars['self']
-                if(vars.has_key('__builtins__')):
+                if '__builtins__' in vars:
                     del vars['__builtins__']
                 for i in vars:
                     vars[i] = safeReprTypeOnFail(vars[i]) 
-                if(customFunction):
-                    superLogFile.write( "before = %s"%customFunction())
+
+                if customFunction:
+                    superLogFile.write( "before = %s\n"%customFunction())
+
                 superLogFile.write( "%s(%s):%s:%s\n"%(a.f_code.co_filename.split("\\")[-1],a.f_code.co_firstlineno, a.f_code.co_name, vars))
-                if(customFunction):
-                    superLogFile.write( "after = %s"%customFunction())
+
+                if customFunction:
+                    superLogFile.write( "after = %s\n"%customFunction())
+
+
                 return trace_dispatch
         sys.settrace(trace_dispatch)
       
@@ -4129,6 +4291,388 @@ if __debug__:
     assert s.c[0].text == 'testComment'
     del s
 
+def repeatableRepr(obj):
+    if type(obj) is types.DictType:
+        keys = obj.keys()
+        keys.sort()
+        s = '{'
+        for i in xrange(len(keys)):
+            key = keys[i]
+            s += repeatableRepr(key)
+            s += ': '
+            s += repeatableRepr(obj[key])
+            if i < (len(keys)-1):
+                s += ', '
+        s += '}'
+        return s
+    elif type(obj) is type(set()):
+        l = []
+        for item in obj:
+            l.append(item)
+        l.sort()
+        return repeatableRepr(l)
+    return repr(obj)
+
+if __debug__:
+    assert repeatableRepr({1: 'a', 2: 'b'}) == repeatableRepr({2: 'b', 1: 'a'})
+    assert repeatableRepr(set([1,2,3])) == repeatableRepr(set([3,2,1]))
+
+#bpdb - breakpoint debugging system (kanpatel - 04/2010)
+class BpDb:
+    enabled = True
+    lastBp = None
+    grpInfos = {}
+
+    def set_trace(self, frameCount=1):
+        #find usefule frame
+        self.currFrame = sys._getframe()
+        interactFrame = self.currFrame
+        while frameCount > 0:
+            interactFrame = interactFrame.f_back
+            frameCount -= 1
+
+        #set up and start debuggger
+        self.pdb = pdb.Pdb()
+        self.pdb.do_alias('aa bpdb.addAliases()')        
+        self.addAliases()
+        self.pdb.set_trace(interactFrame);
+        
+    def addAliases(self):
+        self.aliases = {}
+        #bpdb cmds
+        self.makeAlias('_i', 'bpdb.lastBp.ignore(%*)')
+        self.makeAlias('_t', 'bpdb.lastBp.toggle(%*)')
+        self.makeAlias('_tg', 'bpdb.lastBp.toggleGroup(%*)')
+        self.makeAlias('_z', 'bpdb.lastBp.reset(%*)')
+        self.makeAlias('_h', 'bpdb.displayHelp()')
+        self.makeAlias('_ua', 'bpdb.removeAliases()')
+
+    def makeAlias(self, aliasName, aliasCmd):
+        self.aliases[aliasName] = aliasCmd
+        self.pdb.do_alias('%s %s'%(aliasName,aliasCmd))
+
+    def removeAliases(self):
+        for aliasName in self.aliases.iterkeys():
+            self.pdb.do_unalias(aliasName)
+        self.aliases = {}
+        print '(bpdb aliases removed)'
+
+    def displayHelp(self):
+        print 'You may use normal pdb commands plus the following:'
+        #print '    cmd  [param <def>]  [cmd] does )this( with [param] (default is def)'
+        #print '    -----------------------------------------------------------------------'
+        print '    _i   [n <0> [, name=<curr>]] set ignore count for bp [name] to [n]'
+        print '    _t   [name <curr>]   toggle bp [name]'
+        print '    _tg  [grp  <curr>]   toggle bp group [grp]'
+        print '    _z   [name <curr>]   clear all settings for bp [name]'
+        print '    _h                   displays this usage help'
+        print '    _ua                  unalias these commands from pdb'
+
+    @staticmethod
+    def verifyEnabled():
+        try:
+            bpdb.enabled = __dev__
+            bpdb.enabled = config.GetBool('force-breakpoints', bpdb.enabled)
+        except:
+            pass
+        return bpdb.enabled
+
+    @staticmethod
+    def bp(id=None, grp=None, cfg=None, iff=True, frameCount=1):
+        if not bpdb.enabled or not bpdb.verifyEnabled():
+            return
+            
+        bpi = bp(id=id, grp=grp, cfg=cfg, iff=iff,frameCount=frameCount+1)
+        bpi.maybeBreak(frameCount=frameCount+1)
+
+    @staticmethod
+    def bpCall(id=None,grp=None,cfg=None,iff=True,frameCount=1,onEnter=1,onExit=0):
+        def decorator(f):
+            return f
+
+        if not bpdb.enabled or not bpdb.verifyEnabled():
+            return decorator
+        
+        bpi = bp(id=id, grp=grp, cfg=cfg, iff=iff, frameCount=frameCount+1)
+        if bpi.disabled:
+            return decorator
+
+        def decorator(f):
+            def wrap(*args, **kwds):
+                #create our bp object
+                dbp = bp(id=id or f.__name__, grp=bpi.grp, cfg=bpi.cfg, iff=iff, frameCount=frameCount+1)
+                if onEnter:
+                    dbp.maybeBreak(iff=iff,frameCount=frameCount+1,displayPrefix='Calling ')
+                f_result = f(*args, **kwds)
+                if onExit:
+                    dbp.maybeBreak(iff=iff,frameCount=frameCount+1,displayPrefix='Exited ')
+                return f_result
+                
+            wrap.func_name = f.func_name
+            wrap.func_dict = f.func_dict
+            wrap.func_doc = f.func_doc
+            wrap.__module__ = f.__module__
+            return wrap
+            
+        return decorator
+        
+    @staticmethod
+    def bpGroup(*args, **kArgs):
+        if not bpdb.enabled or not bpdb.verifyEnabled():
+            def functor(*cArgs, **ckArgs):
+                return
+            return functor
+        
+        argsCopy = args[:]
+        def functor(*cArgs, **ckArgs):
+            ckArgs.update(kArgs)
+            ckArgs.pop('static', None)
+            ckArgs['frameCount'] = ckArgs.get('frameCount',1)+1
+            return bpdb.bp(*(cArgs), **ckArgs)
+        
+        if kArgs.get('static'):
+            return staticmethod(functor)
+        else:
+            return functor
+
+
+class bp:
+    def __init__(self, id=None, grp=None, cfg=None, iff=True, frameCount=1):
+        #check early out conditions
+        self.disabled = False
+        if not bpdb.enabled:
+            self.disabled = True
+            return
+        
+        moduleName = None
+        callingModule = inspect.getmodule(inspect.stack()[frameCount][0])
+        if callingModule.__name__ != '__main__':
+            #get only leaf module name
+            moduleName = callingModule.__name__.split()[-1] 
+
+        #default cfg to stripped module name
+        if cfg is None and moduleName:
+            cfg = moduleName
+            #prune 'Distributed' and 'AI/UD/OV'
+            if cfg.find("Distributed") != -1:
+                cfg = cfg[len("Distributed"):]
+                cfgLen = len(cfg)
+                if cfg > 2:
+                    for suffix in ['AI','UD','OV']:
+                        suffixPos = cfg.rfind(suffix)
+                        if suffixPos == cfg - 2:
+                            cfg = cfg[:cfgLen-2]
+                            break
+
+        # determine whether we should this bp is active
+        # based on the value of cfg.
+        if cfg:
+            dConfigParamList = []
+            dConfigParams = choice(isinstance(cfg, (list,tuple)), cfg, (cfg,))
+            dConfigParamList = [param for param in dConfigParams \
+                                if ConfigVariableBool('want-bp-%s' % (param,), 0).getValue()]
+            if not dConfigParamList:
+                self.disabled = True
+                return
+
+        #default grp to context name
+        if grp is None:
+            #look for class
+            for i in range(frameCount, len(inspect.stack())):
+                callingContexts = inspect.stack()[i][4]
+                if not callingContexts:
+                    continue
+                #print i, callingContexts
+                contextTokens = callingContexts[0].split()
+                if contextTokens[0] in ['class','def'] and len(contextTokens) > 1:
+                    callingContexts[0] = callingContexts[0].replace('(',' ').replace(':',' ')
+                    contextTokens = callingContexts[0].split()
+                    className = contextTokens[1]
+                    grp = className
+                    break
+            #look for self
+            if grp is None:
+                slf = inspect.stack()[frameCount][0].f_locals.get('self')
+                if slf:
+                    className = slf.__class__.__name__
+                    grp = className
+            #default to module
+            if grp is None:
+                grp = moduleName                
+
+        #default name to line number
+        if id is None:
+            def byteOffsetToLineno(code, byte):
+                # Returns the source line number corresponding to the given byte
+                # offset into the indicated Python code module.
+                import array
+                lnotab = array.array('B', code.co_lnotab)
+                line   = code.co_firstlineno
+                for i in range(0, len(lnotab), 2):
+                    byte -= lnotab[i]
+                    if byte <= 0:
+                        return line
+                    line += lnotab[i+1]
+                return line
+
+            if frameCount < len(inspect.stack()):
+                frame = inspect.stack()[frameCount][0]
+                lineno = byteOffsetToLineno(frame.f_code, frame.f_lasti)
+                id = lineno
+
+        #store this breakpoint's settings
+        self.id = id
+        self.grp = grp
+        self.cfg = cfg
+        self.iff = iff
+
+        #cache this as the latest bp
+        bpdb.lastBp = self
+
+    @staticmethod
+    def prettyName(id=None, grp=None, cfg=None, q=0):
+        prettyName = ''
+        prettyName += choice(q, "'", '')
+        if cfg:
+            prettyName += '%s'%(cfg,)
+            if grp or id:
+                prettyName += '::'
+        if grp:
+            prettyName += '%s'%(grp,)
+        if id:
+            if isinstance(id, int):
+                prettyName += '(%s)'%(id,)
+            elif grp:
+                prettyName += '.%s'%(id,)
+            else:
+                prettyName += '%s'%(id,)
+        prettyName += choice(q, "'", '')
+        return prettyName
+
+    def displayContextHint(self, displayPrefix=''):
+        contextString = displayPrefix + self.prettyName(id=self.id,grp=self.grp,cfg=self.cfg)
+        dashes = '-'*max(0, (80 - len(contextString) - 4) / 2)
+        print '<%s %s %s>'%(dashes,contextString,dashes)
+    
+    def makeIdGrp(self, id, grp):
+        bpdb.grpInfos.setdefault(grp, {'__settings__':{},})
+        bpdb.grpInfos[grp].setdefault(id, {})
+
+    def parseBPPath(self, arg=None):
+        id = None
+        grp = None
+        if arg:
+            if not isinstance(arg, type('')):
+                print "error: argument must be string '[grp.]id'"
+                return None, None
+                
+            tokens = arg.split('.')
+            id = tokens[-1]
+            if len(tokens) > 1:
+                grp = tokens[-2]
+
+        id = id or bpdb.lastBp.id
+        grp = grp or bpdb.lastBp.grp       
+
+        return id, grp
+
+    def enable(self, enabled=True, id=None, grp=None):
+        id = id or bpdb.lastBp.id
+        grp = grp or bpdb.lastBp.grp
+        self.makeIdGrp(id,grp)  
+
+        bpdb.grpInfos[grp][id]['enabled'] = enabled
+        
+    def toggle(self, arg=None):
+        id, grp = self.parseBPPath(arg)
+        self.makeIdGrp(id,grp)  
+
+        newEnabled = not bpdb.grpInfos[grp][id].get('enabled', True)
+        bpdb.grpInfos[grp][id]['enabled'] = newEnabled
+        print '%s is now %s.'%(self.prettyName(id,grp,q=1),choice(newEnabled,'enabled','disabled'),)
+
+    def toggleGroup(self, grp=None):
+        if grp and not isinstance(grp, type('')):
+            print "error: argument must be string 'grp'"
+            return
+            
+        grp = grp or bpdb.lastBp.grp
+        bpdb.grpInfos.setdefault(grp, {'__settings__':{},})
+
+        newEnabled = not bpdb.grpInfos[grp]['__settings__'].get('enabled', True)
+        bpdb.grpInfos[grp]['__settings__']['enabled'] = newEnabled
+        print 'group %s is now %s.'%(self.prettyName(grp=grp,q=1),choice(newEnabled,'enabled','disabled'),)
+
+    def ignore(self, ignoreCount=0, arg=None):
+        if not isinstance(ignoreCount, int):
+            print 'error: first argument should be integer ignoreCount'
+            return
+            
+        id, grp = self.parseBPPath(arg)
+        self.makeIdGrp(id,grp)  
+
+        bpdb.grpInfos[grp][id]['ignoreCount'] = ignoreCount
+        print '%s will ignored %s times.'%(self.prettyName(id,grp,q=1),ignoreCount,)
+
+    def reset(self, arg=None):
+        id, grp = self.parseBPPath(arg)
+        self.makeIdGrp(id,grp)  
+
+        bpdb.grpInfos[grp][id] = {}
+        print '%s has been reset.'%(self.prettyName(id,grp,q=1),)
+
+    def maybeBreak(self, iff=True, frameCount=1,displayPrefix=''):
+        if self.shouldBreak(iff):
+            self.doBreak(frameCount=frameCount+1,displayPrefix=displayPrefix)
+    
+    def shouldBreak(self,iff=True):
+        #check easy early out
+        if self.disabled:
+            return False
+        if not self.iff or not iff:
+            return False
+
+        #make sure we exist
+        self.makeIdGrp(self.id,self.grp)  
+
+        #check disabled conditions
+        if not bpdb.grpInfos[self.grp]['__settings__'].get('enabled', True):
+            return False
+        if not bpdb.grpInfos[self.grp][self.id].get('enabled', True):
+            return False
+        if self.cfg:
+            dConfigParamList = []
+            dConfigParams = choice(isinstance(self.cfg, (list,tuple)), self.cfg, (self.cfg,))
+            dConfigParamList = [param for param in dConfigParams \
+                                if ConfigVariableBool('want-bp-%s' % (param,), 0).getValue()]
+            if not dConfigParamList:
+                return False      
+
+        #check skip conditions
+        if bpdb.grpInfos[self.grp][self.id].get('ignoreCount', 0) > 0:
+            bpdb.grpInfos[self.grp][self.id]['ignoreCount'] -= 1
+            return False
+        if bpdb.grpInfos[self.grp][self.id].get('lifetime', -1) == 0:
+            return False
+
+        #all conditions go
+        return True
+        
+    def doBreak(self, frameCount=1,displayPrefix=''):
+        #make sure we exist
+        self.makeIdGrp(self.id,self.grp)  
+
+        #accumulate hit count
+        if 'lifetime' in bpdb.grpInfos[self.grp][self.id]:
+            bpdb.grpInfos[self.grp][self.id]['lifetime'] -= 1
+        bpdb.grpInfos[self.grp][self.id]['count'] = bpdb.grpInfos[self.grp][self.id].get('count', 0) + 1
+        
+        #setup debugger
+        self.displayContextHint(displayPrefix=displayPrefix)
+        bpdb.set_trace(frameCount=frameCount+1)
+
+bpdb = BpDb()
+
 import __builtin__
 __builtin__.Functor = Functor
 __builtin__.Stack = Stack
@@ -4148,6 +4692,7 @@ __builtin__.itype = itype
 __builtin__.exceptionLogged = exceptionLogged
 __builtin__.appendStr = appendStr
 __builtin__.bound = bound
+__builtin__.clamp = clamp
 __builtin__.lerp = lerp
 __builtin__.notNone = notNone
 __builtin__.clampScalar = clampScalar
@@ -4187,3 +4732,5 @@ __builtin__.configIsToday = configIsToday
 __builtin__.typeName = typeName
 __builtin__.safeTypeName = safeTypeName
 __builtin__.histogramDict = histogramDict
+__builtin__.repeatableRepr = repeatableRepr
+__builtin__.bpdb = bpdb
