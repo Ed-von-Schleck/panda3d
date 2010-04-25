@@ -13,10 +13,11 @@
 ////////////////////////////////////////////////////////////////////
 
 // Acknowledgement: I used the BSD-licensed DromeAudio audio library
-// as a reference on the WAV format. The lines that may have been
+// as a reference on the WAV format. The lines that have been
 // adapted are copyright their authors.
 
-// FIXME: This implementation assumes little-endianness.
+// FIXME: This implementation is endian independent but it requires
+// testing in this aspect.
 
 // Format support: 8 and 16-bit uncompressed PCM wav.
 
@@ -137,9 +138,14 @@ WavAudioCursor(WavAudio *src) :
     cleanup(); return;
   }
 
-	_audio_channels = format.channels;
-	_bytes_per_sample = format.bits_per_sample / 8;
-	_audio_rate = format.rate;
+  LittleEndian audio_channels(&format.channels, sizeof(format.channels));
+	_audio_channels = *((PN_uint16*)(audio_channels.get_data()));
+
+  LittleEndian bits_per_sample(&format.bits_per_sample, sizeof(format.bits_per_sample));
+	_bytes_per_sample = *((PN_uint16*)(bits_per_sample.get_data())) / 8;
+
+  LittleEndian audio_rate(&format.rate, sizeof(format.rate));
+	_audio_rate = *((PN_uint16*)(audio_rate.get_data()));
 
 	// Look for data chunk
 	bool data_chunk_found = false;
@@ -151,7 +157,10 @@ WavAudioCursor(WavAudio *src) :
 			data_chunk_found = true;
 			break;
 		} else {
-      wav_stream->seekg(header.chunk_size, std::ios::cur);
+      LittleEndian chunk_size(&header.chunk_size, sizeof(header.chunk_size));
+      PN_uint32 native_chunk_size = *((PN_uint32*)(chunk_size.get_data()));
+
+      wav_stream->seekg(native_chunk_size, std::ios::cur);
       if(!wav_stream->fail() && !wav_stream->eof()){
 				break;
       }
@@ -166,8 +175,10 @@ WavAudioCursor(WavAudio *src) :
     cleanup(); return;
   }
 
-	_audio_buffer_size = header.chunk_size;
-	_num_samples = _audio_buffer_size / _audio_channels / _bytes_per_sample;
+  LittleEndian audio_buffer_size(&header.chunk_size, sizeof(header.chunk_size));
+  _audio_buffer_size = *((PN_uint32*)(audio_buffer_size.get_data()));
+
+  _num_samples = _audio_buffer_size / _audio_channels / _bytes_per_sample;
 
   _length = _num_samples / (float)_audio_rate;
 	
@@ -183,6 +194,24 @@ WavAudioCursor(WavAudio *src) :
   }
 
   file->close_read_file(wav_stream);
+
+  // Byte-swapping the audio data itself is not necessary because OpenAL is little
+  // endian, but I'm gonna leave the code here in case we want to use it some day
+  // with other sound backend.
+  // Also note that enclsoing it in "ifdef WORDS_BIGENDIAN" isn't necessary
+  // either, as the LittleEndian class takes care of it. It's just an
+  // optimization.
+
+  //#ifdef WORDS_BIGENDIAN
+  //	if(_bytes_per_sample == 2) {
+  //		PN_uint16 *data = (PN_uint16 *)_audio_buffer;
+  //    for(unsigned int i = 0; i < _audio_buffer_size / 2; i++){
+  //      LittleEndian word(&data[i], sizeof(data[i]));
+  //	    data[i] = *((PN_uint16*)(word.get_data()));
+  //    }
+  //	}
+  //#endif
+
   _opened = true;
 
 }
