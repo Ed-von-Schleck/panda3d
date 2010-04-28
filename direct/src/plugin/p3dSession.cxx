@@ -958,6 +958,8 @@ start_p3dpython(P3DInstance *inst) {
     _env += string("_ROOT=");
     _env += package->get_package_dir();
     _env += '\0';
+
+    package->mark_used();
   }
 
   // Check for a few tokens that have special meaning at this level.
@@ -1058,7 +1060,7 @@ start_p3dpython(P3DInstance *inst) {
       char buffer[buffer_size];
       sprintf(buffer, "%02d%02d%02d_%02d%02d%02d", 
               (int)(log_time_local.tm_year+1900-2000),
-              (int)(log_time_local.tm_mon),
+              (int)(log_time_local.tm_mon+1),
               (int)(log_time_local.tm_mday),
               (int)(log_time_local.tm_hour),
               (int)(log_time_local.tm_min),
@@ -1288,7 +1290,8 @@ rt_thread_run() {
 //     Function: P3DSession::rt_handle_request
 //       Access: Private
 //  Description: Processes a single request or notification received
-//               from an instance.
+//               from an instance.  This method runs in the read
+//               thread.
 ////////////////////////////////////////////////////////////////////
 void P3DSession::
 rt_handle_request(TiXmlDocument *doc) {
