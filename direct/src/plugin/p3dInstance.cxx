@@ -153,6 +153,7 @@ P3DInstance(P3D_request_ready_func *func,
   _download_package_index = 0;
   _total_download_size = 0;
   _total_downloaded = 0;
+  _packages_specified = false;
   _download_started = false;
   _download_complete = false;
   _instance_started = false;
@@ -296,6 +297,8 @@ P3DInstance::
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 cleanup() {
+  _failed = true;
+
   if (_auth_session != NULL) {
     _auth_session->shutdown(false);
     p3d_unref_delete(_auth_session);
@@ -375,8 +378,6 @@ cleanup() {
     P3DDownload *download = (*di).second;
     download->cancel();
   }
-
-  _failed = true;
 }
 
 
@@ -417,9 +418,9 @@ set_p3d_url(const string &p3d_url) {
   // Mark the time we started downloading, so we'll know when to reveal
   // the progress bar, and we can predict the total download time.
 #ifdef _WIN32
-  _start_dl_instance_tick = GetTickCount();
+  _start_dl_tick = GetTickCount();
 #else
-  gettimeofday(&_start_dl_instance_timeval, NULL);
+  gettimeofday(&_start_dl_timeval, NULL);
 #endif
   _show_dl_instance_progress = false;
 
@@ -459,9 +460,9 @@ make_p3d_stream(const string &p3d_url) {
   // Mark the time we started downloading, so we'll know when to reveal
   // the progress bar.
 #ifdef _WIN32
-  _start_dl_instance_tick = GetTickCount();
+  _start_dl_tick = GetTickCount();
 #else
-  gettimeofday(&_start_dl_instance_timeval, NULL);
+  gettimeofday(&_start_dl_timeval, NULL);
 #endif
   _show_dl_instance_progress = false;
 
@@ -703,29 +704,68 @@ get_request() {
   _request_pending = !_baked_requests.empty();
 
   if (request != NULL) {
-    if (request->_request_type == P3D_RT_notify) {
-      // Also eval the associated HTML token, if any.
-      string message = request->_request._notify._message;
-      string expression = _fparams.lookup_token(message);
-      nout << "notify: " << message << " " << expression << "\n";
-      if (!expression.empty() && _browser_script_object != NULL) {
-        P3D_object *result = P3D_OBJECT_EVAL(_browser_script_object, expression.c_str());
-        P3D_OBJECT_XDECREF(result);
+    switch (request->_request_type) {
+    case P3D_RT_notify:
+      {
+        // Also eval the associated HTML token, if any.
+        string message = request->_request._notify._message;
+        string expression = _fparams.lookup_token(message);
+        nout << "notify: " << message << " " << expression << "\n";
+        if (!expression.empty() && _browser_script_object != NULL) {
+          P3D_object *result = P3D_OBJECT_EVAL(_browser_script_object, expression.c_str());
+          P3D_OBJECT_XDECREF(result);
+        }
       }
+      break;
 
-    } else if (request->_request_type == P3D_RT_stop) {
-      // We also send an implicit message when Python requests itself
-      // to shutdown.
-      _panda_script_object->set_pyobj(NULL);
-      _panda_script_object->set_string_property("status", "stopped");
-
-      string message = "onpythonstop";
-      string expression = _fparams.lookup_token(message);
-      nout << "notify: " << message << " " << expression << "\n";
-      if (!expression.empty() && _browser_script_object != NULL) {
-        P3D_object *result = P3D_OBJECT_EVAL(_browser_script_object, expression.c_str());
-        P3D_OBJECT_XDECREF(result);
+    case P3D_RT_stop:
+      {
+        // We also send an implicit message when Python requests itself
+        // to shutdown.
+        _panda_script_object->set_pyobj(NULL);
+        _panda_script_object->set_string_property("status", "stopped");
+        
+        string message = "onpythonstop";
+        string expression = _fparams.lookup_token(message);
+        nout << "notify: " << message << " " << expression << "\n";
+        if (!expression.empty() && _browser_script_object != NULL) {
+          P3D_object *result = P3D_OBJECT_EVAL(_browser_script_object, expression.c_str());
+          P3D_OBJECT_XDECREF(result);
+        }
       }
+      break;
+
+    case P3D_RT_callback:
+      {
+        // And when the callback request is extracted, we make the
+        // callback.
+        P3D_callback_func *func = request->_request._callback._func;
+        void *data = request->_request._callback._data;
+        (*func)(data);
+      }
+      break;
+
+    case P3D_RT_forget_package:
+      {
+        // We're being asked to forget a particular package.
+        const char *host_url = request->_request._forget_package._host_url;
+        const char *package_name = request->_request._forget_package._package_name;
+        const char *package_version = request->_request._forget_package._package_version;
+        if (package_version == NULL) {
+          package_version = "";
+        }
+
+        P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
+        P3DHost *host = inst_mgr->get_host(host_url);
+        if (package_name != NULL) {
+          P3DPackage *package = host->get_package(package_name, package_version);
+          host->forget_package(package);
+        } else {
+          // If a NULL package name is given, forget the whole host.
+          inst_mgr->forget_host(host);
+        }
+      }
+      break;
     }
   }
   
@@ -843,7 +883,7 @@ finish_request(P3D_request *request, bool handled) {
 
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
   if (inst_mgr->validate_instance(request->_instance) == NULL) {
-    nout << "Ignoring unknown request " << request << "\n";
+    //    nout << "Ignoring unknown request " << request << "\n";
     return;
   }
 
@@ -852,18 +892,38 @@ finish_request(P3D_request *request, bool handled) {
     break;
 
   case P3D_RT_get_url:
-    free((char *)request->_request._get_url._url);
-    request->_request._get_url._url = NULL;
+    if (request->_request._get_url._url != NULL) {
+      free((char *)request->_request._get_url._url);
+      request->_request._get_url._url = NULL;
+    }
     break;
 
   case P3D_RT_notify:
-    free((char *)request->_request._notify._message);
-    request->_request._notify._message = NULL;
+    if (request->_request._notify._message != NULL) {
+      free((char *)request->_request._notify._message);
+      request->_request._notify._message = NULL;
+    }
+    break;
+
+  case P3D_RT_forget_package:
+    if (request->_request._forget_package._host_url != NULL) {
+      free((char *)request->_request._forget_package._host_url);
+      request->_request._forget_package._host_url = NULL;
+    }
+    if (request->_request._forget_package._package_name != NULL) {
+      free((char *)request->_request._forget_package._package_name);
+      request->_request._forget_package._package_name = NULL;
+    }
+    if (request->_request._forget_package._package_version != NULL) {
+      free((char *)request->_request._forget_package._package_version);
+      request->_request._forget_package._package_version = NULL;
+    }
     break;
   }
 
   p3d_unref_delete(((P3DInstance *)request->_instance));
   request->_instance = NULL;
+
   delete request;
 }
 
@@ -1055,6 +1115,11 @@ remove_package(P3DPackage *package) {
 ////////////////////////////////////////////////////////////////////
 bool P3DInstance::
 get_packages_info_ready() const {
+  if (!_packages_specified) {
+    // We haven't even specified the full set of required packages yet.
+    return false;
+  }
+
   Packages::const_iterator pi;
   for (pi = _packages.begin(); pi != _packages.end(); ++pi) {
     if (!(*pi)->get_info_ready()) {
@@ -1236,6 +1301,21 @@ request_refresh() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: P3DInstance::request_callback
+//       Access: Public
+//  Description: Asks the host to make a callback later.
+////////////////////////////////////////////////////////////////////
+void P3DInstance::
+request_callback(P3D_callback_func *func, void *data) {
+  P3D_request *request = new P3D_request;
+  request->_instance = NULL;
+  request->_request_type = P3D_RT_callback;
+  request->_request._callback._func = func;
+  request->_request._callback._data = data;
+  add_baked_request(request);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: P3DInstance::make_xml
 //       Access: Public
 //  Description: Returns a newly-allocated XML structure that
@@ -1339,7 +1419,7 @@ auth_button_clicked() {
 //       Access: Public
 //  Description: Called to start the game by the user clicking the
 //               green "play" button, or by JavaScript calling
-//               start().
+//               play().
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 play_button_clicked() {
@@ -1349,7 +1429,9 @@ play_button_clicked() {
       // Now we initiate the download.
       _auto_install = true;
       _auto_start = true;
-      ready_to_install();
+      if (get_packages_info_ready()) {
+        ready_to_install();
+      }
 
     } else {
       set_background_image(IT_launch);
@@ -1439,8 +1521,8 @@ void P3DInstance::
 uninstall_host() {
   uninstall_packages();
 
+  // Collect the set of hosts referenced by this instance.
   set<P3DHost *> hosts;
-
   Packages::const_iterator pi;
   for (pi = _packages.begin(); pi != _packages.end(); ++pi) {
     P3DPackage *package = (*pi);
@@ -1450,6 +1532,7 @@ uninstall_host() {
     }
   }
 
+  // Uninstall all of them.
   set<P3DHost *>::iterator hi;
   for (hi = hosts.begin(); hi != hosts.end(); ++hi) {
     P3DHost *host = (*hi);
@@ -1831,7 +1914,11 @@ void P3DInstance::
 mark_p3d_trusted() {
   nout << "p3d trusted\n";
   // Only call this once.
-  assert(!_p3d_trusted);
+  if (_p3d_trusted) {
+    nout << "mark_p3d_trusted() called twice on " << _fparams.get_p3d_filename()
+         << "\n";
+    return;
+  }
 
   // Extract the application desc file from the p3d file.
   stringstream sstream;
@@ -1993,6 +2080,8 @@ scan_app_desc_file(TiXmlDocument *doc) {
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 add_packages() {
+  assert(!_packages_specified);
+
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
 
   TiXmlElement *xrequires = _xpackage->FirstChildElement("requires");
@@ -2009,6 +2098,23 @@ add_packages() {
     }
 
     xrequires = xrequires->NextSiblingElement("requires");
+  }
+
+  _packages_specified = true;
+  if (get_packages_info_ready()) {
+    // All packages are ready to go.  Let's start some download
+    // action.
+    _downloading_packages.clear();
+    _total_download_size = 0;
+    Packages::const_iterator pi;
+    for (pi = _packages.begin(); pi != _packages.end(); ++pi) {
+      P3DPackage *package = (*pi);
+      if (package->get_info_ready() && !package->get_ready()) {
+        _downloading_packages.push_back(package);
+        _total_download_size += package->get_download_size();
+      }
+    }
+    ready_to_install();
   }
 }
 
@@ -2205,6 +2311,27 @@ make_p3d_request(TiXmlElement *xrequest) {
       request = new P3D_request;
       request->_instance = NULL;
       request->_request_type = P3D_RT_stop;
+
+    } else if (strcmp(rtype, "forget_package") == 0) {
+      const char *host_url = xrequest->Attribute("host_url");
+      if (host_url != NULL) {
+        // A Python-level request to remove a package from the cache.
+        request = new P3D_request;
+        request->_instance = NULL;
+        request->_request_type = P3D_RT_forget_package;
+        request->_request._forget_package._host_url = strdup(host_url);
+        request->_request._forget_package._package_name = NULL;
+        request->_request._forget_package._package_version = NULL;
+
+        const char *package_name = xrequest->Attribute("package_name");
+        const char *package_version = xrequest->Attribute("package_version");
+        if (package_name != NULL) {
+          request->_request._forget_package._package_name = strdup(package_name);
+          if (package_version != NULL) {
+            request->_request._forget_package._package_version = strdup(package_version);
+          }
+        }
+      }
 
     } else {
       nout << "Ignoring request of type " << rtype << "\n";
@@ -2758,6 +2885,14 @@ ready_to_install() {
     _download_package_index = 0;
     _total_downloaded = 0;
 
+    // Record the time we started the package download, so we can
+    // report downloadElapsedTime and predict downloadRemainingTime.
+#ifdef _WIN32
+    _start_dl_tick = GetTickCount();
+#else
+    gettimeofday(&_start_dl_timeval, NULL);
+#endif
+
     nout << "Beginning install of " << _downloading_packages.size()
          << " packages, total " << _total_download_size
          << " bytes required.\n";
@@ -2914,12 +3049,12 @@ report_instance_progress(double progress, bool is_progress_known,
     // instance file might be already in the browser cache).
 #ifdef _WIN32
     int now = GetTickCount();
-    double elapsed = (double)(now - _start_dl_instance_tick) * 0.001;
+    double elapsed = (double)(now - _start_dl_tick) * 0.001;
 #else
     struct timeval now;
     gettimeofday(&now, NULL);
-    double elapsed = (double)(now.tv_sec - _start_dl_instance_timeval.tv_sec) +
-      (double)(now.tv_usec - _start_dl_instance_timeval.tv_usec) / 1000000.0;
+    double elapsed = (double)(now.tv_sec - _start_dl_timeval.tv_sec) +
+      (double)(now.tv_usec - _start_dl_timeval.tv_usec) / 1000000.0;
 #endif
 
     // Put up the progress bar after 2 seconds have elapsed, if we've
@@ -2984,12 +3119,12 @@ report_package_progress(P3DPackage *package, double progress) {
   // Get the floating-point elapsed time.
 #ifdef _WIN32
   int now = GetTickCount();
-  double elapsed = (double)(now - _start_dl_instance_tick) * 0.001;
+  double elapsed = (double)(now - _start_dl_tick) * 0.001;
 #else
   struct timeval now;
   gettimeofday(&now, NULL);
-  double elapsed = (double)(now.tv_sec - _start_dl_instance_timeval.tv_sec) +
-    (double)(now.tv_usec - _start_dl_instance_timeval.tv_usec) / 1000000.0;
+  double elapsed = (double)(now.tv_sec - _start_dl_timeval.tv_sec) +
+    (double)(now.tv_usec - _start_dl_timeval.tv_usec) / 1000000.0;
 #endif
 
   int ielapsed = (int)elapsed;
@@ -3052,6 +3187,7 @@ report_package_done(P3DPackage *package, bool success) {
       nout << "No <config> entry in image package\n";
       return;
     }
+    package->mark_used();
 
     for (int i = 0; i < (int)IT_none; ++i) {
       if (_image_files[i]._use_standard_image) {
@@ -3083,6 +3219,8 @@ report_package_done(P3DPackage *package, bool success) {
     // failing to download it) means we can finish checking the
     // authenticity of the p3d file.
 
+    package->mark_used();
+
     // Take down the download progress.
     if (_splash_window != NULL) {
       _splash_window->set_install_progress(0.0, true, 0);
@@ -3098,6 +3236,8 @@ report_package_done(P3DPackage *package, bool success) {
   if (package == _p3dcert_package) {
     // Another special case: successfully downloading p3dcert means we
     // can enable the auth button.
+
+    package->mark_used();
 
     // Take down the download progress.
     if (_splash_window != NULL) {
