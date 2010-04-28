@@ -766,6 +766,8 @@ typedef enum {
   P3D_RT_get_url,
   P3D_RT_notify,
   P3D_RT_refresh,
+  P3D_RT_callback,
+  P3D_RT_forget_package
 } P3D_request_type;
 
 /* Structures corresponding to the request types in the above enum. */
@@ -791,8 +793,9 @@ typedef struct {
 } P3D_request_get_url;
 
 /* A general notification.  This is just a message of some event
-   having occurred within the Panda3D instance.  It may be safely
-   ignored.
+   having occurred within the Panda3D instance.  The core API will
+   automatically trigger a JavaScript callback based on this event.
+   It may be safely ignored by the application.
 */
 typedef struct {
   const char *_message;
@@ -804,6 +807,32 @@ typedef struct {
 typedef struct {
 } P3D_request_refresh;
 
+/* A callback request.  The instance wants to yield control
+   temporarily back to JavaScript, to allow JavaScript to maintain
+   interactivity during a long computation, and expects to get control
+   again some short while later (when the callback request is pulled
+   off the queue and the request is handled).  The data within this
+   structure is used internally by the core API and shouldn't be
+   interpreted by the caller. */
+typedef void P3D_callback_func(void *);
+typedef struct {
+  P3D_callback_func *_func;
+  void *_data;
+} P3D_request_callback;
+
+/* A forget-package request.  This is called when a Python application
+   wishes to uninstall a specific package (for instance, to clean up
+   disk space).  It is assumed that the application will be
+   responsible for deleting the actual files of the package; this is
+   just an instruction to the core API to remove the indicated package
+   from the in-memory cache.  This is handled internally, and
+   shouldn't be interpreted by the caller. */
+typedef struct {
+  const char *_host_url;
+  const char *_package_name;
+  const char *_package_version;
+} P3D_request_forget_package;
+
 /* This is the overall structure that represents a single request.  It
    is returned by P3D_instance_get_request(). */
 typedef struct {
@@ -814,6 +843,8 @@ typedef struct {
     P3D_request_get_url _get_url;
     P3D_request_notify _notify;
     P3D_request_refresh _refresh;
+    P3D_request_callback _callback;
+    P3D_request_forget_package _forget_package;
   } _request;
 } P3D_request;
 
