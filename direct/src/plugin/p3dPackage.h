@@ -69,6 +69,7 @@ public:
   void add_instance(P3DInstance *inst);
   void remove_instance(P3DInstance *inst);
 
+  void mark_used();
   void uninstall();
 
   TiXmlElement *make_xml();
@@ -114,6 +115,7 @@ private:
     IT_step_complete,
     IT_step_failed,
     IT_continue,
+    IT_needs_callback,
     IT_terminate,
   };
 
@@ -149,11 +151,31 @@ private:
     Download *_download;
   };
 
-  class InstallStepUncompressFile : public InstallStep {
+  class InstallStepThreaded : public InstallStep {
+  public:
+    InstallStepThreaded(P3DPackage *package, size_t bytes, double factor);
+    virtual ~InstallStepThreaded();
+
+    virtual InstallToken do_step(bool download_finished);
+
+    THREAD_CALLBACK_DECLARATION(InstallStepThreaded, thread_main);
+    void thread_main();
+    virtual InstallToken thread_step()=0;
+    void thread_set_bytes_done(size_t bytes_done);
+    void thread_add_bytes_done(size_t bytes_done);
+
+    THREAD _thread;
+    LOCK _thread_lock;
+    bool _thread_started;
+    InstallToken _thread_token;
+    size_t _thread_bytes_done;
+  };    
+
+  class InstallStepUncompressFile : public InstallStepThreaded {
   public:
     InstallStepUncompressFile(P3DPackage *package, const FileSpec &source,
                               const FileSpec &target, bool verify_target);
-    virtual InstallToken do_step(bool download_finished);
+    virtual InstallToken thread_step();
     virtual void output(ostream &out);
 
     FileSpec _source;
@@ -161,20 +183,20 @@ private:
     bool _verify_target;
   };
 
-  class InstallStepUnpackArchive : public InstallStep {
+  class InstallStepUnpackArchive : public InstallStepThreaded {
   public:
     InstallStepUnpackArchive(P3DPackage *package, size_t unpack_size);
-    virtual InstallToken do_step(bool download_finished);
+    virtual InstallToken thread_step();
     virtual void output(ostream &out);
   };
 
-  class InstallStepApplyPatch : public InstallStep {
+  class InstallStepApplyPatch : public InstallStepThreaded {
   public:
     InstallStepApplyPatch(P3DPackage *package,
                           const FileSpec &patchfile,
                           const FileSpec &source,
                           const FileSpec &target);
-    virtual InstallToken do_step(bool download_finished);
+    virtual InstallToken thread_step();
     virtual void output(ostream &out);
 
     P3DPatchfileReader _reader;
@@ -184,6 +206,7 @@ private:
   typedef deque<InstallPlan> InstallPlans;
   InstallPlans _install_plans;
 
+  bool _computed_plan_size;
   double _total_plan_size;
   double _total_plan_completed;
   double _download_progress;
@@ -202,7 +225,9 @@ private:
 
   void clear_install_plans();
   void build_install_plans(TiXmlDocument *doc);
-  void follow_install_plans(bool download_finished);
+  void follow_install_plans(bool download_finished, bool plan_failed);
+  static void st_callback(void *self);
+  void request_callback();
 
   void report_progress(InstallStep *step);
   void report_info_ready();
@@ -266,6 +291,7 @@ private:
 
   size_t _unpack_size;
   Extracts _extracts;
+  bool _updated;
 
   static const double _download_factor;
   static const double _uncompress_factor;
