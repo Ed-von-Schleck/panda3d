@@ -7,7 +7,6 @@ from direct.task import Task
 from direct.gui import DirectGuiGlobals
 from direct.showbase.EventGroup import EventGroup
 from direct.showbase.PythonUtil import report
-from direct.distributed.GridParent import GridParent
 from direct.distributed.StagedObject import StagedObject
 
 if __debug__:
@@ -16,6 +15,7 @@ if __debug__:
     from direct.showbase.PythonUtil import randFloat
 
 from CartesianGridBase import CartesianGridBase
+from GridChild import GridChild
 
 # increase this number if you want to visualize the grid lines
 # above water level
@@ -53,7 +53,7 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
         # TODO: when teleporting off an island...
         taskMgr.remove(self.taskName("processVisibility"))
 
-    def isGridParent(self):
+    def isGrid(self):
         # If this distributed object is a DistributedGrid return 1.  0 by default
         return 1
 
@@ -81,29 +81,28 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
         return self.centerPos
 
     def handleChildArrive(self, child, zoneId):
+        assert isinstance(child, GridChild), "Must be a GridChild to be setLocation()ed here"
         DistributedNode.handleChildArrive(self, child, zoneId)
         if (zoneId >= self.startingZone):
-            if not child.gridParent:
-                child.gridParent = GridParent(child)
-            child.gridParent.setGridParent(self, zoneId)
-        elif child.gridParent:
-            child.gridParent.delete()
-            child.gridParent = None
+            child.setGridCell(self, zoneId)
+        else:
+            child.setGridCell(None, 0)
+            pass
+        pass
 
     def handleChildArriveZone(self, child, zoneId):
-        DistributedNode.handleChildArrive(self, child, zoneId)
+        DistributedNode.handleChildArriveZone(self, child, zoneId)
         if (zoneId >= self.startingZone):
-            if not child.gridParent:
-                child.gridParent = GridParent(child)
-            child.gridParent.setGridParent(self, zoneId)
-        elif child.gridParent:
-            child.gridParent.delete()
-            child.gridParent = None
-
+            child.setGridCell(self, zoneId)
+        else:
+            child.setGridCell(None, 0)
+            pass
+        pass
+        
     def handleChildLeave(self, child, zoneId):
-        if child.gridParent:
-            child.gridParent.delete()
-            child.gridParent = None
+        child.setGridCell(None, 0)
+        DistributedNode.handleChildLeave(self, child, zoneId)
+        pass
             
     @report(types = ['deltaStamp', 'avLocation', 'args'], dConfigParam = ['connector','shipboard'])
     def startProcessVisibility(self, avatar):
@@ -124,7 +123,6 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
         self.acceptOnce(self.cr.StopVisibilityEvent, self.stopProcessVisibility)
         self.visAvatar = avatar
         self.visZone = None
-        self.visDirty = True
         t = taskMgr.add(
             self.processVisibility, self.taskName("processVisibility"))
         self.processVisibility(0)
@@ -192,54 +190,42 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
                 self.visZone = None
                 self.gridVisContext = None
             return Task.cont
-        # Compute which zone we are in
-        zoneId = int(self.startingZone + ((row * self.gridSize) + col))
-        assert self.notify.debug("processVisibility: %s: row: %s col: %s zoneId: %s" %
-                                 (self.doId, row, col, zoneId))
-        if (zoneId == self.visZone):
-            assert self.notify.debug(
-                "processVisibility: %s: interest did not change" % (self.doId))
-            if self.visDirty:
-                messenger.send(self.uniqueName("visibility"))
-                self.visDirty = False
-            return Task.cont
         else:
-            assert self.notify.debug(
-                "processVisibility: %s: new interest" % (self.doId))
-            self.visZone = zoneId
-            if not self.gridVisContext:
-                self.gridVisContext = self.cr.addTaggedInterest(
-                    self.getDoId(), self.visZone,
-                    self.cr.ITAG_GAME,
-                    self.uniqueName('gridvis'),
-                    event = self.uniqueName('visibility'))
+            # Compute which zone we are in
+            zoneId = int(self.startingZone + ((row * self.gridSize) + col))
+            assert self.notify.debug("processVisibility: %s: row: %s col: %s zoneId: %s" %
+                                     (self.doId, row, col, zoneId))
+            if (zoneId == self.visZone):
+                assert self.notify.debug(
+                    "processVisibility: %s: interest did not change" % (self.doId))
+                return Task.cont
             else:
                 assert self.notify.debug(
-                    "processVisibility: %s: altering interest to zoneId: %s" %
-                    (self.doId, zoneId))
-                
-                event = None
-                if self.visDirty:
-                    event = self.uniqueName("visibility")                    
-                self.cr.alterInterest(self.gridVisContext,
-                                      self.getDoId(), self.visZone,
-                                      event = event)
-                
-                # If the visAvatar is parented to this grid, also do a
-                # setLocation
-                parentId = self.visAvatar.parentId
-                oldZoneId = self.visAvatar.zoneId
-                assert self.notify.debug(
-                    "processVisibility: %s: parentId: %s oldZoneId: %s" %
-                    (self.doId, parentId, oldZoneId))
-                if parentId == self.doId:
+                    "processVisibility: %s: new interest" % (self.doId))
+                self.visZone = zoneId
+                if not self.gridVisContext:
+                    self.gridVisContext = self.cr.addTaggedInterest(
+                        self.getDoId(), self.visZone,
+                        self.cr.ITAG_GAME,
+                        self.uniqueName('gridvis'))
+                else:
                     assert self.notify.debug(
-                        "processVisibility: %s: changing location" %
-                        (self.doId))
-                    messenger.send("avatarZoneChanged", [self.visAvatar, self.doId, zoneId])
-                    #self.handleAvatarZoneChange(self.visAvatar, zoneId)
-            self.visDirty = False
-            return Task.cont
+                        "processVisibility: %s: altering interest to zoneId: %s" %
+                        (self.doId, zoneId))
+                
+                    self.cr.alterInterest(self.gridVisContext,
+                                          self.getDoId(), self.visZone)
+                
+                    # If the visAvatar is parented to this grid, also do a
+                    # setLocation
+                    if self.visAvatar.parentId == self.doId:
+                        assert self.notify.debug(
+                            "processVisibility: %s changing cell (%s, %s -> %s)" %
+                            (self.visAvatar, self.doId, self.visAvatar.zoneId, zoneId))
+                        self.handleChildCellChange(self.visAvatar, zoneId)
+                return Task.cont
+            pass
+        pass
 
     # Update our location based on our avatar's position on the grid
     # Assumes our position is correct, relative to the grid    
@@ -250,8 +236,7 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
         # Figure out what zone in that island grid
         zoneId = self.getZoneFromXYZ(pos)
         # Do the wrtReparenting to the grid node
-        messenger.send("avatarZoneChanged", [av, self.doId, zoneId])
-        #self.handleAvatarZoneChange(av, zoneId)
+        self.handleChildCellChange(av, zoneId)
 
     def removeObjectFromGrid(self, av):
         assert self.notify.debug("removeObjectFromGrid %s" % av)
@@ -263,19 +248,19 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
         #av.b_setLocation(0, 0)
 
 
-    def handleAvatarZoneChange(self, av, zoneId):
-        assert self.notify.debug("handleAvatarZoneChange(%s, %s)" % (av.doId, zoneId))
+    def handleChildCellChange(self, child, zoneId):
+        assert self.notify.debug("handleChildCellChange(%s, %s)" % (child.doId, zoneId))
         # This method can be overridden by derived classes that
-        # want to do some special management when the avatar changes
+        # want to do some special management when the child changes
         # zones.
         # Make sure this is a valid zone
         if not self.isValidZone(zoneId):
-            assert self.notify.warning("handleAvatarZoneChange: not a valid zone (%s)" % zoneId)
+            assert self.notify.warning("handleChildCellChange: not a valid zone (%s)" % zoneId)
             return
 
         # Set the location on the server
-        av.b_setLocation(self.doId, zoneId)
-
+        child.b_setLocation(self.doId, zoneId)
+        pass
 
     def handleOffStage(self):
         self.stopProcessVisibility()

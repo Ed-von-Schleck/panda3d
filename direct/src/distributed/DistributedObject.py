@@ -512,10 +512,6 @@ class DistributedObject(DistributedObjectBase):
         # avatar class overrides this to return true.
         return self.cr and self.cr.isLocalId(self.doId)
 
-    def isGridParent(self):
-        # If this distributed object is a DistributedGrid return 1.  0 by default
-        return 0
-
     def execCommand(self, string, mwMgrId, avId, zoneId):
         pass
 

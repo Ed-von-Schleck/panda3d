@@ -82,6 +82,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
     def generate(self):
         self.smoother = SmoothMover()
         self.smoothStarted = 0
+        self.embeddedVal = 0
         self.lastSuggestResync = 0
         self._smoothWrtReparents = False
 
@@ -164,7 +165,13 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         #printStack()
         if (not self.isLocal()) and \
            self.smoother.getLatestPosition():
-            self.smoother.applySmoothPosHpr(self, self)
+            embeddedVal = SmoothValue()
+            self.smoother.applySmoothPosHprE(self, self, embeddedVal)
+            self.embeddedVal = embeddedVal.get()
+            parent = self.getParentObj()
+            if parent.isGrid():
+                self.setGridCell(parent, self.embeddedVal)
+                pass
         self.smoother.clearPositions(1)
 
     def reloadPosition(self):
@@ -264,17 +271,42 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         self.setComponentR(r)
         self.setComponentTLive(timestamp)
 
-    def setSmPosHprL(self, l, x, y, z, h, p, r, timestamp=None):
+    def setSmPosHprE(self, x, y, z, h, p, r, e, timestamp=None):
+        # This ensures that the marked positions (sample points)
+        # are all relative to the same parent.
+        eParent = self.getCoordinateSpaceFromEmbedded(e)
+        if eParent is not self.getParent():
+            parent = self.getParent()
+            wrtData = eParent.attachNewNode('wrtData')
+            wrtData.setPosHpr(x,y,z,h,p,r)
+            x,y,z = wrtData.getPos(parent)
+            h,p,r = wrtData.getHpr(parent)
+            pass
+        
         self._checkResume(timestamp)
-        self.setComponentL(l)
         self.setComponentX(x)
         self.setComponentY(y)
         self.setComponentZ(z)
         self.setComponentH(h)
         self.setComponentP(p)
         self.setComponentR(r)
+        self.setComponentE(e)
         self.setComponentTLive(timestamp)
 
+    def getCoordinateSpaceFromEmbedded(self, e):
+        # Sometimes the telemetry cannot be smoothed
+        # between points (think boundary wrapping at a
+        # grid cell border).  This allows us to convert
+        # our received telemetry into our current coordinate
+        # space, assuming we can use the embedded data
+        # to determine the coordinate space of the received
+        # telemetry.
+
+        # The default case is that the embedded data is not
+        # used and we just received telemetry in the current
+        # coordinate space.
+        return self.getParent()
+    
     ### component set pos and hpr functions ###
 
     ### These are the component functions that are invoked
@@ -299,10 +331,9 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
     def setComponentR(self, r):
         self.smoother.setR(r)
     @report(types = ['args'], dConfigParam = 'smoothnode')
-    def setComponentL(self, l):
-        if (l != self.zoneId):
-            # only perform set location if location is different
-            self.setLocation(self.parentId,l)
+    def setComponentE(self, e):
+        self.smoother.setE(e)
+        pass
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def setComponentT(self, timestamp):
         # This is a little bit hacky.  If *this* function is called,
@@ -378,12 +409,14 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
 
         if not self.localControl and not self.smoothStarted and \
            self.smoother.getLatestPosition():
-            self.smoother.applySmoothPosHpr(self, self)
-
+            embeddedVal = SmoothValue()
+            self.smoother.applySmoothPosHpr(self, self, embeddedVal)
+            self.embeddedVal = embeddedVal.get()
+            assert False, "TODO: reset to new grid parent"
+            
+            
     # These are all required by the CMU server, which requires get* to
     # match set* in more cases than the Disney server does.
-    def getComponentL(self):
-        return self.zoneId
     def getComponentX(self):
         return self.getX()
     def getComponentY(self):
@@ -396,6 +429,8 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         return self.getP()
     def getComponentR(self):
         return self.getR()
+    def getComponentE(self):
+        return self.embeddedVal
     def getComponentT(self):
         return 0
                 

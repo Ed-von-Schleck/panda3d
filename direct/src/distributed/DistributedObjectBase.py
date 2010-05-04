@@ -137,3 +137,9 @@ class DistributedObjectBase(DirectObject):
         _getAutoInterests = None
         return list(autoInterests)
 
+    def isGrid(self):
+        # If this distributed object is a DistributedGrid return 1.  0 by default.
+        # Yeah, this is silly, but until we get rid of the whole "isGrid() question"
+        # this seems like the most reasonable place to put this.
+        return 0
+

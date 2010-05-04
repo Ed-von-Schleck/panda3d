@@ -54,8 +54,11 @@ PUBLISHED:
   void broadcast_pos_hpr_xyh();
   void broadcast_pos_hpr_xy();
 
-  void set_curr_l(PN_uint64 l);
-  void print_curr_l();
+  // This value is used to embed another data point into the telemetry stream. 
+  // For instance, an object on a grid would need to have a way to switch grid
+  // cells at the same instant the positional data wraps.
+  void set_embedded_val(PN_uint64 e);
+  void print_embedded_val() const;
 
 private:
   INLINE static bool only_changed(int flags, int compare);
@@ -70,7 +73,7 @@ private:
   INLINE void d_setSmXYH(float x, float y, float h);
   INLINE void d_setSmXYZH(float x, float y, float z, float h);
   INLINE void d_setSmPosHpr(float x, float y, float z, float h, float p, float r);
-  INLINE void d_setSmPosHprL(float x, float y, float z, float h, float p, float r, PN_uint64 l);
+  INLINE void d_setSmPosHprE(float x, float y, float z, float h, float p, float r, PN_uint64 e);
 
   void begin_send_update(DCPacker &packer, const string &field_name);
   void finish_send_update(DCPacker &packer);
@@ -82,6 +85,7 @@ private:
     F_new_h     = 0x08,
     F_new_p     = 0x10,
     F_new_r     = 0x20,
+    F_new_e     = 0x40,
   };
 
   NodePath _node_path;
@@ -97,10 +101,10 @@ private:
 
   LPoint3f _store_xyz;
   LVecBase3f _store_hpr;
+  PN_uint64 _store_e;
+  bool _dirty_e; // set when _store_e has been changed;
   bool _store_stop;
-  // contains most recently sent location info as
-  // index 0, index 1 contains most recently set location info
-  PN_uint64 _currL[2];
+
 };
 
 #include "cDistributedSmoothNodeBase.I"

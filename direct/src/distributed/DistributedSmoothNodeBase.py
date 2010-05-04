@@ -17,14 +17,15 @@ class DistributedSmoothNodeBase:
 
     def __init__(self):
         self.__broadcastPeriod = None
-
+        self.cnode = None
+        
     def generate(self):
         self.cnode = CDistributedSmoothNodeBase()
         self.cnode.setClockDelta(globalClockDelta)
         self.d_broadcastPosHpr = None
 
     def disable(self):
-        del self.cnode
+        self.cnode = None
         # make sure our task is gone
         self.stopPosHprBroadcast()
 

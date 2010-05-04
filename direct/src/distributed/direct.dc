@@ -54,13 +54,13 @@ dclass DistributedNode: DistributedObject {
 dclass DistributedSmoothNode: DistributedNode {
   // Component set pos and hpr functions.
 
-  setComponentL(uint64) broadcast ram;
   setComponentX(int16 / 10) broadcast ram;
   setComponentY(int16 / 10) broadcast ram;
   setComponentZ(int16 / 10) broadcast ram;
   setComponentH(int16 % 360 / 10) broadcast ram;
   setComponentP(int16 % 360 / 10) broadcast ram;
   setComponentR(int16 % 360 / 10) broadcast ram;
+  setComponentE(uint64) broadcast ram;
   setComponentT(int16 timestamp) broadcast ram;
 
   // Composite set pos and hpr functions.  These map to combinations
@@ -78,7 +78,7 @@ dclass DistributedSmoothNode: DistributedNode {
   setSmPosHpr: setComponentX, setComponentY, setComponentZ, setComponentH, setComponentP, setComponentR, setComponentT;
   // special update if L (being location, such as zoneId) changes, send everything, intended to
   // keep position and 'location' in sync
-  setSmPosHprL: setComponentL, setComponentX, setComponentY, setComponentZ, setComponentH, setComponentP, setComponentR, setComponentT;
+  setSmPosHprE: setComponentX, setComponentY, setComponentZ, setComponentH, setComponentP, setComponentR, setComponentE, setComponentT;
 
   clearSmoothing(int8 bogus) broadcast;
 

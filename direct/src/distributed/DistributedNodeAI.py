@@ -14,38 +14,13 @@ class DistributedNodeAI(DistributedObjectAI.DistributedObjectAI, NodePath):
             if name is None:
                 name = self.__class__.__name__
             NodePath.__init__(self, name)
-            self.gridParent = None
 
     def delete(self):
-        if self.gridParent:
-            self.gridParent.delete()
-            self.gridParent = None
         if not self.isEmpty():
             self.removeNode()
         DistributedObjectAI.DistributedObjectAI.delete(self)
 
-    def setLocation(self, parentId, zoneId, teleport=0):
-        # Redefine DistributedObject setLocation, so that when
-        # location is set to the ocean grid, we can update our parenting
-        # under gridParent
-        DistributedObjectAI.DistributedObjectAI.setLocation(self, parentId, zoneId)
-        parentObj = self.air.doId2do.get(parentId)
-        if parentObj:
-            if parentObj.isGridParent():
-                if not self.gridParent:
-                    self.gridParent = GridParent.GridParent(self)
-                self.gridParent.setGridParent(parentObj, zoneId)
-            else:
-                if self.gridParent:
-                    self.gridParent.delete()
-                    self.gridParent = None
-                    # NOTE: at this point the avatar has been detached from the scene
-                    # graph.  Someone else needs to reparent him to something in the scene graph
-            # TODO: handle DistributedNode parenting
-
-
     ### setParent ###
-
     def b_setParent(self, parentToken):
         if type(parentToken) == types.StringType:
             self.setParentStr(parentToken)
