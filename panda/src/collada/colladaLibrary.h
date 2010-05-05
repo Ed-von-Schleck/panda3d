@@ -23,8 +23,10 @@
 #include "pvector.h"
 #include "pointerTo.h"
 
+class ColladaCamera;
 class ColladaEffect;
 class ColladaGeometry;
+class ColladaLight;
 class ColladaMaterial;
 class ColladaVisualScene;
 
@@ -69,8 +71,10 @@ PUBLISHED:
 // Specialize for ColladaNode to search recursively
 template<> INLINE PT(ColladaElement) ColladaLibrary<ColladaNode>::get_element_by_id(const string &id) const;
 
+typedef ColladaLibrary<ColladaCamera> ColladaLibraryCameras;
 typedef ColladaLibrary<ColladaEffect> ColladaLibraryEffects;
 typedef ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries;
+typedef ColladaLibrary<ColladaLight> ColladaLibraryLights;
 typedef ColladaLibrary<ColladaMaterial> ColladaLibraryMaterials;
 typedef ColladaLibrary<ColladaNode> ColladaLibraryNodes;
 typedef ColladaLibrary<ColladaVisualScene> ColladaLibraryVisualScenes;

@@ -50,8 +50,10 @@ private:
 
   Filename _filename;
   PT(ColladaInstanceVisualScene) _instance_visual_scene;
+  ColladaLibraryCameras _library_cameras;
   ColladaLibraryEffects _library_effects;
   ColladaLibraryGeometries _library_geometries;
+  ColladaLibraryLights _library_lights;
   ColladaLibraryMaterials _library_materials;
   ColladaLibraryNodes _library_nodes;
   ColladaLibraryVisualScenes _library_visual_scenes;

@@ -1,8 +1,14 @@
+forcetype ColladaLibrary<ColladaCamera>
+renametype ColladaLibrary<ColladaCamera> ColladaLibraryCameras
+
 forcetype ColladaLibrary<ColladaEffect>
 renametype ColladaLibrary<ColladaEffect> ColladaLibraryEffects
 
 forcetype ColladaLibrary<ColladaGeometry>
 renametype ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries
+
+forcetype ColladaLibrary<ColladaLight>
+renametype ColladaLibrary<ColladaLight> ColladaLibraryLights
 
 forcetype ColladaLibrary<ColladaMaterial>
 renametype ColladaLibrary<ColladaMaterial> ColladaLibraryMaterials

@@ -32,8 +32,10 @@ void ColladaRoot::
 clear() {
   ColladaAssetElement::clear();
   _instance_visual_scene = NULL;
+  _library_cameras.clear();
   _library_effects.clear();
   _library_geometries.clear();
+  _library_lights.clear();
   _library_materials.clear();
   _library_nodes.clear();
   _library_visual_scenes.clear();
@@ -70,6 +72,11 @@ load_xml(const TiXmlElement *xelement) {
 
   const TiXmlElement *xchild;
 
+  xchild = xelement->FirstChildElement("library_cameras");
+  if (xchild != NULL) {
+    _library_cameras.load_xml(xchild);
+  }
+
   xchild = xelement->FirstChildElement("library_effects");
   if (xchild != NULL) {
     _library_effects.load_xml(xchild);
@@ -78,6 +85,11 @@ load_xml(const TiXmlElement *xelement) {
   xchild = xelement->FirstChildElement("library_geometries");
   if (xchild != NULL) {
     _library_geometries.load_xml(xchild);
+  }
+
+  xchild = xelement->FirstChildElement("library_lights");
+  if (xchild != NULL) {
+    _library_lights.load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_materials");
@@ -132,11 +144,17 @@ make_xml() const {
     //FIXME: what to do when there is no asset? collada spec requires one, I'm fairly certain
   }
 
+  if (_library_cameras.size() > 0) {
+    xelement->LinkEndChild(_library_cameras.make_xml());
+  }
   if (_library_effects.size() > 0) {
     xelement->LinkEndChild(_library_effects.make_xml());
   }
   if (_library_geometries.size() > 0) {
     xelement->LinkEndChild(_library_geometries.make_xml());
+  }
+  if (_library_lights.size() > 0) {
+    xelement->LinkEndChild(_library_lights.make_xml());
   }
   if (_library_materials.size() > 0) {
     xelement->LinkEndChild(_library_materials.make_xml());
