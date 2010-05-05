@@ -75,6 +75,9 @@ class ObjectMgrBase:
         if parent is None:
             parent = self.editor.NPParent
 
+        if uid is None:
+            uid = self.genUniqueId()
+
         if self.editor:
             objDef = self.editor.objectPalette.findItem(typeName)
             if objDef is None:
@@ -120,6 +123,9 @@ class ObjectMgrBase:
                         newobj = Actor(model)
                     except:
                         newobj = Actor(Filename.fromOsSpecific(model).getFullpath())
+                    if hasattr(objDef, 'animDict') and objDef.animDict != {}:
+                        objDef.anims = objDef.animDict.get(model)
+                        
                 elif objDef.model is not None:
                     # since this obj is simple model let's load the model
                     if model is None:
@@ -129,6 +135,7 @@ class ObjectMgrBase:
                     except:
                         newobjModel = loader.loadModel(Filename.fromOsSpecific(model).getFullpath(), okMissing=True)
                     if newobjModel:
+                        self.flatten(newobjModel, model, objDef, uid)
                         newobj = PythonNodePath(newobjModel)
                     else:
                         newobj = None
@@ -137,6 +144,7 @@ class ObjectMgrBase:
                     newobj = hidden.attachNewNode(objDef.name)
             else:
                 newobj = nodePath
+
             i = 0
             for i in range(len(objDef.anims)):
                 animFile = objDef.anims[i]
@@ -159,9 +167,6 @@ class ObjectMgrBase:
 
             newobj.reparentTo(parent)
             newobj.setTag('OBJRoot','1')
-
-            if uid is None:
-                uid = self.genUniqueId()
 
             # populate obj data using default values
             properties = {}
@@ -370,6 +375,7 @@ class ObjectMgrBase:
         obj[OG.OBJ_RGBA] = (r,g,b,a)
         for child in np.getChildren():
             if not child.hasTag('OBJRoot') and\
+               not child.hasTag('_le_sys') and\
                child.getName() != 'bboxLines':
                 child.setTransparency(1)
                 child.setColorScale(r, g, b, a)
@@ -381,10 +387,12 @@ class ObjectMgrBase:
             base.direct.deselectAllCB()
 
             objNP = obj[OG.OBJ_NP]
+            objDef = obj[OG.OBJ_DEF]
             objRGBA = obj[OG.OBJ_RGBA]
+            uid = obj[OG.OBJ_UID]
             
             # load new model
-            if obj[OG.OBJ_DEF].actor:
+            if objDef.actor:
                 try:
                     newobj = Actor(model)
                 except:
@@ -394,6 +402,7 @@ class ObjectMgrBase:
                 if newobjModel is None:
                     print "Can't load model %s"%model
                     return
+                self.flatten(newobjModel, model, objDef, uid)
                 newobj = PythonNodePath(newobjModel)
             newobj.setTag('OBJRoot','1')
 
@@ -419,6 +428,9 @@ class ObjectMgrBase:
             obj[OG.OBJ_NP] = newobj
             obj[OG.OBJ_MODEL] = model
             self.npIndex[NodePath(newobj)] = obj[OG.OBJ_UID]
+
+            # update scene graph label
+            self.editor.ui.sceneGraphUI.changeLabel(obj[OG.OBJ_UID], newobj.getName())
 
             self.editor.fNeedToSave = True
             # update anim if necessary
@@ -755,3 +767,7 @@ class ObjectMgrBase:
         self.editor.ui.sceneGraphUI.delete(uid)
         newobj = self.addNewObject(typeName, uid, parent=parentNP, fSelectObject=False)
         newobj.setMat(mat)
+
+    def flatten(self, newobjModel, objDef, uid):
+        # override this to flatten models
+        pass

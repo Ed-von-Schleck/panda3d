@@ -1,9 +1,12 @@
 from direct.wxwidgets.WxAppShell import *
 import os, re, shutil
 
-from ObjectPaletteBase import *
+import ObjectGlobals as OG
 
 CLOSE_STDIN = "<CLOSE STDIN>"
+
+class StartupError(Exception):
+    pass
 
 class Process:
     def __init__(self, parent, cmd, end_callback):
@@ -70,13 +73,14 @@ class Process:
                 return 1, None
 
 class MayaConverter(wx.Dialog):
-    def __init__(self, parent, editor, mayaFile, obj = None, isAnim=False):
+    def __init__(self, parent, editor, mayaFile, callBack=None, obj=None, isAnim=False):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title="Maya Converter",
                            pos=wx.DefaultPosition, size=(300, 200))
 
         self.editor = editor
         self.obj = obj
         self.isAnim = isAnim
+        self.callBack = callBack
 
         self.mainPanel = wx.Panel(self, -1)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -141,14 +145,11 @@ class MayaConverter(wx.Dialog):
             else:
                 modelName = "%s.model.egg"%mayaFile
                 animName = "%s.anim.egg"%mayaFile
-                itemData = ObjectBase(name=name, model=modelName, anims=[animName], actor=True)
+                result = [name, modelName, animName]
         else:
             modelName = "%s.egg"%mayaFile
-            itemData = ObjectBase(name=name, model=modelName, actor=False)
+            result = [name, modelName]
 
-        self.editor.protoPalette.add(itemData)
-
-        newItem = self.editor.ui.protoPaletteUI.tree.AppendItem(self.editor.ui.protoPaletteUI.tree.root, name)
-        self.editor.ui.protoPaletteUI.tree.SetItemPyData(newItem, itemData)
-        self.editor.ui.protoPaletteUI.tree.ScrollTo(newItem)
+        if self.callBack:
+            self.callBack(result)
             

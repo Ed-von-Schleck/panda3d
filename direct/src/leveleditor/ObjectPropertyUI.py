@@ -31,7 +31,7 @@ class AnimFileDrop(wx.FileDropTarget):
             animName = Filename.fromOsSpecific(filename).getFullpath()
             if name.endswith('.mb') or\
                name.endswith('.ma'):
-                self.editor.convertMaya(animName, obj, isAnim=True)
+                self.editor.convertMaya(animName, self.editor.ui.protoPaletteUI.addNewItem, obj, isAnim=True)
                 return
 
             if animName not in objDef.anims:
@@ -50,10 +50,14 @@ class ObjectPropUI(wx.Panel):
     def __init__(self, parent, label):
         wx.Panel.__init__(self, parent)
         self.parent = parent
-        self.label = wx.StaticText(self, label=label)
+        self.labelPane = wx.Panel(self)
+        self.label = wx.StaticText(self.labelPane, label=label)
+        self.labelSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelSizer.Add(self.label)
+        self.labelPane.SetSizer(self.labelSizer)
         self.uiPane = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.label)
+        sizer.Add(self.labelPane)
         sizer.Add(self.uiPane, 1, wx.EXPAND, 0)
         self.SetSizer(sizer)
 
@@ -134,9 +138,13 @@ class ObjectPropUIRadio(ObjectPropUI):
 
 
 class ObjectPropUICombo(ObjectPropUI):
-    def __init__(self, parent, label, value, valueList):
+    def __init__(self, parent, label, value, valueList, obj=None, callBack=None):
         ObjectPropUI.__init__(self, parent, label)
         self.ui = wx.Choice(self.uiPane, -1, choices=valueList)
+        if callBack is not None:
+            button = wx.Button(self.labelPane, -1, 'Update', size = (100, 18))
+            button.Bind(wx.EVT_BUTTON, lambda p0=None, p1=obj, p2=self: callBack(p0, p1, p2))
+            self.labelSizer.Add(button)
         self.setValue(value)
         self.eventType = wx.EVT_CHOICE
         self.Layout()
@@ -146,6 +154,9 @@ class ObjectPropUICombo(ObjectPropUI):
 
     def getValue(self):
         return self.ui.GetStringSelection()
+
+    def setItems(self, valueList):
+        self.ui.SetItems(valueList)
 
 class ColorPicker(CubeColourDialog):
     def __init__(self, parent, colourData=None, style=CCD_SHOW_ALPHA, alpha = 255, updateCB=None, exitCB=None):
@@ -315,8 +326,16 @@ class ObjectPropertyUI(ScrolledPanel):
 
         objDef = obj[OG.OBJ_DEF]
 
-        if objDef.model is not None and len(objDef.models) > 0:
-            propUI = ObjectPropUICombo(self.lookPane, 'model', obj[OG.OBJ_MODEL], objDef.models)
+        if objDef.updateModelFunction is not None or (objDef.model is not None and len(objDef.models) > 0):
+            defaultModel = obj[OG.OBJ_MODEL]
+            if defaultModel is None:
+                defaultModel = ''
+
+            if len(objDef.models) == 0:
+                modelList = ''
+            else:
+                modelList = objDef.models
+            propUI = ObjectPropUICombo(self.lookPane, 'model', defaultModel, modelList, obj, callBack=objDef.updateModelFunction)
             sizer.Add(propUI)            
 
             propUI.bindFunc(self.editor.objectMgr.onEnterObjectPropUI,
@@ -326,15 +345,9 @@ class ObjectPropertyUI(ScrolledPanel):
         animList = objDef.animDict.get(obj[OG.OBJ_MODEL])
         if len(objDef.anims) > 0 or animList:
             if animList is None:
-                animist = objDef.anims
-
-            if '' not in animList:
-                animList.append('')
-            defaultAnim = obj[OG.OBJ_ANIM]
-            if defaultAnim is None:
-                defaultAnim = ''
+                animList = objDef.anims
                 
-            propUI = ObjectPropUICombo(self.lookPane, 'anim', defaultAnim, animList)
+            propUI = ObjectPropUICombo(self.lookPane, 'anim', obj[OG.OBJ_ANIM], animList)
             sizer.Add(propUI)            
 
             propUI.bindFunc(self.editor.objectMgr.onEnterObjectPropUI,

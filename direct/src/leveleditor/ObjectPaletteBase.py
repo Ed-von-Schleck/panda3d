@@ -9,7 +9,7 @@ class ObjectGen:
 class ObjectBase(ObjectGen):
     """ Base class for obj definitions """
     def __init__(self, name='', createFunction = None, model = None, models= [], anims = [], animNames = [], animDict = {}, properties={},
-                 movable = True, actor = False, named=False, orderedProperties=[], propertiesMask={}):
+                 movable = True, actor = False, named=False, updateModelFunction = None, orderedProperties=[], propertiesMask={}):
         ObjectGen.__init__(self, name)
         self.createFunction = createFunction
         self.model = model
@@ -21,6 +21,7 @@ class ObjectBase(ObjectGen):
         self.movable = movable
         self.actor = actor
         self.named = named
+        self.updateModelFunction = updateModelFunction
         # to maintain order of properties in UI
         self.orderedProperties = orderedProperties[:]
         # to show/hide properties per editor mode
@@ -99,6 +100,14 @@ class ObjectPaletteBase:
         except:
             return None
         return item
+
+    def findChildren(self, name):
+        result = []
+        for key in self.dataKeys:
+            if self.dataStruct[key] == name:
+                result.append(key)
+
+        return result
 
     def rename(self, oldName, newName):
         #import pdb;set_trace()
