@@ -12,6 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+#include "config_collada.h"
 #include "colladaLight.h"
 #include "ambientLight.h"
 #include "directionalLight.h"
@@ -47,6 +48,25 @@ load_xml(const TiXmlElement *xelement) {
   const TiXmlElement *xcommon_tech = xelement->FirstChildElement("technique_common");
   nassertr(xcommon_tech != NULL, false);
   const TiXmlElement *xlighttype = xcommon_tech->FirstChildElement();
+  nassertr(xlighttype != NULL, false);
+
+  if (xlighttype->ValueStr() == "ambient") {
+    
+    _light_type = LT_ambient;
+  }
+  else if (xlighttype->ValueStr() == "directional") {
+    _light_type = LT_directional;
+  }
+  else if (xlighttype->ValueStr() == "point") {
+    _light_type = LT_point;
+  }
+  else if (xlighttype->ValueStr() == "spot") {
+    _light_type = LT_spot;
+  }
+  else {
+    collada_cat.error() << "Unknown light type '" << xlighttype->ValueStr() << "'\n";
+    return false;
+  }
 
   return true;
 }
@@ -65,6 +85,9 @@ make_xml() const {
   TiXmlElement *xcommon_tech = new TiXmlElement("technique_common");
   TiXmlElement *xlight_type;
   switch (_light_type) {
+    default:
+      collada_cat.error() << "Invalid light type\n";
+      break;
     case LT_ambient:
       xlight_type = new TiXmlElement("ambient");
       break;
