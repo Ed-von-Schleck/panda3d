@@ -43,6 +43,7 @@ load_xml(const TiXmlElement *xelement) {
   const TiXmlElement* xchild = xelement->FirstChildElement(T::_element_name);
   while (xchild != NULL) {
     PT(T) item = new T;
+    item->_parent = this;
     item->load_xml(xchild);
     pvector<PointerTo<T> >::push_back(item);
     xchild = xchild->NextSiblingElement(T::_element_name);

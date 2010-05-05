@@ -26,6 +26,8 @@
 class EXPCL_COLLADA ColladaEffect : public ColladaAssetElement {
 PUBLISHED:
   virtual void clear();
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
 
   INLINE void add_profile(PT(ColladaProfile) profile);
   INLINE PT(ColladaProfile) get_profile(int index) const;

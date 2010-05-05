@@ -31,6 +31,7 @@ const string ColladaLight::_library_name ("library_lights");
 ColladaLight::
 ColladaLight() {
   clear();
+  _light_type = LT_invalid;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -50,20 +51,16 @@ load_xml(const TiXmlElement *xelement) {
   const TiXmlElement *xlighttype = xcommon_tech->FirstChildElement();
   nassertr(xlighttype != NULL, false);
 
+  _light_type = LT_invalid;
   if (xlighttype->ValueStr() == "ambient") {
-    
     _light_type = LT_ambient;
-  }
-  else if (xlighttype->ValueStr() == "directional") {
+  } else if (xlighttype->ValueStr() == "directional") {
     _light_type = LT_directional;
-  }
-  else if (xlighttype->ValueStr() == "point") {
+  } else if (xlighttype->ValueStr() == "point") {
     _light_type = LT_point;
-  }
-  else if (xlighttype->ValueStr() == "spot") {
+  } else if (xlighttype->ValueStr() == "spot") {
     _light_type = LT_spot;
-  }
-  else {
+  } else {
     collada_cat.error() << "Unknown light type '" << xlighttype->ValueStr() << "'\n";
     return false;
   }
@@ -100,7 +97,7 @@ make_xml() const {
     case LT_spot:
       xlight_type = new TiXmlElement("spot");
       break;
-    }
+  }
   xcommon_tech->LinkEndChild(xlight_type);
   xelement->LinkEndChild(xcommon_tech);
 
