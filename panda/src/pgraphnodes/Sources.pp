@@ -27,8 +27,7 @@
     sequenceNode.h sequenceNode.I \
     shaderGenerator.h shaderGenerator.I \
     spotlight.h spotlight.I \
-    switchNode.h switchNode.I \
-    uvScrollNode.I uvScrollNode.h
+    switchNode.h switchNode.I
 
   #define INCLUDED_SOURCES \
     ambientLight.cxx \
@@ -46,8 +45,7 @@
     sequenceNode.cxx \
     shaderGenerator.cxx \
     spotlight.cxx \
-    switchNode.cxx \
-    uvScrollNode.cxx
+    switchNode.cxx
 
   #define INSTALL_HEADERS \
     ambientLight.h ambientLight.I \
@@ -65,8 +63,7 @@
     sequenceNode.h sequenceNode.I \
     shaderGenerator.h shaderGenerator.I \
     spotlight.h spotlight.I \
-    switchNode.h switchNode.I \
-    uvScrollNode.I uvScrollNode.h
+    switchNode.h switchNode.I
 
   #define IGATESCAN all
 

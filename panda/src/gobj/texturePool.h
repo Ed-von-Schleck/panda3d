@@ -1,6 +1,5 @@
 // Filename: texturePool.h
 // Created by:  drose (26Apr00)
-// Updated by: fperazzi, PandaSE(29Apr10) (added load_2d_texture_array)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -54,9 +53,6 @@ PUBLISHED:
   INLINE static Texture *load_3d_texture(const Filename &filename_pattern,
                                          bool read_mipmaps = false,
                                          const LoaderOptions &options = LoaderOptions());
-  INLINE static Texture *load_2d_texture_array(const Filename &filename_pattern,
-                                               bool read_mipmaps = false,
-                                               const LoaderOptions &options = LoaderOptions());
   INLINE static Texture *load_cube_map(const Filename &filename_pattern,
                                        bool read_mipmaps = false,
                                        const LoaderOptions &options = LoaderOptions());
@@ -112,9 +108,6 @@ private:
   Texture *ns_load_3d_texture(const Filename &filename_pattern,
                               bool read_mipmaps,
                               const LoaderOptions &options);
-  Texture *ns_load_2d_texture_array(const Filename &filename_pattern,
-                                    bool read_mipmaps,
-                                    const LoaderOptions &options);
   Texture *ns_load_cube_map(const Filename &filename_pattern,
                             bool read_mipmaps,
                             const LoaderOptions &options);

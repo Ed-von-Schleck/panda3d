@@ -1,8 +1,5 @@
 // Filename: graphicsStateGuardian.cxx
 // Created by:  drose (02Feb99)
-// Updated by: fperazzi, PandaSE (05May10) (added fetch_ptr_parameter,
-//  _max_2d_texture_array_layers, _supports_2d_texture_array,
-//  get_supports_cg_profile)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -171,7 +168,6 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   // and that 3-d and cube-map textures are not supported.
   _max_texture_dimension = -1;
   _max_3d_texture_dimension = 0;
-  _max_2d_texture_array_layers = 0;
   _max_cube_map_dimension = 0;
 
   // Assume we don't support these fairly advanced texture combiner
@@ -181,7 +177,6 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   _supports_texture_dot3 = false;
 
   _supports_3d_texture = false;
-  _supports_2d_texture_array = false;
   _supports_cube_map = false;
   _supports_tex_non_pow2 = false;
   _supports_compressed_texture = false;
@@ -315,17 +310,6 @@ get_supports_multisample() const {
 int GraphicsStateGuardian::
 get_supported_geom_rendering() const {
   return _supported_geom_rendering;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GraphicsStateGuardian::get_supports_cg_profile
-//       Access: Published, Virtual
-//  Description: Returns true if this particular GSG supports the 
-//               specified Cg Shader Profile.
-////////////////////////////////////////////////////////////////////
-bool GraphicsStateGuardian::
-get_supports_cg_profile(const string &name) const {
-  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -911,7 +895,7 @@ compute_distance_to(const LPoint3f &point) const {
 const LMatrix4f *GraphicsStateGuardian::
 fetch_specified_value(Shader::ShaderMatSpec &spec, int altered) {
   LVecBase3f v;
-  
+
   if (altered & spec._dep[0]) {
     const LMatrix4f *t = fetch_specified_part(spec._part[0], spec._arg[0], spec._cache[0]);
     if (t != &spec._cache[0]) {
@@ -1264,16 +1248,6 @@ fetch_specified_part(Shader::ShaderMatInput part, InternalName *name, LMatrix4f 
     // should never get here
     return &LMatrix4f::ident_mat();
   }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GraphicsStateGuardian::fetch_ptr_parameter
-//       Access: Public
-//  Description: Return a pointer to struct ShaderPtrData
-////////////////////////////////////////////////////////////////////
-const Shader::ShaderPtrData *GraphicsStateGuardian::
-  fetch_ptr_parameter(const Shader::ShaderPtrSpec& spec){
-    return (_target_shader->get_shader_input_ptr(spec._arg));
 }
 
 ////////////////////////////////////////////////////////////////////
