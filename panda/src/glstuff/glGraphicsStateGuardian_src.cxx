@@ -4307,6 +4307,7 @@ do_issue_shader(bool state_has_changed) {
       context->bind(this);
       _current_shader = shader;
       _current_shader_context = context;
+      context->issue_parameters(this, Shader::SSD_shaderinputs);
     } else {
 #ifdef OPENGLES_2
       context->bind(this, false);
@@ -9496,6 +9497,27 @@ do_point_size() {
   }
 
   report_my_gl_errors();
+#endif
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GLGraphicsStateGuardian::get_supports_cg_profile
+//       Access: Public, Virtual
+//  Description: Returns true if this particular GSG supports the 
+//               specified Cg Shader Profile.
+////////////////////////////////////////////////////////////////////
+bool CLP(GraphicsStateGuardian)::
+get_supports_cg_profile(const string &name) const {
+#ifndef HAVE_CG
+  return false;
+#else
+  CGprofile profile = cgGetProfile(name.c_str());
+  
+  if (profile ==CG_PROFILE_UNKNOWN) {
+    GLCAT.error() << name <<", unknown Cg-profile\n";
+    return false;
+  }
+  return cgGLIsProfileSupported(profile);
 #endif
 }
 
