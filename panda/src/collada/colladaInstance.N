@@ -10,6 +10,9 @@ renametype ColladaInstance<ColladaGeometry> ColladaInstanceGeometry
 forcetype ColladaInstance<ColladaLight>
 renametype ColladaInstance<ColladaLight> ColladaInstanceLight
 
+forcetype ColladaInstance<ColladaMaterial>
+renametype ColladaInstance<ColladaMaterial> ColladaInstanceMaterial
+
 forcetype ColladaInstance<ColladaNode>
 renametype ColladaInstance<ColladaNode> ColladaInstanceNode
 

@@ -25,6 +25,7 @@ class ColladaDocument;
 class ColladaEffect;
 class ColladaGeometry;
 class ColladaLight;
+class ColladaMaterial;
 class ColladaNode;
 class ColladaVisualScene;
 
@@ -36,13 +37,28 @@ class ColladaVisualScene;
 class EXPCL_COLLADA ColladaInstanceBase : public ColladaElement {
 PUBLISHED:
   INLINE virtual TypeHandle get_target_type() const
-    { return _target_type; };
+    { return TypeHandle::none(); };
 
 protected:
   string _url;
-  TypeHandle _target_type;
-
   friend class ColladaDocument;
+
+public:
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ColladaElement::init_type();
+    register_type(_type_handle, "ColladaInstanceBase",
+                  ColladaElement::get_class_type());
+  }
+
+private:
+  static TypeHandle _type_handle;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -66,16 +82,53 @@ PUBLISHED:
 
 private:
   friend class ColladaDocument;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type(const string &type_name = "UndefinedColladaInstance") {
+    ColladaInstanceBase::init_type();
+    _type_handle = register_dynamic_type
+      (type_name, ColladaInstanceBase::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {
+    // In this case, we can't do anything, since we don't have the
+    // class' type_name.
+    return get_class_type();
+  }
+
+private:
+  static TypeHandle _type_handle;
 };
+
+// Note: when adding new types, be sure to add them to config_collada.cxx also
+
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaCamera>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaEffect>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaGeometry>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaLight>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaMaterial>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaNode>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaInstance<ColladaVisualScene>);
 
 typedef ColladaInstance<ColladaCamera> ColladaInstanceCamera;
 typedef ColladaInstance<ColladaEffect> ColladaInstanceEffect;
 typedef ColladaInstance<ColladaGeometry> ColladaInstanceGeometry;
 typedef ColladaInstance<ColladaLight> ColladaInstanceLight;
+typedef ColladaInstance<ColladaMaterial> ColladaInstanceMaterial;
 typedef ColladaInstance<ColladaNode> ColladaInstanceNode;
 typedef ColladaInstance<ColladaVisualScene> ColladaInstanceVisualScene;
 
 #include "colladaInstance.I"
+
+// Tell GCC that we'll take care of the instantiation explicitly here.
+#ifdef __GNUC__
+#pragma interface
+#endif
 
 #endif
 

@@ -14,6 +14,10 @@
 
 #include "colladaGeometry.h"
 
+
+template<class T>
+TypeHandle ColladaInstance<T>::_type_handle;
+
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInstance::get_target_type
 //       Access: Public

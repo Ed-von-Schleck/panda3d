@@ -1,5 +1,5 @@
-// Filename: colladaLibrary.cxx
-// Created by:  rdb (21Apr10)
+// Filename: colladaInstance.cxx
+// Created by:  rdb (05May10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,10 +12,12 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaLibrary.h"
+#include "colladaInstance.h"
 
 // Tell GCC that we'll take care of the instantiation explicitly here.
 #ifdef __GNUC__
 #pragma implementation
 #endif
+
+TypeHandle ColladaInstanceBase::_type_handle;
 

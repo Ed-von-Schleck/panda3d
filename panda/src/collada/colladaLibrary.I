@@ -13,6 +13,9 @@
 ////////////////////////////////////////////////////////////////////
 
 
+template<class T>
+TypeHandle ColladaLibrary<T>::_type_handle;
+
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLibrary::clear
 //       Access: Public
@@ -21,7 +24,7 @@
 template<class T>
 INLINE void ColladaLibrary<T>::
 clear () {
-  ColladaLibraryBase::clear();
+  ColladaAssetElement::clear();
   pvector<PointerTo<T> >::clear();
 }
 
@@ -34,7 +37,7 @@ clear () {
 template<class T>
 INLINE bool ColladaLibrary<T>::
 load_xml(const TiXmlElement *xelement) {
-  if (!ColladaLibraryBase::load_xml(xelement)) {
+  if (!ColladaAssetElement::load_xml(xelement)) {
     return false;
   }
 
@@ -61,7 +64,7 @@ load_xml(const TiXmlElement *xelement) {
 template<class T>
 INLINE TiXmlElement * ColladaLibrary<T>::
 make_xml() const {
-  TiXmlElement * xelement = ColladaLibraryBase::make_xml();
+  TiXmlElement * xelement = ColladaAssetElement::make_xml();
   xelement->SetValue(T::_library_name);
 
   for (int i = 0; i < pvector<PointerTo<T> >::size(); ++i) {

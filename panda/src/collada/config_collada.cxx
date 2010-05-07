@@ -23,6 +23,8 @@
 #include "colladaEffect.h"
 #include "colladaElement.h"
 #include "colladaGeometry.h"
+#include "colladaInstance.h"
+#include "colladaLibrary.h"
 #include "colladaLight.h"
 #include "colladaMaterial.h"
 #include "colladaMesh.h"
@@ -105,6 +107,7 @@ init_libcollada() {
   ColladaEffect::init_type();
   ColladaElement::init_type();
   ColladaGeometry::init_type();
+  ColladaInstanceBase::init_type();
   ColladaLight::init_type();
   ColladaMaterial::init_type();
   ColladaMesh::init_type();
@@ -115,6 +118,22 @@ init_libcollada() {
   ColladaRoot::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();
+
+  ColladaInstanceCamera::init_type("ColladaInstanceCamera");
+  ColladaInstanceEffect::init_type("ColladaInstanceEffect");
+  ColladaInstanceGeometry::init_type("ColladaInstanceGeometry");
+  ColladaInstanceLight::init_type("ColladaInstanceLight");
+  ColladaInstanceMaterial::init_type("ColladaInstanceMaterial");
+  ColladaInstanceNode::init_type("ColladaInstanceNode");
+  ColladaInstanceVisualScene::init_type("ColladaInstanceVisualScene");
+
+  ColladaLibraryCameras::init_type("ColladaLibraryCameras");
+  ColladaLibraryEffects::init_type("ColladaLibraryEffects");
+  ColladaLibraryGeometries::init_type("ColladaLibraryGeometries");
+  ColladaLibraryLights::init_type("ColladaLibraryLights");
+  ColladaLibraryMaterials::init_type("ColladaLibraryMaterials");
+  ColladaLibraryNodes::init_type("ColladaLibraryNodes");
+  ColladaLibraryVisualScenes::init_type("ColladaLibraryVisualScenes");
 
   LoaderFileTypeRegistry *reg = LoaderFileTypeRegistry::get_global_ptr();
 
