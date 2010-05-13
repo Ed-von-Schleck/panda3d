@@ -69,6 +69,12 @@ class GridParent:
             self._grid = None
             self._zoneId = None
 
+    def getGrid(self):
+        return self._grid
+
+    def getGridZone(self):
+        return self._zoneId
+    
     def setGridCell(self, grid, zoneId):
         # This will wrtReparent the child to a new grid node in the scenegraph
         # If the child currently has no parent, it will simply be reparented to

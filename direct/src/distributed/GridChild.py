@@ -11,24 +11,21 @@ class GridChild:
             self.__initiallized
         except AttributeError:
             self._gridParent = None
+
+            self._gridInterestEnabled = False
+            self._gridInterest = None
             pass
         pass
 
-    def __setGridParent(self, gridParent):
-        if self._gridParent and self._gridParent is not gridParent:
-            self._gridParent.delete()
-            pass
-        self._gridParent = gridParent
+    def delete(self):
+        self.__setGridParent(None)
+        self.enableGridInterest(False)
         pass
 
     def setGridCell(self, grid, zoneId):
-        try:
-            if self.uniqueId == '1240950699.65ian':
-                set_trace()
-        except:
-            pass
         if grid is None:
             self.__setGridParent(None)
+            self.__clearGridInterest()
             pass
         else:
             if not self._gridParent:
@@ -37,16 +34,73 @@ class GridChild:
             
             # Does the (wrt)ReparentTo() operation
             self._gridParent.setGridCell(grid, zoneId)
+
+            # Moves the grid interest along with this child
+            if self._gridInterestEnabled:
+                self.__setGridInterest(grid, zoneId)
+                pass
+            pass
+        pass
+
+    def enableGridInterest(self, enabled = True):
+        self._gridInterestEnabled = enabled
+        if not enabled:
+            self.__clearGridInterest()
             pass
         pass
 
     def isOnAGrid(self):
         return self._gridParent is not None
-    
-    def delete(self):
-        self.__setGridParent(None)
+
+    def getGrid(self):
+        if self._gridParent:
+            return self._gridParent.getGrid()
+        else:
+            return None
+
+    def getGridZone(self):
+        if self._gridParent:
+            return self._gridParent.getGridZone()
+        else:
+            return None
+        
+    def __setGridParent(self, gridParent):
+        if self._gridParent and self._gridParent is not gridParent:
+            self._gridParent.delete()
+            pass
+        self._gridParent = gridParent
         pass
+
     
+    def __setGridInterest(self, grid, zoneId):
+        assert not self.cr.noNewInterests()
+        if self.cr.noNewInterests():
+            self.notify.warning(
+                'startProcessVisibility(%s): tried to open a new interest during logout'
+                % self.doId)
+            return
+        
+        if self._gridInterest:
+            self.cr.alterInterest(self._gridInterest,
+                                  grid.getDoId(), zoneId)
+        else:
+            self._gridInterest = self.cr.addTaggedInterest(grid.getDoId(), zoneId,
+                                                           self.cr.ITAG_GAME,
+                                                           self.uniqueName('gridvis'))
+            pass
+        pass
+
+    def __clearGridInterest(self):
+        if self._gridInterest:
+            self.cr.removeTaggedInterest(self.gridInterest)
+            self._gridInterest = None
+            pass
+        
+                
+
+
+
+
 class SmoothGridChild(GridChild):
     """
     SmoothNodes have a special requirement in that they need to send
@@ -68,4 +122,4 @@ class SmoothGridChild(GridChild):
             self.cnode.setEmbeddedVal(zoneId)
             pass
         pass
-    
+
