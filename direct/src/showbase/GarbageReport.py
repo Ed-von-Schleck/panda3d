@@ -535,7 +535,7 @@ class _CFGLGlobals:
 def checkForGarbageLeaks():
     gc.collect()
     numGarbage = len(gc.garbage)
-    if (numGarbage > 0 and (not config.GetBool('disable-garbage-logging', 1))):
+    if (numGarbage > 0 and config.GetBool('auto-garbage-logging', 0)):
         if (numGarbage != _CFGLGlobals.LastNumGarbage):
             print
             gr = GarbageReport('found garbage', threaded=False, collect=False)
@@ -553,6 +553,8 @@ def checkForGarbageLeaks():
     return numGarbage
 
 def b_checkForGarbageLeaks(wantReply=False):
+    if not __dev__:
+        return 0
     # does a garbage collect on the client and the AI
     # returns number of client garbage leaks
     # logs leak info and terminates (if configured to do so)
