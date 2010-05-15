@@ -4724,6 +4724,8 @@ def RunDependencyQueue(tasklist):
     else:
         SequentialMake(tasklist)
 
+printStatus("Makepanda Pre-Build Report", WARNINGS)
+
 try:
     RunDependencyQueue(DEPENDENCYQUEUE)
 except:
