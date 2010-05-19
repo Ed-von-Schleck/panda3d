@@ -19,6 +19,7 @@
 
 #include "graphicsOutput.h"
 #include "graphicsWindowInputDevice.h"
+#include "graphicsWindowProc.h"
 #include "windowProperties.h"
 #include "mouseData.h"
 #include "modifierButtons.h"
@@ -83,6 +84,12 @@ PUBLISHED:
   MouseData get_pointer(int device) const;
   virtual bool move_pointer(int device, int x, int y);
   virtual void close_ime();
+
+  // empty method calls
+  virtual void add_window_proc( const GraphicsWindowProc* wnd_proc_object ){};
+  virtual void remove_window_proc( const GraphicsWindowProc* wnd_proc_object ){};
+  virtual void clear_window_procs(){};
+  virtual bool supports_window_procs() const;
 
 public:
   // No need to publish these.
