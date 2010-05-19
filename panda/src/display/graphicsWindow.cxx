@@ -425,6 +425,19 @@ close_ime() {
   return;
 }
 
+//////// a bei edit
+
+// empty method calls
+/*
+void GraphicsWindow::add_window_proc( const GraphicsWindowProc* wnd_proc_object ){}
+void GraphicsWindow::remove_window_proc( const GraphicsWindowProc* wnd_proc_object ){}
+void GraphicsWindow::clear_window_procs(){}
+*/
+bool GraphicsWindow::supports_window_procs() const{
+	return false;
+}
+////////
+
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsWindow::has_button_event
 //       Access: Public

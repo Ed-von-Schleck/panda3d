@@ -2,6 +2,7 @@
 #include "graphicsStateGuardian.cxx"
 #include "graphicsThreadingModel.cxx"
 #include "graphicsWindow.cxx"
+#include "graphicsWindowProc.cxx"
 #include "graphicsWindowInputDevice.cxx"
 #include "lru.cxx"
 #include "nativeWindowHandle.cxx"
