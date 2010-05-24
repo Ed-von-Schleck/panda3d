@@ -1,12 +1,9 @@
-#define BUILD_DIRECTORY $[HAVE_TINYXML]
-
 #define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
                    dtoolutil:c dtoolbase:c dtool:m prc:c
 
 #begin lib_target
   #define TARGET p3collada
-  #define USE_PACKAGES tinyxml
-  #define LOCAL_LIBS display express putil pandabase
+  #define LOCAL_LIBS display express putil pandabase dxml
 
   #define COMBINED_SOURCES collada_composite1.cxx
 
