@@ -4328,7 +4328,7 @@ def bpdbGetEnabled():
     finally:
         return enabled
 bpdb.setEnabledCallback(bpdbGetEnabled)
-bpdb.setConfigCallback(lambda cfg: ConfigVariableBool('want-bp-%s' % (cfg,), 0).getValue())
+bpdb.setConfigCallback(lambda cfg: ConfigVariableBool('want-bp-%s' % (cfg.lower(),), 0).getValue())
 
 
 import __builtin__

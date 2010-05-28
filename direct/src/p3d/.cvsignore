@@ -2,3 +2,6 @@
 Makefile
 *.pyc
 pp.dep
+packp3d
+ppackage
+ppatcher
