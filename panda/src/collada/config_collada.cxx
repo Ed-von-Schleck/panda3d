@@ -116,6 +116,7 @@ init_libcollada() {
   ColladaPrimitive::init_type();
   ColladaProfile::init_type();
   ColladaRoot::init_type();
+  ColladaVertices::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();
 

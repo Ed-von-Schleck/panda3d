@@ -1,5 +1,5 @@
-// Filename: colladaMesh.h
-// Created by: Xidram (20Apr10)
+// Filename: colladaVertices.h
+// Created by: rdb (29May10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,26 +12,34 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAMESH_H
-#define COLLADAMESH_H
+#ifndef COLLADAVERTICES_H
+#define COLLADAVERTICES_H
 
+#include "pointerTo.h"
 #include "colladaElement.h"
-#include "colladaVertices.h"
-#include "colladaPrimitive.h"
+#include "geomPrimitive.h"
+#include "pta_int.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaMesh
-// Description : Object that represents the <mesh> COLLADA element.
+//       Class : ColladaVertices
+// Description : Object that represents the COLLADA <vertices> tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaMesh : public ColladaElement {
+class EXPCL_COLLADA ColladaVertices : public ColladaElement {
 PUBLISHED:
+  ColladaVertices();
+  virtual ~ColladaVertices() {};
+
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
+  struct Input {
+    string _semantic;
+    string _source;
+  };
+
 private:
-  PT(ColladaVertices) _vertices;
-  pvector<PT(ColladaPrimitive)> _primitives;
+  pvector<Input> _inputs;
 
 public:
   static TypeHandle get_class_type() {
@@ -39,7 +47,7 @@ public:
   }
   static void init_type() {
     ColladaElement::init_type();
-    register_type(_type_handle, "ColladaMesh",
+    register_type(_type_handle, "ColladaVertices",
                   ColladaElement::get_class_type());
   }
   virtual TypeHandle get_type() const {

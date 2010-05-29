@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "colladaMesh.h"
-#include "colladaPrimitive.h"
 
 TypeHandle ColladaMesh::_type_handle;
 
@@ -26,6 +25,7 @@ void ColladaMesh::
 clear () {
   ColladaElement::clear();
   _primitives.clear();
+  _vertices = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -42,6 +42,16 @@ load_xml(const TiXmlElement *xelement) {
 
   bool okflag = true;
   const TiXmlElement *xchild;
+
+  xchild = xelement->FirstChildElement("vertices");
+  if (xchild == NULL) {
+    collada_cat.error() << "No <vertices> found in <mesh>!\n";
+    okflag = false;
+  } else {
+    _vertices = new ColladaVertices;
+    _vertices->_parent = this;
+    _vertices->load_xml(xchild);
+  }
 
   xchild = xelement->FirstChildElement();
   while (xchild != NULL) {
@@ -70,7 +80,7 @@ load_xml(const TiXmlElement *xelement) {
     xchild = xchild->NextSiblingElement();
   }
 
-  return true;
+  return okflag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -83,6 +93,10 @@ TiXmlElement *ColladaMesh::
 make_xml() const {
   TiXmlElement *xelement = ColladaElement::make_xml();
   xelement->SetValue("mesh");
+
+  if (_vertices != NULL) {
+    xelement->LinkEndChild(_vertices->make_xml());
+  }
 
   for (int i = 0; i < _primitives.size(); ++i) {
     xelement->LinkEndChild(_primitives.at(i)->make_xml());

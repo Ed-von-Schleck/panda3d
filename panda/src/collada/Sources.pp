@@ -27,6 +27,7 @@
     colladaProfile.h colladaProfile.I \
     colladaRoot.h colladaRoot.I \
     colladaSource.h \
+    colladaVertices.h \
     colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \
     load_collada_file.h \
@@ -40,6 +41,7 @@
     colladaDocument.cxx \
     colladaEffect.cxx \
     colladaGeometry.cxx \
+    colladaInstance.cxx \
     colladaLibrary.cxx \
     colladaLight.cxx \
     colladaMaterial.cxx \
@@ -49,6 +51,8 @@
     colladaPrimitive.cxx \
     colladaProfile.cxx \
     colladaRoot.cxx \
+    colladaSource.cxx \
+    colladaVertices.cxx \
     colladaVisualScene.cxx \
     config_collada.cxx \
     load_collada_file.cxx \
@@ -74,6 +78,7 @@
     colladaProfile.h colladaProfile.I \
     colladaRoot.h colladaRoot.I \
     colladaSource.h \
+    colladaVertices.h \
     colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \
     load_collada_file.h \
