@@ -130,7 +130,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       okflag = false;
     } else if (ttype == "matrix") {
       vector_string m;
-      tokenize(trim(xchild->GetText()), m, " ", true);
+      tokenize(trim(xchild->GetText()), m, COLLADA_WHITESPACE, true);
       if (m.size() == 16) {
         _transform *= LMatrix4d(
           patof(m[0].c_str()), patof(m[4].c_str()), patof(m[8].c_str()), patof(m[12].c_str()),
@@ -143,7 +143,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       }
     } else if (ttype == "rotate") {
       vector_string r;
-      tokenize(trim(xchild->GetText()), r, " ", true);
+      tokenize(trim(xchild->GetText()), r, COLLADA_WHITESPACE, true);
       if (r.size() == 4) {
         _transform *= LMatrix4d::rotate_mat(patof(r[3].c_str()), LVecBase3d(
           patof(r[0].c_str()), patof(r[1].c_str()), patof(r[2].c_str())));
@@ -153,7 +153,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       }
     } else if (ttype == "scale") {
       vector_string v;
-      tokenize(trim(xchild->GetText()), v, " ", true);
+      tokenize(trim(xchild->GetText()), v, COLLADA_WHITESPACE, true);
       if (v.size() == 3) {
         _transform *= LMatrix4d::scale_mat(
           patof(v[0].c_str()), patof(v[1].c_str()), patof(v[2].c_str()));
@@ -166,7 +166,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
       okflag = false;
     } else if (ttype == "translate") {
       vector_string v;
-      tokenize(trim(xchild->GetText()), v, " ", true);
+      tokenize(trim(xchild->GetText()), v, COLLADA_WHITESPACE, true);
       if (v.size() == 3) {
         _transform *= LMatrix4d::translate_mat(
           patof(v[0].c_str()), patof(v[1].c_str()), patof(v[2].c_str()));

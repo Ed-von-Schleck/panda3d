@@ -1,0 +1,15 @@
+forcetype ColladaArray<AT_bool, bool>
+forcetype ColladaArray<AT_float, double>
+forcetype ColladaArray<AT_IDREF, string>
+forcetype ColladaArray<AT_int, int>
+forcetype ColladaArray<AT_Name, string>
+forcetype ColladaArray<AT_SIDREF, string>
+forcetype ColladaArray<AT_token, string>
+
+renametype ColladaArray<AT_bool, bool> ColladaBoolArray
+renametype ColladaArray<AT_float, double> ColladaFloatArray
+renametype ColladaArray<AT_IDREF, string> ColladaIdrefArray
+renametype ColladaArray<AT_int, int> ColladaIntArray
+renametype ColladaArray<AT_Name, string> ColladaNameArray
+renametype ColladaArray<AT_SIDREF, string> ColladaSidrefArray
+renametype ColladaArray<AT_token, string> ColladaTokenArray

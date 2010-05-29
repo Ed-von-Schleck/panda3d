@@ -90,7 +90,7 @@ load_xml(const TiXmlElement *xelement) {
   xchild = xelement->FirstChildElement("p");
   while (xchild != NULL) {
     vector_string p;
-    tokenize(trim(xchild->GetText()), p, " ", true);
+    tokenize(trim(xchild->GetText()), p, COLLADA_WHITESPACE, true);
     vector_string::iterator it;
     for (it = p.begin(); it != p.end(); ++it) {
       _p.push_back(atoi(it->c_str()));

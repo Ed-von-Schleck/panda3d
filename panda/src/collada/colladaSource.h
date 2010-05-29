@@ -15,6 +15,7 @@
 #ifndef COLLADASOURCE_H
 #define COLLADASOURCE_H
 
+#include "colladaArray.h"
 #include "colladaAssetElement.h"
 #include "typedReferenceCount.h"
 
@@ -23,14 +24,25 @@
 // Description : Object that represents the <source> COLLADA element.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaSource : public ColladaAssetElement {
+PUBLISHED:
+  ColladaSource();
+  virtual ~ColladaSource() {};
+
+  virtual void clear();
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
+
+protected:
+  PT(ColladaArrayBase) _array;
+
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
-    ColladaSource::init_type();
+    ColladaAssetElement::init_type();
     register_type(_type_handle, "ColladaSource",
-                  ColladaSource::get_class_type());
+                  ColladaAssetElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

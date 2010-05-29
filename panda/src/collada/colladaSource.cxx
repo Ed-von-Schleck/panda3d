@@ -15,3 +15,92 @@
 #include "colladaSource.h"
 
 TypeHandle ColladaSource::_type_handle;
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaSource::Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+ColladaSource::
+ColladaSource() {
+  clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaSource::clear
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+void ColladaSource::
+clear() {
+  ColladaAssetElement::clear();
+  _array = NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaSource::load_xml
+//       Access: Public
+//  Description: Loads <source> data from a TiXmlElement.
+////////////////////////////////////////////////////////////////////
+bool ColladaSource::
+load_xml(const TiXmlElement *xelement) {
+  if (!ColladaAssetElement::load_xml(xelement)) {
+    return false;
+  }
+
+  bool okflag = true;
+  const TiXmlElement* xchild;
+
+  // Read out the array element
+  xchild = xelement->FirstChildElement();
+  while (xchild != NULL) {
+    PT(ColladaArrayBase) array = NULL;
+    if (cmp_nocase_uh(xchild->Value(), "bool_array") == 0) {
+      array = new ColladaBoolArray;
+    } else if (cmp_nocase_uh(xchild->Value(), "float_array") == 0) {
+      array = new ColladaFloatArray;
+    } else if (cmp_nocase_uh(xchild->Value(), "IDREF_array") == 0) {
+      array = new ColladaIdrefArray;
+    } else if (cmp_nocase_uh(xchild->Value(), "int_array") == 0) {
+      array = new ColladaIntArray;
+    } else if (cmp_nocase_uh(xchild->Value(), "Name_array") == 0) {
+      array = new ColladaNameArray;
+    } else if (cmp_nocase_uh(xchild->Value(), "SIDREF_array") == 0) {
+      array = new ColladaSidrefArray;
+    } else if (cmp_nocase_uh(xchild->Value(), "token_array") == 0) {
+      array = new ColladaTokenArray;
+    }
+    if (array != NULL) {
+      if (_array != NULL) {
+        collada_cat.error() << "Multiple arrays found in <source> element!\n";
+        okflag = false;
+        break;
+      }
+      _array = array;
+      _array->_parent = this;
+      _array->load_xml(xchild);
+    }
+    xchild = xchild->NextSiblingElement();
+  }
+
+  return okflag;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaSource::make_xml
+//       Access: Public
+//  Description: Returns a new TiXmlElement representing
+//               the visual scene.
+////////////////////////////////////////////////////////////////////
+TiXmlElement *ColladaSource::
+make_xml() const {
+  TiXmlElement *xelement = ColladaAssetElement::make_xml();
+  xelement->SetValue("source");
+
+  if (_array != NULL) {
+    xelement->LinkEndChild(_array->make_xml());
+  }
+
+  return xelement;
+}
+

@@ -1,3 +1,4 @@
+#include "colladaArray.cxx"
 #include "colladaAsset.cxx"
 #include "colladaAssetElement.cxx"
 #include "colladaCamera.cxx"

@@ -40,7 +40,7 @@ clear() {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVertices::load_xml
 //       Access: Public
-//  Description: Loads <node> data from a TiXmlElement.
+//  Description: Loads <vertices> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaVertices::
 load_xml(const TiXmlElement *xelement) {

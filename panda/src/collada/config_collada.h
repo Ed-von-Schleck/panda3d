@@ -26,6 +26,9 @@
 #endif
 #include <tinyxml.h>
 
+// Characters accepted as whitespace characters.
+#define COLLADA_WHITESPACE " \t\n\v\f\r"
+
 ConfigureDecl(config_collada, EXPCL_COLLADA, EXPTP_COLLADA);
 NotifyCategoryDecl(collada, EXPCL_COLLADA, EXPTP_COLLADA);
 

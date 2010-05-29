@@ -16,8 +16,9 @@
 #define COLLADAMESH_H
 
 #include "colladaElement.h"
-#include "colladaVertices.h"
 #include "colladaPrimitive.h"
+#include "colladaSource.h"
+#include "colladaVertices.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaMesh
@@ -30,6 +31,7 @@ PUBLISHED:
   virtual TiXmlElement *make_xml() const;
 
 private:
+  pvector<PT(ColladaSource)> _sources;
   PT(ColladaVertices) _vertices;
   pvector<PT(ColladaPrimitive)> _primitives;
 

@@ -15,6 +15,7 @@
 #include "config_collada.h"
 
 #include "dconfig.h"
+#include "colladaArray.h"
 #include "colladaAsset.h"
 #include "colladaAssetElement.h"
 #include "colladaCamera.h"
@@ -116,9 +117,18 @@ init_libcollada() {
   ColladaPrimitive::init_type();
   ColladaProfile::init_type();
   ColladaRoot::init_type();
+  ColladaSource::init_type();
   ColladaVertices::init_type();
   ColladaVisualScene::init_type();
   LoaderFileTypeDae::init_type();
+
+  ColladaBoolArray::init_type("ColladaBoolArray");
+  ColladaFloatArray::init_type("ColladaFloatArray");
+  ColladaIdrefArray::init_type("ColladaIdrefArray");
+  ColladaIntArray::init_type("ColladaIntArray");
+  ColladaNameArray::init_type("ColladaNameArray");
+  ColladaSidrefArray::init_type("ColladaSidrefArray");
+  ColladaTokenArray::init_type("ColladaTokenArray");
 
   ColladaInstanceCamera::init_type("ColladaInstanceCamera");
   ColladaInstanceEffect::init_type("ColladaInstanceEffect");
