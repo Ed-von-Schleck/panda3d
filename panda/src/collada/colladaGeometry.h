@@ -27,6 +27,7 @@ PUBLISHED:
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
+  PT(PandaNode) make_node() const;
 
   PT(ColladaElement) get_geometric_element() const;
 

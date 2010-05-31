@@ -41,7 +41,12 @@ load_xml(const TiXmlElement *xelement) {
     return false;
   }
 
-  nassertr(xelement->ValueStr() == T::_library_name, false);
+#ifndef NDEBUG
+  nassertr(xelement->ValueStr() == T::_library_name || xelement->ValueStr() == "library", false);
+  if (xelement->ValueStr() == "library") {
+    nassertr(cmp_nocase(xelement->Attribute("type"), T::_element_name)== 0, false);
+  }
+#endif
 
   const TiXmlElement* xchild = xelement->FirstChildElement(T::_element_name);
   while (xchild != NULL) {

@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "colladaMesh.h"
+#include "geom.h"
 
 TypeHandle ColladaMesh::_type_handle;
 
@@ -163,5 +164,21 @@ get_element_by_id(const string &id) const {
   }
 
   return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaMesh::make_geom
+//       Access: Published
+//  Description: Returns a new Geom object representing this
+//               COLLADA mesh object.
+////////////////////////////////////////////////////////////////////
+PT(Geom) ColladaMesh::
+make_geom() const {
+  PT(GeomVertexArrayFormat) aformat = new GeomVertexArrayFormat();
+  PT(GeomVertexFormat) format = new GeomVertexFormat();
+  format->add_array(aformat);
+  PT(GeomVertexData) vdata = new GeomVertexData(get_name(), GeomVertexFormat::register_format(format), GeomEnums::UH_static);
+  PT(Geom) geom = new Geom(vdata);
+  return geom;
 }
 

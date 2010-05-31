@@ -84,6 +84,12 @@ load_xml(const TiXmlElement *xelement) {
     xchild = xchild->NextSiblingElement("param");
   }
 
+  if (_stride < _params.size()) {
+    collada_cat.warning()
+      << "Stride count of accessor is lower than the amount of params!\n";
+    _stride = _params.size();
+  }
+
   return okflag;
 }
 
@@ -120,16 +126,47 @@ make_xml() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaAccessor::get_source
+//     Function: ColladaAccessor::get_array
 //       Access: Public
 //  Description: Returns the ColladaArray that this accessor
 //               operates on, or NULL if it couldn't be located.
 ////////////////////////////////////////////////////////////////////
 PT(ColladaArrayBase) ColladaAccessor::
-get_source() const {
+get_array() const {
   PT(ColladaDocument) doc = get_document();
   nassertr(doc != NULL, NULL);
   PT(ColladaArrayBase) source = DCAST(ColladaArrayBase, doc->resolve_url(_source));
   return source;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAccessor::get_source
+//       Access: Public
+//  Description: Clears the given array and fills in the values
+//               as specified by the accessor settings. Returns
+//               false if this failed for some reason. On failure,
+//               the given array remains unmodified.
+//               Note that unbound parameter values are omitted.
+////////////////////////////////////////////////////////////////////
+bool ColladaAccessor::
+get_values(PTA_LVecBase4f &into) const {
+  CPT(ColladaArrayBase) array_base = get_array();
+  if (array_base == NULL || array_base->get_array_type() != AT_float) {
+    return false;
+  }
+  CPT(ColladaFloatArray) array = DCAST(ColladaFloatArray, array_base);
+  into.clear();
+  int pos = _offset;
+  for (int a = 0; a < _count; ++a) {
+    int i = 0;
+    LVecBase4f v (LVecBase4f::zero());
+    for (int p = 0; p < _params.size(); ++p) {
+      if (!_params[i]._name.empty()) {
+        v._v.data[i++] = array->at(pos + p);
+      }
+    }
+    pos += _stride;
+  }
+  return true;
 }
 

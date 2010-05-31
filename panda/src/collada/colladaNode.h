@@ -39,7 +39,7 @@ PUBLISHED:
 public:
   virtual bool load_xml(const TiXmlElement *xelement, const CoordinateSystem cs = CS_default);
   virtual TiXmlElement *make_xml() const;
-  virtual PT(PandaNode) make_node() const;
+  PT(PandaNode) make_node() const;
 
   virtual PT(ColladaElement) get_element_by_id(const string &id) const;
 

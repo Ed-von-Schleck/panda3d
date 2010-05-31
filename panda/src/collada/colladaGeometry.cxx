@@ -14,6 +14,7 @@
 
 #include "colladaGeometry.h"
 #include "colladaMesh.h"
+#include "geomNode.h"
 
 TypeHandle ColladaGeometry::_type_handle;
 const string ColladaGeometry::_element_name ("geometry");
@@ -77,6 +78,25 @@ make_xml() const {
   }
 
   return xelement;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaGeometry::make_node
+//       Access: Public
+//  Description: Returns a new PandaNode representing this element.
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) ColladaGeometry::
+make_node() const {
+  PT(GeomNode) gnode = new GeomNode(get_name());
+
+  if (_geometric_element != NULL && _geometric_element->is_of_type(ColladaMesh::get_class_type())) {
+    PT(Geom) geom = DCAST(ColladaMesh, _geometric_element)->make_geom();
+    if (geom != NULL) {
+      gnode->add_geom(geom);
+    }
+  }
+
+  return DCAST(PandaNode, gnode);
 }
 
 ////////////////////////////////////////////////////////////////////

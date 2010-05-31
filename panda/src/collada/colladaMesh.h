@@ -29,6 +29,7 @@ PUBLISHED:
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
+  PT(Geom) make_geom() const;
 
   virtual PT(ColladaElement) get_element_by_id(const string &id) const;
 

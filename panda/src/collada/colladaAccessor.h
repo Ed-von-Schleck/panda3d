@@ -19,6 +19,7 @@
 #include "colladaArray.h"
 #include "pointerTo.h"
 #include "pvector.h"
+#include "pta_LVecBase4f.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaAccessor
@@ -33,16 +34,18 @@ PUBLISHED:
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
-  PT(ColladaArrayBase) get_source() const;
+  PT(ColladaArrayBase) get_array() const;
+  bool get_values(PTA_LVecBase4f &into) const;
+
+  INLINE int get_count() const;
+  INLINE int get_offset() const;
+  INLINE int get_stride() const;
 
   struct Param {
     string _name;
     string _type;
     string _semantic;
   };
-
-public:
-  template<class T> INLINE pvector<T> make_vector() const;
 
 private:
   int _count;

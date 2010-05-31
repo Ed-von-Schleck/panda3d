@@ -275,6 +275,12 @@ make_node() const {
     pnode->add_child(targetnode);
   }
 
+  for (int i = 0; i < _instance_geometries.size(); ++i) {
+    PT(ColladaGeometry) target = DCAST(ColladaGeometry, _instance_geometries.at(i)->get_target());
+    nassertd(target != NULL) continue;
+    pnode->add_child(target->make_node());
+  }
+
   ((ColladaNode*)this)->_cached_node = pnode;
   return pnode;
 }
