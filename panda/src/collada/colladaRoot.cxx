@@ -12,7 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "colladaDocument.h"
+#include "colladaRoot.h"
+#include "colladaVisualScene.h"
 #include "config_collada.h"
 #include "config_util.h"
 #include "config_express.h"

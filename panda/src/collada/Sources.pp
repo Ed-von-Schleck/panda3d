@@ -5,7 +5,7 @@
   #define TARGET p3collada
   #define LOCAL_LIBS display express putil pandabase dxml
 
-  #define COMBINED_SOURCES collada_composite1.cxx
+  #define COMBINED_SOURCES collada_composite1.cxx collada_composite2.cxx
 
   #define SOURCES \
     colladaAccessor.h \

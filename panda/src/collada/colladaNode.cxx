@@ -286,7 +286,7 @@ make_node() const {
 //               the given ID, or NULL if none found.
 //               Searches recursively for subnodes as well.
 ////////////////////////////////////////////////////////////////////
-INLINE PT(ColladaNode) ColladaNode::
+PT(ColladaNode) ColladaNode::
 get_node_by_id(const string &id) const {
   PT(ColladaNode) res;
   for (int i = 0; i < _nodes.size(); ++i) {
