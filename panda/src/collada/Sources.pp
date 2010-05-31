@@ -8,6 +8,7 @@
   #define COMBINED_SOURCES collada_composite1.cxx
 
   #define SOURCES \
+    colladaAccessor.h \
     colladaArray.h colladaArray.I colladaArray.N \
     colladaAsset.h colladaAsset.I \
     colladaAssetElement.h colladaAssetElement.I \
@@ -35,6 +36,7 @@
     loaderFileTypeDae.h
 
   #define INCLUDED_SOURCES \
+    colladaAccessor.cxx \
     colladaArray.cxx \
     colladaAsset.cxx \
     colladaAssetElement.cxx \
@@ -61,6 +63,7 @@
     loaderFileTypeDae.cxx
 
   #define INSTALL_HEADERS \
+    colladaAccessor.h \
     colladaArray.h colladaArray.I \
     colladaAsset.h colladaAsset.I \
     colladaAssetElement.h colladaAssetElement.I \

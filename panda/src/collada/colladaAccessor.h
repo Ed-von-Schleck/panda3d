@@ -1,5 +1,5 @@
-// Filename: colladaSource.h
-// Created by: Xidram (20Apr10)
+// Filename: colladaAccessor.h
+// Created by: rdb (31May10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,39 +12,48 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADASOURCE_H
-#define COLLADASOURCE_H
+#ifndef COLLADAACCESSOR_H
+#define COLLADAACCESSOR_H
 
-#include "colladaAccessor.h"
-#include "colladaArray.h"
-#include "colladaAssetElement.h"
-#include "typedReferenceCount.h"
+#include "pointerTo.h"
+#include "colladaElement.h"
+#include "geomPrimitive.h"
+#include "pta_int.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaSource
-// Description : Object that represents the <source> COLLADA element.
+//       Class : ColladaAccessor
+// Description : Object that represents the COLLADA <accessor> tag.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaSource : public ColladaAssetElement {
+class EXPCL_COLLADA ColladaAccessor : public ColladaElement {
 PUBLISHED:
-  ColladaSource();
-  virtual ~ColladaSource() {};
+  ColladaAccessor();
+  virtual ~ColladaAccessor() {};
 
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
-protected:
-  PT(ColladaArrayBase) _array;
-  PT(ColladaAccessor) _accessor;
+  struct Param {
+    string _name;
+    string _type;
+    string _semantic;
+  };
+
+private:
+  int _count;
+  int _offset;
+  string _source;
+  int _stride;
+  pvector<Param> _params;
 
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type() {
-    ColladaAssetElement::init_type();
-    register_type(_type_handle, "ColladaSource",
-                  ColladaAssetElement::get_class_type());
+    ColladaElement::init_type();
+    register_type(_type_handle, "ColladaAccessor",
+                  ColladaElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

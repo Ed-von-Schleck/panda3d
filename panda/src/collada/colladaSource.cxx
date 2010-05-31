@@ -35,6 +35,7 @@ void ColladaSource::
 clear() {
   ColladaAssetElement::clear();
   _array = NULL;
+  _accessor = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -83,6 +84,16 @@ load_xml(const TiXmlElement *xelement) {
     xchild = xchild->NextSiblingElement();
   }
 
+  xchild = xelement->FirstChildElement("technique_common");
+  if (xchild != NULL) {
+    xchild = xchild->FirstChildElement("accessor");
+    if (xchild != NULL) {
+      _accessor = new ColladaAccessor;
+      _accessor->_parent = this;
+      _accessor->load_xml(xchild);
+    }
+  }
+
   return okflag;
 }
 
@@ -99,6 +110,12 @@ make_xml() const {
 
   if (_array != NULL) {
     xelement->LinkEndChild(_array->make_xml());
+  }
+
+  if (_accessor != NULL) {
+    TiXmlElement *xchild = new TiXmlElement("technique_common");
+    xchild->LinkEndChild(_accessor->make_xml());
+    xelement->LinkEndChild(xchild);
   }
 
   return xelement;

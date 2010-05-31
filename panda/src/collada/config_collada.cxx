@@ -15,6 +15,7 @@
 #include "config_collada.h"
 
 #include "dconfig.h"
+#include "colladaAccessor.h"
 #include "colladaArray.h"
 #include "colladaAsset.h"
 #include "colladaAssetElement.h"
@@ -100,6 +101,7 @@ init_libcollada() {
   }
   initialized = true;
 
+  ColladaAccessor::init_type();
   ColladaAsset::init_type();
   ColladaAssetElement::init_type();
   ColladaCamera::init_type();
