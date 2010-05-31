@@ -45,6 +45,7 @@ PUBLISHED:
 
   INLINE PT(ColladaElement) get_parent() const;
   INLINE virtual PT(ColladaDocument) get_document() const;
+  INLINE virtual PT(ColladaElement) get_element_by_id(const string &id) const;
 
 protected:
   INLINE void attach(ColladaElement *child);
@@ -53,7 +54,7 @@ protected:
 public:
   PT(ColladaElement) _parent;
 
-private:
+protected:
   string _name;
   string _id;
 

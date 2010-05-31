@@ -30,6 +30,8 @@ PUBLISHED:
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
+  virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+
 private:
   pvector<PT(ColladaSource)> _sources;
   PT(ColladaVertices) _vertices;

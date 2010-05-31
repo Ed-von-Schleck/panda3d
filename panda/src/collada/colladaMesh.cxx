@@ -121,3 +121,47 @@ make_xml() const {
   return xelement;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaMesh::get_element_by_id
+//       Access: Published, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaMesh::
+get_element_by_id(const string &id) const {
+  PT(ColladaElement) result = NULL;
+
+  for (int i = 0; i < _sources.size(); ++i) {
+    if (_sources[i]->get_id() == id) {
+      return DCAST(ColladaElement, _sources[i]);
+    } else {
+      result = _sources[i]->get_element_by_id(id);
+      if (result != NULL) {
+        return result;
+      }
+    }
+  }
+
+  if (_vertices != NULL) {
+    if (_vertices->get_id() == id) {
+      return DCAST(ColladaElement, _vertices);
+    }
+    result = _vertices->get_element_by_id(id);
+    if (result != NULL) {
+      return result;
+    }
+  }
+
+  for (int i = 0; i < _primitives.size(); ++i) {
+    if (_primitives[i]->get_id() == id) {
+      return DCAST(ColladaElement, _primitives[i]);
+    } else {
+      result = _primitives[i]->get_element_by_id(id);
+      if (result != NULL) {
+        return result;
+      }
+    }
+  }
+
+  return NULL;
+}
+

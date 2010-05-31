@@ -72,3 +72,23 @@ make_xml() const {
   return xelement;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaEffect::get_element_by_id
+//       Access: Published, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaEffect::
+get_element_by_id(const string &id) const {
+  for (int i = 0; i < _profiles.size(); ++i) {
+    if (_profiles[i]->get_id() == id) {
+      return DCAST(ColladaElement, _profiles[i]);
+    } else {
+      PT(ColladaElement) result = _profiles[i]->get_element_by_id(id);
+      if (result != NULL) {
+        return result;
+      }
+    }
+  }
+  return NULL;
+}
+

@@ -88,3 +88,27 @@ make_node() const {
   return DCAST(PandaNode, pnode);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaVisualScene::get_element_by_id
+//       Access: Public
+//  Description: Returns the node in the node hierarchy that has
+//               the given ID, or NULL if none found.
+//               Searches recursively for subnodes as well.
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaVisualScene::
+get_element_by_id(const string &id) const {
+  PT(ColladaElement) res;
+  for (int i = 0; i < _nodes.size(); ++i) {
+    res = _nodes[i];
+    if (res->get_id() == id) {
+      return DCAST(ColladaElement, res);
+    } else {
+      res = res->get_element_by_id(id);
+      if (res != NULL) {
+        return DCAST(ColladaElement, res);
+      }
+    }
+  }
+  return NULL;
+}
+

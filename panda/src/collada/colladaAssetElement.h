@@ -33,6 +33,8 @@ PUBLISHED:
   virtual bool load_xml(const TiXmlElement *element);
   virtual TiXmlElement *make_xml() const;
 
+  INLINE virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+
 protected:
   PT(ColladaAsset) _asset;
 

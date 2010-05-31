@@ -41,7 +41,7 @@ public:
   virtual TiXmlElement *make_xml() const;
   virtual PT(PandaNode) make_node() const;
 
-  PT(ColladaNode) get_node_by_id(const string &id) const;
+  virtual PT(ColladaElement) get_element_by_id(const string &id) const;
 
   // Needed by ColladaLibrary to validate the element names.
   static const string _element_name;

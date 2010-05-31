@@ -48,3 +48,18 @@ set_asset(PT(ColladaAsset) asset) {
   attach(_asset);
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAssetElement::get_element_by_id
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE PT(ColladaElement) ColladaAssetElement::
+get_element_by_id(const string &id) const {
+  if (_asset) {
+    if (_asset->get_id() == id) {
+      return DCAST(ColladaElement, _asset);
+    }
+    return _asset->get_element_by_id(id);
+  }
+  return NULL;
+}

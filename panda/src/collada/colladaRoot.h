@@ -44,19 +44,20 @@ PUBLISHED:
   virtual PT(PandaNode) make_node() const;
 
   INLINE virtual PT(ColladaDocument) get_document() const;
+  virtual PT(ColladaElement) get_element_by_id(const string &id) const;
 
 private:
   PT(ColladaDocument) _document;
 
   Filename _filename;
   PT(ColladaInstanceVisualScene) _instance_visual_scene;
-  ColladaLibraryCameras _library_cameras;
-  ColladaLibraryEffects _library_effects;
-  ColladaLibraryGeometries _library_geometries;
-  ColladaLibraryLights _library_lights;
-  ColladaLibraryMaterials _library_materials;
-  ColladaLibraryNodes _library_nodes;
-  ColladaLibraryVisualScenes _library_visual_scenes;
+  PT(ColladaLibraryCameras) _library_cameras;
+  PT(ColladaLibraryEffects) _library_effects;
+  PT(ColladaLibraryGeometries) _library_geometries;
+  PT(ColladaLibraryLights) _library_lights;
+  PT(ColladaLibraryMaterials) _library_materials;
+  PT(ColladaLibraryNodes) _library_nodes;
+  PT(ColladaLibraryVisualScenes) _library_visual_scenes;
 
 public:
   static TypeHandle get_class_type() {

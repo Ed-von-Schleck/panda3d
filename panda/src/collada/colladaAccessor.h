@@ -15,10 +15,10 @@
 #ifndef COLLADAACCESSOR_H
 #define COLLADAACCESSOR_H
 
-#include "pointerTo.h"
 #include "colladaElement.h"
-#include "geomPrimitive.h"
-#include "pta_int.h"
+#include "colladaArray.h"
+#include "pointerTo.h"
+#include "pvector.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaAccessor
@@ -33,11 +33,16 @@ PUBLISHED:
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
+  PT(ColladaArrayBase) get_source() const;
+
   struct Param {
     string _name;
     string _type;
     string _semantic;
   };
+
+public:
+  template<class T> INLINE pvector<T> make_vector() const;
 
 private:
   int _count;
@@ -63,6 +68,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaAccessor.I"
 
 #endif
 

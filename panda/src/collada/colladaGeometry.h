@@ -38,6 +38,8 @@ PUBLISHED:
     GT_brep
   };
 
+  virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+
 private:
   GeometryType _geometry_type;
   PT(ColladaElement) _geometric_element;

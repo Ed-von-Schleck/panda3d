@@ -119,3 +119,17 @@ make_xml() const {
   return xelement;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAccessor::get_source
+//       Access: Public
+//  Description: Returns the ColladaArray that this accessor
+//               operates on, or NULL if it couldn't be located.
+////////////////////////////////////////////////////////////////////
+PT(ColladaArrayBase) ColladaAccessor::
+get_source() const {
+  PT(ColladaDocument) doc = get_document();
+  nassertr(doc != NULL, NULL);
+  PT(ColladaArrayBase) source = DCAST(ColladaArrayBase, doc->resolve_url(_source));
+  return source;
+}
+

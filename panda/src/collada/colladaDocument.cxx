@@ -14,8 +14,10 @@
 
 #include "colladaDocument.h"
 #include "config_collada.h"
+#include "colladaCamera.h"
 #include "colladaEffect.h"
 #include "colladaInstance.h"
+#include "colladaLight.h"
 #include "colladaMaterial.h"
 #include "colladaRoot.h"
 #include "colladaVisualScene.h"
@@ -210,6 +212,27 @@ make_node() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaDocument::resolve_url
+//       Access: Public
+//  Description: Resolves the given URL and returns the right
+//               element, or NULL if it wasn't found.
+////////////////////////////////////////////////////////////////////
+ColladaElement *ColladaDocument::
+resolve_url(const string &url) const {
+  if (url.empty()) {
+    return NULL;
+  }
+
+  if (url[0] != '#') {
+    collada_cat.warning() << "URL '" << url << "' is not local, cannot resolve\n";
+    return NULL;
+  }
+
+  string id = url.substr(1);
+  return _root->get_element_by_id(id);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaDocument::resolve_instance
 //       Access: Public
 //  Description: Resolves the URL in the given instance, returns
@@ -221,28 +244,13 @@ resolve_instance(const ColladaInstanceBase *inst) const {
     return NULL;
   }
 
-  if (inst->_url[0] != '#') {
-    collada_cat.warning() << "URL '" << inst->_url << "' is not local, cannot resolve\n";
-    return NULL;
+  const TypeHandle &handle = inst->get_target_type();
+  PT(ColladaElement) result = resolve_url(inst->_url);
+  if (!result->is_of_type(handle)) {
+    collada_cat.warning()
+      << "Instance URL '" << inst->_url << "' points to element of the wrong type!\n";
   }
 
-  string id = inst->_url.substr(1);
-  const TypeHandle &handle = inst->get_target_type();
-  if (handle == ColladaEffect::get_class_type()) {
-    return _root->_library_effects.get_element_by_id(id);
-  } else if (handle == ColladaGeometry::get_class_type()) {
-    return _root->_library_geometries.get_element_by_id(id);
-  } else if (handle == ColladaMaterial::get_class_type()) {
-    return _root->_library_materials.get_element_by_id(id);
-  } else if (handle == ColladaNode::get_class_type()) {
-    return _root->_library_nodes.get_element_by_id(id);
-  } else if (handle == ColladaVisualScene::get_class_type()) {
-    return _root->_library_visual_scenes.get_element_by_id(id);
-  } else {
-    collada_cat.error()
-      << "ColladaDocument::resolve_instance invoked with unknown type "
-      << handle.get_name() << "\n";
-  }
-  return NULL;
+  return result;
 }
 

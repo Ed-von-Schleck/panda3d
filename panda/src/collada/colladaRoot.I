@@ -23,11 +23,13 @@ INLINE ColladaRoot::
 ColladaRoot(PT(ColladaDocument) document) {
   _document = document;
   clear();
-  _library_effects._parent = this;
-  _library_geometries._parent = this;
-  _library_materials._parent = this;
-  _library_nodes._parent = this;
-  _library_visual_scenes._parent = this;
+  _library_cameras = NULL;
+  _library_effects = NULL;
+  _library_geometries = NULL;
+  _library_lights = NULL;
+  _library_materials = NULL;
+  _library_nodes = NULL;
+  _library_visual_scenes = NULL;
   nassertv(document != NULL);
 }
 

@@ -33,13 +33,13 @@ void ColladaRoot::
 clear() {
   ColladaAssetElement::clear();
   _instance_visual_scene = NULL;
-  _library_cameras.clear();
-  _library_effects.clear();
-  _library_geometries.clear();
-  _library_lights.clear();
-  _library_materials.clear();
-  _library_nodes.clear();
-  _library_visual_scenes.clear();
+  _library_cameras = NULL;
+  _library_effects = NULL;
+  _library_geometries = NULL;
+  _library_lights = NULL;
+  _library_materials = NULL;
+  _library_nodes = NULL;
+  _library_visual_scenes = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -75,37 +75,51 @@ load_xml(const TiXmlElement *xelement) {
 
   xchild = xelement->FirstChildElement("library_cameras");
   if (xchild != NULL) {
-    _library_cameras.load_xml(xchild);
+    _library_cameras = new ColladaLibraryCameras;
+    _library_cameras->_parent = this;
+    _library_cameras->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_effects");
   if (xchild != NULL) {
-    _library_effects.load_xml(xchild);
+    _library_effects = new ColladaLibraryEffects;
+    _library_effects->_parent = this;
+    _library_effects->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_geometries");
   if (xchild != NULL) {
-    _library_geometries.load_xml(xchild);
+    _library_geometries = new ColladaLibraryGeometries;
+    _library_geometries->_parent = this;
+    _library_geometries->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_lights");
   if (xchild != NULL) {
-    _library_lights.load_xml(xchild);
+    _library_lights = new ColladaLibraryLights;
+    _library_lights->_parent = this;
+    _library_lights->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_materials");
   if (xchild != NULL) {
-    _library_materials.load_xml(xchild);
+    _library_materials = new ColladaLibraryMaterials;
+    _library_materials->_parent = this;
+    _library_materials->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_nodes");
   if (xchild != NULL) {
-    _library_nodes.load_xml(xchild);
+    _library_nodes = new ColladaLibraryNodes;
+    _library_nodes->_parent = this;
+    _library_nodes->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_visual_scenes");
   if (xchild != NULL) {
-    _library_visual_scenes.load_xml(xchild);
+    _library_visual_scenes = new ColladaLibraryVisualScenes;
+    _library_visual_scenes->_parent = this;
+    _library_visual_scenes->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("scene");
@@ -145,26 +159,26 @@ make_xml() const {
     //FIXME: what to do when there is no asset? collada spec requires one, I'm fairly certain
   }
 
-  if (_library_cameras.size() > 0) {
-    xelement->LinkEndChild(_library_cameras.make_xml());
+  if (_library_cameras != NULL && _library_cameras->size() > 0) {
+    xelement->LinkEndChild(_library_cameras->make_xml());
   }
-  if (_library_effects.size() > 0) {
-    xelement->LinkEndChild(_library_effects.make_xml());
+  if (_library_effects != NULL && _library_effects->size() > 0) {
+    xelement->LinkEndChild(_library_effects->make_xml());
   }
-  if (_library_geometries.size() > 0) {
-    xelement->LinkEndChild(_library_geometries.make_xml());
+  if (_library_geometries != NULL && _library_geometries->size() > 0) {
+    xelement->LinkEndChild(_library_geometries->make_xml());
   }
-  if (_library_lights.size() > 0) {
-    xelement->LinkEndChild(_library_lights.make_xml());
+  if (_library_lights != NULL && _library_lights->size() > 0) {
+    xelement->LinkEndChild(_library_lights->make_xml());
   }
-  if (_library_materials.size() > 0) {
-    xelement->LinkEndChild(_library_materials.make_xml());
+  if (_library_materials != NULL && _library_materials->size() > 0) {
+    xelement->LinkEndChild(_library_materials->make_xml());
   }
-  if (_library_nodes.size() > 0) {
-    xelement->LinkEndChild(_library_nodes.make_xml());
+  if (_library_nodes != NULL && _library_nodes->size() > 0) {
+    xelement->LinkEndChild(_library_nodes->make_xml());
   }
-  if (_library_visual_scenes.size() > 0) {
-    xelement->LinkEndChild(_library_visual_scenes.make_xml());
+  if (_library_visual_scenes != NULL && _library_visual_scenes->size() > 0) {
+    xelement->LinkEndChild(_library_visual_scenes->make_xml());
   }
 
   TiXmlElement * xscene = new TiXmlElement("scene");
@@ -195,5 +209,71 @@ make_node() const {
   }
 
   return DCAST(PandaNode, node);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaRoot::get_element_by_id
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaRoot::get_element_by_id(const string &id) const {
+  PT(ColladaElement) result = NULL;
+  if (_library_cameras != NULL){
+    if (_library_cameras->get_id() == id) {
+      return DCAST(ColladaElement, _library_cameras);
+    }
+    if ((result = _library_cameras->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_effects != NULL){
+    if (_library_effects->get_id() == id) {
+      return DCAST(ColladaElement, _library_effects);
+    }
+    if ((result = _library_effects->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_geometries != NULL){
+    if (_library_geometries->get_id() == id) {
+      return DCAST(ColladaElement, _library_geometries);
+    }
+    if ((result = _library_geometries->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_lights != NULL){
+    if (_library_lights->get_id() == id) {
+      return DCAST(ColladaElement, _library_lights);
+    }
+    if ((result = _library_lights->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_materials != NULL){
+    if (_library_materials->get_id() == id) {
+      return DCAST(ColladaElement, _library_materials);
+    }
+    if ((result = _library_materials->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_nodes != NULL){
+    if (_library_nodes->get_id() == id) {
+      return DCAST(ColladaElement, _library_nodes);
+    }
+    if ((result = _library_nodes->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_visual_scenes != NULL){
+    if (_library_visual_scenes->get_id() == id) {
+      return DCAST(ColladaElement, _library_visual_scenes);
+    }
+    if ((result = _library_visual_scenes->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  return NULL;
 }
 

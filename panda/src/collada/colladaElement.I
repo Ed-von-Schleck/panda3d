@@ -15,7 +15,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE ColladaElement::
@@ -26,7 +26,7 @@ ColladaElement() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaElement to its initial state.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaElement::
@@ -37,7 +37,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::set_name
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaElement::
@@ -47,7 +47,7 @@ set_name(const string &name) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::clear_name
-//       Access: Public
+//       Access: Published
 //  Description: Resets the element's name to empty.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaElement::
@@ -57,7 +57,7 @@ clear_name() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::has_name
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if the element has a nonempty name set,
 //               false if the name is empty.
 ////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ has_name() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::get_name
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaElement::
@@ -78,7 +78,7 @@ get_name() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::set_id
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaElement::
@@ -88,7 +88,7 @@ set_id(const string &id) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::clear_id
-//       Access: Public
+//       Access: Published
 //  Description: Resets the element's ID to empty.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaElement::
@@ -98,7 +98,7 @@ clear_id() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::has_id
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if the element has a nonempty ID set,
 //               false if the ID is empty.
 ////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ has_id() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::get_id
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE const string &ColladaElement::
@@ -119,7 +119,7 @@ get_id() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::get_parent
-//       Access: Public
+//       Access: Published
 //  Description: Returns the parent element of this element, if
 //               it is attached to a parent. Returns NULL if
 //               otherwise.
@@ -131,7 +131,7 @@ get_parent() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaElement::get_document
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns the ColladaDocument that this element
 //               resides in, or NULL if it is not part of any
 //               document.
@@ -173,5 +173,17 @@ detach(ColladaElement *child) const {
     return;
   }
   child->_parent = NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaElement::get_element_by_id
+//       Access: Published, Virtual
+//  Description: Searches this element and all elements below it
+//               for an element with the specified ID, and
+//               returns it. Returns NULL if no element was found.
+////////////////////////////////////////////////////////////////////
+INLINE PT(ColladaElement) ColladaElement::
+get_element_by_id(const string &id) const {
+  return NULL;
 }
 

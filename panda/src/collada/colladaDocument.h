@@ -56,6 +56,7 @@ PUBLISHED:
   INLINE void set_filename(const Filename &filename);
   INLINE const Filename &get_filename() const;
 
+  ColladaElement *resolve_url(const string &url) const;
   ColladaElement *resolve_instance(const ColladaInstanceBase *inst) const;
 
 private:

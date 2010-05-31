@@ -41,7 +41,7 @@ PUBLISHED:
   INLINE virtual void clear();
   INLINE virtual bool load_xml(const TiXmlElement *xelement);
   INLINE virtual TiXmlElement *make_xml() const;
-  INLINE PT(ColladaElement) get_element_by_id(const string &id) const;
+  INLINE virtual PT(ColladaElement) get_element_by_id(const string &id) const;
 
 public:
   static TypeHandle get_class_type() {
@@ -64,9 +64,6 @@ public:
 private:
   static TypeHandle _type_handle;
 };
-
-// Specialize for ColladaNode to search recursively
-template<> INLINE PT(ColladaElement) ColladaLibrary<ColladaNode>::get_element_by_id(const string &id) const;
 
 // Note: when adding new types, be sure to add them to config_collada.cxx also
 

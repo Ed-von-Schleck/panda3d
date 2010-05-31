@@ -21,6 +21,7 @@
 #include "colladaElement.h"
 
 enum ColladaArrayType {
+  AT_invalid = 0,
   AT_bool,
   AT_float,
   AT_IDREF,
@@ -36,6 +37,11 @@ enum ColladaArrayType {
 //               COLLADA document.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaArrayBase : public ColladaElement {
+PUBLISHED:
+  INLINE virtual ColladaArrayType get_array_type() const {
+    return AT_invalid;
+  }
+
 public:
   virtual TypeHandle get_type() const {
     return get_class_type();

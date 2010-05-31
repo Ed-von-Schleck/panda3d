@@ -91,3 +91,20 @@ get_geometric_element() const {
   return _geometric_element;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaGeometry::get_element_by_id
+//       Access: Published, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaGeometry::
+get_element_by_id(const string &id) const {
+  if (_geometric_element) {
+    if (_geometric_element->get_id() == id) {
+      return _geometric_element;
+    } else {
+      return _geometric_element->get_element_by_id(id);
+    }
+  }
+  return NULL;
+}
+

@@ -121,3 +121,28 @@ make_xml() const {
   return xelement;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaSource::get_element_by_id
+//       Access: Published, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaSource::
+get_element_by_id(const string &id) const {
+  PT(ColladaElement) result = NULL;
+
+  if (_array != NULL) {
+    if (_array->get_id() == id) {
+      return DCAST(ColladaElement, _array);
+    }
+    result = _array->get_element_by_id(id);
+    if (result != NULL) {
+      return result;
+    }
+  }
+
+  // We're not checking _accessor because according to
+  // the COLLADA spec it is not supposed to have an ID.
+
+  return NULL;
+}
+

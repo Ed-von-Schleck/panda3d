@@ -280,25 +280,27 @@ make_node() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaNode::get_node_by_id
+//     Function: ColladaNode::get_element_by_id
 //       Access: Public
 //  Description: Returns the node in the node hierarchy that has
 //               the given ID, or NULL if none found.
 //               Searches recursively for subnodes as well.
 ////////////////////////////////////////////////////////////////////
-PT(ColladaNode) ColladaNode::
-get_node_by_id(const string &id) const {
-  PT(ColladaNode) res;
+PT(ColladaElement) ColladaNode::
+get_element_by_id(const string &id) const {
+  PT(ColladaElement) res;
   for (int i = 0; i < _nodes.size(); ++i) {
-    res = _nodes.at(i);
+    res = _nodes[i];
     if (res->get_id() == id) {
-      return res;
+      return DCAST(ColladaElement, res);
     } else {
-      res = res->get_node_by_id(id);
+      res = res->get_element_by_id(id);
       if (res != NULL) {
-        return res;
+        return DCAST(ColladaElement, res);
       }
     }
   }
+  // We're not checking _instance_* because instances don't
+  // have an ID, according to the COLLADA specification.
   return NULL;
 }

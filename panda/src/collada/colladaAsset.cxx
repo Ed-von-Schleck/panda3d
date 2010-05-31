@@ -275,8 +275,23 @@ make_xml() const {
   }
 
   for (int i = 0; i < _contributors.size(); ++i) {
-    xelement->LinkEndChild(_contributors.at(i)->make_xml());
+    xelement->LinkEndChild(_contributors[i]->make_xml());
   }
 
   return xelement;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::get_element_by_id
+//       Access: Published, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+PT(ColladaElement) ColladaAsset::
+get_element_by_id(const string &id) const {
+  for (int i = 0; i < _contributors.size(); ++i) {
+    if (_contributors[i]->get_id() == id) {
+      return DCAST(ColladaElement, _contributors[i]);
+    }
+  }
+  return NULL;
 }

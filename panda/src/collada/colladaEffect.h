@@ -33,6 +33,8 @@ PUBLISHED:
   INLINE PT(ColladaProfile) get_profile(int index) const;
   INLINE int get_num_profiles() const;
 
+  virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+
 private:
   pvector<PT(ColladaProfile)> _profiles;
 
