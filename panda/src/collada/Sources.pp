@@ -22,13 +22,13 @@
     colladaLibrary.h colladaLibrary.I colladaLibrary.N \
     colladaLight.h colladaLight.I \
     colladaMaterial.h colladaMaterial.I \
-    colladaMesh.h \
+    colladaMesh.h colladaMesh.I \
     colladaNode.h colladaNode.I \
     colladaOptics.h colladaOptics.I \
     colladaPrimitive.h \
     colladaProfile.h colladaProfile.I \
     colladaRoot.h colladaRoot.I \
-    colladaSource.h \
+    colladaSource.h colladaSource.I \
     colladaVertices.h \
     colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \
@@ -77,13 +77,13 @@
     colladaLibrary.h colladaLibrary.I \
     colladaLight.h colladaLight.I \
     colladaMaterial.h colladaMaterial.I \
-    colladaMesh.h \
+    colladaMesh.h colladaMesh.I \
     colladaNode.h colladaNode.I \
     colladaOptics.h colladaNode.I \
     colladaPrimitive.h \
     colladaProfile.h colladaProfile.I \
     colladaRoot.h colladaRoot.I \
-    colladaSource.h \
+    colladaSource.h colladaSource.I \
     colladaVertices.h \
     colladaVisualScene.h colladaVisualScene.I \
     config_collada.h \

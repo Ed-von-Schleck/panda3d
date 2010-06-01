@@ -21,6 +21,8 @@
 #include "pvector.h"
 #include "pta_LVecBase4f.h"
 
+class ColladaPrimitive;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaAccessor
 // Description : Object that represents the COLLADA <accessor> tag.
@@ -41,6 +43,8 @@ PUBLISHED:
   INLINE int get_offset() const;
   INLINE int get_stride() const;
 
+  int get_num_bound_params() const;
+
   struct Param {
     string _name;
     string _type;
@@ -53,6 +57,8 @@ private:
   string _source;
   int _stride;
   pvector<Param> _params;
+
+  friend class ColladaPrimitive;
 
 public:
   static TypeHandle get_class_type() {

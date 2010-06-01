@@ -19,6 +19,7 @@
 #include "colladaPrimitive.h"
 #include "colladaSource.h"
 #include "colladaVertices.h"
+#include "geom.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaMesh
@@ -32,6 +33,17 @@ PUBLISHED:
   PT(Geom) make_geom() const;
 
   virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+
+  INLINE int get_num_sources() const;
+  INLINE PT(ColladaSource) get_source(int i) const;
+  MAKE_SEQ(get_source, get_num_sources, get_source);
+
+  INLINE PT(ColladaVertices) get_vertices() const;
+  INLINE void set_vertices(ColladaVertices *vertices);
+
+  INLINE int get_num_primitives() const;
+  INLINE PT(ColladaPrimitive) get_primitive(int i) const;
+  MAKE_SEQ(get_primitives, get_num_primitives, get_primitive);
 
 private:
   pvector<PT(ColladaSource)> _sources;
@@ -55,6 +67,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaMesh.I"
 
 #endif
 

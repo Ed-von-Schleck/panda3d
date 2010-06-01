@@ -140,7 +140,25 @@ get_array() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaAccessor::get_source
+//     Function: ColladaAccessor::get_num_bound_params
+//       Access: Published
+//  Description: Returns the number of params that are bound to
+//               a value. This usually means the amount of columns
+//               in a vector, position or color.
+////////////////////////////////////////////////////////////////////
+int ColladaAccessor::
+get_num_bound_params() const {
+  int i = 0;
+  for (int p = 0; p < _params.size(); ++p) {
+    if (!_params[i]._name.empty()) {
+      ++i;
+    }
+  }
+  return i;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaAccessor::get_values
 //       Access: Public
 //  Description: Clears the given array and fills in the values
 //               as specified by the accessor settings. Returns

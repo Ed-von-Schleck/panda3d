@@ -29,6 +29,15 @@ PUBLISHED:
   ColladaSource();
   virtual ~ColladaSource() {};
 
+  INLINE bool has_array() const;
+  INLINE PT(ColladaArrayBase) get_array() const;
+  INLINE void set_array(ColladaArrayBase* array);
+  INLINE void clear_array();
+
+  INLINE ColladaArrayType get_array_type() const;
+
+  INLINE PT(ColladaAccessor) get_accessor() const;
+
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
@@ -55,6 +64,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaSource.I"
 
 #endif
 
