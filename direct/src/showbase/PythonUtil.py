@@ -53,6 +53,7 @@ from StringIO import StringIO
 import marshal
 import ElementTree as ET
 from HTMLParser import HTMLParser
+import unicodedata
 
 from direct.directutil import Verify
 # Don't import libpandaexpressModules, which doesn't get built until
@@ -332,12 +333,12 @@ def traceFunctionCall(frame):
         r+=name
         r+='='
         if dict.has_key(name):
-            v=str(dict[name])
+            v=safeRepr(dict[name])
             if len(v)>2000:
                 # r+="<too big for debug>"
-                r += (str(dict[name])[:2000] + "...")
+                r += (v[:2000] + "...")
             else:
-                r+=str(dict[name])
+                r+=v
         else: r+="*** undefined ***"
     return r+')'
 
@@ -4121,6 +4122,9 @@ if __debug__:
     assert s.c[0].text == 'testComment'
     del s
 
+def u2ascii(str):
+    return unicodedata.normalize('NFKD', str).encode('ascii','ignore')
+
 import __builtin__
 __builtin__.Functor = Functor
 __builtin__.Stack = Stack
@@ -4179,3 +4183,4 @@ __builtin__.configIsToday = configIsToday
 __builtin__.typeName = typeName
 __builtin__.safeTypeName = safeTypeName
 __builtin__.histogramDict = histogramDict
+__builtin__.u2ascii = u2ascii
