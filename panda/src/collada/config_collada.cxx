@@ -25,6 +25,7 @@
 #include "colladaEffect.h"
 #include "colladaElement.h"
 #include "colladaGeometry.h"
+#include "colladaInput.h"
 #include "colladaInstance.h"
 #include "colladaLibrary.h"
 #include "colladaLight.h"
@@ -110,6 +111,7 @@ init_libcollada() {
   ColladaEffect::init_type();
   ColladaElement::init_type();
   ColladaGeometry::init_type();
+  ColladaInput::init_type();
   ColladaInstanceBase::init_type();
   ColladaLight::init_type();
   ColladaMaterial::init_type();

@@ -17,8 +17,7 @@
 
 #include "pointerTo.h"
 #include "colladaElement.h"
-#include "geomPrimitive.h"
-#include "pta_int.h"
+#include "colladaInput.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaVertices
@@ -33,13 +32,10 @@ PUBLISHED:
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
-  struct Input {
-    string _semantic;
-    string _source;
-  };
-
 private:
-  pvector<Input> _inputs;
+  pvector<PT(ColladaInput)> _inputs;
+
+  friend class ColladaInput;
 
 public:
   static TypeHandle get_class_type() {

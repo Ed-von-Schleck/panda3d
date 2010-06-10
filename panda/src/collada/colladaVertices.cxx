@@ -55,14 +55,10 @@ load_xml(const TiXmlElement *xelement) {
   // Read out the input specifiers
   xchild = xelement->FirstChildElement("input");
   while (xchild != NULL) {
-    Input newinput;
-    if (xchild->Attribute("semantic") != NULL) {
-      newinput._semantic = xchild->Attribute("semantic");
-    }
-    if (xchild->Attribute("source") != NULL) {
-      newinput._source = xchild->Attribute("source");
-    }
-    _inputs.push_back(newinput);
+    PT(ColladaInput) input = new ColladaInput;
+    input->_parent = this;
+    input->load_xml(xchild);
+    _inputs.push_back(input);
     xchild = xchild->NextSiblingElement("input");
   }
 
@@ -81,11 +77,7 @@ make_xml() const {
   xelement->SetValue("vertices");
 
   for (int i = 0; i < _inputs.size(); ++i) {
-    const Input &input = _inputs[i];
-    TiXmlElement *xinput = new TiXmlElement("input");
-    xinput->SetAttribute("semantic", input._semantic);
-    xinput->SetAttribute("source", input._source);
-    xelement->LinkEndChild(xinput);
+    xelement->LinkEndChild(_inputs[i]->make_xml());
   }
 
   return xelement;

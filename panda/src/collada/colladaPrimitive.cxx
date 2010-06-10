@@ -71,18 +71,10 @@ load_xml(const TiXmlElement *xelement) {
   // Read out the input specifiers
   xchild = xelement->FirstChildElement("input");
   while (xchild != NULL) {
-    Input newinput;
-    if (xchild->Attribute("semantic") != NULL) {
-      newinput._semantic = xchild->Attribute("semantic");
-    }
-    if (xchild->Attribute("source") != NULL) {
-      newinput._source = xchild->Attribute("source");
-    }
-    nassertr(xchild->QueryIntAttribute("offset", &newinput._offset) == TIXML_SUCCESS, false);
-    if (xchild->QueryIntAttribute("set", &newinput._set) != TIXML_SUCCESS) {
-      newinput._set = -1;
-    }
-    _inputs.push_back(newinput);
+    PT(ColladaInput) input = new ColladaInput;
+    input->_parent = this;
+    input->load_xml(xchild);
+    _inputs.push_back(input);
     xchild = xchild->NextSiblingElement("input");
   }
 
@@ -139,28 +131,42 @@ make_xml() const {
   xelement->SetAttribute("count", _count);
 
   for (int i = 0; i < _inputs.size(); ++i) {
-    const Input &input = _inputs[i];
-    TiXmlElement *xinput = new TiXmlElement("input");
-    xinput->SetAttribute("semantic", input._semantic);
-    xinput->SetAttribute("source", input._source);
-    xinput->SetAttribute("offset", input._offset);
-    if (input._set >= 0) {
-      xinput->SetAttribute("set", input._set);
+    xelement->LinkEndChild(_inputs[i]->make_xml());
+  }
+
+  if (_p.size() > 0) {
+    ostringstream strm;
+    TiXmlElement *xp = new TiXmlElement("p");
+    for (int i = 0; i < _p.size(); ++i) {
+      if (i != 0) {
+        strm << " ";
+      }
+      strm << _p[i];
     }
-    xelement->LinkEndChild(xinput);
+    xp->LinkEndChild(new TiXmlText(strm.str()));
+    xelement->LinkEndChild(xp);
   }
 
   return xelement;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaPrimitive::make_primitive
-//       Access: Public
-//  Description: Returns a new GeomPrimitive representing this
+//     Function: ColladaMesh::make_geom
+//       Access: Published
+//  Description: Returns a new Geom object representing this
 //               COLLADA primitive object.
 ////////////////////////////////////////////////////////////////////
-PT(GeomPrimitive) ColladaPrimitive::
-make_primitive() const {
+PT(Geom) ColladaPrimitive::
+make_geom() const {
+  PT(GeomVertexArrayFormat) aformat = new GeomVertexArrayFormat();
+  for (int i = 0; i < _inputs.size(); ++i) {
+    _inputs[i]->make_columns(aformat);
+  }
+  PT(GeomVertexFormat) format = new GeomVertexFormat();
+  format->add_array(aformat);
+  PT(GeomVertexData) vdata = new GeomVertexData(get_name(), GeomVertexFormat::register_format(format), GeomEnums::UH_static);
+  PT(Geom) geom = new Geom(vdata);
+
   PT(GeomPrimitive) prim = NULL;
   switch (_primitive_type) {
     case PT_lines:
@@ -187,6 +193,9 @@ make_primitive() const {
     default:
       collada_cat.error() << "Invalid primitive type!\n";
   }
-  return prim;
+  if (prim != NULL) {
+    geom->add_primitive(prim);
+  }
+  return geom;
 }
 

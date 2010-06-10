@@ -17,8 +17,11 @@
 
 #include "pointerTo.h"
 #include "colladaElement.h"
-#include "geomPrimitive.h"
+#include "colladaInput.h"
+#include "geom.h"
 #include "pta_int.h"
+
+class ColladaMesh;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaPrimitive
@@ -43,20 +46,15 @@ PUBLISHED:
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
-  virtual PT(GeomPrimitive) make_primitive() const;
-
-  struct Input {
-    string _semantic;
-    string _source;
-    int _offset;
-    int _set;
-  };
+  virtual PT(Geom) make_geom() const;
 
 private:
   PrimitiveType _primitive_type;
-  pvector<Input> _inputs;
+  pvector<PT(ColladaInput)> _inputs;
   PTA_int _p;
   int _count;
+
+  friend class ColladaMesh;
 
 public:
   static TypeHandle get_class_type() {

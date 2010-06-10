@@ -90,9 +90,12 @@ make_node() const {
   PT(GeomNode) gnode = new GeomNode(get_name());
 
   if (_geometric_element != NULL && _geometric_element->is_of_type(ColladaMesh::get_class_type())) {
-    PT(Geom) geom = DCAST(ColladaMesh, _geometric_element)->make_geom();
-    if (geom != NULL) {
-      gnode->add_geom(geom);
+    pvector<PT(ColladaPrimitive)> primitives = DCAST(ColladaMesh, _geometric_element)->_primitives;
+    for (int i = 0; i < primitives.size(); ++i) {
+      PT(Geom) geom = primitives[i]->make_geom();
+      if (geom != NULL) {
+        gnode->add_geom(geom);
+      }
     }
   }
 

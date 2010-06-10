@@ -18,6 +18,7 @@
     colladaEffect.h colladaEffect.I \
     colladaElement.h colladaElement.I \
     colladaGeometry.h \
+    colladaInput.h colladaInput.I \
     colladaInstance.h colladaInstance.I colladaInstance.N \
     colladaLibrary.h colladaLibrary.I colladaLibrary.N \
     colladaLight.h colladaLight.I \
@@ -45,6 +46,7 @@
     colladaDocument.cxx \
     colladaEffect.cxx \
     colladaGeometry.cxx \
+    colladaInput.cxx \
     colladaInstance.cxx \
     colladaLibrary.cxx \
     colladaLight.cxx \
@@ -73,6 +75,7 @@
     colladaEffect.h colladaEffect.I \
     colladaElement.h colladaElement.I \
     colladaGeometry.h \
+    colladaInput.h colladaInput.I \
     colladaInstance.h colladaInstance.I \
     colladaLibrary.h colladaLibrary.I \
     colladaLight.h colladaLight.I \

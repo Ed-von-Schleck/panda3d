@@ -1,5 +1,5 @@
-// Filename: colladaMesh.h
-// Created by: Xidram (20Apr10)
+// Filename: colladaInput.h
+// Created by:  rdb (02Jun10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,46 +12,33 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef COLLADAMESH_H
-#define COLLADAMESH_H
+#ifndef COLLADAINPUT_H
+#define COLLADAINPUT_H
 
 #include "colladaElement.h"
-#include "colladaPrimitive.h"
-#include "colladaSource.h"
-#include "colladaVertices.h"
-#include "geom.h"
-
-class ColladaGeometry;
+#include "geomVertexArrayFormat.h"
 
 ////////////////////////////////////////////////////////////////////
-//       Class : ColladaMesh
-// Description : Object that represents the <mesh> COLLADA element.
+//       Class : ColladaInput
+// Description : Object that represents the <input> COLLADA element.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_COLLADA ColladaMesh : public ColladaElement {
+class EXPCL_COLLADA ColladaInput : public ColladaElement {
 PUBLISHED:
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
-  virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+  int make_columns(GeomVertexArrayFormat *format) const;
 
-  INLINE int get_num_sources() const;
-  INLINE PT(ColladaSource) get_source(int i) const;
-  MAKE_SEQ(get_source, get_num_sources, get_source);
-
-  INLINE PT(ColladaVertices) get_vertices() const;
-  INLINE void set_vertices(ColladaVertices *vertices);
-
-  INLINE int get_num_primitives() const;
-  INLINE PT(ColladaPrimitive) get_primitive(int i) const;
-  MAKE_SEQ(get_primitives, get_num_primitives, get_primitive);
+  INLINE int get_offset() const;
+  INLINE const string &get_semantic() const;
+  INLINE int get_set() const;
 
 private:
-  pvector<PT(ColladaSource)> _sources;
-  PT(ColladaVertices) _vertices;
-  pvector<PT(ColladaPrimitive)> _primitives;
-
-  friend class ColladaGeometry;
+  int _offset;
+  string _semantic;
+  string _source;
+  int _set;
 
 public:
   static TypeHandle get_class_type() {
@@ -59,7 +46,7 @@ public:
   }
   static void init_type() {
     ColladaElement::init_type();
-    register_type(_type_handle, "ColladaMesh",
+    register_type(_type_handle, "ColladaInput",
                   ColladaElement::get_class_type());
   }
   virtual TypeHandle get_type() const {
@@ -71,7 +58,7 @@ private:
   static TypeHandle _type_handle;
 };
 
-#include "colladaMesh.I"
+#include "colladaInput.I"
 
 #endif
 

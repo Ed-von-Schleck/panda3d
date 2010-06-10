@@ -16,31 +16,6 @@
 
 TypeHandle ColladaMesh::_type_handle;
 
-void parse_semantic (const string &semantic, PT(InternalName) &cname, GeomEnums::Contents &contents) {
-  cname = NULL;
-  contents = GeomEnums::C_other;
-  if (semantic == "BINORMAL") {
-    cname = InternalName::get_binormal();
-    contents = GeomEnums::C_vector;
-  } else if (semantic == "COLOR") {
-    cname = InternalName::get_color();
-    contents = GeomEnums::C_color;
-  } else if (semantic == "NORMAL") {
-    cname = InternalName::get_normal();
-    contents = GeomEnums::C_vector;
-  } else if (semantic == "POSITION") {
-    cname = InternalName::get_vertex();
-    contents = GeomEnums::C_point;
-  } else if (semantic == "TANGENT") {
-    cname = InternalName::get_tangent();
-    contents = GeomEnums::C_vector;
-  } else {
-    cname = InternalName::make(downcase(semantic));
-    contents = GeomEnums::C_other;
-    collada_cat.warning() << "Unrecognized input semantic '" << semantic << "' found\n";
-  }
-}
-
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMesh::clear
 //       Access: Public
@@ -188,16 +163,5 @@ get_element_by_id(const string &id) const {
   }
 
   return NULL;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaMesh::make_geom
-//       Access: Published
-//  Description: Returns a new Geom object representing this
-//               COLLADA mesh object.
-////////////////////////////////////////////////////////////////////
-PT(Geom) ColladaMesh::
-make_geom() const {
-
 }
 

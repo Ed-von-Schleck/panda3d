@@ -8,6 +8,7 @@
 #include "colladaEffect.cxx"
 #include "colladaElement.cxx"
 #include "colladaGeometry.cxx"
+#include "colladaInput.cxx"
 #include "colladaInstance.cxx"
 #include "colladaLibrary.cxx"
 #include "colladaLight.cxx"
