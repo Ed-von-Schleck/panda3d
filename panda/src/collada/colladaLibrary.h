@@ -24,6 +24,7 @@
 #include "pointerTo.h"
 
 class ColladaCamera;
+class ColladaController;
 class ColladaEffect;
 class ColladaGeometry;
 class ColladaLight;
@@ -66,8 +67,10 @@ private:
 };
 
 // Note: when adding new types, be sure to add them to config_collada.cxx also
+// Also see colladaLibrary.N
 
 EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaCamera>);
+EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaController>);
 EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaEffect>);
 EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaGeometry>);
 EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaLight>);
@@ -76,6 +79,7 @@ EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaNode>)
 EXPORT_TEMPLATE_CLASS(EXPCL_COLLADA, EXPTP_COLLADA, ColladaLibrary<ColladaVisualScene>);
 
 typedef ColladaLibrary<ColladaCamera> ColladaLibraryCameras;
+typedef ColladaLibrary<ColladaController> ColladaLibraryControllers;
 typedef ColladaLibrary<ColladaEffect> ColladaLibraryEffects;
 typedef ColladaLibrary<ColladaGeometry> ColladaLibraryGeometries;
 typedef ColladaLibrary<ColladaLight> ColladaLibraryLights;

@@ -3,7 +3,7 @@
 
 #begin lib_target
   #define TARGET p3collada
-  #define LOCAL_LIBS display express putil pandabase dxml
+  #define LOCAL_LIBS display express putil pandabase dxml char
 
   #define COMBINED_SOURCES collada_composite1.cxx collada_composite2.cxx
 
@@ -14,6 +14,7 @@
     colladaAssetElement.h colladaAssetElement.I \
     colladaCamera.h colladaCamera.I \
     colladaContributor.h colladaContributor.I \
+    colladaController.h \
     colladaDocument.h colladaDocument.I \
     colladaEffect.h colladaEffect.I \
     colladaElement.h colladaElement.I \
@@ -43,6 +44,7 @@
     colladaAssetElement.cxx \
     colladaCamera.cxx \
     colladaContributor.cxx \
+    colladaController.cxx \
     colladaDocument.cxx \
     colladaEffect.cxx \
     colladaGeometry.cxx \
@@ -71,6 +73,7 @@
     colladaAssetElement.h colladaAssetElement.I \
     colladaCamera.h colladaCamera.I \
     colladaContributor.h colladaContributor.I \
+    colladaController.h \
     colladaDocument.h colladaDocument.I \
     colladaEffect.h colladaEffect.I \
     colladaElement.h colladaElement.I \

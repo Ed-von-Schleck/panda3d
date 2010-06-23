@@ -21,6 +21,7 @@
 #include "colladaAssetElement.h"
 #include "colladaCamera.h"
 #include "colladaContributor.h"
+#include "colladaController.h"
 #include "colladaDocument.h"
 #include "colladaEffect.h"
 #include "colladaElement.h"
@@ -107,6 +108,7 @@ init_libcollada() {
   ColladaAssetElement::init_type();
   ColladaCamera::init_type();
   ColladaContributor::init_type();
+  ColladaController::init_type();
   ColladaDocument::init_type();
   ColladaEffect::init_type();
   ColladaElement::init_type();
@@ -135,6 +137,7 @@ init_libcollada() {
   ColladaTokenArray::init_type("ColladaTokenArray");
 
   ColladaInstanceCamera::init_type("ColladaInstanceCamera");
+  ColladaInstanceController::init_type("ColladaInstanceController");
   ColladaInstanceEffect::init_type("ColladaInstanceEffect");
   ColladaInstanceGeometry::init_type("ColladaInstanceGeometry");
   ColladaInstanceLight::init_type("ColladaInstanceLight");
@@ -143,6 +146,7 @@ init_libcollada() {
   ColladaInstanceVisualScene::init_type("ColladaInstanceVisualScene");
 
   ColladaLibraryCameras::init_type("ColladaLibraryCameras");
+  ColladaLibraryControllers::init_type("ColladaLibraryControllers");
   ColladaLibraryEffects::init_type("ColladaLibraryEffects");
   ColladaLibraryGeometries::init_type("ColladaLibraryGeometries");
   ColladaLibraryLights::init_type("ColladaLibraryLights");

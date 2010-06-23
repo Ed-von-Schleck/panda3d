@@ -4,6 +4,7 @@
 #include "colladaAssetElement.cxx"
 #include "colladaCamera.cxx"
 #include "colladaContributor.cxx"
+#include "colladaController.cxx"
 #include "colladaDocument.cxx"
 #include "colladaEffect.cxx"
 #include "colladaElement.cxx"
@@ -11,4 +12,3 @@
 #include "colladaInput.cxx"
 #include "colladaInstance.cxx"
 #include "colladaLibrary.cxx"
-#include "colladaLight.cxx"

@@ -24,6 +24,7 @@ ColladaRoot(PT(ColladaDocument) document) {
   _document = document;
   clear();
   _library_cameras = NULL;
+  _library_controllers = NULL;
   _library_effects = NULL;
   _library_geometries = NULL;
   _library_lights = NULL;

@@ -57,6 +57,7 @@ private:
   // the system comes to a crawl, and we don't get to eat Pandette Scout treats.
   #ifndef CPPPARSER
     pvector<PT(ColladaInstanceCamera)> _instance_cameras;
+    pvector<PT(ColladaInstanceController)> _instance_controllers;
     pvector<PT(ColladaInstanceGeometry)> _instance_geometries;
     pvector<PT(ColladaInstanceLight)> _instance_lights;
     pvector<PT(ColladaInstanceNode)> _instance_nodes;

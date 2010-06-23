@@ -52,6 +52,7 @@ private:
   Filename _filename;
   PT(ColladaInstanceVisualScene) _instance_visual_scene;
   PT(ColladaLibraryCameras) _library_cameras;
+  PT(ColladaLibraryControllers) _library_controllers;
   PT(ColladaLibraryEffects) _library_effects;
   PT(ColladaLibraryGeometries) _library_geometries;
   PT(ColladaLibraryLights) _library_lights;

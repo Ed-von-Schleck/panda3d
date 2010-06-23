@@ -34,6 +34,7 @@ clear() {
   ColladaAssetElement::clear();
   _instance_visual_scene = NULL;
   _library_cameras = NULL;
+  _library_controllers = NULL;
   _library_effects = NULL;
   _library_geometries = NULL;
   _library_lights = NULL;
@@ -78,6 +79,13 @@ load_xml(const TiXmlElement *xelement) {
     _library_cameras = new ColladaLibraryCameras;
     _library_cameras->_parent = this;
     _library_cameras->load_xml(xchild);
+  }
+
+  xchild = xelement->FirstChildElement("library_controllers");
+  if (xchild != NULL) {
+    _library_controllers = new ColladaLibraryControllers;
+    _library_controllers->_parent = this;
+    _library_controllers->load_xml(xchild);
   }
 
   xchild = xelement->FirstChildElement("library_effects");
@@ -162,6 +170,9 @@ make_xml() const {
   if (_library_cameras != NULL && _library_cameras->size() > 0) {
     xelement->LinkEndChild(_library_cameras->make_xml());
   }
+  if (_library_controllers != NULL && _library_controllers->size() > 0) {
+    xelement->LinkEndChild(_library_controllers->make_xml());
+  }
   if (_library_effects != NULL && _library_effects->size() > 0) {
     xelement->LinkEndChild(_library_effects->make_xml());
   }
@@ -223,6 +234,14 @@ PT(ColladaElement) ColladaRoot::get_element_by_id(const string &id) const {
       return DCAST(ColladaElement, _library_cameras);
     }
     if ((result = _library_cameras->get_element_by_id(id))) {
+      return result;
+    }
+  }
+  if (_library_controllers != NULL){
+    if (_library_controllers->get_id() == id) {
+      return DCAST(ColladaElement, _library_controllers);
+    }
+    if ((result = _library_controllers->get_element_by_id(id))) {
       return result;
     }
   }

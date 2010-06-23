@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "colladaNode.h"
+#include "colladaController.h"
 
 #include "pstrtod.h"
 
@@ -85,6 +86,16 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
     inst->load_xml(xchild);
     _instance_cameras.push_back(inst);
     xchild = xchild->NextSiblingElement("instance_camera");
+  }
+
+  // Read out any instances to controllers.
+  xchild = xelement->FirstChildElement("instance_controller");
+  while (xchild != NULL) {
+    PT(ColladaInstanceController) inst = new ColladaInstanceController;
+    inst->_parent = this;
+    inst->load_xml(xchild);
+    _instance_controllers.push_back(inst);
+    xchild = xchild->NextSiblingElement("instance_controller");
   }
 
   // Read out any instances to geometries.
@@ -232,6 +243,10 @@ make_xml() const {
     xelement->LinkEndChild(_instance_cameras.at(i)->make_xml());
   }
 
+  for (int i = 0; i < _instance_controllers.size(); ++i) {
+    xelement->LinkEndChild(_instance_controllers.at(i)->make_xml());
+  }
+
   for (int i = 0; i < _instance_geometries.size(); ++i) {
     xelement->LinkEndChild(_instance_geometries.at(i)->make_xml());
   }
@@ -242,6 +257,10 @@ make_xml() const {
 
   for (int i = 0; i < _instance_nodes.size(); ++i) {
     xelement->LinkEndChild(_instance_nodes.at(i)->make_xml());
+  }
+
+  for (int i = 0; i < _nodes.size(); ++i) {
+    xelement->LinkEndChild(_nodes.at(i)->make_xml());
   }
 
   return xelement;
@@ -260,8 +279,16 @@ make_node() const {
   //TODO: coordinate system conversion
   pnode->set_transform(TransformState::make_mat(LCAST(float, _transform)));
 
-  for (int i = 0; i < _nodes.size(); ++i) {
-    pnode->add_child(_nodes.at(i)->make_node());
+  for (int i = 0; i < _instance_controllers.size(); ++i) {
+    PT(ColladaController) target = DCAST(ColladaController, _instance_controllers.at(i)->get_target());
+    nassertd(target != NULL) continue;
+    pnode->add_child(target->make_node());
+  }
+
+  for (int i = 0; i < _instance_geometries.size(); ++i) {
+    PT(ColladaGeometry) target = DCAST(ColladaGeometry, _instance_geometries.at(i)->get_target());
+    nassertd(target != NULL) continue;
+    pnode->add_child(target->make_node());
   }
 
   for (int i = 0; i < _instance_nodes.size(); ++i) {
@@ -275,10 +302,8 @@ make_node() const {
     pnode->add_child(targetnode);
   }
 
-  for (int i = 0; i < _instance_geometries.size(); ++i) {
-    PT(ColladaGeometry) target = DCAST(ColladaGeometry, _instance_geometries.at(i)->get_target());
-    nassertd(target != NULL) continue;
-    pnode->add_child(target->make_node());
+  for (int i = 0; i < _nodes.size(); ++i) {
+    pnode->add_child(_nodes.at(i)->make_node());
   }
 
   ((ColladaNode*)this)->_cached_node = pnode;
