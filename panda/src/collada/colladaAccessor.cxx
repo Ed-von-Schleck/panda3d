@@ -177,12 +177,15 @@ get_values(PTA_LVecBase4f &into) const {
   int pos = _offset;
   for (int a = 0; a < _count; ++a) {
     int i = 0;
-    LVecBase4f v (LVecBase4f::zero());
+    // Yes, the last component defaults to 1 to work around a
+    // perspective divide that Panda3D does internally for points.
+    LVecBase4f v (0, 0, 0, 1);
     for (int p = 0; p < _params.size(); ++p) {
       if (!_params[i]._name.empty()) {
         v._v.data[i++] = array->at(pos + p);
       }
     }
+    into.push_back(v);
     pos += _stride;
   }
   return true;

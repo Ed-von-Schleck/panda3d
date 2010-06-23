@@ -18,6 +18,8 @@
 #include "colladaElement.h"
 #include "geomVertexArrayFormat.h"
 
+class ColladaPrimitive;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaInput
 // Description : Object that represents the <input> COLLADA element.
@@ -28,7 +30,9 @@ PUBLISHED:
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
+  PT(InternalName) get_column_name() const;
   int make_columns(GeomVertexArrayFormat *format) const;
+  bool write_data(GeomVertexData *data, const PTA_int &p, int stride) const;
 
   INLINE int get_offset() const;
   INLINE const string &get_semantic() const;
@@ -39,6 +43,8 @@ private:
   string _semantic;
   string _source;
   int _set;
+
+  friend class ColladaPrimitive;
 
 public:
   static TypeHandle get_class_type() {

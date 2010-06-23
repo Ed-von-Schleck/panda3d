@@ -45,37 +45,37 @@ load_xml(const TiXmlElement *xelement) {
   const TiXmlElement *xchild;
 
   xchild = xelement->FirstChildElement("author");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _author = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("author_email");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _author_email = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("author_website");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _author_website = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("authoring_tool");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _authoring_tool = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("comments");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _comments = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("copyright");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _copyright = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("source_data");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _source_data = xchild->GetText();
   }
 

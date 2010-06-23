@@ -51,7 +51,7 @@ PUBLISHED:
 private:
   PrimitiveType _primitive_type;
   pvector<PT(ColladaInput)> _inputs;
-  PTA_int _p;
+  pvector<PTA_int> _ps;
   int _count;
 
   friend class ColladaMesh;

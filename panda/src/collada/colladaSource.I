@@ -84,3 +84,14 @@ get_accessor() const {
   return _accessor;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaSource::get_values
+//       Access: Published
+//  Description: Shorthand for get_accessor().get_values(...).
+////////////////////////////////////////////////////////////////////
+INLINE bool ColladaSource::
+get_values(PTA_LVecBase4f &into) const {
+  nassertr(_accessor != NULL, false);
+  return _accessor->get_values(into);
+}
+

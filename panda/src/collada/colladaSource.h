@@ -37,6 +37,7 @@ PUBLISHED:
   INLINE ColladaArrayType get_array_type() const;
 
   INLINE PT(ColladaAccessor) get_accessor() const;
+  INLINE bool get_values(PTA_LVecBase4f &into) const;
 
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);

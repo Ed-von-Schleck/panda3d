@@ -14,6 +14,7 @@
 
 #include "colladaInput.h"
 #include "colladaVertices.h"
+#include "geomVertexWriter.h"
 
 TypeHandle ColladaInput::_type_handle;
 
@@ -87,6 +88,39 @@ make_xml() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaInput::get_column_name
+//       Access: Public
+//  Description: Returns the InternalName that is able to
+//               represent this input. Note that an input with
+//               semantic VERTICES does not have a column name -
+//               instead, you have to get those from the inputs
+//               in the target <vertices> element.
+////////////////////////////////////////////////////////////////////
+PT(InternalName) ColladaInput::
+get_column_name() const {
+  if (_semantic == "VERTICES") {
+    collada_cat.error()
+      << "Attempt to call get_column_name() on an input with VERTICES semantic\n";
+    return NULL;
+  } else if (_semantic == "BINORMAL") {
+    return InternalName::get_binormal();
+  } else if (_semantic == "COLOR") {
+    return InternalName::get_color();
+  } else if (_semantic == "NORMAL") {
+    return InternalName::get_normal();
+  } else if (_semantic == "POSITION") {
+    return InternalName::get_vertex();
+  } else if (_semantic == "TANGENT") {
+    return InternalName::get_tangent();
+  } else if (_semantic == "TEXCOORD") {
+    return InternalName::get_texcoord();
+  }
+  collada_cat.warning()
+    << "Unrecognized input semantic '" << _semantic << "' found\n";
+  return InternalName::make(downcase(_semantic));
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaInput::make_column
 //       Access: Public
 //  Description: Adds GeomVertexColumns to the indicated array
@@ -114,28 +148,21 @@ make_columns(GeomVertexArrayFormat *format) const {
     return counter;
   }
 
-  PT(InternalName) cname = NULL;
+  PT(InternalName) cname = get_column_name();
   GeomEnums::Contents contents = GeomEnums::C_other;
   if (_semantic == "BINORMAL") {
-    cname = InternalName::get_binormal();
     contents = GeomEnums::C_vector;
   } else if (_semantic == "COLOR") {
-    cname = InternalName::get_color();
     contents = GeomEnums::C_color;
   } else if (_semantic == "NORMAL") {
-    cname = InternalName::get_normal();
     contents = GeomEnums::C_vector;
   } else if (_semantic == "POSITION") {
-    cname = InternalName::get_vertex();
     contents = GeomEnums::C_point;
   } else if (_semantic == "TANGENT") {
-    cname = InternalName::get_tangent();
     contents = GeomEnums::C_vector;
   } else if (_semantic == "TEXCOORD") {
-    cname = InternalName::get_texcoord();
     contents = GeomEnums::C_texcoord;
   } else {
-    cname = InternalName::make(downcase(_semantic));
     contents = GeomEnums::C_other;
     collada_cat.warning()
       << "Unrecognized input semantic '" << _semantic << "' found\n";
@@ -159,5 +186,40 @@ make_columns(GeomVertexArrayFormat *format) const {
   format->add_column(cname, accessor->get_num_bound_params(), ntype, contents);
 
   return 1;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaInput::write_data
+//       Access: Public
+//  Description: Writes data to the indicated GeomVertexData.
+////////////////////////////////////////////////////////////////////
+bool ColladaInput::
+write_data(GeomVertexData *data, const PTA_int &p, int stride) const {
+  CPT(ColladaDocument) doc = get_document();
+  nassertr(doc != NULL, false);
+
+  // If it's has the VERTEX semantic, it redirects to a <vertices> element.
+  if (_semantic == "VERTEX") {
+    PT(ColladaVertices) vertices = DCAST(ColladaVertices, doc->resolve_url(_source));
+    nassertr(vertices != NULL, false);
+    for (int i = 0; i < vertices->_inputs.size(); ++i) {
+      vertices->_inputs[i]->write_data(data, p, stride);
+    }
+    return true;
+  }
+
+  PT(ColladaSource) source = DCAST(ColladaSource, doc->resolve_url(_source));
+  nassertr(source != NULL, false);
+  PTA_LVecBase4f values;
+  nassertr(source->get_values(values), false);
+  nassertr(_offset <= stride, false);
+
+  GeomVertexWriter writer (data, get_column_name());
+  for (size_t i = 0; i + _offset < p.size(); i += stride) {
+    // Note: Panda may internally do a perspective divide for points
+    // This is worked around in ColladaAccessor::get_values().
+    writer.add_data4f(values[p[i + _offset]]);
+  }
+  return true;
 }
 
