@@ -53,7 +53,7 @@ load_xml(const TiXmlElement *xelement) {
     collada_cat.error()
       << "Controller should have either <skin> or <morph>!\n";
   }
-  if (xchild->Attribute("source")) {
+  if (xchild != NULL && xchild->Attribute("source")) {
     _source = xchild->Attribute("source");
   }
 

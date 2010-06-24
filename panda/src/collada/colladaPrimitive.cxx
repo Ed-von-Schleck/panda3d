@@ -19,6 +19,7 @@
 #include "geomTriangles.h"
 #include "geomTrifans.h"
 #include "geomTristrips.h"
+#include "geomVertexWriter.h"
 
 TypeHandle ColladaPrimitive::_type_handle;
 
@@ -44,6 +45,7 @@ clear() {
   _count = 0;
   _inputs.clear();
   _ps.clear();
+  _vcount = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -76,6 +78,19 @@ load_xml(const TiXmlElement *xelement) {
     input->load_xml(xchild);
     _inputs.push_back(input);
     xchild = xchild->NextSiblingElement("input");
+  }
+
+  // Read out the <vcount> element if it's the right primitive type
+  if (_primitive_type == PT_polylist) {
+    xchild = xelement->FirstChildElement("vcount");
+    if (xchild != NULL) {
+      vector_string v;
+      tokenize(trim(xchild->GetText()), v, COLLADA_WHITESPACE, true);
+      _vcount = PTA_int::empty_array(v.size());
+      for (size_t i = 0; i < v.size(); ++i) {
+        _vcount[i] = atoi(v[i].c_str());
+      }
+    }
   }
 
   // Read out the <p> element(s)
@@ -135,6 +150,19 @@ make_xml() const {
     xelement->LinkEndChild(_inputs[i]->make_xml());
   }
 
+  if (_vcount != NULL && _primitive_type == PT_polylist) {
+    ostringstream strm;
+    TiXmlElement *xvcount = new TiXmlElement("vcount");
+    for (size_t i = 0; i < _vcount.size(); ++i) {
+      if (i != 0) {
+        strm << " ";
+      }
+      strm << _vcount[i];
+    }
+    xvcount->LinkEndChild(new TiXmlText(strm.str()));
+    xelement->LinkEndChild(xvcount);
+  }
+
   // These elements may only contain one <p> tag
   if (_primitive_type == PT_lines ||
       _primitive_type == PT_polylist ||
@@ -182,11 +210,32 @@ make_xml() const {
 ////////////////////////////////////////////////////////////////////
 PT(Geom) ColladaPrimitive::
 make_geom() const {
-  PT(GeomVertexArrayFormat) aformat = new GeomVertexArrayFormat();
+  CPT(ColladaDocument) doc = get_document();
+  nassertr(doc != NULL, NULL);
+
+  PT(ColladaInput) vinput = NULL;
+  PT(ColladaVertices) vertices = NULL;
+  // First, find the input with the VERTEX semantic.
   for (size_t i = 0; i < _inputs.size(); ++i) {
-    _inputs[i]->make_columns(aformat);
+    if (_inputs[i]->_semantic == "VERTEX") {
+      if (vertices != NULL) {
+        collada_cat.error()
+          << "Multiple inputs with VERTEX semantic found!\n";
+        break;
+      }
+      vinput = _inputs[i];
+      vertices = DCAST(ColladaVertices, doc->resolve_url(vinput->_source));
+    }
+  }
+  nassertr(vertices != NULL, NULL); // No <vertices> element found
+
+
+  PT(GeomVertexArrayFormat) aformat = new GeomVertexArrayFormat;
+  for (size_t i = 0; i < _inputs.size(); ++i) {
+    _inputs[i]->make_column(aformat);
   }
   PT(GeomVertexFormat) format = new GeomVertexFormat();
+  format->add_array(vertices->make_array_format());
   format->add_array(aformat);
   PT(GeomVertexData) vdata = new GeomVertexData(get_name(), GeomVertexFormat::register_format(format), GeomEnums::UH_static);
 
@@ -202,7 +251,8 @@ make_geom() const {
       collada_cat.error() << "<polygons> not yet supported!\n";
       break;
     case PT_polylist:
-      collada_cat.error() << "<polylist> not yet supported!\n";
+      // Automatically triangulated to tristrips
+      prim = new GeomTristrips(GeomEnums::UH_static);
       break;
     case PT_triangles:
       prim = new GeomTriangles(GeomEnums::UH_static);
@@ -225,23 +275,66 @@ make_geom() const {
     }
   }
 
+  vertices->write_data(vdata);
+
+  int offset = 0;
   for (size_t i = 0; i < _ps.size(); ++i) {
-    for (size_t j = 0; j < _inputs.size(); ++j) {
-      _inputs[j]->write_data(vdata, _ps[i], stride);
+    // Get all of the indices of the VERTEX input first
+    pvector<int> vindices;
+    for (size_t p = vinput->_offset; p + vinput->_offset < _ps[i].size(); p += stride) {
+      vindices.push_back(_ps[i][p]);
     }
-    //TODO: add <vcount> support for polylists
-    if (_primitive_type == PT_lines) {
+    // Then loop through all of the other inputs
+    for (size_t j = 0; j < _inputs.size(); ++j) {
+      if (_inputs[j]->_semantic != "VERTEX") {
+        PT(ColladaSource) source = DCAST(ColladaSource, doc->resolve_url(_inputs[j]->_source));
+        nassertd(source != NULL) continue;
+        PTA_LVecBase4f values;
+        nassertd(source->get_values(values)) continue;
+        GeomVertexWriter writer (vdata, _inputs[j]->get_column_name());
+        for (size_t v = 0; v < vindices.size(); ++v) {
+          writer.set_row(vindices[v]);
+          writer.set_data4f(values[_ps[i][v * stride + _inputs[j]->_offset]]);
+        }
+      }
+    }
+    if (_primitive_type == PT_polylist) {
+      nassertr(_vcount != NULL, NULL);
+      // Triangulate to tristrips, that seems easiest
+      for (size_t p = 0; p < _count; ++p) {
+        for (size_t v = 0; v < _vcount[p]; ++v) {
+          if (v <= 1) { // 0 and 1
+            prim->add_vertex(vindices[offset + v]);
+          } else if (v % 2) { // uneven
+            prim->add_vertex(vindices[offset + (v + 1) / 2]);
+          } else { // even
+            prim->add_vertex(vindices[offset + _vcount[p] - v / 2]);
+          }
+        }
+        offset += _vcount[p];
+        prim->close_primitive();
+      }
+    } else if (_primitive_type == PT_lines) {
       for (size_t j = 0; j < _count; ++j) {
-        prim->add_next_vertices(2);
+        for (char v = 0; v < 2; ++v) {
+          prim->add_vertex(vindices[offset + v]);
+        }
+        offset += 2;
         prim->close_primitive();
       }
     } else if (_primitive_type == PT_triangles) {
       for (size_t j = 0; j < _count; ++j) {
-        prim->add_next_vertices(3);
+        for (char v = 0; v < 3; ++v) {
+          prim->add_vertex(vindices[offset + v]);
+        }
+        offset += 3;
         prim->close_primitive();
       }
     } else {
-      prim->add_next_vertices(_count);
+      for (size_t v = 0; v < _count; ++v) {
+        prim->add_vertex(vindices[offset + v]);
+      }
+      offset += _count;
       prim->close_primitive();
     }
   }

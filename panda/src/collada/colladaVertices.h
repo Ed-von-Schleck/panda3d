@@ -19,6 +19,9 @@
 #include "colladaElement.h"
 #include "colladaInput.h"
 
+#include "geomVertexArrayFormat.h"
+#include "geomVertexArrayData.h"
+
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaVertices
 // Description : Object that represents the COLLADA <vertices> tag.
@@ -31,6 +34,9 @@ PUBLISHED:
   virtual void clear();
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
+
+  PT(GeomVertexArrayFormat) make_array_format() const;
+  bool write_data(GeomVertexData *data) const;
 
 private:
   pvector<PT(ColladaInput)> _inputs;

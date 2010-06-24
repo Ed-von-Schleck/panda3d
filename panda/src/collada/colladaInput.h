@@ -19,6 +19,7 @@
 #include "geomVertexArrayFormat.h"
 
 class ColladaPrimitive;
+class ColladaVertices;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : ColladaInput
@@ -31,8 +32,7 @@ PUBLISHED:
   virtual TiXmlElement *make_xml() const;
 
   PT(InternalName) get_column_name() const;
-  int make_columns(GeomVertexArrayFormat *format) const;
-  bool write_data(GeomVertexData *data, const PTA_int &p, int stride) const;
+  bool make_column(GeomVertexArrayFormat *format) const;
 
   INLINE int get_offset() const;
   INLINE const string &get_semantic() const;
@@ -45,6 +45,7 @@ private:
   int _set;
 
   friend class ColladaPrimitive;
+  friend class ColladaVertices;
 
 public:
   static TypeHandle get_class_type() {

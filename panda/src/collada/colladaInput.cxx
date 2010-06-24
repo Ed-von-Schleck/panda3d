@@ -123,30 +123,23 @@ get_column_name() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInput::make_column
 //       Access: Public
-//  Description: Adds GeomVertexColumns to the indicated array
-//               format. This is often just one column, but this
-//               can be more than one if the input has the
-//               VERTEX semantic. Returns the amount of columns
-//               that were added to the format.
+//  Description: Creates a new GeomVertexColumn and adds it to the
+//               indicated format. Returns true if this succeeded,
+//               false if an error occurred or if this input can't
+//               be directly represented by a column.
 ////////////////////////////////////////////////////////////////////
-int ColladaInput::
-make_columns(GeomVertexArrayFormat *format) const {
-  nassertr(format != NULL, 0);
-  nassertr(!_semantic.empty(), 0);
+bool ColladaInput::
+make_column(GeomVertexArrayFormat *format) const {
+  nassertr(format != NULL, false);
+  nassertr(!_semantic.empty(), false);
+
+  // If it's has the VERTEX semantic, it can't be represented by a single column.
+  if (_semantic == "VERTEX") {
+    return false;
+  }
 
   CPT(ColladaDocument) doc = get_document();
-  nassertr(doc != NULL, 0);
-
-  // If it's has the VERTEX semantic, it redirects to a <vertices> element.
-  if (_semantic == "VERTEX") {
-    PT(ColladaVertices) vertices = DCAST(ColladaVertices, doc->resolve_url(_source));
-    nassertr(vertices != NULL, 0);
-    int counter = 0;
-    for (int i = 0; i < vertices->_inputs.size(); ++i) {
-      counter += vertices->_inputs[i]->make_columns(format);
-    }
-    return counter;
-  }
+  nassertr(doc != NULL, false);
 
   PT(InternalName) cname = get_column_name();
   GeomEnums::Contents contents = GeomEnums::C_other;
@@ -169,11 +162,11 @@ make_columns(GeomVertexArrayFormat *format) const {
   }
 
   PT(ColladaSource) source = DCAST(ColladaSource, doc->resolve_url(_source));
-  nassertr(source != NULL, 0);
+  nassertr(source != NULL, false);
   PT(ColladaAccessor) accessor = source->get_accessor();
-  nassertr(accessor != NULL, 0);
+  nassertr(accessor != NULL, false);
   PT(ColladaArrayBase) array = accessor->get_array();
-  nassertr(array != NULL, 0);
+  nassertr(array != NULL, false);
   GeomEnums::NumericType ntype;
   if (array->get_array_type() == AT_float) {
     ntype = GeomEnums::NT_float32;
@@ -181,45 +174,10 @@ make_columns(GeomVertexArrayFormat *format) const {
     ntype = GeomEnums::NT_uint32;
   } else {
     collada_cat.error() << "Unusable array type\n";
-    return 0;
+    return false;
   }
+
   format->add_column(cname, accessor->get_num_bound_params(), ntype, contents);
-
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaInput::write_data
-//       Access: Public
-//  Description: Writes data to the indicated GeomVertexData.
-////////////////////////////////////////////////////////////////////
-bool ColladaInput::
-write_data(GeomVertexData *data, const PTA_int &p, int stride) const {
-  CPT(ColladaDocument) doc = get_document();
-  nassertr(doc != NULL, false);
-
-  // If it's has the VERTEX semantic, it redirects to a <vertices> element.
-  if (_semantic == "VERTEX") {
-    PT(ColladaVertices) vertices = DCAST(ColladaVertices, doc->resolve_url(_source));
-    nassertr(vertices != NULL, false);
-    for (int i = 0; i < vertices->_inputs.size(); ++i) {
-      vertices->_inputs[i]->write_data(data, p, stride);
-    }
-    return true;
-  }
-
-  PT(ColladaSource) source = DCAST(ColladaSource, doc->resolve_url(_source));
-  nassertr(source != NULL, false);
-  PTA_LVecBase4f values;
-  nassertr(source->get_values(values), false);
-  nassertr(_offset <= stride, false);
-
-  GeomVertexWriter writer (data, get_column_name());
-  for (size_t i = 0; i + _offset < p.size(); i += stride) {
-    // Note: Panda may internally do a perspective divide for points
-    // This is worked around in ColladaAccessor::get_values().
-    writer.add_data4f(values[p[i + _offset]]);
-  }
   return true;
 }
 
