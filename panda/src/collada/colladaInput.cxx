@@ -121,6 +121,37 @@ get_column_name() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaInput::get_column_contents
+//       Access: Public
+//  Description: Returns the GeomEnum::Contents that describes
+//               the contents of the column that can represent
+//               this input.
+////////////////////////////////////////////////////////////////////
+GeomEnums::Contents ColladaInput::
+get_column_contents() const {
+  if (_semantic == "VERTICES") {
+    collada_cat.error()
+      << "Attempt to call get_column_contents() on an input with VERTICES semantic\n";
+    return GeomEnums::C_other;
+  } else if (_semantic == "BINORMAL") {
+    return GeomEnums::C_vector;
+  } else if (_semantic == "COLOR") {
+    return GeomEnums::C_color;
+  } else if (_semantic == "NORMAL") {
+    return GeomEnums::C_vector;
+  } else if (_semantic == "POSITION") {
+    return GeomEnums::C_point;
+  } else if (_semantic == "TANGENT") {
+    return GeomEnums::C_vector;
+  } else if (_semantic == "TEXCOORD") {
+    return GeomEnums::C_texcoord;
+  }
+  collada_cat.warning()
+    << "Unrecognized input semantic '" << _semantic << "' found\n";
+  return GeomEnums::C_other;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaInput::make_column
 //       Access: Public
 //  Description: Creates a new GeomVertexColumn and adds it to the
@@ -142,24 +173,7 @@ make_column(GeomVertexArrayFormat *format) const {
   nassertr(doc != NULL, false);
 
   PT(InternalName) cname = get_column_name();
-  GeomEnums::Contents contents = GeomEnums::C_other;
-  if (_semantic == "BINORMAL") {
-    contents = GeomEnums::C_vector;
-  } else if (_semantic == "COLOR") {
-    contents = GeomEnums::C_color;
-  } else if (_semantic == "NORMAL") {
-    contents = GeomEnums::C_vector;
-  } else if (_semantic == "POSITION") {
-    contents = GeomEnums::C_point;
-  } else if (_semantic == "TANGENT") {
-    contents = GeomEnums::C_vector;
-  } else if (_semantic == "TEXCOORD") {
-    contents = GeomEnums::C_texcoord;
-  } else {
-    contents = GeomEnums::C_other;
-    collada_cat.warning()
-      << "Unrecognized input semantic '" << _semantic << "' found\n";
-  }
+  GeomEnums::Contents contents = get_column_contents();
 
   PT(ColladaSource) source = DCAST(ColladaSource, doc->resolve_url(_source));
   nassertr(source != NULL, false);

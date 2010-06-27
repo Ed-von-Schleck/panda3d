@@ -63,6 +63,7 @@ PUBLISHED:
   INLINE void set_unit(double unit_meter, const string &unit_name);
   INLINE void clear_unit();
 
+  INLINE bool has_coordinate_system() const;
   INLINE CoordinateSystem get_coordinate_system() const;
 
   virtual bool load_xml(const TiXmlElement *xelement);

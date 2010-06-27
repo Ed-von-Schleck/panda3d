@@ -219,6 +219,11 @@ make_node() const {
     }
   }
 
+  LMatrix4f conv = LMatrix4f::convert_mat(get_coordinate_system(), CS_default);
+  if (conv != LMatrix4f::ident_mat()) {
+    node->set_transform(TransformState::make_mat(conv));
+  }
+
   return DCAST(PandaNode, node);
 }
 

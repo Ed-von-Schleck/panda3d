@@ -238,8 +238,19 @@ clear_unit() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColladaAsset::has_coordinate_system
+//       Access: Published
+//  Description: Returns true if this asset specifies a (valid)
+//               coordinate system.
+////////////////////////////////////////////////////////////////////
+INLINE bool ColladaAsset::
+has_coordinate_system() const {
+  return (_coordsys != CS_invalid && _coordsys != CS_default);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::get_coordinate_system
-//       Access: Public
+//       Access: Published
 //  Description: Returns the coordinate system in which the file
 //               is defined.
 ////////////////////////////////////////////////////////////////////

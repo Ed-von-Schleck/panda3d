@@ -34,6 +34,7 @@ PUBLISHED:
   virtual TiXmlElement *make_xml() const;
 
   INLINE virtual PT(ColladaElement) get_element_by_id(const string &id) const;
+  INLINE virtual CoordinateSystem get_coordinate_system() const;
 
 protected:
   PT(ColladaAsset) _asset;

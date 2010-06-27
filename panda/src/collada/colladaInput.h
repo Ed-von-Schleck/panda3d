@@ -16,6 +16,7 @@
 #define COLLADAINPUT_H
 
 #include "colladaElement.h"
+#include "geomEnums.h"
 #include "geomVertexArrayFormat.h"
 
 class ColladaPrimitive;
@@ -32,6 +33,7 @@ PUBLISHED:
   virtual TiXmlElement *make_xml() const;
 
   PT(InternalName) get_column_name() const;
+  GeomEnums::Contents get_column_contents() const;
   bool make_column(GeomVertexArrayFormat *format) const;
 
   INLINE int get_offset() const;

@@ -187,3 +187,21 @@ get_element_by_id(const string &id) const {
   return NULL;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: ColladaElement::get_coordinate_system
+//       Access: Published, Virtual
+//  Description: Returns the coordinate system of this particular
+//               element. If this element specifies no coordinate
+//               system (by means of an asset element), the parent
+//               node is searched. If there is no parent,
+//               CS_yup_right is returned.
+////////////////////////////////////////////////////////////////////
+INLINE CoordinateSystem ColladaElement::
+get_coordinate_system() const {
+  if (_parent == NULL) {
+    return CS_yup_right;
+  } else {
+    return _parent->get_coordinate_system();
+  }
+}
+
