@@ -251,8 +251,8 @@ make_geom() const {
       collada_cat.error() << "<polygons> not yet supported!\n";
       break;
     case PT_polylist:
-      // Automatically triangulated to tristrips
-      prim = new GeomTristrips(GeomEnums::UH_static);
+      // Automatically triangulated
+      prim = new GeomTriangles(GeomEnums::UH_static);
       break;
     case PT_triangles:
       prim = new GeomTriangles(GeomEnums::UH_static);
@@ -279,10 +279,40 @@ make_geom() const {
 
   int offset = 0;
   for (size_t i = 0; i < _ps.size(); ++i) {
+    int count = _count;
+    PTA_int cprim;
+    if (_primitive_type == PT_polylist) {
+      cprim = PTA_int::empty_array(0);
+      int offs = 0;
+      count = 0;
+      // Triangulate first, make a new <p>
+      nassertr(_vcount != NULL, NULL);
+      for (size_t p = 0; p < _count; ++p) {
+        int idx = stride;
+        for (size_t t = 0; t < _vcount[p] - 2; ++t) {
+          size_t j;
+          for (j = 0; j < _inputs.size(); ++j) {
+            cprim.push_back(_ps[i][offs + j]);
+          }
+          for (j = 0; j < _inputs.size(); ++j) {
+            cprim.push_back(_ps[i][offs + idx + j]);
+          }
+          idx += stride;
+          for (j = 0; j < _inputs.size(); ++j) {
+            cprim.push_back(_ps[i][offs + idx + j]);
+          }
+          ++count;
+        }
+        offs += _vcount[p] * stride;
+      }
+    } else {
+      cprim = _ps[i];
+    }
+
     // Get all of the indices of the VERTEX input first
     pvector<int> vindices;
-    for (size_t p = vinput->_offset; p + vinput->_offset < _ps[i].size(); p += stride) {
-      vindices.push_back(_ps[i][p]);
+    for (size_t p = vinput->_offset; p + vinput->_offset < cprim.size(); p += stride) {
+      vindices.push_back(cprim[p]);
     }
     // Then loop through all of the other inputs
     for (size_t j = 0; j < _inputs.size(); ++j) {
@@ -294,36 +324,20 @@ make_geom() const {
         GeomVertexWriter writer (vdata, _inputs[j]->get_column_name());
         for (size_t v = 0; v < vindices.size(); ++v) {
           writer.set_row(vindices[v]);
-          writer.set_data4f(values[_ps[i][v * stride + _inputs[j]->_offset]]);
+          writer.set_data4f(values[cprim[v * stride + _inputs[j]->_offset]]);
         }
       }
     }
-    if (_primitive_type == PT_polylist) {
-      nassertr(_vcount != NULL, NULL);
-      // Triangulate to tristrips, that seems easiest
-      for (size_t p = 0; p < _count; ++p) {
-        for (size_t v = 0; v < _vcount[p]; ++v) {
-          if (v <= 1) { // 0 and 1
-            prim->add_vertex(vindices[offset + v]);
-          } else if (v % 2) { // uneven
-            prim->add_vertex(vindices[offset + (v + 1) / 2]);
-          } else { // even
-            prim->add_vertex(vindices[offset + _vcount[p] - v / 2]);
-          }
-        }
-        offset += _vcount[p];
-        prim->close_primitive();
-      }
-    } else if (_primitive_type == PT_lines) {
-      for (size_t j = 0; j < _count; ++j) {
+    if (_primitive_type == PT_lines) {
+      for (size_t j = 0; j < count; ++j) {
         for (char v = 0; v < 2; ++v) {
           prim->add_vertex(vindices[offset + v]);
         }
         offset += 2;
         prim->close_primitive();
       }
-    } else if (_primitive_type == PT_triangles) {
-      for (size_t j = 0; j < _count; ++j) {
+    } else if (_primitive_type == PT_triangles || _primitive_type == PT_polylist) {
+      for (size_t j = 0; j < count; ++j) {
         for (char v = 0; v < 3; ++v) {
           prim->add_vertex(vindices[offset + v]);
         }
@@ -331,7 +345,7 @@ make_geom() const {
         prim->close_primitive();
       }
     } else {
-      for (size_t v = 0; v < _count; ++v) {
+      for (size_t v = 0; v < count; ++v) {
         prim->add_vertex(vindices[offset + v]);
       }
       offset += _count;
