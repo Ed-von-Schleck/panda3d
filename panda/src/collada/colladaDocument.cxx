@@ -126,8 +126,33 @@ read(Filename filename, string display_name) {
 bool ColladaDocument::
 read(istream &in) {
   TiXmlDocument *doc = new TiXmlDocument;
-  in >> *doc;
-  if (in.fail() && !in.eof()) {
+  // We stream it to a string first,
+  // because TinyXML doesn't support row/column
+  // tracking if we use the >> operator.
+  string contents;
+  while (in.good()) {
+    char c = in.get();
+    if (in.good()) {
+      contents += c;
+    }
+  }
+  if (!in.eof()) {
+    delete doc;
+    return false;
+  }
+  doc->Parse(contents.c_str());
+
+  if (doc->Error()) {
+    if (doc->ErrorRow()) {
+      collada_cat.error()
+        << "Error in " << _filename << " at line " << doc->ErrorRow()
+        << ", column " << doc->ErrorCol() << ": "
+        << doc->ErrorDesc() << "\n";
+    } else {
+      collada_cat.error()
+        << "Error in " << _filename << ": "
+        << doc->ErrorDesc() << "\n";
+    }
     delete doc;
     return false;
   }
