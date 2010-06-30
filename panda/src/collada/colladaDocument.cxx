@@ -228,7 +228,7 @@ write_dae(ostream &out) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaDocument::make_node
-//       Access: Public
+//       Access: Published
 //  Description: Simply calls get_root()->make_node().
 ////////////////////////////////////////////////////////////////////
 PT(PandaNode) ColladaDocument::

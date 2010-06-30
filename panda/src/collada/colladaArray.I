@@ -67,11 +67,13 @@ load_xml(const TiXmlElement *xelement) {
     return false;
   }
 
-  vector_string items;
-  tokenize(trim(xelement->GetText()), items, COLLADA_WHITESPACE, true);
+  if (xelement->GetText()) {
+    vector_string items;
+    tokenize(trim(xelement->GetText()), items, COLLADA_WHITESPACE, true);
 
-  for (vector_string::iterator it = items.begin(); it != items.end(); ++it) {
-    pvector<itemType>::push_back(string_to_item(*it));
+    for (vector_string::iterator it = items.begin(); it != items.end(); ++it) {
+      pvector<itemType>::push_back(string_to_item(*it));
+    }
   }
 
   int count;

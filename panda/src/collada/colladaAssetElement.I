@@ -15,7 +15,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAssetElement::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaAssetElement to its initial state.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaAssetElement::

@@ -30,7 +30,7 @@ ColladaVisualScene() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVisualScene::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <visual_scene> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaVisualScene::
@@ -55,7 +55,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVisualScene::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the visual scene.
 ////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ make_xml() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVisualScene::make_node
-//       Access: Public
+//       Access: Published
 //  Description: Returns a new ModelNode representing this
 //               COLLADA visual scene and the nodes below it.
 ////////////////////////////////////////////////////////////////////

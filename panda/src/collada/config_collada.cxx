@@ -83,6 +83,11 @@ ConfigVariableBool collada_accept_errors
           "COLLADA file is loaded.  When it is false, only perfectly "
           "pristine COLLADA files may be loaded."));
 
+/*ConfigVariableEnum<ColladaProfile::Profile> collada_profile
+("collada-profile", ColladaProfile::P_common,
+ PRC_DESC("Specifies the profile to prefer when reading out COLLADA effects."));*/
+
+
 ConfigureFn(config_collada) {
   init_libcollada();
 }

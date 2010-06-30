@@ -48,12 +48,19 @@ PUBLISHED:
   virtual TiXmlElement *make_xml() const;
   virtual PT(Geom) make_geom() const;
 
+  INLINE PrimitiveType get_primitive_type() const;
+  INLINE bool has_material() const;
+  INLINE const string &get_material() const;
+  INLINE void set_material(const string &symbol);
+  INLINE void clear_material();
+
 private:
   PrimitiveType _primitive_type;
   pvector<PT(ColladaInput)> _inputs;
   pvector<PTA_int> _ps;
   PTA_int _vcount;
   int _count;
+  string _material;
 
   friend class ColladaMesh;
 
@@ -74,6 +81,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "colladaPrimitive.I"
 
 #endif
 

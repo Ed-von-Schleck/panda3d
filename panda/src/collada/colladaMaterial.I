@@ -19,53 +19,43 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE ColladaMaterial::
-ColladaMaterial() {
-  clear();
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: ColladaMaterial::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-INLINE ColladaMaterial::
 ColladaMaterial(PT(ColladaInstanceEffect) effect) {
   clear();
-  set_effect(effect);
+  set_instance_effect(effect);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMaterial::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaMaterial to its initial state.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaMaterial::
 clear() {
   ColladaAssetElement::clear();
-  _effect = NULL;
+  _instance_effect = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaMaterial::get_effect
+//     Function: ColladaMaterial::get_instance_effect
 //       Access: Public
 //  Description: Returns the ColladaInstanceEffect associated with
 //               this ColladaMaterial.
 ////////////////////////////////////////////////////////////////////
 INLINE PT(ColladaInstanceEffect) ColladaMaterial::
-get_effect() const {
-  return _effect;
+get_instance_effect() const {
+  return _instance_effect;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaMaterial::set_effect
+//     Function: ColladaMaterial::set_instance_effect
 //       Access: Public
 //  Description: Sets the ColladaInstanceEffect associated with this
 //               ColladaMaterial.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaMaterial::
-set_effect(PT(ColladaInstanceEffect) effect) {
-  detach(_effect);
-  _effect = effect;
-  attach(_effect);
+set_instance_effect(PT(ColladaInstanceEffect) instance_effect) {
+  detach(_instance_effect);
+  _instance_effect = instance_effect;
+  attach(_instance_effect);
 }
 

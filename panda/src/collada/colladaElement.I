@@ -157,6 +157,7 @@ attach(ColladaElement *child) {
   if (child == NULL) {
     return;
   }
+  assert(child->_parent == NULL); // Currently, multiple parents aren't supported
   child->_parent = this;
 }
 

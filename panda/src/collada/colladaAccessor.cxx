@@ -28,7 +28,7 @@ ColladaAccessor() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAccessor::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void ColladaAccessor::
@@ -43,7 +43,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAccessor::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <accessor> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaAccessor::
@@ -95,7 +95,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAccessor::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the visual scene.
 ////////////////////////////////////////////////////////////////////

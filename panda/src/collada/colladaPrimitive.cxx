@@ -36,12 +36,13 @@ ColladaPrimitive(PrimitiveType primitive_type) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaPrimitive::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void ColladaPrimitive::
 clear() {
   ColladaElement::clear();
+  _material = "";
   _count = 0;
   _inputs.clear();
   _ps.clear();
@@ -50,7 +51,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaPrimitive::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <node> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaPrimitive::
@@ -66,6 +67,10 @@ load_xml(const TiXmlElement *xelement) {
     collada_cat.error()
       << "Invalid count attribute in " << xelement->Value() << "\n";
     okflag = false;
+  }
+
+  if (xelement->QueryStringAttribute("material", &_material) != TIXML_SUCCESS) {
+    _material = "";
   }
 
   const TiXmlElement* xchild;
@@ -111,7 +116,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaPrimitive::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the visual scene.
 ////////////////////////////////////////////////////////////////////
@@ -145,6 +150,9 @@ make_xml() const {
       return NULL;
   }
   xelement->SetAttribute("count", _count);
+  if (!_material.empty()) {
+    xelement->SetAttribute("material", _material);
+  }
 
   for (int i = 0; i < _inputs.size(); ++i) {
     xelement->LinkEndChild(_inputs[i]->make_xml());
@@ -203,7 +211,7 @@ make_xml() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: ColladaMesh::make_geom
+//     Function: ColladaPrimitive::make_geom
 //       Access: Published
 //  Description: Returns a new Geom object representing this
 //               COLLADA primitive object.
@@ -236,7 +244,9 @@ make_geom() const {
   }
   PT(GeomVertexFormat) format = new GeomVertexFormat();
   format->add_array(vertices->make_array_format());
-  format->add_array(aformat);
+  if (aformat->get_num_columns() > 0) {
+    format->add_array(aformat);
+  }
   PT(GeomVertexData) vdata = new GeomVertexData(get_name(), GeomVertexFormat::register_format(format), GeomEnums::UH_static);
 
   PT(GeomPrimitive) prim = NULL;
@@ -345,10 +355,10 @@ make_geom() const {
         prim->close_primitive();
       }
     } else {
-      for (size_t v = 0; v < count; ++v) {
+      for (size_t v = 0; v < vindices.size(); ++v) {
         prim->add_vertex(vindices[offset + v]);
       }
-      offset += _count;
+      offset += cprim.size();
       prim->close_primitive();
     }
   }
@@ -357,3 +367,4 @@ make_geom() const {
   geom->add_primitive(prim);
   return geom;
 }
+

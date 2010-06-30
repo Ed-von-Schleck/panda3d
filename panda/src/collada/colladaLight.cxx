@@ -36,7 +36,7 @@ ColladaLight() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLight::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <light> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaLight::
@@ -70,7 +70,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLight::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the light.
 ////////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ make_xml() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLight::make_node
-//       Access: Public
+//       Access: Published
 //  Description: Returns a new PandaNode representing this
 //               COLLADA light and the children below it.
 ////////////////////////////////////////////////////////////////////

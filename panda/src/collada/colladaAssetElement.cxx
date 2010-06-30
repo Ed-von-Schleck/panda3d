@@ -18,7 +18,7 @@ TypeHandle ColladaAssetElement::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAssetElement::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <asset> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaAssetElement::
@@ -42,7 +42,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAssetElement::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////

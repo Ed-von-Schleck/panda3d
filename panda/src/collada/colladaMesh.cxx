@@ -18,7 +18,7 @@ TypeHandle ColladaMesh::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMesh::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaMesh to its initial state.
 ////////////////////////////////////////////////////////////////////
 void ColladaMesh::
@@ -31,7 +31,7 @@ clear () {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMesh::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <mesh> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaMesh::
@@ -97,7 +97,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMesh::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////

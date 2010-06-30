@@ -32,7 +32,7 @@ get_target_type() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInstance::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaInstance to its initial state.
 ////////////////////////////////////////////////////////////////////
 template<class T>
@@ -95,7 +95,7 @@ get_target() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInstance::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads the items in the library from the given
 //               XML element.
 ////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInstance::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing the instance.
 ////////////////////////////////////////////////////////////////////
 template<class T>

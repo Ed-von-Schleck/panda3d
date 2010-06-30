@@ -20,7 +20,7 @@ const string ColladaEffect::_library_name ("library_effects");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaEffect::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaEffect to its initial state.
 ////////////////////////////////////////////////////////////////////
 void ColladaEffect::
@@ -31,7 +31,7 @@ clear () {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaEffect::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <effect> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaEffect::
@@ -44,10 +44,12 @@ load_xml(const TiXmlElement *xelement) {
 
   const TiXmlElement* xchild = xelement->FirstChildElement();
   while (xchild != NULL) {
-    PT(ColladaProfile) item = new ColladaProfile;
-    item->_parent = this;
-    item->load_xml(xchild);
-    _profiles.push_back(item);
+    if (strncmp(xchild->Value(), "profile_", 8) == 0) {
+      PT(ColladaProfile) item = new ColladaProfile(ColladaProfile::string_profile(xchild->Value() + 8));
+      item->_parent = this;
+      item->load_xml(xchild);
+      _profiles.push_back(item);
+    }
     xchild = xchild->NextSiblingElement();
   }
 
@@ -56,9 +58,9 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaEffect::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
-//               the asset.
+//               this effect.
 ////////////////////////////////////////////////////////////////////
 TiXmlElement *ColladaEffect::
 make_xml() const {

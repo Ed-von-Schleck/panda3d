@@ -14,7 +14,7 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVisualScene::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaVisualScene to its initial state.
 ////////////////////////////////////////////////////////////////////
 INLINE void ColladaVisualScene::

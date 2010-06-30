@@ -24,7 +24,7 @@ TypeHandle ColladaRoot::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaRoot::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the stored data of this ColladaDocument,
 //               and makes it as if it were a new instance.
 //               Note that the filename value is not cleared.
@@ -45,7 +45,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaRoot::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Parses the dae syntax contained in the indicated
 //               TiXmlElement.  Returns true if the stream was a
 //               completely valid dae file, false if there were some
@@ -146,7 +146,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaRoot::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns the root <COLLADA> element of the COLLADA
 //               document as new TiXmlElement. This contains the
 //               entire structure of the COLLADA document.
@@ -203,7 +203,7 @@ make_xml() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaRoot::make_node
-//       Access: Public
+//       Access: Published
 //  Description: The main interface for loading COLLADA data
 //               into the scene graph. Returns a ModelRoot
 //               representing the ColladaDocument and its children.

@@ -16,7 +16,7 @@ TypeHandle ColladaContributor::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaContributor to its initial state.
 ////////////////////////////////////////////////////////////////////
 void ColladaContributor::
@@ -33,7 +33,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <contributor> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaContributor::
@@ -84,7 +84,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaContributor::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////

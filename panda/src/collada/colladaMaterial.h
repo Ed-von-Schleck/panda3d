@@ -25,18 +25,17 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaMaterial : public ColladaAssetElement {
 PUBLISHED:
-  INLINE ColladaMaterial();
-  INLINE ColladaMaterial(PT(ColladaInstanceEffect) effect);
+  INLINE ColladaMaterial(PT(ColladaInstanceEffect) effect = NULL);
   INLINE virtual void clear();
 
   virtual bool load_xml(const TiXmlElement *xelement);
   virtual TiXmlElement *make_xml() const;
 
-  INLINE PT(ColladaInstanceEffect) get_effect() const;
-  INLINE void set_effect(PT(ColladaInstanceEffect) effect);
+  INLINE PT(ColladaInstanceEffect) get_instance_effect() const;
+  INLINE void set_instance_effect(PT(ColladaInstanceEffect) instance_effect);
 
 private:
-  PT(ColladaInstanceEffect) _effect;
+  PT(ColladaInstanceEffect) _instance_effect;
 
 public:
   // Needed by ColladaLibrary to validate the element names.

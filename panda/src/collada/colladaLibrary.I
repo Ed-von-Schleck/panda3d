@@ -18,7 +18,7 @@ TypeHandle ColladaLibrary<T>::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLibrary::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaLibrary to its initial state.
 ////////////////////////////////////////////////////////////////////
 template<class T>
@@ -30,7 +30,7 @@ clear () {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLibrary::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads the items in the library from the given
 //               XML element.
 ////////////////////////////////////////////////////////////////////
@@ -62,7 +62,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaLibrary::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the library and its children.
 ////////////////////////////////////////////////////////////////////

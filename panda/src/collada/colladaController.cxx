@@ -22,7 +22,7 @@ const string ColladaController::_library_name ("library_controllers");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaController::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaController to its initial state.
 ////////////////////////////////////////////////////////////////////
 void ColladaController::
@@ -33,7 +33,7 @@ clear () {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaController::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <controller> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaController::
@@ -62,7 +62,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaController::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ make_xml() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaController::make_node
-//       Access: Public
+//       Access: Published
 //  Description: Returns a new PandaNode representing this element.
 ////////////////////////////////////////////////////////////////////
 PT(PandaNode) ColladaController::

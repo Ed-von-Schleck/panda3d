@@ -34,7 +34,7 @@ clear () {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInput::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <input> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaInput::
@@ -62,7 +62,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaInput::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////

@@ -28,7 +28,7 @@ ColladaVertices() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVertices::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void ColladaVertices::
@@ -39,7 +39,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVertices::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <vertices> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaVertices::
@@ -67,7 +67,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaVertices::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the visual scene.
 ////////////////////////////////////////////////////////////////////

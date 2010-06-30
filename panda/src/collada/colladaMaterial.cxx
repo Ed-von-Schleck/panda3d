@@ -20,12 +20,12 @@ const string ColladaMaterial::_library_name ("library_materials");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMaterial::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <material> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaMaterial::
 load_xml(const TiXmlElement *xelement) {
-  if (!ColladaElement::load_xml(xelement)) {
+  if (!ColladaAssetElement::load_xml(xelement)) {
     return false;
   }
 
@@ -33,9 +33,9 @@ load_xml(const TiXmlElement *xelement) {
 
   xchild = xelement->FirstChildElement("instance_effect");
   if (xchild != NULL) {
-    _effect = new ColladaInstanceEffect;
-    _effect->_parent = this;
-    _effect->load_xml(xchild);
+    _instance_effect = new ColladaInstanceEffect;
+    _instance_effect->_parent = this;
+    _instance_effect->load_xml(xchild);
   }
 
   return true;
@@ -43,7 +43,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaMaterial::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////
@@ -52,8 +52,8 @@ make_xml() const {
   TiXmlElement *xelement = ColladaAssetElement::make_xml();
   xelement->SetValue("material");
 
-  if (_effect != NULL) {
-    xelement->LinkEndChild(_effect->make_xml());
+  if (_instance_effect != NULL) {
+    xelement->LinkEndChild(_instance_effect->make_xml());
   }
 
   return xelement;

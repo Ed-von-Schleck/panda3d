@@ -22,7 +22,7 @@ const string ColladaGeometry::_library_name ("library_geometries");
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaGeometry::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaGeometry to its initial state.
 ////////////////////////////////////////////////////////////////////
 void ColladaGeometry::
@@ -34,7 +34,7 @@ clear () {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaGeometry::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <geometry> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaGeometry::
@@ -64,7 +64,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaGeometry::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               this element.
 ////////////////////////////////////////////////////////////////////
@@ -82,20 +82,42 @@ make_xml() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaGeometry::make_node
-//       Access: Public
+//       Access: Published
 //  Description: Returns a new PandaNode representing this element.
 ////////////////////////////////////////////////////////////////////
 PT(PandaNode) ColladaGeometry::
 make_node() const {
+  if (_geometric_element == NULL || !_geometric_element->is_of_type(ColladaMesh::get_class_type())) {
+    return new GeomNode(get_name());
+  }
+
   PT(GeomNode) gnode = new GeomNode(get_name());
 
-  if (_geometric_element != NULL && _geometric_element->is_of_type(ColladaMesh::get_class_type())) {
-    pvector<PT(ColladaPrimitive)> primitives = DCAST(ColladaMesh, _geometric_element)->_primitives;
-    for (int i = 0; i < primitives.size(); ++i) {
-      PT(Geom) geom = primitives[i]->make_geom();
-      if (geom != NULL) {
+  pvector<PT(ColladaPrimitive)> primitives = DCAST(ColladaMesh, _geometric_element)->_primitives;
+  pmap<string, PT(GeomNode)> geom_by_symbol;
+  for (int i = 0; i < primitives.size(); ++i) {
+    PT(Geom) geom = primitives[i]->make_geom();
+    if (geom != NULL) {
+      if (primitives[i]->has_material()) {
+        const string &material = primitives[i]->get_material();
+        if (geom_by_symbol.count(material) == 0) {
+          geom_by_symbol[material] = new GeomNode(material);
+        }
+        geom_by_symbol[material]->add_geom(geom);
+      } else {
         gnode->add_geom(geom);
       }
+    }
+  }
+
+  // Collapse into a single GeomNode, if possible.
+  if (geom_by_symbol.size() == 1 && gnode->get_num_geoms() == 0) {
+    gnode = geom_by_symbol.begin()->second;
+    gnode->set_name(get_name());
+  } else {
+    pmap<string, PT(GeomNode)>::const_iterator it;
+    for (it = geom_by_symbol.begin(); it != geom_by_symbol.end(); ++it) {
+      gnode->add_child(it->second);
     }
   }
 

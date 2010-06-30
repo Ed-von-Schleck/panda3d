@@ -22,7 +22,7 @@ TypeHandle ColladaAsset::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::clear
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Resets the ColladaAsset to its initial state.
 ////////////////////////////////////////////////////////////////////
 void ColladaAsset::
@@ -49,7 +49,7 @@ clear() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <asset> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaAsset::
@@ -65,22 +65,22 @@ load_xml(const TiXmlElement *xelement) {
   const TiXmlElement *xchild;
 
   xchild = xelement->FirstChildElement("title");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _title = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("subject");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _subject = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("keywords");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _keywords = xchild->GetText();
   }
 
   xchild = xelement->FirstChildElement("revision");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     _revision = xchild->GetText();
   }
 
@@ -99,7 +99,7 @@ load_xml(const TiXmlElement *xelement) {
   //TODO: read out geographic_location
 
   xchild = xelement->FirstChildElement("up_axis");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     const char* coordsys = xchild->GetText();
     _coordsys = parse_coordinate_system_string(coordsys);
     if (_coordsys == CS_invalid || _coordsys == CS_default) {
@@ -112,38 +112,36 @@ load_xml(const TiXmlElement *xelement) {
   // Get the created & modified timestamps
   // Note: we're assuming the time is stored as UTC.
   xchild = xelement->FirstChildElement("created");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     string datetime (xchild->GetText());
     if (datetime[datetime.size() - 1] == 'Z') {
       datetime = datetime.substr(0, datetime.size() - 1);
     }
     const char* result = strptime(datetime.c_str(), TIME_FORMAT, &_created);
     if (result == NULL || strlen(result) != 0) {
-      collada_cat.error()
+      collada_cat.warning()
         << "Invalid <created> time: '" << xchild->GetText() << "'\n";
       if (result != NULL) {
-        collada_cat.error()
+        collada_cat.warning()
           << "Unprocessed characters: '" << result << "'\n";
       }
-      okflag = false;
     }
   }
 
   xchild = xelement->FirstChildElement("modified");
-  if (xchild != NULL) {
+  if (xchild != NULL && xchild->GetText()) {
     string datetime (xchild->GetText());
     if (datetime[datetime.size() - 1] == 'Z') {
       datetime = datetime.substr(0, datetime.size() - 1);
     }
     const char* result = strptime(datetime.c_str(), TIME_FORMAT, &_modified);
     if (result == NULL || strlen(result) != 0) {
-      collada_cat.error()
+      collada_cat.warning()
         << "Invalid <modified> time: '" << xchild->GetText() << "'\n";
       if (result != NULL) {
-        collada_cat.error()
+        collada_cat.warning()
           << "Unprocessed characters: '" << result << "'\n";
       }
-      okflag = false;
     }
   }
 
@@ -162,7 +160,7 @@ load_xml(const TiXmlElement *xelement) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaAsset::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the asset.
 ////////////////////////////////////////////////////////////////////

@@ -24,7 +24,25 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_COLLADA ColladaProfile : public ColladaAssetElement {
 PUBLISHED:
+  enum Profile {
+    P_common,
+    P_bridge,
+    P_cg,
+    P_gles,
+    P_gles2,
+    P_glsl
+  };
+
+  INLINE ColladaProfile(Profile profile);
+
   virtual void clear();
+  virtual bool load_xml(const TiXmlElement *xelement);
+  virtual TiXmlElement *make_xml() const;
+
+  static Profile string_profile(const string &string);
+
+private:
+  Profile _profile;
 
 public:
   static TypeHandle get_class_type() {
@@ -43,6 +61,9 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+EXPCL_COLLADA ostream &operator << (ostream &out, ColladaProfile::Profile profile);
+EXPCL_COLLADA istream &operator >> (istream &in, ColladaProfile::Profile &profile);
 
 #include "colladaProfile.I"
 

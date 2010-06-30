@@ -17,7 +17,6 @@
 
 #include "pandabase.h"
 
-#include "coordinateSystem.h"
 #include "notifyCategoryProxy.h"
 #include "dconfig.h"
 
@@ -37,6 +36,7 @@ extern EXPCL_COLLADA ConfigVariableBool collada_unify;
 extern EXPCL_COLLADA ConfigVariableDouble collada_flatten_radius;
 extern EXPCL_COLLADA ConfigVariableBool collada_combine_geoms;
 extern EXPCL_COLLADA ConfigVariableBool collada_accept_errors;
+//extern EXPCL_COLLADA ConfigVariableEnum<ColladaProfile::Profile> collada_profile;
 
 extern EXPCL_COLLADA void init_libcollada();
 

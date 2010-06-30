@@ -33,7 +33,7 @@ ColladaNode() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaNode::load_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Loads <node> data from a TiXmlElement.
 ////////////////////////////////////////////////////////////////////
 bool ColladaNode::
@@ -194,7 +194,7 @@ load_xml(const TiXmlElement *xelement, const CoordinateSystem cs) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaNode::make_xml
-//       Access: Public
+//       Access: Published, Virtual
 //  Description: Returns a new TiXmlElement representing
 //               the node.
 ////////////////////////////////////////////////////////////////////
@@ -268,7 +268,7 @@ make_xml() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ColladaNode::make_node
-//       Access: Public
+//       Access: Published
 //  Description: Returns a new PandaNode representing this
 //               COLLADA node and the children below it.
 ////////////////////////////////////////////////////////////////////
