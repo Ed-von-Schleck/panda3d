@@ -55,6 +55,11 @@ PUBLISHED:
   INLINE CPT(PandaNode) get_source() const;
   INLINE void set_source(CPT(PandaNode) node);
 
+  bool build() const;
+
+private:
+  void rasterize_r(CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;
+
 private:
   float _cell_size;
   float _cell_height;
@@ -70,7 +75,7 @@ private:
   float _detail_sample_max_error;
 
   CPT(PandaNode) _source;
-  
+
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
