@@ -3,7 +3,7 @@
 
 #begin lib_target
   #define TARGET p3navigation
-  #define LOCAL_LIBS pgraph express putil pandabase
+  #define LOCAL_LIBS display pgraph express putil pandabase
 
   #define COMBINED_SOURCES navigation_composite1.cxx
 

@@ -12,7 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "config_collada.h"
+#include "config_navigation.h"
 
 #include "dconfig.h"
 #include "recastNavMesh.h"
@@ -34,13 +34,13 @@ ConfigureFn(config_navigation) {
 //               called explicitly, but special cases exist.
 ////////////////////////////////////////////////////////////////////
 void
-init_libcollada() {
+init_libnavigation() {
   static bool initialized = false;
   if (initialized) {
     return;
   }
   initialized = true;
 
-
+  RecastNavMesh::init_type();
 }
 

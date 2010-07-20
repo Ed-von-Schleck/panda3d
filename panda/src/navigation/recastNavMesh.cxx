@@ -14,6 +14,8 @@
 
 #include "recastNavMesh.h"
 
+TypeHandle RecastNavMesh::_type_handle;
+
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::Constructor
 //       Access: Public

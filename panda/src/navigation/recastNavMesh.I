@@ -252,3 +252,23 @@ set_detail_sample_max_error(float detail_sample_max_error) {
   _detail_sample_max_error = detail_sample_max_error;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::get_source
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE CPT(PandaNode) RecastNavMesh::
+get_source() const {
+  return _source;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::set_source
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void RecastNavMesh::
+set_source(CPT(PandaNode) node) {
+  _source = node;
+}
+

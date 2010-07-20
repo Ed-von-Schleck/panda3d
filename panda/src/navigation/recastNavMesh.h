@@ -14,13 +14,17 @@
 
 #ifndef RECASTNAVMESH_H
 #define RECASTNAVMESH_H
+
 #include "config_navigation.h"
+#include "pandaNode.h"
+#include "pointerTo.h"
+#include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : RecastNavMesh
 // Description :
 ////////////////////////////////////////////////////////////////////
-class EXPCL_NAVIGATION RecastNavMesh {
+class EXPCL_NAVIGATION RecastNavMesh : public TypedReferenceCount {
 PUBLISHED:
   RecastNavMesh();
   INLINE float get_cell_size() const;
@@ -48,6 +52,9 @@ PUBLISHED:
   INLINE float get_detail_sample_max_error() const;
   INLINE void set_detail_sample_max_error(float detail_sample_max_error);
 
+  INLINE CPT(PandaNode) get_source() const;
+  INLINE void set_source(CPT(PandaNode) node);
+
 private:
   float _cell_size;
   float _cell_height;
@@ -61,6 +68,26 @@ private:
   float _merge_region_size;
   float _detail_sample_distance;
   float _detail_sample_max_error;
+
+  CPT(PandaNode) _source;
+  
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    TypedReferenceCount::init_type();
+    register_type(_type_handle, "RecastNavMesh",
+                  TypedReferenceCount::get_class_type());
+  }
+  virtual TypeHandle get_type() const {
+    return get_class_type();
+  }
+  virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+
+private:
+  static TypeHandle _type_handle;
+
 };
 
 #include "recastNavMesh.I"

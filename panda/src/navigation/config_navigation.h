@@ -12,8 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifndef CONFIG_COLLADA_H
-#define CONFIG_COLLADA_H
+#ifndef CONFIG_NAVIGATION_H
+#define CONFIG_NAVIGATION_H
 
 #include "pandabase.h"
 
