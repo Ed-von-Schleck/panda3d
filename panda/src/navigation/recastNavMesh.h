@@ -20,6 +20,8 @@
 #include "pointerTo.h"
 #include "typedReferenceCount.h"
 
+class rcHeightfield;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : RecastNavMesh
 // Description :
@@ -58,7 +60,7 @@ PUBLISHED:
   bool build() const;
 
 private:
-  void rasterize_r(CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;
+  void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;
 
 private:
   float _cell_size;

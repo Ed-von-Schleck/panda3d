@@ -19,6 +19,8 @@
 #include "geomTriangles.h"
 #include "geomVertexReader.h"
 
+#include <Recast.h>
+
 TypeHandle RecastNavMesh::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
@@ -51,7 +53,7 @@ RecastNavMesh() {
 //               node.
 ////////////////////////////////////////////////////////////////////
 void RecastNavMesh::
-rasterize_r(CPT(PandaNode) node, LMatrix4f xform) const {
+rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) const {
   xform = node->get_transform()->get_mat() * xform;
   if (node->is_geom_node()) {
     CPT(GeomNode) gnode = DCAST(GeomNode, node);
@@ -61,27 +63,27 @@ rasterize_r(CPT(PandaNode) node, LMatrix4f xform) const {
       GeomVertexReader reader (geom->get_vertex_data(), InternalName::get_vertex());
       for (size_t p = 0; p < geom->get_num_primitives(); ++p) {
         CPT(GeomPrimitive) prim = geom->get_primitive(p);
-        if (prim->is_of_type(GeomTriangles::get_class_type())) {
+        if (!prim->is_of_type(GeomTriangles::get_class_type())) {
           continue;
         }
         for (size_t pr = 0; pr < prim->get_num_primitives(); ++pr) {
           int start = prim->get_primitive_start(pr);
-          nassertd(start + 2 == prim->get_primitive_end(pr)) continue;
+          nassertd(start + 3 == prim->get_primitive_end(pr)) continue;
           reader.set_row(prim->get_vertex(start));
           LVector3f vtx1 = reader.get_data3f();
           reader.set_row(prim->get_vertex(start + 1));
           LVector3f vtx2 = reader.get_data3f();
-          reader.set_row(prim->get_vertex(start + 3));
+          reader.set_row(prim->get_vertex(start + 2));
           LVector3f vtx3 = reader.get_data3f();
-          cerr << vtx1 << "_" << vtx2 << "_" << vtx3 << "\n";
-          //rcRasterizeTriangle();
+          rcRasterizeTriangle(vtx1._v.data, vtx2._v.data, vtx3._v.data,
+             0, heightfield);
         }
       }
     }
   }
 
   for (size_t c = 0; c < node->get_num_children(); ++c) {
-    rasterize_r(node->get_child(c), xform);
+    rasterize_r(heightfield, node->get_child(c), xform);
   }
 }
 
@@ -98,7 +100,14 @@ build() const {
     return false;
   }
 
-  rasterize_r(_source);
+  rcHeightfield *heightfield = rcAllocHeightfield();
+  if (!heightfield) {
+    navigation_cat.error()
+      << "Failed to allocate heightfield. Out of memory?\n";
+    return false;
+  }
+  rasterize_r(*heightfield, _source);
+  rcFreeHeightField(heightfield);
   return true;
 }
 
