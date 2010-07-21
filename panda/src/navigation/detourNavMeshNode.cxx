@@ -15,11 +15,15 @@
 #include "detourNavMeshNode.h"
 #include "cullTraverserData.h"
 #include "geomVertexWriter.h"
+#include "geomLines.h"
+#include "geomPoints.h"
 #include "geomTriangles.h"
-#include "geomTristrips.h"
 #include "boundingBox.h"
+
+#include "antialiasAttrib.h"
 #include "colorAttrib.h"
 #include "depthOffsetAttrib.h"
+#include "renderModeAttrib.h"
 #include "transparencyAttrib.h"
 
 TypeHandle DetourNavMeshNode::_type_handle;
@@ -67,16 +71,22 @@ bool DetourNavMeshNode::
 cull_callback(CullTraverser *trav, CullTraverserData &data) {
   if (_viz_geom == NULL) {
     _viz_geom = new GeomNode("viz");
+
+    // Generate a representation of the navmesh.
+    // Attempts to be similar in look to detour's debug renderer.
     PT(GeomVertexData) vdata = new GeomVertexData("viz", GeomVertexFormat::get_v3(), Geom::UH_static);
     GeomVertexWriter writer (vdata, InternalName::get_vertex());
     PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
+    PT(GeomLines) olines = new GeomLines(Geom::UH_static);
+    PT(GeomLines) ilines = new GeomLines(Geom::UH_static);
+    PT(GeomPoints) points = new GeomPoints(Geom::UH_static);
     const LMatrix4f &conv = LMatrix4f::convert_mat(CS_yup_right, CS_default);
 
     for (int t = 0; t < getMaxTiles(); ++t) {
-      dtMeshHeader *header = getTile(t)->header;
+      const dtMeshHeader *header = getTile(t)->header;
 
       // Add the vertices
-      float *verts = getTile(t)->verts;
+      const float *verts = getTile(t)->verts;
       for (int v = 0; v < header->vertCount; ++v) {
         LPoint3f vtx (verts[v * 3], verts[v * 3 + 1], verts[v * 3 + 2]);
         vtx = conv.xform_point(vtx);
@@ -84,8 +94,11 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
       }
 
       // Add the polygons
-      dtPoly *polys = getTile(t)->polys;
+      const dtPoly *polys = getTile(t)->polys;
       for (int p = 0; p < header->polyCount; ++p) {
+        if (polys[p].type == DT_POLYTYPE_OFFMESH_CONNECTION) {
+          continue;
+        }
         if (polys[p].vertCount > 3) {
           // Fan from first vertex
           for (int v = 2; v < polys[p].vertCount; ++v) {
@@ -100,16 +113,53 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
           triangles->add_vertex(polys[p].verts[2]);
           triangles->close_primitive();
         }
+        for (int v = 0; v < polys[p].vertCount; ++v) {
+          points->add_vertex(polys[p].verts[v]);
+          int next = v + 1;
+          if (next == polys[p].vertCount) {
+            next = 0;
+          }
+          if (polys[p].neis[v] == 0) {
+            olines->add_vertex(polys[p].verts[v]);
+            olines->add_vertex(polys[p].verts[next]);
+            olines->close_primitive();
+          } else {
+            ilines->add_vertex(polys[p].verts[v]);
+            ilines->add_vertex(polys[p].verts[next]);
+            ilines->close_primitive();
+          }
+        }
+        points->close_primitive();
       }
     }
 
-    // Create a geom and add the primitives to it.
-    PT(Geom) geom = new Geom(vdata);
-    geom->add_primitive(triangles);
-    _viz_geom->add_geom(geom);
+    // Create geoms and add the primitives to it.
+    PT(Geom) geom_tr = new Geom(vdata);
+    geom_tr->add_primitive(triangles);
+    PT(Geom) geom_il = new Geom(vdata);
+    geom_il->add_primitive(ilines);
+    PT(Geom) geom_ol = new Geom(vdata);
+    geom_ol->add_primitive(olines);
+    PT(Geom) geom_pt = new Geom(vdata);
+    geom_pt->add_primitive(points);
+
+    _viz_geom->add_geom(geom_tr, RenderState::make(
+        ColorAttrib::make_flat(LVecBase4f(0, 0.75, 1, 0.25)),
+        AntialiasAttrib::make(AntialiasAttrib::M_polygon)));
+    _viz_geom->add_geom(geom_il, RenderState::make(
+        RenderModeAttrib::make(RenderModeAttrib::M_unchanged, 1.5),
+        ColorAttrib::make_flat(LVecBase4f(0, 0.1875, 0.25, 0.125)),
+        AntialiasAttrib::make(AntialiasAttrib::M_line)));
+    _viz_geom->add_geom(geom_ol, RenderState::make(
+        RenderModeAttrib::make(RenderModeAttrib::M_unchanged, 2.5),
+        ColorAttrib::make_flat(LVecBase4f(0, 0.1875, 0.25, 0.86)),
+        AntialiasAttrib::make(AntialiasAttrib::M_line)));
+    _viz_geom->add_geom(geom_pt, RenderState::make(
+        RenderModeAttrib::make(RenderModeAttrib::M_unchanged, 3.0),
+        ColorAttrib::make_flat(LVecBase4f(0, 0, 0, 0.75)),
+        AntialiasAttrib::make(AntialiasAttrib::M_point)));
     _viz_geom->set_state(RenderState::make(DepthOffsetAttrib::make(1),
-               TransparencyAttrib::make(TransparencyAttrib::M_alpha),
-               ColorAttrib::make_flat(LVecBase4f(0, 0.75, 1, 0.25))));
+               TransparencyAttrib::make(TransparencyAttrib::M_dual)));
   }
 
   CullTraverserData next_data(data, _viz_geom);
