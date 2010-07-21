@@ -292,3 +292,23 @@ set_source(CPT(PandaNode) node) {
   _source = node;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::get_node
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE PT(DetourNavMeshNode) RecastNavMesh::
+get_node() const {
+  return _node;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::set_node
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void RecastNavMesh::
+set_node(PT(DetourNavMeshNode) node) {
+  _node = node;
+}
+

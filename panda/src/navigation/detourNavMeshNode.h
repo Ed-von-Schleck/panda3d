@@ -26,7 +26,7 @@
 // Description :
 ////////////////////////////////////////////////////////////////////
 class EXPCL_NAVIGATION DetourNavMeshNode : public PandaNode, protected dtNavMesh {
-protected:
+PUBLISHED:
   DetourNavMeshNode(const string &name);
 
   friend class RecastNavMesh;

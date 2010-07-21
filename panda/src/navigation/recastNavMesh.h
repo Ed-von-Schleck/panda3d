@@ -16,6 +16,7 @@
 #define RECASTNAVMESH_H
 
 #include "config_navigation.h"
+#include "detourNavMeshNode.h"
 #include "pandaNode.h"
 #include "pointerTo.h"
 #include "typedReferenceCount.h"
@@ -30,6 +31,7 @@ struct rcConfig;
 class EXPCL_NAVIGATION RecastNavMesh : public TypedReferenceCount {
 PUBLISHED:
   RecastNavMesh();
+
   INLINE float get_cell_size() const;
   INLINE void set_cell_size(float cell_size);
   INLINE float get_cell_height() const;
@@ -58,6 +60,8 @@ PUBLISHED:
   INLINE void set_detail_sample_max_error(float detail_sample_max_error);
   INLINE CPT(PandaNode) get_source() const;
   INLINE void set_source(CPT(PandaNode) node);
+  INLINE PT(DetourNavMeshNode) get_node() const;
+  INLINE void set_node(PT(DetourNavMeshNode) node);
 
   bool build() const;
 
@@ -76,6 +80,7 @@ protected:
   float _detail_sample_distance;
   float _detail_sample_max_error;
   CPT(PandaNode) _source;
+  PT(DetourNavMeshNode) _node;
 
   virtual rcConfig configure() const;
   void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;

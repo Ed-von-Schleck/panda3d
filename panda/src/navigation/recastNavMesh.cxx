@@ -14,7 +14,6 @@
 
 #include "recastNavMesh.h"
 #include "dcast.h"
-#include "detourNavMeshNode.h"
 #include "geomNode.h"
 #include "geomPrimitive.h"
 #include "geomTriangles.h"
@@ -48,6 +47,7 @@ RecastNavMesh() {
   _detail_sample_max_error = 0;
 
   _source = NULL;
+  _node = new DetourNavMeshNode("");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -161,8 +161,7 @@ build() const {
     return false;
   }
 
-  if (!rcCreateHeightfield(*heightfield, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
-  {
+  if (!rcCreateHeightfield(*heightfield, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch)) {
     navigation_cat.error()
       << "Failed to create solid heightfield.\n";
     return false;
@@ -175,15 +174,13 @@ build() const {
   rcFilterWalkableLowHeightSpans(config.walkableHeight, *heightfield);
 
   rcCompactHeightfield *compact_heightfield = rcAllocCompactHeightfield();
-  if (!compact_heightfield)
-  {
+  if (!compact_heightfield) {
     navigation_cat.error()
       << "Failed to allocate compact heightfield. Out of memory?\n";
     return false;
   }
 
-  if (!rcBuildCompactHeightfield(config.walkableHeight, config.walkableClimb, *heightfield, *compact_heightfield))
-  {
+  if (!rcBuildCompactHeightfield(config.walkableHeight, config.walkableClimb, *heightfield, *compact_heightfield)) {
     navigation_cat.error()
       << "Failed to build compact heightfield data.\n";
     return false;
@@ -191,69 +188,59 @@ build() const {
 
   rcFreeHeightField(heightfield);
 
-  if (config.walkableRadius > 0)
-  {
-    if (!rcErodeWalkableArea(config.walkableRadius, *compact_heightfield))
-    {
+  if (config.walkableRadius > 0) {
+    if (!rcErodeWalkableArea(config.walkableRadius, *compact_heightfield)) {
       navigation_cat.error()
         << "Failed to erode walkable area.\n";
       return false;
     }
   }
 
-  if (!rcBuildDistanceField(*compact_heightfield))
-  {
+  if (!rcBuildDistanceField(*compact_heightfield)) {
     navigation_cat.error()
       << "Failed to build distance field.\n";
     return false;
   }
 
-  if (!rcBuildRegions(*compact_heightfield, config.borderSize, config.minRegionSize, config.mergeRegionSize))
-  {
+  if (!rcBuildRegions(*compact_heightfield, config.borderSize, config.minRegionSize, config.mergeRegionSize)) {
     navigation_cat.error()
       << "Failed to build regions.\n";
   }
 
   rcContourSet *contour_set = rcAllocContourSet();
-  if (!contour_set)
-  {
+  if (!contour_set) {
     navigation_cat.error()
       << "Failed to allocate contour set. Out of memory?\n";
     return false;
   }
 
-  if (!rcBuildContours(*compact_heightfield, config.maxSimplificationError, config.maxEdgeLen, *contour_set))
-  {
+  if (!rcBuildContours(*compact_heightfield, config.maxSimplificationError, config.maxEdgeLen, *contour_set)) {
     navigation_cat.error()
       << "Failed to create contours.";
     return false;
   }
 
   rcPolyMesh *poly_mesh = rcAllocPolyMesh();
-  if (!poly_mesh)
-  {
+  if (!poly_mesh) {
     navigation_cat.error()
       << "Failed to allocate polygon mesh. Out of memory?\n";
     return false;
   }
 
-  if (!rcBuildPolyMesh(*contour_set, config.maxVertsPerPoly, *poly_mesh))
-  {
+  if (!rcBuildPolyMesh(*contour_set, config.maxVertsPerPoly, *poly_mesh)) {
     navigation_cat.error()
       << "Failed to triangulate contours.";
     return false;
   }
 
   rcPolyMeshDetail *detail_poly_mesh = rcAllocPolyMeshDetail();
-  if (!detail_poly_mesh)
-  {
+  if (!detail_poly_mesh) {
     navigation_cat.error()
       << "Failed to allocate detail polygon mesh. Out of memory?\n";
     return false;
   }
 
-  if (!rcBuildPolyMeshDetail(*poly_mesh, *compact_heightfield, config.detailSampleDist, config.detailSampleMaxError, *detail_poly_mesh))
-  {
+  if (!rcBuildPolyMeshDetail(*poly_mesh, *compact_heightfield, config.detailSampleDist, config.detailSampleMaxError, *detail_poly_mesh)) {
     navigation_cat.error()
       << "Failed to build detail mesh.\n";
   }
@@ -292,18 +279,17 @@ build() const {
       return false;
   }
 
-  PT(DetourNavMeshNode) detour_nav_mesh = new DetourNavMeshNode("");
-  if (!detour_nav_mesh) {
+  if (!_node) {
     dtFree(nav_data);
     navigation_cat.error()
-      << "Failed to create Detour navigation mesh.\n";
+      << "Failed to create Detour navigation mesh node.\n";
       return false;
   }
 
-  if (!detour_nav_mesh->init(nav_data, nav_data_size, DT_TILE_FREE_DATA, 2048)) {
+  if (!_node->init(nav_data, nav_data_size, DT_TILE_FREE_DATA, 2048)) {
     dtFree(nav_data);
     navigation_cat.error()
-      << "Failed to initialize Detour navigation mesh.\n";
+      << "Failed to initialize Detour navigation mesh node.\n";
       return false;
   }
 
