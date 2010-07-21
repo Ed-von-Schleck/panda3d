@@ -17,6 +17,7 @@
 
 #include "config_navigation.h"
 #include "pandaNode.h"
+#include "geomNode.h"
 
 #include <DetourNavMesh.h>
 
@@ -27,6 +28,21 @@
 class EXPCL_NAVIGATION DetourNavMeshNode : public PandaNode, protected dtNavMesh {
 protected:
   DetourNavMeshNode(const string &name);
+
+  friend class RecastNavMesh;
+
+public:
+  virtual bool cull_callback(CullTraverser *trav, CullTraverserData &data);
+  virtual bool is_renderable() const;
+
+protected:
+  virtual void compute_internal_bounds(CPT(BoundingVolume) &internal_bounds,
+                                       int &internal_vertices,
+                                       int pipeline_stage,
+                                       Thread *current_thread) const;
+
+private:
+  PT(GeomNode) _viz_geom;
 
 public:
   static TypeHandle get_class_type() {
