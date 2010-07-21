@@ -14,6 +14,7 @@
 
 #include "recastNavMesh.h"
 #include "dcast.h"
+#include "coordinateSystem.h"
 #include "geomNode.h"
 #include "geomPrimitive.h"
 #include "geomTriangles.h"
@@ -60,8 +61,9 @@ void RecastNavMesh::
 rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) const {
   xform = node->get_transform()->get_mat() * xform;
   if (node->is_geom_node()) {
-    // Calculate the threshold now, to avoid doing this more often than necessary.
+    // Calculate this now, to avoid doing this more often than necessary.
     const float threshold = cosf(_walkable_slope_angle / 180.0f * (float) M_PI);
+    const LMatrix4f &conv = LMatrix4f::convert_mat(CS_default, CS_yup_right);
 
     CPT(GeomNode) gnode = DCAST(GeomNode, node);
     for (size_t g = 0; g < gnode->get_num_geoms(); ++g) {
@@ -77,11 +79,13 @@ rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) co
           int start = prim->get_primitive_start(pr);
           nassertd(start + 3 == prim->get_primitive_end(pr)) continue;
           reader.set_row(prim->get_vertex(start));
-          LVector3f vtx1 = reader.get_data3f();
+          LPoint3f vtx1 = conv.xform_point(reader.get_data3f());
           reader.set_row(prim->get_vertex(start + 1));
-          LVector3f vtx2 = reader.get_data3f();
+          LPoint3f vtx2 = conv.xform_point(reader.get_data3f());
           reader.set_row(prim->get_vertex(start + 2));
-          LVector3f vtx3 = reader.get_data3f();
+          LPoint3f vtx3 = conv.xform_point(reader.get_data3f());
+
+          // Figure out if this triangle is walkable, based on the slope
           unsigned char area = 0;
           float e0[3], e1[3], norm[3];
           rcVsub(e0, vtx2._v.data, vtx1._v.data);
@@ -132,8 +136,17 @@ configure() const {
   LPoint3f bmin, bmax;
   bool found = false;
   _source->calc_tight_bounds(bmin, bmax, found, TransformState::make_identity(), Thread::get_current_thread());
-  rcVcopy(config.bmin, bmin._v.data);
-  rcVcopy(config.bmax, bmax._v.data);
+
+  const LMatrix4f &conv = LMatrix4f::convert_mat(CS_default, CS_yup_right);
+  bmin = conv.xform_point(bmin);
+  bmax = conv.xform_point(bmax);
+
+  config.bmin[0] = min(bmin[0], bmax[0]);
+  config.bmin[1] = min(bmin[1], bmax[1]);
+  config.bmin[2] = min(bmin[2], bmax[2]);
+  config.bmax[0] = max(bmin[0], bmax[0]);
+  config.bmax[1] = max(bmin[1], bmax[1]);
+  config.bmax[2] = max(bmin[2], bmax[2]);
   rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
 
   return config;
@@ -166,7 +179,7 @@ build() const {
       << "Failed to create solid heightfield.\n";
     return false;
   }
-  
+
   rasterize_r(*heightfield, _source);
 
   rcFilterLowHangingWalkableObstacles(config.walkableClimb, *heightfield);
@@ -177,12 +190,16 @@ build() const {
   if (!compact_heightfield) {
     navigation_cat.error()
       << "Failed to allocate compact heightfield. Out of memory?\n";
+    rcFreeHeightField(heightfield);
     return false;
   }
 
+  // Convert our heightfield into a compact heightfield.
   if (!rcBuildCompactHeightfield(config.walkableHeight, config.walkableClimb, *heightfield, *compact_heightfield)) {
     navigation_cat.error()
       << "Failed to build compact heightfield data.\n";
+    rcFreeHeightField(heightfield);
+    rcFreeCompactHeightfield(compact_heightfield);
     return false;
   }
 
@@ -192,6 +209,7 @@ build() const {
     if (!rcErodeWalkableArea(config.walkableRadius, *compact_heightfield)) {
       navigation_cat.error()
         << "Failed to erode walkable area.\n";
+      rcFreeCompactHeightfield(compact_heightfield);
       return false;
     }
   }
@@ -199,6 +217,7 @@ build() const {
   if (!rcBuildDistanceField(*compact_heightfield)) {
     navigation_cat.error()
       << "Failed to build distance field.\n";
+    rcFreeCompactHeightfield(compact_heightfield);
     return false;
   }
 
@@ -211,12 +230,15 @@ build() const {
   if (!contour_set) {
     navigation_cat.error()
       << "Failed to allocate contour set. Out of memory?\n";
+    rcFreeCompactHeightfield(compact_heightfield);
     return false;
   }
 
   if (!rcBuildContours(*compact_heightfield, config.maxSimplificationError, config.maxEdgeLen, *contour_set)) {
     navigation_cat.error()
       << "Failed to create contours.";
+    rcFreeCompactHeightfield(compact_heightfield);
+    rcFreeContourSet(contour_set);
     return false;
   }
 
@@ -224,12 +246,16 @@ build() const {
   if (!poly_mesh) {
     navigation_cat.error()
       << "Failed to allocate polygon mesh. Out of memory?\n";
+    rcFreeCompactHeightfield(compact_heightfield);
+    rcFreeContourSet(contour_set);
     return false;
   }
 
   if (!rcBuildPolyMesh(*contour_set, config.maxVertsPerPoly, *poly_mesh)) {
     navigation_cat.error()
       << "Failed to triangulate contours.";
+    rcFreeCompactHeightfield(compact_heightfield);
+    rcFreeContourSet(contour_set);
     return false;
   }
 
@@ -237,6 +263,8 @@ build() const {
   if (!detail_poly_mesh) {
     navigation_cat.error()
       << "Failed to allocate detail polygon mesh. Out of memory?\n";
+    rcFreeCompactHeightfield(compact_heightfield);
+    rcFreeContourSet(contour_set);
     return false;
   }
 

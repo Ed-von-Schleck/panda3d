@@ -13,7 +13,14 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "detourNavMeshNode.h"
+#include "cullTraverserData.h"
+#include "geomVertexWriter.h"
+#include "geomTriangles.h"
+#include "geomTristrips.h"
 #include "boundingBox.h"
+#include "colorAttrib.h"
+#include "depthOffsetAttrib.h"
+#include "transparencyAttrib.h"
 
 TypeHandle DetourNavMeshNode::_type_handle;
 
@@ -58,15 +65,58 @@ DetourNavMeshNode(const string &name) : PandaNode(name) {
 ////////////////////////////////////////////////////////////////////
 bool DetourNavMeshNode::
 cull_callback(CullTraverser *trav, CullTraverserData &data) {
-  /*if (_viz_geom != NULL) {
-    CullTraverserData next_data(data, node);
+  if (_viz_geom == NULL) {
+    _viz_geom = new GeomNode("viz");
+    PT(GeomVertexData) vdata = new GeomVertexData("viz", GeomVertexFormat::get_v3(), Geom::UH_static);
+    GeomVertexWriter writer (vdata, InternalName::get_vertex());
+    PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
+    const LMatrix4f &conv = LMatrix4f::convert_mat(CS_yup_right, CS_default);
 
-    // We don't want to inherit the render state from above for these
-    // guys, except for the depth offset - and we add one to that.
-    CPT(DepthOffsetAttrib) offset = data._state.get_attrib()
-    next_data._state = RenderState::make_empty();
-    trav->traverse(next_data);
-  }*/
+    for (int t = 0; t < getMaxTiles(); ++t) {
+      dtMeshHeader *header = getTile(t)->header;
+
+      // Add the vertices
+      float *verts = getTile(t)->verts;
+      for (int v = 0; v < header->vertCount; ++v) {
+        LPoint3f vtx (verts[v * 3], verts[v * 3 + 1], verts[v * 3 + 2]);
+        vtx = conv.xform_point(vtx);
+        writer.add_data3f(vtx);
+      }
+
+      // Add the polygons
+      dtPoly *polys = getTile(t)->polys;
+      for (int p = 0; p < header->polyCount; ++p) {
+        if (polys[p].vertCount > 3) {
+          // Fan from first vertex
+          for (int v = 2; v < polys[p].vertCount; ++v) {
+            triangles->add_vertex(polys[p].verts[0]);
+            triangles->add_vertex(polys[p].verts[v - 1]);
+            triangles->add_vertex(polys[p].verts[v]);
+            triangles->close_primitive();
+          }
+        } else {
+          triangles->add_vertex(polys[p].verts[0]);
+          triangles->add_vertex(polys[p].verts[1]);
+          triangles->add_vertex(polys[p].verts[2]);
+          triangles->close_primitive();
+        }
+      }
+    }
+
+    // Create a geom and add the primitives to it.
+    PT(Geom) geom = new Geom(vdata);
+    geom->add_primitive(triangles);
+    _viz_geom->add_geom(geom);
+    _viz_geom->set_state(RenderState::make(DepthOffsetAttrib::make(1),
+               TransparencyAttrib::make(TransparencyAttrib::M_alpha),
+               ColorAttrib::make_flat(LVecBase4f(0, 0.75, 1, 0.25))));
+  }
+
+  CullTraverserData next_data(data, _viz_geom);
+
+  // We don't want to inherit the render state from above for this.
+  next_data._state = RenderState::make_empty();
+  trav->traverse(next_data);
 
   // Now carry on to render our child nodes.
   return true;
@@ -119,7 +169,18 @@ compute_internal_bounds(CPT(BoundingVolume) &internal_bounds,
     bmax_all[2] = max(tmax[2], bmax_all[2]);
   }
 
-  internal_bounds = new BoundingBox(bmin_all, bmax_all);
+  const LMatrix4f &conv = LMatrix4f::convert_mat(CS_yup_right, CS_default);
+  bmin_all = conv.xform_point(bmin_all);
+  bmax_all = conv.xform_point(bmax_all);
+  LPoint3f bmin_new, bmax_new;
+  bmin_new[0] = min(bmin_all[0], bmax_all[0]);
+  bmin_new[1] = min(bmin_all[1], bmax_all[1]);
+  bmin_new[2] = min(bmin_all[2], bmax_all[2]);
+  bmax_new[0] = max(bmin_all[0], bmax_all[0]);
+  bmax_new[1] = max(bmin_all[1], bmax_all[1]);
+  bmax_new[2] = max(bmin_all[2], bmax_all[2]);
+
+  internal_bounds = new BoundingBox(bmin_new, bmax_new);
   internal_vertices = 0;
 }
 
