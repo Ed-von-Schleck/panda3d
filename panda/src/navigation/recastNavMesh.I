@@ -213,6 +213,26 @@ set_merge_region_size(float merge_region_size) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::get_max_verts_per_poly
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE int RecastNavMesh::
+get_max_verts_per_poly() const {
+  return _max_verts_per_poly;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::set_max_verts_per_poly
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void RecastNavMesh::
+set_max_verts_per_poly(int verts) {
+  _max_verts_per_poly = verts;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_detail_sample_distance
 //       Access: Public
 //  Description: 

@@ -30,16 +30,17 @@ TypeHandle RecastNavMesh::_type_handle;
 ////////////////////////////////////////////////////////////////////
 RecastNavMesh::
 RecastNavMesh() {
-  _cell_size = 0;
-  _cell_height = 0;
-  _walkable_slope_angle = 0;
-  _walkable_height = 0;
-  _walkable_climb = 0;
-  _walkable_radius = 0;
-  _max_edge_length = 0;
-  _max_simplification_error = 0;
+  _cell_size = 0.3;
+  _cell_height = 0.2;
+  _walkable_slope_angle = 45;
+  _walkable_height = 1;
+  _walkable_climb = 1;
+  _walkable_radius = 1;
+  _max_edge_length = 12;
+  _max_simplification_error = 1.3;
   _min_region_size = 0;
   _merge_region_size = 0;
+  _max_verts_per_poly = 6;
   _detail_sample_distance = 0;
   _detail_sample_max_error = 0;
 
@@ -88,6 +89,41 @@ rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) co
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::config
+//       Access: Published
+//  Description: Sets configuration variables.
+////////////////////////////////////////////////////////////////////
+rcConfig RecastNavMesh::
+configure() const {
+  rcConfig config;
+
+	memset(&config, 0, sizeof(config));
+
+	config.cs = _cell_size;
+	config.ch = _cell_height;
+	config.walkableSlopeAngle = _walkable_slope_angle;
+	config.walkableHeight = (int)ceilf(_walkable_height / config.ch);
+	config.walkableClimb = (int)floorf(_walkable_climb / config.ch);
+	config.walkableRadius = (int)ceilf(_walkable_radius / config.cs);
+	config.maxEdgeLen = (int)(_max_edge_length / _cell_size);
+	config.maxSimplificationError = _max_simplification_error;
+	config.minRegionSize = (int)rcSqr(_min_region_size);
+	config.mergeRegionSize = (int)rcSqr(_merge_region_size);
+	config.maxVertsPerPoly = (int)_max_verts_per_poly;
+	config.detailSampleDist = _detail_sample_distance < 0.9f ? 0 : _cell_size * _detail_sample_distance;
+	config.detailSampleMaxError = _cell_height * _detail_sample_max_error;
+
+  LPoint3f bmin, bmax;
+  bool found = false;
+  _source->calc_tight_bounds(bmin, bmax, found, TransformState::make_identity(), Thread::get_current_thread());
+  rcVcopy(config.bmin, bmin._v.data);
+  rcVcopy(config.bmax, bmax._v.data);
+  rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
+
+  return config;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::build
 //       Access: Published
 //  Description: Builds the source data into a navmesh.
@@ -100,14 +136,115 @@ build() const {
     return false;
   }
 
+  rcConfig config = configure();
+
   rcHeightfield *heightfield = rcAllocHeightfield();
   if (!heightfield) {
     navigation_cat.error()
       << "Failed to allocate heightfield. Out of memory?\n";
     return false;
   }
+
+  if (!rcCreateHeightfield(*heightfield, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
+	{
+    navigation_cat.error()
+      << "Failed to create solid heightfield.\n";
+		return false;
+	}
+  
   rasterize_r(*heightfield, _source);
+
+  rcFilterLowHangingWalkableObstacles(config.walkableClimb, *heightfield);
+	rcFilterLedgeSpans(config.walkableHeight, config.walkableClimb, *heightfield);
+	rcFilterWalkableLowHeightSpans(config.walkableHeight, *heightfield);
+
+  rcCompactHeightfield *compact_heightfield = rcAllocCompactHeightfield();
+	if (!compact_heightfield)
+	{
+		navigation_cat.error()
+			<< "Failed to allocate compact heightfield. Out of memory?\n";
+		return false;
+	}
+
+  if (!rcBuildCompactHeightfield(config.walkableHeight, config.walkableClimb, *heightfield, *compact_heightfield))
+	{
+		navigation_cat.error()
+      << "Failed to build compact heightfield data.\n";
+		return false;
+	}
+
   rcFreeHeightField(heightfield);
+
+  if (config.walkableRadius > 0)
+  {
+    if (!rcErodeWalkableArea(config.walkableRadius, *compact_heightfield))
+    {
+      navigation_cat.error()
+        << "Failed to erode walkable area.\n";
+      return false;
+    }
+  }
+
+  if (!rcBuildDistanceField(*compact_heightfield))
+	{
+		navigation_cat.error()
+			<< "Failed to build distance field.\n";
+		return false;
+	}
+
+	if (!rcBuildRegions(*compact_heightfield, config.borderSize, config.minRegionSize, config.mergeRegionSize))
+	{
+		navigation_cat.error()
+			<< "Failed to build regions.\n";
+	}
+
+  rcContourSet *contour_set = rcAllocContourSet();
+	if (!contour_set)
+	{
+		navigation_cat.error()
+			<< "Failed to allocate contour set. Out of memory?\n";
+		return false;
+	}
+
+  if (!rcBuildContours(*compact_heightfield, config.maxSimplificationError, config.maxEdgeLen, *contour_set))
+	{
+		navigation_cat.error()
+			<< "Failed to create contours.";
+		return false;
+	}
+
+  rcPolyMesh *poly_mesh = rcAllocPolyMesh();
+	if (!poly_mesh)
+	{
+		navigation_cat.error()
+			<< "Failed to allocate polygon mesh. Out of memory?\n";
+		return false;
+	}
+
+  if (!rcBuildPolyMesh(*contour_set, config.maxVertsPerPoly, *poly_mesh))
+	{
+		navigation_cat.error()
+			<< "Failed to triangulate contours.";
+		return false;
+	}
+
+  rcPolyMeshDetail *detail_poly_mesh = rcAllocPolyMeshDetail();
+	if (!detail_poly_mesh)
+	{
+		navigation_cat.error()
+			<< "Failed to allocate detail polygon mesh. Out of memory?\n";
+		return false;
+	}
+
+  if (!rcBuildPolyMeshDetail(*poly_mesh, *compact_heightfield, config.detailSampleDist, config.detailSampleMaxError, *detail_poly_mesh))
+	{
+		navigation_cat.error()
+			<< "Failed to build detail mesh.\n";
+	}
+
+  rcFreeCompactHeightfield(compact_heightfield);
+  rcFreeContourSet(contour_set);
+
   return true;
 }
 

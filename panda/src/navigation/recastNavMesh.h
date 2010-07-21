@@ -21,6 +21,7 @@
 #include "typedReferenceCount.h"
 
 class rcHeightfield;
+struct rcConfig;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : RecastNavMesh
@@ -49,20 +50,18 @@ PUBLISHED:
   INLINE void set_min_region_size(float min_region_size);
   INLINE float get_merge_region_size() const;
   INLINE void set_merge_region_size(float merge_region_size);
+  INLINE int get_max_verts_per_poly() const;
+  INLINE void set_max_verts_per_poly(int verts);
   INLINE float get_detail_sample_distance() const;
   INLINE void set_detail_sample_distance(float detail_sample_distance);
   INLINE float get_detail_sample_max_error() const;
   INLINE void set_detail_sample_max_error(float detail_sample_max_error);
-
   INLINE CPT(PandaNode) get_source() const;
   INLINE void set_source(CPT(PandaNode) node);
 
   bool build() const;
 
-private:
-  void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;
-
-private:
+protected:
   float _cell_size;
   float _cell_height;
   float _walkable_slope_angle;
@@ -73,10 +72,13 @@ private:
   float _max_simplification_error;
   float _min_region_size;
   float _merge_region_size;
+  int _max_verts_per_poly;
   float _detail_sample_distance;
   float _detail_sample_max_error;
-
   CPT(PandaNode) _source;
+
+  virtual rcConfig configure() const;
+  void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;
 
 public:
   static TypeHandle get_class_type() {
