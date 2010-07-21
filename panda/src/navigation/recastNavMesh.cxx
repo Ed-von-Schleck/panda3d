@@ -14,12 +14,15 @@
 
 #include "recastNavMesh.h"
 #include "dcast.h"
+#include "detourNavMeshNode.h"
 #include "geomNode.h"
 #include "geomPrimitive.h"
 #include "geomTriangles.h"
 #include "geomVertexReader.h"
 
 #include <Recast.h>
+#include <DetourNavMesh.h>
+#include <DetourNavMeshBuilder.h>
 
 TypeHandle RecastNavMesh::_type_handle;
 
@@ -57,6 +60,9 @@ void RecastNavMesh::
 rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) const {
   xform = node->get_transform()->get_mat() * xform;
   if (node->is_geom_node()) {
+    // Calculate the threshold now, to avoid doing this more often than necessary.
+    const float threshold = cosf(_walkable_slope_angle / 180.0f * (float) M_PI);
+
     CPT(GeomNode) gnode = DCAST(GeomNode, node);
     for (size_t g = 0; g < gnode->get_num_geoms(); ++g) {
       PT(Geom) geom = gnode->get_geom(g)->decompose();
@@ -76,8 +82,17 @@ rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) co
           LVector3f vtx2 = reader.get_data3f();
           reader.set_row(prim->get_vertex(start + 2));
           LVector3f vtx3 = reader.get_data3f();
+          unsigned char area = 0;
+          float e0[3], e1[3], norm[3];
+          rcVsub(e0, vtx2._v.data, vtx1._v.data);
+          rcVsub(e1, vtx3._v.data, vtx1._v.data);
+          rcVcross(norm, e0, e1);
+          rcVnormalize(norm);
+          if (norm[1] > threshold) {
+            area = RC_WALKABLE_AREA;
+          }
           rcRasterizeTriangle(vtx1._v.data, vtx2._v.data, vtx3._v.data,
-             0, heightfield);
+             area, heightfield, (int) floorf(_walkable_climb / _cell_height));
         }
       }
     }
@@ -97,21 +112,22 @@ rcConfig RecastNavMesh::
 configure() const {
   rcConfig config;
 
-	memset(&config, 0, sizeof(config));
+  memset(&config, 0, sizeof(config));
 
-	config.cs = _cell_size;
-	config.ch = _cell_height;
-	config.walkableSlopeAngle = _walkable_slope_angle;
-	config.walkableHeight = (int)ceilf(_walkable_height / config.ch);
-	config.walkableClimb = (int)floorf(_walkable_climb / config.ch);
-	config.walkableRadius = (int)ceilf(_walkable_radius / config.cs);
-	config.maxEdgeLen = (int)(_max_edge_length / _cell_size);
-	config.maxSimplificationError = _max_simplification_error;
-	config.minRegionSize = (int)rcSqr(_min_region_size);
-	config.mergeRegionSize = (int)rcSqr(_merge_region_size);
-	config.maxVertsPerPoly = (int)_max_verts_per_poly;
-	config.detailSampleDist = _detail_sample_distance < 0.9f ? 0 : _cell_size * _detail_sample_distance;
-	config.detailSampleMaxError = _cell_height * _detail_sample_max_error;
+  config.cs = _cell_size;
+  config.ch = _cell_height;
+  config.walkableSlopeAngle = _walkable_slope_angle;
+  config.walkableHeight = (int)ceilf(_walkable_height / config.ch);
+  config.walkableClimb = (int)floorf(_walkable_climb / config.ch);
+  config.walkableRadius = (int)ceilf(_walkable_radius / config.cs);
+  config.maxEdgeLen = (int)(_max_edge_length / _cell_size);
+  config.maxSimplificationError = _max_simplification_error;
+  config.minRegionSize = (int)rcSqr(_min_region_size);
+  config.mergeRegionSize = (int)rcSqr(_merge_region_size);
+  config.maxVertsPerPoly = (int)_max_verts_per_poly;
+  min(config.maxVertsPerPoly, DT_VERTS_PER_POLYGON);
+  config.detailSampleDist = _detail_sample_distance < 0.9f ? 0 : _cell_size * _detail_sample_distance;
+  config.detailSampleMaxError = _cell_height * _detail_sample_max_error;
 
   LPoint3f bmin, bmax;
   bool found = false;
@@ -146,32 +162,32 @@ build() const {
   }
 
   if (!rcCreateHeightfield(*heightfield, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
-	{
+  {
     navigation_cat.error()
       << "Failed to create solid heightfield.\n";
-		return false;
-	}
+    return false;
+  }
   
   rasterize_r(*heightfield, _source);
 
   rcFilterLowHangingWalkableObstacles(config.walkableClimb, *heightfield);
-	rcFilterLedgeSpans(config.walkableHeight, config.walkableClimb, *heightfield);
-	rcFilterWalkableLowHeightSpans(config.walkableHeight, *heightfield);
+  rcFilterLedgeSpans(config.walkableHeight, config.walkableClimb, *heightfield);
+  rcFilterWalkableLowHeightSpans(config.walkableHeight, *heightfield);
 
   rcCompactHeightfield *compact_heightfield = rcAllocCompactHeightfield();
-	if (!compact_heightfield)
-	{
-		navigation_cat.error()
-			<< "Failed to allocate compact heightfield. Out of memory?\n";
-		return false;
-	}
+  if (!compact_heightfield)
+  {
+    navigation_cat.error()
+      << "Failed to allocate compact heightfield. Out of memory?\n";
+    return false;
+  }
 
   if (!rcBuildCompactHeightfield(config.walkableHeight, config.walkableClimb, *heightfield, *compact_heightfield))
-	{
-		navigation_cat.error()
+  {
+    navigation_cat.error()
       << "Failed to build compact heightfield data.\n";
-		return false;
-	}
+    return false;
+  }
 
   rcFreeHeightField(heightfield);
 
@@ -186,64 +202,110 @@ build() const {
   }
 
   if (!rcBuildDistanceField(*compact_heightfield))
-	{
-		navigation_cat.error()
-			<< "Failed to build distance field.\n";
-		return false;
-	}
+  {
+    navigation_cat.error()
+      << "Failed to build distance field.\n";
+    return false;
+  }
 
-	if (!rcBuildRegions(*compact_heightfield, config.borderSize, config.minRegionSize, config.mergeRegionSize))
-	{
-		navigation_cat.error()
-			<< "Failed to build regions.\n";
-	}
+  if (!rcBuildRegions(*compact_heightfield, config.borderSize, config.minRegionSize, config.mergeRegionSize))
+  {
+    navigation_cat.error()
+      << "Failed to build regions.\n";
+  }
 
   rcContourSet *contour_set = rcAllocContourSet();
-	if (!contour_set)
-	{
-		navigation_cat.error()
-			<< "Failed to allocate contour set. Out of memory?\n";
-		return false;
-	}
+  if (!contour_set)
+  {
+    navigation_cat.error()
+      << "Failed to allocate contour set. Out of memory?\n";
+    return false;
+  }
 
   if (!rcBuildContours(*compact_heightfield, config.maxSimplificationError, config.maxEdgeLen, *contour_set))
-	{
-		navigation_cat.error()
-			<< "Failed to create contours.";
-		return false;
-	}
+  {
+    navigation_cat.error()
+      << "Failed to create contours.";
+    return false;
+  }
 
   rcPolyMesh *poly_mesh = rcAllocPolyMesh();
-	if (!poly_mesh)
-	{
-		navigation_cat.error()
-			<< "Failed to allocate polygon mesh. Out of memory?\n";
-		return false;
-	}
+  if (!poly_mesh)
+  {
+    navigation_cat.error()
+      << "Failed to allocate polygon mesh. Out of memory?\n";
+    return false;
+  }
 
   if (!rcBuildPolyMesh(*contour_set, config.maxVertsPerPoly, *poly_mesh))
-	{
-		navigation_cat.error()
-			<< "Failed to triangulate contours.";
-		return false;
-	}
+  {
+    navigation_cat.error()
+      << "Failed to triangulate contours.";
+    return false;
+  }
 
   rcPolyMeshDetail *detail_poly_mesh = rcAllocPolyMeshDetail();
-	if (!detail_poly_mesh)
-	{
-		navigation_cat.error()
-			<< "Failed to allocate detail polygon mesh. Out of memory?\n";
-		return false;
-	}
+  if (!detail_poly_mesh)
+  {
+    navigation_cat.error()
+      << "Failed to allocate detail polygon mesh. Out of memory?\n";
+    return false;
+  }
 
   if (!rcBuildPolyMeshDetail(*poly_mesh, *compact_heightfield, config.detailSampleDist, config.detailSampleMaxError, *detail_poly_mesh))
-	{
-		navigation_cat.error()
-			<< "Failed to build detail mesh.\n";
-	}
+  {
+    navigation_cat.error()
+      << "Failed to build detail mesh.\n";
+  }
 
   rcFreeCompactHeightfield(compact_heightfield);
   rcFreeContourSet(contour_set);
+
+  unsigned char *nav_data = 0;
+  int nav_data_size = 0;
+
+  dtNavMeshCreateParams params;
+  memset(&params, 0, sizeof(params));
+  params.verts = poly_mesh->verts;
+  params.vertCount = poly_mesh->nverts;
+  params.polys = poly_mesh->polys;
+  params.polyAreas = poly_mesh->areas;
+  params.polyFlags = poly_mesh->flags;
+  params.polyCount = poly_mesh->npolys;
+  params.nvp = poly_mesh->nvp;
+  params.detailMeshes = detail_poly_mesh->meshes;
+  params.detailVerts = detail_poly_mesh->verts;
+  params.detailVertsCount = detail_poly_mesh->nverts;
+  params.detailTris = detail_poly_mesh->tris;
+  params.detailTriCount = detail_poly_mesh->ntris;
+  params.walkableHeight = _walkable_height;
+  params.walkableRadius = _walkable_radius;
+  params.walkableClimb = _walkable_climb;
+  rcVcopy(params.bmin, poly_mesh->bmin);
+  rcVcopy(params.bmax, poly_mesh->bmax);
+  params.cs = config.cs;
+  params.ch = config.ch;
+
+  if (!dtCreateNavMeshData(&params, &nav_data, &nav_data_size)) {
+    navigation_cat.error()
+      << "Failed to build Detour navigation mesh.\n";
+      return false;
+  }
+
+  PT(DetourNavMeshNode) detour_nav_mesh = new DetourNavMeshNode("");
+  if (!detour_nav_mesh) {
+    dtFree(nav_data);
+    navigation_cat.error()
+      << "Failed to create Detour navigation mesh.\n";
+      return false;
+  }
+
+  if (!detour_nav_mesh->init(nav_data, nav_data_size, DT_TILE_FREE_DATA, 2048)) {
+    dtFree(nav_data);
+    navigation_cat.error()
+      << "Failed to initialize Detour navigation mesh.\n";
+      return false;
+  }
 
   return true;
 }
