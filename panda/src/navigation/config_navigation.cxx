@@ -15,6 +15,7 @@
 #include "config_navigation.h"
 
 #include "dconfig.h"
+#include "detourNavMeshNode.h"
 #include "recastNavMesh.h"
 
 ConfigureDef(config_navigation);
@@ -41,6 +42,7 @@ init_libnavigation() {
   }
   initialized = true;
 
+  DetourNavMeshNode::init_type();
   RecastNavMesh::init_type();
 }
 
