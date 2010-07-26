@@ -17,11 +17,12 @@
 
 #include "config_navigation.h"
 #include "detourNavMeshNode.h"
+#include "navMeshAttrib.h"
 #include "pandaNode.h"
 #include "pointerTo.h"
 #include "typedReferenceCount.h"
 
-class rcHeightfield;
+struct rcHeightfield;
 struct rcConfig;
 
 ////////////////////////////////////////////////////////////////////
@@ -83,7 +84,7 @@ protected:
   PT(DetourNavMeshNode) _node;
 
   virtual rcConfig configure() const;
-  void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform = LMatrix4f::ident_mat()) const;
+  void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, CPT(RenderState) state, LMatrix4f xform = LMatrix4f::ident_mat()) const;
 
 public:
   static TypeHandle get_class_type() {

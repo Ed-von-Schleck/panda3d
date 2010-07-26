@@ -11,16 +11,19 @@
   #define SOURCES \
     config_navigation.h \
     detourNavMeshNode.h detourNavMeshNode.I \
+    navMeshAttrib.h navMeshAttrib.I \
     recastNavMesh.h recastNavMesh.I
 
   #define INCLUDED_SOURCES \
     config_navigation.cxx \
     detourNavMeshNode.cxx \
+    navMeshAttrib.cxx \
     recastNavMesh.cxx
 
   #define INSTALL_HEADERS \
     config_navigation.h \
     detourNavMeshNode.h detourNavMeshNode.I \
+    navMeshAttrib.h navMeshAttrib.I \
     recastNavMesh.h recastNavMesh.I
 
   #define IGATESCAN all

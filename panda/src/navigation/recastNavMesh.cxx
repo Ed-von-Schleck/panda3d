@@ -44,8 +44,8 @@ RecastNavMesh() {
   _min_region_size = 0;
   _merge_region_size = 0;
   _max_verts_per_poly = 6;
-  _detail_sample_distance = 0;
-  _detail_sample_max_error = 0;
+  _detail_sample_distance = 6;
+  _detail_sample_max_error = 1;
 
   _source = NULL;
   _node = new DetourNavMeshNode("");
@@ -58,8 +58,10 @@ RecastNavMesh() {
 //               node.
 ////////////////////////////////////////////////////////////////////
 void RecastNavMesh::
-rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) const {
+rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, CPT(RenderState) state, LMatrix4f xform) const {
   xform = node->get_transform()->get_mat() * xform;
+  state = state->compose(node->get_state());
+
   if (node->is_geom_node()) {
     // Calculate this now, to avoid doing this more often than necessary.
     const float threshold = cosf(_walkable_slope_angle / 180.0f * (float) M_PI);
@@ -67,6 +69,13 @@ rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) co
 
     CPT(GeomNode) gnode = DCAST(GeomNode, node);
     for (size_t g = 0; g < gnode->get_num_geoms(); ++g) {
+      CPT(RenderState) gstate = state->compose(gnode->get_geom_state(g));
+      CPT(NavMeshAttrib) nmattr =
+        DCAST(NavMeshAttrib, gstate->get_attrib(NavMeshAttrib::get_class_type()));
+      if (!nmattr || nmattr->is_off()) {
+        continue;
+      }
+
       PT(Geom) geom = gnode->get_geom(g)->decompose();
       geom->transform_vertices(xform);
       GeomVertexReader reader (geom->get_vertex_data(), InternalName::get_vertex());
@@ -86,14 +95,14 @@ rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) co
           LPoint3f vtx3 = conv.xform_point(reader.get_data3f());
 
           // Figure out if this triangle is walkable, based on the slope
-          unsigned char area = 0;
+          unsigned char area = RC_NULL_AREA;
           float e0[3], e1[3], norm[3];
           rcVsub(e0, vtx2._v.data, vtx1._v.data);
           rcVsub(e1, vtx3._v.data, vtx1._v.data);
           rcVcross(norm, e0, e1);
           rcVnormalize(norm);
           if (norm[1] > threshold) {
-            area = RC_WALKABLE_AREA;
+            area = nmattr->get_area();
           }
           rcRasterizeTriangle(vtx1._v.data, vtx2._v.data, vtx3._v.data,
              area, heightfield, (int) floorf(_walkable_climb / _cell_height));
@@ -103,7 +112,7 @@ rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, LMatrix4f xform) co
   }
 
   for (size_t c = 0; c < node->get_num_children(); ++c) {
-    rasterize_r(heightfield, node->get_child(c), xform);
+    rasterize_r(heightfield, node->get_child(c), state, xform);
   }
 }
 
@@ -180,7 +189,7 @@ build() const {
     return false;
   }
 
-  rasterize_r(*heightfield, _source);
+  rasterize_r(*heightfield, _source, RenderState::make(NavMeshAttrib::make_default(), -1));
 
   rcFilterLowHangingWalkableObstacles(config.walkableClimb, *heightfield);
   rcFilterLedgeSpans(config.walkableHeight, config.walkableClimb, *heightfield);
