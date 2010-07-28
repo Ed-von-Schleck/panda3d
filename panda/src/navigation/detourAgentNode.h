@@ -17,7 +17,10 @@
 
 #include "config_navigation.h"
 #include "detourNavMeshNode.h"
+#include "lpoint3.h"
 #include "pandaNode.h"
+#include "pointerTo.h"
+#include "transformState.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : DetourAgentNode
@@ -25,8 +28,19 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_NAVIGATION DetourAgentNode : public PandaNode {
 PUBLISHED:
-  DetourAgentNode(const string &name);
-  CPT(DetourNavMeshNode) get_nav_mesh();
+  INLINE DetourAgentNode(const string &name);
+
+  INLINE PT(DetourNavMeshNode) get_nav_mesh();
+  INLINE void set_nav_mesh(DetourNavMeshNode *nav_mesh);
+
+  INLINE void move_to(PandaNode *target);
+  INLINE void move_to(LPoint3f &target);
+  INLINE void set_speed(float speed);
+
+private:
+  PT(DetourNavMeshNode) _nav_mesh;
+  PT(PandaNode) _target_node;
+  float _speed;
 
 public:
   static TypeHandle get_class_type() {
@@ -46,6 +60,8 @@ private:
   static TypeHandle _type_handle;
 
 };
+
+#include "detourAgentNode.I"
 
 #endif
 

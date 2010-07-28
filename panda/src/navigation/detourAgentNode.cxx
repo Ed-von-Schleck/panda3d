@@ -16,26 +16,3 @@
 
 TypeHandle DetourAgentNode::_type_handle;
 
-////////////////////////////////////////////////////////////////////
-//     Function: DetourAgentNode::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-DetourAgentNode::
-DetourAgentNode(const string &name) : PandaNode(name) {
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: DetourAgentNode::get_nav_mesh
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-CPT(DetourNavMeshNode) DetourAgentNode::
-get_nav_mesh() {
-  PT(PandaNode) parent = get_parent();
-  while (parent != NULL && !parent->is_of_type(DetourNavMeshNode::get_class_type())) {
-    parent = parent->get_parent();
-  }
-  return parent;
-}
-
