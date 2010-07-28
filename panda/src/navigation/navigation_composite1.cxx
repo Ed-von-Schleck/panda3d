@@ -1,4 +1,5 @@
 #include "config_navigation.cxx"
+#include "detourAgentNode.cxx"
 #include "detourNavMeshNode.cxx"
 #include "navMeshAttrib.cxx"
 #include "recastNavMesh.cxx"

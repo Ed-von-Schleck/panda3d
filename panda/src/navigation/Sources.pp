@@ -10,18 +10,21 @@
 
   #define SOURCES \
     config_navigation.h \
+    detourAgentNode.h \
     detourNavMeshNode.h detourNavMeshNode.I \
     navMeshAttrib.h navMeshAttrib.I \
     recastNavMesh.h recastNavMesh.I
 
   #define INCLUDED_SOURCES \
     config_navigation.cxx \
+    detourAgentNode.cxx \
     detourNavMeshNode.cxx \
     navMeshAttrib.cxx \
     recastNavMesh.cxx
 
   #define INSTALL_HEADERS \
     config_navigation.h \
+    detourAgentNode.h \
     detourNavMeshNode.h detourNavMeshNode.I \
     navMeshAttrib.h navMeshAttrib.I \
     recastNavMesh.h recastNavMesh.I
