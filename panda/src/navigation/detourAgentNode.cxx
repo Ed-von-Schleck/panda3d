@@ -35,6 +35,7 @@ update(float dt) {
   }
 
   const LMatrix4f &conv = LMatrix4f::convert_mat(CS_default, CS_yup_right);
+  const LMatrix4f &conv_back = LMatrix4f::convert_mat(CS_yup_right, CS_default);
 
   const dtNavMesh &nav_mesh = *_nav_mesh->_nav_mesh;
 
@@ -70,17 +71,20 @@ update(float dt) {
 
   float path_points[MAX_POLYS * 3];
 
+  int cur_point = 0;
   float distance = _speed * dt;
 
-  while (distance > 0.0f) {
-    int pathlen = nav_mesh.findStraightPath(start_point, new_end_point, polygons, polycount,
-                                   path_points, NULL, NULL, MAX_POLYS);
-    LPoint3f next_point;
-    rcVcopy(next_point._v.data, path_points);
-    //TODO: coordinate system conversion, remember?
-    LVector3f steer = conv.xform_vec(next_point - get_transform()->get_pos());
+  int pathlen = nav_mesh.findStraightPath(start_point, new_end_point, polygons, polycount,
+                                          path_points, NULL, NULL, MAX_POLYS);
 
-    if (steer.length_squared() <= distance * distance) {
+  while (distance > 0.0f && cur_point < MAX_POLYS) {
+    LPoint3f next_point;
+    rcVcopy(next_point._v.data, path_points + cur_point * 3);
+    next_point = conv_back.xform_point(next_point);
+    //TODO: coordinate system conversion, remember?
+    LVector3f steer = next_point - get_transform()->get_pos();
+
+    if (distance * distance <= steer.length_squared()) {
       // Our new pos will be between the current pos and the next point
       steer.normalize();
       steer *= distance;
@@ -88,9 +92,10 @@ update(float dt) {
       set_transform(transform->set_pos(transform->get_pos() + steer));
       distance = 0.0f;
     } else {
+      set_transform(get_transform()->set_pos(next_point));
       distance -= steer.length();
-      start_point = next_point._v.data;
     }
+    cur_point += 1;
   }
 }
 
