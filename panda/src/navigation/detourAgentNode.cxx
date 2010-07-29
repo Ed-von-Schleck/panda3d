@@ -14,5 +14,81 @@
 
 #include "detourAgentNode.h"
 
+#include <Recast.h>
+
 TypeHandle DetourAgentNode::_type_handle;
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourNavMeshNode::update
+//       Access: Published
+//  Description: Updates the position of the agent based on the
+//               configured parameters. The passed parameter is
+//               the time elapsed since the last frame.
+//               Note that you don't need to call this unless
+//               you explicitly instructed the agent not to
+//               automatically add a task to the task manager.
+////////////////////////////////////////////////////////////////////
+void DetourAgentNode::
+update(float dt) {
+  if (_target_node == NULL || _speed == 0.0) {
+    return;
+  }
+
+  const dtNavMesh &nav_mesh = *_nav_mesh->_nav_mesh;
+
+  dtPolyRef start (0);
+  dtPolyRef end (0);
+  float search_box[3] = {2, 4, 2};
+  dtQueryFilter filter;
+  filter.includeFlags = 0xFFFF;
+  filter.excludeFlags = 0;
+
+  const float* start_point = get_transform()->get_pos()._v.data;
+  const float* end_point = _target_node->get_transform()->get_pos()._v.data;
+
+  start = nav_mesh.findNearestPoly(start_point, search_box, &filter, 0);
+  //TODO: transform into coordinate space of nav mesh
+  end = nav_mesh.findNearestPoly(end_point, search_box, &filter, 0);
+
+#define MAX_POLYS 256
+  dtPolyRef polygons[MAX_POLYS];
+  int polycount = nav_mesh.findPath(start, end, start_point, end_point, &filter, polygons, MAX_POLYS);
+
+  if (polycount == 0) {
+    return;
+  }
+
+  // In case the end point is not accessible, go to the closest point.
+  float new_end_point[3];
+  if (polygons[polycount - 1] == end) {
+    rcVcopy(new_end_point, end_point);
+  } else {
+    nav_mesh.closestPointOnPoly(polygons[polycount - 1], end_point, new_end_point);
+  }
+
+  float path_points[MAX_POLYS * 3];
+
+  float distance = _speed * dt;
+
+  while (distance > 0.0f) {
+    int pathlen = nav_mesh.findStraightPath(start_point, new_end_point, polygons, polycount,
+                                   path_points, NULL, NULL, MAX_POLYS);
+    LPoint3f next_point;
+    rcVcopy(next_point._v.data, path_points);
+    //TODO: coordinate system conversion, remember?
+    LVector3f steer (next_point - get_transform()->get_pos());
+
+    if (steer.length_squared() <= distance * distance) {
+      // Our new pos will be between the current pos and the next point
+      steer.normalize();
+      steer *= distance;
+      CPT(TransformState) transform = get_transform();
+      set_transform(transform->set_pos(transform->get_pos() + steer));
+      distance = 0.0f;
+    } else {
+      distance -= steer.length();
+      start_point = next_point._v.data;
+    }
+  }
+}
 

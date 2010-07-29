@@ -21,6 +21,8 @@
 
 #include <DetourNavMesh.h>
 
+class DetourAgentNode;
+
 ////////////////////////////////////////////////////////////////////
 //       Class : DetourNavMeshNode
 // Description :
@@ -47,9 +49,11 @@ protected:
 
 private:
   PT(GeomNode) _viz_geom;
-  #ifndef CPPPARSER
+#ifndef CPPPARSER
   dtNavMesh *_nav_mesh;
-  #endif
+#endif
+
+  friend class DetourAgentNode;
 
 public:
   static TypeHandle get_class_type() {

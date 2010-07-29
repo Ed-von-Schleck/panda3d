@@ -39,13 +39,15 @@ PUBLISHED:
   INLINE void move_to(LPoint3f &target);
   INLINE void set_speed(float speed);
 
+  void update(float dt);
+
 private:
   PT(DetourNavMeshNode) _nav_mesh;
   PT(PandaNode) _target_node;
   PT(GenericAsyncTask) task;
   float _speed;
 
-  static AsyncTask::DoneStatus update_task(GenericAsyncTask* task, void* data);
+  static INLINE AsyncTask::DoneStatus update_task(GenericAsyncTask* task, void* data);
 
 public:
   static TypeHandle get_class_type() {

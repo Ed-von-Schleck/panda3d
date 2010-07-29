@@ -31,7 +31,7 @@ DetourAgentNode(const string &name) : PandaNode(name) {
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-AsyncTask::DoneStatus DetourAgentNode::
+INLINE AsyncTask::DoneStatus DetourAgentNode::
 update_task(GenericAsyncTask* task, void* data) {
   ClockObject *clock = task->get_manager()->get_clock();
   ((DetourAgentNode*)data)->update(clock->get_dt());
