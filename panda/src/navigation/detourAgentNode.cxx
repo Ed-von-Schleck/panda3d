@@ -69,13 +69,17 @@ update(float dt) {
     nav_mesh.closestPointOnPoly(polygons[polycount - 1], end_point, new_end_point);
   }
 
-  float path_points[MAX_POLYS * 3];
-
-  int cur_point = 0;
+  // Distance we're allowed to travel this frame.
   float distance = _speed * dt;
+  float path_points[MAX_POLYS * 3];
+  int cur_point = 0;
 
   int pathlen = nav_mesh.findStraightPath(start_point, new_end_point, polygons, polycount,
                                           path_points, NULL, NULL, MAX_POLYS);
+
+  if (pathlen == 1) {
+    _target_node = NULL;
+  }
 
   while (distance > 0.0f && cur_point < MAX_POLYS) {
     LPoint3f next_point;
