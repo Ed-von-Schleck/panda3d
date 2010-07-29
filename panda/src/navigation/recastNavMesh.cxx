@@ -288,6 +288,11 @@ build() const {
   unsigned char *nav_data = 0;
   int nav_data_size = 0;
 
+  for (int i = 0; i < poly_mesh->npolys; ++i) {
+    const AreaFlags &mask = get_area_flags(poly_mesh->areas[i]);
+    poly_mesh->flags[i] = mask.get_word();
+  }
+
   dtNavMeshCreateParams params;
   memset(&params, 0, sizeof(params));
   params.verts = poly_mesh->verts;
@@ -323,7 +328,12 @@ build() const {
       return false;
   }
 
-  if (!_node->init(nav_data, nav_data_size, DT_TILE_FREE_DATA, 2048)) {
+  if (_node->_nav_mesh) {
+    dtFreeNavMesh(_node->_nav_mesh);
+  }
+  _node->_nav_mesh = dtAllocNavMesh();
+
+  if (!_node->_nav_mesh->init(nav_data, nav_data_size, DT_TILE_FREE_DATA, 2048)) {
     dtFree(nav_data);
     navigation_cat.error()
       << "Failed to initialize Detour navigation mesh node.\n";

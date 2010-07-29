@@ -25,9 +25,13 @@
 //       Class : DetourNavMeshNode
 // Description :
 ////////////////////////////////////////////////////////////////////
-class EXPCL_NAVIGATION DetourNavMeshNode : public PandaNode, protected dtNavMesh {
+class EXPCL_NAVIGATION DetourNavMeshNode : public PandaNode {
 PUBLISHED:
   DetourNavMeshNode(const string &name);
+  virtual ~DetourNavMeshNode();
+
+  INLINE float get_area_cost(const int area);
+  INLINE void set_area_cost(const int area, float cost);
 
   friend class RecastNavMesh;
 
@@ -43,6 +47,9 @@ protected:
 
 private:
   PT(GeomNode) _viz_geom;
+  #ifndef CPPPARSER
+  dtNavMesh *_nav_mesh;
+  #endif
 
 public:
   static TypeHandle get_class_type() {

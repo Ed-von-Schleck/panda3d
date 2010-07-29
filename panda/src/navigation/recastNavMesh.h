@@ -15,6 +15,7 @@
 #ifndef RECASTNAVMESH_H
 #define RECASTNAVMESH_H
 
+#include "bitMask.h"
 #include "config_navigation.h"
 #include "detourNavMeshNode.h"
 #include "navMeshAttrib.h"
@@ -24,6 +25,8 @@
 
 struct rcHeightfield;
 struct rcConfig;
+
+typedef BitMask16 AreaFlags;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : RecastNavMesh
@@ -64,6 +67,10 @@ PUBLISHED:
   INLINE PT(DetourNavMeshNode) get_node() const;
   INLINE void set_node(PT(DetourNavMeshNode) node);
 
+  INLINE AreaFlags get_area_flags(int area) const;
+  INLINE void set_area_flags(int area, AreaFlags &mask);
+  INLINE void clear_area_flags(int area);
+
   bool build() const;
 
 protected:
@@ -82,6 +89,7 @@ protected:
   float _detail_sample_max_error;
   CPT(PandaNode) _source;
   PT(DetourNavMeshNode) _node;
+  pmap<char, BitMask16> _area_flags;
 
   virtual rcConfig configure() const;
   void rasterize_r(rcHeightfield &heightfield, CPT(PandaNode) node, CPT(RenderState) state, LMatrix4f xform = LMatrix4f::ident_mat()) const;

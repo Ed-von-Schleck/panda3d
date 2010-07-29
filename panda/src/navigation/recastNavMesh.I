@@ -312,3 +312,38 @@ set_node(PT(DetourNavMeshNode) node) {
   _node = node;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::get_area_flags
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE AreaFlags RecastNavMesh::
+get_area_flags(int area) const {
+  nassertr(area >= 0 && area <= 255, AreaFlags::all_off());
+  if (_area_flags.count(area)) {
+    return _area_flags.find(area)->second;
+  } else {
+    return AreaFlags::all_off();
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::set_area_flags
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void RecastNavMesh::
+set_area_flags(int area, AreaFlags &mask) {
+  _area_flags[area] = mask;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RecastNavMesh::clear_area_flags
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE void RecastNavMesh::
+clear_area_flags(int area) {
+  _area_flags[area] = 0;
+}
+

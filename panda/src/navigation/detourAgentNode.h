@@ -15,8 +15,10 @@
 #ifndef DETOURAGENTNODE_H
 #define DETOURAGENTNODE_H
 
+#include "asyncTaskManager.h"
 #include "config_navigation.h"
 #include "detourNavMeshNode.h"
+#include "genericAsyncTask.h"
 #include "lpoint3.h"
 #include "pandaNode.h"
 #include "pointerTo.h"
@@ -30,7 +32,7 @@ class EXPCL_NAVIGATION DetourAgentNode : public PandaNode {
 PUBLISHED:
   INLINE DetourAgentNode(const string &name);
 
-  INLINE PT(DetourNavMeshNode) get_nav_mesh();
+  INLINE PT(DetourNavMeshNode) get_nav_mesh() const;
   INLINE void set_nav_mesh(DetourNavMeshNode *nav_mesh);
 
   INLINE void move_to(PandaNode *target);
@@ -40,7 +42,10 @@ PUBLISHED:
 private:
   PT(DetourNavMeshNode) _nav_mesh;
   PT(PandaNode) _target_node;
+  PT(GenericAsyncTask) task;
   float _speed;
+
+  static AsyncTask::DoneStatus update_task(GenericAsyncTask* task, void* data);
 
 public:
   static TypeHandle get_class_type() {

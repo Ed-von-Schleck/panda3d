@@ -21,6 +21,21 @@
 INLINE DetourAgentNode::
 DetourAgentNode(const string &name) : PandaNode(name) {
   _nav_mesh = NULL;
+  PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
+  task = new GenericAsyncTask("UpdateTask", &update_task, (void*) this);
+  task_manager->add(task);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::update_task
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+AsyncTask::DoneStatus DetourAgentNode::
+update_task(GenericAsyncTask* task, void* data) {
+  ClockObject *clock = task->get_manager()->get_clock();
+  ((DetourAgentNode*)data)->update(clock->get_dt());
+  return AsyncTask::DS_cont;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -29,7 +44,7 @@ DetourAgentNode(const string &name) : PandaNode(name) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PT(DetourNavMeshNode) DetourAgentNode::
-get_nav_mesh() {
+get_nav_mesh() const {
   return _nav_mesh;
 }
 

@@ -36,10 +36,23 @@ TypeHandle DetourNavMeshNode::_type_handle;
 DetourNavMeshNode::
 DetourNavMeshNode(const string &name) : PandaNode(name) {
   _viz_geom = NULL;
+  _nav_mesh = NULL;
   set_cull_callback();
 
   // DetourNavMeshNodes are hidden by default.
   set_overall_hidden(true);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourNavMeshNode::Destructor
+//       Access: Protected
+//  Description:
+////////////////////////////////////////////////////////////////////
+DetourNavMeshNode::
+~DetourNavMeshNode() {
+  if (_nav_mesh) {
+    dtFreeNavMesh(_nav_mesh);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -82,11 +95,11 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
     PT(GeomPoints) points = new GeomPoints(Geom::UH_static);
     const LMatrix4f &conv = LMatrix4f::convert_mat(CS_yup_right, CS_default);
 
-    for (int t = 0; t < getMaxTiles(); ++t) {
-      const dtMeshHeader *header = getTile(t)->header;
+    for (int t = 0; t < _nav_mesh->getMaxTiles(); ++t) {
+      const dtMeshHeader *header = _nav_mesh->getTile(t)->header;
 
       // Add the vertices
-      const float *verts = getTile(t)->verts;
+      const float *verts = _nav_mesh->getTile(t)->verts;
       for (int v = 0; v < header->vertCount; ++v) {
         LPoint3f vtx (verts[v * 3], verts[v * 3 + 1], verts[v * 3 + 2]);
         vtx = conv.xform_point(vtx);
@@ -94,7 +107,7 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
       }
 
       // Add the polygons
-      const dtPoly *polys = getTile(t)->polys;
+      const dtPoly *polys = _nav_mesh->getTile(t)->polys;
       for (int p = 0; p < header->polyCount; ++p) {
         if (polys[p].type == DT_POLYTYPE_OFFMESH_CONNECTION) {
           continue;
@@ -202,9 +215,9 @@ compute_internal_bounds(CPT(BoundingVolume) &internal_bounds,
                         Thread *current_thread) const {
 
   LPoint3f bmin_all, bmax_all;
-  for (int i = 0; i < getMaxTiles(); ++i) {
-    float* tmin = getTile(i)->header->bmin;
-    float* tmax = getTile(i)->header->bmax;
+  for (int i = 0; i < _nav_mesh->getMaxTiles(); ++i) {
+    float* tmin = _nav_mesh->getTile(i)->header->bmin;
+    float* tmax = _nav_mesh->getTile(i)->header->bmax;
 
     if (i == 0) {
       bmin_all.set(tmin[0], tmin[1], tmin[2]);
