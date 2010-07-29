@@ -34,6 +34,8 @@ update(float dt) {
     return;
   }
 
+  const LMatrix4f &conv = LMatrix4f::convert_mat(CS_default, CS_yup_right);
+
   const dtNavMesh &nav_mesh = *_nav_mesh->_nav_mesh;
 
   dtPolyRef start (0);
@@ -43,8 +45,8 @@ update(float dt) {
   filter.includeFlags = 0xFFFF;
   filter.excludeFlags = 0;
 
-  const float* start_point = get_transform()->get_pos()._v.data;
-  const float* end_point = _target_node->get_transform()->get_pos()._v.data;
+  const float* start_point = conv.xform_point(get_transform()->get_pos())._v.data;
+  const float* end_point = conv.xform_point(_target_node->get_transform()->get_pos())._v.data;
 
   start = nav_mesh.findNearestPoly(start_point, search_box, &filter, 0);
   //TODO: transform into coordinate space of nav mesh
@@ -76,7 +78,7 @@ update(float dt) {
     LPoint3f next_point;
     rcVcopy(next_point._v.data, path_points);
     //TODO: coordinate system conversion, remember?
-    LVector3f steer (next_point - get_transform()->get_pos());
+    LVector3f steer = conv.xform_vec(next_point - get_transform()->get_pos());
 
     if (steer.length_squared() <= distance * distance) {
       // Our new pos will be between the current pos and the next point
