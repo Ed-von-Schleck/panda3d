@@ -15,7 +15,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_cell_size
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_cell_size() const {
@@ -25,7 +25,7 @@ get_cell_size() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_cell_size
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_cell_size(float cell_size) {
@@ -35,7 +35,7 @@ set_cell_size(float cell_size) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_cell_height
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_cell_height() const {
@@ -45,7 +45,7 @@ get_cell_height() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_cell_height
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_cell_height(float cell_height) {
@@ -55,7 +55,7 @@ set_cell_height(float cell_height) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_walkable_slope_angle
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_walkable_slope_angle() const {
@@ -65,7 +65,7 @@ get_walkable_slope_angle() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_walkable_slope_angle
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_walkable_slope_angle(float walkable_slope_angle) {
@@ -75,7 +75,7 @@ set_walkable_slope_angle(float walkable_slope_angle) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_walkable_height
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_walkable_height() const {
@@ -85,7 +85,7 @@ get_walkable_height() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_walkable_height
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_walkable_height(float walkable_height) {
@@ -95,7 +95,7 @@ set_walkable_height(float walkable_height) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_walkable_climb
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_walkable_climb() const {
@@ -105,7 +105,7 @@ get_walkable_climb() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_walkable_climb
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_walkable_climb(float walkable_climb) {
@@ -115,7 +115,7 @@ set_walkable_climb(float walkable_climb) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_walkable_radius
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_walkable_radius() const {
@@ -125,7 +125,7 @@ get_walkable_radius() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_walkable_radius
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_walkable_radius(float walkable_radius) {
@@ -135,7 +135,7 @@ set_walkable_radius(float walkable_radius) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_max_edge_length
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_max_edge_length() const {
@@ -145,7 +145,7 @@ get_max_edge_length() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_max_edge_length
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_max_edge_length(float max_edge_length) {
@@ -155,7 +155,7 @@ set_max_edge_length(float max_edge_length) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_max_simplification_error
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_max_simplification_error() const {
@@ -165,7 +165,7 @@ get_max_simplification_error() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_max_simplification_error
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_max_simplification_error(float max_simplification_error) {
@@ -175,7 +175,7 @@ set_max_simplification_error(float max_simplification_error) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_min_region_size
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_min_region_size() const {
@@ -185,7 +185,7 @@ get_min_region_size() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_min_region_size
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_min_region_size(float min_region_size) {
@@ -195,7 +195,7 @@ set_min_region_size(float min_region_size) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_merge_region_size
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_merge_region_size() const {
@@ -205,7 +205,7 @@ get_merge_region_size() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_merge_region_size
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_merge_region_size(float merge_region_size) {
@@ -215,7 +215,7 @@ set_merge_region_size(float merge_region_size) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_max_verts_per_poly
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE int RecastNavMesh::
 get_max_verts_per_poly() const {
@@ -225,7 +225,7 @@ get_max_verts_per_poly() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_max_verts_per_poly
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_max_verts_per_poly(int verts) {
@@ -235,7 +235,7 @@ set_max_verts_per_poly(int verts) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_detail_sample_distance
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_detail_sample_distance() const {
@@ -245,7 +245,7 @@ get_detail_sample_distance() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_detail_sample_distance
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_detail_sample_distance(float detail_sample_distance) {
@@ -255,7 +255,7 @@ set_detail_sample_distance(float detail_sample_distance) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_detail_sample_max_error
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float RecastNavMesh::
 get_detail_sample_max_error() const {
@@ -265,7 +265,7 @@ get_detail_sample_max_error() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_detail_sample_max_error
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_detail_sample_max_error(float detail_sample_max_error) {
@@ -275,7 +275,7 @@ set_detail_sample_max_error(float detail_sample_max_error) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_source
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(PandaNode) RecastNavMesh::
 get_source() const {
@@ -285,7 +285,7 @@ get_source() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_source
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_source(CPT(PandaNode) node) {
@@ -295,7 +295,7 @@ set_source(CPT(PandaNode) node) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_node
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PT(DetourNavMeshNode) RecastNavMesh::
 get_node() const {
@@ -305,7 +305,7 @@ get_node() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_node
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_node(PT(DetourNavMeshNode) node) {
@@ -315,7 +315,7 @@ set_node(PT(DetourNavMeshNode) node) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::get_area_flags
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE AreaFlags RecastNavMesh::
 get_area_flags(int area) const {
@@ -323,14 +323,14 @@ get_area_flags(int area) const {
   if (_area_flags.count(area)) {
     return _area_flags.find(area)->second;
   } else {
-    return AreaFlags::all_off();
+    return AreaFlags::all_on();
   }
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::set_area_flags
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 set_area_flags(int area, AreaFlags &mask) {
@@ -340,7 +340,7 @@ set_area_flags(int area, AreaFlags &mask) {
 ////////////////////////////////////////////////////////////////////
 //     Function: RecastNavMesh::clear_area_flags
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RecastNavMesh::
 clear_area_flags(int area) {
