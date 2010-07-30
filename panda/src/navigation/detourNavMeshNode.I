@@ -16,20 +16,22 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: DetourNavMeshNode::get_area_cost
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE float DetourNavMeshNode::
 get_area_cost(const int area) {
+  nassertr(_nav_mesh != NULL, 0);
   return _nav_mesh->getAreaCost(area);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: DetourNavMeshNode::set_area_cost
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DetourNavMeshNode::
 set_area_cost(const int area, float cost) {
+  nassertv(_nav_mesh != NULL);
   _nav_mesh->setAreaCost(area, cost);
 }
 

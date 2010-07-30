@@ -340,6 +340,10 @@ build() const {
       return false;
   }
 
+  // The computed stuff stored on the DetourAgentNode is no longer valid.
+  _node->mark_internal_bounds_stale();
+  _node->_viz_geom = NULL;
+
   return true;
 }
 

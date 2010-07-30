@@ -22,8 +22,33 @@ INLINE DetourAgentNode::
 DetourAgentNode(const string &name) : PandaNode(name) {
   _nav_mesh = NULL;
   PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
-  task = new GenericAsyncTask("UpdateTask", &update_task, (void*) this);
-  task_manager->add(task);
+  _task = new GenericAsyncTask("agent-update", &update_task, (void*) this);
+  task_manager->add(_task);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::Constructor
+//       Access: Public
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE DetourAgentNode::
+DetourAgentNode(const string &name, DetourNavMeshNode *nav_mesh) : PandaNode(name) {
+  _nav_mesh = nav_mesh;
+  PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
+  _task = new GenericAsyncTask("agent-update", &update_task, (void*) this);
+  task_manager->add(_task);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::Destructor
+//       Access: Public, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE DetourAgentNode::
+~DetourAgentNode() {
+  if (_task != NULL) {
+    _task->remove();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////

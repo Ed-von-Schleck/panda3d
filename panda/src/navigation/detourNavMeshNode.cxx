@@ -82,6 +82,11 @@ DetourNavMeshNode::
 ////////////////////////////////////////////////////////////////////
 bool DetourNavMeshNode::
 cull_callback(CullTraverser *trav, CullTraverserData &data) {
+  // If we don't have a nav mesh set yet, there's nothing to visualize.
+  if (_nav_mesh == NULL) {
+    return true;
+  }
+
   if (_viz_geom == NULL) {
     _viz_geom = new GeomNode("viz");
 
@@ -213,6 +218,15 @@ compute_internal_bounds(CPT(BoundingVolume) &internal_bounds,
                         int &internal_vertices,
                         int pipeline_stage,
                         Thread *current_thread) const {
+
+  // If we don't have a nav mesh yet, there are no bounds to
+  // compute. We'll rely on RecastNavMesh to mark the bounds
+  // as stale as soon as it sets the _nav_mesh member.
+  if (_nav_mesh == NULL) {
+    internal_bounds = new BoundingBox;
+    internal_vertices = 0;
+    return;
+  }
 
   LPoint3f bmin_all, bmax_all;
   for (int i = 0; i < _nav_mesh->getMaxTiles(); ++i) {

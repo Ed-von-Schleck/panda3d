@@ -30,7 +30,7 @@ TypeHandle DetourAgentNode::_type_handle;
 ////////////////////////////////////////////////////////////////////
 void DetourAgentNode::
 update(float dt) {
-  if (_target_node == NULL || _speed == 0.0) {
+  if (_target_node == NULL || _speed == 0.0 || _nav_mesh == NULL || _nav_mesh->_nav_mesh == NULL) {
     return;
   }
 

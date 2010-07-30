@@ -31,6 +31,8 @@
 class EXPCL_NAVIGATION DetourAgentNode : public PandaNode {
 PUBLISHED:
   INLINE DetourAgentNode(const string &name);
+  INLINE DetourAgentNode(const string &name, DetourNavMeshNode* nav_mesh);
+  INLINE virtual ~DetourAgentNode();
 
   INLINE PT(DetourNavMeshNode) get_nav_mesh() const;
   INLINE void set_nav_mesh(DetourNavMeshNode *nav_mesh);
@@ -44,7 +46,7 @@ PUBLISHED:
 private:
   PT(DetourNavMeshNode) _nav_mesh;
   PT(PandaNode) _target_node;
-  PT(GenericAsyncTask) task;
+  PT(GenericAsyncTask) _task;
   float _speed;
 
   static INLINE AsyncTask::DoneStatus update_task(GenericAsyncTask* task, void* data);
