@@ -20,6 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 INLINE DetourAgentNode::
 DetourAgentNode(const string &name) : PandaNode(name) {
+  _speed = 1.0f;
   _nav_mesh = NULL;
   PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
   _task = new GenericAsyncTask("agent-update", &update_task, (void*) this);
@@ -33,6 +34,7 @@ DetourAgentNode(const string &name) : PandaNode(name) {
 ////////////////////////////////////////////////////////////////////
 INLINE DetourAgentNode::
 DetourAgentNode(const string &name, DetourNavMeshNode *nav_mesh) : PandaNode(name) {
+  _speed = 1.0f;
   _nav_mesh = nav_mesh;
   PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
   _task = new GenericAsyncTask("agent-update", &update_task, (void*) this);
@@ -84,6 +86,30 @@ set_nav_mesh(DetourNavMeshNode *nav_mesh) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::get_target_node
+//       Access: Public
+//  Description: Returns the PandaNode that is currently being
+//               moved to. It could be a dummy node, if a point
+//               was passed to move_to(). It returns NULL if the
+//               agent is not moving, if it reached its end position.
+////////////////////////////////////////////////////////////////////
+INLINE PT(PandaNode) DetourAgentNode::
+get_target_node() const {
+  return _target_node;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::stop
+//       Access: Public
+//  Description: Clears the target that is currently set - this
+//               makes the agent stop moving.
+////////////////////////////////////////////////////////////////////
+INLINE void DetourAgentNode::
+stop() {
+  _target_node = NULL;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: DetourAgentNode::move_to
 //       Access: Public
 //  Description:
@@ -105,9 +131,21 @@ move_to(LPoint3f &target) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::get_speed
+//       Access: Public
+//  Description: Returns the speed of the model, in units per second.
+//               The default value is 1.0.
+////////////////////////////////////////////////////////////////////
+INLINE float DetourAgentNode::
+get_speed() const {
+  return _speed;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: DetourAgentNode::set_speed
 //       Access: Public
-//  Description:
+//  Description: Sets the speed of the model, in units per second.
+//               The default value is 1.0.
 ////////////////////////////////////////////////////////////////////
 INLINE void DetourAgentNode::
 set_speed(float speed) {

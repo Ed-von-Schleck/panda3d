@@ -37,8 +37,12 @@ PUBLISHED:
   INLINE PT(DetourNavMeshNode) get_nav_mesh() const;
   INLINE void set_nav_mesh(DetourNavMeshNode *nav_mesh);
 
+  INLINE PT(PandaNode) get_target_node() const;
+  INLINE void stop();
   INLINE void move_to(PandaNode *target);
   INLINE void move_to(LPoint3f &target);
+
+  INLINE float get_speed() const;
   INLINE void set_speed(float speed);
 
   void update(float dt);
