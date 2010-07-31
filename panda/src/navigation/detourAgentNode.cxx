@@ -82,7 +82,7 @@ update(float dt) {
     _target_node = NULL;
   }
 
-  while (distance > 0.0f && cur_point < MAX_POLYS) {
+  while (distance > 0.0f && cur_point < polycount) {
     LPoint3f next_point;
     rcVcopy(next_point._v.data, path_points + cur_point * 3);
     next_point = conv_back.xform_point(next_point);
