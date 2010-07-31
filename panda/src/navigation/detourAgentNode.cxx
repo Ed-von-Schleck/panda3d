@@ -129,7 +129,7 @@ update(float dt) {
   // If we arrived at this point, it means there's no next
   // point to go to. We must be really close to the end point.
   // We can just snap to it and consider the job done.
-  set_transform(get_transform()->set_pos(end_point));
+  set_transform(get_transform()->set_pos(conv_back.xform_point(end_point)));
   _target_node = NULL;
 }
 
