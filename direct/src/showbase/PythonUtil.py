@@ -2481,6 +2481,7 @@ def _getSafeReprNotify():
     global safeReprNotify
     from direct.directnotify.DirectNotifyGlobal import directNotify
     safeReprNotify = directNotify.newCategory("safeRepr")
+    return safeReprNotify
 
 def safeRepr(obj):
     global dtoolSuperBase
