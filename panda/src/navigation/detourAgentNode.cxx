@@ -47,27 +47,36 @@ update(float dt) {
   filter.includeFlags = 0xFFFF;
   filter.excludeFlags = 0;
 
-  const float* start_point = conv.xform_point(get_transform()->get_pos())._v.data;
-  const float* end_point = conv.xform_point(_target_node->get_transform()->get_pos())._v.data;
+  LPoint3f start_point = conv.xform_point(get_transform()->get_pos());
+  LPoint3f end_point = conv.xform_point(_target_node->get_transform()->get_pos());
 
-  start = nav_mesh.findNearestPoly(start_point, search_box, &filter, 0);
+  if (start_point.compare_to(end_point) == 0) {
+    _target_node = NULL;
+    return;
+  }
+
+  start = nav_mesh.findNearestPoly(start_point._v.data, search_box, &filter, 0);
   //TODO: transform into coordinate space of nav mesh
-  end = nav_mesh.findNearestPoly(end_point, search_box, &filter, 0);
+  end = nav_mesh.findNearestPoly(end_point._v.data, search_box, &filter, 0);
 
 #define MAX_POLYS 256
   dtPolyRef polygons[MAX_POLYS];
-  int polycount = nav_mesh.findPath(start, end, start_point, end_point, &filter, polygons, MAX_POLYS);
+  int polycount = nav_mesh.findPath(start, end, start_point._v.data, end_point._v.data, &filter, polygons, MAX_POLYS);
 
   if (polycount == 0) {
     return;
   }
 
   // In case the end point is not accessible, go to the closest point.
-  float new_end_point[3];
-  if (polygons[polycount - 1] == end) {
-    rcVcopy(new_end_point, end_point);
-  } else {
-    nav_mesh.closestPointOnPoly(polygons[polycount - 1], end_point, new_end_point);
+  if (polygons[polycount - 1] != end) {
+    float new_end_point[3];
+    nav_mesh.closestPointOnPoly(polygons[polycount - 1], end_point._v.data, new_end_point);
+    rcVcopy(end_point._v.data, new_end_point);
+
+    if (start_point.compare_to(end_point) == 0) {
+      _target_node = NULL;
+      return;
+    }
   }
 
   // Distance we're allowed to travel this frame.
@@ -75,8 +84,9 @@ update(float dt) {
   float path_points[MAX_POLYS * 3];
   int cur_point = 0;
 
-  int pathlen = nav_mesh.findStraightPath(start_point, new_end_point, polygons, polycount,
-                                          path_points, NULL, NULL, MAX_POLYS);
+  int pathlen = nav_mesh.findStraightPath(start_point._v.data, end_point._v.data,
+                                          polygons, polycount, path_points,
+                                          NULL, NULL, MAX_POLYS);
 
   if (pathlen == 1) {
     _target_node = NULL;
@@ -105,7 +115,9 @@ update(float dt) {
         transform = transform->set_quat(direction);
       }
       set_transform(transform);
-      break;
+
+      // We've already moved enough for this frame.
+      return;
     } else {
       transform = transform->set_pos(next_point);
       set_transform(transform);
@@ -113,5 +125,11 @@ update(float dt) {
     }
     cur_point += 1;
   }
+
+  // If we arrived at this point, it means there's no next
+  // point to go to. We must be really close to the end point.
+  // We can just snap to it and consider the job done.
+  set_transform(get_transform()->set_pos(end_point));
+  _target_node = NULL;
 }
 
