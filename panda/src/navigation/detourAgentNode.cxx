@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "detourAgentNode.h"
+#include "look_at.h"
 
 #include <Recast.h>
 
@@ -88,15 +89,26 @@ update(float dt) {
     //TODO: coordinate system conversion, remember?
     LVector3f steer = next_point - get_transform()->get_pos();
 
+    CPT(TransformState) transform = get_transform();
     if (distance * distance <= steer.length_squared()) {
       // Our new pos will be between the current pos and the next point
       steer.normalize();
       steer *= distance;
-      CPT(TransformState) transform = get_transform();
-      set_transform(transform->set_pos(transform->get_pos() + steer));
-      distance = 0.0f;
+      transform = transform->set_pos(transform->get_pos() + steer);
+      if (_auto_direction) {
+        LQuaternionf direction;
+        if (_heads_up) {
+          heads_up(direction, steer);
+        } else {
+          look_at(direction, steer);
+        }
+        transform = transform->set_quat(direction);
+      }
+      set_transform(transform);
+      break;
     } else {
-      set_transform(get_transform()->set_pos(next_point));
+      transform = transform->set_pos(next_point);
+      set_transform(transform);
       distance -= steer.length();
     }
     cur_point += 1;

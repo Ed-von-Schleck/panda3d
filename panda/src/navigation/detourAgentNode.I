@@ -19,9 +19,12 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE DetourAgentNode::
-DetourAgentNode(const string &name) : PandaNode(name) {
-  _speed = 1.0f;
-  _nav_mesh = NULL;
+DetourAgentNode(const string &name) : PandaNode(name),
+  _speed(1.0f),
+  _nav_mesh(NULL),
+  _auto_direction(true),
+  _heads_up(true) {
+
   PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
   _task = new GenericAsyncTask("agent-update", &update_task, (void*) this);
   task_manager->add(_task);
@@ -33,9 +36,12 @@ DetourAgentNode(const string &name) : PandaNode(name) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE DetourAgentNode::
-DetourAgentNode(const string &name, DetourNavMeshNode *nav_mesh) : PandaNode(name) {
-  _speed = 1.0f;
-  _nav_mesh = nav_mesh;
+DetourAgentNode(const string &name, DetourNavMeshNode *nav_mesh) : PandaNode(name),
+  _speed(1.0f),
+  _nav_mesh(nav_mesh),
+  _auto_direction(true),
+  _heads_up(true) {
+
   PT(AsyncTaskManager) task_manager = AsyncTaskManager::get_global_ptr();
   _task = new GenericAsyncTask("agent-update", &update_task, (void*) this);
   task_manager->add(_task);
@@ -83,6 +89,34 @@ get_nav_mesh() const {
 INLINE void DetourAgentNode::
 set_nav_mesh(DetourNavMeshNode *nav_mesh) {
   _nav_mesh = nav_mesh;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::get_auto_direction
+//       Access: Public
+//  Description: Returns true if the agent will automatically
+//               update it's rotation based on the direction in
+//               which it is going. The default is true.
+////////////////////////////////////////////////////////////////////
+INLINE bool DetourAgentNode::
+get_auto_direction() const {
+  return _auto_direction;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DetourAgentNode::get_auto_direction
+//       Access: Public
+//  Description: Set this to true if the agent should automatically
+//               update it's rotation based on the direction in
+//               which it is going. The default is true.
+//               If the heads_up parameter is set to true (also
+//               the default), it will use heads_up instead of
+//               look_at to update the direction.
+////////////////////////////////////////////////////////////////////
+INLINE void DetourAgentNode::
+set_auto_direction(bool on, bool heads_up) {
+  _auto_direction = on;
+  _heads_up = heads_up;
 }
 
 ////////////////////////////////////////////////////////////////////

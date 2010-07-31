@@ -37,6 +37,9 @@ PUBLISHED:
   INLINE PT(DetourNavMeshNode) get_nav_mesh() const;
   INLINE void set_nav_mesh(DetourNavMeshNode *nav_mesh);
 
+  INLINE bool get_auto_direction() const;
+  INLINE void set_auto_direction(bool on, bool heads_up = true);
+
   INLINE PT(PandaNode) get_target_node() const;
   INLINE void stop();
   INLINE void move_to(PandaNode *target);
@@ -52,6 +55,8 @@ private:
   PT(PandaNode) _target_node;
   PT(GenericAsyncTask) _task;
   float _speed;
+  bool _auto_direction;
+  bool _heads_up;
 
   static INLINE AsyncTask::DoneStatus update_task(GenericAsyncTask* task, void* data);
 
