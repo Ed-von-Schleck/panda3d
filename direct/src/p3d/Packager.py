@@ -1967,6 +1967,14 @@ class Packager:
         else:
             self.executableExtensions = [ 'so' ]
 
+        # Files that represent a Windows "manifest" file.  These files
+        # must be explicitly extracted to disk so the OS can find
+        # them.
+        if self.platform.startswith('win'):
+            self.manifestExtensions = [ 'manifest' ]
+        else:
+            self.manifestExtensions = [ ]
+
         # Extensions that are automatically remapped by convention.
         self.remapExtensions = {}
         if self.platform.startswith('win'):
@@ -1985,7 +1993,7 @@ class Packager:
                 }
 
         # Files that should be extracted to disk.
-        self.extractExtensions = self.executableExtensions[:]
+        self.extractExtensions = self.executableExtensions[:] + self.manifestExtensions[:]
 
         # Files that indicate a platform dependency.
         self.platformSpecificExtensions = self.executableExtensions[:]
