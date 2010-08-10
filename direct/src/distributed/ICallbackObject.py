@@ -1,0 +1,4 @@
+
+class ICallbackObject:
+    pass
+
