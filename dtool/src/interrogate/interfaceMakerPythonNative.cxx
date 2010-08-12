@@ -60,10 +60,10 @@ RenameSet methodRenameDictionary[] = {
     { "operator !="   , "ne",                   0 },
     { "operator <<"   , "__lshift__",           0 },
     { "operator >>"   , "__rshift__",           0 },
-    { "operator <"    , "lessThan",             0 },
-    { "operator >"    , "greaterThan",          0 },
-    { "operator <="   , "lessThanOrEqual",      0 },
-    { "operator >="   , "greaterThanOrEqual",   0 },
+    { "operator <"    , "__lt__",               0 },
+    { "operator >"    , "__gt__",               0 },
+    { "operator <="   , "__le__",               0 },
+    { "operator >="   , "__ge__",               0 },
     { "operator ="    , "assign",               0 },
     { "operator ()"   , "__call__",             0 },
     { "operator []"   , "__getitem__",          0 },
@@ -210,31 +210,7 @@ std::string  checkKeyword(std::string & cppName)
 std::string  classNameFromCppName(const std::string &cppName)
 {
     //# initialize to empty string
-    std::string className = "";
-    //# These are the characters we want to strip out of the name
-    const std::string  badChars("!@#$%^&*()<>,.-=+~{}?");
-    int nextCap = 0;
-    int firstChar = 1;
-    for(std::string::const_iterator  chr = cppName.begin(); chr != cppName.end(); chr++)
-    {
-        if (badChars.find(*chr) != std::string::npos)
-        {
-        }
-        else if (*chr == '_' || *chr == ' ')
-        {
-            nextCap = 1;
-        }
-        else if (nextCap || firstChar)
-        {
-            className += toupper(*chr);
-            nextCap = 0;
-            firstChar = 0;
-        }
-        else
-        {
-            className += * chr;
-        }
-    }
+    std::string className = InterrogateBuilder::clean_identifier(cppName);
     for(int x = 0; classRenameDictionary[x]._from != NULL; x++)
     {
         if(cppName == classRenameDictionary[x]._from)
@@ -258,20 +234,9 @@ std::string  classNameFromCppName(const std::string &cppName)
 std::string nonClassNameFromCppName(const std::string &cppName_in)
 {
     std::string className = classNameFromCppName(cppName_in);
-    //# Make the first character lowercase
-    std::string newName;
-    int pass = 0;
-    for(std::string::const_iterator  chr = className.begin(); chr != className.end(); chr++)
-    {
-        if(pass == 0)
-            newName += toupper(*chr);
-        else
-            newName += tolower(*chr);
-        pass++;
-    }    
     //# Mangle names that happen to be python keywords so they are not anymore
     //newName = checkKeyword(newName)
-    return newName;
+    return className;
 }
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -285,28 +250,7 @@ methodNameFromCppName(const std::string &cppName, const std::string &className) 
     origName = origName.substr(6);
   }
 
-  std::string methodName;
-  const std::string  badChars("!@#$%^&*()<>,.-=+~{}?");
-  int nextCap = 0;
-  for(std::string::const_iterator  chr = origName.begin(); chr != origName.end(); chr++)
-    {
-      if (badChars.find(*chr) != std::string::npos)
-        {
-        }
-      else if (*chr == '_' || *chr == ' ')
-        {
-          nextCap = 1;
-        }
-      else if (nextCap)
-        {
-          methodName += toupper(*chr);
-          nextCap = 0;
-        }
-      else
-        {
-          methodName += *chr;
-        }
-    }
+  std::string methodName = InterrogateBuilder::clean_identifier(origName);
 
   for(int x = 0; methodRenameDictionary[x]._from != NULL; x++)
     {
