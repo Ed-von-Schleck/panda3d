@@ -12,7 +12,7 @@
 #include "depthOffsetAttrib.cxx"
 #include "depthTestAttrib.cxx"
 #include "depthWriteAttrib.cxx"
-#include "alphaTestAttrib.cxx"
+#include "effect.cxx"
 #include "eventStorePandaNode.cxx"
 #include "findApproxPath.cxx"
 #include "findApproxLevelEntry.cxx"

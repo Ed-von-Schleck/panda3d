@@ -1,4 +1,5 @@
 #include "accumulatedAttribs.cxx"
+#include "alphaTestAttrib.cxx"
 #include "antialiasAttrib.cxx"
 #include "attribNodeRegistry.cxx"
 #include "audioVolumeAttrib.cxx"
