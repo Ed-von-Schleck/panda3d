@@ -12,6 +12,7 @@
 #include "simpleAllocator.cxx"
 #include "simpleLru.cxx"
 #include "sliderTable.cxx"
+#include "technique.cxx"
 #include "texture.cxx"
 #include "textureCollection.cxx"
 #include "textureContext.cxx"
@@ -34,3 +35,4 @@
 #include "vertexSlider.cxx"
 #include "vertexTransform.cxx"
 #include "videoTexture.cxx"
+

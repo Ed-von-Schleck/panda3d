@@ -55,6 +55,7 @@
     simpleAllocator.h simpleAllocator.I \
     simpleLru.h simpleLru.I \
     sliderTable.I sliderTable.h \
+    technique.h \
     texture.I texture.h \
     textureCollection.I textureCollection.h \
     textureContext.I textureContext.h \
@@ -123,6 +124,7 @@
     simpleAllocator.cxx \
     simpleLru.cxx \
     sliderTable.cxx \
+    technique.cxx \
     texture.cxx \
     textureCollection.cxx \
     textureContext.cxx \
@@ -193,6 +195,7 @@
     simpleAllocator.h simpleAllocator.I \
     simpleLru.h simpleLru.I \
     sliderTable.I sliderTable.h \
+    technique.h \
     texture.I texture.h \
     textureCollection.I textureCollection.h \
     textureContext.I textureContext.h \
