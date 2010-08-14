@@ -267,6 +267,10 @@ if (RUNTIME):
 if not os.path.isdir("contrib"):
     PkgDisable("CONTRIB")
 
+if (PkgSkip("FFMPEG")==0):
+    PkgDisable("OGG")
+    PkgDisable("VORBIS")
+
 ########################################################################
 ##
 ## Load the dependency cache.
@@ -417,8 +421,8 @@ if (COMPILER=="MSVC"):
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avcodec-51-panda.lib")
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avformat-50-panda.lib")
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avutil-49-panda.lib")
-    if (not PkgSkip("FFMPEG")==0 and PkgSkip("OGG")==0):      LibName("OGG",      GetThirdpartyDir() + "ogg/lib/libogg_static.lib")
-    if (not PkgSkip("FFMPEG")==0 and PkgSkip("VORBIS")==0):   LibName("VORBIS",   GetThirdpartyDir() + "vorbis/lib/libvorbis_static.lib")
+    if (PkgSkip("OGG")==0):      LibName("OGG",      GetThirdpartyDir() + "ogg/lib/libogg_static.lib")
+    if (PkgSkip("VORBIS")==0):   LibName("VORBIS",   GetThirdpartyDir() + "vorbis/lib/libvorbis_static.lib")
     if (PkgSkip("AWESOMIUM")==0):LibName("AWESOMIUM",   GetThirdpartyDir() + "awesomium/lib/Awesomium.lib")
     if (PkgSkip("SWSCALE")==0):  PkgDisable("SWSCALE")
     if (PkgSkip("WX")==0):
@@ -489,9 +493,8 @@ if (COMPILER=="LINUX"):
         SmartPkgEnable("ARTOOLKIT", "",          ("AR"), "AR/ar.h")
         SmartPkgEnable("FCOLLADA",  "",          ChooseLib(*fcollada_libs), ("FCollada", "FCollada.h"))
         SmartPkgEnable("FFMPEG",    ffmpeg_libs, ffmpeg_libs, ffmpeg_libs)
-        if (not PkgSkip("FFMPEG")==0):
-            SmartPkgEnable("OGG",       "libogg",    ("ogg"), ("ogg/ogg.h", "ogg/os_types.h"))
-            SmartPkgEnable("VORBIS",    "libvorbis", ("vorbis"), ("vorbis/codec.h"))
+        SmartPkgEnable("OGG",       "libogg",    ("ogg"), ("ogg/ogg.h", "ogg/os_types.h"))
+        SmartPkgEnable("VORBIS",    "libvorbis", ("vorbis"), ("vorbis/codec.h"))
         SmartPkgEnable("SWSCALE",   "libswscale", "libswscale", ("libswscale", "libswscale/swscale.h"), target_pkg = "FFMPEG")
         SmartPkgEnable("FFTW",      "",          ("fftw", "rfftw"), ("fftw.h", "rfftw.h"))
         SmartPkgEnable("FMODEX",    "",          ("fmodex"), ("fmodex", "fmodex/fmod.h"))
