@@ -29,3 +29,5 @@
 #include "indexBufferContext.cxx"
 #include "internalName.cxx"
 #include "lens.cxx"
+#include "material.cxx"
+#include "materialPool.cxx"

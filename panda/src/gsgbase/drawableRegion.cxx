@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: DrawableRegion::Destructor
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DrawableRegion::
 ~DrawableRegion() {
@@ -179,8 +179,7 @@ get_renderbuffer_type(int rtp) {
   case RTP_aux_float_2:    return RenderBuffer::T_aux_float_2;
   case RTP_aux_float_3:    return RenderBuffer::T_aux_float_3;
   default:
-    display_cat.error() << "DrawableRegion::get_renderbuffer_type unexpected case!\n";
-    return 0;
+    nassertr(false, 0);
   };
 }
 

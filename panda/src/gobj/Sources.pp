@@ -8,7 +8,7 @@
   #define LOCAL_LIBS \
     pstatclient event linmath mathutil pnmimage gsgbase putil
 
-  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx 
+  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx
 
   #define SOURCES \
     adaptiveLru.I adaptiveLru.h \
@@ -49,6 +49,7 @@
     perspectiveLens.h \
     preparedGraphicsObjects.I preparedGraphicsObjects.h \
     queryContext.I queryContext.h \
+    renderPass.I renderPass.h \
     savedContext.I savedContext.h \
     shader.I shader.h \
     shaderContext.h shaderContext.I \
@@ -78,7 +79,7 @@
     vertexSlider.I vertexSlider.h \
     vertexTransform.I vertexTransform.h \
     videoTexture.I videoTexture.h
-    
+
   #define INCLUDED_SOURCES \
     adaptiveLru.cxx \
     animateVerticesRequest.cxx \
@@ -118,6 +119,7 @@
     perspectiveLens.cxx \
     preparedGraphicsObjects.cxx \
     queryContext.cxx \
+    renderPass.cxx \
     savedContext.cxx \
     shader.cxx \
     shaderContext.cxx \
@@ -189,6 +191,7 @@
     perspectiveLens.h \
     preparedGraphicsObjects.I preparedGraphicsObjects.h \
     queryContext.I queryContext.h \
+    renderPass.I renderPass.h \
     savedContext.I savedContext.h \
     shader.I shader.h \
     shaderContext.h shaderContext.I \

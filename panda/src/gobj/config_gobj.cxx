@@ -36,6 +36,7 @@
 #include "perspectiveLens.h"
 #include "lens.h"
 #include "queryContext.h"
+#include "renderPass.h"
 #include "sliderTable.h"
 #include "texture.h"
 #include "texturePoolFilter.h"
@@ -90,7 +91,7 @@ ConfigVariableInt texture_scale_limit
           "to both X and Y."));
 
 ConfigVariableList exclude_texture_scale
-("exclude-texture-scale", 
+("exclude-texture-scale",
  PRC_DESC("This is a list of glob patterns for texture filenames "
           "(excluding the directory part of the filename, but including "
           "the extension); for instance, 'digits_*.png'.  Any texture "
@@ -303,7 +304,7 @@ ConfigVariableInt simple_image_size
 
 ConfigVariableDouble simple_image_threshold
 ("simple-image-threshold", 0.1,
- PRC_DESC("This is a value that indicates how closely a texture's " 
+ PRC_DESC("This is a value that indicates how closely a texture's "
           "generated simple "
           "image should approximate the original image.  The smaller the "
           "number, the closer the match; small numbers will result in "
@@ -451,7 +452,7 @@ PRC_DESC("If this is nonzero, it represents an artificial delay, "
          "delay is per-model, and all aync loads will be queued "
          "up behind the delay--it is as if the time it takes to read a "
          "file is increased by this amount per read."));
- 
+
 
 ConfigureFn(config_gobj) {
   AnimateVerticesRequest::init_type();
@@ -484,6 +485,7 @@ ConfigureFn(config_gobj) {
   OrthographicLens::init_type();
   PerspectiveLens::init_type();
   QueryContext::init_type();
+  RenderPass::init_type();
   ShaderContext::init_type();
   Shader::init_type();
   SliderTable::init_type();
@@ -522,6 +524,7 @@ ConfigureFn(config_gobj) {
   MatrixLens::register_with_read_factory();
   OrthographicLens::register_with_read_factory();
   PerspectiveLens::register_with_read_factory();
+  RenderPass::register_with_read_factory();
   Shader::register_with_read_factory();
   SliderTable::register_with_read_factory();
   Texture::register_with_read_factory();
@@ -537,10 +540,10 @@ operator << (ostream &out, AutoTextureScale ats) {
   switch (ats) {
   case ATS_none:
     return out << "none";
-   
+
   case ATS_down:
     return out << "down";
-    
+
   case ATS_up:
     return out << "up";
 
@@ -584,10 +587,10 @@ operator << (ostream &out, ShaderUtilization sgc) {
   switch (sgc) {
   case SUT_none:
     return out << "none";
-   
+
   case SUT_basic:
     return out << "basic";
-    
+
   case SUT_advanced:
     return out << "advanced";
 

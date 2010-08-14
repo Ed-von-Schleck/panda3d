@@ -4,7 +4,6 @@
 #include "displayRegionCullCallbackData.cxx"
 #include "displayRegionDrawCallbackData.cxx"
 #include "displaySearchParameters.cxx"
-#include "drawableRegion.cxx"
 #include "frameBufferProperties.cxx"
 #include "graphicsBuffer.cxx"
 #include "graphicsDevice.cxx"

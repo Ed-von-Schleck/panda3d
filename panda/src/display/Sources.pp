@@ -1,19 +1,18 @@
 #define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
                    dtoolutil:c dtoolbase:c dtool:m prc:c
 #define WIN_SYS_LIBS $[WIN_SYS_LIBS] ws2_32.lib
-                   
+
 #begin lib_target
   #define TARGET display
   #define LOCAL_LIBS \
     pgraph pgraphnodes cull putil gsgbase gobj linmath mathutil \
     pstatclient
 
-  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx 
- 
+  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx
+
   #define SOURCES  \
     standardMunger.I standardMunger.h \
     config_display.h \
-    drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h  \
     displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
     displayRegionDrawCallbackData.I displayRegionDrawCallbackData.h \
@@ -42,11 +41,10 @@
     displayInformation.h \
     subprocessWindow.h subprocessWindow.I \
     $[if $[OSX_PLATFORM], subprocessWindowBuffer.h subprocessWindowBuffer.I]
-    
+
  #define INCLUDED_SOURCES  \
     standardMunger.cxx \
     config_display.cxx \
-    drawableRegion.cxx \
     displayRegion.cxx \
     displayRegionCullCallbackData.cxx \
     displayRegionDrawCallbackData.cxx \
@@ -74,7 +72,6 @@
   #define INSTALL_HEADERS \
     standardMunger.I standardMunger.h \
     config_display.h \
-    drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h \
     displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
     displayRegionDrawCallbackData.I displayRegionDrawCallbackData.h \

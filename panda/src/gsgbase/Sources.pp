@@ -5,23 +5,26 @@
   #define TARGET gsgbase
   #define LOCAL_LIBS \
     putil linmath
-    
-  #define COMBINED_SOURCES $[TARGET]_composite1.cxx     
+
+  #define COMBINED_SOURCES $[TARGET]_composite1.cxx
 
   #define SOURCES \
     config_gsgbase.h \
     displayRegionBase.I displayRegionBase.h \
+    drawableRegion.I drawableRegion.h \
     graphicsOutputBase.I graphicsOutputBase.h \
-    graphicsStateGuardianBase.h    
+    graphicsStateGuardianBase.h
 
   #define INCLUDED_SOURCES \
     config_gsgbase.cxx \
     displayRegionBase.cxx \
+    drawableRegion.cxx \
     graphicsOutputBase.cxx \
     graphicsStateGuardianBase.cxx
 
   #define INSTALL_HEADERS \
     displayRegionBase.I displayRegionBase.h \
+    drawableRegion.I drawableRegion.h \
     graphicsOutputBase.I graphicsOutputBase.h \
     graphicsStateGuardianBase.h
 
