@@ -21,7 +21,8 @@
 INLINE EffectFile::
 EffectFile(const string &name) :
   Effect(name),
-  _fullpath(name)
+  _fullpath(name),
+  _reference(new EffectFile::EffectReference)
 {
 }
 

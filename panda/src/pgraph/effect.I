@@ -31,8 +31,7 @@ Effect(const string &name) : PandaNode(name) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Effect::
 has_technique(CPT(InternalName) name) {
-  int index = _techniques.find(name);
-  return (index != -1);
+  return (bool) _techniques.count(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -42,9 +41,9 @@ has_technique(CPT(InternalName) name) {
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(Technique) Effect::
 get_technique(CPT(InternalName) name) const {
-  int index = _techniques.find(name);
-  nassertr(index != -1, NULL);
-  return _techniques.get_data(index);
+  Techniques::const_iterator it = _techniques.find(name);
+  nassertr(it != _techniques.end(), NULL);
+  return it->second;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -64,6 +63,8 @@ set_technique(CPT(InternalName) name, PT(Technique) technique) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Effect::
 remove_technique(CPT(InternalName) name) {
-  _techniques.remove(name);
+  Techniques::iterator it = _techniques.find(name);
+  nassertv(it != _techniques.end());
+  _techniques.erase(it);
 }
 

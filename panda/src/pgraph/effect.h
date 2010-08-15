@@ -17,7 +17,7 @@
 
 #include "internalName.h"
 #include "pandaNode.h"
-#include "simpleHashMap.h"
+#include "pmap.h"
 #include "technique.h"
 
 ////////////////////////////////////////////////////////////////////
@@ -38,7 +38,17 @@ public:
   virtual bool cull_callback(CullTraverser *trav, CullTraverserData &data);
 
 private:
-  SimpleHashMap<CPT(InternalName), PT(Technique)> _techniques;
+  typedef phash_map<CPT(InternalName), PT(Technique)> Techniques;
+  Techniques _techniques;
+
+public:
+  static void register_with_read_factory();
+  virtual void write_datagram(BamWriter *manager, Datagram &me);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
+
+protected:
+  static TypedWritable *make_from_bam(const FactoryParams &params);
+  void fillin(DatagramIterator &scan, BamReader *manager);
 
 public:
   static TypeHandle get_class_type() {

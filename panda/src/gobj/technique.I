@@ -14,33 +14,42 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Technique::get_num_render_passes
+//     Function: Technique::Constructor
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE Technique::
+Technique() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Technique::get_num_passes
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE int Technique::
-get_num_render_passes() const {
-  return _render_passes.size();
+get_num_passes() const {
+  return _passes.size();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Technique::get_render_pass
+//     Function: Technique::get_pass
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(RenderPass) Technique::
-get_render_pass(int i) const {
-  nassertr(_render_passes.size() >= i, NULL);
-  return _render_passes[i];
+get_pass(int i) const {
+  nassertr(_passes.size() >= i, NULL);
+  return _passes[i];
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Technique::modify_render_pass
+//     Function: Technique::modify_pass
 //       Access: Published
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE PT(RenderPass) Technique::
-modify_render_pass(int i) {
+modify_pass(int i) {
   
 }
 

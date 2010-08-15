@@ -51,3 +51,94 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
 
   return false;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::register_with_read_factory
+//       Access: Public, Static
+//  Description: Tells the BamReader how to create objects of type
+//               Effect.
+////////////////////////////////////////////////////////////////////
+void Effect::
+register_with_read_factory() {
+  BamReader::get_factory()->register_factory(get_class_type(), make_from_bam);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::write_datagram
+//       Access: Public, Virtual
+//  Description: Writes the contents of this object to the datagram
+//               for shipping out to a Bam file.
+////////////////////////////////////////////////////////////////////
+void Effect::
+write_datagram(BamWriter *manager, Datagram &dg) {
+  PandaNode::write_datagram(manager, dg);
+
+  // First write out the amount of techniques, so we will
+  // know how many to read when we're reading them later.
+  dg.add_uint8((unsigned char) _techniques.size());
+  
+  Techniques::const_iterator it;
+  for (it = _techniques.begin(); it != _techniques.end(); ++it) {
+    dg.add_string(it->first->get_name());
+    manager->write_pointer(dg, it->second);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::complete_pointers
+//       Access: Public, Virtual
+//  Description: Receives an array of pointers, one for each time
+//               manager->read_pointer() was called in fillin().
+//               Returns the number of pointers processed.
+////////////////////////////////////////////////////////////////////
+int Effect::
+complete_pointers(TypedWritable **p_list, BamReader *manager) {
+   int pi = PandaNode::complete_pointers(p_list, manager);
+
+  Techniques::iterator ci;
+  for (ci = _techniques.begin(); ci != _techniques.end(); ++ci) {
+    Technique *ts = DCAST(Technique, p_list[pi++]);
+    ci->second = ts;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::make_from_bam
+//       Access: Protected, Static
+//  Description: This function is called by the BamReader's factory
+//               when a new object of type Effect is encountered
+//               in the Bam file.  It should create the Effect
+//               and extract its information from the file.
+////////////////////////////////////////////////////////////////////
+TypedWritable *Effect::
+make_from_bam(const FactoryParams &params) {
+  Effect *node = new Effect("");
+  DatagramIterator scan;
+  BamReader *manager;
+
+  parse_params(params, scan, manager);
+  node->fillin(scan, manager);
+
+  return node;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::fillin
+//       Access: Protected
+//  Description: This internal function is called by make_from_bam to
+//               read in all of the relevant data from the BamFile for
+//               the new Effect.
+////////////////////////////////////////////////////////////////////
+void Effect::
+fillin(DatagramIterator &scan, BamReader *manager) {
+  PandaNode::fillin(scan, manager);
+
+  int tech_count = (int) scan.get_uint8();
+  _techniques.clear();
+  for (int i = 0; i < tech_count; i++) {
+    const string &name (scan.get_string());
+    manager->read_pointer(scan);
+    set_technique(InternalName::make(name), NULL);
+  }
+}
+

@@ -20,6 +20,18 @@
 EffectPool *EffectPool::_global_ptr = (EffectPool *)NULL;
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EffectPool::write
+//       Access: Published, Static
+//  Description: Lists the contents of the effect pool to the
+//               indicated output stream.
+//               Helps with debugging.
+////////////////////////////////////////////////////////////////////
+void EffectPool::
+write(ostream &out) {
+  get_ptr()->ns_list_contents(out);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EffectPool::ns_has_effect
 //       Access: Private
 //  Description: The nonstatic implementation of has_effect().

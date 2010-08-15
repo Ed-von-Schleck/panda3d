@@ -18,25 +18,36 @@
 #include "pointerTo.h"
 #include "pvector.h"
 #include "renderPass.h"
-#include "typedReferenceCount.h"
+#include "typedWritableReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : Technique
 // Description : 
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_GOBJ Technique : public TypedReferenceCount {
+class EXPCL_PANDA_GOBJ Technique : public TypedWritableReferenceCount {
 PUBLISHED:
-  INLINE int get_num_render_passes() const;
-  INLINE CPT(RenderPass) get_render_pass(int i) const;
-  MAKE_SEQ(get_render_passes, get_num_render_passes, get_render_pass);
-  INLINE PT(RenderPass) modify_render_pass(int i);
-  void set_render_pass(int i, const RenderPass *pass);
-  void add_render_pass(const RenderPass *pass);
-  void remove_render_pass(int i);
-  void clear_render_pass();
+  INLINE Technique();
+  INLINE int get_num_passes() const;
+  INLINE CPT(RenderPass) get_pass(int i) const;
+  MAKE_SEQ(get_passes, get_num_passes, get_pass);
+  INLINE PT(RenderPass) modify_pass(int i);
+  void set_pass(int i, RenderPass *pass);
+  void add_pass(RenderPass *pass);
+  void remove_pass(int i);
+  void clear_pass();
 
 private:
-  pvector<PT(RenderPass)> _render_passes;
+   typedef pvector<PT(RenderPass)> RenderPasses;
+   RenderPasses _passes;
+
+public:
+  static void register_with_read_factory();
+  virtual void write_datagram(BamWriter *manager, Datagram &me);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
+
+protected:
+  static TypedWritable *make_from_bam(const FactoryParams &params);
+  void fillin(DatagramIterator &scan, BamReader *manager);
 
 public:
   static TypeHandle get_class_type() {
