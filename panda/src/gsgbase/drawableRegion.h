@@ -65,10 +65,10 @@ PUBLISHED:
 
   INLINE void set_clear_color_active(bool clear_color_active);
   INLINE bool get_clear_color_active() const;
-  
+
   INLINE void set_clear_depth_active(bool clear_depth_active);
   INLINE bool get_clear_depth_active() const;
- 
+
   INLINE void set_clear_stencil_active(bool clear_stencil_active);
   INLINE bool get_clear_stencil_active() const;
 
@@ -86,7 +86,7 @@ PUBLISHED:
 
   virtual void set_clear_value(int n, const Colorf &clear_value);
   virtual const Colorf &get_clear_value(int n) const;
-  
+
   virtual void disable_clears();
   virtual bool is_any_clear_active() const;
 
@@ -96,7 +96,7 @@ PUBLISHED:
   virtual bool supports_pixel_zoom() const;
 
   static int get_renderbuffer_type(int plane);
-  
+
 public:
   INLINE int get_screenshot_buffer_type() const;
   INLINE int get_draw_buffer_type() const;
@@ -109,7 +109,6 @@ protected:
   int _screenshot_buffer_type;
   int _draw_buffer_type;
 
-private:
   bool    _clear_active[RTP_COUNT];
   Colorf  _clear_value[RTP_COUNT];
 

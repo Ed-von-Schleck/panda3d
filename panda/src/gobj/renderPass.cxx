@@ -37,6 +37,12 @@ void RenderPass::
 write_datagram(BamWriter *manager, Datagram &dg) {
   dg.add_string(get_name());
   dg.add_uint8((unsigned char) _draw_type);
+
+  dg.add_uint8((unsigned char) RTP_COUNT);
+  for (int i = 0; i < RTP_COUNT; ++i) {
+    dg.add_bool(_clear_active[i]);
+    _clear_value[i].write_datagram(dg);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -70,4 +76,13 @@ void RenderPass::
 fillin(DatagramIterator &scan, BamReader *manager) {
   set_name(scan.get_string());
   _draw_type = (DrawType) scan.get_uint8();
+
+  int num_rtps = (int) scan.get_uint8();
+  if (num_rtps > RTP_COUNT) {
+    num_rtps = RTP_COUNT;
+  }
+  for (int i = 0; i < num_rtps; i++) {
+    _clear_active[i] = scan.get_bool();
+    _clear_value[i].read_datagram(scan);
+  }
 }

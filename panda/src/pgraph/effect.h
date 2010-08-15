@@ -22,16 +22,21 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : Effect
-// Description : 
+// Description :
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_PGRAPH Effect : public PandaNode {
 PUBLISHED:
   INLINE Effect(const string &name);
+  virtual ~Effect() {};
 
   INLINE bool has_technique(CPT(InternalName) name);
   INLINE CPT(Technique) get_technique(CPT(InternalName) name) const;
   INLINE void set_technique(CPT(InternalName) name, PT(Technique) technique);
   INLINE void remove_technique(CPT(InternalName) name);
+
+public:
+  virtual bool cull_callback(CullTraverser *trav, CullTraverserData &data);
+
 private:
   SimpleHashMap<CPT(InternalName), PT(Technique)> _techniques;
 

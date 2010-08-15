@@ -16,18 +16,18 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: Effect::Constructor
 //       Access: Published
-//  Description:
+//  Description: Constructs a new Effect that can be placed in the
+//               scene graph.
 ////////////////////////////////////////////////////////////////////
 INLINE Effect::
-Effect(const string &name) :
-  PandaNode(name)
-{
+Effect(const string &name) : PandaNode(name) {
+  set_cull_callback();
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Effect::has_technique
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE bool Effect::
 has_technique(CPT(InternalName) name) {
@@ -38,7 +38,7 @@ has_technique(CPT(InternalName) name) {
 ////////////////////////////////////////////////////////////////////
 //     Function: Effect::get_technique
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(Technique) Effect::
 get_technique(CPT(InternalName) name) const {
@@ -50,7 +50,7 @@ get_technique(CPT(InternalName) name) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: Effect::set_technique
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void Effect::
 set_technique(CPT(InternalName) name, PT(Technique) technique) {
@@ -60,7 +60,7 @@ set_technique(CPT(InternalName) name, PT(Technique) technique) {
 ////////////////////////////////////////////////////////////////////
 //     Function: Effect::remove_technique
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void Effect::
 remove_technique(CPT(InternalName) name) {

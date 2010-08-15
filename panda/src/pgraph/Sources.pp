@@ -48,7 +48,7 @@
     depthWriteAttrib.I depthWriteAttrib.h \
     effect.I effect.h \
     effectFile.I effectFile.h \
-    effectPool.I effect.h \
+    effectPool.I effectPool.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     findApproxLevelEntry.I findApproxLevelEntry.h \
     findApproxPath.I findApproxPath.h \
