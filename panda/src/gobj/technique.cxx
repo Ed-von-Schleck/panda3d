@@ -20,7 +20,7 @@ TypeHandle Technique::_type_handle;
 ////////////////////////////////////////////////////////////////////
 //     Function: Technique::set_pass
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void Technique::
 set_pass(int i, RenderPass *pass) {
@@ -30,7 +30,7 @@ set_pass(int i, RenderPass *pass) {
 ////////////////////////////////////////////////////////////////////
 //     Function: Technique::add_pass
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void Technique::
 add_pass(RenderPass *pass) {
@@ -40,7 +40,7 @@ add_pass(RenderPass *pass) {
 ////////////////////////////////////////////////////////////////////
 //     Function: Technique::remove_pass
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void Technique::
 remove_pass(int i) {
@@ -50,7 +50,7 @@ remove_pass(int i) {
 ////////////////////////////////////////////////////////////////////
 //     Function: Technique::clear_pass
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void Technique::
 clear_pass() {
@@ -76,11 +76,10 @@ register_with_read_factory() {
 ////////////////////////////////////////////////////////////////////
 void Technique::
 write_datagram(BamWriter *manager, Datagram &dg) {
-
   // First write out the amount of render passes, so we will
   // know how many to read when we're reading them later.
-  dg.add_uint8((unsigned char) _passes.size());
-  
+  dg.add_uint16((unsigned short) _passes.size());
+
   RenderPasses::const_iterator it;
   for (it = _passes.begin(); it != _passes.end(); ++it) {
     manager->write_pointer(dg, *it);
@@ -134,12 +133,12 @@ make_from_bam(const FactoryParams &params) {
 ////////////////////////////////////////////////////////////////////
 void Technique::
 fillin(DatagramIterator &scan, BamReader *manager) {
-  int tech_count = (int) scan.get_uint8();
+  int tech_count = (int) scan.get_uint16();
   _passes.clear();
-  for (int i = 0; i < tech_count; i++) {
-    const string &name (scan.get_string());
+  _passes.reserve(tech_count);
+  for (int i = 0; i < tech_count; ++i) {
     manager->read_pointer(scan);
-    add_pass(NULL);
+    _passes[i] = NULL;
   }
 }
 

@@ -43,7 +43,7 @@ TypeHandle Effect::_type_handle;
 ////////////////////////////////////////////////////////////////////
 bool Effect::
 cull_callback(CullTraverser *trav, CullTraverserData &data) {
-  //TODO: select a technique
+  //TODO: technique selection
   for (int i = 0; i < get_num_children(); ++i) {
     CullTraverserData next_data(data, get_child(i));
     trav->traverse(next_data);
@@ -75,11 +75,11 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 
   // First write out the amount of techniques, so we will
   // know how many to read when we're reading them later.
-  dg.add_uint8((unsigned char) _techniques.size());
-  
+  dg.add_uint16((unsigned short) _techniques.size());
+
   Techniques::const_iterator it;
   for (it = _techniques.begin(); it != _techniques.end(); ++it) {
-    dg.add_string(it->first->get_name());
+    manager->write_pointer(dg, it->first);
     manager->write_pointer(dg, it->second);
   }
 }
@@ -93,12 +93,13 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 ////////////////////////////////////////////////////////////////////
 int Effect::
 complete_pointers(TypedWritable **p_list, BamReader *manager) {
-   int pi = PandaNode::complete_pointers(p_list, manager);
+  int pi = PandaNode::complete_pointers(p_list, manager);
 
-  Techniques::iterator ci;
-  for (ci = _techniques.begin(); ci != _techniques.end(); ++ci) {
-    Technique *ts = DCAST(Technique, p_list[pi++]);
-    ci->second = ts;
+  int tech_count = manager->get_int_tag("tech_count");
+  for (int i = 0; i < tech_count; ++i) {
+    const InternalName *name = DCAST(InternalName, p_list[pi++]);
+    Technique *t = DCAST(Technique, p_list[pi++]);
+    _techniques[name] = t;
   }
 }
 
@@ -133,12 +134,12 @@ void Effect::
 fillin(DatagramIterator &scan, BamReader *manager) {
   PandaNode::fillin(scan, manager);
 
-  int tech_count = (int) scan.get_uint8();
+  int tech_count = (int) scan.get_uint16();
+  manager->set_int_tag("tech_count", tech_count);
   _techniques.clear();
   for (int i = 0; i < tech_count; i++) {
-    const string &name (scan.get_string());
     manager->read_pointer(scan);
-    set_technique(InternalName::make(name), NULL);
+    manager->read_pointer(scan);
   }
 }
 
