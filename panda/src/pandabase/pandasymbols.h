@@ -32,12 +32,28 @@
   #define EXPTP_CFTALK extern
 #endif
 
+#ifdef BUILDING_CG
+  #define EXPCL_CG __declspec(dllexport)
+  #define EXPTP_CG
+#else
+  #define EXPCL_CG __declspec(dllimport)
+  #define EXPTP_CG extern
+#endif
+
 #ifdef BUILDING_COLLADA
   #define EXPCL_COLLADA __declspec(dllexport)
   #define EXPTP_COLLADA
 #else
   #define EXPCL_COLLADA __declspec(dllimport)
   #define EXPTP_COLLADA extern
+#endif
+
+#ifdef BUILDING_FMOD_AUDIO
+  #define EXPCL_FMOD_AUDIO __declspec(dllexport)
+  #define EXPTP_FMOD_AUDIO
+#else
+  #define EXPCL_FMOD_AUDIO __declspec(dllimport)
+  #define EXPTP_FMOD_AUDIO extern
 #endif
 
 #ifdef BUILDING_FRAMEWORK
@@ -64,12 +80,12 @@
   #define EXPTP_MILES_AUDIO extern
 #endif
 
-#ifdef BUILDING_FMOD_AUDIO
-  #define EXPCL_FMOD_AUDIO __declspec(dllexport)
-  #define EXPTP_FMOD_AUDIO
+#ifdef BUILDING_NAVIGATION
+  #define EXPCL_NAVIGATION __declspec(dllexport)
+  #define EXPTP_NAVIGATION
 #else
-  #define EXPCL_FMOD_AUDIO __declspec(dllimport)
-  #define EXPTP_FMOD_AUDIO extern
+  #define EXPCL_NAVIGATION __declspec(dllimport)
+  #define EXPTP_NAVIGATION extern
 #endif
 
 #ifdef BUILDING_OPENAL_AUDIO
@@ -261,8 +277,14 @@
 #define EXPCL_CFTALK
 #define EXPTP_CFTALK
 
+#define EXPCL_CG
+#define EXPTP_CG
+
 #define EXPCL_COLLADA
 #define EXPTP_COLLADA
+
+#define EXPCL_FMOD_AUDIO
+#define EXPTP_FMOD_AUDIO
 
 #define EXPCL_FRAMEWORK
 #define EXPTP_FRAMEWORK
@@ -273,8 +295,8 @@
 #define EXPCL_MILES_AUDIO
 #define EXPTP_MILES_AUDIO
 
-#define EXPCL_FMOD_AUDIO
-#define EXPTP_FMOD_AUDIO
+#define EXPCL_NAVIGATION
+#define EXPTP_NAVIGATION
 
 #define EXPCL_OPENAL_AUDIO
 #define EXPTP_OPENAL_AUDIO

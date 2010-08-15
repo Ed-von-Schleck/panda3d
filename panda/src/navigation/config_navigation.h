@@ -17,10 +17,6 @@
 
 #include "pandabase.h"
 
-//FIXME: do this properly in pandabase.h
-#define EXPCL_NAVIGATION
-#define EXPTP_NAVIGATION
-
 #include "notifyCategoryProxy.h"
 #include "dconfig.h"
 
