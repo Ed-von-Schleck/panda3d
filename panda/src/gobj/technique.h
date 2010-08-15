@@ -15,6 +15,9 @@
 #ifndef TECHNIQUE_H
 #define TECHNIQUE_H
 
+#include "pointerTo.h"
+#include "pvector.h"
+#include "renderPass.h"
 #include "typedReferenceCount.h"
 
 ////////////////////////////////////////////////////////////////////
@@ -23,7 +26,18 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_GOBJ Technique : public TypedReferenceCount {
 PUBLISHED:
-  void temp() {};
+  INLINE int get_num_render_passes() const;
+  INLINE CPT(RenderPass) get_render_pass(int i) const;
+  MAKE_SEQ(get_render_passes, get_num_render_passes, get_render_pass);
+  INLINE PT(RenderPass) modify_render_pass(int i);
+  void set_render_pass(int i, const RenderPass *pass);
+  void add_render_pass(const RenderPass *pass);
+  void remove_render_pass(int i);
+  void clear_render_pass();
+
+private:
+  pvector<PT(RenderPass)> _render_passes;
+
 public:
   static TypeHandle get_class_type() {
     return _type_handle;
@@ -42,6 +56,8 @@ private:
   static TypeHandle _type_handle;
 
 };
+
+#include "technique.I"
 
 #endif
 

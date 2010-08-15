@@ -47,6 +47,8 @@
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
     effect.I effect.h \
+    effectFile.I effectFile.h \
+    effectPool.I effect.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     findApproxLevelEntry.I findApproxLevelEntry.h \
     findApproxPath.I findApproxPath.h \
@@ -147,6 +149,8 @@
     depthTestAttrib.cxx \
     depthWriteAttrib.cxx \
     effect.cxx \
+    effectFile.cxx \
+    effectPool.cxx \
     eventStorePandaNode.cxx \
     findApproxLevelEntry.cxx \
     findApproxPath.cxx \
@@ -245,6 +249,8 @@
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
     effect.I effect.h \
+    effectFile.I effectFile.h \
+    effectPool.I effectPool.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     fog.I fog.h \
     fogAttrib.I fogAttrib.h \

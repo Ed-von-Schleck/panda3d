@@ -14,6 +14,17 @@
 
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Effect::Constructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE Effect::
+Effect(const string &name) :
+  PandaNode(name)
+{
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Effect::has_technique
 //       Access: Published
 //  Description: 
@@ -21,11 +32,7 @@
 INLINE bool Effect::
 has_technique(CPT(InternalName) name) {
   int index = _techniques.find(name);
-  if (index == -1) {
-    return NULL;
-  } else {
-    return index;
-  }
+  return (index != -1);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -26,6 +26,8 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_PGRAPH Effect : public PandaNode {
 PUBLISHED:
+  INLINE Effect(const string &name);
+
   INLINE bool has_technique(CPT(InternalName) name);
   INLINE CPT(Technique) get_technique(CPT(InternalName) name) const;
   INLINE void set_technique(CPT(InternalName) name, PT(Technique) technique);
@@ -49,7 +51,6 @@ public:
 
 private:
   static TypeHandle _type_handle;
-
 
 };
 
