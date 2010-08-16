@@ -98,7 +98,7 @@ WinGraphicsWindow(GraphicsEngine *engine, GraphicsPipe *pipe,
   _ime_open = false;
   _ime_active = false;
   _tracking_mouse_leaving = false;
-  _maximized = false;
+  _in_modal_loop = true;
   _cursor = 0;
   memset(_keyboard_state, 0, sizeof(BYTE) * num_virtual_keys);
   _lost_keypresses = false;
@@ -1409,24 +1409,25 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       windisplay_cat.debug()
         << "WM_SIZE: " << hwnd << ", " << wparam << "\n";
     }
+
     // for maximized, unmaximize, need to call resize code
     // artificially since no WM_EXITSIZEMOVE is generated.
-    if (wparam == SIZE_MAXIMIZED) {
-      _maximized = true;
-      handle_reshape();
-    
-    } else if (wparam == SIZE_RESTORED && _maximized) {
+    if (wparam == SIZE_MAXIMIZED || (wparam == SIZE_RESTORED && !_in_modal_loop)) {
       // SIZE_RESTORED might mean we restored to its original size
       // before the maximize, but it might also be called while the
-      // user is resizing the window by hand.  Checking the _maximized
+      // user is resizing the window by hand.  Checking the _in_modal_loop
       // flag that we set above allows us to differentiate the two
       // cases.
-      _maximized = false;
       handle_reshape();
     }
     break;
-    
+
+  case WM_ENTERSIZEMOVE:
+    _in_modal_loop = true;
+    break;
+
   case WM_EXITSIZEMOVE:
+    _in_modal_loop = false;
     handle_reshape();
     break;
 
