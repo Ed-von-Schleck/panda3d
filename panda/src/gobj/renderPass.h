@@ -17,6 +17,7 @@
 
 #include "typedWritableReferenceCount.h"
 #include "drawableRegion.h"
+#include "renderState.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : RenderPass
@@ -34,9 +35,12 @@ PUBLISHED:
 
   INLINE DrawType get_draw_type() const;
   INLINE void set_draw_type(DrawType draw_type);
+  INLINE PT(RenderState) get_state() const;
+  INLINE void set_state(PT(RenderState) state);
 
 private:
   DrawType _draw_type;
+  PT(RenderState) _state;
 
 public:
   static void register_with_read_factory();

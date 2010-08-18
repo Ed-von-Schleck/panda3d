@@ -15,9 +15,11 @@
 #ifndef CGEFFECT_H
 #define CGEFFECT_H
 
+#include "bamCacheRecord.h"
 #include <Cg/cg.h>
-#include "config_navigation.h"
+#include "config_cg.h"
 #include "effect.h"
+#include "renderState.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : CgEffect
@@ -25,8 +27,9 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_CG CgEffect : public Effect {
 PUBLISHED:
-  INLINE CgEffect(const string &name);
-  bool read(const Filename &fullpath);
+  INLINE CgEffect(const string &name = string());
+  INLINE static PT(CgEffect) make_effect();
+  virtual bool read(const Filename &fullpath, BamCacheRecord *record = NULL);
 };
 
 #include "cgEffect.I"

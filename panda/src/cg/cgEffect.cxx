@@ -24,7 +24,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 bool CgEffect::
-read(const Filename &fullpath) {
+read(const Filename &fullpath, BamCacheRecord *record) {
   string body;
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
   if (!vfs->read_file(fullpath, body, true)) {
@@ -44,6 +44,7 @@ read(const Filename &fullpath) {
     while (cg_pass) {
       PT(RenderPass) pass = new RenderPass(cgGetPassName(cg_pass));
       technique->add_pass(pass);
+
       cg_pass = cgGetNextPass(cg_pass);
     }
 

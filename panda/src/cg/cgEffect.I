@@ -24,3 +24,13 @@ CgEffect(const string &name) :
 {
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: CgEffect::make_effect
+//       Access: Public, Static
+//  Description: A factory function to make a new CgEffect, used to
+//               pass to the EffectPool.
+////////////////////////////////////////////////////////////////////
+INLINE PT(CgEffect) CgEffect::
+make_effect() {
+  return new CgEffect;
+}
