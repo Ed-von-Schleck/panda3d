@@ -41,7 +41,7 @@ BamCache() :
   _index_stale_since(0)
 {
   ConfigVariableFilename model_cache_dir
-    ("model-cache-dir", Filename(), 
+    ("model-cache-dir", Filename(),
      PRC_DESC("The full path to a directory, local to this computer, in which "
               "model and texture files will be cached on load.  If a directory "
               "name is specified here, files may be loaded from the cache "
@@ -49,7 +49,7 @@ BamCache() :
               "especially if you are loading egg files instead of bam files, "
               "or if you are loading models from a shared network drive.  "
               "If this is the empty string, no cache will be used."));
-  
+
   ConfigVariableInt model_cache_flush
     ("model-cache-flush", 30,
      PRC_DESC("This is the amount of time, in seconds, between automatic "
@@ -72,6 +72,11 @@ BamCache() :
               "by the GSG.  This may be set in conjunction with "
               "model-cache-textures, or it may be independent."));
 
+  ConfigVariableBool model_cache_effects
+    ("model-cache-effects", true,
+     PRC_DESC("If this is set to true, effects will also be cached in the "
+              "model cache, as bam files."));
+
   ConfigVariableInt model_cache_max_kbytes
     ("model-cache-max-kbytes", 1048576,
      PRC_DESC("This is the maximum size of the model cache, in kilobytes."));
@@ -79,6 +84,7 @@ BamCache() :
   _cache_models = model_cache_models;
   _cache_textures = model_cache_textures;
   _cache_compressed_textures = model_cache_compressed_textures;
+  _cache_effects = model_cache_effects;
 
   _flush_time = model_cache_flush;
   _max_kbytes = model_cache_max_kbytes;
@@ -139,7 +145,7 @@ set_root(const Filename &root) {
 ////////////////////////////////////////////////////////////////////
 //     Function: BamCache::lookup
 //       Access: Published
-//  Description: Looks up a file in the cache.  
+//  Description: Looks up a file in the cache.
 //
 //               If the file is cacheable, then regardless of whether
 //               the file is found in the cache or not, this returns a
@@ -164,7 +170,7 @@ lookup(const Filename &source_filename, const string &cache_extension) {
   consider_flush_index();
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  
+
   Filename source_pathname(source_filename);
   source_pathname.make_absolute(vfs->get_cwd());
 
@@ -200,7 +206,7 @@ store(BamCacheRecord *record) {
   if (_read_only) {
     return false;
   }
-  
+
   consider_flush_index();
 
 #ifndef NDEBUG
@@ -239,7 +245,7 @@ store(BamCacheRecord *record) {
     emergency_read_only();
     return false;
   }
-  
+
   if (!dout.write_header(_bam_header)) {
     util_cat.error()
       << "Unable to write to " << temp_pathname << "\n";
@@ -253,7 +259,7 @@ store(BamCacheRecord *record) {
       temp_pathname.unlink();
       return false;
     }
-    
+
     TypeRegistry *type_registry = TypeRegistry::ptr();
     TypeHandle texture_type = type_registry->find_type("Texture");
     if (record->get_data()->is_of_type(texture_type)) {
@@ -263,12 +269,12 @@ store(BamCacheRecord *record) {
       // Any other kinds of objects write texture references.
       writer.set_file_texture_mode(BamWriter::BTM_fullpath);
     }
-    
+
     if (!writer.write_object(record)) {
       temp_pathname.unlink();
       return false;
     }
-    
+
     if (!writer.write_object(record->get_data())) {
       temp_pathname.unlink();
       return false;
@@ -287,7 +293,7 @@ store(BamCacheRecord *record) {
     cache_pathname.unlink();
     if (!temp_pathname.rename_to(cache_pathname)) {
       util_cat.error()
-        << "Unable to rename " << temp_pathname << " to " 
+        << "Unable to rename " << temp_pathname << " to "
         << cache_pathname << "\n";
       temp_pathname.unlink();
       return false;
@@ -303,7 +309,7 @@ store(BamCacheRecord *record) {
 //     Function: BamCache::emergency_read_only
 //       Access: Private
 //  Description: Called when an attempt to write to the cache dir
-//               has failed, usually for lack of disk space or 
+//               has failed, usually for lack of disk space or
 //               because of incorrect file permissions.  Outputs
 //               an error and puts the BamCache into read-only
 //               mode.
@@ -356,7 +362,7 @@ flush_index() {
       emergency_read_only();
       return;
     }
-    
+
     // Now atomically write the name of this index file to the index
     // reference file.
     Filename index_ref_pathname(_root, Filename("index_name.txt"));
@@ -477,8 +483,8 @@ merge_index(BamCacheIndex *new_index) {
 
   BamCacheIndex::Records::const_iterator ai = old_index->_records.begin();
   BamCacheIndex::Records::const_iterator bi = new_index->_records.begin();
-  
-  while (ai != old_index->_records.end() && 
+
+  while (ai != old_index->_records.end() &&
          bi != new_index->_records.end()) {
     if ((*ai).first < (*bi).first) {
       // Here is an entry we have in our index, not present in the new
@@ -540,7 +546,7 @@ merge_index(BamCacheIndex *new_index) {
     }
     ++ai;
   }
-   
+
   while (bi != new_index->_records.end()) {
     // Here is an entry in the new index, not present in our index.
     PT(BamCacheRecord) record = (*bi).second;
@@ -683,26 +689,26 @@ do_read_index(Filename &index_pathname) {
   }
 
   DatagramInputFile din;
-    
+
   if (!din.open(index_file)) {
     util_cat.debug()
       << "Could not read index file: " << index_pathname << "\n";
     return NULL;
   }
-  
+
   string head;
   if (!din.read_header(head, _bam_header.size())) {
     util_cat.debug()
       << index_pathname << " is not an index file.\n";
     return NULL;
   }
-  
+
   if (head != _bam_header) {
     util_cat.debug()
       << index_pathname << " is not an index file.\n";
     return NULL;
   }
-  
+
   BamReader reader(&din, index_pathname);
   if (!reader.init()) {
     return NULL;
@@ -741,13 +747,13 @@ bool BamCache::
 do_write_index(Filename &index_pathname, const BamCacheIndex *index) {
   index_pathname.set_binary();
   pofstream index_file;
-  
+
   if (!index_pathname.open_write(index_file)) {
     util_cat.error()
       << "Could not open index file: " << index_pathname << "\n";
     return false;
   }
-  
+
   DatagramOutputFile dout;
   if (!dout.open(index_file)) {
     util_cat.error()
@@ -769,7 +775,7 @@ do_write_index(Filename &index_pathname, const BamCacheIndex *index) {
       index_pathname.unlink();
       return false;
     }
-    
+
     if (!writer.write_object(index)) {
       index_pathname.unlink();
       return false;
@@ -790,11 +796,11 @@ do_write_index(Filename &index_pathname, const BamCacheIndex *index) {
 //               filename.
 ////////////////////////////////////////////////////////////////////
 PT(BamCacheRecord) BamCache::
-find_and_read_record(const Filename &source_pathname, 
+find_and_read_record(const Filename &source_pathname,
                      const Filename &cache_filename) {
   int pass = 0;
   while (true) {
-    PT(BamCacheRecord) record = 
+    PT(BamCacheRecord) record =
       read_record(source_pathname, cache_filename, pass);
     if (record != (BamCacheRecord *)NULL) {
       add_to_index(record);
@@ -812,7 +818,7 @@ find_and_read_record(const Filename &source_pathname,
 //               the source filename.
 ////////////////////////////////////////////////////////////////////
 PT(BamCacheRecord) BamCache::
-read_record(const Filename &source_pathname, 
+read_record(const Filename &source_pathname,
             const Filename &cache_filename,
             int pass) {
   Filename cache_pathname(_root, cache_filename);
@@ -821,7 +827,7 @@ read_record(const Filename &source_pathname,
     strm << cache_pathname.get_basename_wo_extension() << "_" << pass;
     cache_pathname.set_basename_wo_extension(strm.str());
   }
-  
+
   if (!cache_pathname.exists()) {
     // There is no such cache file already.  Declare it.
     PT(BamCacheRecord) record =
@@ -876,44 +882,44 @@ do_read_record(Filename &cache_pathname, bool read_data) {
   }
 
   DatagramInputFile din;
-    
+
   if (!din.open(cache_file)) {
     util_cat.debug()
       << "Could not read cache file: " << cache_pathname << "\n";
     return NULL;
   }
-  
+
   string head;
   if (!din.read_header(head, _bam_header.size())) {
     util_cat.debug()
       << cache_pathname << " is not a cache file.\n";
     return NULL;
   }
-  
+
   if (head != _bam_header) {
     util_cat.debug()
       << cache_pathname << " is not a cache file.\n";
     return NULL;
   }
-  
+
   BamReader reader(&din, cache_pathname);
   if (!reader.init()) {
     return NULL;
   }
-  
+
   TypedWritable *object = reader.read_object();
   if (object == (TypedWritable *)NULL) {
     util_cat.debug()
       << cache_pathname << " is empty.\n";
     return NULL;
-    
+
   } else if (!object->is_of_type(BamCacheRecord::get_class_type())) {
     util_cat.debug()
       << "Cache file " << cache_pathname << " contains a "
       << object->get_type() << ", not a BamCacheRecord.\n";
     return NULL;
   }
-  
+
   PT(BamCacheRecord) record = DCAST(BamCacheRecord, object);
   if (!reader.resolve()) {
     util_cat.debug()
@@ -943,7 +949,7 @@ do_read_record(Filename &cache_pathname, bool read_data) {
       }
     }
   }
-  
+
   // Also get the file size.
   cache_file.clear();
   cache_file.seekg(0, ios::end);
@@ -975,8 +981,8 @@ hash_filename(const string &filename) {
 #else  // HAVE_OPENSSL
   // Without OpenSSL, don't get fancy; just build a simple hash.
   unsigned int hash = 0;
-  for (string::const_iterator si = filename.begin(); 
-       si != filename.end(); 
+  for (string::const_iterator si = filename.begin();
+       si != filename.end();
        ++si) {
     hash = (hash * 9109) + (unsigned int)(*si);
   }

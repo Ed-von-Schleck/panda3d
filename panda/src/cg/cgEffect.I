@@ -30,7 +30,7 @@ CgEffect(const string &name) :
 //  Description: A factory function to make a new CgEffect, used to
 //               pass to the EffectPool.
 ////////////////////////////////////////////////////////////////////
-INLINE PT(CgEffect) CgEffect::
+INLINE PT(Effect) CgEffect::
 make_effect() {
   return new CgEffect;
 }

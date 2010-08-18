@@ -15,6 +15,7 @@
 #ifndef EFFECT_H
 #define EFFECT_H
 
+#include "bamCacheRecord.h"
 #include "internalName.h"
 #include "pandaNode.h"
 #include "pmap.h"
@@ -26,13 +27,27 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_PGRAPH Effect : public PandaNode {
 PUBLISHED:
-  INLINE Effect(const string &name);
+  INLINE Effect(const string &name = string());
   virtual ~Effect() {};
+
+  virtual bool read(const Filename &fullpath, BamCacheRecord *record = NULL);
 
   INLINE bool has_technique(CPT(InternalName) name);
   INLINE CPT(Technique) get_technique(CPT(InternalName) name) const;
   INLINE void set_technique(CPT(InternalName) name, PT(Technique) technique);
   INLINE void remove_technique(CPT(InternalName) name);
+
+  INLINE bool has_filename() const;
+  INLINE const Filename &get_filename() const;
+  INLINE void set_filename(const Filename &filename);
+  INLINE void clear_filename();
+
+  INLINE bool has_fullpath() const;
+  INLINE const Filename &get_fullpath() const;
+  INLINE void set_fullpath(const Filename &fullpath);
+  INLINE void clear_fullpath();
+
+  INLINE static PT(Effect) make_effect();
 
 public:
   virtual bool cull_callback(CullTraverser *trav, CullTraverserData &data);
@@ -49,6 +64,10 @@ public:
 protected:
   static TypedWritable *make_from_bam(const FactoryParams &params);
   void fillin(DatagramIterator &scan, BamReader *manager);
+
+protected:
+  Filename _filename;
+  Filename _fullpath;
 
 public:
   static TypeHandle get_class_type() {

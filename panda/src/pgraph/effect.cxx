@@ -49,7 +49,20 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
     trav->traverse(next_data);
   }
 
+  // We return false because we already manually processed the children.
   return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::read
+//       Access: Published, Virtual
+//  Description: Should be overridden by an effect implementation
+//               to read that particular effect file format.
+////////////////////////////////////////////////////////////////////
+bool Effect::
+read(const Filename &fullpath, BamCacheRecord *record) {
+  //TODO: read from bam
+  nassertr_always(false, false);
 }
 
 ////////////////////////////////////////////////////////////////////

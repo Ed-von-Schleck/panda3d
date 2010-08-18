@@ -13,6 +13,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "config_cg.h"
+#include "cgEffect.h"
+
+#include "effectPool.h"
 
 #include "dconfig.h"
 
@@ -40,5 +43,9 @@ init_libcg() {
   }
   initialized = true;
 
+  CgEffect::init_type();
+
+  EffectPool *ts = EffectPool::get_global_ptr();
+  ts->register_effect_type(CgEffect::make_effect, "cgfx");
 }
 

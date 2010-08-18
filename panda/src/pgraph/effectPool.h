@@ -17,7 +17,7 @@
 
 #include "pandabase.h"
 
-#include "effectFile.h"
+#include "effect.h"
 #include "filename.h"
 #include "loaderOptions.h"
 #include "pmap.h"
@@ -26,20 +26,20 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : EffectPool
-// Description : 
+// Description :
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_PGRAPH EffectPool {
 PUBLISHED:
   INLINE static bool has_effect(const Filename &filename);
   INLINE static bool verify_effect(const Filename &filename);
-  INLINE static EffectFile *load_effect(const Filename &filename,
+  INLINE static Effect *load_effect(const Filename &filename,
                                     const LoaderOptions &options = LoaderOptions());
 
-  INLINE static void add_effect(const Filename &filename, EffectFile *effect);
+  INLINE static void add_effect(const Filename &filename, Effect *effect);
   INLINE static void release_effect(const Filename &filename);
 
-  INLINE static void add_effect(EffectFile *effect);
-  INLINE static void release_effect(EffectFile *effect);
+  INLINE static void add_effect(Effect *effect);
+  INLINE static void release_effect(Effect *effect);
 
 
   INLINE static void release_all_effects();
@@ -50,30 +50,45 @@ PUBLISHED:
   INLINE static void list_contents();
   static void write(ostream &out);
 
+  static EffectPool *get_global_ptr();
+
+public:
+  typedef PT(Effect) MakeEffectFunc();
+  void register_effect_type(MakeEffectFunc *func, const string &extensions);
+
+  MakeEffectFunc *get_effect_type(const string &extension) const;
+  PT(Effect) make_effect(const string &extension) const;
+  void write_effect_types(ostream &out, int indent_level) const;
+
 private:
   INLINE EffectPool();
 
   bool ns_has_effect(const Filename &filename);
-  EffectFile *ns_load_effect(const Filename &filename,
+  Effect *ns_load_effect(const Filename &filename,
                            const LoaderOptions &options);
-  void ns_add_effect(const Filename &filename, EffectFile *effect);
+  void ns_add_effect(const Filename &filename, Effect *effect);
   void ns_release_effect(const Filename &filename);
 
-  void ns_add_effect(EffectFile *effect);
-  void ns_release_effect(EffectFile *effect);
+  void ns_add_effect(Effect *effect);
+  void ns_release_effect(Effect *effect);
 
   void ns_release_all_effects();
   int ns_garbage_collect();
   void ns_list_contents(ostream &out) const;
 
-  static EffectPool *get_ptr();
+  void resolve_filename(Filename &new_filename, const Filename &orig_filename);
+  void report_effect_unreadable(const Filename &filename) const;
 
   static EffectPool *_global_ptr;
 
-  LightMutex _lock;
-  typedef pmap<Filename,  PT(EffectFile)> Effects;
+  Mutex _lock;
+  typedef pmap<Filename, PT(Effect)> Effects;
   Effects _effects;
+  typedef pmap<Filename, Filename> RelpathLookup;
+  RelpathLookup _relpath_lookup;
 
+  typedef pmap<string, MakeEffectFunc *> TypeRegistry;
+  TypeRegistry _type_registry;
 };
 
 #include "effectPool.I"

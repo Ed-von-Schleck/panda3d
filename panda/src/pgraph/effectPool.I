@@ -32,7 +32,7 @@ EffectPool() {
 ////////////////////////////////////////////////////////////////////
 INLINE bool EffectPool::
 has_effect(const Filename &filename) {
-  return get_ptr()->ns_has_effect(filename);
+  return get_global_ptr()->ns_has_effect(filename);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -43,11 +43,11 @@ has_effect(const Filename &filename) {
 //               success, or false to indicate failure. If this
 //               returns true, it is guaranteed that a subsequent call
 //               to load_effect() with the same effect name will
-//               return a valid EffectFile pointer.
+//               return a valid Effect pointer.
 ////////////////////////////////////////////////////////////////////
 INLINE bool EffectPool::
 verify_effect(const Filename &filename) {
-  return load_effect(filename) != (EffectFile *)NULL;
+  return load_effect(filename) != (Effect *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -59,9 +59,9 @@ verify_effect(const Filename &filename) {
 //               loaded, returns that one instead. If the effect
 //               file cannot be found, returns NULL.
 ////////////////////////////////////////////////////////////////////
-INLINE EffectFile *EffectPool::
+INLINE Effect *EffectPool::
 load_effect(const Filename &filename, const LoaderOptions &options) {
-  return get_ptr()->ns_load_effect(filename, options);
+  return get_global_ptr()->ns_load_effect(filename, options);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -77,8 +77,8 @@ load_effect(const Filename &filename, const LoaderOptions &options) {
 //               instead.
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
-add_effect(const Filename &filename, EffectFile *effect) {
-  get_ptr()->ns_add_effect(filename, effect);
+add_effect(const Filename &filename, Effect *effect) {
+  get_global_ptr()->ns_add_effect(filename, effect);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -95,7 +95,7 @@ add_effect(const Filename &filename, EffectFile *effect) {
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
 release_effect(const Filename &filename) {
-  get_ptr()->ns_release_effect(filename);
+  get_global_ptr()->ns_release_effect(filename);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -107,8 +107,8 @@ release_effect(const Filename &filename) {
 //               same filename.
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
-add_effect(EffectFile *effect) {
-  get_ptr()->ns_add_effect(effect);
+add_effect(Effect *effect) {
+  get_global_ptr()->ns_add_effect(effect);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -125,8 +125,8 @@ add_effect(EffectFile *effect) {
 //               fail to locate it in the pool.
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
-release_effect(EffectFile *effect) {
-  get_ptr()->ns_release_effect(effect);
+release_effect(Effect *effect) {
+  get_global_ptr()->ns_release_effect(effect);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -137,7 +137,7 @@ release_effect(EffectFile *effect) {
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
 release_all_effects() {
-  get_ptr()->ns_release_all_effects();
+  get_global_ptr()->ns_release_all_effects();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -150,7 +150,7 @@ release_all_effects() {
 ////////////////////////////////////////////////////////////////////
 INLINE int EffectPool::
 garbage_collect() {
-  return get_ptr()->ns_garbage_collect();
+  return get_global_ptr()->ns_garbage_collect();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ garbage_collect() {
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
 list_contents(ostream &out) {
-  get_ptr()->ns_list_contents(out);
+  get_global_ptr()->ns_list_contents(out);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -171,6 +171,6 @@ list_contents(ostream &out) {
 ////////////////////////////////////////////////////////////////////
 INLINE void EffectPool::
 list_contents() {
-  get_ptr()->ns_list_contents(cout);
+  get_global_ptr()->ns_list_contents(cout);
 }
 

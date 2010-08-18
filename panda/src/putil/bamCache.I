@@ -143,6 +143,32 @@ get_cache_compressed_textures() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamCache::set_cache_effects
+//       Access: Published
+//  Description: Indicates whether effect files will be stored in the
+//               cache, as bam files.
+////////////////////////////////////////////////////////////////////
+INLINE void BamCache::
+set_cache_effects(bool flag) {
+  ReMutexHolder holder(_lock);
+  _cache_effects = flag;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamCache::get_cache_effects
+//       Access: Published
+//  Description: Returns whether effect files (e.g. egg files and bam
+//               files) will be stored in the cache, as bam files.
+//
+//               This also returns false if get_active() is false.
+////////////////////////////////////////////////////////////////////
+INLINE bool BamCache::
+get_cache_effects() const {
+  ReMutexHolder holder(_lock);
+  return _cache_effects && _active;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: BamCache::get_root
 //       Access: Published
 //  Description: Returns the current root pathname of the cache.  See

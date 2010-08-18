@@ -28,7 +28,7 @@
 class EXPCL_CG CgEffect : public Effect {
 PUBLISHED:
   INLINE CgEffect(const string &name = string());
-  INLINE static PT(CgEffect) make_effect();
+  INLINE static PT(Effect) make_effect();
   virtual bool read(const Filename &fullpath, BamCacheRecord *record = NULL);
 };
 

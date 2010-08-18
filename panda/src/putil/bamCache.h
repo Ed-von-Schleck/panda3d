@@ -61,6 +61,9 @@ PUBLISHED:
   INLINE void set_cache_compressed_textures(bool flag);
   INLINE bool get_cache_compressed_textures() const;
 
+  INLINE void set_cache_effects(bool flag);
+  INLINE bool get_cache_effects() const;
+
   void set_root(const Filename &root);
   INLINE Filename get_root() const;
 
@@ -73,13 +76,13 @@ PUBLISHED:
   INLINE void set_read_only(bool ro);
   INLINE bool get_read_only() const;
 
-  PT(BamCacheRecord) lookup(const Filename &source_filename, 
+  PT(BamCacheRecord) lookup(const Filename &source_filename,
                             const string &cache_extension);
   bool store(BamCacheRecord *record);
 
   void consider_flush_index();
   void flush_index();
-  
+
   INLINE static BamCache *get_global_ptr();
 
 private:
@@ -96,7 +99,7 @@ private:
   void check_cache_size();
 
   void emergency_read_only();
-  
+
   static BamCacheIndex *do_read_index(Filename &index_pathname);
   static bool do_write_index(Filename &index_pathname, const BamCacheIndex *index);
 
@@ -105,7 +108,7 @@ private:
   PT(BamCacheRecord) read_record(const Filename &source_pathname,
                                  const Filename &cache_filename,
                                  int pass);
-  static PT(BamCacheRecord) do_read_record(Filename &cache_pathname, 
+  static PT(BamCacheRecord) do_read_record(Filename &cache_pathname,
                                            bool read_data);
 
   static string hash_filename(const string &filename);
@@ -115,6 +118,7 @@ private:
   bool _cache_models;
   bool _cache_textures;
   bool _cache_compressed_textures;
+  bool _cache_effects;
   bool _read_only;
   Filename _root;
   int _flush_time;

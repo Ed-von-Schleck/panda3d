@@ -346,7 +346,7 @@ ns_load_texture(const Filename &orig_filename, int primary_file_num_channels,
 //  Description: The nonstatic implementation of load_texture().
 ////////////////////////////////////////////////////////////////////
 Texture *TexturePool::
-ns_load_texture(const Filename &orig_filename, 
+ns_load_texture(const Filename &orig_filename,
                 const Filename &orig_alpha_filename,
                 int primary_file_num_channels,
                 int alpha_file_channel,
@@ -379,7 +379,7 @@ ns_load_texture(const Filename &orig_filename,
   bool store_record = false;
 
   // Can one of our texture filters supply the texture?
-  tex = pre_load(orig_filename, alpha_filename, primary_file_num_channels, 
+  tex = pre_load(orig_filename, alpha_filename, primary_file_num_channels,
                  alpha_file_channel, read_mipmaps, options);
 
   BamCache *cache = BamCache::get_global_ptr();
@@ -449,7 +449,7 @@ ns_load_texture(const Filename &orig_filename,
       nassertr(!tex->get_fullpath().empty(), tex);
       return tex;
     }
-    
+
     _textures[filename] = tex;
   }
 
@@ -505,7 +505,7 @@ ns_load_3d_texture(const Filename &filename_pattern,
   try_load_cache(tex, cache, filename, record, compressed_cache_record,
                  options);
 
-  if (tex == (Texture *)NULL || 
+  if (tex == (Texture *)NULL ||
       tex->get_texture_type() != Texture::TT_3d_texture) {
     // The texture was neither in the pool, nor found in the on-disk
     // cache; it needs to be loaded from its source image(s).
@@ -577,7 +577,7 @@ ns_load_3d_texture(const Filename &filename_pattern,
 //  Description: The nonstatic implementation of load_cube_map().
 ////////////////////////////////////////////////////////////////////
 Texture *TexturePool::
-ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps, 
+ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps,
                  const LoaderOptions &options) {
   Filename orig_filename(filename_pattern);
   orig_filename.set_pattern(true);
@@ -604,7 +604,7 @@ ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps,
   try_load_cache(tex, cache, filename, record, compressed_cache_record,
                  options);
 
-  if (tex == (Texture *)NULL || 
+  if (tex == (Texture *)NULL ||
       tex->get_texture_type() != Texture::TT_cube_map) {
     // The texture was neither in the pool, nor found in the on-disk
     // cache; it needs to be loaded from its source image(s).
@@ -639,7 +639,7 @@ ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps,
     // We don't want to save this texture.
     store_record = false;
   }
-    
+
   // Set the original filename, before we searched along the path.
   nassertr(tex != (Texture *)NULL, false);
   tex->set_filename(filename_pattern);
@@ -831,23 +831,23 @@ ns_list_contents(ostream &out) const {
   Textures::const_iterator ti;
 
   out << "texture pool contents:\n";
-  
+
   total_size = 0;
   total_ram_size = 0;
   for (ti = _textures.begin(); ti != _textures.end(); ++ti) {
     Texture *tex = (*ti).second;
     out << (*ti).first << "\n";
-    out << "  (count = " << tex->get_ref_count() 
-        << ", ram  = " << tex->get_ram_image_size() 
+    out << "  (count = " << tex->get_ref_count()
+        << ", ram  = " << tex->get_ram_image_size()
         << ", size = " << tex->get_ram_page_size()
-        << ", w = " << tex->get_x_size() 
-        << ", h = " << tex->get_y_size() 
+        << ", w = " << tex->get_x_size()
+        << ", h = " << tex->get_y_size()
         << ")\n";
     nassertv(tex->_texture_pool_key == (*ti).first);
     total_ram_size += tex->get_ram_image_size();
     total_size += tex->get_ram_page_size();
   }
-  
+
   out << "total number of textures: " << _textures.size() << "\n";
   out << "texture pool ram : " << total_ram_size << "\n";
   out << "texture pool size: " << total_size << "\n";
@@ -1060,7 +1060,7 @@ report_texture_unreadable(const Filename &filename) const {
     MakeTextureFunc *func = get_texture_type(filename.get_extension());
     if (func == (MakeTextureFunc *)NULL) {
       gobj_cat.error()
-        << "Texture extension \"" << filename.get_extension() 
+        << "Texture extension \"" << filename.get_extension()
         << "\" is unknown.  Supported texture types:\n";
       write_texture_types(gobj_cat.error(false), 2);
     }
@@ -1134,11 +1134,11 @@ load_filters() {
               "purposes of performing texture filtering.  This variable may be repeated several "
               "times.  As in load-display, the actual library filename is derived by "
               "prefixing 'lib' to the specified name."));
-  
+
   int num_aux = texture_filter.get_num_unique_values();
   for (int i = 0; i < num_aux; i++) {
     string name = texture_filter.get_unique_value(i);
-    
+
     Filename dlname = Filename::dso_filename("lib" + name + ".so");
     gobj_cat->info()
       << "loading texture filter: " << dlname.to_os_specific() << endl;

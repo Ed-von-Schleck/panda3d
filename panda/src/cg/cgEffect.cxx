@@ -20,8 +20,8 @@
 
 ////////////////////////////////////////////////////////////////////
 //     Function: CgEffect::read
-//       Access: Published
-//  Description:
+//       Access: Published, Virtual
+//  Description: Reads a CgFX effect from disk.
 ////////////////////////////////////////////////////////////////////
 bool CgEffect::
 read(const Filename &fullpath, BamCacheRecord *record) {
@@ -29,7 +29,7 @@ read(const Filename &fullpath, BamCacheRecord *record) {
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
   if (!vfs->read_file(fullpath, body, true)) {
     cg_cat.error() << "Could not read CgFX file: " << fullpath << "\n";
-    return NULL;
+    return false;
   }
 
   CGcontext cg_context = cgCreateContext();
@@ -50,5 +50,7 @@ read(const Filename &fullpath, BamCacheRecord *record) {
 
     cg_technique = cgGetNextTechnique(cg_technique);
   }
+
+  return true;
 }
 

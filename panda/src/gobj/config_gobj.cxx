@@ -38,6 +38,7 @@
 #include "queryContext.h"
 #include "renderPass.h"
 #include "sliderTable.h"
+#include "technique.h"
 #include "texture.h"
 #include "texturePoolFilter.h"
 #include "textureReloadRequest.h"
@@ -489,6 +490,7 @@ ConfigureFn(config_gobj) {
   ShaderContext::init_type();
   Shader::init_type();
   SliderTable::init_type();
+  Technique::init_type();
   Texture::init_type();
   TextureContext::init_type();
   TexturePoolFilter::init_type();
@@ -527,6 +529,7 @@ ConfigureFn(config_gobj) {
   RenderPass::register_with_read_factory();
   Shader::register_with_read_factory();
   SliderTable::register_with_read_factory();
+  Technique::register_with_read_factory();
   Texture::register_with_read_factory();
   TextureStage::register_with_read_factory();
   TransformBlendTable::register_with_read_factory();
