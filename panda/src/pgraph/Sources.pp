@@ -2,9 +2,9 @@
                    dtoolutil:c dtoolbase:c dtool:m prc:c
 #define LOCAL_LIBS \
     lerp event gsgbase gobj putil linmath \
-    downloader express pandabase pstatclient 
+    downloader express pandabase pstatclient
 #define USE_PACKAGES python
- 
+
 #begin lib_target
   #define TARGET pgraph
 
@@ -14,7 +14,7 @@
 
   #define SOURCES \
     accumulatedAttribs.I accumulatedAttribs.h \
-    alphaTestAttrib.I alphaTestAttrib.h \  
+    alphaTestAttrib.I alphaTestAttrib.h \
     antialiasAttrib.I antialiasAttrib.h \
     attribNodeRegistry.I attribNodeRegistry.h \
     audioVolumeAttrib.I audioVolumeAttrib.h \
@@ -47,7 +47,6 @@
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
     effect.I effect.h \
-    effectFile.I effectFile.h \
     effectPool.I effectPool.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     findApproxLevelEntry.I findApproxLevelEntry.h \
@@ -89,6 +88,7 @@
     renderEffect.I renderEffect.h \
     renderEffects.I renderEffects.h \
     renderModeAttrib.I renderModeAttrib.h \
+    renderPass.I renderPass.h \
     renderState.I renderState.h \
     rescaleNormalAttrib.I rescaleNormalAttrib.h \
     sceneGraphReducer.I sceneGraphReducer.h \
@@ -102,6 +102,7 @@
     showBoundsEffect.I showBoundsEffect.h \
     stateMunger.I stateMunger.h \
     stencilAttrib.I stencilAttrib.h \
+    technique.I technique.h \
     texMatrixAttrib.I texMatrixAttrib.h \
     texProjectorEffect.I texProjectorEffect.h \
     textureAttrib.I textureAttrib.h \
@@ -118,7 +119,7 @@
     $[TARGET]_composite3.cxx $[TARGET]_composite4.cxx
   #define INCLUDED_SOURCES \
     accumulatedAttribs.cxx \
-    alphaTestAttrib.cxx \  
+    alphaTestAttrib.cxx \
     antialiasAttrib.cxx \
     attribNodeRegistry.cxx \
     audioVolumeAttrib.cxx \
@@ -149,7 +150,6 @@
     depthTestAttrib.cxx \
     depthWriteAttrib.cxx \
     effect.cxx \
-    effectFile.cxx \
     effectPool.cxx \
     eventStorePandaNode.cxx \
     findApproxLevelEntry.cxx \
@@ -190,6 +190,7 @@
     renderEffect.cxx \
     renderEffects.cxx \
     renderModeAttrib.cxx \
+    renderPass.cxx \
     renderState.cxx \
     rescaleNormalAttrib.cxx \
     sceneGraphReducer.cxx \
@@ -203,6 +204,7 @@
     showBoundsEffect.cxx \
     stateMunger.cxx \
     stencilAttrib.cxx \
+    technique.cxx \
     texMatrixAttrib.cxx \
     texProjectorEffect.cxx \
     textureAttrib.cxx \
@@ -216,7 +218,7 @@
 
   #define INSTALL_HEADERS \
     accumulatedAttribs.I accumulatedAttribs.h \
-    alphaTestAttrib.I alphaTestAttrib.h \  
+    alphaTestAttrib.I alphaTestAttrib.h \
     antialiasAttrib.I antialiasAttrib.h \
     attribNodeRegistry.I attribNodeRegistry.h \
     audioVolumeAttrib.I audioVolumeAttrib.h \
@@ -249,7 +251,6 @@
     depthTestAttrib.I depthTestAttrib.h \
     depthWriteAttrib.I depthWriteAttrib.h \
     effect.I effect.h \
-    effectFile.I effectFile.h \
     effectPool.I effectPool.h \
     eventStorePandaNode.I eventStorePandaNode.h \
     fog.I fog.h \
@@ -289,6 +290,7 @@
     renderEffect.I renderEffect.h \
     renderEffects.I renderEffects.h \
     renderModeAttrib.I renderModeAttrib.h \
+    renderPass.I renderPass.h \
     renderState.I renderState.h \
     rescaleNormalAttrib.I rescaleNormalAttrib.h \
     sceneGraphReducer.I sceneGraphReducer.h \
@@ -302,6 +304,7 @@
     showBoundsEffect.I showBoundsEffect.h \
     stateMunger.I stateMunger.h \
     stencilAttrib.I stencilAttrib.h \
+    technique.I technique.h \
     texMatrixAttrib.I texMatrixAttrib.h \
     texProjectorEffect.I texProjectorEffect.h \
     textureAttrib.I textureAttrib.h \

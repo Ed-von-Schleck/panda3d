@@ -69,6 +69,7 @@
 #include "renderEffect.h"
 #include "renderEffects.h"
 #include "renderModeAttrib.h"
+#include "renderPass.h"
 #include "renderState.h"
 #include "rescaleNormalAttrib.h"
 #include "scissorAttrib.h"
@@ -80,6 +81,7 @@
 #include "showBoundsEffect.h"
 #include "stencilAttrib.h"
 #include "stateMunger.h"
+#include "technique.h"
 #include "texMatrixAttrib.h"
 #include "texProjectorEffect.h"
 #include "textureAttrib.h"
@@ -462,6 +464,7 @@ init_libpgraph() {
   RenderEffect::init_type();
   RenderEffects::init_type();
   RenderModeAttrib::init_type();
+  RenderPass::init_type();
   RenderState::init_type();
   RescaleNormalAttrib::init_type();
   ScissorAttrib::init_type();
@@ -472,6 +475,7 @@ init_libpgraph() {
   ShowBoundsEffect::init_type();
   StateMunger::init_type();
   StencilAttrib::init_type();
+  Technique::init_type();
   TexMatrixAttrib::init_type();
   TexProjectorEffect::init_type();
   TextureAttrib::init_type();
@@ -522,6 +526,7 @@ init_libpgraph() {
   PortalNode::register_with_read_factory();
   RenderEffects::register_with_read_factory();
   RenderModeAttrib::register_with_read_factory();
+  RenderPass::register_with_read_factory();
   RenderState::register_with_read_factory();
   RescaleNormalAttrib::register_with_read_factory();
   ScissorAttrib::register_with_read_factory();
@@ -531,6 +536,7 @@ init_libpgraph() {
   ShaderAttrib::register_with_read_factory();
   Shader::register_with_read_factory();
   ShowBoundsEffect::register_with_read_factory();
+  Technique::register_with_read_factory();
   TexMatrixAttrib::register_with_read_factory();
   TexProjectorEffect::register_with_read_factory();
   TextureAttrib::register_with_read_factory();

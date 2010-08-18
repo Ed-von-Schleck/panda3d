@@ -13,7 +13,6 @@
 #include "depthTestAttrib.cxx"
 #include "depthWriteAttrib.cxx"
 #include "effect.cxx"
-#include "effectFile.cxx"
 #include "effectPool.cxx"
 #include "eventStorePandaNode.cxx"
 #include "findApproxPath.cxx"
