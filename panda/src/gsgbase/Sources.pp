@@ -13,7 +13,8 @@
     displayRegionBase.I displayRegionBase.h \
     drawableRegion.I drawableRegion.h \
     graphicsOutputBase.I graphicsOutputBase.h \
-    graphicsStateGuardianBase.h
+    graphicsStateGuardianBase.h \
+    renderBuffer.h
 
   #define INCLUDED_SOURCES \
     config_gsgbase.cxx \
@@ -26,7 +27,8 @@
     displayRegionBase.I displayRegionBase.h \
     drawableRegion.I drawableRegion.h \
     graphicsOutputBase.I graphicsOutputBase.h \
-    graphicsStateGuardianBase.h
+    graphicsStateGuardianBase.h \
+    renderBuffer.h
 
   #define IGATESCAN all
 

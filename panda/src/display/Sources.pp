@@ -34,7 +34,6 @@
     parasiteBuffer.I parasiteBuffer.h \
     windowHandle.I windowHandle.h \
     windowProperties.I windowProperties.h \
-    renderBuffer.h \
     stencilRenderStates.h \
     stereoDisplayRegion.I stereoDisplayRegion.h \
     displaySearchParameters.h \
@@ -92,7 +91,6 @@
     parasiteBuffer.I parasiteBuffer.h \
     windowHandle.I windowHandle.h \
     windowProperties.I windowProperties.h \
-    renderBuffer.h \
     stencilRenderStates.h \
     stereoDisplayRegion.I stereoDisplayRegion.h \
     displaySearchParameters.h \
