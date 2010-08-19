@@ -39,6 +39,9 @@
 #include "wavAudio.h"
 #include "wavAudioCursor.h"
 
+#include "oggAudio.h"
+#include "oggAudioCursor.h"
+
 ConfigureDecl(config_movies, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
 NotifyCategoryDecl(movies, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
 

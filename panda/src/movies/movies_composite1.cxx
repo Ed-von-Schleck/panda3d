@@ -18,6 +18,9 @@
 #include "wavAudio.cxx"
 #include "wavAudioCursor.cxx"
 
+#include "oggAudio.cxx"
+#include "oggAudioCursor.cxx"
+
 #include "userDataAudio.cxx"
 #include "userDataAudioCursor.cxx"
 

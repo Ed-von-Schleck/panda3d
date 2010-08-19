@@ -66,6 +66,12 @@ get(const Filename &name) {
   std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
   if (extension == "wav"){
     return new WavAudio(name);
+#ifdef HAVE_OGG
+#ifdef HAVE_VORBIS
+  } else if (extension == "oga" || extension == "ogg"){
+    return new OggAudio(name);
+#endif
+#endif
   } else {
     return new MovieAudio("Load-Failure Stub");
   }

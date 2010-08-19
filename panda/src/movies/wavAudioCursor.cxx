@@ -269,7 +269,7 @@ read_samples(int n, PN_int16 *data) {
 
 	  if(_bytes_per_sample == 2) {
       for (int c = 0; c < _audio_channels; c++){
-	      PN_uint16 *sample = (PN_uint16 *)_audio_buffer + _samples_read * _audio_channels + c;
+	      PN_int16 *sample = (PN_int16 *)_audio_buffer + _samples_read * _audio_channels + c;
 	      data[s*_audio_channels+c] = *sample;
       }
       if (_audio_channels > 0){

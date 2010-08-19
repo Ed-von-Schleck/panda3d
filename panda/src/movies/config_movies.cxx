@@ -61,8 +61,16 @@ init_libmovies() {
   av_register_all();
   FfmpegVirtualFile::register_protocol();
 #else
+
+#ifdef HAVE_OGG
+#ifdef HAVE_VORBIS
   WavAudio::init_type();
   WavAudioCursor::init_type();
+  OggAudio::init_type();
+  OggAudioCursor::init_type();
+#endif
+#endif
+
 #endif
 }
 
