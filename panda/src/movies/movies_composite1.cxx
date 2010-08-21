@@ -20,6 +20,8 @@
 
 #include "oggAudio.cxx"
 #include "oggAudioCursor.cxx"
+#include "oggVorbisDecoder.cxx"
+#include "oggDecoder.cxx"
 
 #include "userDataAudio.cxx"
 #include "userDataAudioCursor.cxx"

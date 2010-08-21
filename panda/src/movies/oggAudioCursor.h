@@ -14,6 +14,7 @@
 
 #ifndef OGGAUDIOCURSOR_H
 #define OGGAUDIOCURSOR_H
+
 #ifndef HAVE_FFMPEG
 #ifdef HAVE_OGG
 #ifdef HAVE_VORBIS
@@ -22,85 +23,8 @@
 #include "namable.h"
 #include "texture.h"
 #include "pointerTo.h"
-#include <ogg/ogg.h>
-#include <vorbis/codec.h>
 #include <iostream>
-#include <sstream>
-
-enum StreamType {
-  TYPE_VORBIS,
-  TYPE_THEORA,
-  TYPE_UNKNOWN
-};
-
-////////////////////////////////////////////////////////////////////
-//       Class : OggDecoder
-// Description : Helper class that abtracts a Vorbis stream.
-////////////////////////////////////////////////////////////////////
-
-class VorbisStream
-{
-public:
-  int mSerial;
-  ogg_stream_state mState;
-  StreamType mType;
-  bool mActive;
-
-  vorbis_info mInfo;
-  vorbis_comment mComment;
-  vorbis_dsp_state mDsp;
-  vorbis_block mBlock;
-
-public:
-  VorbisStream(int serial = -1) : 
-    mSerial(serial),
-    mType(TYPE_UNKNOWN),
-    mActive(true)
-  { 
-    vorbis_info_init(&mInfo);
-    vorbis_comment_init(&mComment);
-  }
-
-  ~VorbisStream() {
-    int ret = ogg_stream_clear(&mState);
-    assert(ret == 0);
-  }
-};
-
-typedef map<int, VorbisStream*> StreamMap; 
-
-////////////////////////////////////////////////////////////////////
-//       Class : OggDecoder
-// Description : Helper class that encapsulates OGG handling
-////////////////////////////////////////////////////////////////////
-
-class OggDecoder
-{
-public:
-  StreamMap mStreams;  
-  ogg_sync_state state;
-  VorbisStream* audio;
-private:
-  bool handle_vorbis_header(VorbisStream* stream, ogg_packet* packet);
-  void read_headers(istream& stream, ogg_sync_state* state);
-
-  bool read_page(istream& stream, ogg_sync_state* state, ogg_page* page);
-  bool read_packet(istream& is, ogg_sync_state* state, VorbisStream* stream, ogg_packet* packet);
-
-public:
-  OggDecoder()
-  {
-    audio = 0;
-  }
-
-  ~OggDecoder() {
-
-  }
-  void initialize_playback(istream& is);
-  void decode(istream& is, vector<PN_int16>& os, int &stream_size);
-  void finalize_playback();
-
-};
+#include "oggDecoder.h"
 
 ////////////////////////////////////////////////////////////////////
 //       Class : OggAudioCursor
