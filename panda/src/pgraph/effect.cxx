@@ -54,6 +54,41 @@ cull_callback(CullTraverser *trav, CullTraverserData &data) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Effect::output
+//       Access: Public, Virtual
+//  Description: Writes a brief description of the node to the
+//               indicated output stream.  This is invoked by the <<
+//               operator.  It may be overridden in derived classes to
+//               include some information relevant to the class.
+////////////////////////////////////////////////////////////////////
+void Effect::
+output(ostream &out) const {
+  PandaNode::output(out);
+  out << " (" << _techniques.size() << " techniques)";
+  if (!_filename.empty()) {
+    out << " (from " << _filename << ")";
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Effect::write
+//       Access: Public, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+void Effect::
+write(ostream &out, int indent_level) const {
+  PandaNode::write(out, indent_level);
+
+  for (Techniques::const_iterator ti = _techniques.begin();
+       ti != _techniques.end();
+       ++ti) {
+    indent(out, indent_level + 2)
+      << ti->second->get_type() << " " << ti->first->get_name() << "\n";
+    ti->second->write(out, indent_level + 2);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Effect::read
 //       Access: Published, Virtual
 //  Description: Should be overridden by an effect implementation

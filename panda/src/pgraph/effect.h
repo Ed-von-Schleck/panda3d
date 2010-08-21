@@ -52,6 +52,9 @@ PUBLISHED:
 public:
   virtual bool cull_callback(CullTraverser *trav, CullTraverserData &data);
 
+  virtual void output(ostream &out) const;
+  virtual void write(ostream &out, int indent_level) const;
+
 private:
   typedef phash_map<CPT(InternalName), PT(Technique)> Techniques;
   Techniques _techniques;

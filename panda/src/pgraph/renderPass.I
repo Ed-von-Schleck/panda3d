@@ -48,9 +48,9 @@ get_draw_type() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RenderPass::get_state
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PT(RenderState) RenderPass::
+INLINE CPT(RenderState) RenderPass::
 get_state() const {
   return _state;
 }
@@ -58,10 +58,10 @@ get_state() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: RenderPass::set_state
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void RenderPass::
-set_state(PT(RenderState) state) {
+set_state(CPT(RenderState) state) {
   _state = state;
 }
 

@@ -23,7 +23,7 @@
 //       Class : RenderPass
 // Description :
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_GOBJ RenderPass : public TypedWritableReferenceCount, public Namable, public DrawableRegion {
+class EXPCL_PANDA_PGRAPH RenderPass : public TypedWritableReferenceCount, public Namable, public DrawableRegion {
 PUBLISHED:
   enum DrawType {
     DT_geometry = 0,
@@ -35,16 +35,19 @@ PUBLISHED:
 
   INLINE DrawType get_draw_type() const;
   INLINE void set_draw_type(DrawType draw_type);
-  INLINE PT(RenderState) get_state() const;
-  INLINE void set_state(PT(RenderState) state);
+  INLINE CPT(RenderState) get_state() const;
+  INLINE void set_state(CPT(RenderState) state);
 
 private:
   DrawType _draw_type;
-  PT(RenderState) _state;
+  CPT(RenderState) _state;
 
 public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &me);
+
+  virtual void output(ostream &out) const;
+  virtual void write(ostream &out, int indent_level) const;
 
 protected:
   static TypedWritable *make_from_bam(const FactoryParams &params);
@@ -67,6 +70,8 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+EXPCL_PANDA_PGRAPH ostream &operator << (ostream &out, RenderPass::DrawType ft);
 
 #include "renderPass.I"
 

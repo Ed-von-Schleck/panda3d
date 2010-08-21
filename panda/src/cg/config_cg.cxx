@@ -15,8 +15,9 @@
 #include "config_cg.h"
 #include "cgEffect.h"
 
+#include <Cg/cg.h>
 #include "effectPool.h"
-
+#include "virtualFileSystem.h"
 #include "dconfig.h"
 
 ConfigureDef(config_cg);
@@ -25,6 +26,24 @@ NotifyCategoryDef(cg, "");
 
 ConfigureFn(config_cg) {
   init_libcg();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: cg_error_handler
+//  Description: Will be called by Cg whenever an error occurs.
+////////////////////////////////////////////////////////////////////
+void
+cg_error_handler(CGcontext context, CGerror error, void* data) {
+  const char* error_string = cgGetErrorString(error);
+  if (strncmp(error_string, "CG ERROR : ", 11) == 0) {
+    cg_cat.error() << (const char*) (error_string + 11) << "\n";
+  } else {
+    cg_cat.error() << error_string << "\n";
+  }
+
+  if (error == CG_COMPILER_ERROR) {
+    cg_cat.error(false) << cgGetLastListing(context) << "\n";
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -42,6 +61,12 @@ init_libcg() {
     return;
   }
   initialized = true;
+
+  cgSetErrorHandler(&cg_error_handler, NULL);
+  if (Thread::is_threading_supported()) {
+    // Less overhead in case we're not using threading
+    cgSetLockingPolicy(CG_NO_LOCKS_POLICY);
+  }
 
   CgEffect::init_type();
 

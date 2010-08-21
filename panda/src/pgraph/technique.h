@@ -22,15 +22,14 @@
 
 ////////////////////////////////////////////////////////////////////
 //       Class : Technique
-// Description : 
+// Description :
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_GOBJ Technique : public TypedWritableReferenceCount {
 PUBLISHED:
   INLINE Technique();
   INLINE int get_num_passes() const;
-  INLINE CPT(RenderPass) get_pass(int i) const;
+  INLINE PT(RenderPass) get_pass(int i) const;
   MAKE_SEQ(get_passes, get_num_passes, get_pass);
-  INLINE PT(RenderPass) modify_pass(int i);
   void set_pass(int i, RenderPass *pass);
   void add_pass(RenderPass *pass);
   void remove_pass(int i);
@@ -44,6 +43,8 @@ public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &me);
   virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
+
+  virtual void write(ostream &out, int indent_level) const;
 
 protected:
   static TypedWritable *make_from_bam(const FactoryParams &params);

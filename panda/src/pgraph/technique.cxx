@@ -142,3 +142,17 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   }
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: Technique::write
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+void Technique::
+write(ostream &out, int indent_level) const {
+  for (RenderPasses::const_iterator ti = _passes.begin();
+       ti != _passes.end();
+       ++ti) {
+    (*ti)->write(out, indent_level + 2);
+  }
+}
+

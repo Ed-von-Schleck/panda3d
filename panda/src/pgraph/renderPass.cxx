@@ -38,6 +38,7 @@ write_datagram(BamWriter *manager, Datagram &dg) {
   dg.add_string(get_name());
   dg.add_uint8((unsigned char) _draw_type);
 
+  // Try to be a bit compatible if the enum changes
   dg.add_uint8((unsigned char) RTP_COUNT);
   for (int i = 0; i < RTP_COUNT; ++i) {
     dg.add_bool(_clear_active[i]);
@@ -77,6 +78,7 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   set_name(scan.get_string());
   _draw_type = (DrawType) scan.get_uint8();
 
+  // Try to be a bit compatible if the enum changes
   int num_rtps = (int) scan.get_uint8();
   if (num_rtps > RTP_COUNT) {
     num_rtps = RTP_COUNT;
@@ -85,4 +87,47 @@ fillin(DatagramIterator &scan, BamReader *manager) {
     _clear_active[i] = scan.get_bool();
     _clear_value[i].read_datagram(scan);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RenderPass::output
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+void RenderPass::
+output(ostream &out) const {
+  out << get_type() << " " << get_name() << " (" << _draw_type << ")";
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RenderPass::write
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+void RenderPass::
+write(ostream &out, int indent_level) const {
+  indent(out, indent_level)
+    << get_type() << " " << get_name() << " (" << _draw_type << ")";
+
+  CPT(RenderState) state = get_state();
+  if (!state->is_empty()) {
+    out << " " << *state;
+  }
+  out << " " << "\n";
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RenderPass::DrawType output operator
+//  Description:
+////////////////////////////////////////////////////////////////////
+ostream &
+operator << (ostream &out, RenderPass::DrawType dt) {
+  switch (dt) {
+  case RenderPass::DT_geometry:
+    return out << "geometry";
+  case RenderPass::DT_full_screen_quad:
+    return out << "full_screen_quad";
+  }
+
+  return out << "(**invalid RenderPass::DrawType(" << (int)dt << ")**)";
 }
