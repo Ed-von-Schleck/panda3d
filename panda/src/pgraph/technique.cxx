@@ -102,6 +102,7 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
     RenderPass *ts = DCAST(RenderPass, p_list[pi++]);
     *ci = ts;
   }
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////
