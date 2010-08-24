@@ -2495,7 +2495,6 @@ if (not RUNTIME):
   OPTS=['DIR:panda/src/display', 'BUILDING:PANDA', 'BIGOBJ']
   TargetAdd('display_composite.obj', opts=OPTS, input='display_composite.cxx')
   IGATEFILES=GetDirectoryContents('panda/src/display', ["*.h", "*_composite.cxx"])
-  IGATEFILES.remove("renderBuffer.h")
   TargetAdd('libdisplay.in', opts=OPTS, input=IGATEFILES)
   TargetAdd('libdisplay.in', opts=['IMOD:panda', 'ILIB:libdisplay', 'SRCDIR:panda/src/display'])
   TargetAdd('libdisplay_igate.obj', input='libdisplay.in', opts=["DEPENDENCYONLY"])
