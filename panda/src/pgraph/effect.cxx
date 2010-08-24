@@ -149,8 +149,7 @@ complete_pointers(TypedWritable **p_list, BamReader *manager) {
     Technique *t = DCAST(Technique, p_list[pi++]);
     _techniques[name] = t;
   }
-  pi += tech_count;
-  
+
   return pi;
 }
 

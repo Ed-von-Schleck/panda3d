@@ -45,6 +45,7 @@ private:
 public:
   static void register_with_read_factory();
   virtual void write_datagram(BamWriter *manager, Datagram &me);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
 
   virtual void output(ostream &out) const;
   virtual void write(ostream &out, int indent_level) const;

@@ -37,6 +37,7 @@ void RenderPass::
 write_datagram(BamWriter *manager, Datagram &dg) {
   dg.add_string(get_name());
   dg.add_uint8((unsigned char) _draw_type);
+  manager->write_pointer(dg, _state);
 
   // Try to be a bit compatible if the enum changes
   dg.add_uint8((unsigned char) RTP_COUNT);
@@ -44,6 +45,22 @@ write_datagram(BamWriter *manager, Datagram &dg) {
     dg.add_bool(_clear_active[i]);
     _clear_value[i].write_datagram(dg);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: RenderPass::complete_pointers
+//       Access: Public, Virtual
+//  Description: Receives an array of pointers, one for each time
+//               manager->read_pointer() was called in fillin().
+//               Returns the number of pointers processed.
+////////////////////////////////////////////////////////////////////
+int RenderPass::
+complete_pointers(TypedWritable **p_list, BamReader *manager) {
+  int pi = 0;
+
+  _state = DCAST(RenderState, p_list[pi++]);
+
+  return pi;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -77,6 +94,8 @@ void RenderPass::
 fillin(DatagramIterator &scan, BamReader *manager) {
   set_name(scan.get_string());
   _draw_type = (DrawType) scan.get_uint8();
+  // Read out _state, see complete_pointers
+  manager->read_pointer(scan);
 
   // Try to be a bit compatible if the enum changes
   int num_rtps = (int) scan.get_uint8();
