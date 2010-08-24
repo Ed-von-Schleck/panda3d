@@ -1276,7 +1276,16 @@ def SdkLocateDirectX():
     if (sys.platform != "win32"): return
     GetSdkDir("directx8", "DX8")
     GetSdkDir("directx9", "DX9")
-    ## We first try to locate the August SDK in 64 bits, then 32.
+    if ("DX9" not in SDK):
+        dir = GetRegistryKey("SOFTWARE\\Wow6432Node\\Microsoft\\DirectX\\Microsoft DirectX SDK (June 2010)", "InstallPath")
+        if (dir != 0):
+            SDK["DX9"] = dir.replace("\\", "/").rstrip("/")
+            SDK["GENERIC_DXERR_LIBRARY"] = 1;
+    if ("DX9" not in SDK):
+        dir = GetRegistryKey("SOFTWARE\\Microsoft\\DirectX\\Microsoft DirectX SDK (June 2010)", "InstallPath")
+        if (dir != 0):
+            SDK["DX9"] = dir.replace("\\", "/").rstrip("/")
+            SDK["GENERIC_DXERR_LIBRARY"] = 1;
     if ("DX9" not in SDK):
         dir = GetRegistryKey("SOFTWARE\\Wow6432Node\\Microsoft\\DirectX\\Microsoft DirectX SDK (August 2009)", "InstallPath")
         if (dir != 0):
