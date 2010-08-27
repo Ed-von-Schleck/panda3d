@@ -78,21 +78,33 @@ supports_compressed() const {
 PT(PandaNode) LoaderFileTypeCgFX::
 load_file(const Filename &path, const LoaderOptions &options,
           BamCacheRecord *record) const {
-  if (record != (BamCacheRecord *)NULL) {
-    record->add_dependent_file(path);
-  }
 
   bool report_errors = (options.get_flags() & LoaderOptions::LF_report_errors) != 0;
 
-  string body;
+  // Allow the path to be a directory in the structure
+  // that FX Composer uses, just to be extra flexible
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  if (!vfs->read_file(path, body, true)) {
+  Filename new_path (path);
+  Filename extra_incdir;
+  if (vfs->is_directory(path)) {
+    extra_incdir = Filename(path, "CgFX");
+    new_path = Filename(extra_incdir, path.get_basename());
+    //TODO: the subdirectory "textures" should also
+    // be respected later when loading textures.
+  }
+
+  if (record != (BamCacheRecord *)NULL) {
+    record->add_dependent_file(new_path);
+  }
+
+  string body;
+  if (!vfs->read_file(new_path, body, true)) {
     cg_cat.error() << "Could not read CgFX file: " << path << "\n";
     return NULL;
   }
 
   CGeffect cg_effect =
-    CgContextManager::create_effect(body.c_str(), NULL, record);
+    CgContextManager::create_effect(body.c_str(), NULL, extra_incdir, record);
 
   if (cg_effect == NULL || !cgIsEffect(cg_effect)) {
     return NULL;
@@ -298,4 +310,3 @@ load_material(const CGpass cg_pass) const {
   // properties were actually specified in the CG pass.
   return mat_modified ? mat : NULL;
 }
-

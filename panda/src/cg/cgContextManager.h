@@ -29,7 +29,9 @@ typedef struct _CGstate* CGstate;
 class CgContextManager {
 public:
   virtual ~CgContextManager();
-  static CGeffect create_effect(const char *source, const char **args, BamCacheRecord *record = NULL);
+  static CGeffect create_effect(const char *source, const char **args,
+                                const Filename &extra_incdir = Filename(),
+                                BamCacheRecord *record = NULL);
 
 private:
   CgContextManager();
@@ -43,6 +45,7 @@ private:
   static CgContextManager *_global_ptr;
   CGcontext _context;
   BamCacheRecord *_record;
+  Filename _extra_incdir;
   LightMutex _lock;
 };
 

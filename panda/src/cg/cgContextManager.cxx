@@ -194,12 +194,14 @@ register_sampler_wrap_enumerants(CGstate cg_state) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 CGeffect CgContextManager::
-create_effect(const char *source, const char **args, BamCacheRecord *record) {
+create_effect(const char *source, const char **args, const Filename &extra_incdir, BamCacheRecord *record) {
   CgContextManager* p = get_global_ptr();
   LightMutexHolder(p->_lock);
   p->_record = record;
+  p->_extra_incdir = extra_incdir;
   CGeffect effect = cgCreateEffect(p->_context, source, args);
   p->_record = NULL;
+  p->_extra_incdir = Filename();
 
   // Ugh, there doesn't seem to be a better way to check if
   // any errors occurred - it doesn't seem to fire the
@@ -247,7 +249,12 @@ cg_include_callback(CGcontext context, const char* filename) {
   }
 
   if (fullpath.is_local()) {
-    fullpath = get_model_path().find_file(fullpath);
+    DSearchPath include_path (get_model_path());
+    if (!get_global_ptr()->_extra_incdir.empty()) {
+      include_path.prepend_path(get_global_ptr()->_extra_incdir);
+    }
+
+    fullpath = include_path.find_file(fullpath);
     if (fullpath.empty()) {
       // Nothing? Hmm... pass through, maybe it's
       // defined in the virtual file system of Cg.
