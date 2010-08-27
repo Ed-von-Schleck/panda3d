@@ -119,6 +119,14 @@ register_states() {
   cgAddStateEnumerant(cg_state, "GEqual", RenderAttrib::M_greater_equal);
   cgAddStateEnumerant(cg_state, "Always", RenderAttrib::M_always);
 
+  cg_state = cgCreateState(_context, "MaterialAmbient", CG_FLOAT4);
+  cg_state = cgCreateState(_context, "MaterialDiffuse", CG_FLOAT4);
+  cg_state = cgCreateState(_context, "MaterialEmission", CG_FLOAT4);
+  cg_state = cgCreateState(_context, "MaterialShininess", CG_FLOAT);
+  cg_state = cgCreateState(_context, "MaterialSpecular", CG_FLOAT4);
+  cg_state = cgCreateState(_context, "LightModelLocalViewerEnable", CG_BOOL);
+  cg_state = cgCreateState(_context, "LightModelTwoSideEnable", CG_BOOL);
+
   cg_state = cgCreateState(_context, "VertexShader", CG_PROGRAM_TYPE);
   cg_state = cgCreateState(_context, "PixelShader", CG_PROGRAM_TYPE);
 

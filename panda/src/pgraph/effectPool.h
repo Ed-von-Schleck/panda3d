@@ -52,14 +52,6 @@ PUBLISHED:
 
   static EffectPool *get_global_ptr();
 
-public:
-  typedef PT(Effect) MakeEffectFunc();
-  void register_effect_type(MakeEffectFunc *func, const string &extensions);
-
-  MakeEffectFunc *get_effect_type(const string &extension) const;
-  PT(Effect) make_effect(const string &extension) const;
-  void write_effect_types(ostream &out, int indent_level) const;
-
 private:
   INLINE EffectPool();
 
@@ -76,19 +68,11 @@ private:
   int ns_garbage_collect();
   void ns_list_contents(ostream &out) const;
 
-  void resolve_filename(Filename &new_filename, const Filename &orig_filename);
-  void report_effect_unreadable(const Filename &filename) const;
-
   static EffectPool *_global_ptr;
 
-  Mutex _lock;
+  LightMutex _lock;
   typedef pmap<Filename, PT(Effect)> Effects;
   Effects _effects;
-  typedef pmap<Filename, Filename> RelpathLookup;
-  RelpathLookup _relpath_lookup;
-
-  typedef pmap<string, MakeEffectFunc *> TypeRegistry;
-  TypeRegistry _type_registry;
 };
 
 #include "effectPool.I"

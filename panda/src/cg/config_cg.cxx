@@ -13,10 +13,11 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "config_cg.h"
-#include "cgEffect.h"
+#include "loaderFileTypeCgFX.h"
 
 #include <Cg/cg.h>
 #include "effectPool.h"
+#include "loaderFileTypeRegistry.h"
 #include "virtualFileSystem.h"
 #include "dconfig.h"
 
@@ -68,9 +69,9 @@ init_libcg() {
     cgSetLockingPolicy(CG_NO_LOCKS_POLICY);
   }
 
-  CgEffect::init_type();
+  LoaderFileTypeCgFX::init_type();
 
-  EffectPool *ts = EffectPool::get_global_ptr();
-  ts->register_effect_type(CgEffect::make_effect, "cgfx");
+  LoaderFileTypeRegistry *reg = LoaderFileTypeRegistry::get_global_ptr();
+  reg->register_type(new LoaderFileTypeCgFX);
 }
 

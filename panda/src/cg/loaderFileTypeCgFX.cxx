@@ -1,5 +1,5 @@
-// Filename: cgEffect.cxx
-// Created by: Xidram (15Aug10)
+// Filename: loaderFileTypeCgFX.cxx
+// Created by:  rdb (27Aug10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -12,73 +12,98 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#include "cgContextManager.h"
-#include "cgEffect.h"
-#include "pointerTo.h"
-#include "renderPass.h"
-#include "technique.h"
-#include "virtualFileSystem.h"
+#include "loaderFileTypeCgFX.h"
+#include "config_cg.h"
+#include "bamFile.h"
+#include "bamCacheRecord.h"
+#include "loaderOptions.h"
+#include "dcast.h"
 
 #include "alphaTestAttrib.h"
-#include "colorBlendAttrib.h"
 #include "colorWriteAttrib.h"
-#include "cullFaceAttrib.h"
 #include "depthTestAttrib.h"
 #include "depthWriteAttrib.h"
+#include "materialAttrib.h"
 
-#include <Cg/cg.h>
-
-TypeHandle CgEffect::_type_handle;
+TypeHandle LoaderFileTypeCgFX::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
-//     Function: CgEffect::Constructor
+//     Function: LoaderFileTypeCgFX::Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-CgEffect::
-CgEffect(const string &name) :
-  Effect(name)
-{
+LoaderFileTypeCgFX::
+LoaderFileTypeCgFX() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: CgEffect::Destructor
+//     Function: LoaderFileTypeCgFX::get_name
 //       Access: Public, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-CgEffect::
-~CgEffect() {
+string LoaderFileTypeCgFX::
+get_name() const {
+  return "CgFX";
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: CgEffect::read
-//       Access: Published, Virtual
-//  Description: Reads a CgFX effect from disk.
+//     Function: LoaderFileTypeCgFX::get_extension
+//       Access: Public, Virtual
+//  Description:
 ////////////////////////////////////////////////////////////////////
-bool CgEffect::
-read(const Filename &fullpath, BamCacheRecord *record) {
-  string body;
-  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  if (!vfs->read_file(fullpath, body, true)) {
-    cg_cat.error() << "Could not read CgFX file: " << fullpath << "\n";
-    return false;
+string LoaderFileTypeCgFX::
+get_extension() const {
+  return "cgfx";
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LoaderFileTypeCgFX::supports_compressed
+//       Access: Published, Virtual
+//  Description: Returns true if this file type can transparently load
+//               compressed files (with a .pz extension), false
+//               otherwise.
+////////////////////////////////////////////////////////////////////
+bool LoaderFileTypeCgFX::
+supports_compressed() const {
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LoaderFileTypeCgFX::load_file
+//       Access: Public, Virtual
+//  Description: Loads a CgFX effect and returns an Effect object
+//               that most closely represents the CgFX effect.
+//               Returns NULL on failure.
+////////////////////////////////////////////////////////////////////
+PT(PandaNode) LoaderFileTypeCgFX::
+load_file(const Filename &path, const LoaderOptions &options,
+          BamCacheRecord *record) const {
+  if (record != (BamCacheRecord *)NULL) {
+    record->add_dependent_file(path);
   }
 
-  if (record != (BamCacheRecord *)NULL) {
-    record->add_dependent_file(fullpath);
+  bool report_errors = (options.get_flags() & LoaderOptions::LF_report_errors) != 0;
+
+  string body;
+  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+  if (!vfs->read_file(path, body, true)) {
+    cg_cat.error() << "Could not read CgFX file: " << path << "\n";
+    return NULL;
   }
 
   CGeffect cg_effect =
     CgContextManager::create_effect(body.c_str(), NULL, record);
 
   if (cg_effect == NULL || !cgIsEffect(cg_effect)) {
-    return false;
+    return NULL;
   }
+
+  PT(Effect) effect = new Effect(path.get_basename());
 
   CGtechnique cg_technique = cgGetFirstTechnique(cg_effect);
   while (cg_technique) {
     PT(Technique) technique = new Technique();
-    set_technique(InternalName::make(cgGetTechniqueName(cg_technique)), technique);
+    effect->set_technique(InternalName::make(cgGetTechniqueName(cg_technique)), technique);
 
     CGpass cg_pass = cgGetFirstPass(cg_technique);
     while (cg_pass) {
@@ -183,6 +208,11 @@ read(const Filename &fullpath, BamCacheRecord *record) {
         }
       }
 
+      PT(Material) mat = load_material(cg_pass);
+      if (mat) {
+        state = state->add_attrib(MaterialAttrib::make(mat));
+      }
+
       pass->set_state(state);
 
       cg_pass = cgGetNextPass(cg_pass);
@@ -193,6 +223,79 @@ read(const Filename &fullpath, BamCacheRecord *record) {
 
   cgDestroyEffect(cg_effect);
 
-  return true;
+  return DCAST(Effect, effect);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LoaderFileTypeCgFX::load_material
+//       Access: Private
+//  Description: Loads material settings from a CGpass object.
+//               Returns a new Material object, or NULL if no
+//               material settings were specified on the pass.
+//
+//               This method tries hard to do the exact
+//               inverse of glGSG::do_issue_material.
+////////////////////////////////////////////////////////////////////
+PT(Material) LoaderFileTypeCgFX::
+load_material(const CGpass cg_pass) const {
+  CGstateassignment cg_sa;
+  int count;
+
+  PT(Material) mat = new Material;
+  bool mat_modified = false;
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "MaterialAmbient")) {
+    const float* values = cgGetFloatStateAssignmentValues(cg_sa, &count);
+    Colorf color;
+    memcpy(color._v.data, values, sizeof(float) * count);
+    mat->set_ambient(color);
+    mat_modified = true;
+  }
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "MaterialDiffuse")) {
+    const float* values = cgGetFloatStateAssignmentValues(cg_sa, &count);
+    Colorf color;
+    memcpy(color._v.data, values, sizeof(float) * count);
+    mat->set_diffuse(color);
+    mat_modified = true;
+  }
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "MaterialEmission")) {
+    const float* values = cgGetFloatStateAssignmentValues(cg_sa, &count);
+    Colorf color;
+    memcpy(color._v.data, values, sizeof(float) * count);
+    mat->set_emission(color);
+    mat_modified = true;
+  }
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "MaterialShininess")) {
+    const float value = *cgGetFloatStateAssignmentValues(cg_sa, &count);
+    mat->set_shininess(value);
+    mat_modified = true;
+  }
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "MaterialSpecular")) {
+    const float* values = cgGetFloatStateAssignmentValues(cg_sa, &count);
+    Colorf color;
+    memcpy(color._v.data, values, sizeof(float) * count);
+    mat->set_specular(color);
+    mat_modified = true;
+  }
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "LightModelLocalViewerEnable")) {
+    const CGbool value = *cgGetBoolStateAssignmentValues(cg_sa, &count);
+    mat->set_local(value);
+    mat_modified = true;
+  }
+
+  if (cg_sa = cgGetNamedStateAssignment(cg_pass, "LightModelTwoSideEnable")) {
+    const CGbool value = *cgGetBoolStateAssignmentValues(cg_sa, &count);
+    mat->set_twoside(value);
+    mat_modified = true;
+  }
+
+  // Make sure that we don't return a material if no material
+  // properties were actually specified in the CG pass.
+  return mat_modified ? mat : NULL;
 }
 

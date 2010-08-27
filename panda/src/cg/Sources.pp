@@ -14,17 +14,17 @@
   #define SOURCES \
     config_cg.h \
     cgContextManager.h \
-    cgEffect.I cgEffect.h
+    loaderFileTypeCgFX.h
 
   #define INCLUDED_SOURCES \
     config_cg.cxx \
     cgContextManager.cxx \
-    cgEffect.cxx
+    loaderFileTypeCgFX.cxx
 
   #define INSTALL_HEADERS \
     config_cg.h \
     cgContextManager.h \
-    cgEffect.I cgEffect.h
+    loaderFileTypeCgFX.h
 
   #define IGATESCAN all
 
