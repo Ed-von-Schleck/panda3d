@@ -52,20 +52,20 @@ OSXTARGET=None
 if "MACOSX_DEPLOYMENT_TARGET" in os.environ:
     OSXTARGET=os.environ["MACOSX_DEPLOYMENT_TARGET"]
 
-PkgListSet(["PYTHON", "DIRECT",                        # Python support
-  "OPENGL"] + DXVERSIONS + ["TINYDISPLAY", "NVIDIACG", # 3D graphics
-  "OPENAL", "FMODEX", "FFMPEG", "OGG", "VORBIS",       # Multimedia
-  "ODE", "PHYSX",                                      # Physics
-  "ZLIB", "PNG", "JPEG", "TIFF", "SQUISH", "FREETYPE", # 2D Formats support
-  ] + MAYAVERSIONS + MAXVERSIONS + [ "FCOLLADA",       # 3D Formats support
-  "VRPN", "OPENSSL",                                   # Transport
-  "FFTW", "SWSCALE",                                   # Algorithm helpers
-  "ARTOOLKIT", "OPENCV", "DIRECTCAM",                  # Augmented Reality
-  "NPAPI", "AWESOMIUM",                                # Browser embedding
-  "GTK2", "WX",                                        # Toolkit support
-  "OSMESA", "X11", "XF86DGA", "XRANDR",                # Unix platform support
-  "PANDATOOL", "PVIEW", "DEPLOYTOOLS",                 # Toolchain
-  "CONTRIB"                                            # Experimental
+PkgListSet(["PYTHON", "DIRECT",                            # Python support
+  "OPENGL"] + DXVERSIONS + ["TINYDISPLAY", "NVIDIACG",     # 3D graphics
+  "OPENAL", "FMODEX", "FFMPEG", "OGG", "VORBIS", "THEORA", # Multimedia
+  "ODE", "PHYSX",                                          # Physics
+  "ZLIB", "PNG", "JPEG", "TIFF", "SQUISH", "FREETYPE",     # 2D Formats support
+  ] + MAYAVERSIONS + MAXVERSIONS + [ "FCOLLADA",           # 3D Formats support
+  "VRPN", "OPENSSL",                                       # Transport
+  "FFTW", "SWSCALE",                                       # Algorithm helpers
+  "ARTOOLKIT", "OPENCV", "DIRECTCAM",                      # Augmented Reality
+  "NPAPI", "AWESOMIUM",                                    # Browser embedding
+  "GTK2", "WX",                                            # Toolkit support
+  "OSMESA", "X11", "XF86DGA", "XRANDR",                    # Unix platform support
+  "PANDATOOL", "PVIEW", "DEPLOYTOOLS",                     # Toolchain
+  "CONTRIB"                                                # Experimental
 ])
 
 CheckPandaSourceTree()
@@ -270,6 +270,7 @@ if not os.path.isdir("contrib"):
 if (PkgSkip("FFMPEG")==0):
     PkgDisable("OGG")
     PkgDisable("VORBIS")
+    PkgDisable("THEORA")
 
 ########################################################################
 ##
@@ -422,6 +423,7 @@ if (COMPILER=="MSVC"):
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avutil-49-panda.lib")
     if (PkgSkip("OGG")==0):      LibName("OGG",      GetThirdpartyDir() + "ogg/lib/libogg_static.lib")
     if (PkgSkip("VORBIS")==0):   LibName("VORBIS",   GetThirdpartyDir() + "vorbis/lib/libvorbis_static.lib")
+    if (PkgSkip("THEORA")==0):   LibName("THEORA",   GetThirdpartyDir() + "theora/lib/libtheora_static.lib")
     if (PkgSkip("AWESOMIUM")==0):LibName("AWESOMIUM",   GetThirdpartyDir() + "awesomium/lib/Awesomium.lib")
     if (PkgSkip("SWSCALE")==0):  PkgDisable("SWSCALE")
     if (PkgSkip("WX")==0):
@@ -494,6 +496,7 @@ if (COMPILER=="LINUX"):
         SmartPkgEnable("FFMPEG",    ffmpeg_libs, ffmpeg_libs, ffmpeg_libs)
         SmartPkgEnable("OGG",       "libogg",    ("ogg"), ("ogg/ogg.h", "ogg/os_types.h"))
         SmartPkgEnable("VORBIS",    "libvorbis", ("vorbis"), ("vorbis/codec.h"))
+        SmartPkgEnable("THEORA",    "libtheora", ("theora"), ("theora/codec.h"))
         SmartPkgEnable("SWSCALE",   "libswscale", "libswscale", ("libswscale", "libswscale/swscale.h"), target_pkg = "FFMPEG")
         SmartPkgEnable("FFTW",      "",          ("fftw", "rfftw"), ("fftw.h", "rfftw.h"))
         SmartPkgEnable("FMODEX",    "",          ("fmodex"), ("fmodex", "fmodex/fmod.h"))
@@ -1396,6 +1399,7 @@ DTOOL_CONFIG=[
     ("HAVE_P3D_PLUGIN",                'UNDEF',                  'UNDEF'),
     ("HAVE_OGG",                       'UNDEF',                  'UNDEF'),
     ("HAVE_VORBIS",                    'UNDEF',                  'UNDEF'),
+    ("HAVE_THEORA",                    'UNDEF',                  'UNDEF'),
 ]
 
 PRC_PARAMETERS=[
@@ -2544,7 +2548,7 @@ if (not RUNTIME):
 #
 
 if (not RUNTIME):
-  OPTS=['DIR:panda/src/movies', 'BUILDING:PANDA', 'FFMPEG', 'OGG', 'VORBIS']
+  OPTS=['DIR:panda/src/movies', 'BUILDING:PANDA', 'FFMPEG', 'OGG', 'VORBIS', 'THEORA']
   TargetAdd('movies_composite1.obj', opts=OPTS, input='movies_composite1.cxx')
   IGATEFILES=GetDirectoryContents('panda/src/movies', ["*.h", "*_composite.cxx"])
   TargetAdd('libmovies.in', opts=OPTS, input=IGATEFILES)
@@ -2671,7 +2675,7 @@ if (not RUNTIME):
 if (not RUNTIME):
   OPTS=['DIR:panda/metalibs/panda', 'BUILDING:PANDA', 'VRPN', 'JPEG', 'PNG',
       'TIFF', 'ZLIB', 'OPENSSL', 'FREETYPE', 'FFTW', 'ADVAPI', 'WINSOCK2','SQUISH',
-      'NVIDIACG', 'WINUSER', 'WINMM', 'FFMPEG', 'OGG', 'VORBIS']
+      'NVIDIACG', 'WINUSER', 'WINMM', 'FFMPEG', 'OGG', 'VORBIS', 'THEORA']
 
   TargetAdd('panda_panda.obj', opts=OPTS, input='panda.cxx')
 
