@@ -157,6 +157,10 @@ DXGraphicsStateGuardian9(GraphicsEngine *engine, GraphicsPipe *pipe) :
 
   _supports_stream_offset = false;
 
+  _draw_callback = 0;
+  _pre_reset_callback = 0;
+  _post_reset_callback = 0;
+
   get_gamma_table();
   atexit (atexit_function);
 }
@@ -1097,7 +1101,7 @@ begin_scene() {
   if (!GraphicsStateGuardian::begin_scene()) {
     return false;
   }
-
+   
 /*
   HRESULT hr = _d3d_device->BeginScene();
 
@@ -1185,6 +1189,15 @@ end_scene() {
 ////////////////////////////////////////////////////////////////////
 void DXGraphicsStateGuardian9::
 end_frame(Thread *current_thread) {
+
+  if (_draw_callback){
+    IDirect3DStateBlock9 *state_block = NULL;
+    _d3d_device->CreateStateBlock(D3DSBT_ALL, &state_block);
+    state_block->Capture();
+    _draw_callback->do_callback(NULL);
+    state_block->Apply();
+    state_block->Release();
+  }
 
   HRESULT hr = _d3d_device->EndScene();
 
@@ -4781,6 +4794,10 @@ reset_d3d_device(D3DPRESENT_PARAMETERS *presentation_params,
       }
     }
 
+    if (_pre_reset_callback){
+      _pre_reset_callback->do_callback(NULL);
+    }
+
     this -> mark_new();
     hr = _d3d_device->Reset(&_presentation_reset);
     if (FAILED(hr) && hr != D3DERR_DEVICELOST) {
@@ -4794,6 +4811,10 @@ reset_d3d_device(D3DPRESENT_PARAMETERS *presentation_params,
 
     if (presentation_params != &_screen->_presentation_params) {
       memcpy(&_screen->_presentation_params, presentation_params, sizeof(D3DPRESENT_PARAMETERS));
+    }
+
+    if (_post_reset_callback){
+      _post_reset_callback->do_callback(NULL);
     }
 
     return hr;

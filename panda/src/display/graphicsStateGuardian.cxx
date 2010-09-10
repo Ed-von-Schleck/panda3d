@@ -239,6 +239,11 @@ GraphicsStateGuardian(CoordinateSystem internal_coordinate_system,
   _texture_quality_override = Texture::QL_default;
   
   _shader_generator = NULL;
+
+  _draw_callback = 0;
+  _pre_reset_callback = 0;
+  _post_reset_callback = 0;
+
 }
 
 ////////////////////////////////////////////////////////////////////

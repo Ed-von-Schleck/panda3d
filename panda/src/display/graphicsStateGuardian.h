@@ -47,6 +47,7 @@
 #include "textureAttrib.h"
 #include "texGenAttrib.h"
 #include "shaderAttrib.h"
+#include "callbackObject.h"
 
 class DrawableRegion;
 class GraphicsEngine;
@@ -169,8 +170,14 @@ PUBLISHED:
   float get_gamma(float gamma);
   virtual void restore_gamma();
 
+  virtual INLINE void *get_d3d_device();
+
   INLINE void set_texture_quality_override(Texture::QualityLevel quality_level);
   INLINE Texture::QualityLevel get_texture_quality_override() const;
+
+  INLINE void set_draw_callback(CallbackObject *callback);
+  INLINE void set_pre_reset_callback(CallbackObject *callback);
+  INLINE void set_post_reset_callback(CallbackObject *callback);
 
 #ifdef HAVE_PYTHON
   PyObject *get_prepared_textures() const;
@@ -492,6 +499,10 @@ protected:
   Texture::QualityLevel _texture_quality_override;
   
   ShaderGenerator* _shader_generator;
+
+  CallbackObject *_draw_callback;
+  CallbackObject *_pre_reset_callback;
+  CallbackObject *_post_reset_callback;
 
 #ifndef NDEBUG
   PT(Texture) _flash_texture;

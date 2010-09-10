@@ -32,6 +32,8 @@
 
 #include "lru.h"
 
+#include "callbackObject.h"
+
 typedef LPDIRECT3DDEVICE9 DIRECT_3D_DEVICE;
 typedef D3DVERTEXELEMENT9 DIRECT_3D_VERTEX_ELEMENT;
 typedef LPDIRECT3DVERTEXDECLARATION9 DIRECT_3D_VERTEX_DECLARATION;
@@ -157,6 +159,8 @@ public:
   INLINE HRESULT set_render_state (D3DRENDERSTATETYPE state, DWORD value);
   INLINE HRESULT set_texture_stage_state (DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value);
   INLINE HRESULT set_sampler_state (DWORD sampler, D3DSAMPLERSTATETYPE type, DWORD value);
+
+  INLINE void *get_d3d_device();
 
   static bool get_gamma_table(void);
   static bool static_set_gamma(bool restore, float gamma);

@@ -213,3 +213,13 @@ set_sampler_state (DWORD sampler, D3DSAMPLERSTATETYPE type, DWORD value)
   return hr;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: DXGraphicsStateGuardian9::get_d3d_device
+//       Access: Public
+//  Description: Returns the pointer to the D3D Device.
+////////////////////////////////////////////////////////////////////
+INLINE void *DXGraphicsStateGuardian9::
+get_d3d_device()
+{
+  return (void*)_d3d_device;
+}

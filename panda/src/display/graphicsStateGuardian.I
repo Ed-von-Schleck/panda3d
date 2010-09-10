@@ -927,3 +927,56 @@ set_current_properties(const FrameBufferProperties *prop) {
   _current_properties = prop;
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::get_d3d_device
+//       Access: Public
+//  Description: In the case of DirectX, returns the pointer to the
+//               D3D Device, otherwise, returns 0. We put this here
+//               so that users could integrate externals without
+//               requiring their apps to link to DirectX.
+//               For example, CEGUI requires the d3d device, but
+//               since that type is defined in the Windows
+//               platform sdk, you don't really need the DirectX
+//               SDK, which is very convenient.
+////////////////////////////////////////////////////////////////////
+INLINE void *GraphicsStateGuardian::
+get_d3d_device() {
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::set_draw_callback
+//       Access: Public
+//  Description: Sets a callback to be called before ending the
+//               frame.
+//               Currently only the DX9 gsg implements this.
+//               The DX state is saved before calling the callback
+//               and restored afterwards.
+////////////////////////////////////////////////////////////////////
+INLINE void GraphicsStateGuardian::
+set_draw_callback(CallbackObject *callback){
+  _draw_callback = callback;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::set_pre_reset_callback
+//       Access: Public
+//  Description: Sets a callback to be called before resetting
+//               (resizing) the device in the DX9 gsg.
+////////////////////////////////////////////////////////////////////
+INLINE void GraphicsStateGuardian::
+set_pre_reset_callback(CallbackObject *callback){
+  _pre_reset_callback = callback;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::set_post_reset_callback
+//       Access: Public
+//  Description: Sets a callback to be called after resetting
+//               (resizing) the device in the DX9 gsg.
+////////////////////////////////////////////////////////////////////
+INLINE void GraphicsStateGuardian::
+set_post_reset_callback(CallbackObject *callback){
+  _post_reset_callback = callback;
+}
+
