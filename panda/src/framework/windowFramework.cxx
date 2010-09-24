@@ -361,8 +361,8 @@ get_aspect_2d() {
 NodePath WindowFramework::
 get_pixel_2d() {
   if (_pixel_2d.is_empty()) {
-    PGTop *top = new PGTop("aspect_2d");
-    _aspect_2d = get_render_2d().attach_new_node(top);
+    PGTop *top = new PGTop("pixel_2d");
+    _pixel_2d = get_render_2d().attach_new_node(top);
   }
 
   _pixel_2d.set_pos(-1, 0, 1);
