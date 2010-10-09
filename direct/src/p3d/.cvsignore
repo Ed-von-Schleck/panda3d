@@ -1,0 +1,12 @@
+.cvsignore
+Makefile
+*.pyc
+pp.dep
+packp3d
+ppackage
+ppatcher
+_vfsimporter.exp
+_vfsimporter.lib
+_vfsimporter.pyd
+_vfsimporter.pyd.manifest
+vc90.pdb
