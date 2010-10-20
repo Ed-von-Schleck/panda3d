@@ -66,9 +66,12 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
     def setSmPosHpr(self, x, y, z, h, p, r, t=None):
         self.setPosHpr(x, y, z, h, p, r)
 
-    def setSmPosHprE(self, x, y, z, h, p, r, e, t=None):
-        self.setSmPosHpr(x, y, z, h, p, r, t)
+    def setPosHprE(self, x, y, z, h, p, r, e, t=None):
+        self.setPosHpr(x, y, z, h, p, r)
         self.setComponentE(e)
+
+    def setSmPosHprE(self, x, y, z, h, p, r, e, t=None):
+        self.setPosHprE(x, y, z, h, p, r, e, t)
 
     def clearSmoothing(self, bogus = None):
         pass
