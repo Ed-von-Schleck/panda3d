@@ -25,12 +25,12 @@
 static const int max_position_reports = 10;
 static const int max_timestamp_delays = 10;
 
-class EXPCL_DIRECT SmoothValue {
+class EXPCL_DIRECT EmbeddedValue {
   PN_uint64 _v;
 
  PUBLISHED:
-  SmoothValue(): _v(0) {}
-  ~SmoothValue() {}
+  EmbeddedValue(): _v(0) {}
+  ~EmbeddedValue() {}
 
   void set(PN_uint64 v) { _v = v; }
   PN_uint64 get() const { return _v; }
@@ -108,14 +108,15 @@ PUBLISHED:
 
   INLINE void apply_smooth_pos(NodePath &node) const;
   INLINE void apply_smooth_hpr(NodePath &node) const;
-  INLINE void apply_smooth_e(SmoothValue &node) const;
+  INLINE void apply_smooth_e(EmbeddedValue &node) const;
   INLINE void apply_smooth_pos_hpr(NodePath &pos_node, NodePath &hpr_node) const;
-  INLINE void apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, SmoothValue& e) const;
+  INLINE void apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, EmbeddedValue& e) const;
 
-  INLINE void compute_and_apply_smooth_pos(NodePath &node);
-  INLINE void compute_and_apply_smooth_hpr(NodePath &hpr_node);
-  INLINE void compute_and_apply_smooth_pos_hpr(NodePath &pos_node, NodePath &hpr_node);
-  INLINE void compute_and_apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, SmoothValue& e);
+  INLINE bool compute_and_apply_smooth_pos(NodePath &node);
+  INLINE bool compute_and_apply_smooth_hpr(NodePath &hpr_node);
+  INLINE bool compute_and_apply_smooth_e(EmbeddedValue& e);
+  INLINE bool compute_and_apply_smooth_pos_hpr(NodePath &pos_node, NodePath &hpr_node);
+  INLINE bool compute_and_apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, EmbeddedValue& e);
 
   INLINE float get_smooth_forward_velocity() const;
   INLINE float get_smooth_lateral_velocity() const;

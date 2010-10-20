@@ -499,12 +499,12 @@ apply_smooth_hpr(NodePath &node) const {
 //     Function: SmoothMover::apply_smooth_e
 //       Access: Published
 //  Description: Applies the smoothed e to the indicated
-//               SmoothValue. You can get the same data
+//               EmbeddedValue. You can get the same data
 //               from get_smooth_e(), but this is provided
 //               for completeness.
 ////////////////////////////////////////////////////////////////////
 INLINE void SmoothMover::
-apply_smooth_e(SmoothValue &e) const {
+apply_smooth_e(EmbeddedValue &e) const {
   e.set(get_smooth_e());
 }
 
@@ -529,14 +529,14 @@ apply_smooth_pos_hpr(NodePath &pos_node, NodePath &hpr_node) const {
 //       Access: Published
 //  Description: Applies the smoothed position and orientation to the
 //               indicated NodePath.  Also applies the current embedded
-//               value to SmoothValue, This is equivalent to calling
+//               value to EmbeddedValue, This is equivalent to calling
 //               node.set_pos_hpr(smooth_mover->get_smooth_pos(),
 //               smooth_mover->get_smooth_hpr()).  It exists as an
 //               optimization only, to avoid the overhead of passing
 //               the return value through Python.
 ////////////////////////////////////////////////////////////////////
 INLINE void SmoothMover::
-apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, SmoothValue &e) const {
+apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, EmbeddedValue &e) const {
   pos_node.set_pos(get_smooth_pos());
   hpr_node.set_hpr(get_smooth_hpr());
   e.set(get_smooth_e());
@@ -549,26 +549,46 @@ apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, SmoothValue &e) c
 //               computes the smooth position and applies it to the
 //               indicated node in one call.
 ////////////////////////////////////////////////////////////////////
-INLINE void SmoothMover::
+INLINE bool SmoothMover::
 compute_and_apply_smooth_pos(NodePath &node) {
   if (compute_smooth_position()) {
     apply_smooth_pos(node);
+    return true;
   }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: SmoothMover::compute_and_apply_smooth_pos_hpr
+//     Function: SmoothMover::compute_and_apply_smooth_hpr
 //       Access: Published
 //  Description: A further optimization to reduce Python calls.  This
 //               computes the smooth position and applies it to the
 //               indicated node or nodes in one call.  The pos_node
 //               and hpr_node might be the same NodePath.
 ////////////////////////////////////////////////////////////////////
-INLINE void SmoothMover::
+INLINE bool SmoothMover::
 compute_and_apply_smooth_hpr(NodePath &hpr_node) {
   if (compute_smooth_position()) {
     apply_smooth_hpr(hpr_node);
+    return true;
   }
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: SmoothMover::compute_and_apply_smooth_pos
+//       Access: Published
+//  Description: A further optimization to reduce Python calls.  This
+//               computes the smooth position and applies it to the
+//               indicated node in one call.
+////////////////////////////////////////////////////////////////////
+INLINE bool SmoothMover::
+compute_and_apply_smooth_e(EmbeddedValue& e) {
+  if (compute_smooth_position()) {
+    apply_smooth_e(e);
+    return true;
+  }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -579,11 +599,13 @@ compute_and_apply_smooth_hpr(NodePath &hpr_node) {
 //               indicated node or nodes in one call.  The pos_node
 //               and hpr_node might be the same NodePath.
 ////////////////////////////////////////////////////////////////////
-INLINE void SmoothMover::
+INLINE bool SmoothMover::
 compute_and_apply_smooth_pos_hpr(NodePath &pos_node, NodePath &hpr_node) {
   if (compute_smooth_position()) {
     apply_smooth_pos_hpr(pos_node, hpr_node);
+    return true;
   }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -594,11 +616,13 @@ compute_and_apply_smooth_pos_hpr(NodePath &pos_node, NodePath &hpr_node) {
 //               indicated node or nodes in one call.  The pos_node
 //               and hpr_node might be the same NodePath.
 ////////////////////////////////////////////////////////////////////
-INLINE void SmoothMover::
-compute_and_apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, SmoothValue& e) {
+INLINE bool SmoothMover::
+compute_and_apply_smooth_pos_hpr_e(NodePath &pos_node, NodePath &hpr_node, EmbeddedValue& e) {
   if (compute_smooth_position()) {
     apply_smooth_pos_hpr_e(pos_node, hpr_node, e);
+    return true;
   }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
