@@ -3434,7 +3434,12 @@ def report(types = [], prefix = '', xform = None, notifyFunc = None, dConfigPara
     def decorator(f):
         def wrap(*args,**kwargs):
             if args:
-                rArgs = [args[0].__class__.__name__ + ', ']
+                try:
+                    rArgs = [repr(args[0]) + ', ']
+                except:
+                    rArgs = [args[0].__class__.__module__ + ', ']
+                    pass
+                pass
             else:
                 rArgs = []
 
