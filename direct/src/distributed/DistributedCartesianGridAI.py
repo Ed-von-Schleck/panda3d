@@ -24,10 +24,6 @@ class DistributedCartesianGridAI(DistributedNodeAI, CartesianGridBase):
         DistributedNodeAI.handleChildArrive(self, child, zoneId)
         CartesianGridBase.handleChildArrive(self, child, zoneId)
 
-    def handleChildArriveZone(self, child, zoneId):
-        DistributedNodeAI.handleChildArriveZone(self, child, zoneId)
-        CartesianGridBase.handleChildArriveZone(self, child, zoneId)
-
     def handleChildLeave(self, child, zoneId):
         DistributedNodeAI.handleChildLeave(self, child, zoneId)
         CartesianGridBase.handleChildLeave(self, child, zoneId)

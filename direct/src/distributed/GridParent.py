@@ -81,7 +81,7 @@ class GridParent:
         # the new node.
 
         newCellOrigin = self.getCellOrigin(grid, zoneId)
-        if self._child.getParent():
+        if self._child.getParent() != newCellOrigin:
             self._child.wrtReparentTo(newCellOrigin)
         else:
             self._child.reparentTo(newCellOrigin)

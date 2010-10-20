@@ -1,5 +1,6 @@
 from direct.distributed.DistributedSmoothNodeBase import DistributedSmoothNodeBase
 from direct.distributed.GridParent import GridParent
+from pandac.PandaModules import EmbeddedValue
 
 class GridChild:
     """
@@ -22,16 +23,16 @@ class GridChild:
         self.enableGridInterest(False)
         pass
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
     def setGridCell(self, grid, zoneId):
         if grid is None:
             self.__setGridParent(None)
             self.__clearGridInterest()
-            pass
         else:
             if not self._gridParent:
                 self.__setGridParent(GridParent(self))
                 pass
-            
+
             # Does the (wrt)ReparentTo() operation
             self._gridParent.setGridCell(grid, zoneId)
 
@@ -44,7 +45,9 @@ class GridChild:
 
     def enableGridInterest(self, enabled = True):
         self._gridInterestEnabled = enabled
-        if not enabled:
+        if enabled and self.isOnAGrid():
+            self.__setGridInterest(self.getGrid(), self.getGridZone())
+        else:
             self.__clearGridInterest()
             pass
         pass
@@ -92,7 +95,7 @@ class GridChild:
 
     def __clearGridInterest(self):
         if self._gridInterest:
-            self.cr.removeTaggedInterest(self.gridInterest)
+            self.cr.removeTaggedInterest(self._gridInterest)
             self._gridInterest = None
             pass
         
@@ -115,11 +118,24 @@ class SmoothGridChild(GridChild):
         GridChild.__init__(self)
         assert isinstance(self, DistributedSmoothNodeBase), \
                'All GridChild objects must be instances of DistributedSmoothNodeBase'
+        pass
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
     def setGridCell(self, grid, zoneId):
         GridChild.setGridCell(self, grid, zoneId)
-        if grid is not None and self.isGenerated(): # we get our cnode in DSmoothNodeBase.generate()
+        if grid and self.isGenerated(): # we get our cnode in DistributedSmoothNodeBase.generate()
             self.cnode.setEmbeddedVal(zoneId)
             pass
         pass
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
+    def transformTelemetry(self, x, y, z, h, p, r, e):
+        # We don't really need to transform telemetry, but
+        # we do update our grid cell such that the new 
+        # telemetry is correct now.
+        # We do this instead of overriding setSmPosHprE()
+        # because we're a mixin class.
+        if self.isOnAGrid():
+            self.setGridCell(self.getGrid(), e) # causes a wrtReparent() which updates 
+                                                # all previous smooth positions
+        return x, y, z, h, p, r

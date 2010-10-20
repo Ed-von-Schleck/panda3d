@@ -48,6 +48,7 @@ PUBLISHED:
   void initialize(const NodePath &node_path, DCClass *dclass,
                   CHANNEL_TYPE do_id);
 
+  int refresh_pos_hpr();
   void send_everything();
 
   void broadcast_pos_hpr_full();
@@ -58,7 +59,7 @@ PUBLISHED:
   // For instance, an object on a grid would need to have a way to switch grid
   // cells at the same instant the positional data wraps.
   void set_embedded_val(PN_uint64 e);
-  void print_embedded_val() const;
+  PN_uint64 get_embedded_val() const;
 
 private:
   INLINE static bool only_changed(int flags, int compare);

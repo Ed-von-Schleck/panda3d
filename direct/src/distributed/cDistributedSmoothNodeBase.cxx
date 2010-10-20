@@ -71,27 +71,21 @@ initialize(const NodePath &node_path, DCClass *dclass, CHANNEL_TYPE do_id) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: CDistributedSmoothNodeBase::send_everything
-//       Access: Published
-//  Description: Broadcasts the current pos/hpr in its complete form.
-////////////////////////////////////////////////////////////////////
-void CDistributedSmoothNodeBase::
-send_everything() {
-  _dirty_e = false;
-  d_setSmPosHprE(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
-                 _store_hpr[0], _store_hpr[1], _store_hpr[2], 
-                 _store_e);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CDistributedSmoothNodeBase::broadcast_pos_hpr_full
+//     Function: CDistributedSmoothNodeBase::refresh_pos_hpr
 //       Access: Published
 //  Description: Examines the complete pos/hpr information to see
 //               which of the six elements have changed, and
-//               broadcasts the appropriate messages.
+//               stores the info internally. You must send any 
+//               updates for any detected changes manually.
+//               Returns flags associated with the changed values.
 ////////////////////////////////////////////////////////////////////
-void CDistributedSmoothNodeBase::
-broadcast_pos_hpr_full() {
+int CDistributedSmoothNodeBase::
+refresh_pos_hpr() {
+  // We may not be initialized yet.
+  if (_node_path.is_empty()) {
+    return 0;
+  }
+
   LPoint3f xyz = _node_path.get_pos();
   LVecBase3f hpr = _node_path.get_hpr();
 
@@ -130,6 +124,35 @@ broadcast_pos_hpr_full() {
   if (_dirty_e) {
     flags |= F_new_e;
   }
+
+  return flags;
+}
+////////////////////////////////////////////////////////////////////
+//     Function: CDistributedSmoothNodeBase::send_everything
+//       Access: Published
+//  Description: Broadcasts the current pos/hpr in its complete form.
+////////////////////////////////////////////////////////////////////
+void CDistributedSmoothNodeBase::
+send_everything() {
+  _dirty_e = false;
+  d_setSmPosHprE(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
+                 _store_hpr[0], _store_hpr[1], _store_hpr[2], 
+                 _store_e);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CDistributedSmoothNodeBase::broadcast_pos_hpr_full
+//       Access: Published
+//  Description: Examines the complete pos/hpr information to see
+//               which of the six elements have changed, and
+//               broadcasts the appropriate messages.
+////////////////////////////////////////////////////////////////////
+void CDistributedSmoothNodeBase::
+broadcast_pos_hpr_full() {
+  LPoint3f xyz = _node_path.get_pos();
+  LVecBase3f hpr = _node_path.get_hpr();
+
+  int flags = refresh_pos_hpr();
 
   if (flags == 0) {
     // No change.  Send one and only one "stop" message.
@@ -179,7 +202,7 @@ broadcast_pos_hpr_full() {
     d_setSmXYZH(_store_xyz[0], _store_xyz[1], _store_xyz[2], _store_hpr[0]);
 
   } else if (flags & F_new_e) {
-    // Any other change
+    // Only change in embedded
     _store_stop = false;
     send_everything();
 
@@ -391,8 +414,8 @@ set_embedded_val(PN_uint64 e) {
   }
 }
 
-void CDistributedSmoothNodeBase::
-print_embedded_val() const {
-  cout << "printEmbeddedVal: (val=" << _store_e << ", dirty=" << _dirty_e << ")\n";
+PN_uint64 CDistributedSmoothNodeBase::
+get_embedded_val() const {
+  return _store_e;
 }
 

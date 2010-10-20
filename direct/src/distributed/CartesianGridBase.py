@@ -19,7 +19,7 @@ class CartesianGridBase:
 
     def disable(self):
         self.stopManagementTask()
-        self.managedObjects.clear()
+        self.__managedChildren.clear()
         pass
 
     def isGrid(self):
@@ -73,6 +73,12 @@ class CartesianGridBase:
             return (zoneId,col,row)
         else:
             return zoneId
+
+    def getZoneAndCellPosFromXYZ(self, pos):
+        zone = self.getZoneFromXYZ(pos)
+        x = pos[0] % self.cellWidth
+        y = pos[1] % self.cellWidth
+        return zone, Vec3(x, y, pos[2])
 
     def getGridSizeFromSphereRadius(self, sphereRadius, cellWidth, gridRadius):
         # NOTE: This ensures that the grid is at least a "gridRadius" number
@@ -170,6 +176,8 @@ class CartesianGridBase:
         if self.isGridZone(zoneId):
             child.setGridCell(self, zoneId)
             return zoneId
+        else:
+            assert self.notify.warning("Placing object on grid in non-grid zone(%s): %s" % (zoneId, child))
         return 0            
 
     def handleChildArrive(self, child, zoneId):
@@ -181,15 +189,8 @@ class CartesianGridBase:
             pass
         pass
 
-    def handleChildArriveZone(self, child, zoneId):
-        if self.isGridZone(zoneId):
-            child.setGridCell(self, zoneId)
-        else:
-            child.setGridCell(None, 0)
-            pass
-        pass
-        
     def handleChildLeave(self, child, zoneId):
+        self.ignoreChild(child)
         child.setGridCell(None, 0)
         pass
 
@@ -255,6 +256,7 @@ class CartesianGridBase:
             
             if self.isGridZone(newZoneId):
                 child.setGridCell(self, newZoneId)
+                child.sendCurrentPosition()
                 child.b_setLocation(self.getDoId(), newZoneId)
             else:
                 self.notify.warning(

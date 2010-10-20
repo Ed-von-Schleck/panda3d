@@ -418,12 +418,22 @@ class DistributedObjectAI(DistributedObjectBase):
             self.doId = doId
         # Put the new DO in the dictionaries
         self.air.addDOToTables(self, location=(parentId, zoneId))
+        
         # Send a generate message
+        self.preGenerate()
         self.sendGenerateWithRequired(self.air, parentId, zoneId, optionalFields)
         self.generate()
         self.announceGenerate()
         self.postGenerateMessage()
 
+    def preGenerate(self):
+        """
+        Unfortunately, there may be cases where you need the zoneId info
+        prior to sending this object's data to the state server.  Do that
+        stuff here, and as always, remember to call down.
+        """
+        pass
+    
     def generate(self):
         """
         Inheritors should put functions that require self.zoneId or

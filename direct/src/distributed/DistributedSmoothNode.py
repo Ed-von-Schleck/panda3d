@@ -82,10 +82,8 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
     def generate(self):
         self.smoother = SmoothMover()
         self.smoothStarted = 0
-        self.embeddedVal = 0
         self.lastSuggestResync = 0
-        self._smoothWrtReparents = False
-
+        
         DistributedNode.DistributedNode.generate(self)
         DistributedSmoothNodeBase.DistributedSmoothNodeBase.generate(self)
         self.cnode.setRepository(self.cr, 0, 0)
@@ -151,29 +149,22 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
             self.forceToTruePosition()
             self.smoothStarted = 0
 
-    def setSmoothWrtReparents(self, flag):
-        self._smoothWrtReparents = flag
-    def getSmoothWrtReparents(self):
-        return self._smoothWrtReparents
-
     def forceToTruePosition(self):
         """
         This forces the node to reposition itself to its latest known
         position.  This may result in a pop as the node skips the last
         of its lerp points.
         """
-        #printStack()
         if (not self.isLocal()) and \
            self.smoother.getLatestPosition():
-            embeddedVal = SmoothValue()
+            embeddedVal = EmbeddedValue()
             self.smoother.applySmoothPosHprE(self, self, embeddedVal)
-            self.embeddedVal = embeddedVal.get()
-            parent = self.getParentObj()
-            if parent.isGrid():
-                self.setGridCell(parent, self.embeddedVal)
-                pass
+            self.cnode.setEmbeddedVal(embeddedVal.get())
+            pass
+        
         self.smoother.clearPositions(1)
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
     def reloadPosition(self):
         """
         This function re-reads the position from the node itself and
@@ -182,10 +173,11 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         it to stick.
         """
         self.smoother.clearPositions(0)
-        self.smoother.setPosHpr(self.getPos(), self.getHpr())
+        self.smoother.setPosHprE(self.getPos(), self.getHpr(), self.cnode.getEmbeddedVal())
         self.smoother.setPhonyTimestamp()
         self.smoother.markPosition()
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
     def _checkResume(self,timestamp):
         """
         Determine if we were previously stopped and now need to
@@ -271,18 +263,12 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         self.setComponentR(r)
         self.setComponentTLive(timestamp)
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
     def setSmPosHprE(self, x, y, z, h, p, r, e, timestamp=None):
         # This ensures that the marked positions (sample points)
         # are all relative to the same parent.
-        eParent = self.getCoordinateSpaceFromEmbedded(e)
-        if eParent is not self.getParent():
-            parent = self.getParent()
-            wrtData = eParent.attachNewNode('wrtData')
-            wrtData.setPosHpr(x,y,z,h,p,r)
-            x,y,z = wrtData.getPos(parent)
-            h,p,r = wrtData.getHpr(parent)
-            pass
-        
+        x, y, z, h, p, r = self.transformTelemetry(x, y, z, h, p, r, e)
+             
         self._checkResume(timestamp)
         self.setComponentX(x)
         self.setComponentY(y)
@@ -290,10 +276,9 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         self.setComponentH(h)
         self.setComponentP(p)
         self.setComponentR(r)
-        self.setComponentE(e)
         self.setComponentTLive(timestamp)
 
-    def getCoordinateSpaceFromEmbedded(self, e):
+    def transformTelemetry(self, x, y, z, h, p, r, e):
         # Sometimes the telemetry cannot be smoothed
         # between points (think boundary wrapping at a
         # grid cell border).  This allows us to convert
@@ -305,7 +290,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         # The default case is that the embedded data is not
         # used and we just received telemetry in the current
         # coordinate space.
-        return self.getParent()
+        return x, y, z, h, p, r
     
     ### component set pos and hpr functions ###
 
@@ -332,8 +317,15 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         self.smoother.setR(r)
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def setComponentE(self, e):
+        
         self.smoother.setE(e)
+
+        # In case we switch from a receiver to a broadcaster, we'll
+        # need the latest data.
+        self.cnode.setEmbeddedVal(e)
         pass
+        
+    
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def setComponentT(self, timestamp):
         # This is a little bit hacky.  If *this* function is called,
@@ -378,6 +370,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
                 self.smoother.setPhonyTimestamp()
             self.smoother.markPosition()
         else:
+            
             now = globalClock.getFrameTime()
             local = globalClockDelta.networkToLocalTime(timestamp, now)
             realTime = globalClock.getRealTime()
@@ -409,11 +402,9 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
 
         if not self.localControl and not self.smoothStarted and \
            self.smoother.getLatestPosition():
-            embeddedVal = SmoothValue()
-            self.smoother.applySmoothPosHpr(self, self, embeddedVal)
-            self.embeddedVal = embeddedVal.get()
-            assert False, "TODO: reset to new grid parent"
-            
+            eVal = EmbeddedValue()
+            self.smoother.applySmoothPosHprE(self, self, eVal)
+            self.cnode.setEmbeddedVal(eVal.get())
             
     # These are all required by the CMU server, which requires get* to
     # match set* in more cases than the Disney server does.
@@ -430,7 +421,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
     def getComponentR(self):
         return self.getR()
     def getComponentE(self):
-        return self.embeddedVal
+        return self.cnode.getEmbeddedVal()
     def getComponentT(self):
         return 0
                 
@@ -441,22 +432,23 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         #printStack()
         self.smoother.clearPositions(1)
 
-
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def wrtReparentTo(self, parent):
         # We override this NodePath method to force it to
         # automatically reset the smoothing position when we call it.
         if self.smoothStarted:
-            if self._smoothWrtReparents:
-                #print self.getParent(), parent, self.getParent().getPos(parent)
-                self.smoother.handleWrtReparent(self.getParent(), parent)
-                NodePath.wrtReparentTo(self, parent)
-            else:
-                self.forceToTruePosition()
-                NodePath.wrtReparentTo(self, parent)
-                self.reloadPosition()
-        else:
-            NodePath.wrtReparentTo(self, parent)
+            self.notify.info('handleWrtReparent(%s, %s)' % (self.getParent(), parent))
+            self.smoother.handleWrtReparent(self.getParent(), parent)
+            pass
+
+        NodePath.wrtReparentTo(self, parent)
+
+        # update our broadcast data source with our new current position
+        # any embedded data would need to be handled separately
+        if self.isGenerated():
+            self.cnode.refreshPosHpr()
+            pass
+        pass
 
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def d_setParent(self, parentToken):

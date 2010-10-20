@@ -51,10 +51,7 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
     def handleChildArrive(self, child, zoneId):
         DistributedNode.handleChildArrive(self, child, zoneId)
         CartesianGridBase.handleChildArrive(self, child, zoneId)
-
-    def handleChildArriveZone(self, child, zoneId):
-        DistributedNode.handleChildArriveZone(self, child, zoneId)
-        CartesianGridBase.handleChildArriveZone(self, child, zoneId)
+        pass
 
     def handleChildLeave(self, child, zoneId):
         DistributedNode.handleChildLeave(self, child, zoneId)
