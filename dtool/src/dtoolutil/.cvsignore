@@ -1,0 +1,6 @@
+.cvsignore
+Makefile
+pp.dep
+pandaVersion.h
+checkPandaVersion.h
+checkPandaVersion.cxx
