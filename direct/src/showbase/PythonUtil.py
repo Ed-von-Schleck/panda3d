@@ -47,6 +47,7 @@ import random
 import time
 import new
 import gc
+import bisect
 #if __debug__:
 import traceback
 import __builtin__
@@ -2486,6 +2487,7 @@ def _getSafeReprNotify():
     global safeReprNotify
     from direct.directnotify.DirectNotifyGlobal import directNotify
     safeReprNotify = directNotify.newCategory("safeRepr")
+    return safeReprNotify
 
 def safeRepr(obj):
     global dtoolSuperBase
@@ -4138,6 +4140,7 @@ def startSuperLog(customFunction = None):
                 if customFunction:
                     superLogFile.write( "after = %s\n"%customFunction())
 
+        
 
                 return trace_dispatch
         sys.settrace(trace_dispatch)
@@ -4329,6 +4332,84 @@ def u2ascii(str):
         return unicodedata.normalize('NFKD', str).encode('ascii','ignore')
     else:
         return str
+
+class PriorityCallbacks:
+    """ manage a set of prioritized callbacks, and allow them to be invoked in order of priority """
+    TokenGen = SerialNumGen()
+
+    def __init__(self):
+        self._callbacks = []
+        self._token2item = {}
+
+    def clear(self):
+        while self._callbacks:
+            self._callbacks.pop()
+        self._token2item = {}
+
+    def add(self, callback, priority=None):
+        if priority is None:
+            priority = 0
+        item = (priority, callback)
+        bisect.insort(self._callbacks, item)
+        token = 'pc-%s' % (self.TokenGen.next())
+        self._token2item[token] = item
+        return token
+
+    def remove(self, token):
+        item = self._token2item[token]
+        self._callbacks.pop(bisect.bisect_left(self._callbacks, item))
+
+    def __call__(self):
+        callbacks = self._callbacks[:]
+        for priority, callback in callbacks:
+            callback()
+
+if __debug__:
+    l = []
+    def a(l=l):
+        l.append('a')
+    def b(l=l):
+        l.append('b')
+    def c(l=l):
+        l.append('c')
+    pc = PriorityCallbacks()
+    pc.add(a)
+    pc()
+    assert l == ['a']
+    while len(l):
+        l.pop()
+    bItem = pc.add(b)
+    pc()
+    assert 'a' in l
+    assert 'b' in l
+    assert len(l) == 2
+    while len(l):
+        l.pop()
+    pc.remove(bItem)
+    pc()
+    assert l == ['a']
+    while len(l):
+        l.pop()
+    pc.add(c, 2)
+    bItem = pc.add(b, 10)
+    pc()
+    assert l == ['a', 'c', 'b']
+    while len(l):
+        l.pop()
+    pc.remove(bItem)
+    pc()
+    assert l == ['a', 'c']
+    while len(l):
+        l.pop()
+    pc.clear()
+    pc()
+    assert len(l) == 0
+    del l
+    del a
+    del b
+    del c
+    del pc
+    del bItem
 
 import __builtin__
 __builtin__.Functor = Functor
