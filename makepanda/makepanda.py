@@ -530,9 +530,9 @@ if (COMPILER=="LINUX"):
 
     if (RUNTIME):
         # For the runtime, all packages are required
-        for pkg in ["OPENSSL", "ZLIB", "NPAPI", "JPEG", "X11", "PNG"]:
+        for pkg in ["OPENSSL", "ZLIB", "NPAPI", "JPEG", "PNG"]:
             if (pkg in PkgListGet() and PkgSkip(pkg)==1):
-                exit("Runtime must be compiled with OpenSSL, ZLib, NPAPI, JPEG, X11 and PNG support!")
+                exit("Runtime must be compiled with OpenSSL, ZLib, NPAPI, JPEG and PNG support!")
 
     if (not RUNTIME and not LocateBinary("bison")):
         exit("Could not locate bison!")
