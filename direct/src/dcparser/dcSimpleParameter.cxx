@@ -2334,13 +2334,6 @@ output_instance(ostream &out, bool brief, const string &prename,
       }
       break;
 
-    case ST_string:
-      if (!_uint_range.is_empty()) {
-        out << "(";
-        _uint_range.output(out, _divisor);
-        out << ")";
-      }
-      break;
     default:
       break;
     }
