@@ -3185,6 +3185,8 @@ class SubframeCall:
         if (self._taskName):
             taskMgr.remove(self._taskName)
             self._taskName = None
+    def isFinished(self):
+        return self._taskName == None
 
 class ArgumentEater:
     def __init__(self, numToEat, func):
@@ -4337,6 +4339,10 @@ class PriorityCallbacks:
     """ manage a set of prioritized callbacks, and allow them to be invoked in order of priority """
     TokenGen = SerialNumGen()
 
+    @classmethod
+    def GetToken(cls):
+        return 'pc-%s' % cls.TokenGen.next()
+
     def __init__(self):
         self._callbacks = []
         self._token2item = {}
@@ -4351,7 +4357,7 @@ class PriorityCallbacks:
             priority = 0
         item = (priority, callback)
         bisect.insort(self._callbacks, item)
-        token = 'pc-%s' % (self.TokenGen.next())
+        token = self.GetToken()
         self._token2item[token] = item
         return token
 
