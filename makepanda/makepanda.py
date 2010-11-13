@@ -45,6 +45,7 @@ RTDIST_VERSION="dev"
 RUNTIME=0
 DISTRIBUTOR=""
 VERSION=None
+DEBVERSION=None
 MAJOR_VERSION=None
 COREAPI_VERSION=None
 OSXTARGET=None
@@ -94,6 +95,7 @@ def usage(problem):
     print ""
     print "  --help            (print the help message you're reading now)"
     print "  --verbose         (print out more information)"
+    print "  --runtime         (build a runtime build instead of an SDK build)"
     print "  --installer       (build an installer)"
     print "  --optimize X      (optimization level can be 1,2,3,4)"
     print "  --version         (set the panda version number)"
@@ -117,13 +119,13 @@ def usage(problem):
     os._exit(1)
 
 def parseopts(args):
-    global INSTALLER,RTDIST,RUNTIME,GENMAN,DISTRIBUTOR
-    global VERSION,COMPRESSOR,THREADCOUNT,OSXTARGET,HOST_URL
+    global INSTALLER,RTDIST,RUNTIME,GENMAN,DISTRIBUTOR,VERSION
+    global COMPRESSOR,THREADCOUNT,OSXTARGET,HOST_URL,DEBVERSION
     longopts = [
         "help","distributor=","verbose","runtime","osxtarget=",
         "optimize=","everything","nothing","installer","rtdist","nocolor",
         "version=","lzma","no-python","threads=","outputdir=","override=",
-        "static","host="]
+        "static","host=","debversion="]
     anything = 0
     optimize = ""
     for pkg in PkgListGet(): longopts.append("no-"+pkg.lower())
@@ -152,6 +154,7 @@ def parseopts(args):
             elif (option=="--override"): AddOverride(value.strip())
             elif (option=="--static"): SetLinkAllStatic(True)
             elif (option=="--host"): HOST_URL=value
+            elif (option=="--debversion"): DEBVERSION=value
             else:
                 for pkg in PkgListGet():
                     if (option=="--use-"+pkg.lower()):
@@ -213,15 +216,18 @@ if (sys.platform == "darwin" and OSXTARGET != None):
 ##
 ########################################################################
 
-if (VERSION == None):
+if (VERSION is None):
     if (RUNTIME):
         VERSION = ParsePluginVersion("dtool/PandaVersion.pp")
         COREAPI_VERSION = VERSION + "." + ParseCoreapiVersion("dtool/PandaVersion.pp")
     else:
         VERSION = ParsePandaVersion("dtool/PandaVersion.pp")
 
-if (COREAPI_VERSION == None):
+if (COREAPI_VERSION is None):
     COREAPI_VERSION = VERSION
+
+if (DEBVERSION is None):
+    DEBVERSION = VERSION
 
 MAJOR_VERSION = VERSION[:3]
 
@@ -1468,6 +1474,9 @@ def WriteConfigSettings():
         dtool_config["IS_LINUX"] = 'UNDEF'
         dtool_config["HAVE_VIDEO4LINUX"] = 'UNDEF'
         dtool_config["IS_OSX"] = '1'
+        # 10.4 had a broken ucontext implementation
+        if int(platform.mac_ver()[0][3]) <= 4:
+            dtool_config["PHAVE_UCONTEXT_H"] = 'UNDEF'
 
     if (sys.platform.startswith("freebsd")):
         dtool_config["IS_LINUX"] = 'UNDEF'
@@ -4839,7 +4848,7 @@ def MakeInstallerNSIS(file, fullname, smdirectory, installdir):
 
 
 INSTALLER_DEB_FILE="""
-Package: panda3d
+Package: panda3dMAJOR
 Version: VERSION
 Section: libdevel
 Priority: optional
@@ -4848,6 +4857,8 @@ Essential: no
 Depends: DEPENDS
 Recommends: panda3d-runtime, python-wxversion, python-profiler (>= PV), python-tk (>= PV), python-pmw, RECOMMENDS
 Provides: panda3d
+Conflicts: panda3d
+Replaces: panda3d
 Maintainer: etc-panda3d@lists.andrew.cmu.edu
 Description: The Panda3D free 3D engine SDK
  Panda3D is a game engine which includes graphics, audio, I/O, collision detection, and other abilities relevant to the creation of 3D games. Panda3D is open source and free software under the revised BSD license, and can be used for both free and commercial game development at no financial cost.
@@ -5005,7 +5016,7 @@ def MakeInstallerLinux():
             txt = RUNTIME_INSTALLER_DEB_FILE[1:]
         else:
             txt = INSTALLER_DEB_FILE[1:]
-        txt = txt.replace("VERSION",str(VERSION)).replace("ARCH",ARCH).replace("PV",PV)
+        txt = txt.replace("VERSION", str(DEBVERSION)).replace("ARCH", ARCH).replace("PV", PV).replace("MAJOR", MAJOR_VERSION)
         oscmd("mkdir --mode=0755 -p targetroot/DEBIAN")
         oscmd("cd targetroot ; (find usr -type f -exec md5sum {} \;) >  DEBIAN/md5sums")
         if (not RUNTIME):
@@ -5021,11 +5032,11 @@ def MakeInstallerLinux():
             depends = ReadFile("targetroot/debian/substvars").replace("shlibs:Depends=", "").strip()
             WriteFile("targetroot/DEBIAN/control", txt.replace("DEPENDS", depends))
         else:
-            oscmd("ln -s .. targetroot/debian/panda3d")
-            oscmd("cd targetroot ; dpkg-gensymbols -v%s -ppanda3d -eusr%s/panda3d/lib*.so* -ODEBIAN/symbols >/dev/null" % (VERSION, libdir))
+            oscmd("ln -s .. targetroot/debian/panda3d" + MAJOR_VERSION)
+            oscmd("cd targetroot ; dpkg-gensymbols -v%s -ppanda3d%s -eusr%s/panda3d/lib*.so* -ODEBIAN/symbols >/dev/null" % (DEBVERSION, MAJOR_VERSION, libdir))
             # Library dependencies are required, binary dependencies are recommended. Dunno why -xlibphysx-extras is needed, prolly a bug in their package
-            oscmd("cd targetroot ; LD_LIBRARY_PATH=usr%s/panda3d dpkg-shlibdeps --ignore-missing-info --warnings=2 -xpanda3d -xlibphysx-extras -Tdebian/substvars_dep debian/panda3d/usr/lib*/panda3d/lib*.so*" % libdir)
-            oscmd("cd targetroot ; LD_LIBRARY_PATH=usr%s/panda3d dpkg-shlibdeps --ignore-missing-info --warnings=2 -xpanda3d -Tdebian/substvars_rec debian/panda3d/usr/bin/*" % libdir)
+            oscmd("cd targetroot ; LD_LIBRARY_PATH=usr%s/panda3d dpkg-shlibdeps --ignore-missing-info --warnings=2 -xpanda3d%s -xlibphysx-extras -Tdebian/substvars_dep debian/panda3d%s/usr/lib*/panda3d/lib*.so*" % (libdir, MAJOR_VERSION, MAJOR_VERSION))
+            oscmd("cd targetroot ; LD_LIBRARY_PATH=usr%s/panda3d dpkg-shlibdeps --ignore-missing-info --warnings=2 -xpanda3d%s -Tdebian/substvars_rec debian/panda3d%s/usr/bin/*" % (libdir, MAJOR_VERSION, MAJOR_VERSION))
             depends = ReadFile("targetroot/debian/substvars_dep").replace("shlibs:Depends=", "").strip()
             recommends = ReadFile("targetroot/debian/substvars_rec").replace("shlibs:Depends=", "").strip()
             depends += ", " + PYTHONV
@@ -5033,9 +5044,9 @@ def MakeInstallerLinux():
         oscmd("rm -rf targetroot/debian")
         oscmd("chmod -R 755 targetroot/DEBIAN")
         if (RUNTIME):
-            oscmd("dpkg-deb -b targetroot panda3d-runtime_"+VERSION+"_"+ARCH+".deb")
+            oscmd("dpkg-deb -b targetroot panda3d-runtime_"+DEBVERSION+"_"+ARCH+".deb")
         else:
-            oscmd("dpkg-deb -b targetroot panda3d_"+VERSION+"_"+ARCH+".deb")
+            oscmd("dpkg-deb -b targetroot panda3d"+MAJOR_VERSION+"_"+DEBVERSION+"_"+ARCH+".deb")
         oscmd("chmod -R 755 targetroot")
 
     if not (os.path.exists("/usr/bin/rpmbuild") or os.path.exists("/usr/bin/dpkg-deb")):
