@@ -4329,11 +4329,23 @@ def bpdbGetEnabled():
 bpdb.setEnabledCallback(bpdbGetEnabled)
 bpdb.setConfigCallback(lambda cfg: ConfigVariableBool('want-bp-%s' % (cfg.lower(),), 0).getValue())
 
-def u2ascii(str):
-    if type(str) is types.UnicodeType:
-        return unicodedata.normalize('NFKD', str).encode('ascii','ignore')
+def u2ascii(s):
+    # Unicode -> ASCII
+    if type(s) is types.UnicodeType:
+        return unicodedata.normalize('NFKD', s).encode('ascii', 'backslashreplace')
     else:
-        return str
+        return str(s)
+
+def unicodeUtf8(s):
+    # * -> Unicode UTF-8
+    if type(s) is types.UnicodeType:
+        return s
+    else:
+        return unicode(str(s), 'utf-8')
+
+def encodedUtf8(s):
+    # * -> 8-bit-encoded UTF-8
+    return unicodeUtf8(s).encode('utf-8')
 
 class PriorityCallbacks:
     """ manage a set of prioritized callbacks, and allow them to be invoked in order of priority """
@@ -4479,3 +4491,5 @@ __builtin__.histogramDict = histogramDict
 __builtin__.repeatableRepr = repeatableRepr
 __builtin__.bpdb = bpdb
 __builtin__.u2ascii = u2ascii
+__builtin__.unicodeUtf8 = unicodeUtf8
+__builtin__.encodedUtf8 = encodedUtf8
