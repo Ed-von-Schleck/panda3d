@@ -176,14 +176,6 @@
   #define EXPTP_PANDAGLES2 extern
 #endif
 
-#ifdef BUILDING_PANDAGLUT
-  #define EXPCL_PANDAGLUT __declspec(dllexport)
-  #define EXPTP_PANDAGLUT
-#else
-  #define EXPCL_PANDAGLUT __declspec(dllimport)
-  #define EXPTP_PANDAGLUT extern
-#endif
-
 #ifdef BUILDING_PANDAMESA
   #define EXPCL_PANDAMESA __declspec(dllexport)
   #define EXPTP_PANDAMESA
@@ -330,9 +322,6 @@
 
 #define EXPCL_PANDAGLES2
 #define EXPTP_PANDAGLES2
-
-#define EXPCL_PANDAGLUT
-#define EXPTP_PANDAGLUT
 
 #define EXPCL_PANDAMESA
 #define EXPTP_PANDAMESA
