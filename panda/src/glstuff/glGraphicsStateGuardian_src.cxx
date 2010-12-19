@@ -62,7 +62,7 @@
 #include "graphicsEngine.h"
 #include "shaderGenerator.h"
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) && !defined(OPENGLES)
 #include "Cg/cgGL.h"
 #endif
 
@@ -833,7 +833,7 @@ reset() {
     }
   }
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) && !defined(OPENGLES)
   if (cgGLIsProfileSupported(CG_PROFILE_ARBFP1) &&
       cgGLIsProfileSupported(CG_PROFILE_ARBVP1)) {
     _supports_basic_shaders = true;
@@ -1608,7 +1608,7 @@ reset() {
   void gl_set_stencil_functions (StencilRenderStates *stencil_render_states);
   gl_set_stencil_functions (_stencil_render_states);
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) && !defined(OPENGLES)
 
   typedef struct
   {
@@ -5129,18 +5129,33 @@ report_errors_loop(int line, const char *source_file, GLenum error_code,
 ////////////////////////////////////////////////////////////////////
 //     Function: GLGraphicsStateGuardian::get_error_string
 //       Access: Protected, Static
-//  Description: Returns gluGetErrorString(), if GLU is available;
-//               otherwise, returns some default error message.
+//  Description: Returns an error string for an OpenGL error code.
 ////////////////////////////////////////////////////////////////////
 string CLP(GraphicsStateGuardian)::
 get_error_string(GLenum error_code) {
-#if defined(HAVE_GLU) && !defined(OPENGLES)
-  const GLubyte *error_string = GLUP(ErrorString)(error_code);
-  if (error_string != (const GLubyte *)NULL) {
-    return string((const char *)error_string);
-  }
-#endif  // HAVE_GLU
+  // We used to use gluErrorString here, but I (rdb) took it out
+  // because that was really the only function we used from GLU.
+  // The idea with the error table was taken from SGI's sample implementation.
+  static const char *error_strings[GL_OUT_OF_MEMORY - GL_INVALID_ENUM + 1] = {
+    "invalid enumerant",
+    "invalid value",
+    "invalid operation",
+    "stack overflow",
+    "stack underflow",
+    "out of memory",
+  };
 
+  if (error_code == GL_NO_ERROR) {
+    return "no error";
+#ifndef OPENGLES
+  } else if (error_code == GL_TABLE_TOO_LARGE) {
+    return "table too large";
+#endif
+  } else if (error_code >= GL_INVALID_ENUM && error_code <= GL_OUT_OF_MEMORY) {
+    return error_strings[error_code - GL_INVALID_ENUM];
+  }
+
+  // Other error, somehow?  Just display the error code then.
   ostringstream strm;
   strm << "GL error " << (int)error_code;
 
@@ -9508,7 +9523,7 @@ do_point_size() {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 get_supports_cg_profile(const string &name) const {
-#ifndef HAVE_CG
+#if !defined(HAVE_CG) || defined(OPENGLES)
   return false;
 #else
   CGprofile profile = cgGetProfile(name.c_str());
