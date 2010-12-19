@@ -1,3 +1,4 @@
+#define BUILD_DIRECTORY
 #define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
                    dtoolutil:c dtoolbase:c dtool:m prc:c Recast:c Detour:c
 
