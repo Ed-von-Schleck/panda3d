@@ -65,6 +65,9 @@ init_libcg() {
 
   cgSetErrorHandler(&cg_error_handler, NULL);
   if (Thread::is_threading_supported()) {
+    // Better safe than crashy
+    cgSetLockingPolicy(CG_THREAD_SAFE_POLICY);
+  } else {
     // Less overhead in case we're not using threading
     cgSetLockingPolicy(CG_NO_LOCKS_POLICY);
   }

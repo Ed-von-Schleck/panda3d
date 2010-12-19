@@ -235,7 +235,7 @@ load_file(const Filename &path, const LoaderOptions &options,
 
   cgDestroyEffect(cg_effect);
 
-  return DCAST(Effect, effect);
+  return DCAST(PandaNode, effect);
 }
 
 ////////////////////////////////////////////////////////////////////
