@@ -336,7 +336,6 @@ $[cdefine HAVE_ZLIB]
 
 /* Define if we have OpenGL installed and want to build for GL.  */
 $[cdefine HAVE_GL]
-$[cdefine HAVE_GLU]
 #if HAVE_GL
 # define MIN_GL_VERSION_MAJOR $[word 1,$[MIN_GL_VERSION]]
 # define MIN_GL_VERSION_MINOR $[word 2,$[MIN_GL_VERSION]]
@@ -403,6 +402,9 @@ $[cdefine HAVE_XF86DGA]
 
 /* Define if we have the XRandR extension. */
 $[cdefine HAVE_XRANDR]
+
+/* Define if we have the XCursor extension. */
+$[cdefine HAVE_XCURSOR]
 
 /* Define if we want to compile the threading code.  */
 $[cdefine HAVE_THREADS]

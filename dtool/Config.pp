@@ -596,27 +596,19 @@
 #define ZLIB_LIBS z
 #defer HAVE_ZLIB $[libtest $[ZLIB_LPATH],$[ZLIB_LIBS]]
 
-// Is OpenGL installed, and where?  This should include libGL as well
-// as libGLU, if they are in different places.
+// Is OpenGL installed, and where?
 #defer GL_IPATH /usr/include
 #defer GL_LPATH
 #defer GL_LIBS
-#defer GLU_LIBS
 #if $[WINDOWS_PLATFORM]
   #define GL_LIBS opengl32.lib
-  #define GLU_LIBS glu32.lib
 #elif $[OSX_PLATFORM]
   #defer GL_FRAMEWORK OpenGL
 #else
   #defer GL_LPATH /usr/X11R6/lib
   #defer GL_LIBS GL
-  #defer GLU_LIBS GLU
 #endif
 #defer HAVE_GL $[libtest $[GL_LPATH],$[GL_LIBS]]
-
-// GLU is an auxiliary library that is usually provided with OpenGL,
-// but is sometimes missing (e.g. the default FC5 installation).
-#defer HAVE_GLU $[libtest $[GL_LPATH],$[GLU_LIBS]]
 
 // If you are having trouble linking in OpenGL extension functions at
 // runtime for some reason, you can set this variable.  This defines
@@ -717,12 +709,19 @@
 #define XF86DGA_LIBS Xxf86dga
 #defer HAVE_XF86DGA $[libtest $[XF86DGA_LPATH],$[XF86DGA_LIBS]]
 
-// This defines if we have XF86DGA installed. This
+// This defines if we have XRANDR installed. This
 // enables resolution switching in x11display.
 #define XRANDR_IPATH /usr/include/X11/extensions
 #define XRANDR_LPATH /usr/lib
 #define XRANDR_LIBS Xrandr
 #defer HAVE_XRANDR $[libtest $[XRANDR_LPATH],$[XRANDR_LIBS]]
+
+// This defines if we have XCURSOR installed. This
+// enables custom cursor support in x11display.
+#define XCURSOR_IPATH /usr/include/X11/extensions
+#define XCURSOR_LPATH /usr/lib
+#define XCURSOR_LIBS Xcursor
+#defer HAVE_XCURSOR $[libtest $[XCURSOR_LPATH],$[XCURSOR_LIBS]]
 
 // How about GLX?
 #define GLX_IPATH
