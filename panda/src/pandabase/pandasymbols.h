@@ -24,6 +24,15 @@
 
 #if defined(WIN32_VC) && !defined(CPPPARSER) && !defined(LINK_ALL_STATIC)
 
+/* See dtoolsymbols.h if you want to know why I did this. */
+#ifdef BUILDING_CORE
+  #define EXPCL_PANDAEXPRESS __declspec(dllexport)
+  #define EXPTP_PANDAEXPRESS
+#else
+  #define EXPCL_PANDAEXPRESS __declspec(dllimport)
+  #define EXPTP_PANDAEXPRESS extern
+#endif
+
 #ifdef BUILDING_CFTALK
   #define EXPCL_CFTALK __declspec(dllexport)
   #define EXPTP_CFTALK
@@ -134,14 +143,6 @@
 #else
   #define EXPCL_PANDAEGG __declspec(dllimport)
   #define EXPTP_PANDAEGG extern
-#endif
-
-#ifdef BUILDING_PANDAEXPRESS
-  #define EXPCL_PANDAEXPRESS __declspec(dllexport)
-  #define EXPTP_PANDAEXPRESS
-#else
-  #define EXPCL_PANDAEXPRESS __declspec(dllimport)
-  #define EXPTP_PANDAEXPRESS extern
 #endif
 
 #ifdef BUILDING_PANDAFX

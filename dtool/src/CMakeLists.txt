@@ -1,0 +1,11 @@
+subdirs(
+  dtoolbase
+  dtoolutil
+  prc
+  prckeys
+  dconfig
+  pystub
+  cppparser
+  interrogatedb
+  interrogate
+)

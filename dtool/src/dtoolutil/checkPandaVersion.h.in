@@ -1,0 +1,22 @@
+/* Include this file in code that compiles with Panda to guarantee
+   that it is linking with the same version of the Panda DLL's that it
+   was compiled with.  You should include it in one .cxx file only. */
+
+/* We guarantee this by defining an external symbol which is based on
+   the version number.  If that symbol is defined, then our DLL's
+   (probably) match.  Otherwise, we must be running with the wrong
+   DLL; but the system linker will prevent the DLL from loading with
+   an undefined symbol. */
+
+#ifndef CHECK_PANDA_VERSION_H
+#define CHECK_PANDA_VERSION_H
+
+#include "dtoolbase.h"
+
+extern EXPCL_DTOOL int ${PANDA_VERSION_SYMBOL};
+
+#ifndef WIN32
+static int check_panda_version = ${PANDA_VERSION_SYMBOL};
+#endif
+
+#endif // CHECK_PANDA_VERSION_H
