@@ -109,6 +109,8 @@ if(UNIX)
   endif(USE_X11)
 endif(UNIX)
 
+find_package(BISON)
+
 option(HAVE_INTERROGATE "Enable building of interrogate" ON)
 option(INTERROGATE_VERBOSE "Enables verbose debugging output of interrogate" OFF)
 

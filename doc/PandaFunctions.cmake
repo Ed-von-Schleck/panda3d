@@ -11,15 +11,15 @@ macro(panda_add_sources module) # sources
   set(sources ${ARGV})
   list(REMOVE_AT sources 0)
   foreach(source ${sources})
-    if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${source}")
-      set(_PANDA_${module}_SOURCES "${_PANDA_${module}_SOURCES};${CMAKE_CURRENT_BINARY_DIR}/${source}" CACHE INTERNAL "")
-    else()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
       set(_PANDA_${module}_SOURCES "${_PANDA_${module}_SOURCES};${CMAKE_CURRENT_SOURCE_DIR}/${source}" CACHE INTERNAL "")
+    else()
+      set(_PANDA_${module}_SOURCES "${_PANDA_${module}_SOURCES};${CMAKE_CURRENT_BINARY_DIR}/${source}" CACHE INTERNAL "")
     endif()
   endforeach(source)
 
-  set(_PANDA_${module}_INCDIRS "${_PANDA_${module}_INCDIRS};${CMAKE_CURRENT_BINARY_DIR}" CACHE INTERNAL "")
   set(_PANDA_${module}_INCDIRS "${_PANDA_${module}_INCDIRS};${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
+  set(_PANDA_${module}_INCDIRS "${_PANDA_${module}_INCDIRS};${CMAKE_CURRENT_BINARY_DIR}" CACHE INTERNAL "")
 
   set(${module}_INCLUDE_DIRS "${_PANDA_${module}_INCDIRS}" CACHE INTERNAL "")
 endmacro(panda_add_sources)
@@ -36,6 +36,41 @@ macro(panda_add_scan_sources module) # sources
   endforeach(source)
 endmacro(panda_add_scan_sources)
 
+macro(_panda_process_sources var)
+  set(_sources ${ARGV})
+  list(REMOVE_AT _sources 0)
+
+  set("${var}")
+  foreach(source ${_sources})
+    get_filename_component(ext "${source}" EXT)
+    get_filename_component(name "${source}" NAME_WE)
+    get_filename_component(path "${source}" PATH)
+
+    if(ext MATCHES ".yxx")
+      if(BISON_FOUND)
+        bison_target("${name}" "${source}" "${CMAKE_CURRENT_BINARY_DIR}/${name}.cxx")
+        add_custom_command(
+          OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${name}.h"
+          COMMAND ${CMAKE_COMMAND} -E copy "${BISON_${name}_OUTPUT_HEADER}" "${CMAKE_CURRENT_BINARY_DIR}/${name}.h"
+          DEPENDS "${BISON_${name}_OUTPUT_HEADER}"
+        )
+      else()
+        add_custom_command(
+          OUTPUT
+            "${CMAKE_CURRENT_BINARY_DIR}/${name}.h"
+            "${CMAKE_CURRENT_BINARY_DIR}/${name}.cxx"
+          COMMAND ${CMAKE_COMMAND} -E copy "${path}/${name}.h.prebuilt" "${CMAKE_CURRENT_BINARY_DIR}/${name}.h"
+          COMMAND ${CMAKE_COMMAND} -E copy "${path}/${name}.cxx.prebuilt" "${CMAKE_CURRENT_BINARY_DIR}/${name}.cxx"
+          DEPENDS "${path}/${name}.h.prebuilt" "${path}/${name}.cxx.prebuilt"
+        )
+      endif()
+      list(APPEND "${var}" "${name}.cxx" "${name}.h")
+    else()
+      list(APPEND "${var}" "${source}")
+    endif()
+  endforeach(source)
+endmacro(_panda_process_sources)
+
 macro(panda_add_library module) # deps
   set(${module}_LIBRARIES "${LIB_PREFIX}${module}")
 
@@ -46,7 +81,9 @@ macro(panda_add_library module) # deps
 
   string(TOUPPER "${module}" module_uc)
 
-  add_library("${LIB_PREFIX}${module}" SHARED ${_PANDA_${module}_SOURCES})
+  _panda_process_sources(sources ${_PANDA_${module}_SOURCES})
+
+  add_library("${LIB_PREFIX}${module}" SHARED ${sources})
   set_target_properties("${LIB_PREFIX}${module}" PROPERTIES
     VERSION   "${PANDA_MAJOR_VERSION}.${PANDA_MINOR_VERSION}.${PANDA_SEQUENCE_VERSION}"
     SOVERSION "${PANDA_MAJOR_VERSION}.${PANDA_MINOR_VERSION}"
@@ -67,7 +104,9 @@ macro(panda_add_executable exec) # deps
     include_directories(${${dep}_INCLUDE_DIRS})
   endforeach(dep)
 
-  add_executable("${exec}" ${_PANDA_${exec}_SOURCES})
+  _panda_process_sources(sources ${_PANDA_${exec}_SOURCES})
+
+  add_executable("${exec}" ${sources})
   set_target_properties("${exec}" PROPERTIES
     VERSION "${PANDA_MAJOR_VERSION}.${PANDA_MINOR_VERSION}.${PANDA_SEQUENCE_VERSION}")
 
