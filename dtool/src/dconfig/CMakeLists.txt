@@ -8,8 +8,7 @@ set(install_headers
   config_dconfig.h dconfig.I dconfig.h
 )
 
-panda_add_sources(core ${sources})
-panda_add_scan_sources(core ${scan_headers} ${sources})
+add_library(p3dconfig ${sources})
+interrogate(p3dconfig core ${scan_headers} ${sources})
 
-install(FILES ${install_headers} DESTINATION include/panda3d)
-
+install_headers(${install_headers})

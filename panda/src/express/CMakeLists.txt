@@ -53,8 +53,7 @@ set(install_headers
   zStream.I zStream.h zStreamBuf.h
 )
 
-panda_add_sources(core ${sources})
-panda_add_scan_sources(core ${scan_headers} ${sources})
+add_library(p3express ${sources})
+interrogate(p3express core ${scan_headers} ${sources})
 
-install(FILES ${install_headers} DESTINATION include/panda3d)
-
+install_headers(${install_headers})

@@ -12,9 +12,17 @@ set(install_headers
   vector_int.h
 )
 
-panda_add_sources(interrogatedb ${sources})
-panda_add_scan_sources(interrogatedb ${scan_headers})
+# Note, p3interrogatedb is a top-level lib and not a directory lib.
+if(LINK_ALL_STATIC)
+  add_library(p3interrogatedb STATIC ${sources})
+else()
+  add_library(p3interrogatedb SHARED ${sources})
+endif()
+interrogate(p3interrogatedb interrogatedb ${scan_headers})
+add_python_module(interrogatedb p3interrogatedb)
+target_link_libraries(interrogatedb p3prc p3dtoolbase)
 
-install(FILES ${install_headers} DESTINATION include/panda3d)
+install_headers(${install_headers})
+install(TARGETS p3interrogatedb DESTINATION lib)
 
 endif(HAVE_INTERROGATE)

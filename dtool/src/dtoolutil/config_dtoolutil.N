@@ -8,8 +8,6 @@ forcetype istream
 forcetype ostream
 forcetype iostream
 
-forcetype TypeHandle
-
 forcetype Filename
 forcetype DSearchPath
 forcetype DSearchPath::Results

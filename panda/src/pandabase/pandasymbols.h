@@ -24,8 +24,7 @@
 
 #if defined(WIN32_VC) && !defined(CPPPARSER) && !defined(LINK_ALL_STATIC)
 
-/* See dtoolsymbols.h if you want to know why I did this. */
-#ifdef BUILDING_CORE
+#ifdef BUILDING_PANDAEXPRESS
   #define EXPCL_PANDAEXPRESS __declspec(dllexport)
   #define EXPTP_PANDAEXPRESS
 #else

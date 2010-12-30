@@ -103,6 +103,12 @@
 #endif
 #endif
 
+// Do this before everything, preferably.
+// It might contain important system macros.
+#ifdef CPPPARSER
+#include <igate_system_config.h>
+#endif
+
 #ifdef HAVE_PYTHON
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE

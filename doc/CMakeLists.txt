@@ -111,8 +111,13 @@ endif(UNIX)
 
 find_package(BISON)
 
+option(LINK_ALL_STATIC
+  "If this is set, Panda3D will be built as a set of static libraries." OFF)
+
 option(HAVE_INTERROGATE "Enable building of interrogate" ON)
 option(INTERROGATE_VERBOSE "Enables verbose debugging output of interrogate" OFF)
+set(INTERROGATE_OPTIONS -fnames -string -refcount -assert -python-native CACHE LIST "Options to pass to interrogate")
+set(INTERROGATE_MODULE_OPTIONS -python-native CACHE LIST "Options to pass to interrogate_module")
 
 set(DEFAULT_PRC_DIR "${CMAKE_INSTALL_PREFIX}/panda3d/etc" CACHE PATH "")
 set(PRC_DIR_ENVVARS "PANDA_PRC_DIR" CACHE STRING "")
@@ -198,23 +203,24 @@ else(PANDA_OFFICIAL_VERSION)
   set(P3D_PLUGIN_DLL_COMMA_VERSION "${P3D_PLUGIN_MAJOR_VERSION},${P3D_PLUGIN_MINOR_VERSION},${P3D_PLUGIN_SEQUENCE_VERSION},0")
 endif(PANDA_OFFICIAL_VERSION)
 
-include(PandaFunctions.cmake)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(IS_OSX 1)
+endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  set(IS_LINUX 1)
+endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+  set(IS_FREEBSD 1)
+endif()
+
+set(BUILD_SHARED_LIBS OFF)
+if(UNIX)
+  add_definitions(-fpic)
+endif(UNIX)
+
+include(PandaMacros.cmake)
+include_directories("${PROJECT_BINARY_DIR}/include")
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(dtool)
 add_subdirectory(panda)
-
-panda_add_library(core OPENSSL)
-panda_add_library(pystub)
-panda_add_library(interrogatedb core)
-
-if(HAVE_OPENSSL)
-panda_add_executable(make-prc-key core pystub OPENSSL)
-endif(HAVE_OPENSSL)
-
-panda_add_executable(interrogate
-  interrogatedb core pystub)
-panda_add_executable(interrogate_module
-  interrogatedb core pystub)
-
-panda_wrap_library(core)
-panda_wrap_library(interrogatedb)

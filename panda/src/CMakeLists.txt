@@ -1,1 +1,1 @@
-subdirs(pandabase express)
+subdirs(pandabase express pipeline putil downloader)

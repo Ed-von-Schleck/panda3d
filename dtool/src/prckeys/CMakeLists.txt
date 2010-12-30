@@ -1,6 +1,7 @@
 if(HAVE_OPENSSL)
 
-panda_add_sources(make-prc-key
-  makePrcKey.cxx)
+add_executable(make-prc-key makePrcKey.cxx)
+target_link_libraries(make-prc-key p3core p3pystub)
+target_link_libraries(make-prc-key ${OPENSSL_LIBRARIES})
 
 endif(HAVE_OPENSSL)

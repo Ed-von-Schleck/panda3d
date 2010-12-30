@@ -150,26 +150,14 @@ check_include_file_cxx(linux/input.h PHAVE_LINUX_INPUT_H)
 #/* Can we define a modern-style STL allocator? */
 set(USE_STL_ALLOCATOR 1)
 
-#/* Static linkage instead of the normal dynamic linkage? */
-#$[cdefine LINK_ALL_STATIC]
-
 #/* Define to compile the plugin code. */
 #$[cdefine HAVE_P3D_PLUGIN]
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(IS_OSX 1)
-endif()
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  set(IS_LINUX 1)
-endif()
-if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-  set(IS_FREEBSD 1)
-endif()
 #$[cdefine BUILD_IPHONE]
 #$[cdefine UNIVERSAL_BINARIES]
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dtool_config.h.in ${CMAKE_BINARY_DIR}/dtool_config.h)
-install(FILES ${CMAKE_BINARY_DIR}/dtool_config.h DESTINATION include/panda3d)
+configure_file(dtool_config.h.in dtool_config.h)
+install_headers(dtool_config.h)
 
 add_subdirectory(src)
 

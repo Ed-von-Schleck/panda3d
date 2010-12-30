@@ -72,28 +72,37 @@
 
 #if defined(WIN32_VC) && !defined(CPPPARSER) && !defined(LINK_ALL_STATIC)
 
-/* We'll change everything to EXPCL_CORE and EXPTP_CORE later.
-   This would require us to change all of the header files from Panda 1. */
-
 #ifdef BUILDING_CORE
   #define EXPCL_CORE __declspec(dllexport)
   #define EXPTP_CORE
-  #define EXPCL_DTOOL __declspec(dllexport)
-  #define EXPTP_DTOOL
-  #define EXPCL_DTOOLCONFIG __declspec(dllexport)
-  #define EXPTP_DTOOLCONFIG
-  #define EXPCL_MISC __declspec(dllexport)
-  #define EXPTP_MISC
 #else
   #define EXPCL_CORE __declspec(dllimport)
   #define EXPTP_CORE extern
+#endif
+
+#ifdef BUILDING_DTOOL
+  #define EXPCL_DTOOL __declspec(dllexport)
+  #define EXPTP_DTOOL
+#else
   #define EXPCL_DTOOL __declspec(dllimport)
   #define EXPTP_DTOOL extern
+#endif
+
+#ifdef BUILDING_DTOOLCONFIG
+  #define EXPCL_DTOOLCONFIG __declspec(dllexport)
+  #define EXPTP_DTOOLCONFIG
+#else
   #define EXPCL_DTOOLCONFIG __declspec(dllimport)
   #define EXPTP_DTOOLCONFIG extern
+#endif
+
+#ifdef BUILDING_MISC
+  #define EXPCL_MISC __declspec(dllexport)
+  #define EXPTP_MISC
+#else /* BUILDING_MISC */
   #define EXPCL_MISC __declspec(dllimport)
   #define EXPTP_MISC extern
-#endif
+#endif /* BUILDING_MISC */
 
 #else   /* !WIN32_VC */
 

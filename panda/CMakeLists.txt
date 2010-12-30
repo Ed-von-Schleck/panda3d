@@ -1,1 +1,1 @@
-add_subdirectory(src)
+subdirs(src metalibs)

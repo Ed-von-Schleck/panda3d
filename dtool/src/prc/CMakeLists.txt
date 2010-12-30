@@ -34,8 +34,7 @@ set(install_headers
   streamWrapper.I streamWrapper.h streamWriter.I streamWriter.h
 )
 
-panda_add_sources(core ${sources})
-panda_add_scan_sources(core ${scan_headers} ${sources})
+add_library(p3prc ${sources})
+interrogate(p3prc core ${scan_headers} ${sources})
 
-install(FILES ${install_headers} DESTINATION include/panda3d)
-
+install_headers(${install_headers})

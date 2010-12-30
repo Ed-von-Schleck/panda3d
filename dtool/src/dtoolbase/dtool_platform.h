@@ -49,7 +49,8 @@
 #define DTOOL_PLATFORM "freebsd_i386"
 #endif
 
-#elif defined(__x86_64)
+#elif defined(__linux__)
+#if defined(__x86_64)
 #define DTOOL_PLATFORM "linux_amd64"
 
 #elif defined(__i386)
@@ -61,12 +62,11 @@
 #elif defined(__ppc__)
 #define DTOOL_PLATFORM "linux_ppc"
 #endif
+#endif
 
 #ifndef DTOOL_PLATFORM
 #error "Can't determine platform; please define DTOOL_PLATFORM in Config.pp file."
 #endif
-
-
 
 #endif
 
