@@ -1,3 +1,4 @@
+building_dll(PYSTUB)
 set(sources pystub.cxx)
 
 set(install_headers
