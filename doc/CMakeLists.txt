@@ -97,6 +97,8 @@ if(USE_OPENSSL)
   find_package(OpenSSL)
   if(OPENSSL_FOUND)
     set(HAVE_OPENSSL TRUE)
+  else(OPENSSL_FOUND)
+    set(OPENSSL_LIBRARIES)
   endif(OPENSSL_FOUND)
 endif(USE_OPENSSL)
 
