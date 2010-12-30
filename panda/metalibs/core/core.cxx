@@ -5,6 +5,8 @@
 
 #include "core.h"
 
+#include "config_express.h"
+
 // By including checkPandaVersion.h, we guarantee that runtime
 // attempts to load libpanda.so/.dll will fail if they inadvertently
 // link with the wrong version of libdtool.so/.dll.
@@ -21,4 +23,5 @@
 ////////////////////////////////////////////////////////////////////
 void
 init_core() {
+  init_libexpress();
 }

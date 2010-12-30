@@ -19,11 +19,12 @@ if(LINK_ALL_STATIC)
 else()
   add_library(p3interrogatedb SHARED ${sources})
 endif()
+target_link_libraries(p3interrogatedb p3core)
 
 if(HAVE_PYTHON)
   interrogate(p3interrogatedb interrogatedb ${scan_headers})
   add_python_module(interrogatedb p3interrogatedb)
-  target_link_libraries(interrogatedb p3prc p3dtoolbase)
+  target_link_libraries(interrogatedb p3core)
 endif(HAVE_PYTHON)
 
 install_headers(${install_headers})

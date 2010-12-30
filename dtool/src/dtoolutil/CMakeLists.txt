@@ -12,7 +12,7 @@ set(scan_headers
   config_dtoolutil.h executionEnvironment.h filename.h
   filename_assist.h load_dso.h dSearchPath.h pandaFileStream.h
   pandaFileStreamBuf.h pandaSystem.h pfstream.h pfstreamBuf.h
-  vector_string.h gnu_getopt.h
+  vector_string.h
 )
 
 set(install_headers
@@ -26,5 +26,7 @@ set(install_headers
 
 add_library(p3dtoolutil ${sources})
 interrogate(p3dtoolutil core ${scan_headers} ${sources})
+
+add_library(gnu_getopt STATIC gnu_getopt.c gnu_getopt1.c)
 
 install_headers(${install_headers})

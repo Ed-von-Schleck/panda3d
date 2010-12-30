@@ -102,6 +102,14 @@
   #define EXPTP_INTERROGATEDB extern
 #endif
 
+#ifdef BUILDING_PYSTUB
+  #define EXPCL_PYSTUB __declspec(dllexport)
+  #define EXPTP_PYSTUB
+#else
+  #define EXPCL_PYSTUB __declspec(dllimport)
+  #define EXPTP_PYSTUB extern
+#endif
+
 #else   /* !WIN32_VC */
 
 #define EXPCL_CORE
@@ -118,6 +126,9 @@
 
 #define EXPCL_MISC
 #define EXPTP_MISC
+
+#define EXPCL_PYSTUB
+#define EXPTP_PYSTUB
 
 #endif  /* WIN32_VC */
 
