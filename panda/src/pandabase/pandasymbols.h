@@ -24,13 +24,8 @@
 
 #if defined(WIN32_VC) && !defined(CPPPARSER) && !defined(LINK_ALL_STATIC)
 
-#ifdef BUILDING_PANDAEXPRESS
-  #define EXPCL_PANDAEXPRESS __declspec(dllexport)
-  #define EXPTP_PANDAEXPRESS
-#else
-  #define EXPCL_PANDAEXPRESS __declspec(dllimport)
-  #define EXPTP_PANDAEXPRESS extern
-#endif
+#define EXPCL_PANDAEXPRESS EXPCL_CORE
+#define EXPTP_PANDAEXPRESS EXPTP_CORE
 
 #ifdef BUILDING_CFTALK
   #define EXPCL_CFTALK __declspec(dllexport)
@@ -104,13 +99,8 @@
   #define EXPTP_OPENAL_AUDIO extern
 #endif
 
-#ifdef BUILDING_PANDA
-  #define EXPCL_PANDA __declspec(dllexport)
-  #define EXPTP_PANDA
-#else
-  #define EXPCL_PANDA __declspec(dllimport)
-  #define EXPTP_PANDA extern
-#endif
+#define EXPCL_PANDA EXPCL_CORE
+#define EXPTP_PANDA EXPTP_CORE
 
 #ifdef BUILDING_PANDAAWESOMIUM
   #define EXPCL_PANDAAWESOMIUM __declspec(dllexport)
@@ -363,7 +353,7 @@
 #define INLINE_LINMATH __forceinline
 #define INLINE_MATHUTIL __forceinline
 
-#ifdef BUILDING_PANDA
+#ifdef BUILDING_CORE
 #define INLINE_GRAPH __forceinline
 #define INLINE_DISPLAY __forceinline
 #else

@@ -262,7 +262,7 @@ remap_indices(const IndexRemapper &remap) {
 ////////////////////////////////////////////////////////////////////
 //     Function: GetRunTimeDictionary
 ////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG RunTimeTypeDictionary & GetRunTimeDictionary()
+EXPCL_INTERROGATEDB RunTimeTypeDictionary & GetRunTimeDictionary()
 {
     static RunTimeTypeDictionary dict;
     return dict;
@@ -271,7 +271,7 @@ EXPCL_DTOOLCONFIG RunTimeTypeDictionary & GetRunTimeDictionary()
 ////////////////////////////////////////////////////////////////////
 //     Function: GetRunTimeTypeList
 ////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG RunTimeTypeList & GetRunTimeTypeList()
+EXPCL_INTERROGATEDB RunTimeTypeList & GetRunTimeTypeList()
 {
     static RunTimeTypeList list;
     return list;

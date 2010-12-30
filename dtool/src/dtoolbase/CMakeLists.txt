@@ -1,4 +1,5 @@
-SET(sources dtoolbase_composite1.cxx dtoolbase_composite2.cxx lookup3.c indent.cxx)
+building_dll(CORE)
+set(sources dtoolbase_composite1.cxx dtoolbase_composite2.cxx lookup3.c indent.cxx)
 
 set(scan_headers
   addHash.h atomicAdjust.h atomicAdjustDummyImpl.h atomicAdjustI386Impl.h

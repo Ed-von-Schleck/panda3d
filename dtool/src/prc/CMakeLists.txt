@@ -1,5 +1,6 @@
 configure_file(prc_parameters.h.in prc_parameters.h)
 
+building_dll(CORE)
 set(sources prc_composite1.cxx prc_composite2.cxx)
 
 set(scan_headers

@@ -1,3 +1,4 @@
+building_dll(CORE)
 set(sources downloader_composite1.cxx downloader_composite2.cxx)
 
 set(scan_headers

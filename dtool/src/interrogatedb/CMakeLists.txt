@@ -1,5 +1,6 @@
 if(HAVE_INTERROGATE)
 
+building_dll(INTERROGATEDB)
 set(sources interrogatedb_composite1.cxx interrogatedb_composite2.cxx)
 
 set(scan_headers interrogate_interface.h)

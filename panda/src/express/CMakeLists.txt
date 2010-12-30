@@ -1,3 +1,4 @@
+building_dll(CORE)
 set(sources express_composite1.cxx express_composite2.cxx)
 
 set(scan_headers

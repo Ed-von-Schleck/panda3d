@@ -17,6 +17,10 @@ endif(UNIX)
 file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/panda3d/")
 file(WRITE "${PROJECT_BINARY_DIR}/panda3d/__init__.py" "")
 
+macro(building_dll name)
+  add_definitions(-DBUILDING_${name})
+endmacro(building_dll)
+
 # We provide this macro so that we can put required header
 # files into the project binary directory, to avoid having
 # a lot of include_directories() across directories.

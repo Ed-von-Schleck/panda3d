@@ -14,8 +14,8 @@
 
 #include "vector_int.h"
 
-#define EXPCL EXPCL_DTOOLCONFIG
-#define EXPTP EXPTP_DTOOLCONFIG
+#define EXPCL EXPCL_INTERROGATEDB
+#define EXPTP EXPTP_INTERROGATEDB
 #define TYPE int
 #define NAME vector_int
 

@@ -750,7 +750,7 @@ PyObject *map_deepcopy_to_copy(PyObject *self, PyObject *args) {
 //               either a regular integer or a long integer, according
 //               to whether the indicated value will fit.
 ////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG PyObject *
+EXPCL_INTERROGATEDB PyObject *
 PyLongOrInt_FromUnsignedLong(unsigned long value) {
   if ((long)value < 0) {
     return PyLong_FromUnsignedLong(value);

@@ -80,29 +80,27 @@
   #define EXPTP_CORE extern
 #endif
 
-#ifdef BUILDING_DTOOL
-  #define EXPCL_DTOOL __declspec(dllexport)
-  #define EXPTP_DTOOL
-#else
-  #define EXPCL_DTOOL __declspec(dllimport)
-  #define EXPTP_DTOOL extern
-#endif
-
-#ifdef BUILDING_DTOOLCONFIG
-  #define EXPCL_DTOOLCONFIG __declspec(dllexport)
-  #define EXPTP_DTOOLCONFIG
-#else
-  #define EXPCL_DTOOLCONFIG __declspec(dllimport)
-  #define EXPTP_DTOOLCONFIG extern
-#endif
-
 #ifdef BUILDING_MISC
   #define EXPCL_MISC __declspec(dllexport)
   #define EXPTP_MISC
-#else /* BUILDING_MISC */
+#else
   #define EXPCL_MISC __declspec(dllimport)
   #define EXPTP_MISC extern
-#endif /* BUILDING_MISC */
+#endif
+
+#define EXPCL_DTOOL EXPCL_CORE
+#define EXPTP_DTOOL EXPTP_CORE
+
+#define EXPCL_DTOOLCONFIG EXPCL_CORE
+#define EXPTP_DTOOLCONFIG EXPTP_CORE
+
+#ifdef BUILDING_INTERROGATEDB
+  #define EXPCL_INTERROGATEDB __declspec(dllexport)
+  #define EXPTP_INTERROGATEDB
+#else
+  #define EXPCL_INTERROGATEDB __declspec(dllimport)
+  #define EXPTP_INTERROGATEDB extern
+#endif
 
 #else   /* !WIN32_VC */
 
@@ -114,6 +112,9 @@
 
 #define EXPCL_DTOOLCONFIG
 #define EXPTP_DTOOLCONFIG
+
+#define EXPCL_INTERROGATEDB
+#define EXPTP_INTERROGATEDB
 
 #define EXPCL_MISC
 #define EXPTP_MISC

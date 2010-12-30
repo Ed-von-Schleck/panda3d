@@ -1,3 +1,4 @@
+building_dll(CORE)
 set(sources pipeline_composite1.cxx pipeline_composite2.cxx)
 
 set(install_headers

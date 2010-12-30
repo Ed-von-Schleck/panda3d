@@ -1,3 +1,4 @@
+building_dll(CORE)
 set(sources dconfig_composite1.cxx)
 
 set(scan_headers

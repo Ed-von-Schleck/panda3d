@@ -1,3 +1,4 @@
+building_dll(CORE)
 set(sources putil_composite1.cxx putil_composite2.cxx)
 
 set(install_headers

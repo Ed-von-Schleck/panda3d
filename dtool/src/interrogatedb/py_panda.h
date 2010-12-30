@@ -104,8 +104,8 @@ struct          Dtool_PyTypedObject;
 typedef std::map< int , Dtool_PyTypedObject *>   RunTimeTypeDictionary;
 typedef std::set<int >                           RunTimeTypeList;
 
-EXPCL_DTOOLCONFIG   RunTimeTypeDictionary & GetRunTimeDictionary();
-EXPCL_DTOOLCONFIG   RunTimeTypeList & GetRunTimeTypeList();
+EXPCL_INTERROGATEDB   RunTimeTypeDictionary & GetRunTimeDictionary();
+EXPCL_INTERROGATEDB   RunTimeTypeList & GetRunTimeTypeList();
 
 
 //////////////////////////////////////////////////////////
@@ -150,7 +150,7 @@ struct Dtool_PyInstDef {
 ////////////////////////////////////////////////////////////////////////
 // A Offset Dictionary Defining How to read the Above Object..
 ////////////////////////////////////////////////////////////////////////
-extern EXPCL_DTOOLCONFIG PyMemberDef standard_type_members[];
+extern EXPCL_INTERROGATEDB PyMemberDef standard_type_members[];
 
 ////////////////////////////////////////////////////////////////////////
 // The Class Definition Structor For a Dtool python type.
@@ -355,7 +355,7 @@ static void Dtool_FreeInstance_##CLASS_NAME(PyObject *self)\
 ////////////////////////////////////////////////////////////////////////
 /// Simple Recognition Functions..
 ////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG bool DtoolCanThisBeAPandaInstance(PyObject *self);
+EXPCL_INTERROGATEDB bool DtoolCanThisBeAPandaInstance(PyObject *self);
 
 ////////////////////////////////////////////////////////////////////////
 //  Function : DTOOL_Call_ExtractThisPointerForType
@@ -365,14 +365,14 @@ EXPCL_DTOOLCONFIG bool DtoolCanThisBeAPandaInstance(PyObject *self);
 //      with these as the generated code depends on how this is set
 //      up..
 ////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG void DTOOL_Call_ExtractThisPointerForType(PyObject *self, Dtool_PyTypedObject * classdef, void ** answer);
+EXPCL_INTERROGATEDB void DTOOL_Call_ExtractThisPointerForType(PyObject *self, Dtool_PyTypedObject * classdef, void ** answer);
 
 
-EXPCL_DTOOLCONFIG void * DTOOL_Call_GetPointerThisClass(PyObject *self, Dtool_PyTypedObject  *classdef, int param, const string &function_name, bool const_ok, PyObject **coerced, bool report_errors);
+EXPCL_INTERROGATEDB void * DTOOL_Call_GetPointerThisClass(PyObject *self, Dtool_PyTypedObject  *classdef, int param, const string &function_name, bool const_ok, PyObject **coerced, bool report_errors);
 
-EXPCL_DTOOLCONFIG void * DTOOL_Call_GetPointerThisClass(PyObject *self, Dtool_PyTypedObject  *classdef, int param, const string &function_name, bool const_ok, PyObject **coerced);
+EXPCL_INTERROGATEDB void * DTOOL_Call_GetPointerThisClass(PyObject *self, Dtool_PyTypedObject  *classdef, int param, const string &function_name, bool const_ok, PyObject **coerced);
 
-EXPCL_DTOOLCONFIG void * DTOOL_Call_GetPointerThis(PyObject *self);
+EXPCL_INTERROGATEDB void * DTOOL_Call_GetPointerThis(PyObject *self);
 
 ////////////////////////////////////////////////////////////////////////
 //  Function : DTool_CreatePyInstanceTyped
@@ -380,13 +380,13 @@ EXPCL_DTOOLCONFIG void * DTOOL_Call_GetPointerThis(PyObject *self);
 // this function relies on the behavior of typed objects in the panda system. 
 //
 ////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG PyObject *DTool_CreatePyInstanceTyped(void *local_this_in, Dtool_PyTypedObject &known_class_type, bool memory_rules, bool is_const, int RunTimeType);
+EXPCL_INTERROGATEDB PyObject *DTool_CreatePyInstanceTyped(void *local_this_in, Dtool_PyTypedObject &known_class_type, bool memory_rules, bool is_const, int RunTimeType);
 
 ////////////////////////////////////////////////////////////////////////
 // DTool_CreatePyInstance .. wrapper function to finalize the existance of a general 
 //    dtool py instance..
 ////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG PyObject *DTool_CreatePyInstance(void *local_this, Dtool_PyTypedObject &in_classdef, bool memory_rules, bool is_const);
+EXPCL_INTERROGATEDB PyObject *DTool_CreatePyInstance(void *local_this, Dtool_PyTypedObject &in_classdef, bool memory_rules, bool is_const);
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Macro(s) class definition .. Used to allocate storage and 
@@ -436,7 +436,7 @@ Define_Dtool_Class(MODULE_NAME,CLASS_NAME,PUBLIC_NAME)
 ///////////////////////////////////////////////////////////////////////////////
 /// Th Finalizer for simple instances..
 ///////////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG int DTool_PyInit_Finalize(PyObject *self, void *This, Dtool_PyTypedObject *type, bool memory_rules, bool is_const);
+EXPCL_INTERROGATEDB int DTool_PyInit_Finalize(PyObject *self, void *This, Dtool_PyTypedObject *type, bool memory_rules, bool is_const);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// A heler function to glu methed definition together .. that can not be done at 
@@ -445,7 +445,7 @@ EXPCL_DTOOLCONFIG int DTool_PyInit_Finalize(PyObject *self, void *This, Dtool_Py
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::map<std::string, PyMethodDef *  > MethodDefmap;
 
-EXPCL_DTOOLCONFIG void Dtool_Accum_MethDefs(PyMethodDef  in[], MethodDefmap &themap);
+EXPCL_INTERROGATEDB void Dtool_Accum_MethDefs(PyMethodDef  in[], MethodDefmap &themap);
 
 ///////////////////////////////////////////////////////////////////////////////
 //  ** HACK ** allert..
@@ -455,11 +455,11 @@ EXPCL_DTOOLCONFIG void Dtool_Accum_MethDefs(PyMethodDef  in[], MethodDefmap &the
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-EXPCL_DTOOLCONFIG void RegisterRuntimeClass(Dtool_PyTypedObject * otype, int class_id);
+EXPCL_INTERROGATEDB void RegisterRuntimeClass(Dtool_PyTypedObject * otype, int class_id);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG Dtool_PyTypedObject *  Dtool_RuntimeTypeDtoolType(int type);
+EXPCL_INTERROGATEDB Dtool_PyTypedObject *  Dtool_RuntimeTypeDtoolType(int type);
 
 ///////////////////////////////////////////////////////////////////////////////
 //// We need a way to runtime merge compile units into a python "Module" .. this is done with the 
@@ -474,7 +474,7 @@ struct LibrayDef
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-EXPCL_DTOOLCONFIG void Dtool_PyModuleInitHelper( LibrayDef   *defs[], const char *  modulename);
+EXPCL_INTERROGATEDB void Dtool_PyModuleInitHelper( LibrayDef   *defs[], const char *  modulename);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///  HACK.... Be carefull 
@@ -484,16 +484,16 @@ EXPCL_DTOOLCONFIG void Dtool_PyModuleInitHelper( LibrayDef   *defs[], const char
 //      Required to support fom historical inharatence in the for of "is this instance of"..
 //
 ///////////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG PyObject * Dtool_BorrowThisReference(PyObject * self, PyObject * args );
+EXPCL_INTERROGATEDB PyObject * Dtool_BorrowThisReference(PyObject * self, PyObject * args );
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // We do expose a dictionay for dtool classes .. this should be removed at some point..
 //////////////////////////////////////////////////////////////////////////////////////////////
-EXPCL_DTOOLCONFIG PyObject * Dtool_AddToDictionary(PyObject * self1, PyObject * args );
+EXPCL_INTERROGATEDB PyObject * Dtool_AddToDictionary(PyObject * self1, PyObject * args );
 
 ///////////////////////////////////////////////////////////////////////////////////
 /*
-EXPCL_DTOOLCONFIG long  DTool_HashKey(PyObject * inst)
+EXPCL_INTERROGATEDB long  DTool_HashKey(PyObject * inst)
 {
     long   outcome = (long)inst;
     PyObject * func = PyObject_GetAttrString(inst, "__hash__");
@@ -535,27 +535,27 @@ EXPCL_DTOOLCONFIG long  DTool_HashKey(PyObject * inst)
    XXX of error.
 */
 
-EXPCL_DTOOLCONFIG int DTOOL_PyObject_Compare_old(PyObject *v1, PyObject *v2);
+EXPCL_INTERROGATEDB int DTOOL_PyObject_Compare_old(PyObject *v1, PyObject *v2);
 
-EXPCL_DTOOLCONFIG int DTOOL_PyObject_Compare(PyObject *v1, PyObject *v2);
+EXPCL_INTERROGATEDB int DTOOL_PyObject_Compare(PyObject *v1, PyObject *v2);
 
-EXPCL_DTOOLCONFIG PyObject *
+EXPCL_INTERROGATEDB PyObject *
 make_list_for_item(PyObject *self, const char *num_name,
                    const char *element_name);
 
-EXPCL_DTOOLCONFIG PyObject *
+EXPCL_INTERROGATEDB PyObject *
 copy_from_make_copy(PyObject *self);
 
-EXPCL_DTOOLCONFIG PyObject *
+EXPCL_INTERROGATEDB PyObject *
 copy_from_copy_constructor(PyObject *self);
 
-EXPCL_DTOOLCONFIG PyObject *
+EXPCL_INTERROGATEDB PyObject *
 map_deepcopy_to_copy(PyObject *self, PyObject *args);
 
-EXPCL_DTOOLCONFIG PyObject *
+EXPCL_INTERROGATEDB PyObject *
 PyLongOrInt_FromUnsignedLong(unsigned long value);
 
-EXPCL_DTOOLCONFIG extern struct   Dtool_PyTypedObject Dtool_DTOOL_SUPPER_BASE;
+EXPCL_INTERROGATEDB extern struct   Dtool_PyTypedObject Dtool_DTOOL_SUPPER_BASE;
 
 #endif  // HAVE_PYTHON && !CPPPARSER
 

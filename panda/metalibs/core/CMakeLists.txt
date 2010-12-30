@@ -1,3 +1,4 @@
+building_dll(CORE)
 set(component_libs
   p3downloader p3express
   p3interrogatedb p3dconfig p3prc

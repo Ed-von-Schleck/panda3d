@@ -1,3 +1,4 @@
+building_dll(CORE)
 configure_file(pandaVersion.h.in pandaVersion.h)
 configure_file(checkPandaVersion.h.in checkPandaVersion.h)
 configure_file(checkPandaVersion.cxx.in checkPandaVersion.cxx)

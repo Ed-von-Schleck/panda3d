@@ -29,7 +29,7 @@ class CPPScope;
 //       Class : InterrogateType
 // Description : An internal representation of a type.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DTOOLCONFIG InterrogateType : public InterrogateComponent {
+class EXPCL_INTERROGATEDB InterrogateType : public InterrogateComponent {
 public:
   InterrogateType(InterrogateModuleDef *def = NULL);
   InterrogateType(const InterrogateType &copy);
@@ -230,8 +230,8 @@ struct Dtool_PyTypedObject;
 typedef std::map< int , Dtool_PyTypedObject *>   RunTimeTypeDictionary;
 typedef std::set<int >                           RunTimeTypeList;
 
-EXPCL_DTOOLCONFIG  RunTimeTypeDictionary & GetRunTimeDictionary();
-EXPCL_DTOOLCONFIG  RunTimeTypeList & GetRunTimeTypeList();
+EXPCL_INTERROGATEDB  RunTimeTypeDictionary & GetRunTimeDictionary();
+EXPCL_INTERROGATEDB  RunTimeTypeList & GetRunTimeTypeList();
 
 
 #endif
