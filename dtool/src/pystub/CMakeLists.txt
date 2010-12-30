@@ -4,6 +4,7 @@ set(install_headers
   pystub.h
 )
 
-panda_add_sources(pystub ${sources})
+add_library(p3pystub SHARED ${sources})
 
-install(FILES ${install_headers} DESTINATION include/panda3d)
+install_headers(${install_headers})
+install(TARGETS p3pystub DESTINATION lib)
