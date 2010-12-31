@@ -278,6 +278,14 @@ int Py_IsInitialized() {
   return 0;
 }
 
+EXPCL_PYSTUB int Dtool_BamWriter = 0;
+EXPCL_PYSTUB int Dtool_TypedObject = 0;
+
+struct Dtool_PyTypedObject;
+struct PyObject;
+struct _object;
+EXPCL_PYSTUB PyObject* DTool_CreatePyInstanceTyped(void*, Dtool_PyTypedObject&, bool, bool, int) { return 0; }
+EXPCL_PYSTUB void DTOOL_Call_ExtractThisPointerForType(_object*, Dtool_PyTypedObject*, void**) {}
 
 void *PyExc_AssertionError = (void *)NULL;
 void *PyExc_AttributeError = (void *)NULL;
