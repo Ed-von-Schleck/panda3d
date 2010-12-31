@@ -1260,7 +1260,7 @@ write_module_class(ostream &out,  Object *obj) {
     }
 
   if(bases.empty())
-    bases.push_back("DTOOL_SUPPER_BASE");
+    bases.push_back("DTOOL_SUPER_BASE");
 
 
   {

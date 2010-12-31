@@ -555,7 +555,7 @@ map_deepcopy_to_copy(PyObject *self, PyObject *args);
 EXPCL_INTERROGATEDB PyObject *
 PyLongOrInt_FromUnsignedLong(unsigned long value);
 
-EXPCL_INTERROGATEDB extern struct   Dtool_PyTypedObject Dtool_DTOOL_SUPPER_BASE;
+EXPCL_INTERROGATEDB extern struct   Dtool_PyTypedObject Dtool_DTOOL_SUPER_BASE;
 
 #endif  // HAVE_PYTHON && !CPPPARSER
 
