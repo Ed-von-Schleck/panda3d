@@ -19,7 +19,6 @@ if(LINK_ALL_STATIC)
 else()
   add_library(p3interrogatedb SHARED ${sources})
 endif()
-target_link_libraries(p3interrogatedb p3core)
 
 if(HAVE_PYTHON)
   interrogate(p3interrogatedb interrogatedb ${scan_headers})

@@ -56,6 +56,7 @@ set(scan_headers
 )
 
 add_library(p3putil ${sources})
+use_libraries(p3putil OPENSSL ZLIB)
 interrogate(p3putil core ${scan_headers} ${sources})
 
 install_headers(${install_headers})

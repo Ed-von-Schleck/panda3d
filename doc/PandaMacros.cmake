@@ -21,6 +21,26 @@ macro(building_dll name)
   add_definitions(-DBUILDING_${name})
 endmacro(building_dll)
 
+macro(use_libraries target)
+  set(libs ${ARGV})
+  list(REMOVE_AT libs 0)
+
+  foreach(lib ${libs})
+    if(HAVE_${lib})
+      if(${lib}_INCLUDE_DIRS)
+        include_directories(${${lib}_INCLUDE_DIRS})
+      else()
+        include_directories(${${lib}_INCLUDE_DIR})
+      endif()
+      if(${lib}_LIBRARIES)
+        target_link_libraries("${target}" ${${lib}_LIBRARIES})
+      else()
+        target_link_libraries("${target}" ${${lib}_LIBRARY})
+      endif()
+    endif()
+  endforeach(lib)
+endmacro(use_libraries)
+
 # We provide this macro so that we can put required header
 # files into the project binary directory, to avoid having
 # a lot of include_directories() across directories.

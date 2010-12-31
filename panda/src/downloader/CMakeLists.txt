@@ -30,6 +30,7 @@ set(install_headers
 )
 
 add_library(p3downloader ${sources})
+use_libraries(p3downloader OPENSSL ZLIB)
 interrogate(p3downloader core ${scan_headers} ${sources})
 
 install_headers(${install_headers})

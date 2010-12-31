@@ -55,6 +55,7 @@ set(install_headers
 )
 
 add_library(p3express ${sources})
+use_libraries(p3express ZLIB TAR OPENSSL)
 interrogate(p3express core ${scan_headers} ${sources})
 
 install_headers(${install_headers})
