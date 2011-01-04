@@ -1,5 +1,5 @@
 // Filename: config_collada.h
-// Created by:  rdb (23Aug09)
+// Created by: Xidram (21Dec10)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -20,23 +20,9 @@
 #include "notifyCategoryProxy.h"
 #include "dconfig.h"
 
-#ifndef TIXML_USE_STL
-#define TIXML_USE_STL
-#endif
-#include <tinyxml.h>
-
-// Characters accepted as whitespace characters.
-#define COLLADA_WHITESPACE " \t\n\v\f\r"
 
 ConfigureDecl(config_collada, EXPCL_COLLADA, EXPTP_COLLADA);
 NotifyCategoryDecl(collada, EXPCL_COLLADA, EXPTP_COLLADA);
-
-extern EXPCL_COLLADA ConfigVariableBool collada_flatten;
-extern EXPCL_COLLADA ConfigVariableBool collada_unify;
-extern EXPCL_COLLADA ConfigVariableDouble collada_flatten_radius;
-extern EXPCL_COLLADA ConfigVariableBool collada_combine_geoms;
-extern EXPCL_COLLADA ConfigVariableBool collada_accept_errors;
-//extern EXPCL_COLLADA ConfigVariableEnum<ColladaProfile::Profile> collada_profile;
 
 extern EXPCL_COLLADA void init_libcollada();
 

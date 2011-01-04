@@ -13,7 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "loaderFileTypeDae.h"
-#include "load_collada_file.h"
+#include "colladaLoader.h"
 
 TypeHandle LoaderFileTypeDae::_type_handle;
 
@@ -64,9 +64,10 @@ supports_compressed() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 PT(PandaNode) LoaderFileTypeDae::
-load_file(const Filename &path, const LoaderOptions &, 
+load_file(const Filename &path, const LoaderOptions &,
           BamCacheRecord *record) const {
-  PT(PandaNode) result = load_collada_file(path, CS_default, record);
+  PT(ColladaLoader) loader = new ColladaLoader();
+  PT(PandaNode) result = loader->load_collada_file(path);
   return result;
 }
 
