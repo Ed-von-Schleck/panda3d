@@ -288,6 +288,7 @@ class HostInfo:
         filename is read if it is known. """
 
         if not hasattr(PandaModules, 'TiXmlDocument'):
+            self.notify.warning("readContentsFile: missing tix")
             return False
 
         if not tempFilename:
@@ -303,10 +304,12 @@ class HostInfo:
 
         doc = PandaModules.TiXmlDocument(tempFilename.toOsSpecific())
         if not doc.LoadFile():
+            self.notify.warning("readContentsFile: doc.LoadFile() failed")
             return False
 
         xcontents = doc.FirstChildElement('contents')
         if not xcontents:
+            self.notify.warning("readContentsFile: no xcontents")
             return False
 
         maxAge = xcontents.Attribute('max_age')
