@@ -3120,6 +3120,8 @@ class FrameDelayedCall:
     def destroy(self):
         self._finished = True
         self._stopTask()
+        self._callback = None
+        self._cancelFunc = None
     def finish(self):
         if not self._finished:
             self._finished = True
