@@ -92,6 +92,9 @@ class CompilationEnvironment:
                 self.MSVC = os.environ['VCINSTALLDIR']
             elif (Filename('/c/Program Files/Microsoft Visual Studio 9.0/VC').exists()):
                 self.MSVC = Filename('/c/Program Files/Microsoft Visual Studio 9.0/VC').toOsSpecific()
+            elif (Filename('/c/Program Files (x86)/Microsoft Visual Studio 9.0/VC').exists()):
+                self.MSVC = Filename('/c/Program Files (x86)/Microsoft Visual Studio 9.0/VC').toOsSpecific()
+                print "self.MSVC=%s" % str(self.MSVC)
             elif (Filename('/c/Program Files/Microsoft Visual Studio .NET 2003/Vc7').exists()):
                 self.MSVC = Filename('/c/Program Files/Microsoft Visual Studio .NET 2003/Vc7').toOsSpecific()
             else:
