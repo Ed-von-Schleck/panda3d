@@ -6584,7 +6584,7 @@ find_net_python_tag(const string &key) const {
 //               error.
 ////////////////////////////////////////////////////////////////////
 bool NodePath::
-write_bam_file(const string &filename) const {
+write_bam_file(const Filename &filename) const {
   nassertr_always(!is_empty(), false);
 
   BamFile bam_file;
@@ -7631,7 +7631,9 @@ r_find_material(PandaNode *node, const RenderState *state,
         if (!ta->is_off()) {
           Material *material = ta->get_material();
           if (material != (Material *)NULL) {
-            return material;
+            if (glob.matches(material->get_name())) {
+              return material;
+            }
           }
         }
       }
