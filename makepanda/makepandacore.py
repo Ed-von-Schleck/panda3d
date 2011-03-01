@@ -19,6 +19,7 @@ STARTTIME=time.time()
 MAINTHREAD=threading.currentThread()
 OUTPUTDIR="built"
 CUSTOM_OUTPUTDIR=False
+THIRDPARTYBASE=None
 THIRDPARTYDIR=None
 OPTIMIZE="3"
 VERBOSE=False
@@ -698,7 +699,7 @@ def DeleteBuildFiles(dir):
     if dir == "": dir = "."
     for entry in os.listdir(dir):
         subdir = os.path.join(dir, entry)
-        if (os.path.isfile(subdir) and os.path.splitext(subdir)[-1] in SUFFIX_INC+[".pp", ".moved"]):
+        if (os.path.isfile(subdir) and os.path.splitext(subdir)[-1] in [".pp", ".moved"]):
             os.remove(subdir)
         elif (os.path.isdir(subdir)):
             if (os.path.basename(subdir)[:3] == "Opt" and os.path.basename(subdir)[4] == "-"):
@@ -767,29 +768,39 @@ def CheckPandaSourceTree():
 ##
 ########################################################################
 
+def GetThirdpartyBase():
+    global THIRDPARTYBASE
+    if (THIRDPARTYBASE != None):
+        return THIRDPARTYBASE
+    
+    THIRDPARTYBASE = "thirdparty"
+    if "MAKEPANDA_THIRDPARTY" in os.environ:
+        THIRDPARTYBASE = os.environ["MAKEPANDA_THIRDPARTY"]
+    return THIRDPARTYBASE
+
 def GetThirdpartyDir():
     global THIRDPARTYDIR
     if (THIRDPARTYDIR != None):
         return THIRDPARTYDIR
     if (sys.platform.startswith("win")):
         if (platform.architecture()[0] == "64bit"):
-            THIRDPARTYDIR="thirdparty/win-libs-vc9-x64/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/win-libs-vc9-x64/"
         else:
-            THIRDPARTYDIR="thirdparty/win-libs-vc9/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/win-libs-vc9/"
         if not os.path.isdir(THIRDPARTYDIR):
-            THIRDPARTYDIR="thirdparty/win-libs-vc9/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/win-libs-vc9/"
     elif (sys.platform == "darwin"):
-        THIRDPARTYDIR="thirdparty/darwin-libs-a/"
+        THIRDPARTYDIR=GetThirdpartyBase()+"/darwin-libs-a/"
     elif (sys.platform.startswith("linux")):
         if (platform.architecture()[0] == "64bit"):
-            THIRDPARTYDIR="thirdparty/linux-libs-x64/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/linux-libs-x64/"
         else:
-            THIRDPARTYDIR="thirdparty/linux-libs-a/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/linux-libs-a/"
     elif (sys.platform.startswith("freebsd")):
         if (platform.architecture()[0] == "64bit"):
-            THIRDPARTYDIR="thirdparty/freebsd-libs-x64/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/freebsd-libs-x64/"
         else:
-            THIRDPARTYDIR="thirdparty/freebsd-libs-a/"
+            THIRDPARTYDIR=GetThirdpartyBase()+"/freebsd-libs-a/"
     else:
         print GetColor("red") + "WARNING:" + GetColor("Unsupported platform: " + sys.platform)
     return THIRDPARTYDIR
@@ -1064,16 +1075,21 @@ def GetLibCache():
                 if (".so " in lib):
                     lib = lib.split(".so", 1)[0][3:]
                     LD_CACHE.append(lib)
-        libs = glob.glob("/lib/*.so") + glob.glob("/usr/lib/*.so") + glob.glob("/usr/local/lib/*.so") + glob.glob("/usr/PCBSD/local/lib/*.so")
-        libs += glob.glob("/lib/*.a") + glob.glob("/usr/lib/*.a") + glob.glob("/usr/local/lib/*.a") + glob.glob("/usr/PCBSD/local/lib/*.a")
+        
+        libdirs = ["/lib", "/usr/lib", "/usr/local/lib", "/usr/PCBSD/local/lib", "/usr/X11/lib", "/usr/X11R6/lib"]
         if platform.architecture()[0] == "64bit":
-            libs += glob.glob("/lib64/*.so") + glob.glob("/usr/lib64/*.so")
-            libs += glob.glob("/lib64/*.a") + glob.glob("/usr/lib64/*.a")
-        if (sys.platform == "darwin"):
-            libs += glob.glob("/lib/*.dylib*") + glob.glob("/usr/lib/*.dylib*") + glob.glob("/usr/local/lib/*.dylib*")
-            libs += glob.glob("/usr/X11/lib/*.dylib*") + glob.glob("/usr/X11R6/lib/*.dylib*")
-            libs += glob.glob("/lib/*.a") + glob.glob("/usr/lib/*.a") + glob.glob("/usr/local/lib/*.a")
-            libs += glob.glob("/usr/X11/lib/*.a") + glob.glob("/usr/X11R6/lib/*.a")
+            libdirs += ["/lib64", "/usr/lib64"]
+        if "LD_LIBRARY_PATH" in os.environ:
+            libdirs += os.environ["LD_LIBRARY_PATH"].split(":")
+        libdirs = list(set(libdirs))
+        libs = []
+        for path in libdirs:
+            if os.path.isdir(path):
+                libs += glob.glob(path + "/lib*.so")
+                libs += glob.glob(path + "/lib*.a")
+                if (sys.platform == "darwin"):
+                    libs += glob.glob(path + "/lib*.dylib")
+        
         for l in libs:
             lib = os.path.basename(l).split(".so", 1)[0].split(".a", 1)[0].split(".dylib", 1)[0][3:]
             if lib not in LD_CACHE:
@@ -1250,7 +1266,11 @@ def GetSdkDir(sdkname, sdkkey = None):
     # Returns the default SDK directory. If it exists,
     # and sdkkey is not None, it is put in SDK[sdkkey].
     # Note: return value may not be an existing path.
-    sdir = "sdks"
+    sdkbase = "sdks"
+    if "MAKEPANDA_SDKS" in os.environ:
+        sdkbase = os.environ["MAKEPANDA_SDKS"]
+    
+    sdir = sdkbase[:]
     if (sys.platform.startswith("win")):
         sdir += "/win"
         sdir += platform.architecture()[0][:2]
@@ -1262,15 +1282,15 @@ def GetSdkDir(sdkname, sdkkey = None):
     sdir += "/" + sdkname
 
     # If it does not exist, try the old location.
-    if (sdkkey and not os.path.isdir(sdir)):
-        sdir = "sdks/" + sdir
+    if (not os.path.isdir(sdir)):
+        sdir = sdkbase + "/" + sdir
         if (sys.platform.startswith("linux")):
             sdir += "-linux"
             sdir += platform.architecture()[0][:2]
         elif (sys.platform == "darwin"):
             sdir += "-osx"
 
-    if (os.path.isdir(sdir)):
+    if (sdkkey and os.path.isdir(sdir)):
         SDK[sdkkey] = sdir
 
     return sdir
@@ -1362,7 +1382,7 @@ def SdkLocateMax():
 def SdkLocatePython(force_use_sys_executable = False):
     if (PkgSkip("PYTHON")==0):
         if (sys.platform == "win32" and not force_use_sys_executable):
-            SDK["PYTHON"] = "thirdparty/win-python"
+            SDK["PYTHON"] = GetThirdpartyBase()+"/win-python"
             if (GetOptimize() <= 2):
                 SDK["PYTHON"] += "-dbg"
             if (platform.architecture()[0] == "64bit" and os.path.isdir(SDK["PYTHON"] + "-x64")):
@@ -1466,27 +1486,38 @@ def SdkLocateMacOSX(osxtarget=None):
     else:
         SDK["MACOSX"] = ""
 
+# Latest first
 PHYSXVERSIONINFO=[
-    ("PHYSX281","v2.8.1"),
+    ("PHYSX284","v2.8.4"),
     ("PHYSX283","v2.8.3"),
+    ("PHYSX281","v2.8.1"),
 ]
 
 def SdkLocatePhysX():
-    for (ver,key) in PHYSXVERSIONINFO:
+    # First check for a physx directory in sdks.
+    dir = GetSdkDir("physx")
+    if (dir and os.path.isdir(dir)):
+        SDK["PHYSX"] = dir
+        SDK["PHYSXLIBS"] = dir + "/lib"
+        return
+    
+    # Try to find a PhysX installation on the system.
+    for (ver, key) in PHYSXVERSIONINFO:
         if (sys.platform == "win32"):
             folders = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\Folders"
             for folder in ListRegistryValues(folders):
-                if folder.endswith("NVIDIA PhysX SDK\\%s\\SDKs\\" % key):
+                if folder.endswith("NVIDIA PhysX SDK\\%s\\SDKs\\" % key) or \
+                   folder.endswith("NVIDIA PhysX SDK\\%s_win\\SDKs\\" % key):
                     SDK["PHYSX"] = folder
-                    SDK["PHYSXVERSION"] = ver
+                    return
         elif (sys.platform.startswith("linux")):
             incpath = "/usr/include/PhysX/%s/SDKs" % key
             libpath = "/usr/lib/PhysX/%s" % key
             if (os.path.isdir(incpath) and os.path.isdir(libpath)):
                 SDK["PHYSX"] = incpath
-                SDK["PHYSXVERSION"] = ver
                 SDK["PHYSXLIBS"] = libpath
-
+                return
+            
 ########################################################################
 ##
 ## SDK Auto-Disables
@@ -1604,14 +1635,19 @@ def LibDirectory(opt, dir):
     LIBDIRECTORIES.append((opt, dir))
 
 def LibName(opt, name):
-    #check to see if the lib file actually exists for the thrid party library given
-    #are we a thrid party library?
-    if name.startswith("thirdparty"):
-        #does this lib exists
+    # Check to see if the lib file actually exists for the thirdparty library given
+    # Are we a thirdparty library?
+    if name.startswith(GetThirdpartyDir()):
+        # Does this lib exist?
         if not os.path.exists(name):
-            PkgDisable(opt)
             WARNINGS.append(name + " not found.  Skipping Package " + opt)
-            return
+            if (opt in PkgListGet()):
+                print "%sWARNING:%s Could not locate thirdparty package %s, excluding from build" % (GetColor("red"), GetColor(), opt.lower())
+                PkgDisable(opt)
+                return
+            else:
+                print "%sERROR:%s Could not locate thirdparty package %s, aborting build" % (GetColor("red"), GetColor(), opt.lower())
+                exit()
     LIBNAMES.append((opt, name))
 
 def DefSymbol(opt, sym, val):

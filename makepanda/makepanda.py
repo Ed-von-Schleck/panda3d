@@ -46,6 +46,8 @@ RUNTIME=0
 DISTRIBUTOR=""
 VERSION=None
 DEBVERSION=None
+RPMRELEASE="1"
+P3DSUFFIX=""
 MAJOR_VERSION=None
 COREAPI_VERSION=None
 OSXTARGET=None
@@ -55,7 +57,8 @@ if "MACOSX_DEPLOYMENT_TARGET" in os.environ:
     OSXTARGET=os.environ["MACOSX_DEPLOYMENT_TARGET"]
 
 PkgListSet(["PYTHON", "DIRECT",                        # Python support
-  "OPENGL"] + DXVERSIONS + ["TINYDISPLAY", "NVIDIACG", # 3D graphics
+  "GL", "GLES", "GLES2"] + DXVERSIONS + ["TINYDISPLAY", "NVIDIACG", # 3D graphics
+  "EGL",                                               # OpenGL (ES) integration
   "OPENAL", "FMODEX", "FFMPEG",                        # Multimedia
   "ODE", "PHYSX",                                      # Physics
   "ZLIB", "PNG", "JPEG", "TIFF", "SQUISH", "FREETYPE", # 2D Formats support
@@ -65,7 +68,7 @@ PkgListSet(["PYTHON", "DIRECT",                        # Python support
   "ARTOOLKIT", "OPENCV", "DIRECTCAM",                  # Augmented Reality
   "NPAPI", "AWESOMIUM",                                # Browser embedding
   "GTK2", "WX",                                        # Toolkit support
-  "OSMESA", "X11", "XF86DGA", "XRANDR",                # Unix platform support
+  "OSMESA", "X11", "XF86DGA", "XRANDR", "XCURSOR",     # Unix platform support
   "PANDATOOL", "PVIEW", "DEPLOYTOOLS",                 # Toolchain
   "CONTRIB"                                            # Experimental
 ])
@@ -120,12 +123,13 @@ def usage(problem):
 
 def parseopts(args):
     global INSTALLER,RTDIST,RUNTIME,GENMAN,DISTRIBUTOR,VERSION
-    global COMPRESSOR,THREADCOUNT,OSXTARGET,HOST_URL,DEBVERSION
+    global COMPRESSOR,THREADCOUNT,OSXTARGET,HOST_URL
+    global DEBVERSION,RPMRELEASE,P3DSUFFIX
     longopts = [
         "help","distributor=","verbose","runtime","osxtarget=",
         "optimize=","everything","nothing","installer","rtdist","nocolor",
         "version=","lzma","no-python","threads=","outputdir=","override=",
-        "static","host=","debversion="]
+        "static","host=","debversion=","rpmrelease=","p3dsuffix="]
     anything = 0
     optimize = ""
     for pkg in PkgListGet(): longopts.append("no-"+pkg.lower())
@@ -155,6 +159,11 @@ def parseopts(args):
             elif (option=="--static"): SetLinkAllStatic(True)
             elif (option=="--host"): HOST_URL=value
             elif (option=="--debversion"): DEBVERSION=value
+            elif (option=="--rpmrelease"): RPMRELEASE=value
+            elif (option=="--p3dsuffix"): P3DSUFFIX=value
+            # Backward compatibility, OPENGL was renamed to GL
+            elif (option=="--use-opengl"): PkgEnable("GL")
+            elif (option=="--no-opengl"): PkgDisable("GL")
             else:
                 for pkg in PkgListGet():
                     if (option=="--use-"+pkg.lower()):
@@ -255,7 +264,7 @@ if (RUNTIME):
             exit("Runtime must be compiled with OpenSSL, ZLib, NPAPI, JPEG and PNG support!")
 
 if (sys.platform.startswith("win")):
-    os.environ["BISON_SIMPLE"] = "thirdparty/win-util/bison.simple"
+    os.environ["BISON_SIMPLE"] = GetThirdpartyBase()+"/win-util/bison.simple"
 
 if (INSTALLER and RTDIST):
     exit("Cannot build an installer for the rtdist build!")
@@ -344,6 +353,10 @@ if (COMPILER=="MSVC"):
     PkgDisable("X11")
     PkgDisable("XRANDR")
     PkgDisable("XF86DGA")
+    PkgDisable("XCURSOR")
+    PkgDisable("GLES")
+    PkgDisable("GLES2")
+    PkgDisable("EGL")
     if (PkgSkip("PYTHON")==0):
         IncDirectory("ALWAYS", SDK["PYTHON"] + "/include")
         LibDirectory("ALWAYS", SDK["PYTHON"] + "/libs")
@@ -390,8 +403,10 @@ if (COMPILER=="MSVC"):
     LibName("WINSHELL", "shell32.lib")
     LibName("WINGDI", "gdi32.lib")
     LibName("ADVAPI", "advapi32.lib")
-    LibName("OPENGL", "opengl32.lib")
-    LibName("OPENGL", "glu32.lib")
+    LibName("GL", "opengl32.lib")
+    LibName("GLES", "libgles_cm.lib")
+    LibName("GLES2", "libGLESv2.lib")
+    LibName("EGL", "libEGL.lib")
     LibName("MSIMG", "msimg32.lib")
     if (PkgSkip("DIRECTCAM")==0): LibName("DIRECTCAM", "strmiids.lib")
     if (PkgSkip("DIRECTCAM")==0): LibName("DIRECTCAM", "quartz.lib")
@@ -404,7 +419,6 @@ if (COMPILER=="MSVC"):
     if (PkgSkip("VRPN")==0):     LibName("VRPN",     GetThirdpartyDir() + "vrpn/lib/vrpn.lib")
     if (PkgSkip("VRPN")==0):     LibName("VRPN",     GetThirdpartyDir() + "vrpn/lib/quat.lib")
     if (PkgSkip("FMODEX")==0):   LibName("FMODEX",   GetThirdpartyDir() + "fmodex/lib/fmodex_vc.lib")
-    if (PkgSkip("OPENAL")==0):   LibName("OPENAL",   GetThirdpartyDir() + "openal/lib/pandaopenal32.lib")
     if (PkgSkip("NVIDIACG")==0): LibName("CGGL",     GetThirdpartyDir() + "nvidiacg/lib/cgGL.lib")
     if (PkgSkip("NVIDIACG")==0): LibName("CGDX9",    GetThirdpartyDir() + "nvidiacg/lib/cgD3D9.lib")
     if (PkgSkip("NVIDIACG")==0): LibName("NVIDIACG", GetThirdpartyDir() + "nvidiacg/lib/cg.lib")
@@ -422,11 +436,16 @@ if (COMPILER=="MSVC"):
     if (PkgSkip("OPENCV")==0):   LibName("OPENCV",   GetThirdpartyDir() + "opencv/lib/cvaux.lib")
     if (PkgSkip("OPENCV")==0):   LibName("OPENCV",   GetThirdpartyDir() + "opencv/lib/ml.lib")
     if (PkgSkip("OPENCV")==0):   LibName("OPENCV",   GetThirdpartyDir() + "opencv/lib/cxcore.lib")
+    if (PkgSkip("AWESOMIUM")==0):LibName("AWESOMIUM",   GetThirdpartyDir() + "awesomium/lib/Awesomium.lib")
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avcodec-51-panda.lib")
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avformat-50-panda.lib")
     if (PkgSkip("FFMPEG")==0):   LibName("FFMPEG",   GetThirdpartyDir() + "ffmpeg/lib/avutil-49-panda.lib")
-    if (PkgSkip("AWESOMIUM")==0):LibName("AWESOMIUM",   GetThirdpartyDir() + "awesomium/lib/Awesomium.lib")
     if (PkgSkip("SWSCALE")==0):  PkgDisable("SWSCALE")
+    if (PkgSkip("OPENAL")==0):
+        if (os.path.exists(GetThirdpartyDir() + "openal/lib/pandaopenal32.lib")):
+            LibName("OPENAL",   GetThirdpartyDir() + "openal/lib/pandaopenal32.lib")
+        else:
+            LibName("OPENAL",   GetThirdpartyDir() + "openal/lib/OpenAL32.lib")
     if (PkgSkip("WX")==0):
         LibName("WX",       GetThirdpartyDir() + "wx/lib/wxbase28u.lib")
         LibName("WX",       GetThirdpartyDir() + "wx/lib/wxmsw28u_core.lib")
@@ -449,7 +468,6 @@ if (COMPILER=="MSVC"):
             LibName(pkg, SDK[pkg] +  '/lib/maxutil.lib')
             LibName(pkg, SDK[pkg] +  '/lib/paramblk2.lib')
     if (PkgSkip("PHYSX")==0):
-        DefSymbol("PHYSX", SDK["PHYSXVERSION"], "1")
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/PhysXLoader.lib")
         LibName("PHYSX",      SDK["PHYSX"] + "/lib/Win32/NxCharacter.lib")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
@@ -470,7 +488,7 @@ if (COMPILER=="LINUX"):
           IncDirectory("FREETYPE", "/usr/X11R6/include")
           IncDirectory("FREETYPE", "/usr/X11/include")
           IncDirectory("FREETYPE", "/usr/X11/include/freetype2")
-        IncDirectory("OPENGL", "/usr/X11R6/include")
+        IncDirectory("GL", "/usr/X11R6/include")
 
     if (os.path.isdir("/usr/PCBSD")):
         IncDirectory("ALWAYS", "/usr/PCBSD/local/include")
@@ -499,7 +517,10 @@ if (COMPILER=="LINUX"):
         SmartPkgEnable("FFTW",      "",          ("fftw", "rfftw"), ("fftw.h", "rfftw.h"))
         SmartPkgEnable("FMODEX",    "",          ("fmodex"), ("fmodex", "fmodex/fmod.h"))
         SmartPkgEnable("FREETYPE",  "freetype2", ("freetype"), ("freetype2", "freetype2/freetype/freetype.h"))
-        SmartPkgEnable("OPENGL",    "gl",        ("GL"), ("GL/gl.h", "GL/glu.h"), framework = "OpenGL")
+        SmartPkgEnable("GL",        "gl",        ("GL"), ("GL/gl.h"), framework = "OpenGL")
+        SmartPkgEnable("GLES",      "glesv1_cm", ("GLESv1_CM"), ("GLES/gl.h"), framework = "OpenGLES")
+        SmartPkgEnable("GLES2",     "glesv2",    ("GLESv2"), ("GLES2/gl2.h")) #framework = "OpenGLES"?
+        SmartPkgEnable("EGL",       "egl",       ("EGL"), ("EGL/egl.h"))
         SmartPkgEnable("OSMESA",    "osmesa",    ("OSMesa"), ("GL/osmesa.h"))
         SmartPkgEnable("GTK2",      "gtk+-2.0")
         SmartPkgEnable("NVIDIACG",  "",          ("Cg"), "Cg/cg.h", framework = "Cg")
@@ -533,6 +554,7 @@ if (COMPILER=="LINUX"):
             SmartPkgEnable("X11",   "x11", "X11", ("X11", "X11/Xlib.h"))
             SmartPkgEnable("XRANDR", "xrandr", "Xrandr", "X11/extensions/Xrandr.h")
             SmartPkgEnable("XF86DGA", "xxf86dga", "Xxf86dga", "X11/extensions/xf86dga.h")
+            SmartPkgEnable("XCURSOR", "xcursor", "Xcursor", "X11/Xcursor/Xcursor.h")
 
     if (RUNTIME):
         # For the runtime, all packages are required
@@ -574,7 +596,7 @@ if (COMPILER=="LINUX"):
         LibName("CARBON", "-framework Carbon")
         LibName("COCOA", "-framework Cocoa")
         # Fix for a bug in OSX Leopard:
-        LibName("OPENGL", "-dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
+        LibName("GL", "-dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
 
     for pkg in MAYAVERSIONS:
         if (PkgSkip(pkg)==0 and (pkg in SDK)):
@@ -605,7 +627,6 @@ if (COMPILER=="LINUX"):
             if (sys.platform == "darwin"):
                 LibName(pkg, "-dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
     if (PkgSkip("PHYSX")==0):
-        DefSymbol("PHYSX", SDK["PHYSXVERSION"], "1")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Physics/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/PhysXLoader/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/NxCharacter/include")
@@ -613,8 +634,12 @@ if (COMPILER=="LINUX"):
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Foundation/include")
         IncDirectory("PHYSX", SDK["PHYSX"] + "/Cooking/include")
         LibDirectory("PHYSX", SDK["PHYSXLIBS"])
-        LibName("PHYSX", "-lPhysXLoader")
-        LibName("PHYSX", "-lNxCharacter")
+        if (sys.platform == "darwin"):
+            LibName("PHYSX", SDK["PHYSXLIBS"] + "/osxstatic/PhysXCooking.a")
+            LibName("PHYSX", SDK["PHYSXLIBS"] + "/osxstatic/PhysXCore.a")
+        else:
+            LibName("PHYSX", "-lPhysXLoader")
+            LibName("PHYSX", "-lNxCharacter")
 
 DefSymbol("ALWAYS", "MAKEPANDA", "")
 DefSymbol("WITHINPANDA", "WITHIN_PANDA", "1")
@@ -688,12 +713,12 @@ def CompileCxx(obj,src,opts):
         if (platform.architecture()[0]=="64bit"):
             cmd += "/favor:blend "
         cmd += "/wd4996 /wd4275 /wd4267 /wd4101 /wd4273 "
-        
+
         # Enables Windows 7 mode if SDK is detected.
         platsdk = GetRegistryKey("SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\v7.0", "InstallationFolder")
         if platsdk and os.path.isdir(platsdk):
             cmd += "/DPANDA_WIN7 /DWINVER=0x601 "
-            
+
         cmd += "/Fo" + obj + " /nologo /c"
         for x in ipath: cmd += " /I" + x
         for (opt,dir) in INCDIRECTORIES:
@@ -754,7 +779,7 @@ def CompileBison(wobj, wsrc, opts):
     wdstc = GetOutputDir()+"/tmp/" + ifile + ".cxx"
     pre = GetValueOption(opts, "BISONPREFIX_")
     if (COMPILER == "MSVC"):
-        oscmd('thirdparty/win-util/bison -y -d -o'+GetOutputDir()+'/tmp/'+ifile+'.c -p '+pre+' '+wsrc)
+        oscmd(GetThirdpartyBase()+'/win-util/bison -y -d -o'+GetOutputDir()+'/tmp/'+ifile+'.c -p '+pre+' '+wsrc)
         CopyFile(wdstc, GetOutputDir()+"/tmp/"+ifile+".c")
         CopyFile(wdsth, GetOutputDir()+"/tmp/"+ifile+".h")
     if (COMPILER == "LINUX"):
@@ -775,8 +800,8 @@ def CompileFlex(wobj,wsrc,opts):
     pre = GetValueOption(opts, "BISONPREFIX_")
     dashi = opts.count("FLEXDASHI")
     if (COMPILER == "MSVC"):
-        if (dashi): oscmd("thirdparty/win-util/flex -i -P" + pre + " -o"+wdst+" "+wsrc)
-        else:       oscmd("thirdparty/win-util/flex    -P" + pre + " -o"+wdst+" "+wsrc)
+        if (dashi): oscmd(GetThirdpartyBase()+"/win-util/flex -i -P" + pre + " -o"+wdst+" "+wsrc)
+        else:       oscmd(GetThirdpartyBase()+"/win-util/flex    -P" + pre + " -o"+wdst+" "+wsrc)
     if (COMPILER == "LINUX"):
         if (dashi): oscmd("flex -i -P" + pre + " -o"+wdst+" "+wsrc)
         else:       oscmd("flex    -P" + pre + " -o"+wdst+" "+wsrc)
@@ -1108,6 +1133,8 @@ def Package(target, inputs, opts):
     if (sys.platform == "darwin" and "MACOSX" in SDK and SDK["MACOSX"] != None and len(SDK["MACOSX"]) > 1):
         command += " -R \"%s\"" % SDK["MACOSX"]
     command += " -i \"" + GetOutputDir() + "/stage\""
+    if (P3DSUFFIX):
+        command += ' -a "' + P3DSUFFIX + '"'
     command += " " + inputs[0]
     oscmd(command)
 
@@ -1281,11 +1308,14 @@ DTOOL_CONFIG=[
     ("REPORT_OPENSSL_ERRORS",          '1',                      '1'),
     ("USE_PANDAFILESTREAM",            '1',                      '1'),
     ("USE_DELETED_CHAIN",              '1',                      '1'),
-    ("HAVE_GL",                        '1',                      '1'),
+    ("HAVE_GL",                        '1',                      'UNDEF'),
+    ("HAVE_GLES",                      'UNDEF',                  'UNDEF'),
+    ("HAVE_GLES2",                     'UNDEF',                  'UNDEF'),
     ("HAVE_MESA",                      'UNDEF',                  'UNDEF'),
     ("MESA_MGL",                       'UNDEF',                  'UNDEF'),
     ("HAVE_SGIGL",                     'UNDEF',                  'UNDEF'),
     ("HAVE_GLX",                       'UNDEF',                  '1'),
+    ("HAVE_EGL",                       'UNDEF',                  'UNDEF'),
     ("HAVE_WGL",                       '1',                      'UNDEF'),
     ("HAVE_DX8",                       'UNDEF',                  'UNDEF'),
     ("HAVE_DX9",                       'UNDEF',                  'UNDEF'),
@@ -1363,6 +1393,7 @@ DTOOL_CONFIG=[
     ("HAVE_X11",                       'UNDEF',                  '1'),
     ("HAVE_XRANDR",                    'UNDEF',                  '1'),
     ("HAVE_XF86DGA",                   'UNDEF',                  '1'),
+    ("HAVE_XCURSOR",                   'UNDEF',                  '1'),
     ("IS_LINUX",                       'UNDEF',                  '1'),
     ("IS_OSX",                         'UNDEF',                  'UNDEF'),
     ("IS_FREEBSD",                     'UNDEF',                  'UNDEF'),
@@ -1470,6 +1501,7 @@ def WriteConfigSettings():
         dtool_config["HAVE_X11"] = 'UNDEF'  # We might have X11, but we don't need it.
         dtool_config["HAVE_XRANDR"] = 'UNDEF'
         dtool_config["HAVE_XF86DGA"] = 'UNDEF'
+        dtool_config["HAVE_XCURSOR"] = 'UNDEF'
         dtool_config["HAVE_GLX"] = 'UNDEF'
         dtool_config["IS_LINUX"] = 'UNDEF'
         dtool_config["HAVE_VIDEO4LINUX"] = 'UNDEF'
@@ -1769,11 +1801,11 @@ if (PkgSkip("PYTHON")==0 and PkgSkip("DIRECT")==0):
 #
 ##########################################################################################
 
-confautoprc=ReadFile("makepanda/confauto.in")
+confautoprc = ReadFile("makepanda/confauto.in")
 if (os.path.isfile("makepanda/myconfig.in")):
-  configprc=ReadFile("makepanda/myconfig.in")
+    configprc = ReadFile("makepanda/myconfig.in")
 else:
-  configprc=ReadFile("makepanda/config.in")
+    configprc = ReadFile("makepanda/config.in")
 
 if (sys.platform.startswith("win")):
     configprc = configprc.replace("$HOME/.panda3d", "$USER_APPDATA/Panda3D-%s" % MAJOR_VERSION)
@@ -1828,8 +1860,8 @@ CopyFile(GetOutputDir()+"/", "doc/ReleaseNotes")
 if (PkgSkip("PANDATOOL")==0):
     CopyAllFiles(GetOutputDir()+"/plugins/",  "pandatool/src/scripts/", ".mel")
     CopyAllFiles(GetOutputDir()+"/plugins/",  "pandatool/src/scripts/", ".ms")
-if (PkgSkip("PYTHON")==0 and os.path.isdir("thirdparty/Pmw")):
-    CopyTree(GetOutputDir()+'/Pmw',         'thirdparty/Pmw')
+if (PkgSkip("PYTHON")==0 and os.path.isdir(GetThirdpartyBase()+"/Pmw")):
+    CopyTree(GetOutputDir()+'/Pmw',         GetThirdpartyBase()+'/Pmw')
 ConditionalWriteFile(GetOutputDir()+'/include/ctl3d.h', '/* dummy file to make MAX happy */')
 
 ########################################################################
@@ -1908,7 +1940,6 @@ CopyAllHeaders('panda/src/pgui')
 CopyAllHeaders('panda/src/pnmimagetypes')
 CopyAllHeaders('panda/src/recorder')
 CopyAllHeaders('panda/src/vrpn')
-CopyAllHeaders('panda/src/glgsg')
 CopyAllHeaders('panda/src/wgldisplay')
 CopyAllHeaders('panda/src/ode')
 CopyAllHeaders('panda/metalibs/pandaode')
@@ -1931,6 +1962,8 @@ CopyAllHeaders('panda/src/framework')
 CopyAllHeaders('panda/metalibs/pandafx')
 CopyAllHeaders('panda/src/glstuff')
 CopyAllHeaders('panda/src/glgsg')
+CopyAllHeaders('panda/src/glesgsg')
+CopyAllHeaders('panda/src/gles2gsg')
 CopyAllHeaders('panda/metalibs/pandaegg')
 if (sys.platform.startswith("win")):
     CopyAllHeaders('panda/src/wgldisplay')
@@ -1939,7 +1972,10 @@ elif (sys.platform == "darwin"):
 else:
     CopyAllHeaders('panda/src/x11display')
     CopyAllHeaders('panda/src/glxdisplay')
+CopyAllHeaders('panda/src/egldisplay')
 CopyAllHeaders('panda/metalibs/pandagl')
+CopyAllHeaders('panda/metalibs/pandagles')
+CopyAllHeaders('panda/metalibs/pandagles2')
 
 CopyAllHeaders('panda/src/physics')
 CopyAllHeaders('panda/src/particlesystem')
@@ -3129,16 +3165,34 @@ if (not RUNTIME):
   TargetAdd('glstuff_glpure.obj', opts=OPTS, input='glpure.cxx')
   TargetAdd('libp3glstuff.dll', input='glstuff_glpure.obj')
   TargetAdd('libp3glstuff.dll', input=COMMON_PANDA_LIBS)
-  TargetAdd('libp3glstuff.dll', opts=['ADVAPI', 'OPENGL',  'NVIDIACG', 'CGGL'])
+  TargetAdd('libp3glstuff.dll', opts=['ADVAPI', 'GL',  'NVIDIACG', 'CGGL'])
 
 #
 # DIRECTORY: panda/src/glgsg/
 #
 
-if (not RUNTIME and PkgSkip("OPENGL")==0):
-  OPTS=['DIR:panda/src/glgsg', 'DIR:panda/src/glstuff', 'DIR:panda/src/gobj', 'BUILDING:PANDAGL',  'NVIDIACG']
+if (not RUNTIME and PkgSkip("GL")==0):
+  OPTS=['DIR:panda/src/glgsg', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGL',  'NVIDIACG']
   TargetAdd('glgsg_config_glgsg.obj', opts=OPTS, input='config_glgsg.cxx')
   TargetAdd('glgsg_glgsg.obj', opts=OPTS, input='glgsg.cxx')
+
+#
+# DIRECTORY: panda/src/glesgsg/
+#
+
+if (not RUNTIME and PkgSkip("GLES")==0):
+  OPTS=['DIR:panda/src/glesgsg', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGLES']
+  TargetAdd('glesgsg_config_glesgsg.obj', opts=OPTS, input='config_glesgsg.cxx')
+  TargetAdd('glesgsg_glesgsg.obj', opts=OPTS, input='glesgsg.cxx')
+
+#
+# DIRECTORY: panda/src/gles2gsg/
+#
+
+if (not RUNTIME and PkgSkip("GLES2")==0):
+  OPTS=['DIR:panda/src/gles2gsg', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGLES2']
+  TargetAdd('gles2gsg_config_gles2gsg.obj', opts=OPTS, input='config_gles2gsg.cxx')
+  TargetAdd('gles2gsg_gles2gsg.obj', opts=OPTS, input='gles2gsg.cxx')
 
 #
 # DIRECTORY: panda/metalibs/pandaegg/
@@ -3169,15 +3223,15 @@ if (not RUNTIME):
 # DIRECTORY: panda/src/mesadisplay/
 #
 
-if (not sys.platform.startswith("win") and PkgSkip("OPENGL")==0 and PkgSkip("OSMESA")==0 and not RUNTIME):
-  OPTS=['DIR:panda/src/mesadisplay', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGLUT', 'NVIDIACG', 'OPENGL', 'OSMESA']
+if (not sys.platform.startswith("win") and PkgSkip("GL")==0 and PkgSkip("OSMESA")==0 and not RUNTIME):
+  OPTS=['DIR:panda/src/mesadisplay', 'DIR:panda/src/glstuff', 'BUILDING:PANDAMESA', 'NVIDIACG', 'GL', 'OSMESA']
   TargetAdd('mesadisplay_composite.obj', opts=OPTS, input='mesadisplay_composite.cxx')
-  OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAGLUT', 'NVIDIACG', 'OPENGL']
+  OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAMESA', 'NVIDIACG', 'GL']
   TargetAdd('libpandamesa.dll', input='mesadisplay_composite.obj')
   TargetAdd('libpandamesa.dll', input='libp3glstuff.dll')
   TargetAdd('libpandamesa.dll', input='libpandafx.dll')
   TargetAdd('libpandamesa.dll', input=COMMON_PANDA_LIBS)
-  TargetAdd('libpandamesa.dll', opts=['MODULE', 'OPENGL', 'OSMESA'])
+  TargetAdd('libpandamesa.dll', opts=['MODULE', 'GL', 'OSMESA'])
 
 #
 # DIRECTORY: panda/src/x11display/
@@ -3191,10 +3245,10 @@ if (sys.platform != "win32" and sys.platform != "darwin" and PkgSkip("X11")==0 a
 # DIRECTORY: panda/src/glxdisplay/
 #
 
-if (sys.platform != "win32" and sys.platform != "darwin" and PkgSkip("OPENGL")==0 and PkgSkip("X11")==0 and not RUNTIME):
-  OPTS=['DIR:panda/src/glxdisplay', 'BUILDING:PANDAGLUT',  'OPENGL', 'NVIDIACG', 'CGGL']
+if (sys.platform != "win32" and sys.platform != "darwin" and PkgSkip("GL")==0 and PkgSkip("X11")==0 and not RUNTIME):
+  OPTS=['DIR:panda/src/glxdisplay', 'BUILDING:PANDAGL',  'GL', 'NVIDIACG', 'CGGL']
   TargetAdd('glxdisplay_composite.obj', opts=OPTS, input='glxdisplay_composite.cxx')
-  OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAGLUT',  'OPENGL', 'NVIDIACG', 'CGGL']
+  OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAGL',  'GL', 'NVIDIACG', 'CGGL']
   TargetAdd('pandagl_pandagl.obj', opts=OPTS, input='pandagl.cxx')
   TargetAdd('libpandagl.dll', input='x11display_composite.obj')
   TargetAdd('libpandagl.dll', input='pandagl_pandagl.obj')
@@ -3203,17 +3257,17 @@ if (sys.platform != "win32" and sys.platform != "darwin" and PkgSkip("OPENGL")==
   TargetAdd('libpandagl.dll', input='glxdisplay_composite.obj')
   TargetAdd('libpandagl.dll', input='libp3glstuff.dll')
   TargetAdd('libpandagl.dll', input=COMMON_PANDA_LIBS)
-  TargetAdd('libpandagl.dll', opts=['MODULE', 'OPENGL', 'NVIDIACG', 'CGGL', 'X11', 'XRANDR', 'XF86DGA'])
+  TargetAdd('libpandagl.dll', opts=['MODULE', 'GL', 'NVIDIACG', 'CGGL', 'X11', 'XRANDR', 'XF86DGA', 'XCURSOR'])
 
 #
 # DIRECTORY: panda/src/osxdisplay/
 #
 
-if (sys.platform == 'darwin' and PkgSkip("OPENGL")==0 and not RUNTIME):
-  OPTS=['DIR:panda/src/osxdisplay', 'BUILDING:PANDAGLUT',  'OPENGL', 'NVIDIACG', 'CGGL']
+if (sys.platform == 'darwin' and PkgSkip("GL")==0 and not RUNTIME):
+  OPTS=['DIR:panda/src/osxdisplay', 'BUILDING:PANDAGL',  'GL', 'NVIDIACG', 'CGGL']
   TargetAdd('osxdisplay_composite1.obj', opts=OPTS, input='osxdisplay_composite1.cxx')
   TargetAdd('osxdisplay_osxGraphicsWindow.obj', opts=OPTS, input='osxGraphicsWindow.mm')
-  OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAGLUT',  'OPENGL', 'NVIDIACG', 'CGGL']
+  OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAGL',  'GL', 'NVIDIACG', 'CGGL']
   TargetAdd('pandagl_pandagl.obj', opts=OPTS, input='pandagl.cxx')
   TargetAdd('libpandagl.dll', input='pandagl_pandagl.obj')
   TargetAdd('libpandagl.dll', input='glgsg_config_glgsg.obj')
@@ -3223,13 +3277,13 @@ if (sys.platform == 'darwin' and PkgSkip("OPENGL")==0 and not RUNTIME):
   TargetAdd('libpandagl.dll', input='libp3glstuff.dll')
   TargetAdd('libpandagl.dll', input='libpandafx.dll')
   TargetAdd('libpandagl.dll', input=COMMON_PANDA_LIBS)
-  TargetAdd('libpandagl.dll', opts=['MODULE', 'OPENGL', 'NVIDIACG', 'CGGL', 'CARBON', 'AGL', 'COCOA'])
+  TargetAdd('libpandagl.dll', opts=['MODULE', 'GL', 'NVIDIACG', 'CGGL', 'CARBON', 'AGL', 'COCOA'])
 
 #
 # DIRECTORY: panda/src/wgldisplay/
 #
 
-if (sys.platform == "win32" and PkgSkip("OPENGL")==0 and not RUNTIME):
+if (sys.platform == "win32" and PkgSkip("GL")==0 and not RUNTIME):
   OPTS=['DIR:panda/src/wgldisplay', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGL',  'NVIDIACG', 'CGGL']
   TargetAdd('wgldisplay_composite.obj', opts=OPTS, input='wgldisplay_composite.cxx')
   OPTS=['DIR:panda/metalibs/pandagl', 'BUILDING:PANDAGL',  'NVIDIACG', 'CGGL']
@@ -3242,7 +3296,47 @@ if (sys.platform == "win32" and PkgSkip("OPENGL")==0 and not RUNTIME):
   TargetAdd('libpandagl.dll', input='libp3glstuff.dll')
   TargetAdd('libpandagl.dll', input='libpandafx.dll')
   TargetAdd('libpandagl.dll', input=COMMON_PANDA_LIBS)
-  TargetAdd('libpandagl.dll', opts=['MODULE', 'WINGDI', 'OPENGL', 'WINKERNEL', 'WINOLDNAMES', 'WINUSER', 'WINMM',  'NVIDIACG', 'CGGL'])
+  TargetAdd('libpandagl.dll', opts=['MODULE', 'WINGDI', 'GL', 'WINKERNEL', 'WINOLDNAMES', 'WINUSER', 'WINMM',  'NVIDIACG', 'CGGL'])
+
+#
+# DIRECTORY: panda/src/egldisplay/
+#
+
+if (PkgSkip("EGL")==0 and PkgSkip("GLES")==0 and PkgSkip("X11")==0 and not RUNTIME):
+  DefSymbol('GLES', 'OPENGLES_1', '')
+  OPTS=['DIR:panda/src/egldisplay', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGLES',  'GLES', 'EGL']
+  TargetAdd('pandagles_egldisplay_composite1.obj', opts=OPTS, input='egldisplay_composite1.cxx')
+  OPTS=['DIR:panda/metalibs/pandagles', 'BUILDING:PANDAGLES', 'GLES', 'EGL']
+  TargetAdd('pandagles_pandagles.obj', opts=OPTS, input='pandagles.cxx')
+  # Uncomment this as soon as x11-specific stuff is removed from egldisplay
+  #TargetAdd('libpandagles.dll', input='x11display_composite.obj')
+  TargetAdd('libpandagles.dll', input='pandagles_pandagles.obj')
+  TargetAdd('libpandagles.dll', input='glesgsg_config_glesgsg.obj')
+  TargetAdd('libpandagles.dll', input='glesgsg_glesgsg.obj')
+  TargetAdd('libpandagles.dll', input='pandagles_egldisplay_composite1.obj')
+  TargetAdd('libpandagles.dll', input='libp3glstuff.dll')
+  TargetAdd('libpandagles.dll', input=COMMON_PANDA_LIBS)
+  TargetAdd('libpandagles.dll', opts=['MODULE', 'GLES', 'EGL', 'X11', 'XRANDR', 'XF86DGA', 'XCURSOR'])
+
+#
+# DIRECTORY: panda/src/egldisplay/
+#
+
+if (PkgSkip("EGL")==0 and PkgSkip("GLES2")==0 and PkgSkip("X11")==0 and not RUNTIME):
+  DefSymbol('GLES2', 'OPENGLES_2', '')
+  OPTS=['DIR:panda/src/egldisplay', 'DIR:panda/src/glstuff', 'BUILDING:PANDAGLES2',  'GLES2', 'EGL']
+  TargetAdd('pandagles2_egldisplay_composite1.obj', opts=OPTS, input='egldisplay_composite1.cxx')
+  OPTS=['DIR:panda/metalibs/pandagles2', 'BUILDING:PANDAGLES2', 'GLES2', 'EGL']
+  TargetAdd('pandagles2_pandagles2.obj', opts=OPTS, input='pandagles2.cxx')
+  # Uncomment this as soon as x11-specific stuff is removed from egldisplay
+  #TargetAdd('libpandagles2.dll', input='x11display_composite.obj')
+  TargetAdd('libpandagles2.dll', input='pandagles2_pandagles2.obj')
+  TargetAdd('libpandagles2.dll', input='gles2gsg_config_gles2gsg.obj')
+  TargetAdd('libpandagles2.dll', input='gles2gsg_gles2gsg.obj')
+  TargetAdd('libpandagles2.dll', input='pandagles2_egldisplay_composite1.obj')
+  TargetAdd('libpandagles2.dll', input='libp3glstuff.dll')
+  TargetAdd('libpandagles2.dll', input=COMMON_PANDA_LIBS)
+  TargetAdd('libpandagles2.dll', opts=['MODULE', 'GLES2', 'EGL', 'X11', 'XRANDR', 'XF86DGA', 'XCURSOR'])
 
 #
 # DIRECTORY: panda/src/ode/
@@ -3285,7 +3379,7 @@ if (PkgSkip("ODE")==0 and not RUNTIME):
 #
 
 if (PkgSkip("PHYSX")==0):
-  OPTS=['DIR:panda/src/physx', 'BUILDING:PANDAPHYSX', 'PHYSX']
+  OPTS=['DIR:panda/src/physx', 'BUILDING:PANDAPHYSX', 'PHYSX', 'NOPPC']
   TargetAdd('physx_composite.obj', opts=OPTS, input='physx_composite.cxx')
   IGATEFILES=GetDirectoryContents('panda/src/physx', ["*.h", "*_composite.cxx"])
   TargetAdd('libpandaphysx.in', opts=OPTS, input=IGATEFILES)
@@ -3297,7 +3391,7 @@ if (PkgSkip("PHYSX")==0):
 #
 
 if (PkgSkip("PHYSX")==0):
-  OPTS=['DIR:panda/metalibs/pandaphysx', 'BUILDING:PANDAPHYSX', 'PHYSX']
+  OPTS=['DIR:panda/metalibs/pandaphysx', 'BUILDING:PANDAPHYSX', 'PHYSX', 'NOPPC']
   TargetAdd('pandaphysx_pandaphysx.obj', opts=OPTS, input='pandaphysx.cxx')
 
   TargetAdd('libpandaphysx_module.obj', input='libpandaphysx.in')
@@ -3309,7 +3403,7 @@ if (PkgSkip("PHYSX")==0):
   TargetAdd('libpandaphysx.dll', input='physx_composite.obj')
   TargetAdd('libpandaphysx.dll', input='libpandaphysx_igate.obj')
   TargetAdd('libpandaphysx.dll', input=COMMON_PANDA_LIBS)
-  TargetAdd('libpandaphysx.dll', opts=['WINUSER', 'PHYSX'])
+  TargetAdd('libpandaphysx.dll', opts=['WINUSER', 'PHYSX', 'NOPPC'])
 
 #
 # DIRECTORY: panda/src/physics/
@@ -3397,7 +3491,7 @@ if (not RUNTIME and (sys.platform == "win32" or sys.platform == "darwin" or PkgS
     TargetAdd('libtinydisplay.dll', opts=['WINIMM', 'WINGDI', 'WINKERNEL', 'WINOLDNAMES', 'WINUSER', 'WINMM'])
   else:
     TargetAdd('libtinydisplay.dll', input='x11display_composite.obj')
-    TargetAdd('libtinydisplay.dll', opts=['X11', 'XRANDR', 'XF86DGA'])
+    TargetAdd('libtinydisplay.dll', opts=['X11', 'XRANDR', 'XF86DGA', 'XCURSOR'])
   TargetAdd('libtinydisplay.dll', input='tinydisplay_composite1.obj')
   TargetAdd('libtinydisplay.dll', input='tinydisplay_composite2.obj')
   TargetAdd('libtinydisplay.dll', input='tinydisplay_ztriangle_1.obj')
@@ -4632,18 +4726,24 @@ if (PkgSkip("DIRECT")==0 and not RUNTIME):
       model_extensions.append("*.flt")
 
   for model in GetDirectoryContents("dmodels/src/misc", model_extensions):
-      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
-      else: newname = model[:-4] + ".egg"
+      if (PkgSkip("ZLIB")==0 and PkgSkip("DEPLOYTOOLS")==0 and not RTDIST):
+          newname = model[:-4] + ".egg.pz"
+      else:
+          newname = model[:-4] + ".egg"
       TargetAdd(GetOutputDir()+"/models/misc/"+newname, input="dmodels/src/misc/"+model)
 
   for model in GetDirectoryContents("dmodels/src/gui", model_extensions):
-      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
-      else: newname = model[:-4] + ".egg"
+      if (PkgSkip("ZLIB")==0 and PkgSkip("DEPLOYTOOLS")==0 and not RTDIST):
+          newname = model[:-4] + ".egg.pz"
+      else:
+          newname = model[:-4] + ".egg"
       TargetAdd(GetOutputDir()+"/models/gui/"+newname, input="dmodels/src/gui/"+model)
 
   for model in GetDirectoryContents("models", model_extensions):
-      if (PkgSkip("ZLIB")==0 and not RTDIST): newname = model[:-4] + ".egg.pz"
-      else: newname = model[:-4] + ".egg"
+      if (PkgSkip("ZLIB")==0 and PkgSkip("DEPLOYTOOLS")==0 and not RTDIST):
+          newname = model[:-4] + ".egg.pz"
+      else:
+          newname = model[:-4] + ".egg"
       TargetAdd(GetOutputDir()+"/models/"+newname, input="models/"+model)
 
   CopyAllFiles(GetOutputDir()+"/models/audio/sfx/",  "dmodels/src/audio/sfx/", ".wav")
@@ -4827,7 +4927,7 @@ def MakeInstallerNSIS(file, fullname, smdirectory, installdir):
     WriteFile(GetOutputDir()+"/tmp/__init__.py", "")
     psource=os.path.abspath(".")
     panda=os.path.abspath(GetOutputDir())
-    cmd="thirdparty/win-nsis/makensis /V2 "
+    cmd=GetThirdpartyBase()+"/win-nsis/makensis /V2 "
     cmd=cmd+'/DCOMPRESSOR="'+COMPRESSOR+'" '
     cmd=cmd+'/DNAME="'+fullname+'" '
     cmd=cmd+'/DSMDIRECTORY="'+smdirectory+'" '
@@ -4841,7 +4941,7 @@ def MakeInstallerNSIS(file, fullname, smdirectory, installdir):
     cmd=cmd+'/DPANDA="'+panda+'" '
     cmd=cmd+'/DPANDACONF="'+panda+'\\etc" '
     cmd=cmd+'/DPSOURCE="'+psource+'" '
-    cmd=cmd+'/DPYEXTRAS="'+psource+'\\thirdparty\\win-extras" '
+    cmd=cmd+'/DPYEXTRAS="'+os.path.abspath(GetThirdpartyBase())+'\\win-extras" '
     cmd=cmd+'"'+psource+'\\direct\\src\\directscripts\\packpanda.nsi"'
     oscmd(cmd)
     os.rename("nsis-output.exe", file)
@@ -4855,7 +4955,7 @@ Priority: optional
 Architecture: ARCH
 Essential: no
 Depends: DEPENDS
-Recommends: panda3d-runtime, python-wxversion, python-profiler (>= PV), python-tk (>= PV), python-pmw, RECOMMENDS
+Recommends: panda3d-runtime, python-wxversion, python-profiler (>= PV), python-tk (>= PV), RECOMMENDS
 Provides: panda3d
 Conflicts: panda3d
 Replaces: panda3d
@@ -4891,7 +4991,7 @@ INSTALLER_SPEC_FILE="""
 Summary: The Panda3D free 3D engine SDK
 Name: panda3d
 Version: VERSION
-Release: 1
+Release: RPMRELEASE
 License: BSD License
 Group: Development/Libraries
 BuildRoot: PANDASOURCE/targetroot
@@ -4925,7 +5025,7 @@ RUNTIME_INSTALLER_SPEC_FILE="""
 Summary: Runtime binary and browser plugin for the Panda3D Game Engine
 Name: panda3d-runtime
 Version: VERSION
-Release: 1
+Release: RPMRELEASE
 License: BSD License
 Group: Productivity/Graphics/Other
 BuildRoot: PANDASOURCE/targetroot
@@ -5000,14 +5100,14 @@ def MakeInstallerLinux():
             txt = RUNTIME_INSTALLER_SPEC_FILE[1:]
         else:
             txt = INSTALLER_SPEC_FILE[1:]
-        txt = txt.replace("VERSION",VERSION).replace("PANDASOURCE",pandasource).replace("PV",PV)
+        txt = txt.replace("VERSION", VERSION).replace("RPMRELEASE", RPMRELEASE).replace("PANDASOURCE", pandasource).replace("PV", PV)
         WriteFile("panda3d.spec", txt)
-        oscmd("rpmbuild --define '_rpmdir "+pandasource+"' --root "+pandasource+" --buildroot targetroot -bb panda3d.spec")
+        oscmd("rpmbuild --define '_rpmdir "+pandasource+"' --buildroot '"+os.path.abspath("targetroot")+"' -bb panda3d.spec")
         if (RUNTIME):
-            oscmd("mv "+ARCH+"/panda3d-runtime-"+VERSION+"-1."+ARCH+".rpm .")
+            oscmd("mv "+ARCH+"/panda3d-runtime-"+VERSION+"-"+RPMRELEASE+"."+ARCH+".rpm .")
         else:
-            oscmd("mv "+ARCH+"/panda3d-"+VERSION+"-1."+ARCH+".rpm .")
-        oscmd("rmdir "+ARCH, True)
+            oscmd("mv "+ARCH+"/panda3d-"+VERSION+"-"+RPMRELEASE+"."+ARCH+".rpm .")
+        oscmd("rm -rf "+ARCH, True)
 
     if (os.path.exists("/usr/bin/dpkg-deb")):
         oscmd("dpkg --print-architecture > "+GetOutputDir()+"/tmp/architecture.txt")
@@ -5016,7 +5116,7 @@ def MakeInstallerLinux():
             txt = RUNTIME_INSTALLER_DEB_FILE[1:]
         else:
             txt = INSTALLER_DEB_FILE[1:]
-        txt = txt.replace("VERSION", str(DEBVERSION)).replace("ARCH", ARCH).replace("PV", PV).replace("MAJOR", MAJOR_VERSION)
+        txt = txt.replace("VERSION", DEBVERSION).replace("ARCH", ARCH).replace("PV", PV).replace("MAJOR", MAJOR_VERSION)
         oscmd("mkdir --mode=0755 -p targetroot/DEBIAN")
         oscmd("cd targetroot ; (find usr -type f -exec md5sum {} \;) >  DEBIAN/md5sums")
         if (not RUNTIME):
@@ -5039,7 +5139,8 @@ def MakeInstallerLinux():
             oscmd("cd targetroot ; LD_LIBRARY_PATH=usr%s/panda3d dpkg-shlibdeps --ignore-missing-info --warnings=2 -xpanda3d%s -Tdebian/substvars_rec debian/panda3d%s/usr/bin/*" % (libdir, MAJOR_VERSION, MAJOR_VERSION))
             depends = ReadFile("targetroot/debian/substvars_dep").replace("shlibs:Depends=", "").strip()
             recommends = ReadFile("targetroot/debian/substvars_rec").replace("shlibs:Depends=", "").strip()
-            depends += ", " + PYTHONV
+            if PkgSkip("PYTHON")==0:
+                depends += ", " + PYTHONV + ", python-pmw"
             WriteFile("targetroot/DEBIAN/control", txt.replace("DEPENDS", depends).replace("RECOMMENDS", recommends))
         oscmd("rm -rf targetroot/debian")
         oscmd("chmod -R 755 targetroot/DEBIAN")
@@ -5222,12 +5323,12 @@ def MakeInstallerOSX():
             os.makedirs("dstroot/" + pkg)
         if os.path.exists("/Developer/usr/bin/packagemaker"):
             cmd = '/Developer/usr/bin/packagemaker --info /tmp/Info_plist --version ' + VERSION + ' --out dstroot/Panda3D/Panda3D.mpkg/Contents/Packages/' + pkg + '.pkg --target 10.4 --domain system --root dstroot/' + pkg + '/ --no-relocate'
+            if os.path.isdir("dstroot/scripts/" + pkg):
+                cmd += ' --scripts dstroot/scripts/' + pkg
         elif os.path.exists("/Developer/Tools/packagemaker"):
-            cmd = '/Developer/usr/bin/packagemaker -build -f dstroot/' + pkg + '/ -p dstroot/Panda3D/Panda3D.mpkg/Contents/Packages/' + pkg + '.pkg -i /tmp/Info_plist'
+            cmd = '/Developer/Tools/packagemaker -build -f dstroot/' + pkg + '/ -p dstroot/Panda3D/Panda3D.mpkg/Contents/Packages/' + pkg + '.pkg -i /tmp/Info_plist'
         else:
             exit("PackageMaker could not be found!")
-        if os.path.isdir("dstroot/scripts/" + pkg):
-            cmd += ' --scripts dstroot/scripts/' + pkg
         oscmd(cmd)
 
     if os.path.isfile("/tmp/Info_plist"):
