@@ -1085,7 +1085,10 @@ cg_parameter_type(CGparameter p) {
   case CG_SAMPLER2D:   return Shader::SAT_sampler2d;
   case CG_SAMPLER3D:   return Shader::SAT_sampler3d;
   case CG_SAMPLERCUBE: return Shader::SAT_samplercube;
-  default:           return Shader::SAT_unknown;
+  // CG_SAMPLER1DSHADOW and CG_SAMPLER2DSHADOW
+  case 1313:           return Shader::SAT_sampler1d;
+  case 1314:           return Shader::SAT_sampler2d;
+  default:             return Shader::SAT_unknown;
   }
 }
 
