@@ -101,8 +101,11 @@ def usage(problem):
     print "  --runtime         (build a runtime build instead of an SDK build)"
     print "  --installer       (build an installer)"
     print "  --optimize X      (optimization level can be 1,2,3,4)"
-    print "  --version         (set the panda version number)"
-    print "  --lzma            (use lzma compression when building installer)"
+    print "  --version X       (set the panda version number)"
+    print "  --lzma            (use lzma compression when building Windows installer)"
+    print "  --distributor X   (short string identifying the distributor of the build)"
+    print "  --outputdir X     (use the specified directory instead of 'built')"
+    print "  --host URL        (set the host url (runtime build only))"
     print "  --threads N       (use the multithreaded build system. see manual)"
     print "  --osxtarget N     (the OSX version number to build for (OSX only))"
     print "  --override \"O=V\"  (override dtool_config/prc option value)"
@@ -543,7 +546,7 @@ if (COMPILER=="LINUX"):
         SmartPkgEnable("WX",    tool = "wx-config")
     if (RUNTIME):
         if (sys.platform.startswith("freebsd")):
-            SmartPkgEnable("NPAPI", "mozilla-plugin", (), ("xulrunner", "nspr*/prtypes.h", "nspr*"))
+            SmartPkgEnable("NPAPI", "mozilla-plugin", (), ("libxul/stable", "libxul/stable/npapi.h", "nspr/prtypes.h", "nspr"))
         else:
             SmartPkgEnable("NPAPI", "mozilla-plugin", (), ("xulrunner-*/stable", "xulrunner-*/stable/npapi.h", "nspr*/prtypes.h", "nspr*"))
     if (sys.platform != "darwin"):
@@ -5090,9 +5093,9 @@ def MakeInstallerLinux():
 
     # Invoke installpanda.py to install it into a temporary dir
     if RUNTIME:
-        InstallRuntime(destdir = "targetroot", outputdir = GetOutputDir())
+        InstallRuntime(destdir = "targetroot", prefix = "/usr", outputdir = GetOutputDir())
     else:
-        InstallPanda(destdir = "targetroot", outputdir = GetOutputDir())
+        InstallPanda(destdir = "targetroot", prefix = "/usr", outputdir = GetOutputDir())
         oscmd("chmod -R 755 targetroot/usr/share/panda3d")
 
     if (os.path.exists("/usr/bin/rpmbuild") and not os.path.exists("/usr/bin/dpkg-deb")):
@@ -5415,15 +5418,24 @@ def MakeInstallerFreeBSD():
     else:
         descr_txt = INSTALLER_PKG_DESCR_FILE[1:]
     descr_txt = descr_txt.replace("VERSION", VERSION)
-    plist_txt = "@name panda3d-%s\n" % VERSION
+    if (RUNTIME):
+        plist_txt = "@name panda3d-runtime-%s\n" % VERSION
+    else:
+        plist_txt = "@name panda3d-%s\n" % VERSION
     for root, dirs, files in os.walk("targetroot/usr/local/", True):
         for f in files:
             plist_txt += os.path.join(root, f)[21:] + "\n"
-    for remdir in ("lib/panda3d", "share/panda3d", "include/panda3d"):
-        for root, dirs, files in os.walk("targetroot/usr/local/" + remdir, False):
-            for d in dirs:
-                plist_txt += "@dirrm %s\n" % os.path.join(root, d)[21:]
-        plist_txt += "@dirrm %s\n" % remdir
+
+    if (not RUNTIME):
+        plist_txt += "@exec /sbin/ldconfig -m /usr/local/lib\n"
+        plist_txt += "@unexec /sbin/ldconfig -R\n"
+
+        for remdir in ("lib/panda3d", "share/panda3d", "include/panda3d"):
+            for root, dirs, files in os.walk("targetroot/usr/local/" + remdir, False):
+                for d in dirs:
+                    plist_txt += "@dirrm %s\n" % os.path.join(root, d)[21:]
+            plist_txt += "@dirrm %s\n" % remdir
+
     WriteFile("pkg-plist", plist_txt)
     WriteFile("pkg-descr", descr_txt)
     cmd = "pkg_create"
