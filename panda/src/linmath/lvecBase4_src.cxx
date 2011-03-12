@@ -15,7 +15,7 @@
 TypeHandle FLOATNAME(LVecBase4)::_type_handle;
 
 #ifdef HAVE_PYTHON
-#include "py_panda.h"  
+#include "py_panda.h"
 
 #ifndef CPPPARSER
 IMPORT_THIS struct Dtool_PyTypedObject FLOATNAME(Dtool_LVecBase2);
@@ -53,7 +53,7 @@ __reduce__(PyObject *self) const {
     return NULL;
   }
 
-  PyObject *result = Py_BuildValue("(O(ffff))", this_class, 
+  PyObject *result = Py_BuildValue("(O(ffff))", this_class,
                                    (*this)[0], (*this)[1], (*this)[2], (*this)[3]);
   Py_DECREF(this_class);
   return result;
@@ -66,14 +66,12 @@ __reduce__(PyObject *self) const {
 ////////////////////////////////////////////////////////////////////
 PyObject *FLOATNAME(LVecBase4)::
 __getattr__(const string &attr_name) const {
-#ifndef NDEBUG
   // Validate the attribute name.
   for (string::const_iterator it = attr_name.begin(); it < attr_name.end(); it++) {
     if (*it < 'w' || *it > 'z') {
       return NULL;
     }
   }
-#endif
 
   if (attr_name.size() == 1) {
     if (attr_name[0] == 'w') {
@@ -129,14 +127,14 @@ __setattr__(PyObject *self, const string &attr_name, PyObject *assign) {
     // Whoosh.
     PyObject* fast = PySequence_Fast(assign, "");
     nassertr(fast != NULL, -1);
-    
+
     // Let's be strict about size mismatches, to prevent user error.
     if (PySequence_Fast_GET_SIZE(fast) != attr_name.size()) {
       PyErr_SetString(PyExc_ValueError, "length mismatch");
       Py_DECREF(fast);
       return -1;
     }
-    
+
     // Get a pointer to the items, iterate over it and
     // perform our magic assignment.  Fast fast.  Oh yeah.
     PyObject** items = PySequence_Fast_ITEMS(fast);
@@ -178,7 +176,7 @@ __setattr__(PyObject *self, const string &attr_name, PyObject *assign) {
     // and assign the floating-point value to every one of them.
     for (string::const_iterator it = attr_name.begin(); it < attr_name.end(); it++) {
       _v.data[((*it) == 'w') ? 3 : (*it) - 'x'] = value;
-    } 
+    }
   }
 
   return 0;

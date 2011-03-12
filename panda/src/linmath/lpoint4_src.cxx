@@ -15,7 +15,7 @@
 TypeHandle FLOATNAME(LPoint4)::_type_handle;
 
 #ifdef HAVE_PYTHON
-#include "py_panda.h"  
+#include "py_panda.h"
 
 #ifndef CPPPARSER
 IMPORT_THIS struct Dtool_PyTypedObject FLOATNAME(Dtool_LPoint2);
@@ -32,14 +32,12 @@ IMPORT_THIS struct Dtool_PyTypedObject FLOATNAME(Dtool_LPoint4);
 ////////////////////////////////////////////////////////////////////
 PyObject *FLOATNAME(LPoint4)::
 __getattr__(const string &attr_name) const {
-#ifndef NDEBUG
   // Validate the attribute name.
   for (string::const_iterator it = attr_name.begin(); it < attr_name.end(); it++) {
     if (*it < 'w' || *it > 'z') {
       return NULL;
     }
   }
-#endif
 
   if (attr_name.size() == 1) {
     if (attr_name[0] == 'w') {
