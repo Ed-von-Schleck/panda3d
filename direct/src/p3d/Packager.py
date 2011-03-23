@@ -2041,6 +2041,14 @@ class Packager:
         else:
             self.executableExtensions = [ 'so' ]
 
+        # Files that represent a Windows "manifest" file.  These files
+        # must be explicitly extracted to disk so the OS can find
+        # them.
+        if self.platform.startswith('win'):
+            self.manifestExtensions = [ 'manifest' ]
+        else:
+            self.manifestExtensions = [ ]
+
         # Extensions that are automatically remapped by convention.
         self.remapExtensions = {}
         if self.platform.startswith('win'):
@@ -2059,7 +2067,7 @@ class Packager:
                 }
 
         # Files that should be extracted to disk.
-        self.extractExtensions = self.executableExtensions[:]
+        self.extractExtensions = self.executableExtensions[:] + self.manifestExtensions[:]
 
         # Files that indicate a platform dependency.
         self.platformSpecificExtensions = self.executableExtensions[:]
@@ -2877,7 +2885,7 @@ class Packager:
 
         self.currentPackage.signParams.append((certificate, chain, pkey, password))
 
-    def do_setupPanda3D(self):
+    def do_setupPanda3D(self, p3dpythonName=None, p3dpythonwName=None):
         """ A special convenience command that adds the minimum
         startup modules for a panda3d package, intended for developers
         producing their own custom panda3d for download.  Should be
@@ -2942,9 +2950,20 @@ class Packager:
 
         else:
             # Anywhere else, we just ship the executable file p3dpython.exe.
-            self.do_file('p3dpython.exe')
+            if p3dpythonName is None:
+                p3dpythonName = 'p3dpython'
+            else:
+                self.do_config(p3dpython_name=p3dpythonName)
+            self.do_file('p3dpython.exe', newName=p3dpythonName+'.exe')
+
+            # The "Windows" executable appends a 'w' to whatever name is used
+            # above, unless an override name is explicitly specified.
             if self.platform.startswith('win'):
-                self.do_file('p3dpythonw.exe')
+                if p3dpythonwName is None:
+                    p3dpythonwName = p3dpythonName+'w'
+                else:
+                    self.do_config(p3dpythonw_name=p3dpythonwName)
+                self.do_file('p3dpythonw.exe', newName=p3dpythonwName+'.exe')
                 
         self.do_file('libp3dpython.dll')
 
