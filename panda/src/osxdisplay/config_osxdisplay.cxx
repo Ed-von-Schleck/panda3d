@@ -38,7 +38,7 @@ ConfigVariableBool show_resize_box
           "OS.  Set this variable false to allow this control to be hidden."));
 
 ConfigVariableBool osx_support_gl_buffer
-("osx-support-gl-buffer", false,
+("osx-support-gl-buffer", true,
  PRC_DESC("Set this true to support use of GLBuffers on OSX.  This is false by "
           "default because there appear to be some prevalent driver issues with GLBuffers "
           "that cause program crashes.  Offscreen buffers can still be created as "
