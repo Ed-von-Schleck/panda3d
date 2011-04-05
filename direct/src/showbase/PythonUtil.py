@@ -4379,6 +4379,9 @@ class PriorityCallbacks:
         item = self._token2item[token]
         self._callbacks.pop(bisect.bisect_left(self._callbacks, item))
 
+    def __contains__(self, token):
+        return token in self._token2item
+
     def __call__(self):
         callbacks = self._callbacks[:]
         for priority, callback in callbacks:
