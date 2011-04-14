@@ -695,6 +695,20 @@
 #define SDL_LIBS
 #defer HAVE_SDL $[libtest $[SDL_LPATH],$[SDL_LIBS]]
 
+// Is CEGUI installed, and where?
+// TODO: add CEGUIPython
+#define CEGUI_IPATH
+#define CEGUI_LPATH
+#define CEGUI_LIBS CEGUIBase CEGUISILLYImageCodec
+#defer HAVE_CEGUI $[libtest $[CEGUI_LPATH],$[CEGUI_LIBS]]
+
+// Is CEGUI installed, and where?
+// TODO: add CEGUIPython
+#define CEGUI_IPATH
+#define CEGUI_LPATH
+#define CEGUI_LIBS CEGUIBase CEGUISILLYImageCodec
+#defer HAVE_CEGUI $[libtest $[CEGUI_LPATH],$[CEGUI_LIBS]]
+
 // X11 may need to be linked against for tinydisplay, but probably
 // only on a Linux platform.
 #define X11_IPATH

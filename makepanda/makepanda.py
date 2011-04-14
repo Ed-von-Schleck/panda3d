@@ -71,7 +71,8 @@ PkgListSet(["PYTHON", "DIRECT",                        # Python support
   "GTK2", "WX", "FLTK",                                # Toolkit support
   "OSMESA", "X11", "XF86DGA", "XRANDR", "XCURSOR",     # Unix platform support
   "PANDATOOL", "PVIEW", "DEPLOYTOOLS",                 # Toolchain
-  "CONTRIB"                                            # Experimental
+  "CONTRIB",                                           # Experimental
+  "CEGUI"                                              # GUI System
 ])
 
 CheckPandaSourceTree()
@@ -539,6 +540,9 @@ if (COMPILER=="LINUX"):
     #         Name         pkg-config   libs, include(dir)s
     if (not RUNTIME):
         SmartPkgEnable("ARTOOLKIT", "",          ("AR"), "AR/ar.h")
+        SmartPkgEnable("CEGUI", libs=("CEGUIBase"),
+                       incs=('CEGUI', 'CEGUI/CEGUIBase.h')
+                       )
         SmartPkgEnable("FCOLLADA",  "",          ChooseLib(*fcollada_libs), ("FCollada", "FCollada.h"))
         SmartPkgEnable("FFMPEG",    ffmpeg_libs, ffmpeg_libs, ffmpeg_libs)
         SmartPkgEnable("SWSCALE",   "libswscale", "libswscale", ("libswscale", "libswscale/swscale.h"), target_pkg = "FFMPEG")
@@ -2013,7 +2017,9 @@ CopyAllHeaders('panda/src/recorder')
 CopyAllHeaders('panda/src/vrpn')
 CopyAllHeaders('panda/src/wgldisplay')
 CopyAllHeaders('panda/src/ode')
+CopyAllHeaders('panda/src/cegui')
 CopyAllHeaders('panda/metalibs/pandaode')
+CopyAllHeaders('panda/metalibs/pandacegui')
 CopyAllHeaders('panda/src/physics')
 CopyAllHeaders('panda/src/particlesystem')
 CopyAllHeaders('panda/src/dxml')
@@ -3431,6 +3437,49 @@ if (PkgSkip("ODE")==0 and not RUNTIME):
   TargetAdd('libpandaode_igate.obj', input='libpandaode.in', opts=["DEPENDENCYONLY"])
 
 #
+# DIRECTORY: panda/src/cegui/
+#
+if (PkgSkip("CEGUI")==0 and not RUNTIME):
+  OPTS=['DIR:panda/src/cegui', 'BUILDING:PANDACEGUI', 'CEGUI']
+  TargetAdd('cegui_renderer.obj', opts=OPTS,
+            input = ['ceguiPanda3dRenderer.cxx',])
+  TargetAdd('cegui_texture.obj', opts=OPTS,
+            input = ['ceguiPanda3dTexture.cxx'])
+  TargetAdd('cegui_geometry_buffer.obj', opts=OPTS,
+            input = ['ceguiPanda3dGeometryBuffer.cxx'])
+  TargetAdd('cegui_render_target.obj', opts=OPTS,
+            input = ['ceguiPanda3dRenderTarget.cxx'])
+  TargetAdd('cegui_texture_target.obj', opts=OPTS,
+            input = ['ceguiPanda3dTextureTarget.cxx'])
+  TargetAdd('ceguiInput.obj', opts=OPTS, input=['ceguiInputHandler.cxx',])
+  TargetAdd('ceguiSupport.obj', opts=OPTS, input=['ceguiSupport.cxx'])
+  TargetAdd('cegui_config_cegui.obj', opts=OPTS, input=['config_cegui.cxx'])
+  TargetAdd('cegui.obj', opts=OPTS, input=['cegui.cxx'])
+
+
+  # Uncomment to build a sample C++ app.
+  TargetAdd('cegui.exe', opts=OPTS, input=['cegui.obj',
+                                           'cegui_renderer.obj',
+                                           'cegui_texture.obj',
+                                           'cegui_geometry_buffer.obj',
+                                           'cegui_render_target.obj',
+                                           'cegui_texture_target.obj',
+                                           'ceguiSupport.obj',
+                                           'ceguiInput.obj',
+                                           'libp3framework.dll',
+                                           ])
+  TargetAdd('cegui.exe', input=COMMON_PANDA_LIBS_PYSTUB)
+
+  IGATEFILES=['ceguiSupport.h']
+  TargetAdd('libpandacegui.in', opts=OPTS, input=IGATEFILES)
+  TargetAdd('libpandacegui.in',
+            opts=['IMOD:pandacegui',
+                  'ILIB:libpandacegui',
+                  'SRCDIR:panda/src/cegui'])
+  TargetAdd('libpandacegui_igate.obj', input='libpandacegui.in',
+            opts=["DEPENDENCYONLY"])
+
+#
 # DIRECTORY: panda/metalibs/pandaode/
 #
 if (PkgSkip("ODE")==0 and not RUNTIME):
@@ -3449,6 +3498,32 @@ if (PkgSkip("ODE")==0 and not RUNTIME):
   TargetAdd('libpandaode.dll', input='libpandaode_igate.obj')
   TargetAdd('libpandaode.dll', input=COMMON_PANDA_LIBS)
   TargetAdd('libpandaode.dll', opts=['WINUSER', 'ODE'])
+
+#
+# DIRECTORY: panda/metalibs/pandacegui/
+#
+if (PkgSkip("CEGUI")==0 and not RUNTIME):
+  OPTS=['DIR:panda/metalibs/pandacegui', 'BUILDING:PANDACEGUI', 'CEGUI']
+  TargetAdd('pandacegui_pandacegui.obj', opts=OPTS, input='pandacegui.cxx')
+
+  TargetAdd('libpandacegui_module.obj', input='libpandacegui.in')
+  TargetAdd('libpandacegui_module.obj', opts=OPTS)
+  TargetAdd('libpandacegui_module.obj', opts=['IMOD:pandacegui', 'ILIB:libpandacegui'])
+
+  TargetAdd('libpandacegui.dll', input='pandacegui_pandacegui.obj')
+  TargetAdd('libpandacegui.dll', input='libpandacegui_module.obj')
+  TargetAdd('libpandacegui.dll', input=['cegui_renderer.obj',
+                                        'cegui_texture.obj',
+                                        'cegui_geometry_buffer.obj',
+                                        'cegui_render_target.obj',
+                                        'cegui_texture_target.obj',
+                                        'ceguiSupport.obj',
+                                        'ceguiInput.obj',
+                                        'cegui_config_cegui.obj',
+                                        ])
+  TargetAdd('libpandacegui.dll', input='libpandacegui_igate.obj')
+  TargetAdd('libpandacegui.dll', input=COMMON_PANDA_LIBS)
+  TargetAdd('libpandacegui.dll', opts=['WINUSER', 'CEGUI'])
 
 #
 # DIRECTORY: panda/src/physx/
@@ -4845,6 +4920,8 @@ if (PkgSkip("PYTHON")==0 and not RUNTIME):
   TargetAdd('PandaModules.py', input='libpandaegg.dll')
   if (PkgSkip("AWESOMIUM")==0):
     TargetAdd('PandaModules.py', input='libp3awesomium.dll')
+  if (PkgSkip("CEGUI")==0):
+    TargetAdd('PandaModules.py', input='libpandacegui.dll')
   if (PkgSkip("ODE")==0):
     TargetAdd('PandaModules.py', input='libpandaode.dll')
 

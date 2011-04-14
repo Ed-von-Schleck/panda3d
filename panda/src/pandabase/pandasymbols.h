@@ -96,6 +96,14 @@
   #define EXPTP_PANDAAWESOMIUM extern
 #endif
 
+#ifdef BUILDING_PANDACEGUI
+  #define EXPCL_PANDACEGUI __declspec(dllexport)
+  #define EXPTP_PANDACEGUI
+#else
+  #define EXPCL_PANDACEGUI __declspec(dllimport)
+  #define EXPTP_PANDACEGUI extern
+#endif
+
 #ifdef BUILDING_PANDACR
   #define EXPCL_PANDACR __declspec(dllexport)
   #define EXPTP_PANDACR
@@ -276,6 +284,9 @@
 
 #define EXPCL_PANDAAWESOMIUM
 #define EXPTP_PANDAAWESOMIUM
+
+#define EXPCL_PANDACEGUI
+#define EXPTP_PANDACEGUI
 
 #define EXPCL_PANDACR
 #define EXPTP_PANDACR
