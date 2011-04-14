@@ -16,7 +16,6 @@
 
 #include "ceguiPanda3dGeometryBuffer.h"
 #include "ceguiPanda3dRenderer.h"
-#include "CEGUIRenderQueue.h"
 
 #include <iostream>
 

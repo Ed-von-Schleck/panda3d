@@ -16,12 +16,11 @@
 #define CONFIG_CEGUI_H
 
 #include "pandabase.h"
-/* #include "notifyCategoryProxy.h" */
+#include "notifyCategoryProxy.h"
 
 #include "dconfig.h"
 
-/* This is needed to enable cegui_cat. */
-/* NotifyCategoryDecl(cegui, EXPCL_PANDACEGUI, EXPTP_PANDACEGUI); */
+//NotifyCategoryDecl(cegui, EXPCL_PANDACEGUI, EXPTP_PANDACEGUI);
 
 extern EXPCL_PANDACEGUI void init_libcegui();
 

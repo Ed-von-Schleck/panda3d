@@ -15,8 +15,7 @@
 #ifndef CEGUIPANDA3DRENDERTARGET_H
 #define CEGUIPANDA3DRENDERTARGET_H
 
-#include "CEGUIRenderTarget.h"
-#include "CEGUIRect.h"
+#include "cegui_includes.h"
 
 // Start of CEGUI namespace section
 namespace CEGUI {

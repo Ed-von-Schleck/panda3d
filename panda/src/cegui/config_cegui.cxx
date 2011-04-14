@@ -17,8 +17,7 @@
 #include "ceguiInputHandler.h"
 
 Configure(config_cegui);
-// NotifyCategoryDef(cegui, "");
-
+//NotifyCategoryDef(cegui, "");
 
 ConfigureFn(config_cegui) {
   init_libcegui();

@@ -18,8 +18,7 @@
 #include "ceguiPanda3dRenderTarget.h"
 #include "ceguiPanda3dTexture.h"
 
-#include "CEGUIRect.h"
-#include "CEGUITextureTarget.h"
+#include "cegui_includes.h"
 
 // Start of CEGUI namespace section
 namespace CEGUI {

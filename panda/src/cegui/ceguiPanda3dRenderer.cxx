@@ -17,9 +17,6 @@
 #include "ceguiPanda3dTextureTarget.h"
 #include "ceguiPanda3dGeometryBuffer.h"
 #include "ceguiPanda3dRenderTarget.h"
-#include "CEGUITextureTarget.h"
-#include "CEGUIRenderingRoot.h"
-#include "CEGUIExceptions.h"
 
 #include "nodePath.h"
 #include "planeNode.h"

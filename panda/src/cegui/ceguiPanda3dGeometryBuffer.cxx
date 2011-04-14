@@ -14,8 +14,6 @@
 
 #include "ceguiPanda3dGeometryBuffer.h"
 #include "ceguiPanda3dTexture.h"
-#include "CEGUIRenderEffect.h"
-#include "CEGUIVertex.h"
 
 #include <iostream>
 

@@ -435,6 +435,20 @@ if (COMPILER=="MSVC"):
     if (PkgSkip("FFTW")==0):     LibName("FFTW",     GetThirdpartyDir() + "fftw/lib/rfftw.lib")
     if (PkgSkip("FFTW")==0):     LibName("FFTW",     GetThirdpartyDir() + "fftw/lib/fftw.lib")
     if (PkgSkip("ARTOOLKIT")==0):LibName("ARTOOLKIT",GetThirdpartyDir() + "artoolkit/lib/libAR.lib")
+    if (PkgSkip("CEGUI")==0):
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIBase.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUICoronaImageCodec.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIDevILImageCodec.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIExpatParser.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIFalagardWRBase.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIFreeImageImageCodec.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUILuaScriptModule.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUISILLYImageCodec.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUISTBImageCodec.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUITGAImageCodec.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUITinyXMLParser.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIXercesParser.lib")
+        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/tolua++.lib")
     if (PkgSkip("ODE")==0):      LibName("ODE",      GetThirdpartyDir() + "ode/lib/ode.lib")
     if (PkgSkip("FCOLLADA")==0): LibName("FCOLLADA", GetThirdpartyDir() + "fcollada/lib/FCollada.lib")
     if (PkgSkip("SQUISH")==0):   LibName("SQUISH",   GetThirdpartyDir() + "squish/lib/squish.lib")
@@ -3457,7 +3471,7 @@ if (PkgSkip("CEGUI")==0 and not RUNTIME):
   TargetAdd('cegui.obj', opts=OPTS, input=['cegui.cxx'])
 
 
-  # Uncomment to build a sample C++ app.
+# Uncomment to build a sample C++ app.
   TargetAdd('cegui.exe', opts=OPTS, input=['cegui.obj',
                                            'cegui_renderer.obj',
                                            'cegui_texture.obj',

@@ -17,7 +17,8 @@
 
 #include "config_cegui.h"
 #include "ceguiInputHandler.h"
-#include <CEGUISystem.h>
+
+#include "cegui_includes.h"
 
 TypeHandle CeguiInputHandler::_type_handle;
 

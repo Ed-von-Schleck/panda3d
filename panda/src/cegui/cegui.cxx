@@ -12,8 +12,10 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-// This is an example/test file that uses CEGUI from C++.
+#define CEGUI_TEST
+#ifdef CEGUI_TEST
 
+// This is an example/test file that uses CEGUI from C++.
 
 #include "pandaFramework.h"
 #include "pandaSystem.h"
@@ -21,9 +23,7 @@
 #include "ceguiInputHandler.h"
 #include "ceguiSupport.h"
 
-#include <CEGUI/CEGUI.h>
-#include <CEGUI/CEGUIWindowManager.h>
-#include <CEGUI/CEGUIWindow.h>
+#include "cegui_includes.h"
 
 void create_gui() {
   using namespace CEGUI;
@@ -32,7 +32,7 @@ void create_gui() {
   root->setMousePassThroughEnabled(true);
   System::getSingleton().setGUISheet(root);
   Window* wnd = WindowManager::getSingleton().
-      loadWindowLayout("TabControlDemo.layout");
+      loadWindowLayout("Demo8.layout");
   root->addChildWindow(wnd);
 }
 
@@ -55,10 +55,12 @@ int main(int argc, char *argv[]) {
     window->enable_keyboard(); //enable keyboard detection
     window->setup_trackball(); //enable default camera movement
 
+	/*
     // load the box model
     NodePath box = window->load_model(framework.get_models(),
                        "/home/nik/Code/panda3d/project/models/cube.egg");
     box.reparent_to(window->get_render());
+	*/
     // engine.set_bin("fixed", 0);
 
     GraphicsWindow *gw = window->get_graphics_window();
@@ -66,6 +68,7 @@ int main(int argc, char *argv[]) {
     CeguiSupport::init(gw,
                        window->get_panda_framework()->get_mouse(gw),
                        window->get_render_2d(),
+                       //"C:/Users/Keith/Downloads/programming/CEGUI-0.7.5/datafiles/");
                        "/usr/local/share/CEGUI/");
     create_gui();
 
@@ -79,3 +82,5 @@ int main(int argc, char *argv[]) {
   framework.close_framework();
   return (0);
 }
+
+#endif // CEGUI_TEST

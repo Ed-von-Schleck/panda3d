@@ -15,14 +15,9 @@
 #ifndef CEGUIPANDA3DRENDERER_H
 #define CEGUIPANDA3DRENDERER_H
 
-#include "CEGUIRect.h"
-#include "CEGUIRenderer.h"
-#include "CEGUISize.h"
-#include "CEGUIVector.h"
-#include <vector>
-
 #include "nodePath.h"
 
+#include "cegui_includes.h"
 
 class NodePath;
 
@@ -82,25 +77,27 @@ protected:
   RenderTarget* d_defaultTarget;
   //! The default rendering root object
   RenderingRoot* d_defaultRoot;
+
   //! container type used to hold TextureTargets we create.
-  typedef std::vector<TextureTarget*> TextureTargetList;
+  typedef pvector<TextureTarget*> TextureTargetList;
   //! Container used to track texture targets.
   TextureTargetList d_textureTargets;
   //! container type used to hold GeometryBuffers we create.
-  typedef std::vector<Panda3DGeometryBuffer*> GeometryBufferList;
+  typedef pvector<Panda3DGeometryBuffer*> GeometryBufferList;
   //! Container used to track geometry buffers.
   GeometryBufferList d_geometryBuffers;
   //! container type used to hold Textures we create.
-  typedef std::vector<Panda3DTexture*> TextureList;
+  typedef pvector<Panda3DTexture*> TextureList;
   //! Container used to track textures.
   TextureList d_textures;
   // True if we just created a TextureTarget, and are expecting
   // a request for a GeometryBuffer. The buffer will be linked
   // to the TextureTarget. See d_target_buffer_map.
   bool d_waiting_for_geom_buffer;
-  typedef std::map<TextureTarget*, Panda3DGeometryBuffer*> BufferMap;
+  typedef pmap<TextureTarget*, Panda3DGeometryBuffer*> BufferMap;
   // Maps a TextureTarget to a GeometryBuffer (Hack alert).
   BufferMap d_target_buffer_map;
+
   // When a TextureTarget is activated, we set this to the buffer that
   // backs this target.
   Panda3DGeometryBuffer* d_current_parent_buffer;

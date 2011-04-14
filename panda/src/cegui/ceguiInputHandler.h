@@ -15,15 +15,13 @@
 #ifndef CEGUIINPUTHANDLER_H
 #define CEGUIINPUTHANDLER_H
 
-#include <map>
-
-#include <CEGUIInputEvent.h>
-
 #include "dataNodeTransmit.h"
 #include "keyboardButton.h"
 #include "mouseButton.h"
 #include "dataNode.h"
 #include "dataGraphTraverser.h"
+
+#include "CEGUIInputEvent.h"
 
 // Avoid collision with Panda's MouseButton
 typedef ::MouseButton PMouseButton;
@@ -61,7 +59,7 @@ private:
   bool check_mouse_scroll(const ButtonHandle& handle);
   void inject_time_pulse(void);
 
-  typedef map<ButtonHandle, CScan> KeyMap;
+  typedef pmap<ButtonHandle, CScan> KeyMap;
   KeyMap _keymap;
 
   // Inputs and outputs from MouseAndKeyboard

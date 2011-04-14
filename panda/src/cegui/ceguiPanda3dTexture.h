@@ -19,7 +19,7 @@
 #include "texture.h"
 typedef Texture P3dTexture;
 
-#include "CEGUITexture.h"
+#include "cegui_includes.h"
 
 #include "ceguiPanda3dRenderer.h"
 

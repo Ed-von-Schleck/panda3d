@@ -15,16 +15,13 @@
 #ifndef CEGUIPANDA3DGEOMETRYBUFFER_H
 #define CEGUIPANDA3DGEOMETRYBUFFER_H
 
-#include "CEGUIBase.h"
-#include "CEGUIGeometryBuffer.h"
-#include "CEGUIRect.h"
-
 #include "nodePath.h"
 #include "geomVertexData.h"
 #include "geomVertexFormat.h"
 #include "geomVertexWriter.h"
 #include "geomTristrips.h"
 
+#include "cegui_includes.h"
 
 namespace CEGUI {
 

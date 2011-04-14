@@ -20,7 +20,6 @@
 #include "graphicsWindow.h"
 #include "asyncTask.h"
 
-
 namespace CEGUI {
   class Panda3DRenderer;
 }

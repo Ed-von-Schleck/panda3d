@@ -15,17 +15,7 @@
 #include "nodePathCollection.h"
 #include "windowProperties.h"
 
-#include <CEGUI/CEGUISystem.h>
-#include <CEGUI/CEGUIDefaultResourceProvider.h>
-#include <CEGUI/CEGUIFactoryModule.h>
-#include <CEGUI/CEGUIFontManager.h>
-#include <CEGUI/CEGUIImageset.h>
-#include <CEGUI/CEGUIImagesetManager.h>
-#include <CEGUI/CEGUIScheme.h>
-#include <CEGUI/CEGUISchemeManager.h>
-#include <CEGUI/CEGUIWindowManager.h>
-#include <CEGUI/elements/CEGUIFrameWindow.h>
-#include <CEGUI/falagard/CEGUIFalWidgetLookManager.h>
+#include "cegui_includes.h"
 
 #include "ceguiSupport.h"
 #include "ceguiPanda3dRenderer.h"

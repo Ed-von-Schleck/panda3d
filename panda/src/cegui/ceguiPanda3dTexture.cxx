@@ -14,10 +14,6 @@
 
 #include "ceguiPanda3dTexture.h"
 
-#include "CEGUIExceptions.h"
-#include "CEGUISystem.h"
-#include "CEGUIImageCodec.h"
-
 // Start of CEGUI namespace section
 namespace CEGUI {
 
