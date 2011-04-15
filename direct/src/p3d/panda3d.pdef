@@ -73,6 +73,7 @@ class panda3d(package):
     excludeModule('libpandaskel')
     excludeModule('libpandaphysx')
     excludeModule('libpandaai')
+    excludeModule('libpandacegui')
 
     # Exclude these GUI toolkits; they're big, and many applications don't
     # use them.  We define them as separate, optional packages, below.
@@ -263,6 +264,17 @@ class ode(package):
     require('panda3d')
 
     file('libpandaode.dll', required = True)
+
+class cegui(package):
+    # This package contains the ccegui for the cegui integration.
+    # As not every application uses the cegui layers, and to cut down
+    # the download size, it is provided as separate package.
+
+    config(display_name = "Panda3D Crazy Eddie's GUI integration")
+    require('panda3d')
+
+    file('libpandacegui.dll', required = True)
+    file('PyCEGUI.pyd')
 
 class physx(package):
     # This package contains the code for the NVIDIA PhysX integration.

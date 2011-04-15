@@ -14,6 +14,7 @@ panda3d_modules = {
     "ai"          : "libpandaai",
     "awesomium"   : "libp3awesomium",
     "speedtree"   : "libpandaspeedtree",
+    "cegui"       :("libpandacegui", "PyCEGUI"),
 }
 
 class panda3d_import_manager:

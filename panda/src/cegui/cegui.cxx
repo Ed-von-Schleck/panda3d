@@ -12,7 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#define CEGUI_TEST
+//#define CEGUI_TEST
 #ifdef CEGUI_TEST
 
 // This is an example/test file that uses CEGUI from C++.

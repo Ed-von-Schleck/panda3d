@@ -437,18 +437,16 @@ if (COMPILER=="MSVC"):
     if (PkgSkip("ARTOOLKIT")==0):LibName("ARTOOLKIT",GetThirdpartyDir() + "artoolkit/lib/libAR.lib")
     if (PkgSkip("CEGUI")==0):
         LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIBase.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUICoronaImageCodec.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIDevILImageCodec.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIExpatParser.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIFalagardWRBase.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIFreeImageImageCodec.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUILuaScriptModule.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUISILLYImageCodec.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUISTBImageCodec.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUITGAImageCodec.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUITinyXMLParser.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIXercesParser.lib")
-        LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/tolua++.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUICoronaImageCodec.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIDevILImageCodec.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIExpatParser.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIFalagardWRBase.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIFreeImageImageCodec.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUISILLYImageCodec.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUISTBImageCodec.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUITGAImageCodec.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUITinyXMLParser.lib")
+        #LibName("CEGUI",     GetThirdpartyDir() + "cegui/lib/CEGUIXercesParser.lib")
     if (PkgSkip("ODE")==0):      LibName("ODE",      GetThirdpartyDir() + "ode/lib/ode.lib")
     if (PkgSkip("FCOLLADA")==0): LibName("FCOLLADA", GetThirdpartyDir() + "fcollada/lib/FCollada.lib")
     if (PkgSkip("SQUISH")==0):   LibName("SQUISH",   GetThirdpartyDir() + "squish/lib/squish.lib")
@@ -3472,17 +3470,17 @@ if (PkgSkip("CEGUI")==0 and not RUNTIME):
 
 
 # Uncomment to build a sample C++ app.
-  TargetAdd('cegui.exe', opts=OPTS, input=['cegui.obj',
-                                           'cegui_renderer.obj',
-                                           'cegui_texture.obj',
-                                           'cegui_geometry_buffer.obj',
-                                           'cegui_render_target.obj',
-                                           'cegui_texture_target.obj',
-                                           'ceguiSupport.obj',
-                                           'ceguiInput.obj',
-                                           'libp3framework.dll',
-                                           ])
-  TargetAdd('cegui.exe', input=COMMON_PANDA_LIBS_PYSTUB)
+#  TargetAdd('cegui.exe', opts=OPTS, input=['cegui.obj',
+#                                           'cegui_renderer.obj',
+#                                           'cegui_texture.obj',
+#                                           'cegui_geometry_buffer.obj',
+#                                           'cegui_render_target.obj',
+#                                           'cegui_texture_target.obj',
+#                                           'ceguiSupport.obj',
+#                                           'ceguiInput.obj',
+#                                           'libp3framework.dll',
+#                                           ])
+#  TargetAdd('cegui.exe', input=COMMON_PANDA_LIBS_PYSTUB)
 
   IGATEFILES=['ceguiSupport.h']
   TargetAdd('libpandacegui.in', opts=OPTS, input=IGATEFILES)
