@@ -5111,7 +5111,7 @@ def MakeInstallerLinux():
     PV = PYTHONV.replace("python", "")
     if (os.path.isdir("targetroot")): oscmd("chmod -R 755 targetroot")
     oscmd("rm -rf targetroot data.tar.gz control.tar.gz panda3d.spec")
-    oscmd("mkdir targetroot")
+    oscmd("mkdir --mode=0755 targetroot")
 
     # Invoke installpanda.py to install it into a temporary dir
     if RUNTIME:
@@ -5472,7 +5472,10 @@ def MakeInstallerFreeBSD():
             if (python_pkg):
                 cmd += " -P " + python_pkg
     cmd += " -p /usr/local -S \"%s\"" % os.path.abspath("targetroot")
-    cmd += " -c -\"The Panda3D free 3D engine SDK\""
+    if (RUNTIME):
+        cmd += " -c -\"The Panda3D free 3D engine runtime\" -o graphics/panda3d-runtime"
+    else:
+        cmd += " -c -\"The Panda3D free 3D engine SDK\" -o devel/panda3d"
     cmd += " -d pkg-descr -f pkg-plist panda3d-%s" % VERSION
     oscmd(cmd)
 
