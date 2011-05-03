@@ -16,8 +16,13 @@ class WebRequest(object):
 
     connection is an instance of libdirect.HttpRequest
     """
+    notify = directNotify.newCategory('WebRequest')
+
     def __init__(self,connection):
         self.connection = connection
+
+    def logRequest(self):
+        self.notify.info('[from %s]\n%s' % (self.connection.GetSourceAddress(), self.connection.GetRawRequest()))
 
     def getURI(self):
         return self.connection.GetRequestURL()
@@ -204,6 +209,7 @@ class WebRequestDispatcher(object):
         request = HttpRequest.HttpManagerGetARequest()
         while request is not None:
             wreq = WebRequest(request)
+            wreq.logRequest()
             if wreq.getRequestType() == "GET":
                 self.handleGET(wreq)
             else:
