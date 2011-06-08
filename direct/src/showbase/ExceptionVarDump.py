@@ -68,17 +68,28 @@ wantStackDumpLog = False
 wantStackDumpUpload = False
 variableDumpReasons = []
 dumpOnExceptionInit = False
+firstTime = True
 
 class _AttrNotFound:
     pass
 
 def _excepthookDumpVars(eType, eValue, tb):
+    global firstTime
     origTb = tb
-    excStrs = traceback.format_exception(eType, eValue, origTb)
-    s = 'printing traceback in case variable repr crashes the process...\n'
-    for excStr in excStrs:
-        s += excStr
-    notify.info(s)
+
+    if firstTime:
+        firstTime = False
+
+        excStrs = traceback.format_exception(eType, eValue, origTb)
+        s = 'printing traceback in case variable repr crashes the process...\n'
+        for excStr in excStrs:
+            s += excStr
+        notify.info(s)
+
+        # the Panda task system causes this handler to be called twice;
+        # don't dump the stack frames both times
+        return
+
     s = 'DUMPING STACK FRAME VARIABLES'
     #import pdb;pdb.set_trace()
     #foundRun = False
@@ -114,12 +125,11 @@ def _excepthookDumpVars(eType, eValue, tb):
         # show them in alphabetical order
         names = name2obj.keys()
         names.sort()
-        # push them in reverse order so they'll be popped in the correct order
-        names.reverse()
 
         traversedIds = set()
 
-        for name in names:
+        # push them in reverse order so they'll be popped in the correct order
+        for name in reversed(names):
             stateStack.push([name, name2obj[name], traversedIds])
 
         while len(stateStack) > 0:
@@ -155,7 +165,7 @@ def _excepthookDumpVars(eType, eValue, tb):
                     for attrName in attrNames:
                         obj = attrName2obj[attrName]
                         stateStack.push(['%s.%s' % (name, attrName), obj, ids])
-                
+
         tb = tb.tb_next
 
     if foundRun:

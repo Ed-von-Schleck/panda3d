@@ -33,7 +33,8 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'pandaBreak','pandaTrace','formatTimeCompact','DestructiveScratchPad',
 'deeptype','getProfileResultString','StdoutCapture','StdoutPassthrough',
 'Averager', 'getRepository', 'formatTimeExact', 'startSuperLog', 'endSuperLog',
-'typeName', 'safeTypeName', 'histogramDict', 'unescapeHtmlString', 'bpdb', ]
+'typeName', 'safeTypeName', 'histogramDict', 'unescapeHtmlString', 'bpdb',
+'IdSpoofer', ]
 
 import types
 import string
@@ -4434,6 +4435,46 @@ if __debug__:
     del pc
     del bItem
 
+class IdSpoofer:
+    class LocalAvId:
+        pass
+    def __init__(self):
+        from direct.showbase.DirectObject import DirectObject
+        self._spoof = False
+        self._realId = self.LocalAvId
+        self._do = DirectObject()
+        self._do.accept('shift', self._handleShiftDown)
+        self._do.accept('shift-up', self._handleShiftUp)
+
+    def destroy(self):
+        self._do.ignoreAll()
+        self._do = None
+
+    def _handleShiftDown(self):
+        self._spoof = True
+    def _handleShiftUp(self):
+        self._spoof = False
+
+    def _getRealId(self):
+        if self._realId is self.LocalAvId:
+            return localAvatar.doId
+        else:
+            return self._realId
+
+    def __call__(self):
+        if self._spoof:
+            msg = 'spoofing id'
+            if localAvatar.parentId != self._getRealId():
+                id = localAvatar.parentId
+            else:
+                id = 2000000
+        else:
+            msg = 'NOT spoofing id'
+            id = self._getRealId()
+        print '%s: %s' % (msg, id)
+        printStack()
+        return id
+
 import __builtin__
 __builtin__.Functor = Functor
 __builtin__.Stack = Stack
@@ -4498,3 +4539,4 @@ __builtin__.bpdb = bpdb
 __builtin__.u2ascii = u2ascii
 __builtin__.unicodeUtf8 = unicodeUtf8
 __builtin__.encodedUtf8 = encodedUtf8
+__builtin__.IdSpoofer = IdSpoofer

@@ -166,6 +166,8 @@ PUBLISHED:
   INLINE void set_time_warning(float time_warning);
   INLINE float get_time_warning() const;
 
+  INLINE void print_datagram(const Datagram &dg) {describe_message(nout, "RECV", dg);}
+
 private:
 #ifdef HAVE_PYTHON
 #ifdef WANT_NATIVE_NET
