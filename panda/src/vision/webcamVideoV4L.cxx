@@ -21,7 +21,6 @@
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/videodev.h>
 #include <linux/videodev2.h>
 
 TypeHandle WebcamVideoV4L::_type_handle;
@@ -33,7 +32,6 @@ TypeHandle WebcamVideoV4L::_type_handle;
 //               the global list _all_webcams.
 ////////////////////////////////////////////////////////////////////
 void find_all_webcams_v4l() {
-  struct video_capability cap;
   struct v4l2_capability cap2;
 
   vector_string devs;
@@ -110,14 +108,6 @@ void find_all_webcams_v4l() {
               }
             }
           }
-          continue;
-        }
-      }
-
-      // Check for Video4Linux capabilities
-      if (ioctl(fd, VIDIOCGCAP, &cap) != -1) {
-        if (cap.type & VID_TYPE_CAPTURE) {
-          //TODO: Video4Linux support
           continue;
         }
       }

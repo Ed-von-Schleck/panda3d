@@ -60,7 +60,7 @@ PkgListSet(["PYTHON", "DIRECT",                        # Python support
   "GL", "GLES", "GLES2"] + DXVERSIONS + ["TINYDISPLAY", "NVIDIACG", # 3D graphics
   "EGL",                                               # OpenGL (ES) integration
   "OPENAL", "FMODEX", "FFMPEG",                        # Multimedia
-  "ODE", "PHYSX",                                      # Physics
+  "ODE", "PHYSX", "BULLET",                            # Physics
   "SPEEDTREE",                                         # SpeedTree
   "ZLIB", "PNG", "JPEG", "TIFF", "SQUISH", "FREETYPE", # 2D Formats support
   ] + MAYAVERSIONS + MAXVERSIONS + [ "FCOLLADA",       # 3D Formats support
@@ -518,7 +518,14 @@ if (COMPILER=="MSVC"):
         LibName("SPEEDTREE", "%sSpeedTreeRenderInterface%s" % (libdir, libsuffix))
         if (SDK["SPEEDTREEAPI"] == "OpenGL"):
             LibName("SPEEDTREE",  "%sglew32.lib" % (libdir))
+            LibName("SPEEDTREE",  "glu32.lib")
         IncDirectory("SPEEDTREE", SDK["SPEEDTREE"] + "/Include")
+    if (PkgSkip("BULLET")==0):
+        LibName("BULLET", GetThirdpartyDir() + "bullet/lib/LinearMath.lib")
+        LibName("BULLET", GetThirdpartyDir() + "bullet/lib/BulletCollision.lib")
+        LibName("BULLET", GetThirdpartyDir() + "bullet/lib/BulletDynamics.lib")
+        LibName("BULLET", GetThirdpartyDir() + "bullet/lib/BulletSoftBody.lib")
+        LibName("BULLET", GetThirdpartyDir() + "bullet/lib/BulletMultiThreaded.lib")
 
 if (COMPILER=="LINUX"):
     PkgDisable("AWESOMIUM")
@@ -570,7 +577,7 @@ if (COMPILER=="LINUX"):
         SmartPkgEnable("NVIDIACG",  "",          ("Cg"), "Cg/cg.h", framework = "Cg")
         SmartPkgEnable("ODE",       "",          ("ode"), "ode/ode.h")
         SmartPkgEnable("OPENAL",    "openal",    ("openal"), "AL/al.h", framework = "OpenAL")
-        SmartPkgEnable("OPENCV",    "",          ("cv", "highgui", "cvaux", "ml", "cxcore"), ("opencv", "opencv/cv.h"))
+        SmartPkgEnable("OPENCV",    "opencv",    ("cv", "highgui", "cvaux", "ml", "cxcore"), ("opencv", "opencv/cv.h"))
         SmartPkgEnable("SQUISH",    "",          ("squish"), "squish.h")
         SmartPkgEnable("TIFF",      "",          ("tiff"), "tiff.h")
         SmartPkgEnable("VRPN",      "",          ("vrpn", "quat"), ("vrpn", "quat.h", "vrpn/vrpn_Types.h"))
@@ -585,7 +592,7 @@ if (COMPILER=="LINUX"):
         SmartPkgEnable("PYTHON",    "", SDK["PYTHONVERSION"], (SDK["PYTHONVERSION"], SDK["PYTHONVERSION"] + "/Python.h"), tool = SDK["PYTHONVERSION"] + "-config", framework = "Python")
     if (RTDIST):
         SmartPkgEnable("WX",    tool = "wx-config")
-        SmartPkgEnable("FLTK",  tool = "fltk-config")
+        SmartPkgEnable("FLTK", "", ("fltk"), ("Fl/Fl.H"), tool = "fltk-config")
     if (RUNTIME):
         if (sys.platform.startswith("freebsd")):
             SmartPkgEnable("NPAPI", "mozilla-plugin", (), ("libxul/stable", "libxul/stable/npapi.h", "nspr/prtypes.h", "nspr"))
@@ -600,6 +607,8 @@ if (COMPILER=="LINUX"):
             SmartPkgEnable("XRANDR", "xrandr", "Xrandr", "X11/extensions/Xrandr.h")
             SmartPkgEnable("XF86DGA", "xxf86dga", "Xxf86dga", "X11/extensions/xf86dga.h")
             SmartPkgEnable("XCURSOR", "xcursor", "Xcursor", "X11/Xcursor/Xcursor.h")
+
+    SmartPkgEnable("BULLET", "bullet", ("BulletSoftBody", "BulletDynamics", "BulletCollision", "LinearMath"), ("bullet", "bullet/btBulletDynamicsCommon.h"))
 
     if (RUNTIME):
         # For the runtime, all packages are required
@@ -760,8 +769,10 @@ def CompileCxx(obj,src,opts):
         cmd += "/wd4996 /wd4275 /wd4267 /wd4101 /wd4273 "
 
         # Enables Windows 7 mode if SDK is detected.
+        # But only if it is Windows 7 (0x601) and not e. g. Vista (0x600)
         platsdk = GetRegistryKey("SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\v7.0", "InstallationFolder")
-        if platsdk and os.path.isdir(platsdk):
+        winver = sys.getwindowsversion()
+        if platsdk and os.path.isdir(platsdk) and winver[0] >= 6 and winver[1] >= 1:
             cmd += "/DPANDA_WIN7 /DWINVER=0x601 "
 
         cmd += "/Fo" + obj + " /nologo /c"
@@ -780,7 +791,8 @@ def CompileCxx(obj,src,opts):
         cmd += " /Fd" + os.path.splitext(obj)[0] + ".pdb"
         building = GetValueOption(opts, "BUILDING:")
         if (building): cmd += " /DBUILDING_" + building
-        if ("BIGOBJ" in opts): cmd += " /bigobj"
+        if ("BIGOBJ" in opts) or (platform.architecture()[0]=="64bit"):
+            cmd += " /bigobj"
         cmd += " /EHa /Zm300 /DWIN32_VC /DWIN32 /W3 " + BracketNameWithQuotes(src)
         oscmd(cmd)
     if (COMPILER=="LINUX"):
@@ -2075,6 +2087,10 @@ if (PkgSkip("PHYSX")==0):
     CopyAllHeaders('panda/src/physx')
     CopyAllHeaders('panda/metalibs/pandaphysx')
 
+if (PkgSkip("BULLET")==0):
+    CopyAllHeaders('panda/src/bullet')
+    CopyAllHeaders('panda/metalibs/pandabullet')
+
 if (PkgSkip("SPEEDTREE")==0):
     CopyAllHeaders('panda/src/speedtree')
 
@@ -2595,7 +2611,7 @@ if (not RUNTIME):
 #
 
 if (not RUNTIME):
-  OPTS=['DIR:panda/src/cull', 'BUILDING:PANDA']
+  OPTS=['DIR:panda/src/cull', 'BUILDING:PANDA', 'BIGOBJ']
   TargetAdd('cull_composite.obj', opts=OPTS, input='cull_composite.cxx')
   IGATEFILES=GetDirectoryContents('panda/src/cull', ["*.h", "*_composite.cxx"])
   TargetAdd('libcull.in', opts=OPTS, input=IGATEFILES)
@@ -3512,6 +3528,35 @@ if (PkgSkip("ODE")==0 and not RUNTIME):
   TargetAdd('libpandaode.dll', opts=['WINUSER', 'ODE'])
 
 #
+# DIRECTORY: panda/src/bullet/
+#
+if (PkgSkip("BULLET")==0 and not RUNTIME):
+  OPTS=['DIR:panda/src/bullet', 'BUILDING:PANDABULLET', 'BULLET']
+  TargetAdd('bullet_composite.obj', opts=OPTS, input='bullet_composite.cxx')
+  IGATEFILES=GetDirectoryContents('panda/src/bullet', ["*.h", "*_composite.cxx"])
+  TargetAdd('libpandabullet.in', opts=OPTS, input=IGATEFILES)
+  TargetAdd('libpandabullet.in', opts=['IMOD:pandabullet', 'ILIB:libpandabullet', 'SRCDIR:panda/src/bullet'])
+  TargetAdd('libpandabullet_igate.obj', input='libpandabullet.in', opts=["DEPENDENCYONLY"])
+
+#
+# DIRECTORY: panda/metalibs/pandabullet/
+#
+if (PkgSkip("BULLET")==0 and not RUNTIME):
+  OPTS=['DIR:panda/metalibs/pandabullet', 'BUILDING:PANDABULLET', 'BULLET']
+  TargetAdd('pandabullet_pandabullet.obj', opts=OPTS, input='pandabullet.cxx')
+
+  TargetAdd('libpandabullet_module.obj', input='libpandabullet.in')
+  TargetAdd('libpandabullet_module.obj', opts=OPTS)
+  TargetAdd('libpandabullet_module.obj', opts=['IMOD:pandabullet', 'ILIB:libpandabullet'])
+
+  TargetAdd('libpandabullet.dll', input='pandabullet_pandabullet.obj')
+  TargetAdd('libpandabullet.dll', input='libpandabullet_module.obj')
+  TargetAdd('libpandabullet.dll', input='bullet_composite.obj')
+  TargetAdd('libpandabullet.dll', input='libpandabullet_igate.obj')
+  TargetAdd('libpandabullet.dll', input=COMMON_PANDA_LIBS)
+  TargetAdd('libpandabullet.dll', opts=['WINUSER', 'BULLET'])
+
+#
 # DIRECTORY: panda/metalibs/pandacegui/
 #
 if (PkgSkip("CEGUI")==0 and not RUNTIME):
@@ -4081,6 +4126,28 @@ if (RTDIST):
   TargetAdd('p3dembed.exe', input='libp3d_plugin_static.ilb')
   TargetAdd('p3dembed.exe', opts=['NOICON', 'NOSTRIP', 'WINGDI', 'WINSOCK2', 'ZLIB', 'WINUSER', 'OPENSSL', 'JPEG', 'WINOLE', 'CARBON', 'MSIMG', 'WINCOMCTL', 'ADVAPI', 'WINSHELL', 'X11', 'PNG'])
 
+  if (sys.platform.startswith("win")):
+    OPTS.append("P3DEMBEDW")
+    DefSymbol("P3DEMBEDW", "P3DEMBEDW", "")
+    TargetAdd('plugin_standalone_p3dEmbedWinMain.obj', opts=OPTS, input='p3dEmbedMain.cxx')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_panda3dBase.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_p3dEmbedWinMain.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_p3dEmbed.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_pystub.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_dtoolbase_composite1.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_dtoolbase_composite2.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_lookup3.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_indent.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_dtoolutil_composite.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_prc_composite.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_dconfig_composite.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_express_composite.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_standalone_downloader_composite.obj')
+    TargetAdd('p3dembedw.exe', input='plugin_common.obj')
+    TargetAdd('p3dembedw.exe', input='libp3tinyxml.ilb')
+    TargetAdd('p3dembedw.exe', input='libp3d_plugin_static.ilb')
+    TargetAdd('p3dembedw.exe', opts=['NOICON', 'NOSTRIP', 'WINGDI', 'WINSOCK2', 'ZLIB', 'WINUSER', 'OPENSSL', 'JPEG', 'WINOLE', 'MSIMG', 'WINCOMCTL', 'ADVAPI', 'WINSHELL', 'PNG'])
+
 #
 # DIRECTORY: pandatool/src/pandatoolbase/
 #
@@ -4366,6 +4433,11 @@ if (PkgSkip("PANDATOOL")==0):
   TargetAdd('egg-retarget-anim.exe', input='libeggcharbase.lib')
   TargetAdd('egg-retarget-anim.exe', input=COMMON_EGG2X_LIBS_PYSTUB)
   TargetAdd('egg-retarget-anim.exe', opts=['ADVAPI'])
+
+  TargetAdd('egg-list-textures_eggListTextures.obj', opts=OPTS, input='eggListTextures.cxx')
+  TargetAdd('egg-list-textures.exe', input='egg-list-textures_eggListTextures.obj')
+  TargetAdd('egg-list-textures.exe', input=COMMON_EGG2X_LIBS_PYSTUB)
+  TargetAdd('egg-list-textures.exe', opts=['ADVAPI'])
 
 #
 # DIRECTORY: pandatool/src/flt/
@@ -5180,7 +5252,7 @@ Recommends: panda3d-runtime, python-wxversion, python-profiler (>= PV), python-t
 Provides: panda3d
 Conflicts: panda3d
 Replaces: panda3d
-Maintainer: etc-panda3d@lists.andrew.cmu.edu
+Maintainer: rdb <me@rdb.name>
 Description: The Panda3D free 3D engine SDK
  Panda3D is a game engine which includes graphics, audio, I/O, collision detection, and other abilities relevant to the creation of 3D games. Panda3D is open source and free software under the revised BSD license, and can be used for both free and commercial game development at no financial cost.
  Panda3D's intended game-development language is Python. The engine itself is written in C++, and utilizes an automatic wrapper-generator to expose the complete functionality of the engine in a Python interface.
@@ -5198,7 +5270,7 @@ Architecture: ARCH
 Essential: no
 Depends: DEPENDS
 Provides: panda3d-runtime
-Maintainer: etc-panda3d@lists.andrew.cmu.edu
+Maintainer: rdb <me@rdb.name>
 Description: Runtime binary and browser plugin for the Panda3D Game Engine
  This package contains the runtime distribution and browser plugin of the Panda3D engine. It allows you view webpages that contain Panda3D content and to run games created with Panda3D that are packaged as .p3d file.
 
@@ -5303,7 +5375,7 @@ def MakeInstallerLinux():
     PV = PYTHONV.replace("python", "")
     if (os.path.isdir("targetroot")): oscmd("chmod -R 755 targetroot")
     oscmd("rm -rf targetroot data.tar.gz control.tar.gz panda3d.spec")
-    oscmd("mkdir targetroot")
+    oscmd("mkdir --mode=0755 targetroot")
 
     # Invoke installpanda.py to install it into a temporary dir
     if RUNTIME:
@@ -5323,7 +5395,7 @@ def MakeInstallerLinux():
             txt = INSTALLER_SPEC_FILE[1:]
         txt = txt.replace("VERSION", VERSION).replace("RPMRELEASE", RPMRELEASE).replace("PANDASOURCE", pandasource).replace("PV", PV)
         WriteFile("panda3d.spec", txt)
-        oscmd("rpmbuild --define '_rpmdir "+pandasource+"' --buildroot '"+os.path.abspath("targetroot")+"' -bb panda3d.spec")
+        oscmd("fakeroot rpmbuild --define '_rpmdir "+pandasource+"' --buildroot '"+os.path.abspath("targetroot")+"' -bb panda3d.spec")
         if (RUNTIME):
             oscmd("mv "+ARCH+"/panda3d-runtime-"+VERSION+"-"+RPMRELEASE+"."+ARCH+".rpm .")
         else:
@@ -5368,9 +5440,11 @@ def MakeInstallerLinux():
         oscmd("rm -rf targetroot/debian")
         oscmd("chmod -R 755 targetroot/DEBIAN")
         if (RUNTIME):
-            oscmd("dpkg-deb -b targetroot panda3d-runtime_"+DEBVERSION+"_"+ARCH+".deb")
+            oscmd("cd targetroot/DEBIAN ; chmod 644 control md5sums")
+            oscmd("fakeroot dpkg-deb -b targetroot panda3d-runtime_"+DEBVERSION+"_"+ARCH+".deb")
         else:
-            oscmd("dpkg-deb -b targetroot panda3d"+MAJOR_VERSION+"_"+DEBVERSION+"_"+ARCH+".deb")
+            oscmd("cd targetroot/DEBIAN ; chmod 644 control md5sums conffiles symbols")
+            oscmd("fakeroot dpkg-deb -b targetroot panda3d"+MAJOR_VERSION+"_"+DEBVERSION+"_"+ARCH+".deb")
         oscmd("chmod -R 755 targetroot")
 
     if not (os.path.exists("/usr/bin/rpmbuild") or os.path.exists("/usr/bin/dpkg-deb")):
@@ -5664,7 +5738,10 @@ def MakeInstallerFreeBSD():
             if (python_pkg):
                 cmd += " -P " + python_pkg
     cmd += " -p /usr/local -S \"%s\"" % os.path.abspath("targetroot")
-    cmd += " -c -\"The Panda3D free 3D engine SDK\""
+    if (RUNTIME):
+        cmd += " -c -\"The Panda3D free 3D engine runtime\" -o graphics/panda3d-runtime"
+    else:
+        cmd += " -c -\"The Panda3D free 3D engine SDK\" -o devel/panda3d"
     cmd += " -d pkg-descr -f pkg-plist panda3d-%s" % VERSION
     oscmd(cmd)
 

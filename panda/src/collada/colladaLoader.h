@@ -23,14 +23,18 @@
 #include "pvector.h"
 #include "pta_LVecBase4f.h"
 
+class ColladaBindMaterial;
 class BamCacheRecord;
+class GeomNode;
 class LightNode;
 
+class domBind_material;
 class domCOLLADA;
 class domNode;
 class domVisual_scene;
 class domExtra;
 class domGeometry;
+class domInstance_geometry;
 class domLight;
 class domCamera;
 class domSource;
@@ -64,8 +68,8 @@ private:
   void load_node(domNode &node, PandaNode *parent);
   void load_tags(domExtra &extra, PandaNode *node);
   void load_camera(domCamera &cam, PandaNode *parent);
-  void load_geometry(domGeometry &geom, PandaNode *parent);
-  CPT(InternalName) load_input(GeomVertexArrayFormat *fmt, PTA_LVecBase4f &values, const string &semantic, domSource &src, unsigned int set=0);
+  void load_instance_geometry(domInstance_geometry &inst, PandaNode *parent);
+  void load_geometry(domGeometry &geom, GeomNode *parent, ColladaBindMaterial &bind_mat);
   void load_light(domLight &light, PandaNode *parent);
 };
 

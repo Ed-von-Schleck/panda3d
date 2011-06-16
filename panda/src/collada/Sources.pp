@@ -6,8 +6,14 @@
 #define COMBINED_SOURCES collada_composite1.cxx
 
 #define SOURCES \
+  colladaBindMaterial.cxx \
+  colladaBindMaterial.h \
+  colladaInput.cxx \
+  colladaInput.h colladaInput.I \
   colladaLoader.cxx \
   colladaLoader.h colladaLoader.I \
+  colladaPrimitive.cxx \
+  colladaPrimitive.h colladaPrimitive.I \
   config_collada.h \
   load_collada_file.h \
   loaderFileTypeDae.h

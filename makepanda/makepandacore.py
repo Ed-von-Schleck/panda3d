@@ -40,6 +40,7 @@ MAYAVERSIONINFO=[("MAYA6",   "6.0"),
                  ("MAYA2009","2009"),
                  ("MAYA2010","2010"),
                  ("MAYA2011","2011"),
+                 ("MAYA2012","2012"),
 ]
 
 MAXVERSIONINFO = [("MAX6", "SOFTWARE\\Autodesk\\3DSMAX\\6.0", "installdir", "maxsdk\\cssdk\\include"),
@@ -600,8 +601,8 @@ def ListRegistryValues(path):
         _winreg.CloseKey(key)
     return result
 
-def GetRegistryKey(path, subkey):
-    if (platform.architecture()[0]=="64bit"):
+def GetRegistryKey(path, subkey, override64=True):
+    if (platform.architecture()[0]=="64bit" and override64==True):
         path = path.replace("SOFTWARE\\", "SOFTWARE\\Wow6432Node\\")
     k1=0
     key = TryRegistryKey(path)
@@ -994,7 +995,7 @@ def PkgConfigGetLibs(pkgname, tool = "pkg-config"):
     handle.close()
     libs = []
     for l in result.split(" "):
-        if l.startswith("-l"):
+        if l.startswith("-l") or l.startswith("/"):
             libs.append(l)
     return libs
 
@@ -1080,7 +1081,7 @@ def GetLibCache():
             result = handle.read().strip().split("\n")
             for line in result:
                 lib = line.strip().split(" ", 1)[0]
-                if (".so " in lib):
+                if (lib.endswith(".so") or ".so " in lib):
                     lib = lib.split(".so", 1)[0][3:]
                     LD_CACHE.append(lib)
 
@@ -1355,7 +1356,7 @@ def SdkLocateMaya():
                 if (sys.platform == "win32"):
                     for dev in ["Alias|Wavefront","Alias","Autodesk"]:
                         fullkey="SOFTWARE\\"+dev+"\\Maya\\"+key+"\\Setup\\InstallPath"
-                        res = GetRegistryKey(fullkey, "MAYA_INSTALL_LOCATION")
+                        res = GetRegistryKey(fullkey, "MAYA_INSTALL_LOCATION", override64=False)
                         if (res != 0):
                             res = res.replace("\\", "/").rstrip("/")
                             SDK[ver] = res

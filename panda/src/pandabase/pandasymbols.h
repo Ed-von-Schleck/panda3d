@@ -96,6 +96,14 @@
   #define EXPTP_PANDAAWESOMIUM extern
 #endif
 
+#ifdef BUILDING_PANDABULLET
+  #define EXPCL_PANDABULLET __declspec(dllexport)
+  #define EXPTP_PANDABULLET
+#else
+  #define EXPCL_PANDABULLET __declspec(dllimport)
+  #define EXPTP_PANDABULLET extern
+#endif
+
 #ifdef BUILDING_PANDACEGUI
   #define EXPCL_PANDACEGUI __declspec(dllexport)
   #define EXPTP_PANDACEGUI
@@ -285,8 +293,8 @@
 #define EXPCL_PANDAAWESOMIUM
 #define EXPTP_PANDAAWESOMIUM
 
-#define EXPCL_PANDACEGUI
-#define EXPTP_PANDACEGUI
+#define EXPCL_PANDABULLET
+#define EXPTP_PANDABULLET
 
 #define EXPCL_PANDACR
 #define EXPTP_PANDACR
@@ -317,7 +325,6 @@
 
 #define EXPCL_PANDAODE
 #define EXPTP_PANDAODE
-
 
 #define EXPCL_PANDAPHYSICS
 #define EXPTP_PANDAPHYSICS

@@ -975,7 +975,7 @@
 #defer SPEEDTREE_VERSION 5.1
 #defer SPEEDTREE_LIB_SUFFIX _v$[SPEEDTREE_VERSION]_VC90MT$[SPEEDTREE_64]_Static$[SPEEDTREE_DEBUG].lib
 #if $[WINDOWS_PLATFORM]
-#defer SPEEDTREE_LIBS SpeedTreeCore$[SPEEDTREE_LIB_SUFFIX] SpeedTreeForest$[SPEEDTREE_LIB_SUFFIX] SpeedTree$[SPEEDTREE_API]Renderer$[SPEEDTREE_LIB_SUFFIX] SpeedTreeRenderInterface$[SPEEDTREE_LIB_SUFFIX] $[if $[eq $[SPEEDTREE_API],OpenGL],glew32.lib]
+#defer SPEEDTREE_LIBS SpeedTreeCore$[SPEEDTREE_LIB_SUFFIX] SpeedTreeForest$[SPEEDTREE_LIB_SUFFIX] SpeedTree$[SPEEDTREE_API]Renderer$[SPEEDTREE_LIB_SUFFIX] SpeedTreeRenderInterface$[SPEEDTREE_LIB_SUFFIX] $[if $[eq $[SPEEDTREE_API],OpenGL],glew32.lib glu32.lib]
 #else
 #defer SPEEDTREE_LIBS
 #endif
@@ -1078,6 +1078,12 @@
 #define COLLADA15DOM_LPATH /usr/local/lib
 #define COLLADA15DOM_LIBS collada15dom xml2 boost_filesystem
 #defer HAVE_COLLADA15DOM $[libtest $[COLLADA15DOM_LPATH],$[COLLADA15DOM_LIBS]]
+
+// The Assimp library loads various model formats.
+#define ASSIMP_IPATH /usr/local/include/assimp
+#define ASSIMP_LPATH /usr/local/lib
+#define ASSIMP_LIBS assimp
+#define HAVE_ASSIMP $[libtest $[ASSIMP_LPATH],$[ASSIMP_LIBS]]
 
 // Also for the ARToolKit library, for augmented reality
 #define ARTOOLKIT_IPATH
