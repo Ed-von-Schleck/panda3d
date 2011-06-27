@@ -335,7 +335,7 @@
 // genPyCode.  You may wish to add to this list to add your own
 // libraries, or if you want to use some of the more obscure
 // interfaces like libpandaegg and libpandafx.
-#defer GENPYCODE_LIBS libpandaexpress libpanda libpandaphysics libdirect libpandafx libp3vision $[if $[HAVE_ODE],libpandaode]
+#defer GENPYCODE_LIBS libpandaexpress libpanda libpandaphysics libdirect libpandafx libp3vision $[if $[HAVE_ODE],libpandaode] $[if $[HAVE_CEGUI],libpandacegui]
 
 // Normally, Python source files are copied into the INSTALL_LIB_DIR
 // defined above, along with the compiled C++ library objects, when
@@ -697,16 +697,9 @@
 
 // Is CEGUI installed, and where?
 // TODO: add CEGUIPython
-#define CEGUI_IPATH
-#define CEGUI_LPATH
-#define CEGUI_LIBS CEGUIBase CEGUISILLYImageCodec
-#defer HAVE_CEGUI $[libtest $[CEGUI_LPATH],$[CEGUI_LIBS]]
-
-// Is CEGUI installed, and where?
-// TODO: add CEGUIPython
-#define CEGUI_IPATH
-#define CEGUI_LPATH
-#define CEGUI_LIBS CEGUIBase CEGUISILLYImageCodec
+#define CEGUI_IPATH /usr/local/include/CEGUI
+#define CEGUI_LPATH /usr/local/lib
+#define CEGUI_LIBS CEGUIBase
 #defer HAVE_CEGUI $[libtest $[CEGUI_LPATH],$[CEGUI_LIBS]]
 
 // X11 may need to be linked against for tinydisplay, but probably

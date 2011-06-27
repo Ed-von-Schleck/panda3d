@@ -503,6 +503,13 @@
   #define artoolkit_libs $[ARTOOLKIT_LIBS]
 #endif
 
+#if $[HAVE_CEGUI]
+  #define cegui_ipath $[wildcard $[CEGUI_IPATH]]
+  #define cegui_lpath $[wildcard $[CEGUI_LPATH]]
+  #define cegui_cflags $[CEGUI_CFLAGS]
+  #define cegui_libs $[CEGUI_LIBS]
+#endif
+
 // We define these two variables true here in the global scope; a
 // particular Sources.pp file can redefine these to be false to
 // prevent a particular directory or target from being built in

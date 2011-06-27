@@ -220,6 +220,11 @@
 #else
 #print - Did not find ARToolKit
 #endif
+#if $[HAVE_CEGUI]
+#print + CEGUI
+#else
+#print - Did not find CEGUI
+#endif
 
 #print
 #if $[and $[HAVE_INTERROGATE],$[HAVE_PYTHON]]
@@ -338,6 +343,9 @@ $[cdefine HAVE_VRPN]
 
 /* Define if we have HELIX installed.  */
 $[cdefine HAVE_HELIX]
+
+/* Define if we have CEGUI available. */
+$[cdefine HAVE_CEGUI]
 
 /* Define if we have CG installed.  */
 $[cdefine HAVE_CG]

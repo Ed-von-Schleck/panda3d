@@ -379,6 +379,11 @@
 #set ARTOOLKIT_LIBS $[ARTOOLKIT_LIBS]
 #set HAVE_ARTOOLKIT $[HAVE_ARTOOLKIT]
 
+#set CEGUI_IPATH $[unixfilename $[CEGUI_IPATH]]
+#set CEGUI_LPATH $[unixfilename $[CEGUI_LPATH]]
+#set CEGUI_LIBS $[CEGUI_LIBS]
+#set HAVE_CEGUI $[HAVE_CEGUI]
+
 // Now infer a few more variables based on what was defined.
 #if $[and $[HAVE_GTK],$[PKG_CONFIG]]
   #define cflags $[shell $[PKG_CONFIG] gtk+-2.0 --cflags]
