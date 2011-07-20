@@ -111,8 +111,7 @@ class GarbageReport(Job):
         if self.numGarbage > 0:
             yield None
 
-        if self._args.verbose:
-            self.notify.info('found %s garbage items' % self.numGarbage)
+        self.notify.info('found %s items in gc.garbage' % self.numGarbage)
 
         """ spammy
         # print the types of the garbage first, in case the repr of an object
@@ -131,6 +130,8 @@ class GarbageReport(Job):
 
         self.referentsByReference = {}
         self.referentsByNumber = {}
+
+        self._id2garbageInfo = {}
 
         self.cycles = []
         self.cyclesBySyntax = []
@@ -166,6 +167,18 @@ class GarbageReport(Job):
                 byNum, byRef = result                    
                 self.referentsByNumber[i] = byNum
                 self.referentsByReference[i] = byRef
+
+        for i in xrange(self.numGarbage):
+            if hasattr(self.garbage[i], '_garbageInfo') and callable(self.garbage[i]._garbageInfo):
+                try:
+                    info = self.garbage[i]._garbageInfo()
+                except Exception, e:
+                    info = str(e)
+                self._id2garbageInfo[id(self.garbage[i])] = info
+                yield None
+            else:
+                if not (i % 20):
+                    yield None
 
         # find the cycles
         if self._args.findCycles and self.numGarbage > 0:
@@ -334,6 +347,22 @@ class GarbageReport(Job):
                 for i in xrange(len(self.cyclesBySyntax)):
                     yield None
                     s.append('%s:%s' % (ac.next(), self.cyclesBySyntax[i]))
+
+            if len(self._id2garbageInfo):
+                format = '%0' + '%s' % digits + 'i:%s'
+                s.append('===== Garbage Custom Info =====')
+                ids = self._id2garbageInfo.keys()
+                yield None
+                indices = []
+                for _id in ids:
+                    indices.append(self._id2index[_id])
+                    yield None
+                indices.sort()
+                yield None
+                for i in indices:
+                    _id = id(self.garbage[i])
+                    s.append(format % (i, self._id2garbageInfo[_id]))
+                    yield None
 
             if self._args.fullReport:
                 format = '%0' + '%s' % digits + 'i:%s'

@@ -12,7 +12,7 @@ __all__ = ['enumerate', 'unique', 'indent', 'nonRepeatingRandomList',
 'closestDestAngle2', 'closestDestAngle', 'binaryRepr', 'profileFunc',
 'profiled', 'startProfile', 'printProfile', 'getSetterName',
 'getSetter', 'Functor', 'Stack', 'Queue', 'ParamObj', 
-'POD', 'bound', 'clamp', 'lerp', 'average', 'addListsByValue',
+'POD', 'bound', 'clamp', 'lerp', 'clerp', 'triglerp', 'average', 'addListsByValue',
 'boolEqual', 'lineupPos', 'formatElapsedSeconds', 'solveQuadratic',
 'stackEntryInfo', 'lineInfo', 'callerInfo', 'lineTag',
 'findPythonModule', 'describeException', 'mostDerivedLast',
@@ -47,6 +47,7 @@ import random
 import time
 import new
 import gc
+import bisect
 #if __debug__:
 import traceback
 import __builtin__
@@ -1883,6 +1884,21 @@ def lerp(v0, v1, t):
     """
     return v0 + ((v1 - v0) * t)
 
+def clerp(v0, v1, t):
+    """
+    cubic lerp
+    """
+    x = t*t
+    return lerp(v0, v1, (3. * x) - (2. * t * x))
+
+def triglerp(v0, v1, t):
+    """
+    lerp using the curve of sin(-pi/2) -> sin(pi/2)
+    """
+    x = lerp(-math.pi/2, math.pi/2, t)
+    v = math.sin(x)
+    return lerp(v0, v1, (v + 1.) / 2.)
+
 def getShortestRotation(start, end):
     """
     Given two heading values, return a tuple describing
@@ -2486,6 +2502,7 @@ def _getSafeReprNotify():
     global safeReprNotify
     from direct.directnotify.DirectNotifyGlobal import directNotify
     safeReprNotify = directNotify.newCategory("safeRepr")
+    return safeReprNotify
 
 def safeRepr(obj):
     global dtoolSuperBase
@@ -3118,6 +3135,8 @@ class FrameDelayedCall:
     def destroy(self):
         self._finished = True
         self._stopTask()
+        self._callback = None
+        self._cancelFunc = None
     def finish(self):
         if not self._finished:
             self._finished = True
@@ -3183,6 +3202,8 @@ class SubframeCall:
         if (self._taskName):
             taskMgr.remove(self._taskName)
             self._taskName = None
+    def isFinished(self):
+        return self._taskName == None
 
 class ArgumentEater:
     def __init__(self, numToEat, func):
@@ -4138,6 +4159,7 @@ def startSuperLog(customFunction = None):
                 if customFunction:
                     superLogFile.write( "after = %s\n"%customFunction())
 
+        
 
                 return trace_dispatch
         sys.settrace(trace_dispatch)
@@ -4324,11 +4346,108 @@ def bpdbGetEnabled():
 bpdb.setEnabledCallback(bpdbGetEnabled)
 bpdb.setConfigCallback(lambda cfg: ConfigVariableBool('want-bp-%s' % (cfg.lower(),), 0).getValue())
 
-def u2ascii(str):
-    if type(str) is types.UnicodeType:
-        return unicodedata.normalize('NFKD', str).encode('ascii','ignore')
+def u2ascii(s):
+    # Unicode -> ASCII
+    if type(s) is types.UnicodeType:
+        return unicodedata.normalize('NFKD', s).encode('ascii', 'backslashreplace')
     else:
-        return str
+        return str(s)
+
+def unicodeUtf8(s):
+    # * -> Unicode UTF-8
+    if type(s) is types.UnicodeType:
+        return s
+    else:
+        return unicode(str(s), 'utf-8')
+
+def encodedUtf8(s):
+    # * -> 8-bit-encoded UTF-8
+    return unicodeUtf8(s).encode('utf-8')
+
+class PriorityCallbacks:
+    """ manage a set of prioritized callbacks, and allow them to be invoked in order of priority """
+    TokenGen = SerialNumGen()
+
+    @classmethod
+    def GetToken(cls):
+        return 'pc-%s' % cls.TokenGen.next()
+
+    def __init__(self):
+        self._callbacks = []
+        self._token2item = {}
+
+    def clear(self):
+        while self._callbacks:
+            self._callbacks.pop()
+        self._token2item = {}
+
+    def add(self, callback, priority=None):
+        if priority is None:
+            priority = 0
+        item = (priority, callback)
+        bisect.insort(self._callbacks, item)
+        token = self.GetToken()
+        self._token2item[token] = item
+        return token
+
+    def remove(self, token):
+        item = self._token2item[token]
+        self._callbacks.pop(bisect.bisect_left(self._callbacks, item))
+
+    def __contains__(self, token):
+        return token in self._token2item
+
+    def __call__(self):
+        callbacks = self._callbacks[:]
+        for priority, callback in callbacks:
+            callback()
+
+if __debug__:
+    l = []
+    def a(l=l):
+        l.append('a')
+    def b(l=l):
+        l.append('b')
+    def c(l=l):
+        l.append('c')
+    pc = PriorityCallbacks()
+    pc.add(a)
+    pc()
+    assert l == ['a']
+    while len(l):
+        l.pop()
+    bItem = pc.add(b)
+    pc()
+    assert 'a' in l
+    assert 'b' in l
+    assert len(l) == 2
+    while len(l):
+        l.pop()
+    pc.remove(bItem)
+    pc()
+    assert l == ['a']
+    while len(l):
+        l.pop()
+    pc.add(c, 2)
+    bItem = pc.add(b, 10)
+    pc()
+    assert l == ['a', 'c', 'b']
+    while len(l):
+        l.pop()
+    pc.remove(bItem)
+    pc()
+    assert l == ['a', 'c']
+    while len(l):
+        l.pop()
+    pc.clear()
+    pc()
+    assert len(l) == 0
+    del l
+    del a
+    del b
+    del c
+    del pc
+    del bItem
 
 import __builtin__
 __builtin__.Functor = Functor
@@ -4351,6 +4470,8 @@ __builtin__.appendStr = appendStr
 __builtin__.bound = bound
 __builtin__.clamp = clamp
 __builtin__.lerp = lerp
+__builtin__.clerp = clerp
+__builtin__.triglerp = triglerp
 __builtin__.notNone = notNone
 __builtin__.clampScalar = clampScalar
 __builtin__.makeList = makeList
@@ -4392,3 +4513,5 @@ __builtin__.histogramDict = histogramDict
 __builtin__.repeatableRepr = repeatableRepr
 __builtin__.bpdb = bpdb
 __builtin__.u2ascii = u2ascii
+__builtin__.unicodeUtf8 = unicodeUtf8
+__builtin__.encodedUtf8 = encodedUtf8
