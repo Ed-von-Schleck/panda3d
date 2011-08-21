@@ -14,43 +14,47 @@ class GridChild:
             self._gridParent = None
 
             self._gridInterestEnabled = False
-            self._gridInterest = None
-            pass
-        pass
+            self._gridInterests = {}
 
     def delete(self):
         self.__setGridParent(None)
         self.enableGridInterest(False)
-        pass
 
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def setGridCell(self, grid, zoneId):
+        if not hasattr(self,'getParent'):
+            return
         if grid is None:
             self.__setGridParent(None)
             self.__clearGridInterest()
         else:
             if not self._gridParent:
                 self.__setGridParent(GridParent(self))
-                pass
 
             # Does the (wrt)ReparentTo() operation
             self._gridParent.setGridCell(grid, zoneId)
 
             # Moves the grid interest along with this child
-            if self._gridInterestEnabled:
-                self.__setGridInterest(grid, zoneId)
-                pass
-            pass
-        pass
+            self.updateGridInterest(grid, zoneId)
 
+    def updateGridInterest(self, grid, zoneId):
+        # add additional grid interests (sometimes we want more
+        # than just one)
+        #if self._gridInterestEnabled:
+        self.__setGridInterest(grid, zoneId)
+        
     def enableGridInterest(self, enabled = True):
         self._gridInterestEnabled = enabled
         if enabled and self.isOnAGrid():
-            self.__setGridInterest(self.getGrid(), self.getGridZone())
+            # enable all grid interests I may have
+            for currGridId, interestInfo in self._gridInterests.items():
+                currGrid = getBase().getRepository().doId2do.get(currGridId)
+                if currGrid:
+                    self.__setGridInterest(currGrid, interestInfo[1])
+                else:
+                    self.notify.warning("unknown grid interest %s"%currGridId)
         else:
             self.__clearGridInterest()
-            pass
-        pass
 
     def isOnAGrid(self):
         return self._gridParent is not None
@@ -70,9 +74,7 @@ class GridChild:
     def __setGridParent(self, gridParent):
         if self._gridParent and self._gridParent is not gridParent:
             self._gridParent.delete()
-            pass
         self._gridParent = gridParent
-        pass
 
     
     def __setGridInterest(self, grid, zoneId):
@@ -82,24 +84,36 @@ class GridChild:
                 'startProcessVisibility(%s): tried to open a new interest during logout'
                 % self.doId)
             return
-        
-        if self._gridInterest:
-            self.cr.alterInterest(self._gridInterest,
-                                  grid.getDoId(), zoneId)
+
+        gridDoId = grid.getDoId()
+        existingInterest = self._gridInterests.get(gridDoId)
+        if self._gridInterestEnabled:
+            if existingInterest and existingInterest[0]:
+                self.cr.alterInterest(existingInterest[0],
+                                      grid.getDoId(), zoneId)
+                existingInterest[1] = zoneId
+            else:
+                newInterest = self.cr.addTaggedInterest(gridDoId, zoneId,
+                                                        self.cr.ITAG_GAME,
+                                                        self.uniqueName('gridvis'))
+                self._gridInterests[gridDoId] = [newInterest,zoneId]
         else:
-            self._gridInterest = self.cr.addTaggedInterest(grid.getDoId(), zoneId,
-                                                           self.cr.ITAG_GAME,
-                                                           self.uniqueName('gridvis'))
-            pass
-        pass
+            # indicate we want this grid interest once gridInterestEnabled is True
+            self._gridInterests[gridDoId] = [None,zoneId]
+
+    def getGridInterestIds(self):
+        return self._gridInterests.keys()
+
+    def getGridInterestZoneId(self,gridDoId):
+        return self._gridInterests.get(gridDoId,[None,None])[1]
 
     def __clearGridInterest(self):
-        if self._gridInterest:
-            self.cr.removeTaggedInterest(self._gridInterest)
-            self._gridInterest = None
-            pass
-        
-                
+        if self._gridInterestEnabled:
+            for currGridId, interestInfo in self._gridInterests.items():
+                self.cr.removeTaggedInterest(interestInfo[0])
+        self._gridInterests = {}
+
+
 
 
 
@@ -118,15 +132,12 @@ class SmoothGridChild(GridChild):
         GridChild.__init__(self)
         assert isinstance(self, DistributedSmoothNodeBase), \
                'All GridChild objects must be instances of DistributedSmoothNodeBase'
-        pass
 
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def setGridCell(self, grid, zoneId):
         GridChild.setGridCell(self, grid, zoneId)
         if grid and self.isGenerated(): # we get our cnode in DistributedSmoothNodeBase.generate()
             self.cnode.setEmbeddedVal(zoneId)
-            pass
-        pass
 
     @report(types = ['args'], dConfigParam = 'smoothnode')
     def transformTelemetry(self, x, y, z, h, p, r, e):

@@ -162,6 +162,18 @@ class CartesianGridBase:
                 #print "   examining zone %s"%newZone
         return zones
 
+    #--------------------------------------------------------------------------
+    # Function:   child has been parented to this grid, set zone interest
+    #               for this area, and can be overridden to add additional
+    #               interest (such as interest on the parent grid of this
+    #               area)
+    # Parameters:
+    # Changes:
+    # Returns:
+    #--------------------------------------------------------------------------
+    def setChildGridCells(self, child, zoneId):
+        child.setGridCell(self, zoneId)
+
     def parentObjectToArea(self, child):
         """
         Assumes the child is either parented directly to the grid or detached
@@ -174,7 +186,7 @@ class CartesianGridBase:
         child.reparentTo(self) # go ahead and put us here
         zoneId = self.getZoneFromXYZ(child.getPos())
         if self.isGridZone(zoneId):
-            child.setGridCell(self, zoneId)
+            self.setChildGridCells(child, zoneId)
             return zoneId
         else:
             assert self.notify.warning("Placing object on grid in non-grid zone(%s): %s" % (zoneId, child))
@@ -186,13 +198,10 @@ class CartesianGridBase:
             child.setGridCell(self, zoneId)
         else:
             child.setGridCell(None, 0)
-            pass
-        pass
 
     def handleChildLeave(self, child, zoneId):
         self.ignoreChild(child)
         child.setGridCell(None, 0)
-        pass
 
     def manageChild(self, child):
         """
@@ -206,8 +215,6 @@ class CartesianGridBase:
         self.__manageChild(child, setup = True)
         if not self.__managementTask:
             self.startManagementTask()
-            pass
-        pass
 
     def ignoreChild(self, child):
         """
@@ -216,7 +223,6 @@ class CartesianGridBase:
         self.__managedChildren.discard(child)
         if not self.__managedChildren:
             self.stopManagementTask()
-        pass
     
     def startManagementTask(self):
         self.stopManagementTask()
@@ -228,7 +234,6 @@ class CartesianGridBase:
             self.__managementTask = taskMgr.add(self.__manage,
                                                 self.taskName('ManageGrid'))
             self.__managementTask._return = self.__managementTask.cont
-            pass
 
     def __manage(self, task):
 
@@ -239,38 +244,56 @@ class CartesianGridBase:
         
         for child in self.__managedChildren:
             self.__manageChild(child)
-            pass        
         return task._return
 
     def __manageChild(self, child, setup = False):
         assert child, "Must have a non-empty nodepath"
         assert child.getGrid() is self
-        
-        x,y,z = child.getPos()
-        if x < 0 or y < 0 or \
-           x > self.cellWidth or y > self.cellWidth or \
-           setup:
-            
-            absolutePos = child.getPos(self)
-            newZoneId = self.getZoneFromXYZ(absolutePos)
-            
-            if self.isGridZone(newZoneId):
-                child.setGridCell(self, newZoneId)
-                child.sendCurrentPosition()
-                child.b_setLocation(self.getDoId(), newZoneId)
+
+        # manage all grid interests this child has
+        gridIds = child.getGridInterestIds()
+        for currGridId in gridIds:
+            currGrid = getBase().getRepository().doId2do.get(currGridId)
+            adjustGrid = False
+            newZoneId = None
+            if currGrid is self:
+                # this grid is me, the one the child is parented to, so
+                # just check if child is out of bounds of its current zone
+                x,y,z = child.getPos()
+                if x < 0 or y < 0 or \
+                   x > currGrid.cellWidth or y > currGrid.cellWidth or \
+                   setup:
+                    adjustGrid = True
             else:
-                self.notify.warning(
-                    "%s handleChildCellChange %s: not a valid zone (%s) for pos %s" %(self.doId, child.doId, zoneId, pos))                     
-                pass
-            pass
-        pass
-        
+                # this grid is not me, need to determine if relative position
+                # would put it in a different zone than it previously
+                # registered interest in
+                newZoneId = currGrid.getZoneFromXYZ(child.getPos(currGrid))
+                if newZoneId != child.getGridInterestZoneId(currGridId):
+                    adjustGrid = True
+
+            if adjustGrid:
+                # need to update zone child is in (or at least interested in)
+                if not newZoneId:
+                    newZoneId = currGrid.getZoneFromXYZ(child.getPos(currGrid))
+
+                if currGrid.isGridZone(newZoneId):
+                    if currGrid is self:
+                        child.setGridCell(self, newZoneId)
+                        child.sendCurrentPosition()
+                        child.b_setLocation(self.getDoId(), newZoneId)
+                    else:
+                        # not my parent grid, just update interest
+                        child.updateGridInterest(currGrid, newZoneId)
+                else:
+                    self.notify.warning(
+                        "%s handleChildCellChange %s: not a valid zone (%s) for pos %s" %(
+                        self.doId, child.doId, zoneId, pos))                     
 
     def stopManagementTask(self):
         if self.__managementTask:
             taskMgr.remove(self.__managementTask)
         self.__managementTask = None
-        pass
 
     def taskName(self, taskString):
         assert False, "Subclasses must define this"
