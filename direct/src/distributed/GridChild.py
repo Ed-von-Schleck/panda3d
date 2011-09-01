@@ -54,7 +54,10 @@ class GridChild:
                 else:
                     self.notify.warning("unknown grid interest %s"%currGridId)
         else:
-            self.__clearGridInterest()
+            for currGridId, interestInfo in self._gridInterests.items():
+                self.cr.removeTaggedInterest(interestInfo[0])
+            #self.__clearGridInterest()
+            pass
 
     def isOnAGrid(self):
         return self._gridParent is not None
