@@ -64,7 +64,7 @@ class WxPandaShell(WxAppShell):
 
         menuItem = self.menuView.AppendRadioItem(ID_LEFT_VIEW, self.MENU_TEXTS[ID_LEFT_VIEW][0])
         self.Bind(wx.EVT_MENU, lambda p0=None, p1=2:self.onViewChange(p0, p1), menuItem)
-
+        
         self.perspViewMenuItem = self.menuView.AppendRadioItem(ID_PERSP_VIEW, self.MENU_TEXTS[ID_PERSP_VIEW][0])
         self.Bind(wx.EVT_MENU, lambda p0=None, p1=3:self.onViewChange(p0, p1), self.perspViewMenuItem)
 
