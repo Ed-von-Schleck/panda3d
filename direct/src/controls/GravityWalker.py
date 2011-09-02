@@ -698,3 +698,11 @@ class GravityWalker(DirectObject.DirectObject):
             """for debugging"""
             return self.notify.debug(
                     str(id(self))+' '+message)
+
+    # There are sometimes issues if the collision ray height is
+    # so tall that it collides with multiple levels of floors.
+    def setCollisionRayHeight(self, height):
+        cRayNode = self.cRayNodePath.node()
+        cRayNode.removeSolid(0)
+        cRay = CollisionRay(0.0, 0.0, height, 0.0, 0.0, -1.0)
+        cRayNode.addSolid(cRay)        

@@ -1,5 +1,6 @@
 from pandac.PandaModules import Filename, URLSpec, DocumentSpec, Ramfile, Multifile, Decompressor, EUOk, EUSuccess, VirtualFileSystem, Thread, getModelPath, ExecutionEnvironment, PStatCollector, TiXmlDocument, TiXmlDeclaration, TiXmlElement
 from pandac import PandaModules
+from libpandaexpress import ConfigVariableInt
 from direct.p3d.FileSpec import FileSpec
 from direct.p3d.ScanDirectoryNode import ScanDirectoryNode
 from direct.showbase import VFSImporter
@@ -166,6 +167,19 @@ class PackageInfo:
         
         return size
 
+    def getPrevDownloadedEffort(self):
+        """ Returns a rough estimate of this package's total download
+        effort, even if it is already downloaded. """
+
+        effort = 0
+        if self.compressedArchive:
+            effort += self.compressedArchive.size * self.downloadFactor
+        if self.uncompressedArchive:
+            effort += self.uncompressedArchive.size * self.uncompressFactor
+        # Don't bother counting unpacking.
+
+        return effort
+
     def getFormattedName(self):
         """ Returns the name of this package, for output to the user.
         This will be the "public" name of the package, as formatted
@@ -217,6 +231,16 @@ class PackageInfo:
 
         return self.hasPackage
 
+    def hasCurrentDescFile(self):
+        """ Returns true if a desc file file has been successfully
+        read for this package and is still current, false
+        otherwise. """
+
+        if not self.host.hasCurrentContentsFile():
+            return False
+
+        return self.hasDescFile
+
     def downloadDescFile(self, http):
         """ Downloads the desc file for this particular package,
         synchronously, and then reads it.  Returns true on success,
@@ -240,42 +264,44 @@ class PackageInfo:
             # We've already got one.
             yield self.stepComplete; return
 
-        self.http = http
+        if self.host.appRunner and self.host.appRunner.verifyContents != self.host.appRunner.P3DVCNever:
+            # We're allowed to download it.
+            self.http = http
 
-        func = lambda step, self = self: self.__downloadFile(
-            None, self.descFile,
-            urlbase = self.descFile.filename,
-            filename = self.descFileBasename)
-        step = self.InstallStep(func, self.descFile.size, self.downloadFactor, 'downloadDesc')
-
-        for token in step.func():
-            if token == self.stepContinue:
-                yield token
-            else:
-                break
-
-        while token == self.restartDownload:
-            # Try again.
             func = lambda step, self = self: self.__downloadFile(
                 None, self.descFile,
                 urlbase = self.descFile.filename,
                 filename = self.descFileBasename)
             step = self.InstallStep(func, self.descFile.size, self.downloadFactor, 'downloadDesc')
+
             for token in step.func():
                 if token == self.stepContinue:
                     yield token
                 else:
                     break
 
-        if token == self.stepFailed:
-            # Couldn't download the desc file.
-            yield self.stepFailed; return
+            while token == self.restartDownload:
+                # Try again.
+                func = lambda step, self = self: self.__downloadFile(
+                    None, self.descFile,
+                    urlbase = self.descFile.filename,
+                    filename = self.descFileBasename)
+                step = self.InstallStep(func, self.descFile.size, self.downloadFactor, 'downloadDesc')
+                for token in step.func():
+                    if token == self.stepContinue:
+                        yield token
+                    else:
+                        break
 
-        assert token == self.stepComplete
+            if token == self.stepFailed:
+                # Couldn't download the desc file.
+                yield self.stepFailed; return
 
-        filename = Filename(self.getPackageDir(), self.descFileBasename)
-        # Now that we've written the desc file, make it read-only.
-        os.chmod(filename.toOsSpecific(), 0444)
+            assert token == self.stepComplete
+
+            filename = Filename(self.getPackageDir(), self.descFileBasename)
+            # Now that we've written the desc file, make it read-only.
+            os.chmod(filename.toOsSpecific(), 0444)
 
         if not self.__readDescFile():
             # Weird, it passed the hash check, but we still can't read
@@ -386,6 +412,12 @@ class PackageInfo:
         pc.start()
 
         self.hasPackage = False
+        
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # We're not allowed to download anything.
+            self.installPlans = []
+            pc.stop()
+            return
 
         if self.asMirror:
             # If we're just downloading a mirror archive, we only need
@@ -468,6 +500,11 @@ class PackageInfo:
             # plan B as the only plan.
             self.installPlans = [planB]
 
+        # In case of unexpected failures on the internet, we will retry 
+        # the full download instead of just giving up.
+        for retry in range(ConfigVariableInt('package-full-dl-retries', 1)):
+            self.installPlans.append(planB[:])
+
         pc.stop()
 
     def __scanDirectoryRecursively(self, dirname):
@@ -496,6 +533,10 @@ class PackageInfo:
     def __checkArchiveStatus(self):
         """ Returns true if the archive and all extractable files are
         already correct on disk, false otherwise. """
+
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # Assume that everything is just fine.
+            return True
 
         # Get a list of all of the files in the directory, so we can
         # remove files that don't belong.
@@ -579,6 +620,10 @@ class PackageInfo:
 
         if self.hasPackage:
             # We've already got one.
+            yield self.stepComplete; return
+
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # We're not allowed to download anything. Assume it's already downloaded.
             yield self.stepComplete; return
 
         # We should have an install plan by the time we get here.
@@ -692,6 +737,10 @@ class PackageInfo:
         packageDir.  Yields one of stepComplete, stepFailed, 
         restartDownload, or stepContinue. """
 
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # We're not allowed to download anything.
+            yield self.stepFailed; return
+
         self.updated = True
 
         if not urlbase:
@@ -778,6 +827,7 @@ class PackageInfo:
                     if step.bytesDone > step.bytesNeeded:
                         # Oops, too much data.  Might as well abort;
                         # it's the wrong file.
+                        self.notify.warning("Got more data than expected for download %s" % (url))
                         break
                     
                     self.__updateStepProgress(step)
@@ -872,6 +922,10 @@ class PackageInfo:
         archive.  Yields one of stepComplete, stepFailed, 
         restartDownload, or stepContinue. """
 
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # We're not allowed to!
+            yield self.stepFailed; return
+
         self.updated = True
 
         sourcePathname = Filename(self.getPackageDir(), self.compressedArchive.filename)
@@ -921,6 +975,10 @@ class PackageInfo:
             # Nothing to extract.
             self.hasPackage = True
             yield self.stepComplete; return
+
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # We're not allowed to!
+            yield self.stepFailed; return
 
         self.updated = True
 
@@ -1065,6 +1123,10 @@ class PackageInfo:
         called automatically by installPackage(). """
 
         if not hasattr(PandaModules, 'TiXmlDocument'):
+            return
+
+        if self.host.appRunner and self.host.appRunner.verifyContents == self.host.appRunner.P3DVCNever:
+            # Not allowed to write any files to the package directory.
             return
 
         if self.updated:

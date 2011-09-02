@@ -281,6 +281,22 @@ output(ostream &out) {
 ////////////////////////////////////////////////////////////////////
 void P3DMainObject::
 set_pyobj(P3D_object *pyobj) {
+  if (pyobj == this) {
+    // We are setting a reference directly to ourselves.  This happens
+    // when the application has accepted the main object we gave it in
+    // set_instance_info().  This means the application is directly
+    // manipulating this object as its appRunner.main.  In this case,
+    // we don't actually need to set the reference; instead, we clear
+    // anything we had set.
+    nout << "application shares main object\n";
+    pyobj = NULL;
+
+  } else if (pyobj != NULL) {
+    // In the alternate case, the application has its own, separate
+    // appRunner.main object.  Thus, we do need to set the pointer.
+    nout << "application has its own main object\n";
+  }
+    
   if (_pyobj != pyobj) {
     P3D_OBJECT_XDECREF(_pyobj);
     _pyobj = pyobj;
@@ -289,12 +305,7 @@ set_pyobj(P3D_object *pyobj) {
 
       // Now that we have a pyobj, we have to transfer down all of the
       // properties we'd set locally.
-      Properties::const_iterator pi;
-      for (pi = _properties.begin(); pi != _properties.end(); ++pi) {
-        const string &property_name = (*pi).first;
-        P3D_object *value = (*pi).second;
-        P3D_OBJECT_SET_PROPERTY(_pyobj, property_name.c_str(), false, value);
-      }
+      apply_properties(_pyobj);
     }
   }
 }
@@ -308,6 +319,41 @@ set_pyobj(P3D_object *pyobj) {
 P3D_object *P3DMainObject::
 get_pyobj() const {
   return _pyobj;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DMainObject::apply_properties
+//       Access: Public
+//  Description: Applies the locally-set properties onto the indicated
+//               Python object, but does not store the object.  This
+//               is a one-time copy of the locally-set properties
+//               (like "coreapiHostUrl" and the like) onto the
+//               indicated Python object.
+////////////////////////////////////////////////////////////////////
+void P3DMainObject::
+apply_properties(P3D_object *pyobj) {
+  P3DPythonObject *p3dpyobj = NULL;
+  if (pyobj->_class == &P3DObject::_object_class) {
+    p3dpyobj = ((P3DObject *)pyobj)->as_python_object();
+  }
+
+  Properties::const_iterator pi;
+  for (pi = _properties.begin(); pi != _properties.end(); ++pi) {
+    const string &property_name = (*pi).first;
+    P3D_object *value = (*pi).second;
+    if (p3dpyobj != NULL && P3D_OBJECT_GET_TYPE(value) != P3D_OT_object) {
+      // If we know we have an actual P3DPythonObject (we really
+      // expect this), then we can call set_property_insecure()
+      // directly, because we want to allow setting the initial
+      // properties even if Javascript has no permissions to write
+      // into Python.  But we don't allow setting objects this way in
+      // any event.
+      p3dpyobj->set_property_insecure(property_name, false, value);
+    } else {
+      // Otherwise, we go through the generic interface.
+      P3D_OBJECT_SET_PROPERTY(pyobj, property_name.c_str(), false, value);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -679,12 +725,13 @@ call_uninstall(P3D_object *params[], int num_params) {
 
   if (_inst != NULL) {
     nout << "uninstall " << mode << " for " << _inst << "\n";
+    bool success = false;
     if (mode == "host") {
-      _inst->uninstall_host();
+      success = _inst->uninstall_host();
     } else {
-      _inst->uninstall_packages();
+      success = _inst->uninstall_packages();
     }
-    return inst_mgr->new_bool_object(true);
+    return inst_mgr->new_bool_object(success);
   }
 
   nout << "couldn't uninstall; no instance.\n";
