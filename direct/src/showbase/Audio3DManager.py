@@ -2,7 +2,7 @@
 
 __all__ = ['Audio3DManager']
 
-from pandac.PandaModules import VBase3
+from pandac.PandaModules import Vec3, VBase3
 from direct.task import Task
 #
 class Audio3DManager:
@@ -252,6 +252,12 @@ class Audio3DManager:
         """
         # Update the positions of all sounds based on the objects
         # to which they are attached
+        
+        # The audio manager is not active so do nothing
+        if hasattr(self.audio_manager, "getActive"):
+            if self.audio_manager.getActive()==0:
+                return Task.cont
+        
         for known_object in self.sound_dict.keys():
             tracked_sound = 0
             while tracked_sound < len(self.sound_dict[known_object]):
@@ -272,3 +278,14 @@ class Audio3DManager:
         else:
             self.audio_manager.audio3dSetListenerAttributes(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1)
         return Task.cont
+        
+    def disable(self):
+        """
+        Detaches any existing sounds and removes the update task
+        """
+        taskMgr.remove("Audio3DManager-updateTask")
+        self.detachListener()
+        for object in self.sound_dict.keys():
+            for sound in self.sound_dict[object]:
+                self.detachSound(sound)
+        
