@@ -21,8 +21,6 @@ class InterestState:
     StatePendingDel = 'PendingDel'
     def __init__(self, desc, state, context, event, parentId, zoneIdList,
                  eventCounter, auto=False):
-        if not '|' in desc and not '-' in desc:
-            import pdb;pdb.set_trace()
         self.desc = desc
         self.state = state
         self.context = context

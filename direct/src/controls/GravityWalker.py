@@ -288,8 +288,6 @@ class GravityWalker(DirectObject.DirectObject):
             self.cRayNodePath.node().setFromCollideMask(self.floorBitmask)
 
     def setGravity(self, gravity):
-        if gravity < 0:
-            import pdb;pdb.set_trace()
         self.__gravity = gravity
         self.lifter.setGravity(self.__gravity)
 
@@ -365,7 +363,7 @@ class GravityWalker(DirectObject.DirectObject):
             self.collisionsActive = active
             # Each time we change the collision geometry, make one
             # more pass to ensure we aren't standing in a wall.
-            self.oneTimeCollide() # Hey, here's a great idea! When I'm disabling collisions, I really want to run them again one more time. WTF?
+            self.oneTimeCollide()
             # make sure we have a shadow traverser
             base.initShadowTrav()
             if active:
@@ -490,7 +488,7 @@ class GravityWalker(DirectObject.DirectObject):
         """
         # get the button states:
         run = inputState.isSet("run")
-        forward = inputState.sSet("forward")
+        forward = inputState.isSet("forward")
         reverse = inputState.isSet("reverse")
         turnLeft = inputState.isSet("turnLeft")
         turnRight = inputState.isSet("turnRight")
