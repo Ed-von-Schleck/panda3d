@@ -110,7 +110,7 @@ class DistributedObjectAI(DistributedObjectBase):
         """
         self.__generates -= 1
         if self.__generates < 0:
-            self.notify.debug('DistributedObjectAI: delete() called more times than generate()')
+            assert self.notify.debug('DistributedObjectAI: delete() called more times than generate()')
         if self.__generates == 0:
             # prevent this code from executing multiple times
             if self.air is not None:
@@ -418,12 +418,22 @@ class DistributedObjectAI(DistributedObjectBase):
             self.doId = doId
         # Put the new DO in the dictionaries
         self.air.addDOToTables(self, location=(parentId, zoneId))
+        
         # Send a generate message
+        self.preGenerate()
         self.sendGenerateWithRequired(self.air, parentId, zoneId, optionalFields)
         self.generate()
         self.announceGenerate()
         self.postGenerateMessage()
 
+    def preGenerate(self):
+        """
+        Unfortunately, there may be cases where you need the zoneId info
+        prior to sending this object's data to the state server.  Do that
+        stuff here, and as always, remember to call down.
+        """
+        pass
+    
     def generate(self):
         """
         Inheritors should put functions that require self.zoneId or
@@ -568,14 +578,15 @@ class DistributedObjectAI(DistributedObjectBase):
         else:
             self.notify.warning("Unexpected completion from barrier %s" % (context))
 
-    def isGridParent(self):
-        # If this distributed object is a DistributedGrid return 1.  0 by default
-        return 0
-
     def execCommand(self, string, mwMgrId, avId, zoneId):
         pass
     
     def _retrieveCachedData(self):
         """ This is a no-op on the AI. """
         pass
-    
+
+    def printDoTree(self):
+        self.air.printDoTree(self.doId)
+        pass
+
+

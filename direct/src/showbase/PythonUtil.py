@@ -2811,9 +2811,9 @@ except:
     # we're in production, there is no pdb module. assign these to something so that the
     # __builtin__ exports will work
     # references in the code should either be if __dev__'d or asserted
-    set_trace = None
-    setTrace = None
-    pm = None
+    set_trace = (lambda:None)
+    setTrace = (lambda:None)
+    pm = (lambda:None)
 
 
 class ScratchPad:
@@ -3458,7 +3458,10 @@ def report(types = [], prefix = '', xform = None, notifyFunc = None, dConfigPara
     def decorator(f):
         def wrap(*args,**kwargs):
             if args:
-                rArgs = [args[0].__class__.__name__ + ', ']
+                try:
+                    rArgs = [repr(args[0]) + ', ']
+                except:
+                    rArgs = [args[0].__class__.__module__ + ', ']
             else:
                 rArgs = []
 
@@ -4175,7 +4178,15 @@ def isInteger(n):
     return type(n) in (types.IntType, types.LongType)
 
 def configIsToday(configName):
+    """
+    Returns True if the config string indicated by configName
+    is of the formats (m/d/Y, m-d-Y, or m.d.Y) and matches the
+    current date. Otherwise returns false.
+    """
     # TODO: replace usage of strptime with something else
+    if not __dev__:
+        return False
+
     # returns true if config string is a valid representation of today's date
     today = time.localtime()
     confStr = config.GetString(configName, '')

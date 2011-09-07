@@ -123,7 +123,7 @@ class FSM(DirectObject):
 
     There is a way to define specialized transition behavior between
     two particular states.  This is done by defining a from<X>To<Y>()
-    function, where X is the old state and Y is the new state.  If this
+    function, where <X> is the old state and <Y> is the new state.  If this
     is defined, it will be run in place of the exit<X> and enter<Y>
     functions, so if you want that behavior, you'll have to call them
     specifically.  Otherwise, you can completely replace that transition's
