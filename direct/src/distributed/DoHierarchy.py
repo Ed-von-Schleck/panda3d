@@ -1,5 +1,49 @@
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
+class Node:
+    def __init__(self, doId):
+        self.doId = doId
+        self.children = {}
+        pass
+
+    def __repr__(self):
+        return str(self)
+    
+    def __str__(self):
+        return '<%s>' % (self.doId,)
+
+    def __lt__(self, other):
+        return self.doId < other.doId
+    
+    def __getitem__(self, zone):
+        return self.children.get(zone)
+
+    def addChild(self, zoneId, node):
+        self.children.setdefault(zoneId, set()).add(node)
+        pass
+
+    def prettyStr(self, indent = 0, depth = 0):
+        padding = ' '*indent
+        out = '%s%d (%s)\n' % (padding, self.doId, `go(self.doId)`)
+        depth -= 1
+        if depth:
+            for zone, nodes in sorted(self.children.items()):
+                out += '  %s[%d]       <%s>\n' % (padding, zone, `go(self.doId)`)
+                for node in sorted(nodes):
+                    out += node.prettyStr(indent+4, depth)
+                    pass
+                pass
+            pass
+        return out
+
+    def getChildren(self, zone = None):
+        if zone is None:
+            return self.children
+        else:
+            return self.children.get(zone)
+        pass
+    
+    
 class DoHierarchy:
     """
     This table has been a source of memory leaks, with DoIds getting left in the table indefinitely.
@@ -102,3 +146,60 @@ class DoHierarchy:
         else:
             self.notify.error(
                 "deleteObjectLocation: parentId: %s not found" % parentId)
+
+    def genTree(self):
+        """
+        Returns a list of top level nodes and a dictionary of doIds to nodes.
+
+        The nodes contain links each doId's children nodes.
+        """
+        topnodes = {}
+        nodes = {}
+
+        # Build the tree(s) by iterating through _table
+        # adding child nodes to their parents
+        for doId, zones in self._table.items():
+            node = nodes.setdefault(doId, Node(doId))
+            topnodes[doId] = node
+            for zone, doIds in zones.items():
+                for doId in doIds:
+                    node.addChild(zone,nodes.setdefault(doId, Node(doId)))
+                    pass
+                pass
+            pass
+
+        # Determine the root(s) of the tree(s)
+        # by culling out any nodes found to be a
+        # child of another
+        for doId, zones in self._table.items():
+            for zone, doIds in zones.items():
+                for doId in doIds:
+                    topnodes.pop(doId, None)
+                    pass
+                pass
+            pass
+
+        return topnodes.values(),nodes
+    
+
+    def printTree(self, doId = None, depth = 0):
+        topnodes, nodes =  self.genTree()
+
+        if doId:
+            if doId in nodes:
+                nodes = [nodes[doId]]
+            else:
+                nodes = []
+                pass
+            pass
+        else:
+            nodes = topnodes
+            pass
+
+        for node in nodes:
+            print node.prettyStr(depth = depth)
+            pass
+        pass
+    
+    def getChildren(self, doId):
+        topnodes, nodes =  self.genTree()
