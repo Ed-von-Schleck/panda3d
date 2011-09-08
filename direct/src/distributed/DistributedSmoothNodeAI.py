@@ -8,6 +8,12 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
         DistributedNodeAI.DistributedNodeAI.__init__(self, air, name)
         DistributedSmoothNodeBase.DistributedSmoothNodeBase.__init__(self)
 
+        
+    def preGenerate(self):
+        DistributedNodeAI.DistributedNodeAI.preGenerate(self)
+        DistributedSmoothNodeBase.DistributedSmoothNodeBase.preGenerate(self)
+        self.cnode.setEmbeddedVal(self.zoneId)
+
     def generate(self):
         DistributedNodeAI.DistributedNodeAI.generate(self)
         DistributedSmoothNodeBase.DistributedSmoothNodeBase.generate(self)
@@ -60,8 +66,12 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
     def setSmPosHpr(self, x, y, z, h, p, r, t=None):
         self.setPosHpr(x, y, z, h, p, r)
 
-    def setSmPosHprL(self, l, x, y, z, h, p, r, t=None):
+    def setPosHprE(self, x, y, z, h, p, r, e, t=None):
         self.setPosHpr(x, y, z, h, p, r)
+        self.setComponentE(e)
+
+    def setSmPosHprE(self, x, y, z, h, p, r, e, t=None):
+        self.setPosHprE(x, y, z, h, p, r, e, t)
 
     def clearSmoothing(self, bogus = None):
         pass
@@ -80,7 +90,12 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
         self.setP(p)
     def setComponentR(self, r):
         self.setR(r)
-    def setComponentL(self, l):
+    def setComponentE(self, e):
+        # Override this in subclasses to handle the subclass-defined embedded data
+
+        # This really doesn't do anything, but the cnode is as good a place as any to store
+        # the embedded value received from the controlling object.
+        self.cnode.setEmbeddedVal(e)
         pass
     def setComponentT(self, t):
         pass
@@ -97,12 +112,18 @@ class DistributedSmoothNodeAI(DistributedNodeAI.DistributedNodeAI,
         return self.getP()
     def getComponentR(self):
         return self.getR()
-    def getComponentL(self):
-        if (self.zoneId):
-            return self.zoneId
-        else:
-            # we can't send None over the wire which self.zoneId can sometimes be
-            return 0
+    def getComponentE(self):
+        return self.cnode.getEmbeddedVal()
     def getComponentT(self):
         return 0
 
+    @report(types = ['args'], dConfigParam = 'smoothnode')
+    def wrtReparentTo(self, parent):
+        DistributedNodeAI.DistributedNodeAI.wrtReparentTo(self, parent)
+
+        # Update our broadcast data source with our new current position.
+        # Any embedded data will need to be handled separately.
+        if self.isGenerated():
+            self.cnode.refreshPosHpr()
+            pass
+        pass
