@@ -112,7 +112,7 @@ class Interval(DirectObject):
 
     def getT(self):
         return self.currT
-
+        
     def start(self, startT = 0.0, endT = -1.0, playRate = 1.0):
         self.setupPlay(startT, endT, playRate, 0)
         self.__spawnTask()
