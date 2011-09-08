@@ -106,14 +106,14 @@ mark_position() {
       double age = timestamp - _smooth_timestamp;
       age = min(age, _max_position_age);
 
-      set_smooth_pos(_sample._pos, _sample._hpr, timestamp);
+      set_smooth_pos(_sample._pos, _sample._hpr, _sample._embedded, timestamp);
       if (age != 0.0) {
         compute_velocity(pos_delta, hpr_delta, age);
       }
 
     } else {
       // No velocity is possible, just position and orientation.
-      set_smooth_pos(_sample._pos, _sample._hpr, timestamp);
+      set_smooth_pos(_sample._pos, _sample._hpr, _sample._embedded, timestamp);
     }
 
   } else {
@@ -163,9 +163,21 @@ mark_position() {
     } else {
       // In the ordinary case, just add another sample.
       _points.push_back(_sample);
-    }
-  }
+
+      if (deadrec_cat.is_spam()) {
+        deadrec_cat.spam()
+          << "*** added point: "
+          << "(" << _sample._pos << ", " << _sample._hpr << ", " << _sample._embedded << ", " << _sample._timestamp << ")\n" ;
+
+        for (Points::iterator pi = _points.begin(); pi != _points.end(); pi++) {
+          deadrec_cat.spam()
+            << "(" << pi->_pos << ", " << pi->_hpr << ", " << pi->_embedded << ", " << pi->_timestamp << ")\n" ;
+        }
+
+      }
+    } 
   //cout << "mark_position: " << _points.back()._pos << endl;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -216,6 +228,10 @@ compute_smooth_position(double timestamp) {
   if (deadrec_cat.is_spam()) {
     deadrec_cat.spam()
       << _points.size() << " points\n";
+
+    deadrec_cat.spam()
+      << "_sample: " 
+      << "(" << _sample._pos << ", " << _sample._hpr << ", " << _sample._embedded << ", " << _sample._timestamp << ")\n" ;
   }
 
   if (_points.empty()) {
@@ -318,7 +334,7 @@ compute_smooth_position(double timestamp) {
     bool result = !(_last_point_before == point_before && 
                     _last_point_after == point_after);
     const SamplePoint &point = _points[point_after];
-    set_smooth_pos(point._pos, point._hpr, timestamp);
+    set_smooth_pos(point._pos, point._hpr, point._embedded, timestamp);
     _smooth_forward_velocity = 0.0;
     _smooth_lateral_velocity = 0.0;
     _smooth_rotational_velocity = 0.0;
@@ -376,7 +392,7 @@ compute_smooth_position(double timestamp) {
       }
       // If we really only have one point, use it.
       const SamplePoint &point = _points[point_before];
-      set_smooth_pos(point._pos, point._hpr, timestamp);
+      set_smooth_pos(point._pos, point._hpr, point._embedded, timestamp);
     }
 
     double age = timestamp - timestamp_before;
@@ -407,7 +423,7 @@ compute_smooth_position(double timestamp) {
         deadrec_cat.spam()
           << "Points are equivalent\n";
       }
-      set_smooth_pos(point_b._pos, point_b._hpr, timestamp);
+      set_smooth_pos(point_b._pos, point_b._hpr, point_b._embedded, timestamp);
 
       // This implies that velocity is 0.
       _smooth_forward_velocity = 0.0;
@@ -491,26 +507,6 @@ compute_smooth_position(double timestamp) {
           << _last_point_after << "\n";
       }
     }
-
-    // And if there's only one point left, remove even that one
-    // after a while.
-    /* jbutler: commented this out, seems to cause the smoothing pop that occurs
-                when this object is stopped for a while then starts moving again
-    if (_points.size() == 1) {
-      double age = timestamp - _points.back()._timestamp;
-      if (deadrec_cat.is_spam()) {
-        deadrec_cat.spam()
-          << "considering clearing all points, age = " << age << "\n";
-      }
-      if (age > _reset_velocity_age) {
-        if (deadrec_cat.is_spam()) {
-          deadrec_cat.spam()
-            << "clearing all points.\n";
-        }
-        _points.clear();
-      }
-    }
-    */
   }
 
   if (deadrec_cat.is_spam()) {
@@ -543,7 +539,7 @@ get_latest_position() {
   }
 
   const SamplePoint &point = _points.back();
-  set_smooth_pos(point._pos, point._hpr, point._timestamp);
+  set_smooth_pos(point._pos, point._hpr, point._embedded, point._timestamp);
   _smooth_forward_velocity = 0.0;
   _smooth_lateral_velocity = 0.0;
   _smooth_rotational_velocity = 0.0;
@@ -583,11 +579,11 @@ write(ostream &out) const {
 //               the indicated timestamp.
 ////////////////////////////////////////////////////////////////////
 void SmoothMover::
-set_smooth_pos(const LPoint3f &pos, const LVecBase3f &hpr,
+set_smooth_pos(const LPoint3f &pos, const LVecBase3f &hpr, PN_uint64 embedded, 
                double timestamp) {
   if (deadrec_cat.is_spam()) {
     deadrec_cat.spam()
-      << "set_smooth_pos(" << pos << ", " << hpr << ", "
+      << "set_smooth_pos(" << pos << ", " << hpr << ", " << embedded << ", "
       << timestamp << ")\n";
   }
 
@@ -599,6 +595,10 @@ set_smooth_pos(const LPoint3f &pos, const LVecBase3f &hpr,
     _smooth_hpr = hpr;
     _smooth_position_changed = true;
     _computed_forward_axis = false;
+  }
+  if (_smooth_embedded != embedded) {
+    _smooth_embedded = embedded;
+    _smooth_position_changed = true;
   }
 
   _smooth_timestamp = timestamp;
@@ -640,11 +640,18 @@ linear_interpolate(int point_before, int point_after, double timestamp) {
 
     if (deadrec_cat.is_spam()) {
       deadrec_cat.spam()
-        << "   interp " << t << ": " << point_b._pos << " to " << point_a._pos
+        << "   interp " << t << ": " 
+        << "(" << point_b._pos << ", " << point_b._hpr << ", " << point_b._embedded << ", " << point_b._timestamp << ")"
+        << " to "
+        << "(" << point_a._pos << ", " << point_a._hpr << ", " << point_a._embedded << ", " << point_a._timestamp << ")"
         << "\n";
     }
+
     set_smooth_pos(point_b._pos + t * (point_a._pos - point_b._pos),
                    point_b._hpr + t * (point_a._hpr - point_b._hpr),
+                   // We will always use the latest embedded data, since it's possible
+                   // that it's discrete data and thus cannot be interpolated.
+                                       point_a._embedded,
                    timestamp);
 
     // The velocity remains the same as last time.
@@ -666,11 +673,15 @@ linear_interpolate(int point_before, int point_after, double timestamp) {
 
     if (deadrec_cat.is_spam()) {
       deadrec_cat.spam()
-        << "   interp " << t << ": " << point_b._pos << " to " << point_a._pos
+        << "   interp " << t << ": " 
+        << "(" << point_b._pos << ", " << point_b._hpr << ", " << point_b._embedded << ", " << point_b._timestamp << ")"
+        << " to "
+        << "(" << point_a._pos << ", " << point_a._hpr << ", " << point_a._embedded << ", " << point_a._timestamp << ")"
         << "\n";
     }
     set_smooth_pos(point_b._pos + t * pos_delta, 
                    point_b._hpr + t * hpr_delta, 
+                                  point_a._embedded,
                    timestamp);
     compute_velocity(pos_delta, hpr_delta, age);
   }
@@ -758,19 +769,37 @@ handle_wrt_reparent(NodePath &old_parent, NodePath &new_parent) {
   Points::iterator pi;
   NodePath np = old_parent.attach_new_node("smoothMoverWrtReparent");
 
-  //cout << "handle_wrt_reparent: ";
+  if (deadrec_cat.is_spam()) {
+    deadrec_cat.spam()
+      << "  handle_wrt_reparent:\n";
+  }
+
+  // Move all of our stored sample points into the new
+  // coordinate space
   for (pi = _points.begin(); pi != _points.end(); pi++) {
     np.set_pos_hpr((*pi)._pos, (*pi)._hpr);
+    if (deadrec_cat.is_spam()) {
+      deadrec_cat.spam()
+        << "(" << (*pi)._pos << ") -> ";
+    }
     (*pi)._pos = np.get_pos(new_parent);
     (*pi)._hpr = np.get_hpr(new_parent);
-    //cout << "(" << (*pi)._pos << "), ";
+    if (deadrec_cat.is_spam()) {
+      deadrec_cat.spam()
+        << "(" << (*pi)._pos << "), \n";
+    }
   }
-  //cout << endl;
+  if (deadrec_cat.is_spam()) {
+    deadrec_cat.spam()
+      << "\n";
+  }
   
+  // Move our current known position into our new coordinate space
   np.set_pos_hpr(_sample._pos, _sample._hpr);
   _sample._pos = np.get_pos(new_parent);
   _sample._hpr = np.get_hpr(new_parent);
 
+  // Move our current smoothed telemetry into our new coordinate space
   np.set_pos_hpr(_smooth_pos, _smooth_hpr);
   _smooth_pos = np.get_pos(new_parent);
   _smooth_hpr = np.get_hpr(new_parent);
