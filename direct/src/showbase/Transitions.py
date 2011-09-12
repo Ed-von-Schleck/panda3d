@@ -87,7 +87,7 @@ class Transitions:
             self.fade.setColor(0,0,0,0)
 
     
-    def getFadeInIval(self, t=0.5):
+    def getFadeInIval(self, t=0.5, finishIval=None):
         """
         Returns an interval without starting it.  This is particularly useful in
         cutscenes, so when the cutsceneIval is escaped out of we can finish the fade immediately
@@ -102,9 +102,11 @@ class Transitions:
                                   Func(messenger.send,self.FadeInEvent),
                                   name = self.fadeTaskName,
                                   )
+        if finishIval:
+            transitionIval.append(finishIval)
         return transitionIval
 
-    def getFadeOutIval(self, t=0.5):
+    def getFadeOutIval(self, t=0.5, finishIval=None):
         """
         Create a sequence that lerps the color out, then
         parents the fade to hidden
@@ -118,9 +120,11 @@ class Transitions:
                                   Func(messenger.send,self.FadeOutEvent),
                                   name = self.fadeTaskName,
                                   )
+        if finishIval:
+            transitionIval.append(finishIval)
         return transitionIval
     
-    def fadeIn(self, t=0.5):
+    def fadeIn(self, t=0.5, finishIval=None):
         """
         Play a fade in transition over t seconds.
         Places a polygon on the aspect2d plane then lerps the color
@@ -149,10 +153,10 @@ class Transitions:
         else:
             # Create a sequence that lerps the color out, then
             # parents the fade to hidden
-            self.transitionIval = self.getFadeInIval(t)
+            self.transitionIval = self.getFadeInIval(t, finishIval)
             self.transitionIval.start()
 
-    def fadeOut(self, t=0.5):
+    def fadeOut(self, t=0.5, finishIval=None):
         """
         Play a fade out transition over t seconds.
         Places a polygon on the aspect2d plane then lerps the color
@@ -173,10 +177,8 @@ class Transitions:
         else:
             # Create a sequence that lerps the color out, then
             # parents the fade to hidden
-            self.transitionIval = self.getFadeOutIval(t)
+            self.transitionIval = self.getFadeOutIval(t,finishIval)
             self.transitionIval.start()
-            pass
-        pass
     
     def fadeScreen(self, alpha=0.5):
         """
