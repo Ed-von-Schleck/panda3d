@@ -305,8 +305,6 @@ class DistributedObject(DistributedObjectBase):
         """
         assert self.notify.debugStateCall(self)
         self.activeState = ESGenerating
-        # this has already been set at this point
-        #self.cr.storeObjectLocation(self, self.parentId, self.zoneId)
         # semi-hack: we seem to be calling generate() more than once for objects that multiply-inherit
         if not hasattr(self, '_autoInterestHandle'):
             self.cr.openAutoInterests(self)
@@ -355,6 +353,8 @@ class DistributedObject(DistributedObjectBase):
 
     def sendUpdate(self, fieldName, args = [], sendToId = None):
         if self.cr:
+            if self.cr.wantUpdateCalls:
+                self.notify.warning("fieldName = %s, args = %s" % (fieldName, args))
             dg = self.dclass.clientFormatUpdate(
                 fieldName, sendToId or self.doId, args)
             self.cr.send(dg)
@@ -514,9 +514,9 @@ class DistributedObject(DistributedObjectBase):
         # avatar class overrides this to return true.
         return self.cr and self.cr.isLocalId(self.doId)
 
-    def isGridParent(self):
-        # If this distributed object is a DistributedGrid return 1.  0 by default
-        return 0
-
     def execCommand(self, string, mwMgrId, avId, zoneId):
+        pass
+
+    def printDoTree(self):
+        self.cr.printDoTree(self.doId)
         pass

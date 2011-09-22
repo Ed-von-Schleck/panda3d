@@ -36,9 +36,7 @@ PyObject *CDistributedSmoothNodeBase::_clock_delta = NULL;
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 CDistributedSmoothNodeBase::
-CDistributedSmoothNodeBase() {
-  _currL[0] = 0;
-  _currL[1] = 0;
+CDistributedSmoothNodeBase(): _store_e(0), _dirty_e(false){
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -73,26 +71,21 @@ initialize(const NodePath &node_path, DCClass *dclass, CHANNEL_TYPE do_id) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: CDistributedSmoothNodeBase::send_everything
-//       Access: Published
-//  Description: Broadcasts the current pos/hpr in its complete form.
-////////////////////////////////////////////////////////////////////
-void CDistributedSmoothNodeBase::
-send_everything() {
-  _currL[0] = _currL[1];
-  d_setSmPosHprL(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
-                 _store_hpr[0], _store_hpr[1], _store_hpr[2], _currL[0]);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CDistributedSmoothNodeBase::broadcast_pos_hpr_full
+//     Function: CDistributedSmoothNodeBase::refresh_pos_hpr
 //       Access: Published
 //  Description: Examines the complete pos/hpr information to see
 //               which of the six elements have changed, and
-//               broadcasts the appropriate messages.
+//               stores the info internally. You must send any 
+//               updates for any detected changes manually.
+//               Returns flags associated with the changed values.
 ////////////////////////////////////////////////////////////////////
-void CDistributedSmoothNodeBase::
-broadcast_pos_hpr_full() {
+int CDistributedSmoothNodeBase::
+refresh_pos_hpr() {
+  // We may not be initialized yet.
+  if (_node_path.is_empty()) {
+    return 0;
+  }
+
   LPoint3f xyz = _node_path.get_pos();
   LVecBase3f hpr = _node_path.get_hpr();
 
@@ -128,16 +121,40 @@ broadcast_pos_hpr_full() {
     flags |= F_new_r;
   }
 
-  if (_currL[0] != _currL[1]) {
-    // location (zoneId) has changed, send out all info
-    // copy over 'set' location over to 'sent' location
-    _currL[0] = _currL[1];
-    // Any other change
-    _store_stop = false;
-    d_setSmPosHprL(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
-                   _store_hpr[0], _store_hpr[1], _store_hpr[2], _currL[0]);
+  if (_dirty_e) {
+    flags |= F_new_e;
+  }
 
-  } else if (flags == 0) {
+  return flags;
+}
+////////////////////////////////////////////////////////////////////
+//     Function: CDistributedSmoothNodeBase::send_everything
+//       Access: Published
+//  Description: Broadcasts the current pos/hpr in its complete form.
+////////////////////////////////////////////////////////////////////
+void CDistributedSmoothNodeBase::
+send_everything() {
+  _dirty_e = false;
+  d_setSmPosHprE(_store_xyz[0], _store_xyz[1], _store_xyz[2], 
+                 _store_hpr[0], _store_hpr[1], _store_hpr[2], 
+                 _store_e);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: CDistributedSmoothNodeBase::broadcast_pos_hpr_full
+//       Access: Published
+//  Description: Examines the complete pos/hpr information to see
+//               which of the six elements have changed, and
+//               broadcasts the appropriate messages.
+////////////////////////////////////////////////////////////////////
+void CDistributedSmoothNodeBase::
+broadcast_pos_hpr_full() {
+  LPoint3f xyz = _node_path.get_pos();
+  LVecBase3f hpr = _node_path.get_hpr();
+
+  int flags = refresh_pos_hpr();
+
+  if (flags == 0) {
     // No change.  Send one and only one "stop" message.
     if (!_store_stop) {
       _store_stop = true;
@@ -183,6 +200,11 @@ broadcast_pos_hpr_full() {
     // Only change in X, Y, Z, H
     _store_stop = false;
     d_setSmXYZH(_store_xyz[0], _store_xyz[1], _store_xyz[2], _store_hpr[0]);
+
+  } else if (flags & F_new_e) {
+    // Only change in embedded
+    _store_stop = false;
+    send_everything();
 
   } else {
     // Any other change
@@ -349,7 +371,7 @@ finish_send_update(DCPacker &packer) {
       error << "Node position out of range for DC file: "
             << _node_path << " pos = " << _store_xyz
             << " hpr = " << _store_hpr
-            << " zoneId = " << _currL[0];
+            << " embedded = " << _store_e;
 
 #ifdef HAVE_PYTHON
       string message = error.str();
@@ -375,20 +397,25 @@ finish_send_update(DCPacker &packer) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: CDistributedSmoothNodeBase::set_curr_l
-//                 published function to set current location for
-//                 this object, this location is then sent out along
-//                 with the next position broadcast
+//     Function: CDistributedSmoothNodeBase::set_embedded_val
 //       Access: Private
-//  Description: Appends the timestamp and sends the update.
+//  Description: published function to set current embedded value for
+//               this object. It will be sent out with the next
+//               telemetry broadcast.
+//               We expose this because we can't infer changes in this
+//               value from the contained NodePath as we can with 
+//               telemetry.
 ////////////////////////////////////////////////////////////////////
 void CDistributedSmoothNodeBase::
-set_curr_l(PN_uint64 l) {
-  _currL[1] = l;
+set_embedded_val(PN_uint64 e) {
+  if (e != _store_e) {
+    _store_e = e;
+    _dirty_e = true;
+  }
 }
 
-void CDistributedSmoothNodeBase::
-print_curr_l() {
-  cout << "printCurrL: sent l: " << _currL[1] << " last set l: " << _currL[0] << "\n";
+PN_uint64 CDistributedSmoothNodeBase::
+get_embedded_val() const {
+  return _store_e;
 }
 

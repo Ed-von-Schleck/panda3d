@@ -291,11 +291,14 @@ class GravityWalker(DirectObject.DirectObject):
         self.__gravity = gravity
         self.lifter.setGravity(self.__gravity)
 
-    def getGravity(self, gravity):
+    def getGravity(self):
         return self.__gravity
 
+    def setVelocity(self, velocity):
+        self.lifter.setVelocity(velocity)
+
     def initializeCollisions(self, collisionTraverser, avatarNodePath,
-            avatarRadius = 1.4, floorOffset = 1.0, reach = 1.0):
+                             avatarRadius = 1.4, floorOffset = 1.0, reach = 1.0):
         """
         floorOffset is how high the avatar can reach.  I.e. if the avatar
             walks under a ledge that is <= floorOffset above the ground (a
@@ -693,3 +696,11 @@ class GravityWalker(DirectObject.DirectObject):
             """for debugging"""
             return self.notify.debug(
                     str(id(self))+' '+message)
+
+    # There are sometimes issues if the collision ray height is
+    # so tall that it collides with multiple levels of floors.
+    def setCollisionRayHeight(self, height):
+        cRayNode = self.cRayNodePath.node()
+        cRayNode.removeSolid(0)
+        cRay = CollisionRay(0.0, 0.0, height, 0.0, 0.0, -1.0)
+        cRayNode.addSolid(cRay)        
