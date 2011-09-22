@@ -439,3 +439,6 @@ class Transitions:
             if finishIval:
                 self.letterboxIval.append(finishIval)
             self.letterboxIval.start()
+
+    def fadeOutActive(self):
+        return self.fade and self.fade.getColor()[3] > 0
