@@ -102,9 +102,8 @@ class GridChild:
                 self._gridInterests[gridDoId] = [newInterest,zoneId]
         else:
             # indicate we want this grid interest once gridInterestEnabled is True
-            if game.process == 'client':
-                # we only care about interests on the client
-                self._gridInterests[gridDoId] = [None,zoneId]
+            # this is needed on AI so location gets updated as child moves around
+            self._gridInterests[gridDoId] = [None,zoneId]
 
     def getGridInterestIds(self):
         return self._gridInterests.keys()
