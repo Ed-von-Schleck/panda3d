@@ -58,6 +58,10 @@ class NonPhysicsWalker(DirectObject.DirectObject):
     def setAirborneHeightFunc(self, getAirborneHeight):
         self.getAirborneHeight = getAirborneHeight
 
+    def getIsAirborne(self):
+        # never airborne/jumping with this type of walker?
+        return False
+        
     def setWallBitMask(self, bitMask):
         self.cSphereBitMask = bitMask
 
