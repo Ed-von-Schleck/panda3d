@@ -288,7 +288,7 @@ class CartesianGridBase:
                 else:
                     self.notify.warning(
                         "%s handleChildCellChange %s: not a valid zone (%s) for pos %s" %(
-                        self.doId, child.doId, zoneId, pos))                     
+                        self.doId, child.doId, newZoneId, child.getPos(currGrid)))                     
 
     def stopManagementTask(self):
         if self.__managementTask:
@@ -297,3 +297,7 @@ class CartesianGridBase:
 
     def taskName(self, taskString):
         assert False, "Subclasses must define this"
+
+    def forceManagePass(self,child,setup=False):
+        if child in self.__managedChildren:
+            self.__manageChild(child, setup = setup)
