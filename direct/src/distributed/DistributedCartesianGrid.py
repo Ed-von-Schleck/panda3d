@@ -68,7 +68,12 @@ class DistributedCartesianGrid(DistributedNode, CartesianGridBase, StagedObject)
             av.enableGridInterest()
             pass
         pass
-    
+
+    def validGridInterest(self, child, gridId):
+        # interest only not valid if no interest handle exists
+        # and this is the client
+        return child.getGridInterestReference(gridId) != None
+
     ##################################################
     # Visualization Tools
     ##################################################

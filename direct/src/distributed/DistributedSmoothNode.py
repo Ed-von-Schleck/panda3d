@@ -105,6 +105,13 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
     ### Methods to handle computing and updating of the smoothed
     ### position.
 
+    def updateCurrentZone(self):
+        """
+        Perform an automated setLocation based on the last applied
+        smooth position
+        """
+        pass
+
     def smoothPosition(self):
         """
         This function updates the position of the node to its computed
@@ -112,7 +119,8 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         to specialize the behavior.
         """
         self.smoother.computeAndApplySmoothPosHpr(self, self)
-            
+        self.updateCurrentZone()
+
     def doSmoothTask(self, task):
         self.smoothPosition()
         return cont
@@ -268,7 +276,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         # This ensures that the marked positions (sample points)
         # are all relative to the same parent.
         x, y, z, h, p, r = self.transformTelemetry(x, y, z, h, p, r, e)
-             
+
         self._checkResume(timestamp)
         self.setComponentX(x)
         self.setComponentY(y)
@@ -439,7 +447,6 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         if self.smoothStarted:
             self.notify.info('handleWrtReparent(%s, %s)' % (self.getParent(), parent))
             self.smoother.handleWrtReparent(self.getParent(), parent)
-            pass
 
         NodePath.wrtReparentTo(self, parent)
 
