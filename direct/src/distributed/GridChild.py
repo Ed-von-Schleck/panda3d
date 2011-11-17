@@ -153,7 +153,7 @@ class SmoothGridChild(GridChild):
             # check actual zone matches zone I have interest in
             zoneId = currGrid.getZoneFromXYZ(self.getPos(currGrid))
             existingInterest = self._gridInterests.get(currGrid.doId)
-            if existingInterest[1] != zoneId:
+            if existingInterest and existingInterest[1] != zoneId:
                 # we want to update interest here since actual position
                 # of grid child is now in the new zone
                 self.updateGridInterest(currGrid, zoneId)
