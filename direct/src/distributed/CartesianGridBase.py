@@ -246,6 +246,16 @@ class CartesianGridBase:
             self.__manageChild(child)
         return task._return
 
+    #--------------------------------------------------------------------------
+    # Function:   determine if given child has a valid interest on the given
+    #               grid
+    # Parameters:
+    # Changes:
+    # Returns:
+    #--------------------------------------------------------------------------
+    def validGridInterest(self, child, gridId):
+        return True
+
     def __manageChild(self, child, setup = False):
         assert child, "Must have a non-empty nodepath"
         assert child.getGrid() is self
@@ -279,8 +289,22 @@ class CartesianGridBase:
 
                 if currGrid.isGridZone(newZoneId):
                     if currGrid is self:
-                        child.setGridCell(self, newZoneId)
+                        child.setGridCell(self, newZoneId, updateInterest=True)
                         child.sendCurrentPosition()
+                        if not self.validGridInterest(child, currGridId):
+                            # i am on a client and this grid interest is not registered
+                            # with the server so we cannot perform any actual set location
+                            self.notify.warning("skipping setLocation with child %s and grid %s"%(
+                                child,currGridId))
+                            continue
+                        # for debugging...only in QA so we can test disconnect bug,
+                        # can remove if solved
+                        if (config.GetBool('print-interest-debug', 1) and
+                            game.process == 'client' and
+                            launcher.getValue("GAME_ENVIRONMENT", "DEV") in ["QA","DEV"]):
+                            base.cr.printInterestSets()
+                            self.notify.warning("pre-setLocation: interests from child %s are %s"%(
+                                child.doId,child._gridInterests))
                         child.b_setLocation(self.getDoId(), newZoneId)
                     else:
                         # not my parent grid, just update interest
