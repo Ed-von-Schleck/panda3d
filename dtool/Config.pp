@@ -593,18 +593,18 @@
 // Is OpenGL installed, and where?  This should include libGL as well
 // as libGLU, if they are in different places.
 #defer GL_IPATH /usr/include
-#defer GL_LPATH
-#defer GL_LIBS
-#defer GLU_LIBS
+#defer GL_LPATH /usr/lib64
+#defer GL_LIBS /usr/lib64
+#defer GLU_LIBS /usr/lib64
 #if $[WINDOWS_PLATFORM]
   #define GL_LIBS opengl32.lib
   #define GLU_LIBS glu32.lib
 #elif $[OSX_PLATFORM]
   #defer GL_FRAMEWORK OpenGL
 #else
-  #defer GL_LPATH /usr/X11R6/lib
-  #defer GL_LIBS GL
-  #defer GLU_LIBS GLU
+  #defer GL_LPATH /usr/lib64
+  #defer GL_LIBS /usr/lib64 
+  #defer GLU_LIBS /usr/lib64 
 #endif
 #defer HAVE_GL $[libtest $[GL_LPATH],$[GL_LIBS]]
 
@@ -652,10 +652,10 @@
 // or if you want to be able to easily switch between Mesa and the
 // system OpenGL implementation at runtime.  If you compiled Mesa with
 // USE_MGL_NAMESPACE defined, define MESA_MGL here.
-#define MESA_IPATH
-#define MESA_LPATH
-#define MESA_LIBS
-#define MESA_MGL
+#define MESA_IPATH /usr/include
+#define MESA_LPATH /usr/lib64
+#define MESA_LIBS /usr/lib64
+#define MESA_MGL 1
 #defer HAVE_MESA $[libtest $[MESA_LPATH],$[MESA_LIBS]]
 
 // Similar to MIN_GL_VERSION, above.
