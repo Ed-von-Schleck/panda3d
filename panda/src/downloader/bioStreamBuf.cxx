@@ -199,7 +199,8 @@ underflow() {
         // occassionally we get -1 on read_open on the mac
         // the os_error is 35 which means "Resource temporarily unavailable".
         if ( (read_count == -1) && (os_error == 35)) {
-          downloader_cat.warning() << "forcing retry to true again and _read_open to true\n";
+          // remvoing warning for now, a bit spammy, should make this not continually retry?
+          //downloader_cat.warning() << "forcing retry to true again and _read_open to true\n";
           BIO_set_retry_read(*_source);
           _read_open = true;
         }
