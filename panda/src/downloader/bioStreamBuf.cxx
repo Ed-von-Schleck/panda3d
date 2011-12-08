@@ -40,6 +40,11 @@ BioStreamBuf() {
   _read_open = false;
   _write_open = false;
 
+  ConfigVariableBool stream_lax_errorcheck
+    ("stream-lax-errorcheck", true,
+     PRC_DESC("Configure this false to be more strict about disconnecting on errors."));
+  _stream_lax_errorcheck = stream_lax_errorcheck;
+
 #ifdef PHAVE_IOSTREAM
   _buffer = (char *)PANDA_MALLOC_ARRAY(8192);
   char *ebuf = _buffer + 8192;
@@ -198,21 +203,23 @@ underflow() {
 #ifdef IS_OSX
         // occassionally we get -1 on read_open on the mac
         // the os_error is 35 which means "Resource temporarily unavailable".
-        if ( (read_count == -1) && (os_error == 35)) {
+        if ( (_stream_lax_errorcheck) && (read_count == -1) && (os_error == 35)) {
           // remvoing warning for now, a bit spammy, should make this not continually retry?
           //downloader_cat.warning() << "forcing retry to true again and _read_open to true\n";
           BIO_set_retry_read(*_source);
           _read_open = true;
         }
 #endif
+
         if (!_read_open) {
           downloader_cat.info() << "\n";
-          downloader_cat.info() << "_read_open:        " << _read_open << "\n";
-          downloader_cat.info() << "should_read:       " << BIO_should_read(*_source) << "\n";
-          downloader_cat.info() << "should write:      " << BIO_should_write(*_source) << "\n";
-          downloader_cat.info() << "should io special: " << BIO_should_io_special(*_source) << "\n";
-          downloader_cat.info() << "retry type:        " << BIO_retry_type(*_source) << "\n";
-          downloader_cat.info() << "retry reason:      " << BIO_get_retry_reason(*_source) << "\n\n";
+          downloader_cat.info() << "_stream_lax_errorcheck: " << _stream_lax_errorcheck << "\n";
+          downloader_cat.info() << "_read_open:             " << _read_open << "\n";
+          downloader_cat.info() << "should_read:            " << BIO_should_read(*_source) << "\n";
+          downloader_cat.info() << "should write:           " << BIO_should_write(*_source) << "\n";
+          downloader_cat.info() << "should io special:      " << BIO_should_io_special(*_source) << "\n";
+          downloader_cat.info() << "retry type:             " << BIO_retry_type(*_source) << "\n";
+          downloader_cat.info() << "retry reason:           " << BIO_get_retry_reason(*_source) << "\n\n";
           downloader_cat.info()
             << "Lost connection to "
             << _source->get_server_name() << ":" 
