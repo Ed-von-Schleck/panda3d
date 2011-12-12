@@ -290,6 +290,11 @@ class CartesianGridBase:
                 if currGrid.isGridZone(newZoneId):
                     if currGrid is self:
                         child.setGridCell(self, newZoneId, updateInterest=True)
+                        # have to verify new position? were getting some crashes
+                        # where ncps would be out of range
+                        # TODO: add logging info to determine where object is and
+                        # what state they are in
+                        child.checkPosition()
                         child.sendCurrentPosition()
                         if not self.validGridInterest(child, currGridId):
                             # i am on a client and this grid interest is not registered
