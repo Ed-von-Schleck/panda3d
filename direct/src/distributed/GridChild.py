@@ -120,6 +120,14 @@ class GridChild:
                 self.cr.removeTaggedInterest(interestInfo[0])
         self._gridInterests = {}
 
+    #--------------------------------------------------------------------------
+    # Function:   verify position of child is within any limits
+    # Parameters: none
+    # Changes:    none
+    # Returns:    False if no change made
+    #--------------------------------------------------------------------------
+    def checkPosition(self):
+        return False
 
 
 
