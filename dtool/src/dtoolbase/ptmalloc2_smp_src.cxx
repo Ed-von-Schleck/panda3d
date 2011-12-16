@@ -35,7 +35,7 @@
   plus Win32 support readded.
 
 * Version ptmalloc2-smp-20011215
-  $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $
+  $Id: ptmalloc2_smp_src.cxx,v 1.3 2011/12/16 14:17:49 drwr Exp $
   based on:
 * VERSION 2.7.2 Sat Aug 17 09:07:30 2002  Doug Lea  (dl at gee)
 
@@ -749,6 +749,12 @@ extern "C" {
   are optimized for the case of 8-byte alignment.
 */
 
+#ifdef LINMATH_VECTORIZE
+// drose: We require 16-byte alignment of certain structures, to
+// support SSE2.  We don't strictly have to align *everything*, but
+// it's just easier to do so.
+#define MALLOC_ALIGNMENT ((size_t)16U)
+#endif
 
 #ifndef MALLOC_ALIGNMENT
 #define MALLOC_ALIGNMENT       (2 * SIZE_SZ)
@@ -1849,7 +1855,7 @@ int      __posix_memalign(void **, size_t, size_t);
 #endif
 
 /*
-  $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $
+  $Id: ptmalloc2_smp_src.cxx,v 1.3 2011/12/16 14:17:49 drwr Exp $
   `ptmalloc2', a malloc implementation for multiple threads without
   lock contention, by Wolfram Gloger <wg@malloc.de>.
 
@@ -2951,7 +2957,7 @@ static Void_t** iALLOc();
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $ */
+/* $Id: ptmalloc2_smp_src.cxx,v 1.3 2011/12/16 14:17:49 drwr Exp $ */
 
 /* Compile-time constants.  */
 
@@ -4074,7 +4080,7 @@ static void do_check_malloc_state(mstate av)
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* $Id: ptmalloc2_smp_src.cxx,v 1.2 2007/07/13 17:23:54 drwr Exp $ */
+/* $Id: ptmalloc2_smp_src.cxx,v 1.3 2011/12/16 14:17:49 drwr Exp $ */
 
 #ifndef weak_variable
 #define weak_variable /**/
