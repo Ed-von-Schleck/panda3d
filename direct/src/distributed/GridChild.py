@@ -88,6 +88,16 @@ class GridChild:
                 % self.doId)
             return
 
+        # check zoneId
+        if zoneId < 0 or not grid.isValidZone(zoneId):
+            # trying to track down what is causing this
+            self.notify.warning("__setGridInterest: given bad zoneId [%s] [%s] [%s] [%s] [%s]"%(
+                zoneId, grid, self, str(self.getPos(grid)), str(self._gridInterests)))
+            printStack()
+            # try to catch this case in dev
+            assert 0, "Invalid zoneId"
+            return
+
         gridDoId = grid.getDoId()
         existingInterest = self._gridInterests.get(gridDoId)
         if self._gridInterestEnabled:
@@ -113,8 +123,12 @@ class GridChild:
     def getGridInterestZoneId(self,gridDoId):
         return self._gridInterests.get(gridDoId,[None,None])[1]
 
+    def clearinGridInterest(self):
+        pass
+
     def __clearGridInterest(self):
         #if self._gridInterestEnabled:
+        self.clearinGridInterest()
         for currGridId, interestInfo in self._gridInterests.items():
             if interestInfo[0]:
                 self.cr.removeTaggedInterest(interestInfo[0])
