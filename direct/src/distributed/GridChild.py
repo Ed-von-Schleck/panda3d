@@ -90,7 +90,7 @@ class GridChild:
 
         # check zoneId
         if zoneId < 0 or not grid.isValidZone(zoneId):
-            # trying to track down what is causing this
+            # make sure zoneId is valid
             self.notify.warning("__setGridInterest: given bad zoneId [%s] [%s] [%s] [%s] [%s]"%(
                 zoneId, grid, self, str(self.getPos(grid)), str(self._gridInterests)))
             printStack()
