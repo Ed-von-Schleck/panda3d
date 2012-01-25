@@ -3,7 +3,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase.PythonUtil import Queue, invertDictLossless, makeFlywheelGen
 from direct.showbase.PythonUtil import itype, serialNum, safeRepr, fastRepr
 from direct.showbase.Job import Job
-import types, weakref, random, __builtin__
+import inspect, sys, types, weakref, random, __builtin__
 
 def _createContainerLeak():
     def leakContainer(task=None):
@@ -42,6 +42,40 @@ def _createTaskLeak():
         if task:
             return task.done
     leakTask()
+
+outerFrame = inspect.getouterframes(inspect.currentframe())[-1][0]
+OutermostGlobals = outerFrame.f_globals['__builtins__'].globals()
+del outerFrame
+# get the globals dict for the first scope of the program
+# this doesn't seem to work as intended inside a generator...
+def getOutermostGlobals():
+    global OutermostGlobals
+    return OutermostGlobals
+
+def _createGlobalLeak():
+    getOutermostGlobals()['globalLeakContainer'] = {}
+    def leakGlobalContainer(task=None):
+        # use tuples as keys since they can't be weakref'd, and use an instance
+        # since it can't be repr/eval'd
+        # that will force the leak detector to hold a normal 'non-weak' reference
+        class LeakKey:
+            pass
+        globalLeakContainer[(LeakKey(),)] = {}
+        # try to create a leak within a module
+        if 'direct.distributed.AsyncRequest' in sys.modules:
+            if not hasattr(sys.modules['direct.distributed.AsyncRequest'].AsyncRequest, '_leakContainer'):
+                sys.modules['direct.distributed.AsyncRequest'].AsyncRequest._leakContainer = {}
+            sys.modules['direct.distributed.AsyncRequest'].AsyncRequest._leakContainer[(LeakKey(),)] = {}
+        # test the non-weakref object reference handling
+        if random.random() < .01:
+            key = random.choice(globalLeakContainer.keys())
+            ContainerLeakDetector.notify.debug(
+                'removing reference to leakContainer key %s so it will be garbage-collected' % safeRepr(key))
+            del globalLeakContainer[key]
+        taskMgr.doMethodLater(10, leakGlobalContainer, 'leakGlobalContainer-%s' % serialNum())
+        if task:
+            return task.done
+    leakGlobalContainer()
 
 class NoDictKey:
     pass
@@ -231,12 +265,6 @@ class ObjectRef:
         if curObj is not None:
             # eval('curObj.foo.bar.someDict')
             evalStr = 'curObj%s' % evalStr
-        else:
-            # this eval is not based off of curObj, use the global__builtin__ namespace
-            # put __builtin__ at the start if it's not already there
-            bis = '__builtin__'
-            if evalStr[:len(bis)] != bis:
-                evalStr = '%s.%s' % (bis, evalStr)
         try:
             container = eval(evalStr)
         except NameError, ne:
@@ -348,36 +376,11 @@ class FindContainers(Job):
         ContainerLeakDetector.addPrivateObj(self.__dict__)
 
         # set up the base containers, the ones that hold most objects
-        ref = ObjectRef(Indirection(evalStr='__builtin__.__dict__'), id(__builtin__.__dict__))
-        self._id2baseStartRef[id(__builtin__.__dict__)] = ref
-        # container for objects that want to make sure they are found by
-        # the object exploration algorithm, including objects that exist
-        # just to measure things such as C++ memory usage, scene graph size,
-        # framerate, etc. See LeakDetectors.py
-        if not hasattr(__builtin__, "leakDetectors"):
-            __builtin__.leakDetectors = {}
-        ref = ObjectRef(Indirection(evalStr='leakDetectors'), id(leakDetectors))
-        self._id2baseStartRef[id(leakDetectors)] = ref
-        for i in self._addContainerGen(__builtin__.__dict__, ref):
-            pass
-        try:
-            base
-        except:
-            pass
-        else:
-            ref = ObjectRef(Indirection(evalStr='base.__dict__'), id(base.__dict__))
-            self._id2baseStartRef[id(base.__dict__)] = ref
-            for i in self._addContainerGen(base.__dict__, ref):
-                pass
-        try:
-            simbase
-        except:
-            pass
-        else:
-            ref = ObjectRef(Indirection(evalStr='simbase.__dict__'), id(simbase.__dict__))
-            self._id2baseStartRef[id(simbase.__dict__)] = ref
-            for i in self._addContainerGen(simbase.__dict__, ref):
-                pass
+        self._globals = getOutermostGlobals()
+        # make sure we pick up all imported modules via sys.modules
+        if 'sys' in self._globals and self._globals['sys'] is not sys:
+            self.notify.warning("overwriting global 'sys'")
+        self._globals['sys'] = sys
 
     def destroy(self):
         ContainerLeakDetector.removePrivateObj(self.__dict__)
@@ -470,6 +473,19 @@ class FindContainers(Job):
                 yield None
                 #import pdb;pdb.set_trace()
                 if curObjRef is None:
+                    # try to grab a new container out of globals
+                    globls = self._globals.items()
+                    yield None
+                    globlPair = random.choice(globls)
+                    globlName, globlValue = globlPair
+                    if id(globlValue) not in self._id2baseStartRef:
+                        if not self._isDeadEnd(globlValue):
+                            globlId = id(globlValue)
+                            ref = ObjectRef(Indirection(evalStr=globlName), globlId)
+                            self._id2baseStartRef[globlId] = ref
+                            for i in self._addContainerGen(globlValue, ref):
+                                yield None
+
                     # choose an object to start a traversal from
                     try:
                         startRefWorkingList = workingListSelector.next()
@@ -1014,6 +1030,8 @@ class ContainerLeakDetector(Job):
             _createContainerLeak()
         if config.GetBool('leak-tasks', 0):
             _createTaskLeak()
+        if config.GetBool('leak-globals', 0):
+            _createGlobalLeak()
 
         # don't check our own tables for leaks
         ContainerLeakDetector.addPrivateObj(ContainerLeakDetector.PrivateIds)
