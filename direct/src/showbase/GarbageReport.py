@@ -37,18 +37,22 @@ class GarbageReport(Job):
 
     def __init__(self, name, log=True, verbose=False, fullReport=False, findCycles=True,
                  threaded=False, doneCallback=None, autoDestroy=False, priority=None,
-                 safeMode=False, delOnly=False, collect=True):
+                 safeMode=False, delOnly=False, collect=True, cycleLimit=None,):
         # if autoDestroy is True, GarbageReport will self-destroy after logging
         # if false, caller is responsible for calling destroy()
         # if threaded is True, processing will be performed over multiple frames
         # if collect is False, we assume that the caller just did a collect and the results
         # are still in gc.garbage
         Job.__init__(self, name)
+        if cycleLimit is not None:
+            if cycleLimit < 1:
+                cycleLimit = None
+        self._cycleLimited = False
         # stick the arguments onto a ScratchPad so we can delete them all at once
         self._args = ScratchPad(name=name, log=log, verbose=verbose, fullReport=fullReport,
                                 findCycles=findCycles, doneCallback=doneCallback,
                                 autoDestroy=autoDestroy, safeMode=safeMode, delOnly=delOnly,
-                                collect=collect)
+                                collect=collect, cycleLimit=cycleLimit)
         if priority is not None:
             self.setPriority(priority)
         jobMgr.add(self)
@@ -185,6 +189,10 @@ class GarbageReport(Job):
             if self._args.verbose:
                 self.notify.info('calculating cycles...')
             for i in xrange(self.numGarbage):
+                if self._args.cycleLimit is not None:
+                    if len(self.cycles) >= self._args.cycleLimit:
+                        self._cycleLimited = True
+                        break
                 yield None
                 for newCycles in self._getCycles(i, self.uniqueCycleSets):
                     yield None
@@ -335,14 +343,18 @@ class GarbageReport(Job):
                 s.append(format % (idx, itype(self.garbage[idx]), objStr))
 
             if self._args.findCycles:
-                s.append('===== Garbage Cycles (Garbage Item Numbers) =====')
+                s.append('===== Garbage Cycles (Garbage Item Numbers) %s =====' %
+                         choice(self._cycleLimited, '', '[limited to %s cycle%s]' % (
+                    self._args.cycleLimit, choice(self._args.cycleLimit == 1, '', 's'))))
                 ac = AlphabetCounter()
                 for i in xrange(self.numCycles):
                     yield None
                     s.append('%s:%s' % (ac.next(), self.cycles[i]))
 
             if self._args.findCycles:
-                s.append('===== Garbage Cycles (Python Syntax) =====')
+                s.append('===== Garbage Cycles (Python Syntax) %s =====' %
+                         choice(self._cycleLimited, '', '[limited to %s cycle%s]' % (
+                    self._args.cycleLimit, choice(self._args.cycleLimit == 1, '', 's'))))
                 ac = AlphabetCounter()
                 for i in xrange(len(self.cyclesBySyntax)):
                     yield None
