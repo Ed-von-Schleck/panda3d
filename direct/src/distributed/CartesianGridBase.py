@@ -264,6 +264,9 @@ class CartesianGridBase:
         gridIds = child.getGridInterestIds()
         for currGridId in gridIds:
             currGrid = getBase().getRepository().doId2do.get(currGridId)
+            if not currGrid:
+                # grid is gone or this client is cleaned up, ignore
+                continue
             adjustGrid = False
             newZoneId = None
             if currGrid is self:
