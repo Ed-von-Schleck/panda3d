@@ -344,7 +344,7 @@ class GarbageReport(Job):
 
             if self._args.findCycles:
                 s.append('===== Garbage Cycles (Garbage Item Numbers) %s =====' %
-                         choice(self._cycleLimited, '', '[limited to %s cycle%s]' % (
+                         choice(not self._cycleLimited, '', '[limited to %s cycle%s]' % (
                     self._args.cycleLimit, choice(self._args.cycleLimit == 1, '', 's'))))
                 ac = AlphabetCounter()
                 for i in xrange(self.numCycles):
@@ -353,7 +353,7 @@ class GarbageReport(Job):
 
             if self._args.findCycles:
                 s.append('===== Garbage Cycles (Python Syntax) %s =====' %
-                         choice(self._cycleLimited, '', '[limited to %s cycle%s]' % (
+                         choice(not self._cycleLimited, '', '[limited to %s cycle%s]' % (
                     self._args.cycleLimit, choice(self._args.cycleLimit == 1, '', 's'))))
                 ac = AlphabetCounter()
                 for i in xrange(len(self.cyclesBySyntax)):
