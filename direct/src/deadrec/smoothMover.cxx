@@ -568,7 +568,7 @@ write(ostream &out) const {
   for (int i = 0; i < num_points; i++) {
     const SamplePoint &point = _points[i];
     out << "  " << i << ". time = " << point._timestamp << " pos = " 
-        << point._pos << " hpr = " << point._hpr << "\n";
+    << point._pos << " hpr = " << point._hpr << " embedded = " << point._embedded << "\n";
   }
 }
 
