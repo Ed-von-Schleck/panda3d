@@ -216,6 +216,12 @@ class CartesianGridBase:
         if not self.__managementTask:
             self.startManagementTask()
 
+    def isManagedChild(self, child):
+        """
+        Ask if given child is currently managed by this grid
+        """
+        return child in self.__managedChildren
+
     def ignoreChild(self, child):
         """
         Stops managing this child.
