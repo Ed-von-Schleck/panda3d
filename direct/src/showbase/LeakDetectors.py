@@ -66,6 +66,8 @@ class ObjectTypesLeakDetector(LeakDetector):
             self._type2count.setdefault(objType, 0)
             self._type2count[objType] += 1
         self._generation += 1
+        # prevent garbage leak
+        del objs
 
     def _getGeneration(self):
         return self._generation

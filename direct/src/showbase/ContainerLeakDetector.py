@@ -397,31 +397,6 @@ class FindContainers(Job):
         except:
             return 1
     
-    def _isDeadEnd(self, obj, objName=None):
-        if type(obj) in (types.BooleanType, types.BuiltinFunctionType,
-                         types.BuiltinMethodType, types.ComplexType,
-                         types.FloatType, types.IntType, types.LongType,
-                         types.NoneType, types.NotImplementedType,
-                         types.TypeType, types.CodeType, types.FunctionType,
-                         types.StringType, types.UnicodeType,
-                         types.TupleType):
-            return True
-        # if it's an internal object, ignore it
-        if id(obj) in ContainerLeakDetector.PrivateIds:
-            return True
-        # prevent crashes in objects that define __cmp__ and don't handle strings
-        if type(objName) == types.StringType and objName in ('im_self', 'im_class'):
-            return True
-        try:
-            className = obj.__class__.__name__
-        except:
-            pass
-        else:
-            # prevent infinite recursion in built-in containers related to methods
-            if className == 'method-wrapper':
-                return True
-        return False
-
     def _hasLength(self, obj):
         return hasattr(obj, '__len__')
 
@@ -479,7 +454,7 @@ class FindContainers(Job):
                     globlPair = random.choice(globls)
                     globlName, globlValue = globlPair
                     if id(globlValue) not in self._id2baseStartRef:
-                        if not self._isDeadEnd(globlValue):
+                        if not self._leakDetector._isDeadEnd(globlValue):
                             globlId = id(globlValue)
                             ref = ObjectRef(Indirection(evalStr=globlName), globlId)
                             self._id2baseStartRef[globlId] = ref
@@ -559,7 +534,7 @@ class FindContainers(Job):
                 if hasattr(curObj, '__dict__'):
                     child = curObj.__dict__
                     hasLength = self._hasLength(child)
-                    notDeadEnd = not self._isDeadEnd(child)
+                    notDeadEnd = not self._leakDetector._isDeadEnd(child)
                     if hasLength or notDeadEnd:
                         # prevent cycles in the references (i.e. base.loader.base)
                         for goesThrough in parentObjRef.goesThroughGen(child):
@@ -598,7 +573,7 @@ class FindContainers(Job):
                         notDeadEnd = False
                         # if we haven't picked the next ref, check if this one is a candidate
                         if curObjRef is None:
-                            notDeadEnd = not self._isDeadEnd(attr, key)
+                            notDeadEnd = not self._leakDetector._isDeadEnd(attr, key)
                         if hasLength or notDeadEnd:
                             # prevent cycles in the references (i.e. base.loader.base)
                             for goesThrough in parentObjRef.goesThroughGen(curObj[key]):
@@ -650,7 +625,7 @@ class FindContainers(Job):
                                 hasLength = self._hasLength(attr)
                                 notDeadEnd = False
                                 if curObjRef is None:
-                                    notDeadEnd = not self._isDeadEnd(attr)
+                                    notDeadEnd = not self._leakDetector._isDeadEnd(attr)
                                 if hasLength or notDeadEnd:
                                     # prevent cycles in the references (i.e. base.loader.base)
                                     for goesThrough in parentObjRef.goesThrough(curObj[index]):
@@ -729,10 +704,15 @@ class CheckContainers(Job):
                                           contName)
                     self._leakDetector.removeContainerById(objId)
                     continue
-                try:
-                    cLen = len(container)
-                except Exception, e:
-                    # this container no longer exists
+                remove = False
+                isDeadEnd = self._leakDetector._isDeadEnd(container)
+                if not isDeadEnd:
+                    try:
+                        cLen = len(container)
+                    except Exception, e:
+                        isDeadEnd = True
+                if isDeadEnd:
+                    # container has been replaced with a dead-end object
                     if self.notify.getDebug():
                         for contName in self._leakDetector.getContainerNameByIdGen(objId):
                             yield None
@@ -1096,6 +1076,31 @@ class ContainerLeakDetector(Job):
         if id in self._id2ref:
             self._id2ref[id].destroy()
             del self._id2ref[id]
+
+    def _isDeadEnd(self, obj, objName=None):
+        if type(obj) in (types.BooleanType, types.BuiltinFunctionType,
+                         types.BuiltinMethodType, types.ComplexType,
+                         types.FloatType, types.IntType, types.LongType,
+                         types.NoneType, types.NotImplementedType,
+                         types.TypeType, types.CodeType, types.FunctionType,
+                         types.StringType, types.UnicodeType,
+                         types.TupleType):
+            return True
+        # if it's an internal object, ignore it
+        if id(obj) in ContainerLeakDetector.PrivateIds:
+            return True
+        # prevent crashes in objects that define __cmp__ and don't handle strings
+        if type(objName) == types.StringType and objName in ('im_self', 'im_class'):
+            return True
+        try:
+            className = obj.__class__.__name__
+        except:
+            pass
+        else:
+            # prevent infinite recursion in built-in containers related to methods
+            if className == 'method-wrapper':
+                return True
+        return False
 
     def run(self):
         # start looking for containers
