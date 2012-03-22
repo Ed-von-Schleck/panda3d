@@ -24,6 +24,7 @@
 #include "datagramIterator.h"
 #include "throw_event.h"
 #include "pStatTimer.h"
+#include "stringStream.h"
 
 #ifdef HAVE_PYTHON
 #ifndef CPPPARSER
@@ -64,6 +65,7 @@ CConnectionRepository(bool has_owner_view, bool threaded_net) :
 #endif
   _client_datagram(true),
   _handle_datagrams_internally(handle_datagrams_internally),
+  _track_clsends(false),
   _simulated_disconnect(false),
   _verbose(distributed_cat.is_spam()),
   _time_warning(0.0),
@@ -1197,6 +1199,38 @@ bool CConnectionRepository::handle_update_field_ai(PyObject *doId2do)
       DTOOL_Call_ExtractThisPointerForType(dclass_obj, &Dtool_DCClass, (void **) &dclass);
       if(dclass == NULL)
           return false;
+
+      if (_track_clsends) {
+        DatagramIterator di(_di);
+        int field_id = di.get_uint16();
+        DCField *field = dclass->get_field_by_index(field_id);
+        if (field != (DCField *)NULL) {
+          if (field->is_clsend() || field->is_ownsend()) {
+            // need to look up sender avatar
+            PyObject *senderId = PyLong_FromUnsignedLong(get_msg_sender() & 0xffffffff);
+            PyObject *senderObj = PyDict_GetItem(doId2do, senderId);
+            Py_DECREF(senderId);
+            if (senderObj != NULL) {
+              PyObject *func = PyObject_GetAttrString(senderObj, "trackClientSendMsg");
+              if (func != (PyObject *)NULL) {
+                StringStream msgStr;
+                describe_message(msgStr, "", _dg);
+                PyObject *args = Py_BuildValue("(s,s#)", msgStr.get_data().c_str(),
+                                               _dg.get_message().c_str(), _dg.get_length());
+                if (args != (PyObject *)NULL) {
+                  PyObject *result;
+                  Py_INCREF(senderObj);
+                  result = PyObject_CallObject(func, args);
+                  Py_DECREF(senderObj);
+                  Py_XDECREF(result);
+                  Py_DECREF(args);
+                }
+                Py_DECREF(func);
+              }
+            }
+          }
+        }
+      }
 
       Py_INCREF(distobj);
       dclass->receive_update(distobj, _di); 
