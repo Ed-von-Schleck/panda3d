@@ -1010,57 +1010,20 @@ describe_message(ostream &out, const string &prefix,
     // It's an update message.  Figure out what dclass the object is
     // based on its doId, so we can decode the rest of the message.
     do_id = packer.raw_unpack_uint32();
-    DCClass *dclass = NULL;
-
-    #ifdef HAVE_PYTHON
-    if (_python_repository != (PyObject *)NULL) {
-      PyObject *doId2do =
-        PyObject_GetAttrString(_python_repository, "doId2do");
-      nassertv(doId2do != NULL);
-
-      #ifdef USE_PYTHON_2_2_OR_EARLIER
-      PyObject *doId = PyInt_FromLong(do_id);
-      #else
-      PyObject *doId = PyLong_FromUnsignedLong(do_id);
-      #endif
-      PyObject *distobj = PyDict_GetItem(doId2do, doId);
-      Py_DECREF(doId);
-      Py_DECREF(doId2do);
-
-      if (distobj != NULL) {
-        PyObject *dclass_obj = PyObject_GetAttrString(distobj, "dclass");
-        nassertv(dclass_obj != NULL);
-
-        PyObject *dclass_this = PyObject_GetAttrString(dclass_obj, "this");
-        Py_DECREF(dclass_obj);
-        nassertv(dclass_this != NULL);
-        
-        dclass = (DCClass *)PyInt_AsLong(dclass_this);
-        Py_DECREF(dclass_this);
-      }
-    }
-    #endif  // HAVE_PYTHON  
 
     int field_id = packer.raw_unpack_uint16();
-
-    if (dclass == (DCClass *)NULL) {
-      out << full_prefix << "update for unknown object " << do_id 
-          << ", field " << field_id << "\n";
-
+    DCField *field = DCField::get_field_from_number(field_id);
+    if (field == (DCField *)NULL) {
+      out << "unknown field " << field_id << "\n";
     } else {
+      DCClass *dclass = field->get_class();
       out << full_prefix <<
         ":" << dclass->get_name() << "(" << do_id << ").";
-      DCField *field = dclass->get_field_by_index(field_id);
-      if (field == (DCField *)NULL) {
-        out << "unknown field " << field_id << "\n";
-        
-      } else {
-        out << field->get_name();
-        packer.begin_unpack(field);
-        packer.unpack_and_format(out);
-        packer.end_unpack();
-        out << "\n";
-      }
+      out << field->get_name();
+      packer.begin_unpack(field);
+      packer.unpack_and_format(out);
+      packer.end_unpack();
+      out << "\n";
     }
   }
 }
@@ -1213,10 +1176,7 @@ bool CConnectionRepository::handle_update_field_ai(PyObject *doId2do)
             if (senderObj != NULL) {
               PyObject *func = PyObject_GetAttrString(senderObj, "trackClientSendMsg");
               if (func != (PyObject *)NULL) {
-                StringStream msgStr;
-                describe_message(msgStr, "", _dg);
-                PyObject *args = Py_BuildValue("(s,s#)", msgStr.get_data().c_str(),
-                                               _dg.get_message().c_str(), _dg.get_length());
+                PyObject *args = Py_BuildValue("(s#)", _dg.get_message().c_str(), _dg.get_length());
                 if (args != (PyObject *)NULL) {
                   PyObject *result;
                   Py_INCREF(senderObj);
