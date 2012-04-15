@@ -86,7 +86,7 @@ bool TinyXGraphicsWindow::
 begin_frame(FrameMode mode, Thread *current_thread) {
   PStatTimer timer(_make_current_pcollector, current_thread);
 
-  if (_xwindow == (Window)NULL) {
+  if (_xwindow == (X11_Window)NULL) {
     return false;
   }
 
@@ -135,30 +135,24 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TinyXGraphicsWindow::begin_flip
+//     Function: TinyXGraphicsWindow::end_flip
 //       Access: Public, Virtual
 //  Description: This function will be called within the draw thread
-//               after end_frame() has been called on all windows, to
-//               initiate the exchange of the front and back buffers.
+//               after begin_flip() has been called on all windows, to
+//               finish the exchange of the front and back buffers.
 //
-//               This should instruct the window to prepare for the
-//               flip at the next video sync, but it should not wait.
-//
-//               We have the two separate functions, begin_flip() and
-//               end_flip(), to make it easier to flip all of the
-//               windows at the same time.
+//               This should cause the window to wait for the flip, if
+//               necessary.
 ////////////////////////////////////////////////////////////////////
 void TinyXGraphicsWindow::
-begin_flip() {
-  if (_xwindow == (Window)NULL) {
+end_flip() {
+  if (_xwindow == (X11_Window)NULL || !_flip_ready) {
+    GraphicsWindow::end_flip();
     return;
   }
 
@@ -180,6 +174,7 @@ begin_flip() {
   XPutImage(_display, _xwindow, _gc, _ximage, 0, 0, 0, 0,
             _full_frame_buffer->xsize, _full_frame_buffer->ysize);
   XFlush(_display);
+  GraphicsWindow::end_flip();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -217,7 +212,7 @@ process_events() {
 
   GraphicsWindow::process_events();
 
-  if (_xwindow == (Window)0) {
+  if (_xwindow == (X11_Window)0) {
     return;
   }
   
@@ -340,6 +335,7 @@ process_events() {
       break;
 
     case FocusOut:
+      _input_devices[0].focus_lost();
       properties.set_foreground(false);
       system_changed_properties(properties);
       break;
@@ -413,7 +409,6 @@ close_window() {
     DCAST_INTO_V(tinygsg, _gsg);
     tinygsg->_current_frame_buffer = NULL;
     _gsg.clear();
-    _active = false;
   }
   
   x11GraphicsWindow::close_window();

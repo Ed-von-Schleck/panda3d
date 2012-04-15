@@ -27,7 +27,9 @@
 #include "lightReMutexHolder.h"
 #include "lightMutexHolder.h"
 #include "thread.h"
-  
+
+#include <iterator>
+
 LightReMutex *RenderEffects::_states_lock = NULL;
 RenderEffects::States *RenderEffects::_states = NULL;
 CPT(RenderEffects) RenderEffects::_empty_state;
@@ -152,7 +154,7 @@ safe_to_combine() const {
 //               indicated matrix.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderEffects) RenderEffects::
-xform(const LMatrix4f &mat) const {
+xform(const LMatrix4 &mat) const {
   if (is_empty()) {
     return this;
   }

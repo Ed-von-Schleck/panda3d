@@ -32,7 +32,7 @@
 //               It exists as a syntactic convenience to access the
 //               data in the CycleData.  It also allows the whole
 //               system to compile down to nothing if
-//               SUPPORT_PIPELINING is not defined.
+//               DO_PIPELINING is not defined.
 ////////////////////////////////////////////////////////////////////
 template<class CycleDataType>
 class CycleDataWriter {
@@ -43,6 +43,9 @@ public:
   INLINE CycleDataWriter(PipelineCycler<CycleDataType> &cycler,
                          Thread *current_thread = Thread::get_current_thread());
   INLINE CycleDataWriter(PipelineCycler<CycleDataType> &cycler, bool force_to_0,
+                         Thread *current_thread = Thread::get_current_thread());
+  INLINE CycleDataWriter(PipelineCycler<CycleDataType> &cycler, 
+                         CycleDataType *locked_cdata,
                          Thread *current_thread = Thread::get_current_thread());
   INLINE CycleDataWriter(const CycleDataWriter<CycleDataType> &copy);
   INLINE void operator = (const CycleDataWriter<CycleDataType> &copy);

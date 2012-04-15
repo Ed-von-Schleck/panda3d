@@ -46,7 +46,7 @@ operator [](int i) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Row::size
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns 3: the number of columns of a LMatrix3.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH int FLOATNAME(LMatrix3)::Row::
@@ -76,7 +76,7 @@ operator [](int i) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::CRow::size
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns 3: the number of columns of a LMatrix3.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH int FLOATNAME(LMatrix3)::CRow::
@@ -86,7 +86,7 @@ size() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::ident_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns an identity matrix.
 //
 //               This function definition must appear first, since
@@ -99,7 +99,7 @@ ident_mat() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Default Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::
@@ -108,32 +108,29 @@ FLOATNAME(LMatrix3)() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Copy Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::
-FLOATNAME(LMatrix3)(const FLOATNAME(LMatrix3) &copy) {
-  TAU_PROFILE("LMatrix3::LMatrix3(const LMatrix3 &)", " ", TAU_USER);
-  
-  memcpy(_m.data, copy._m.data, sizeof(_m.data));
+FLOATNAME(LMatrix3)(const FLOATNAME(LMatrix3) &copy) : _m(copy._m) {
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Copy Assignment Operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
 operator = (const FLOATNAME(LMatrix3) &copy) {
   TAU_PROFILE("void LMatrix3::operator = (const LMatrix3 &)", " ", TAU_USER);
 
-  memcpy(_m.data, copy._m.data, sizeof(_m.data));
+  _m = copy._m;
   return *this;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Fill Assignment Operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
@@ -144,7 +141,7 @@ operator = (FLOATTYPE fill_value) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::
@@ -152,20 +149,20 @@ FLOATNAME(LMatrix3)(FLOATTYPE e00, FLOATTYPE e01, FLOATTYPE e02,
                     FLOATTYPE e10, FLOATTYPE e11, FLOATTYPE e12,
                     FLOATTYPE e20, FLOATTYPE e21, FLOATTYPE e22) {
   TAU_PROFILE("LMatrix3::LMatrix3(FLOATTYPE, ...)", " ", TAU_USER);
-  _m.m._00 = e00;
-  _m.m._01 = e01;
-  _m.m._02 = e02;
-  _m.m._10 = e10;
-  _m.m._11 = e11;
-  _m.m._12 = e12;
-  _m.m._20 = e20;
-  _m.m._21 = e21;
-  _m.m._22 = e22;
+  _m(0, 0) = e00;
+  _m(0, 1) = e01;
+  _m(0, 2) = e02;
+  _m(1, 0) = e10;
+  _m(1, 1) = e11;
+  _m(1, 2) = e12;
+  _m(2, 0) = e20;
+  _m(2, 1) = e21;
+  _m(2, 2) = e22;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::set
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
@@ -173,99 +170,133 @@ set(FLOATTYPE e00, FLOATTYPE e01, FLOATTYPE e02,
     FLOATTYPE e10, FLOATTYPE e11, FLOATTYPE e12,
     FLOATTYPE e20, FLOATTYPE e21, FLOATTYPE e22) {
   TAU_PROFILE("void LMatrix3::set(FLOATTYPE, ...)", " ", TAU_USER);
-  _m.m._00 = e00;
-  _m.m._01 = e01;
-  _m.m._02 = e02;
-  _m.m._10 = e10;
-  _m.m._11 = e11;
-  _m.m._12 = e12;
-  _m.m._20 = e20;
-  _m.m._21 = e21;
-  _m.m._22 = e22;
+  _m(0, 0) = e00;
+  _m(0, 1) = e01;
+  _m(0, 2) = e02;
+  _m(1, 0) = e10;
+  _m(1, 1) = e11;
+  _m(1, 2) = e12;
+  _m(2, 0) = e20;
+  _m(2, 1) = e21;
+  _m(2, 2) = e22;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::set_row
-//       Access: Public
+//       Access: Published
 //  Description: Replaces the indicated row of the matrix from a
 //               three-component vector.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_row(int row, const FLOATNAME(LVecBase3) &v) {
-  (*this)(row, 0) = v._v.v._0;
-  (*this)(row, 1) = v._v.v._1;
-  (*this)(row, 2) = v._v.v._2;
+#ifdef HAVE_EIGEN
+  _m.row(row) = v._v;
+#else
+  (*this)(row, 0) = v._v(0);
+  (*this)(row, 1) = v._v(1);
+  (*this)(row, 2) = v._v(2);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::set_column
-//       Access: Public
+//       Access: Published
 //  Description: Replaces the indicated column of the matrix from a
 //               three-component vector.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_col(int col, const FLOATNAME(LVecBase3) &v) {
-  (*this)(0, col) = v._v.v._0;
-  (*this)(1, col) = v._v.v._1;
-  (*this)(2, col) = v._v.v._2;
+#ifdef HAVE_EIGEN
+  _m.col(col) = v._v;
+#else
+  (*this)(0, col) = v._v(0);
+  (*this)(1, col) = v._v(1);
+  (*this)(2, col) = v._v(2);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::set_row
-//       Access: Public
+//       Access: Published
 //  Description: Replaces the indicated row of the matrix from a
 //               two-component vector, ignoring the last column.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_row(int row, const FLOATNAME(LVecBase2) &v) {
-  (*this)(row, 0) = v._v.v._0;
-  (*this)(row, 1) = v._v.v._1;
+#ifdef HAVE_EIGEN
+  _m.block<1, 2>(row, 0) = v._v;
+#else
+  (*this)(row, 0) = v._v(0);
+  (*this)(row, 1) = v._v(1);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::set_column
-//       Access: Public
+//       Access: Published
 //  Description: Replaces the indicated column of the matrix from a
 //               two-component vector, ignoring the last row.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_col(int col, const FLOATNAME(LVecBase2) &v) {
-  (*this)(0, col) = v._v.v._0;
-  (*this)(1, col) = v._v.v._1;
+#ifdef HAVE_EIGEN
+  _m.block<2, 1>(0, col) = v._v;
+#else
+  (*this)(0, col) = v._v(0);
+  (*this)(1, col) = v._v(1);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_row
-//       Access: Public
+//       Access: Published
 //  Description: Returns the indicated row of the matrix as a
 //               three-component vector.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LVecBase3) FLOATNAME(LMatrix3)::
 get_row(int row) const {
+#ifdef HAVE_EIGEN  
+  return FLOATNAME(LVecBase3)(_m.row(row));
+#else
   return FLOATNAME(LVecBase3)((*this)(row, 0), (*this)(row, 1), (*this)(row, 2));
+#endif  // HAVE_EIGEN
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::get_row
+//       Access: Published
+//  Description: Stores the indicated row of the matrix as a
+//               three-component vector.
+////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 get_row(FLOATNAME(LVecBase3) &result_vec,int row) const {
-  result_vec._v.v._0 = (*this)(row, 0);
-  result_vec._v.v._1 = (*this)(row, 1);
-  result_vec._v.v._2 = (*this)(row, 2);
+#ifdef HAVE_EIGEN  
+  result_vec._v = _m.row(row);
+#else
+  result_vec._v(0) = (*this)(row, 0);
+  result_vec._v(1) = (*this)(row, 1);
+  result_vec._v(2) = (*this)(row, 2);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_col
-//       Access: Public
+//       Access: Published
 //  Description: Returns the indicated column of the matrix as a
 //               three-component vector.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LVecBase3) FLOATNAME(LMatrix3)::
 get_col(int col) const {
+#ifdef HAVE_EIGEN  
+  return FLOATNAME(LVecBase3)(_m.col(col));
+#else
   return FLOATNAME(LVecBase3)((*this)(0, col), (*this)(1, col), (*this)(2, col));
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_row2
-//       Access: Public
+//       Access: Published
 //  Description: Returns the indicated row of the matrix as a
 //               two-component vector, ignoring the last column.
 ////////////////////////////////////////////////////////////////////
@@ -276,7 +307,7 @@ get_row2(int row) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_col2
-//       Access: Public
+//       Access: Published
 //  Description: Returns the indicated column of the matrix as a
 //               two-component vector, ignoring the last row.
 ////////////////////////////////////////////////////////////////////
@@ -287,51 +318,51 @@ get_col2(int col) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Indexing operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATTYPE &FLOATNAME(LMatrix3)::
 operator () (int row, int col) {
-  nassertr(row >= 0 && row < 3 && col >= 0 && col < 3, _m.data[0]);
-  return _m.data[row * 3 + col];
+  nassertr(row >= 0 && row < 3 && col >= 0 && col < 3, _m(0, 0));
+  return _m(row, col);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Indexing operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATTYPE FLOATNAME(LMatrix3)::
 operator () (int row, int col) const {
   nassertr(row >= 0 && row < 3 && col >= 0 && col < 3, 0.0);
-  return _m.data[row * 3 + col];
+  return _m(row, col);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Indexing Operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::CRow FLOATNAME(LMatrix3)::
 operator [](int i) const {
-  nassertr(i >= 0 && i < 3, CRow(&_m.data[0]));
-  return CRow(&_m.data[i * 3]);
+  nassertr(i >= 0 && i < 3, CRow(&_m(0, 0)));
+  return CRow(&_m(i, 0));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Indexing Operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::Row FLOATNAME(LMatrix3)::
 operator [](int i) {
-  nassertr(i >= 0 && i < 3, Row(&_m.data[0]));
-  return Row(&_m.data[i * 3]);
+  nassertr(i >= 0 && i < 3, Row(&_m(0, 0)));
+  return Row(&_m(i, 0));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::size
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns 3: the number of rows of a LMatrix3.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH int FLOATNAME(LMatrix3)::
@@ -341,7 +372,7 @@ size() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::is_nan
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if any component of the matrix is
 //               not-a-number, false otherwise.
 ////////////////////////////////////////////////////////////////////
@@ -349,48 +380,48 @@ INLINE_LINMATH bool FLOATNAME(LMatrix3)::
 is_nan() const {
   TAU_PROFILE("bool LMatrix3::is_nan()", " ", TAU_USER);
   return
-    cnan(_m.data[0]) || cnan(_m.data[1]) || cnan(_m.data[2]) ||
-    cnan(_m.data[3]) || cnan(_m.data[4]) || cnan(_m.data[5]) ||
-    cnan(_m.data[6]) || cnan(_m.data[7]) || cnan(_m.data[8]);
+    cnan(_m(0, 0)) || cnan(_m(0, 1)) || cnan(_m(0, 2)) ||
+    cnan(_m(1, 0)) || cnan(_m(1, 1)) || cnan(_m(1, 2)) ||
+    cnan(_m(2, 0)) || cnan(_m(2, 1)) || cnan(_m(2, 2));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_cell
-//       Access: Public
+//       Access: Published
 //  Description: Returns a particular element of the matrix.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATTYPE FLOATNAME(LMatrix3)::
 get_cell(int row, int col) const {
   nassertr(row >= 0 && row < 3 && col >= 0 && col < 3, 0.0);
-  return _m.data[row * 3 + col];
+  return _m(row, col);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::set_cell
-//       Access: Public
+//       Access: Published
 //  Description: Changes a particular element of the matrix.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_cell(int row, int col, FLOATTYPE value) {
   nassertv(row >= 0 && row < 3 && col >= 0 && col < 3);
-  _m.data[row * 3 + col] = value;
+  _m(row, col) = value;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_data
-//       Access: Public
+//       Access: Published
 //  Description: Returns the address of the first of the nine data
 //               elements in the matrix.  The remaining elements
 //               occupy the next eight positions in row-major order.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH const FLOATTYPE *FLOATNAME(LMatrix3)::
 get_data() const {
-  return _m.data;
+  return &_m(0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_num_components
-//       Access: Public
+//       Access: Published
 //  Description: Returns the number of elements in the matrix, nine.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH int FLOATNAME(LMatrix3)::
@@ -400,18 +431,18 @@ get_num_components() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::begin
-//       Access: Public
+//       Access: Published
 //  Description: Returns an iterator that may be used to traverse the
 //               elements of the matrix, STL-style.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::iterator FLOATNAME(LMatrix3)::
 begin() {
-  return _m.data;
+  return &_m(0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::end
-//       Access: Public
+//       Access: Published
 //  Description: Returns an iterator that may be used to traverse the
 //               elements of the matrix, STL-style.
 ////////////////////////////////////////////////////////////////////
@@ -422,18 +453,18 @@ end() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::begin
-//       Access: Public
+//       Access: Published
 //  Description: Returns an iterator that may be used to traverse the
 //               elements of the matrix, STL-style.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3)::const_iterator FLOATNAME(LMatrix3)::
 begin() const {
-  return _m.data;
+  return &_m(0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::end
-//       Access: Public
+//       Access: Published
 //  Description: Returns an iterator that may be used to traverse the
 //               elements of the matrix, STL-style.
 ////////////////////////////////////////////////////////////////////
@@ -444,7 +475,7 @@ end() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Ordering Operator
-//       Access: Public
+//       Access: Published
 //  Description: This performs a lexicographical comparison.  It's of
 //               questionable mathematical meaning, but sometimes has
 //               a practical purpose for sorting unique vectors,
@@ -458,7 +489,7 @@ operator < (const FLOATNAME(LMatrix3) &other) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Equality Operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH bool FLOATNAME(LMatrix3)::
@@ -468,7 +499,7 @@ operator == (const FLOATNAME(LMatrix3) &other) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::Inequality Operator
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH bool FLOATNAME(LMatrix3)::
@@ -478,7 +509,7 @@ operator != (const FLOATNAME(LMatrix3) &other) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::compare_to
-//       Access: Public
+//       Access: Published
 //  Description: This flavor of compare_to uses a default threshold
 //               value based on the numeric type.
 ////////////////////////////////////////////////////////////////////
@@ -489,7 +520,7 @@ compare_to(const FLOATNAME(LMatrix3) &other) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_hash
-//       Access: Public
+//       Access: Published
 //  Description: Returns a suitable hash for phash_map.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH size_t FLOATNAME(LMatrix3)::
@@ -499,7 +530,7 @@ get_hash() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::get_hash
-//       Access: Public
+//       Access: Published
 //  Description: Returns a suitable hash for phash_map.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH size_t FLOATNAME(LMatrix3)::
@@ -509,7 +540,7 @@ get_hash(FLOATTYPE threshold) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::add_hash
-//       Access: Public
+//       Access: Published
 //  Description: Adds the vector into the running hash.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH size_t FLOATNAME(LMatrix3)::
@@ -519,7 +550,7 @@ add_hash(size_t hash) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::add_hash
-//       Access: Public
+//       Access: Published
 //  Description: Adds the vector into the running hash.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH size_t FLOATNAME(LMatrix3)::
@@ -527,43 +558,47 @@ add_hash(size_t hash, FLOATTYPE threshold) const {
   TAU_PROFILE("size_t LMatrix3::add_hash(size_t, FLOATTYPE)", " ", TAU_USER);
   float_hash fhasher(threshold);
 
-  hash = fhasher.add_hash(hash, _m.m._00);
-  hash = fhasher.add_hash(hash, _m.m._01);
-  hash = fhasher.add_hash(hash, _m.m._02);
+  hash = fhasher.add_hash(hash, _m(0, 0));
+  hash = fhasher.add_hash(hash, _m(0, 1));
+  hash = fhasher.add_hash(hash, _m(0, 2));
 
-  hash = fhasher.add_hash(hash, _m.m._10);
-  hash = fhasher.add_hash(hash, _m.m._11);
-  hash = fhasher.add_hash(hash, _m.m._12);
+  hash = fhasher.add_hash(hash, _m(1, 0));
+  hash = fhasher.add_hash(hash, _m(1, 1));
+  hash = fhasher.add_hash(hash, _m(1, 2));
 
-  hash = fhasher.add_hash(hash, _m.m._20);
-  hash = fhasher.add_hash(hash, _m.m._21);
-  hash = fhasher.add_hash(hash, _m.m._22);
+  hash = fhasher.add_hash(hash, _m(2, 0));
+  hash = fhasher.add_hash(hash, _m(2, 1));
+  hash = fhasher.add_hash(hash, _m(2, 2));
 
   return hash;
 }
 
 #define VECTOR3_MATRIX3_PRODUCT(v_res, v, mat)                                              \
-v_res._v.v._0 = v._v.v._0*mat._m.m._00 + v._v.v._1*mat._m.m._10 + v._v.v._2*mat._m.m._20;   \
-v_res._v.v._1 = v._v.v._0*mat._m.m._01 + v._v.v._1*mat._m.m._11 + v._v.v._2*mat._m.m._21;   \
-v_res._v.v._2 = v._v.v._0*mat._m.m._02 + v._v.v._1*mat._m.m._12 + v._v.v._2*mat._m.m._22;
+v_res._v(0) = v._v(0)*mat._m(0, 0) + v._v(1)*mat._m(1, 0) + v._v(2)*mat._m(2, 0);   \
+v_res._v(1) = v._v(0)*mat._m(0, 1) + v._v(1)*mat._m(1, 1) + v._v(2)*mat._m(2, 1);   \
+v_res._v(2) = v._v(0)*mat._m(0, 2) + v._v(1)*mat._m(1, 2) + v._v(2)*mat._m(2, 2);
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::xform
-//       Access: Public
+//       Access: Published
 //  Description: 3-component vector or point times matrix.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LVecBase3) FLOATNAME(LMatrix3)::
 xform(const FLOATNAME(LVecBase3) &v) const {
   TAU_PROFILE("LVecBase3 LMatrix3::xform(const LVecBase3 &)", " ", TAU_USER);
   FLOATNAME(LVecBase3) v_res;
+#ifdef HAVE_EIGEN
+  v_res._v.noalias() = v._v * _m;
+#else  
   VECTOR3_MATRIX3_PRODUCT(v_res, v,(*this));
+#endif  // HAVE_EIGEN
   
   return v_res;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::xform_point
-//       Access: Public
+//       Access: Published
 //  Description: The matrix transforms a 2-component point (including
 //               translation component) and returns the result.  This
 //               assumes the matrix is an affine transform.
@@ -573,17 +608,21 @@ xform_point(const FLOATNAME(LVecBase2) &v) const {
   TAU_PROFILE("LVecBase3 LMatrix3::xform_point(const LVecBase3 &)", " ", TAU_USER);
   FLOATNAME(LVecBase2) v_res;
 
-  // v._v.v._2 == 1.0f for this case
+  // v._v(2) == 1.0f for this case
   
-  v_res._v.v._0 = v._v.v._0*_m.m._00 + v._v.v._1*_m.m._10 + _m.m._20;
-  v_res._v.v._1 = v._v.v._0*_m.m._01 + v._v.v._1*_m.m._11 + _m.m._21;
+#ifdef HAVE_EIGEN
+  v_res._v.noalias() = v._v * _m.block<2, 2>(0, 0) + _m.block<1, 2>(2, 0);
+#else  
+  v_res._v(0) = v._v(0)*_m(0, 0) + v._v(1)*_m(1, 0) + _m(2, 0);
+  v_res._v(1) = v._v(0)*_m(0, 1) + v._v(1)*_m(1, 1) + _m(2, 1);
+#endif  // HAVE_EIGEN
   
   return v_res;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::xform_vec
-//       Access: Public
+//       Access: Published
 //  Description: The matrix transforms a 2-component vector (without
 //               translation component) and returns the result.  This
 //               assumes the matrix is an affine transform.
@@ -594,20 +633,21 @@ xform_vec(const FLOATNAME(LVecBase2) &v) const {
 
   FLOATNAME(LVecBase2) v_res;
 
-  // v._v.v._2 == 0.0f for this case
+  // v._v(2) == 0.0f for this case
   
-  v_res._v.v._0 = v._v.v._0*_m.m._00 + v._v.v._1*_m.m._10;
-  v_res._v.v._1 = v._v.v._0*_m.m._01 + v._v.v._1*_m.m._11;
+#ifdef HAVE_EIGEN
+  v_res._v.noalias() = v._v * _m.block<2, 2>(0, 0);
+#else  
+  v_res._v(0) = v._v(0)*_m(0, 0) + v._v(1)*_m(1, 0);
+  v_res._v(1) = v._v(0)*_m(0, 1) + v._v(1)*_m(1, 1);
+#endif  // HAVE_EIGEN
   
   return v_res;
-  
-//  return FLOATNAME(LVecBase2)(v.dot(get_col2(0)),
-//                          v.dot(get_col2(1)));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::xform_vec
-//       Access: Public
+//       Access: Published
 //  Description: The matrix transforms a 3-component vector and
 //               returns the result.  This assumes the matrix is an
 //               orthonormal transform.
@@ -617,20 +657,12 @@ xform_vec(const FLOATNAME(LVecBase2) &v) const {
 INLINE_LINMATH FLOATNAME(LVecBase3) FLOATNAME(LMatrix3)::
 xform_vec(const FLOATNAME(LVecBase3) &v) const {
   TAU_PROFILE("LVecBase3 LMatrix3::xform_vec(const LVecBase3 &)", " ", TAU_USER);
-  FLOATNAME(LVecBase3) v_res;
-  
-  // v._v.v._3 == 0.0f for this case
-  
-  v_res._v.v._0 = v._v.v._0*_m.m._00 + v._v.v._1*_m.m._10 + v._v.v._2*_m.m._20;
-  v_res._v.v._1 = v._v.v._0*_m.m._01 + v._v.v._1*_m.m._11 + v._v.v._2*_m.m._21;
-  v_res._v.v._2 = v._v.v._0*_m.m._02 + v._v.v._1*_m.m._12 + v._v.v._2*_m.m._22;
-  
-  return v_res;
+  return xform(v);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::xform_vec_general
-//       Access: Public
+//       Access: Published
 //  Description: The matrix transforms a 3-component vector (without
 //               translation component) and returns the result, as a
 //               fully general operation.
@@ -638,39 +670,114 @@ xform_vec(const FLOATNAME(LVecBase3) &v) const {
 INLINE_LINMATH FLOATNAME(LVecBase3) FLOATNAME(LMatrix3)::
 xform_vec_general(const FLOATNAME(LVecBase3) &v) const {
   TAU_PROFILE("LVecBase3 LMatrix3::xform_vec_general(const LVecBase3 &)", " ", TAU_USER);
+#ifdef HAVE_EIGEN
+  return FLOATNAME(LVecBase3)(v._v * _m.inverse().transpose());
+#else
   FLOATNAME(LMatrix3) i;
   i.invert_transpose_from(*this);
 
   return i.xform(v);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: LMatrix3::mult_cel
-//       Access: Private
-//  Description: Returns one cell of the result of a matrix-matrix
-//               multiplication operation.
+//     Function: LMatrix3::xform_in_place
+//       Access: Published
+//  Description: 3-component vector or point times matrix.
 ////////////////////////////////////////////////////////////////////
-INLINE_LINMATH FLOATTYPE FLOATNAME(LMatrix3)::
-mult_cel(const FLOATNAME(LMatrix3) &other, int row, int col) const {
-  return get_row(row).dot(other.get_col(col));
+INLINE_LINMATH void FLOATNAME(LMatrix3)::
+xform_in_place(FLOATNAME(LVecBase3) &v) const {
+  TAU_PROFILE("void LMatrix3::xform_in_place(LVecBase3 &)", " ", TAU_USER);
+#ifdef HAVE_EIGEN
+  v._v = v._v * _m;
+#else  
+  v = xform(v);
+#endif  // HAVE_EIGEN
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::xform_point_in_place
+//       Access: Published
+//  Description: The matrix transforms a 2-component point (including
+//               translation component).  This assumes the matrix is
+//               an affine transform.
+////////////////////////////////////////////////////////////////////
+INLINE_LINMATH void FLOATNAME(LMatrix3)::
+xform_point_in_place(FLOATNAME(LVecBase2) &v) const {
+  TAU_PROFILE("void LMatrix3::xform_point_in_place(LVecBase3 &)", " ", TAU_USER);
+  // v._v(2) == 1.0f for this case
+  
+#ifdef HAVE_EIGEN
+  v._v = v._v * _m.block<2, 2>(0, 0) + _m.block<1, 2>(2, 0);
+#else  
+  v = xform_point(v);
+#endif  // HAVE_EIGEN
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::xform_vec_in_place
+//       Access: Published
+//  Description: The matrix transforms a 2-component vector (without
+//               translation component).  This assumes the matrix is
+//               an affine transform.
+////////////////////////////////////////////////////////////////////
+INLINE_LINMATH void FLOATNAME(LMatrix3)::
+xform_vec_in_place(FLOATNAME(LVecBase2) &v) const {
+  TAU_PROFILE("void LMatrix3::xform_vec_in_place(LVecBase3 &)", " ", TAU_USER);
+  // v._v(2) == 0.0f for this case
+  
+#ifdef HAVE_EIGEN
+  v._v = v._v * _m.block<2, 2>(0, 0);
+#else  
+  v = xform_vec(v);
+#endif  // HAVE_EIGEN
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::xform_vec_in_place
+//       Access: Published
+//  Description: The matrix transforms a 3-component vector.  This
+//               assumes the matrix is an orthonormal transform.
+//
+//               In practice, this is the same computation as xform().
+////////////////////////////////////////////////////////////////////
+INLINE_LINMATH void FLOATNAME(LMatrix3)::
+xform_vec_in_place(FLOATNAME(LVecBase3) &v) const {
+  TAU_PROFILE("void LMatrix3::xform_vec_in_place(LVecBase3 &)", " ", TAU_USER);
+  xform_in_place(v);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::xform_vec_general_in_place
+//       Access: Published
+//  Description: The matrix transforms a 3-component vector (without
+//               translation component), as a fully general operation.
+////////////////////////////////////////////////////////////////////
+INLINE_LINMATH void FLOATNAME(LMatrix3)::
+xform_vec_general_in_place(FLOATNAME(LVecBase3) &v) const {
+  TAU_PROFILE("void LMatrix3::xform_vec_general_in_place(LVecBase3 &)", " ", TAU_USER);
+#ifdef HAVE_EIGEN
+  v._v = v._v * _m.inverse().transpose();
+#else
+  v = xform_vec(v);
+#endif  // HAVE_EIGEN
+}
 
 #define MATRIX3_PRODUCT(res, a, b)                   \
-res._m.m._00 = a._m.m._00*b._m.m._00 + a._m.m._01*b._m.m._10 + a._m.m._02*b._m.m._20;   \
-res._m.m._01 = a._m.m._00*b._m.m._01 + a._m.m._01*b._m.m._11 + a._m.m._02*b._m.m._21;   \
-res._m.m._02 = a._m.m._00*b._m.m._02 + a._m.m._01*b._m.m._12 + a._m.m._02*b._m.m._22;   \
-res._m.m._10 = a._m.m._10*b._m.m._00 + a._m.m._11*b._m.m._10 + a._m.m._12*b._m.m._20;   \
-res._m.m._11 = a._m.m._10*b._m.m._01 + a._m.m._11*b._m.m._11 + a._m.m._12*b._m.m._21;   \
-res._m.m._12 = a._m.m._10*b._m.m._02 + a._m.m._11*b._m.m._12 + a._m.m._12*b._m.m._22;   \
-res._m.m._20 = a._m.m._20*b._m.m._00 + a._m.m._21*b._m.m._10 + a._m.m._22*b._m.m._20;   \
-res._m.m._21 = a._m.m._20*b._m.m._01 + a._m.m._21*b._m.m._11 + a._m.m._22*b._m.m._21;   \
-res._m.m._22 = a._m.m._20*b._m.m._02 + a._m.m._21*b._m.m._12 + a._m.m._22*b._m.m._22;
+res._m(0, 0) = a._m(0, 0)*b._m(0, 0) + a._m(0, 1)*b._m(1, 0) + a._m(0, 2)*b._m(2, 0);   \
+res._m(0, 1) = a._m(0, 0)*b._m(0, 1) + a._m(0, 1)*b._m(1, 1) + a._m(0, 2)*b._m(2, 1);   \
+res._m(0, 2) = a._m(0, 0)*b._m(0, 2) + a._m(0, 1)*b._m(1, 2) + a._m(0, 2)*b._m(2, 2);   \
+res._m(1, 0) = a._m(1, 0)*b._m(0, 0) + a._m(1, 1)*b._m(1, 0) + a._m(1, 2)*b._m(2, 0);   \
+res._m(1, 1) = a._m(1, 0)*b._m(0, 1) + a._m(1, 1)*b._m(1, 1) + a._m(1, 2)*b._m(2, 1);   \
+res._m(1, 2) = a._m(1, 0)*b._m(0, 2) + a._m(1, 1)*b._m(1, 2) + a._m(1, 2)*b._m(2, 2);   \
+res._m(2, 0) = a._m(2, 0)*b._m(0, 0) + a._m(2, 1)*b._m(1, 0) + a._m(2, 2)*b._m(2, 0);   \
+res._m(2, 1) = a._m(2, 0)*b._m(0, 1) + a._m(2, 1)*b._m(1, 1) + a._m(2, 2)*b._m(2, 1);   \
+res._m(2, 2) = a._m(2, 0)*b._m(0, 2) + a._m(2, 1)*b._m(1, 2) + a._m(2, 2)*b._m(2, 2);
 
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix * matrix
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
@@ -695,7 +802,7 @@ multiply(const FLOATNAME(LMatrix3) &other1, const FLOATNAME(LMatrix3) &other2) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix * scalar
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
@@ -703,24 +810,24 @@ operator * (FLOATTYPE scalar) const {
   TAU_PROFILE("LMatrix3 operator *(const LMatrix3 &, FLOATTYPE)", " ", TAU_USER);
   FLOATNAME(LMatrix3) t;
 
-  t._m.m._00 = _m.m._00 * scalar;
-  t._m.m._01 = _m.m._01 * scalar;
-  t._m.m._02 = _m.m._02 * scalar;
+  t._m(0, 0) = _m(0, 0) * scalar;
+  t._m(0, 1) = _m(0, 1) * scalar;
+  t._m(0, 2) = _m(0, 2) * scalar;
 
-  t._m.m._10 = _m.m._10 * scalar;
-  t._m.m._11 = _m.m._11 * scalar;
-  t._m.m._12 = _m.m._12 * scalar;
+  t._m(1, 0) = _m(1, 0) * scalar;
+  t._m(1, 1) = _m(1, 1) * scalar;
+  t._m(1, 2) = _m(1, 2) * scalar;
 
-  t._m.m._20 = _m.m._20 * scalar;
-  t._m.m._21 = _m.m._21 * scalar;
-  t._m.m._22 = _m.m._22 * scalar;
+  t._m(2, 0) = _m(2, 0) * scalar;
+  t._m(2, 1) = _m(2, 1) * scalar;
+  t._m(2, 2) = _m(2, 2) * scalar;
 
   return t;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix / scalar
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
@@ -731,53 +838,53 @@ operator / (FLOATTYPE scalar) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix += matrix
-//       Access: Public
+//       Access: Published
 //  Description: Performs a memberwise addition between two matrices.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
 operator += (const FLOATNAME(LMatrix3) &other) {
   TAU_PROFILE("LMatrix3 LMatrix3::operator +=(const LMatrix3 &)", " ", TAU_USER);
-  _m.m._00 += other._m.m._00;
-  _m.m._01 += other._m.m._01;
-  _m.m._02 += other._m.m._02;
+  _m(0, 0) += other._m(0, 0);
+  _m(0, 1) += other._m(0, 1);
+  _m(0, 2) += other._m(0, 2);
 
-  _m.m._10 += other._m.m._10;
-  _m.m._11 += other._m.m._11;
-  _m.m._12 += other._m.m._12;
+  _m(1, 0) += other._m(1, 0);
+  _m(1, 1) += other._m(1, 1);
+  _m(1, 2) += other._m(1, 2);
 
-  _m.m._20 += other._m.m._20;
-  _m.m._21 += other._m.m._21;
-  _m.m._22 += other._m.m._22;
+  _m(2, 0) += other._m(2, 0);
+  _m(2, 1) += other._m(2, 1);
+  _m(2, 2) += other._m(2, 2);
 
   return *this;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix -= matrix
-//       Access: Public
+//       Access: Published
 //  Description: Performs a memberwise subtraction between two matrices.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
 operator -= (const FLOATNAME(LMatrix3) &other) {
   TAU_PROFILE("LMatrix3 LMatrix3::operator -=(const LMatrix3 &)", " ", TAU_USER);
-  _m.m._00 -= other._m.m._00;
-  _m.m._01 -= other._m.m._01;
-  _m.m._02 -= other._m.m._02;
+  _m(0, 0) -= other._m(0, 0);
+  _m(0, 1) -= other._m(0, 1);
+  _m(0, 2) -= other._m(0, 2);
 
-  _m.m._10 -= other._m.m._10;
-  _m.m._11 -= other._m.m._11;
-  _m.m._12 -= other._m.m._12;
+  _m(1, 0) -= other._m(1, 0);
+  _m(1, 1) -= other._m(1, 1);
+  _m(1, 2) -= other._m(1, 2);
 
-  _m.m._20 -= other._m.m._20;
-  _m.m._21 -= other._m.m._21;
-  _m.m._22 -= other._m.m._22;
+  _m(2, 0) -= other._m(2, 0);
+  _m(2, 1) -= other._m(2, 1);
+  _m(2, 2) -= other._m(2, 2);
 
   return *this;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix *= matrix
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
@@ -791,76 +898,76 @@ operator *= (const FLOATNAME(LMatrix3) &other) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix *= scalar
-//       Access: Public
+//       Access: Published
 //  Description: Performs a memberwise scale.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
 operator *= (FLOATTYPE scalar) {
   TAU_PROFILE("LMatrix3 LMatrix3::operator *=(FLOATTYPE)", " ", TAU_USER);
-  _m.m._00 *= scalar;
-  _m.m._01 *= scalar;
-  _m.m._02 *= scalar;
+  _m(0, 0) *= scalar;
+  _m(0, 1) *= scalar;
+  _m(0, 2) *= scalar;
 
-  _m.m._10 *= scalar;
-  _m.m._11 *= scalar;
-  _m.m._12 *= scalar;
+  _m(1, 0) *= scalar;
+  _m(1, 1) *= scalar;
+  _m(1, 2) *= scalar;
 
-  _m.m._20 *= scalar;
-  _m.m._21 *= scalar;
-  _m.m._22 *= scalar;
+  _m(2, 0) *= scalar;
+  _m(2, 1) *= scalar;
+  _m(2, 2) *= scalar;
 
   return *this;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::matrix /= scalar
-//       Access: Public
+//       Access: Published
 //  Description: Performs a memberwise scale.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) &FLOATNAME(LMatrix3)::
 operator /= (FLOATTYPE scalar) {
   TAU_PROFILE("LMatrix3 LMatrix3::operator /=(FLOATTYPE)", " ", TAU_USER);
   FLOATTYPE recip_scalar = 1.0f/scalar;
-  _m.m._00 *= recip_scalar;
-  _m.m._01 *= recip_scalar;
-  _m.m._02 *= recip_scalar;
+  _m(0, 0) *= recip_scalar;
+  _m(0, 1) *= recip_scalar;
+  _m(0, 2) *= recip_scalar;
 
-  _m.m._10 *= recip_scalar;
-  _m.m._11 *= recip_scalar;
-  _m.m._12 *= recip_scalar;
+  _m(1, 0) *= recip_scalar;
+  _m(1, 1) *= recip_scalar;
+  _m(1, 2) *= recip_scalar;
 
-  _m.m._20 *= recip_scalar;
-  _m.m._21 *= recip_scalar;
-  _m.m._22 *= recip_scalar;
+  _m(2, 0) *= recip_scalar;
+  _m(2, 1) *= recip_scalar;
+  _m(2, 2) *= recip_scalar;
 
   return *this;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::transpose_from
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 transpose_from(const FLOATNAME(LMatrix3) &other) {
   TAU_PROFILE("LMatrix3 LMatrix3::transpose_from(const LMatrix3 &other)", " ", TAU_USER);
-  _m.m._00 = other._m.m._00;
-  _m.m._01 = other._m.m._10;
-  _m.m._02 = other._m.m._20;
+  _m(0, 0) = other._m(0, 0);
+  _m(0, 1) = other._m(1, 0);
+  _m(0, 2) = other._m(2, 0);
 
-  _m.m._10 = other._m.m._01;
-  _m.m._11 = other._m.m._11;
-  _m.m._12 = other._m.m._21;
+  _m(1, 0) = other._m(0, 1);
+  _m(1, 1) = other._m(1, 1);
+  _m(1, 2) = other._m(2, 1);
 
-  _m.m._20 = other._m.m._02;
-  _m.m._21 = other._m.m._12;
-  _m.m._22 = other._m.m._22;
+  _m(2, 0) = other._m(0, 2);
+  _m(2, 1) = other._m(1, 2);
+  _m(2, 2) = other._m(2, 2);
 }
 
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::transpose_in_place
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
@@ -868,9 +975,9 @@ transpose_in_place() {
   TAU_PROFILE("void LMatrix3::transpose_in_place()", " ", TAU_USER);
 
   #define SWAP__(x,y) { FLOATTYPE temp = (x);  (x) = (y);  (y) = temp;}
-  SWAP__(_m.m._01,_m.m._10);
-  SWAP__(_m.m._02,_m.m._20);
-  SWAP__(_m.m._12,_m.m._21);
+  SWAP__(_m(0, 1),_m(1, 0));
+  SWAP__(_m(0, 2),_m(2, 0));
+  SWAP__(_m(1, 2),_m(2, 1));
   #undef SWAP__
 }
 
@@ -879,37 +986,29 @@ transpose_in_place() {
 // don't trust compilers to inline these
 #define DET2(E00,E01,E10,E11) ((E00)*(E11) - (E10)*(E01))
 #define MATRIX3_DETERMINANT(mat)                                  \
-   ( (mat)._00 * DET2((mat)._11,(mat)._12,(mat)._21,(mat)._22)    \
-    -(mat)._01 * DET2((mat)._10,(mat)._12,(mat)._20,(mat)._22)    \
-    +(mat)._02 * DET2((mat)._10,(mat)._11,(mat)._20,(mat)._21))
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: LMatrix3::det2
-//       Access: Private, Static
-//  Description: Returns the determinant of a 2x2 matrix.
-////////////////////////////////////////////////////////////////////
-INLINE_LINMATH FLOATTYPE FLOATNAME(LMatrix3)::
-det2(FLOATTYPE e00, FLOATTYPE e01, FLOATTYPE e10, FLOATTYPE e11) const {
-  TAU_PROFILE("FLOATTYPE LMatrix3::det2()", " ", TAU_USER);
-  return DET2(e00, e01, e10, e11);
-}
+   ( (mat)(0, 0) * DET2((mat)(1, 1),(mat)(1, 2),(mat)(2, 1),(mat)(2, 2))    \
+    -(mat)(0, 1) * DET2((mat)(1, 0),(mat)(1, 2),(mat)(2, 0),(mat)(2, 2))    \
+    +(mat)(0, 2) * DET2((mat)(1, 0),(mat)(1, 1),(mat)(2, 0),(mat)(2, 1)))
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::determinant
-//       Access: Public
+//       Access: Published
 //  Description: Returns the determinant of the matrix.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATTYPE FLOATNAME(LMatrix3)::
 determinant() const {
   TAU_PROFILE("FLOATTYPE LMatrix3::determinant()", " ", TAU_USER);
 
- return MATRIX3_DETERMINANT(_m.m);
+#ifdef HAVE_EIGEN
+  return _m.determinant();
+#else
+ return MATRIX3_DETERMINANT(_m);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::invert_from
-//       Access: Public
+//       Access: Published
 //  Description: Computes the inverse of the other matrix, and stores
 //               the result in this matrix.  This is a fully general
 //               operation and makes no assumptions about the type of
@@ -920,14 +1019,30 @@ determinant() const {
 //               place, see invert_in_place.
 //
 //               The return value is true if the matrix was
-//               successfully inverted, false if the was a
+//               successfully inverted, false if there was a
 //               singularity.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH bool FLOATNAME(LMatrix3)::
 invert_from(const FLOATNAME(LMatrix3) &other) {
   TAU_PROFILE("bool LMatrix3::invert_from(const LMatrix3 &)", " ", TAU_USER);
 
-  FLOATTYPE other_det = MATRIX3_DETERMINANT(other._m.m);
+#ifdef HAVE_EIGEN
+  bool invertible;
+  other._m.computeInverseWithCheck(_m, invertible);
+
+  if (!invertible) {
+#ifdef NDEBUG
+    linmath_cat.warning() << "Tried to invert singular LMatrix3.\n";
+#endif
+    (*this) = ident_mat();
+    nassertr(!no_singular_invert, false);
+  }
+
+  return invertible;
+
+#else  // HAVE_EIGEN
+
+  FLOATTYPE other_det = MATRIX3_DETERMINANT(other._m);
 
   // We throw the value out only if it's smaller than our "small"
   // threshold squared.  This helps reduce overly-sensitive
@@ -938,28 +1053,30 @@ invert_from(const FLOATNAME(LMatrix3) &other) {
     linmath_cat.warning() << "Tried to invert singular LMatrix3.\n";
 #endif
     (*this) = ident_mat();
+    nassertr(!no_singular_invert, false);
     return false;
   }
 
   other_det = 1.0f / other_det;
-  _m.m._00 =  other_det * DET2(other._m.m._11, other._m.m._12, other._m.m._21, other._m.m._22);
-  _m.m._10 = -other_det * DET2(other._m.m._10, other._m.m._12, other._m.m._20, other._m.m._22);
-  _m.m._20 =  other_det * DET2(other._m.m._10, other._m.m._11, other._m.m._20, other._m.m._21);
+  _m(0, 0) =  other_det * DET2(other._m(1, 1), other._m(1, 2), other._m(2, 1), other._m(2, 2));
+  _m(1, 0) = -other_det * DET2(other._m(1, 0), other._m(1, 2), other._m(2, 0), other._m(2, 2));
+  _m(2, 0) =  other_det * DET2(other._m(1, 0), other._m(1, 1), other._m(2, 0), other._m(2, 1));
 
-  _m.m._01 = -other_det * DET2(other._m.m._01, other._m.m._02, other._m.m._21, other._m.m._22);
-  _m.m._11 =  other_det * DET2(other._m.m._00, other._m.m._02, other._m.m._20, other._m.m._22);
-  _m.m._21 = -other_det * DET2(other._m.m._00, other._m.m._01, other._m.m._20, other._m.m._21);
+  _m(0, 1) = -other_det * DET2(other._m(0, 1), other._m(0, 2), other._m(2, 1), other._m(2, 2));
+  _m(1, 1) =  other_det * DET2(other._m(0, 0), other._m(0, 2), other._m(2, 0), other._m(2, 2));
+  _m(2, 1) = -other_det * DET2(other._m(0, 0), other._m(0, 1), other._m(2, 0), other._m(2, 1));
 
-  _m.m._02 =  other_det * DET2(other._m.m._01, other._m.m._02, other._m.m._11, other._m.m._12);
-  _m.m._12 = -other_det * DET2(other._m.m._00, other._m.m._02, other._m.m._10, other._m.m._12);
-  _m.m._22 =  other_det * DET2(other._m.m._00, other._m.m._01, other._m.m._10, other._m.m._11);
+  _m(0, 2) =  other_det * DET2(other._m(0, 1), other._m(0, 2), other._m(1, 1), other._m(1, 2));
+  _m(1, 2) = -other_det * DET2(other._m(0, 0), other._m(0, 2), other._m(1, 0), other._m(1, 2));
+  _m(2, 2) =  other_det * DET2(other._m(0, 0), other._m(0, 1), other._m(1, 0), other._m(1, 1));
 
   return true;
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::invert_in_place
-//       Access: Public
+//       Access: Published
 //  Description: Inverts the current matrix.  Returns true if the
 //               inverse is successful, false if the matrix was
 //               singular.
@@ -973,7 +1090,7 @@ invert_in_place() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::invert_transpose_from
-//       Access: Public
+//       Access: Published
 //  Description: Simultaneously computes the inverse of the indicated
 //               matrix, and then the transpose of that inverse.
 ////////////////////////////////////////////////////////////////////
@@ -981,35 +1098,54 @@ INLINE_LINMATH bool FLOATNAME(LMatrix3)::
 invert_transpose_from(const FLOATNAME(LMatrix3) &other) {
   TAU_PROFILE("bool LMatrix3::invert_transpose_from(const LMatrix3 &)", " ", TAU_USER);
 
-  FLOATTYPE other_det = MATRIX3_DETERMINANT(other._m.m);
+#ifdef HAVE_EIGEN
+  bool invertible;
+  EMatrix3 temp;
+  other._m.computeInverseWithCheck(temp, invertible);
+
+  if (!invertible) {
+#ifdef NDEBUG
+    linmath_cat.warning() << "Tried to invert singular LMatrix3.\n";
+#endif
+    (*this) = ident_mat();
+    nassertr(!no_singular_invert, false);
+  }
+
+  _m = temp.transpose();
+  return true;
+
+#else  // HAVE_EIGEN
+  FLOATTYPE other_det = MATRIX3_DETERMINANT(other._m);
 
   if (IS_THRESHOLD_ZERO(other_det, (NEARLY_ZERO(FLOATTYPE) * NEARLY_ZERO(FLOATTYPE)))) {
 #ifdef NOTIFY_DEBUG
     linmath_cat.warning() << "Tried to invert singular LMatrix3.\n";
 #endif
     (*this) = ident_mat();
+    nassertr(!no_singular_invert, false);
     return false;
   }
 
   other_det = 1.0f / other_det;
-  _m.m._00 =  other_det * DET2(other._m.m._11, other._m.m._12, other._m.m._21, other._m.m._22);
-  _m.m._01 = -other_det * DET2(other._m.m._10, other._m.m._12, other._m.m._20, other._m.m._22);
-  _m.m._02 =  other_det * DET2(other._m.m._10, other._m.m._11, other._m.m._20, other._m.m._21);
+  _m(0, 0) =  other_det * DET2(other._m(1, 1), other._m(1, 2), other._m(2, 1), other._m(2, 2));
+  _m(0, 1) = -other_det * DET2(other._m(1, 0), other._m(1, 2), other._m(2, 0), other._m(2, 2));
+  _m(0, 2) =  other_det * DET2(other._m(1, 0), other._m(1, 1), other._m(2, 0), other._m(2, 1));
 
-  _m.m._10 = -other_det * DET2(other._m.m._01, other._m.m._02, other._m.m._21, other._m.m._22);
-  _m.m._11 =  other_det * DET2(other._m.m._00, other._m.m._02, other._m.m._20, other._m.m._22);
-  _m.m._12 = -other_det * DET2(other._m.m._00, other._m.m._01, other._m.m._20, other._m.m._21);
+  _m(1, 0) = -other_det * DET2(other._m(0, 1), other._m(0, 2), other._m(2, 1), other._m(2, 2));
+  _m(1, 1) =  other_det * DET2(other._m(0, 0), other._m(0, 2), other._m(2, 0), other._m(2, 2));
+  _m(1, 2) = -other_det * DET2(other._m(0, 0), other._m(0, 1), other._m(2, 0), other._m(2, 1));
 
-  _m.m._20 =  other_det * DET2(other._m.m._01, other._m.m._02, other._m.m._11, other._m.m._12);
-  _m.m._21 = -other_det * DET2(other._m.m._00, other._m.m._02, other._m.m._10, other._m.m._12);
-  _m.m._22 =  other_det * DET2(other._m.m._00, other._m.m._01, other._m.m._10, other._m.m._11);
+  _m(2, 0) =  other_det * DET2(other._m(0, 1), other._m(0, 2), other._m(1, 1), other._m(1, 2));
+  _m(2, 1) = -other_det * DET2(other._m(0, 0), other._m(0, 2), other._m(1, 0), other._m(1, 2));
+  _m(2, 2) =  other_det * DET2(other._m(0, 0), other._m(0, 1), other._m(1, 0), other._m(1, 1));
 
   return true;
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::invert_transpose_from
-//       Access: Public
+//       Access: Published
 //  Description: Simultaneously computes the inverse of the indicated
 //               matrix, and then the transpose of that inverse.
 ////////////////////////////////////////////////////////////////////
@@ -1017,35 +1153,55 @@ INLINE_LINMATH bool FLOATNAME(LMatrix3)::
 invert_transpose_from(const FLOATNAME(LMatrix4) &other) {
   TAU_PROFILE("bool LMatrix3::invert_transpose_from(const LMatrix4 &)", " ", TAU_USER);
 
-  FLOATTYPE other_det = MATRIX3_DETERMINANT(other._m.m);
+#ifdef HAVE_EIGEN
+  bool invertible;
+  EMatrix3 temp;
+  other._m.block<3, 3>(0, 0).computeInverseWithCheck(temp, invertible);
+
+  if (!invertible) {
+#ifdef NDEBUG
+    linmath_cat.warning() << "Tried to invert singular LMatrix3.\n";
+#endif
+    (*this) = ident_mat();
+    nassertr(!no_singular_invert, false);
+  }
+
+  _m = temp.transpose();
+  return true;
+
+#else  // HAVE_EIGEN
+
+  FLOATTYPE other_det = MATRIX3_DETERMINANT(other._m);
 
   if (IS_THRESHOLD_ZERO(other_det, (NEARLY_ZERO(FLOATTYPE) * NEARLY_ZERO(FLOATTYPE)))) {
 #ifdef NOTIFY_DEBUG
     linmath_cat.warning() << "Tried to invert singular LMatrix4.\n";
 #endif
     (*this) = ident_mat();
+    nassertr(!no_singular_invert, false);
     return false;
   }
 
   other_det = 1.0f / other_det;
-  _m.m._00 =  other_det * DET2(other._m.m._11, other._m.m._12, other._m.m._21, other._m.m._22);
-  _m.m._01 = -other_det * DET2(other._m.m._10, other._m.m._12, other._m.m._20, other._m.m._22);
-  _m.m._02 =  other_det * DET2(other._m.m._10, other._m.m._11, other._m.m._20, other._m.m._21);
+  _m(0, 0) =  other_det * DET2(other._m(1, 1), other._m(1, 2), other._m(2, 1), other._m(2, 2));
+  _m(0, 1) = -other_det * DET2(other._m(1, 0), other._m(1, 2), other._m(2, 0), other._m(2, 2));
+  _m(0, 2) =  other_det * DET2(other._m(1, 0), other._m(1, 1), other._m(2, 0), other._m(2, 1));
 
-  _m.m._10 = -other_det * DET2(other._m.m._01, other._m.m._02, other._m.m._21, other._m.m._22);
-  _m.m._11 =  other_det * DET2(other._m.m._00, other._m.m._02, other._m.m._20, other._m.m._22);
-  _m.m._12 = -other_det * DET2(other._m.m._00, other._m.m._01, other._m.m._20, other._m.m._21);
+  _m(1, 0) = -other_det * DET2(other._m(0, 1), other._m(0, 2), other._m(2, 1), other._m(2, 2));
+  _m(1, 1) =  other_det * DET2(other._m(0, 0), other._m(0, 2), other._m(2, 0), other._m(2, 2));
+  _m(1, 2) = -other_det * DET2(other._m(0, 0), other._m(0, 1), other._m(2, 0), other._m(2, 1));
 
-  _m.m._20 =  other_det * DET2(other._m.m._01, other._m.m._02, other._m.m._11, other._m.m._12);
-  _m.m._21 = -other_det * DET2(other._m.m._00, other._m.m._02, other._m.m._10, other._m.m._12);
-  _m.m._22 =  other_det * DET2(other._m.m._00, other._m.m._01, other._m.m._10, other._m.m._11);
+  _m(2, 0) =  other_det * DET2(other._m(0, 1), other._m(0, 2), other._m(1, 1), other._m(1, 2));
+  _m(2, 1) = -other_det * DET2(other._m(0, 0), other._m(0, 2), other._m(1, 0), other._m(1, 2));
+  _m(2, 2) =  other_det * DET2(other._m(0, 0), other._m(0, 1), other._m(1, 0), other._m(1, 1));
 
   return true;
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_translate_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that applies the indicated
 //               translation.
 ////////////////////////////////////////////////////////////////////
@@ -1053,12 +1209,12 @@ INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_translate_mat(const FLOATNAME(LVecBase2) &trans) {
   set(1.0f, 0.0f, 0.0f,
       0.0f, 1.0f, 0.0f,
-      trans._v.v._0, trans._v.v._1, 1.0f);
+      trans._v(0), trans._v(1), 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_rotate_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that rotates by the given
 //               angle in degrees counterclockwise.
 ////////////////////////////////////////////////////////////////////
@@ -1075,20 +1231,20 @@ set_rotate_mat(FLOATTYPE angle) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_scale_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that applies the indicated
 //               scale in each of the two axes.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_scale_mat(const FLOATNAME(LVecBase2) &scale) {
-  set(scale._v.v._0, 0.0f, 0.0f,
-      0.0f, scale._v.v._1, 0.0f,
+  set(scale._v(0), 0.0f, 0.0f,
+      0.0f, scale._v(1), 0.0f,
       0.0f, 0.0f, 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::translate_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               translation.
 ////////////////////////////////////////////////////////////////////
@@ -1096,12 +1252,12 @@ INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
 translate_mat(const FLOATNAME(LVecBase2) &trans) {
   return FLOATNAME(LMatrix3)(1.0f, 0.0f, 0.0f,
                              0.0f, 1.0f, 0.0f,
-                             trans._v.v._0, trans._v.v._1, 1.0f);
+                             trans._v(0), trans._v(1), 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::translate_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               translation.
 ////////////////////////////////////////////////////////////////////
@@ -1114,7 +1270,7 @@ translate_mat(FLOATTYPE tx, FLOATTYPE ty) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::rotate_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that rotates by the given angle in
 //               degrees counterclockwise.
 ////////////////////////////////////////////////////////////////////
@@ -1127,20 +1283,20 @@ rotate_mat(FLOATTYPE angle) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::scale_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               scale in each of the two axes.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
 scale_mat(const FLOATNAME(LVecBase2) &scale) {
-  return FLOATNAME(LMatrix3)(scale._v.v._0, 0.0f, 0.0f,
-                             0.0f, scale._v.v._1, 0.0f,
+  return FLOATNAME(LMatrix3)(scale._v(0), 0.0f, 0.0f,
+                             0.0f, scale._v(1), 0.0f,
                              0.0f, 0.0f, 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::scale_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               scale in each of the two axes.
 ////////////////////////////////////////////////////////////////////
@@ -1153,12 +1309,12 @@ scale_mat(FLOATTYPE sx, FLOATTYPE sy) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::rotate_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that rotates by the given angle in
 //               degrees counterclockwise about the indicated vector.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
-rotate_mat(FLOATTYPE angle, FLOATNAME(LVecBase3) axis,
+rotate_mat(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
            CoordinateSystem cs) {
   FLOATNAME(LMatrix3) mat;
   mat.set_rotate_mat(angle, axis, cs);
@@ -1167,7 +1323,7 @@ rotate_mat(FLOATTYPE angle, FLOATNAME(LVecBase3) axis,
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::rotate_mat_normaxis
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that rotates by the given angle in
 //               degrees counterclockwise about the indicated vector.
 //               Assumes axis has been normalized.
@@ -1182,33 +1338,33 @@ rotate_mat_normaxis(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_scale_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that applies the indicated
 //               scale in each of the three axes.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::
 set_scale_mat(const FLOATNAME(LVecBase3) &scale) {
-  set(scale._v.v._0, 0.0f, 0.0f,
-      0.0f, scale._v.v._1, 0.0f,
-      0.0f, 0.0f, scale._v.v._2);
+  set(scale._v(0), 0.0f, 0.0f,
+      0.0f, scale._v(1), 0.0f,
+      0.0f, 0.0f, scale._v(2));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::scale_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               scale in each of the three axes.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::
 scale_mat(const FLOATNAME(LVecBase3) &scale) {
-  return FLOATNAME(LMatrix3)(scale._v.v._0, 0.0f, 0.0f,
-                             0.0f, scale._v.v._1, 0.0f,
-                             0.0f, 0.0f, scale._v.v._2);
+  return FLOATNAME(LMatrix3)(scale._v(0), 0.0f, 0.0f,
+                             0.0f, scale._v(1), 0.0f,
+                             0.0f, 0.0f, scale._v(2));
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::scale_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               scale in each of the three axes.
 ////////////////////////////////////////////////////////////////////
@@ -1221,7 +1377,7 @@ scale_mat(FLOATTYPE sx, FLOATTYPE sy, FLOATTYPE sz) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_shear_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that applies the indicated
 //               shear in each of the three planes.
 ////////////////////////////////////////////////////////////////////
@@ -1233,7 +1389,7 @@ set_shear_mat(const FLOATNAME(LVecBase3) &shear, CoordinateSystem cs) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::shear_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               shear in each of the three planes.
 ////////////////////////////////////////////////////////////////////
@@ -1246,7 +1402,7 @@ shear_mat(const FLOATNAME(LVecBase3) &shear, CoordinateSystem cs) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::shear_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               shear in each of the three planes.
 ////////////////////////////////////////////////////////////////////
@@ -1259,7 +1415,7 @@ shear_mat(FLOATTYPE shxy, FLOATTYPE shxz, FLOATTYPE shyz, CoordinateSystem cs) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::scale_shear_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               scale and shear.
 ////////////////////////////////////////////////////////////////////
@@ -1274,7 +1430,7 @@ scale_shear_mat(const FLOATNAME(LVecBase3) &scale,
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::scale_shear_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that applies the indicated
 //               scale and shear.
 ////////////////////////////////////////////////////////////////////
@@ -1290,7 +1446,7 @@ scale_shear_mat(FLOATTYPE sx, FLOATTYPE sy, FLOATTYPE sz,
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::almost_equal
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if two matrices are memberwise equal
 //               within a default tolerance based on the numeric type.
 ////////////////////////////////////////////////////////////////////
@@ -1301,7 +1457,7 @@ almost_equal(const FLOATNAME(LMatrix3) &other) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::generate_hash
-//       Access: Public
+//       Access: Published
 //  Description: Adds the vector to the indicated hash generator.
 ////////////////////////////////////////////////////////////////////
 INLINE_LINMATH void FLOATNAME(LMatrix3)::

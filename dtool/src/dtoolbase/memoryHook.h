@@ -58,6 +58,9 @@ public:
 
   bool heap_trim(size_t pad);
 
+  INLINE static size_t get_memory_alignment();
+  INLINE static size_t get_header_reserved_bytes();
+
   virtual void *mmap_alloc(size_t size, bool allow_exec);
   virtual void mmap_free(void *ptr, size_t size);
   INLINE size_t get_page_size() const;
@@ -67,7 +70,7 @@ public:
 
   DeletedBufferChain *get_deleted_chain(size_t buffer_size);
 
-  virtual void alloc_fail();
+  virtual void alloc_fail(size_t attempted_size);
 
 private:
   INLINE static size_t inflate_size(size_t size);

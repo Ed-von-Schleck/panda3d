@@ -192,7 +192,7 @@ is_fixed_function() const {
 //  Description: Set the color for this stage
 ////////////////////////////////////////////////////////////////////
 INLINE void TextureStage::
-set_color(const Colorf &color) {
+set_color(const LColor &color) {
   _color = color;
 }
 
@@ -201,7 +201,7 @@ set_color(const Colorf &color) {
 //       Access: Published
 //  Description: return the color for this stage
 ////////////////////////////////////////////////////////////////////
-INLINE Colorf TextureStage::
+INLINE LColor TextureStage::
 get_color() const {
   return _color;
 }
@@ -287,6 +287,34 @@ set_saved_result(bool saved_result) {
 INLINE bool TextureStage::
 get_saved_result() const {
   return _saved_result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::set_tex_view_offset
+//       Access: Published
+//  Description: Sets the tex_view_offset value.  This is used only
+//               when a special multiview texture is bound to the
+//               TextureStage, and it selects the particular view of
+//               the texture that is to be used.
+//
+//               This value is added to the similar parameter on
+//               DisplayRegion to derive the final texture view index
+//               that is selected for rendering.
+////////////////////////////////////////////////////////////////////
+INLINE void TextureStage::
+set_tex_view_offset(int tex_view_offset) {
+  _tex_view_offset = tex_view_offset;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureStage::get_tex_view_offset
+//       Access: Published
+//  Description: Returns the current setting of the tex_view_offset.
+//               See set_tex_view_offset().
+////////////////////////////////////////////////////////////////////
+INLINE int TextureStage::
+get_tex_view_offset() const {
+  return _tex_view_offset;
 }
 
 ////////////////////////////////////////////////////////////////////

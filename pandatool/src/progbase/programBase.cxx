@@ -25,18 +25,12 @@
 #include "vector_string.h"
 #include "configVariableInt.h"
 #include "configVariableBool.h"
+#include "panda_getopt_long.h"
+#include "preprocess_argv.h"
 
 #include <stdlib.h>
 #include <algorithm>
 #include <ctype.h>
-
-// If our system getopt() doesn't come with getopt_long_only(), then use
-// the GNU flavor that we've got in tool for this purpose.
-#ifndef HAVE_GETOPT_LONG_ONLY
-  #include "gnu_getopt.h"
-#else
-  #include <getopt.h>
-#endif
 
 // This manifest is defined if we are running on a system (e.g. most
 // any Unix) that allows us to determine the width of the terminal
@@ -205,8 +199,8 @@ show_text(const string &prefix, int indent_width, string text) {
 //               exit(1).
 ////////////////////////////////////////////////////////////////////
 void ProgramBase::
-parse_command_line(int argc, char *argv[]) {
-
+parse_command_line(int argc, char **argv) {
+  preprocess_argv(argc, argv);
 
   // Setting this variable to zero reinitializes the options parser
   // This is only necessary for processing multiple command lines in
@@ -235,10 +229,9 @@ parse_command_line(int argc, char *argv[]) {
   OptionsByName::const_iterator oi;
   int next_index = 256;
 
-  // Let's prefix the option string with "-" to tell GNU getopt that
-  // we want it to tell us the post-option arguments, instead of
-  // trying to meddle with ARGC and ARGV (which we aren't using
-  // directly).
+  // Let's prefix the option string with "-" to tell getopt that we
+  // want it to tell us the post-option arguments, instead of trying
+  // to meddle with ARGC and ARGV (which we aren't using directly).
   short_options = "-";
 
   for (oi = _options_by_name.begin(); oi != _options_by_name.end(); ++oi) {
@@ -708,6 +701,14 @@ add_path_store_options() {
      "directory name is taken from the name of the output file.",
      &ProgramBase::dispatch_filename, &_got_path_directory, 
      &(_path_replace->_path_directory));
+
+  add_option
+    ("pc", "target_directory", 40,
+     "Copies textures and other dependent files into the indicated "
+     "directory.  If a relative pathname is specified, it is relative "
+     "to the directory specified with -pd, above.",
+     &ProgramBase::dispatch_filename, &(_path_replace->_copy_files), 
+     &(_path_replace->_copy_into_directory));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -947,11 +948,11 @@ dispatch_double_quad(const string &opt, const string &arg, void *var) {
 //       Access: Protected, Static
 //  Description: Standard dispatch function for an option that takes a
 //               color, as l or l,a or r,g,b or r,g,b,a.  The data
-//               pointer is to an array of four floats, e.g. a Colorf.
+//               pointer is to an array of four floats, e.g. a LColor.
 ////////////////////////////////////////////////////////////////////
 bool ProgramBase::
 dispatch_color(const string &opt, const string &arg, void *var) {
-  float *ip = (float *)var;
+  PN_stdfloat *ip = (PN_stdfloat *)var;
 
   vector_string words;
   tokenize(arg, words, ",");

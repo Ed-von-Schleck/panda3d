@@ -1,7 +1,5 @@
 // Filename: geoMipTerrain.I
-// Created by:  pro-rsoft (29jun07)
-// Modified by: CMU ETC Summer 2010 team (03aug10) (added getters
-//   for _auto_flatten, _near, _far).
+// Created by:  rdb (29Jun07)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -52,7 +50,7 @@ GeoMipTerrain(const string &name) {
 //               call remove_node() prior to destruction.
 ////////////////////////////////////////////////////////////////////
 INLINE GeoMipTerrain::
-~GeoMipTerrain() { 
+~GeoMipTerrain() {
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -142,19 +140,19 @@ set_focal_point(double x, double y) {
   _focal_is_temporary = true;
 }
 INLINE void GeoMipTerrain::
-set_focal_point(LPoint2d fp) {
+set_focal_point(const LPoint2d &fp) {
   set_focal_point(fp.get_x(), fp.get_y());
 }
 INLINE void GeoMipTerrain::
-set_focal_point(LPoint2f fp) {
+set_focal_point(const LPoint2f &fp) {
   set_focal_point(double(fp.get_x()), double(fp.get_y()));
 }
 INLINE void GeoMipTerrain::
-set_focal_point(LPoint3d fp) {
+set_focal_point(const LPoint3d &fp) {
   set_focal_point(fp.get_x(), fp.get_y());
 }
 INLINE void GeoMipTerrain::
-set_focal_point(LPoint3f fp) {
+set_focal_point(const LPoint3f &fp) {
   set_focal_point(double(fp.get_x()), double(fp.get_y()));
 }
 INLINE void GeoMipTerrain::
@@ -295,7 +293,7 @@ is_dirty() {
 //               The default value is 100.
 ////////////////////////////////////////////////////////////////////
 INLINE void GeoMipTerrain::
-set_factor(float factor) {
+set_factor(PN_stdfloat factor) {
   grutil_cat.debug() << "Using deprecated method set_factor, use set_near and set_far instead!\n";
   _use_near_far = false;
   _factor = factor;
@@ -343,7 +341,7 @@ set_far(double input_far) {
 //     Function: GeoMipTerrain::get_far
 //       Access: Published
 //  Description: Returns the far LOD distance in the terrain coordinate
-//				 space
+//               space
 ////////////////////////////////////////////////////////////////////
 INLINE double GeoMipTerrain::
 get_far() {
@@ -354,7 +352,7 @@ get_far() {
 //     Function: GeoMipTerrain::get_near
 //       Access: Published
 //  Description: Returns the near LOD distance in the terrain coordinate
-//				 space
+//               space
 ////////////////////////////////////////////////////////////////////
 INLINE double GeoMipTerrain::
 get_near() {
@@ -364,7 +362,7 @@ get_near() {
 ////////////////////////////////////////////////////////////////////
 //     Function: GeoMipTerrain::get_flatten_mode
 //       Access: Published
-//  Description: Returns the automatic-flatten mode (e.g., off, 
+//  Description: Returns the automatic-flatten mode (e.g., off,
 //               flatten_light, flatten_medium, or flatten_strong)
 ////////////////////////////////////////////////////////////////////
 INLINE int GeoMipTerrain::
@@ -403,7 +401,7 @@ get_block_node_path(unsigned short mx, unsigned short my) {
 //               the block index of the block which you can use
 //               in GeoMipTerrain::get_block_node_path.
 ////////////////////////////////////////////////////////////////////
-INLINE LVecBase2f GeoMipTerrain::
+INLINE LVecBase2 GeoMipTerrain::
 get_block_from_pos(double x, double y) {
   if (x < 0) x = 0;
   if (y < 0) y = 0;
@@ -411,7 +409,7 @@ get_block_from_pos(double x, double y) {
   if (y > _ysize - 1) y = _ysize - 1;
   x = floor(x / _block_size);
   y = floor(y / _block_size);
-  return LVecBase2f(x, y);
+  return LVecBase2(x, y);
 }
 ////////////////////////////////////////////////////////////////////
 //     Function: GeoMipTerrain::lod_decide
@@ -420,11 +418,11 @@ get_block_from_pos(double x, double y) {
 ////////////////////////////////////////////////////////////////////
 INLINE unsigned short GeoMipTerrain::
 lod_decide(unsigned short mx, unsigned short my) {
-  float cx = mx; 
-  float cy = my;
+  PN_stdfloat cx = mx;
+  PN_stdfloat cy = my;
   cx = (cx * _block_size + _block_size / 2) * _root.get_sx();
   cy = (cy * _block_size + _block_size / 2) * _root.get_sy();
-  float d;
+  PN_stdfloat d;
   if (_use_near_far) {
     d = sqrt(pow(_focal_point.get_x(_root) - cx, 2) +
              pow(_focal_point.get_y(_root) - cy, 2));
@@ -520,7 +518,7 @@ set_color_map(const string &path) {
 //  Description: Returns whether a color map has been set.
 ////////////////////////////////////////////////////////////////////
 INLINE bool GeoMipTerrain::
-has_color_map() {
+has_color_map() const {
   return _has_color_map;
 }
 
@@ -606,7 +604,7 @@ get_pixel_value(unsigned short mx, unsigned short my, int x, int y) {
 //               accurate normals, please divide it by the
 //               terrain scale and normalize it again!
 ////////////////////////////////////////////////////////////////////
-INLINE LVector3f GeoMipTerrain::
+INLINE LVector3 GeoMipTerrain::
 get_normal(unsigned short mx, unsigned short my, int x, int y) {
   nassertr_always(mx < (_xsize - 1) / _block_size, false);
   nassertr_always(my < (_ysize - 1) / _block_size, false);

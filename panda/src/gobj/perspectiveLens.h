@@ -27,7 +27,7 @@
 class EXPCL_PANDA_GOBJ PerspectiveLens : public Lens {
 PUBLISHED:
   INLINE PerspectiveLens();
-  INLINE PerspectiveLens(float hfov, float vfov);
+  INLINE PerspectiveLens(PN_stdfloat hfov, PN_stdfloat vfov);
 
 public:
   INLINE PerspectiveLens(const PerspectiveLens &copy);
@@ -39,11 +39,11 @@ public:
   virtual bool is_perspective() const;
 
 protected:
-  virtual void compute_projection_mat();
+  virtual void do_compute_projection_mat(Lens::CData *lens_cdata);
 
-  virtual float fov_to_film(float fov, float focal_length, bool horiz) const;
-  virtual float fov_to_focal_length(float fov, float film_size, bool horiz) const;
-  virtual float film_to_fov(float film_size, float focal_length, bool horiz) const;
+  virtual PN_stdfloat fov_to_film(PN_stdfloat fov, PN_stdfloat focal_length, bool horiz) const;
+  virtual PN_stdfloat fov_to_focal_length(PN_stdfloat fov, PN_stdfloat film_size, bool horiz) const;
+  virtual PN_stdfloat film_to_fov(PN_stdfloat film_size, PN_stdfloat focal_length, bool horiz) const;
 
 public:
   static void register_with_read_factory();

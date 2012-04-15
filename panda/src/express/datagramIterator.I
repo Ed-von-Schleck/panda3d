@@ -255,20 +255,14 @@ get_uint64() {
 //     Function: DatagramIterator::get_float32
 //       Access: Public
 //  Description: Extracts a 32-bit single-precision floating-point
-//               number.  Since this kind of float is not necessarily
-//               portable across different architectures, special care
-//               is required.
+//               number.
 ////////////////////////////////////////////////////////////////////
-INLINE float DatagramIterator::
+INLINE PN_float32 DatagramIterator::
 get_float32() {
-  // For now, we assume the float format is portable across all
-  // architectures we are concerned with.  If we come across one that
-  // is different, we will have to convert.
-  nassertr(sizeof(float) == 4, 0.0f);
   nassertr(_datagram != (const Datagram *)NULL, 0.0);
   nassertr(_current_index < _datagram->get_length(), 0.0);
 
-  float tempvar;
+  PN_float32 tempvar;
   // Avoid reading junk data off the end of the datagram:
   nassertr(_current_index + sizeof(tempvar) <= _datagram->get_length(), 0.0);
   // Get the Data:
@@ -298,6 +292,23 @@ get_float64() {
   _current_index += sizeof(tempvar);
 
   return tempvar;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: DatagramIterator::get_stdfloat
+//       Access: Public
+//  Description: Extracts either a 32-bit or a 64-bit floating-point
+//               number, according to Datagram::set_stdfloat_double().
+////////////////////////////////////////////////////////////////////
+INLINE PN_stdfloat DatagramIterator::
+get_stdfloat() {
+  nassertr(_datagram != (const Datagram *)NULL, 0.0);
+  if (_datagram->get_stdfloat_double()) {
+    return (PN_stdfloat)get_float64();
+  } else {
+    return (PN_stdfloat)get_float32();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -430,20 +441,14 @@ get_be_uint64() {
 //     Function: DatagramIterator::get_be_float32
 //       Access: Public
 //  Description: Extracts a 32-bit big-endian single-precision
-//               floating-point number.  Since this kind of float is
-//               not necessarily portable across different
-//               architectures, special care is required.
+//               floating-point number.
 ////////////////////////////////////////////////////////////////////
-INLINE float DatagramIterator::
+INLINE PN_float32 DatagramIterator::
 get_be_float32() {
-  // For now, we assume the float format is portable across all
-  // architectures we are concerned with.  If we come across one that
-  // is different, we will have to convert.
-  nassertr(sizeof(float) == 4, 0.0f);
   nassertr(_datagram != (const Datagram *)NULL, 0.0);
   nassertr(_current_index < _datagram->get_length(), 0.0);
 
-  float tempvar;
+  PN_float32 tempvar;
   // Avoid reading junk data off the end of the datagram:
   nassertr(_current_index + sizeof(tempvar) <= _datagram->get_length(), 0);
   // Get the Data:

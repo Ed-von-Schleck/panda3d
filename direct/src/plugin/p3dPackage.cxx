@@ -19,6 +19,7 @@
 #include "p3dTemporaryFile.h"
 #include "p3dPatchFinder.h"
 #include "mkdir_complete.h"
+#include "wstring_encode.h"
 
 #include "zlib.h"
 
@@ -1851,7 +1852,15 @@ thread_step() {
   string source_pathname = _package->get_package_dir() + "/" + _source.get_filename();
   string target_pathname = _package->get_package_dir() + "/" + _target.get_filename();
 
-  ifstream source(source_pathname.c_str(), ios::in | ios::binary);
+  ifstream source;
+#ifdef _WIN32
+  wstring source_pathname_w;
+  if (string_to_wstring(source_pathname_w, source_pathname)) {
+    source.open(source_pathname_w.c_str(), ios::in | ios::binary);
+  }
+#else // _WIN32
+  source.open(source_pathname.c_str(), ios::in | ios::binary);
+#endif  // _WIN32
   if (!source) {
     nout << "Couldn't open " << source_pathname << "\n";
     return IT_step_failed;
@@ -1861,7 +1870,15 @@ thread_step() {
     return IT_step_failed;
   }
 
-  ofstream target(target_pathname.c_str(), ios::out | ios::binary);
+  ofstream target;
+#ifdef _WIN32
+  wstring target_pathname_w;
+  if (string_to_wstring(target_pathname_w, target_pathname)) {
+    target.open(target_pathname_w.c_str(), ios::out | ios::binary);
+  }
+#else // _WIN32
+  target.open(target_pathname.c_str(), ios::out | ios::binary);
+#endif  // _WIN32
   if (!target) {
     nout << "Couldn't write to " << target_pathname << "\n";
     return IT_step_failed;
@@ -1886,11 +1903,11 @@ thread_step() {
   int flush = 0;
 
   source.read(decompress_buffer, decompress_buffer_size);
-  size_t read_count = source.gcount();
+  streamsize read_count = source.gcount();
   eof = (read_count == 0 || source.eof() || source.fail());
   
   z.next_in = (Bytef *)decompress_buffer;
-  z.avail_in = read_count;
+  z.avail_in = (size_t)read_count;
 
   int result = inflateInit(&z);
   if (result < 0) {
@@ -1901,11 +1918,11 @@ thread_step() {
   while (true) {
     if (z.avail_in == 0 && !eof) {
       source.read(decompress_buffer, decompress_buffer_size);
-      size_t read_count = source.gcount();
+      streamsize read_count = source.gcount();
       eof = (read_count == 0 || source.eof() || source.fail());
         
       z.next_in = (Bytef *)decompress_buffer;
-      z.avail_in = read_count;
+      z.avail_in = (size_t)read_count;
     }
 
     z.next_out = (Bytef *)write_buffer;

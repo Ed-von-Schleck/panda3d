@@ -1,8 +1,8 @@
-#define LOCAL_LIBS dtoolutil dtoolbase
+#define LOCAL_LIBS p3dtoolutil p3dtoolbase
 #define USE_PACKAGES openssl
 
 #begin lib_target
-  #define TARGET prc
+  #define TARGET p3prc
 
   #define COMBINED_SOURCES $[TARGET]_composite1.cxx  $[TARGET]_composite2.cxx
   
@@ -27,7 +27,6 @@
     configVariableSearchPath.I configVariableSearchPath.h \
     configVariableString.I configVariableString.h \
     encryptStreamBuf.h encryptStreamBuf.I encryptStream.h encryptStream.I \
-    globPattern.I globPattern.h \
     littleEndian.h \
     nativeNumericData.I nativeNumericData.h \
     pnotify.I pnotify.h \
@@ -63,7 +62,6 @@
     configVariableSearchPath.cxx \
     configVariableString.cxx \
     encryptStreamBuf.cxx encryptStream.cxx \
-    globPattern.cxx \
     nativeNumericData.cxx \
     notify.cxx \
     notifyCategory.cxx \
@@ -93,7 +91,6 @@
     configVariableSearchPath.I configVariableSearchPath.h \
     configVariableString.I configVariableString.h \
     encryptStreamBuf.h encryptStreamBuf.I encryptStream.h encryptStream.I \
-    globPattern.I globPattern.h \
     littleEndian.h \
     nativeNumericData.I nativeNumericData.h \
     pnotify.I pnotify.h \

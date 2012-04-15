@@ -96,15 +96,15 @@ private:
   Materials _materials;
   Faces _faces;
 
-  typedef pmap<int, float> WeightMap;
+  typedef pmap<int, PN_stdfloat> WeightMap;
 
   class SkinWeightsData {
   public:
+    LMatrix4d _matrix_offset;
     string _joint_name;
     WeightMap _weight_map;
-    LMatrix4d _matrix_offset;
   };
-  typedef pvector<SkinWeightsData> SkinWeights;
+  typedef epvector<SkinWeightsData> SkinWeights;
   SkinWeights _skin_weights;
 
   typedef pmap<XFileVertex *, int, IndirectCompareTo<XFileVertex> > UniqueVertices;

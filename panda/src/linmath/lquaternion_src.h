@@ -127,7 +127,7 @@ private:
 };
 
 
-INLINE_LINMATH ostream& operator<<(ostream& os, const FLOATNAME(LQuaternion)& q) {
+INLINE ostream& operator<<(ostream& os, const FLOATNAME(LQuaternion)& q) {
   q.output(os);
   return os;
 }

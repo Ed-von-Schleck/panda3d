@@ -18,6 +18,10 @@
 #include <errno.h>
 #include <stdio.h>  // for perror
 
+#ifdef __APPLE__
+#include <sys/param.h>  // for realpath
+#endif  // __APPLE__
+
 #ifdef WIN32_VC
 // Windows requires this for getcwd().
 #include <direct.h>
@@ -161,6 +165,31 @@ expand_string(const string &str) {
 ////////////////////////////////////////////////////////////////////
 Filename ExecutionEnvironment::
 get_cwd() {
+#ifdef WIN32_VC
+  // getcwd() requires us to allocate a dynamic buffer and grow it on
+  // demand.
+  static size_t bufsize = 1024;
+  static wchar_t *buffer = NULL;
+
+  if (buffer == (wchar_t *)NULL) {
+    buffer = new wchar_t[bufsize];
+  }
+
+  while (_wgetcwd(buffer, bufsize) == (wchar_t *)NULL) {
+    if (errno != ERANGE) {
+      perror("getcwd");
+      return string();
+    }
+    delete[] buffer;
+    bufsize = bufsize * 2;
+    buffer = new wchar_t[bufsize];
+    assert(buffer != (wchar_t *)NULL);
+  }
+
+  Filename cwd = Filename::from_os_specific_w(buffer);
+  cwd.make_true_case();
+  return cwd;
+#else  // WIN32_VC
   // getcwd() requires us to allocate a dynamic buffer and grow it on
   // demand.
   static size_t bufsize = 1024;
@@ -184,6 +213,7 @@ get_cwd() {
   Filename cwd = Filename::from_os_specific(buffer);
   cwd.make_true_case();
   return cwd;
+#endif  // WIN32_VC
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -231,16 +261,33 @@ ns_get_environment_variable(const string &var) const {
 #ifdef HAVE_PYTHON
     // If we're running from Python code, read out sys.argv.
     if (!ns_has_environment_variable("PANDA_INCOMPATIBLE_PYTHON") && Py_IsInitialized()) {
-      PyObject* obj = PySys_GetObject((char*) "argv");
-      if (obj) {
-        Filename main_dir = Filename::from_os_specific(PyString_AsString(PyList_GetItem(obj, 0)));
-        if (main_dir.empty()) {
-          // We must be running in the Python interpreter directly, so return the CWD.
-          return get_cwd().to_os_specific();
+      // Since we might have gotten to this point from a function call
+      // marked BLOCKING, which releases the Python thread state, we
+      // have to temporarily re-establish our thread state in the
+      // Python interpreter.
+      PyGILState_STATE state = PyGILState_Ensure();
+
+      Filename main_dir;
+      PyObject *obj = PySys_GetObject((char*) "argv");  // borrowed reference
+      if (obj != NULL && PyList_Check(obj)) {
+        PyObject *item = PyList_GetItem(obj, 0);  // borrowed reference
+        // Hmm, could this ever be a Unicode object?
+        if (item != NULL && PyString_Check(item)) {
+          char *str = PyString_AsString(item);
+          if (str != (char *)NULL) {
+            main_dir = Filename::from_os_specific(str);
+          }
         }
-        main_dir.make_absolute();
-        return Filename(main_dir.get_dirname()).to_os_specific();
       }
+      
+      PyGILState_Release(state);
+
+      if (main_dir.empty()) {
+        // We must be running in the Python interpreter directly, so return the CWD.
+        return get_cwd().to_os_specific();
+      }
+      main_dir.make_absolute();
+      return Filename(main_dir.get_dirname()).to_os_specific();
     }
 #endif
 
@@ -479,10 +526,10 @@ read_args() {
 #endif
   if (dllhandle != 0) {
     static const DWORD buffer_size = 1024;
-    char buffer[buffer_size];
-    DWORD size = GetModuleFileName(dllhandle, buffer, buffer_size);
+    wchar_t buffer[buffer_size];
+    DWORD size = GetModuleFileNameW(dllhandle, buffer, buffer_size);
     if (size != 0) {
-      Filename tmp = Filename::from_os_specific(string(buffer, size));
+      Filename tmp = Filename::from_os_specific_w(wstring(buffer, size));
       tmp.make_true_case();
       _dtool_name = tmp;
     }
@@ -557,10 +604,10 @@ read_args() {
 #ifdef WIN32_VC
   if (_binary_name.empty()) {
     static const DWORD buffer_size = 1024;
-    char buffer[buffer_size];
-    DWORD size = GetModuleFileName(NULL, buffer, buffer_size);
+    wchar_t buffer[buffer_size];
+    DWORD size = GetModuleFileNameW(NULL, buffer, buffer_size);
     if (size != 0) {
-      Filename tmp = Filename::from_os_specific(string(buffer, size));
+      Filename tmp = Filename::from_os_specific_w(wstring(buffer, size));
       tmp.make_true_case();
       _binary_name = tmp;
     }

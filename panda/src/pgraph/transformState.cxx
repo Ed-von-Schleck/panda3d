@@ -31,7 +31,10 @@ TransformState::States *TransformState::_states = NULL;
 CPT(TransformState) TransformState::_identity_state;
 CPT(TransformState) TransformState::_invalid_state;
 UpdateSeq TransformState::_last_cycle_detect;
+int TransformState::_garbage_index = 0;
+
 PStatCollector TransformState::_cache_update_pcollector("*:State Cache:Update");
+PStatCollector TransformState::_garbage_collect_pcollector("*:State Cache:Garbage Collect");
 PStatCollector TransformState::_transform_compose_pcollector("*:State Cache:Compose Transform");
 PStatCollector TransformState::_transform_invert_pcollector("*:State Cache:Invert Transform");
 PStatCollector TransformState::_transform_calc_pcollector("*:State Cache:Calc Components");
@@ -58,9 +61,9 @@ TransformState() : _lock("TransformState") {
   if (_states == (States *)NULL) {
     init_states();
   }
-  _saved_entry = _states->end();
+  _saved_entry = -1;
   _flags = F_is_identity | F_singular_known | F_is_2d;
-  _inv_mat = (LMatrix4f *)NULL;
+  _inv_mat = (LMatrix4 *)NULL;
   _cache_stats.add_num_states(1);
 }
 
@@ -97,15 +100,15 @@ TransformState::
   set_destructing();
  
   // Free the inverse matrix computation, if it has been stored.
-  if (_inv_mat != (LMatrix4f *)NULL) {
+  if (_inv_mat != (LMatrix4 *)NULL) {
     delete _inv_mat;
-    _inv_mat = (LMatrix4f *)NULL;
+    _inv_mat = (LMatrix4 *)NULL;
   }
 
   LightReMutexHolder holder(*_states_lock);
 
   // unref() should have cleared these.
-  nassertv(_saved_entry == _states->end());
+  nassertv(_saved_entry == -1);
   nassertv(_composition_cache.is_empty() && _invert_composition_cache.is_empty());
 
   // If this was true at the beginning of the destructor, but is no
@@ -115,7 +118,7 @@ TransformState::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TransformState::sorts_less
+//     Function: TransformState::compare_to
 //       Access: Published
 //  Description: Provides an arbitrary ordering among all unique
 //               TransformStates, so we can store the essentially
@@ -127,15 +130,15 @@ TransformState::
 //               TransformStates are uniquified, which is less
 //               expensive.
 ////////////////////////////////////////////////////////////////////
-bool TransformState::
-sorts_less(const TransformState &other, bool uniquify_matrix) const {
+int TransformState::
+compare_to(const TransformState &other, bool uniquify_matrix) const {
   static const int significant_flags = 
     (F_is_invalid | F_is_identity | F_components_given | F_hpr_given | F_quat_given | F_is_2d);
 
   int flags = (_flags & significant_flags);
   int other_flags = (other._flags & significant_flags);
   if (flags != other_flags) {
-    return flags < other_flags;
+    return flags < other_flags ? -1 : 1;
   }
 
   if ((_flags & (F_is_invalid | F_is_identity)) != 0) {
@@ -149,39 +152,42 @@ sorts_less(const TransformState &other, bool uniquify_matrix) const {
     // componentwise.
     int c = _pos.compare_to(other._pos);
     if (c != 0) {
-      return c < 0;
+      return c;
     }
 
     if ((_flags & F_hpr_given) != 0) {
       c = _hpr.compare_to(other._hpr);
       if (c != 0) {
-        return c < 0;
+        return c;
       }
     } else if ((_flags & F_quat_given) != 0) {
       c = _quat.compare_to(other._quat);
       if (c != 0) {
-        return c < 0;
+        return c;
       }
     }
 
     c = _scale.compare_to(other._scale);
     if (c != 0) {
-      return c < 0;
+      return c;
     }
 
     c = _shear.compare_to(other._shear);
-    return c < 0;
+    return c;
   }
 
   // Otherwise, compare the matrices . . .
   if (uniquify_matrix) {
     // . . . but only if the user thinks that's a worthwhile
     // comparison.
-    return get_mat() < other.get_mat();
+    return get_mat().compare_to(other.get_mat());
 
   } else {
     // If not, we just compare the pointers.
-    return (this < &other);
+    if (this != &other) {
+      return (this < &other) ? -1 : 1;
+    }
+    return 0;
   }
 }
 
@@ -226,14 +232,14 @@ make_invalid() {
 //               components.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-make_pos_hpr_scale_shear(const LVecBase3f &pos, const LVecBase3f &hpr, 
-                         const LVecBase3f &scale, const LVecBase3f &shear) {
+make_pos_hpr_scale_shear(const LVecBase3 &pos, const LVecBase3 &hpr, 
+                         const LVecBase3 &scale, const LVecBase3 &shear) {
   nassertr(!(pos.is_nan() || hpr.is_nan() || scale.is_nan() || shear.is_nan()) , make_invalid());
   // Make a special-case check for the identity transform.
-  if (pos == LVecBase3f(0.0f, 0.0f, 0.0f) &&
-      hpr == LVecBase3f(0.0f, 0.0f, 0.0f) &&
-      scale == LVecBase3f(1.0f, 1.0f, 1.0f) &&
-      shear == LVecBase3f(0.0f, 0.0f, 0.0f)) {
+  if (pos == LVecBase3(0.0f, 0.0f, 0.0f) &&
+      hpr == LVecBase3(0.0f, 0.0f, 0.0f) &&
+      scale == LVecBase3(1.0f, 1.0f, 1.0f) &&
+      shear == LVecBase3(0.0f, 0.0f, 0.0f)) {
     return make_identity();
   }
 
@@ -254,14 +260,14 @@ make_pos_hpr_scale_shear(const LVecBase3f &pos, const LVecBase3f &hpr,
 //               components.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-make_pos_quat_scale_shear(const LVecBase3f &pos, const LQuaternionf &quat, 
-                          const LVecBase3f &scale, const LVecBase3f &shear) {
+make_pos_quat_scale_shear(const LVecBase3 &pos, const LQuaternion &quat, 
+                          const LVecBase3 &scale, const LVecBase3 &shear) {
   nassertr(!(pos.is_nan() || quat.is_nan() || scale.is_nan() || shear.is_nan()) , make_invalid());
   // Make a special-case check for the identity transform.
-  if (pos == LVecBase3f(0.0f, 0.0f, 0.0f) &&
-      quat == LQuaternionf::ident_quat() &&
-      scale == LVecBase3f(1.0f, 1.0f, 1.0f) &&
-      shear == LVecBase3f(0.0f, 0.0f, 0.0f)) {
+  if (pos == LVecBase3(0.0f, 0.0f, 0.0f) &&
+      quat == LQuaternion::ident_quat() &&
+      scale == LVecBase3(1.0f, 1.0f, 1.0f) &&
+      shear == LVecBase3(0.0f, 0.0f, 0.0f)) {
     return make_identity();
   }
 
@@ -282,10 +288,10 @@ make_pos_quat_scale_shear(const LVecBase3f &pos, const LQuaternionf &quat,
 //               transformation matrix.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-make_mat(const LMatrix4f &mat) {
+make_mat(const LMatrix4 &mat) {
   nassertr(!mat.is_nan(), make_invalid());
   // Make a special-case check for the identity matrix.
-  if (mat == LMatrix4f::ident_mat()) {
+  if (mat == LMatrix4::ident_mat()) {
     return make_identity();
   }
 
@@ -303,14 +309,14 @@ make_mat(const LMatrix4f &mat) {
 //               specified components.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-make_pos_rotate_scale_shear2d(const LVecBase2f &pos, float rotate,
-                              const LVecBase2f &scale,
-                              float shear) {
+make_pos_rotate_scale_shear2d(const LVecBase2 &pos, PN_stdfloat rotate,
+                              const LVecBase2 &scale,
+                              PN_stdfloat shear) {
   nassertr(!(pos.is_nan() || cnan(rotate) || scale.is_nan() || cnan(shear)) , make_invalid());
   // Make a special-case check for the identity transform.
-  if (pos == LVecBase2f(0.0f, 0.0f) &&
+  if (pos == LVecBase2(0.0f, 0.0f) &&
       rotate == 0.0f &&
-      scale == LVecBase2f(1.0f, 1.0f) &&
+      scale == LVecBase2(1.0f, 1.0f) &&
       shear == 0.0f) {
     return make_identity();
   }
@@ -347,10 +353,10 @@ make_pos_rotate_scale_shear2d(const LVecBase2f &pos, float rotate,
 //               specified 3x3 transformation matrix.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-make_mat3(const LMatrix3f &mat) {
+make_mat3(const LMatrix3 &mat) {
   nassertr(!mat.is_nan(), make_invalid());
   // Make a special-case check for the identity matrix.
-  if (mat == LMatrix3f::ident_mat()) {
+  if (mat == LMatrix3::ident_mat()) {
     return make_identity();
   }
 
@@ -371,7 +377,7 @@ make_mat3(const LMatrix3f &mat) {
 //               replaced with the indicated value.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_pos(const LVecBase3f &pos) const {
+set_pos(const LVecBase3 &pos) const {
   nassertr(!pos.is_nan(), this);
   nassertr(!is_invalid(), this);
   if (is_identity() || components_given()) {
@@ -385,7 +391,7 @@ set_pos(const LVecBase3f &pos) const {
 
   } else {
     // Otherwise, we have a matrix transform, and we keep it that way.
-    LMatrix4f mat = get_mat();
+    LMatrix4 mat = get_mat();
     mat.set_row(3, pos);
     return make_mat(mat);
   }
@@ -399,7 +405,7 @@ set_pos(const LVecBase3f &pos) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_hpr(const LVecBase3f &hpr) const {
+set_hpr(const LVecBase3 &hpr) const {
   nassertr(!hpr.is_nan(), this);
   nassertr(!is_invalid(), this);
   //  nassertr(has_components(), this);
@@ -414,7 +420,7 @@ set_hpr(const LVecBase3f &hpr) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_quat(const LQuaternionf &quat) const {
+set_quat(const LQuaternion &quat) const {
   nassertr(!quat.is_nan(), this);
   nassertr(!is_invalid(), this);
   //  nassertr(has_components(), this);
@@ -429,7 +435,7 @@ set_quat(const LQuaternionf &quat) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_scale(const LVecBase3f &scale) const {
+set_scale(const LVecBase3 &scale) const {
   nassertr(!scale.is_nan(), this);
   nassertr(!is_invalid(), this);
 
@@ -437,7 +443,7 @@ set_scale(const LVecBase3f &scale) const {
     // Don't inflate from 2-d to 3-d just because we got a uniform
     // scale.
     return make_pos_rotate_scale_shear2d(get_pos2d(), get_rotate2d(),
-                                         LVecBase2f(scale[0], scale[0]),
+                                         LVecBase2(scale[0], scale[0]),
                                          get_shear2d());
   }
 
@@ -457,7 +463,7 @@ set_scale(const LVecBase3f &scale) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_shear(const LVecBase3f &shear) const {
+set_shear(const LVecBase3 &shear) const {
   nassertr(!shear.is_nan(), this);
   nassertr(!is_invalid(), this);
   //  nassertr(has_components(), this);
@@ -476,11 +482,11 @@ set_shear(const LVecBase3f &shear) const {
 //               replaced with the indicated value.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_pos2d(const LVecBase2f &pos) const {
+set_pos2d(const LVecBase2 &pos) const {
   nassertr(!pos.is_nan(), this);
   nassertr(!is_invalid(), this);
   if (!is_2d()) {
-    return set_pos(LVecBase3f(pos[0], pos[1], 0.0f));
+    return set_pos(LVecBase3(pos[0], pos[1], 0.0f));
   }
 
   if (is_identity() || components_given()) {
@@ -491,7 +497,7 @@ set_pos2d(const LVecBase2f &pos) const {
 
   } else {
     // Otherwise, we have a matrix transform, and we keep it that way.
-    LMatrix3f mat = get_mat3();
+    LMatrix3 mat = get_mat3();
     mat.set_row(2, pos);
     return make_mat3(mat);
   }
@@ -505,7 +511,7 @@ set_pos2d(const LVecBase2f &pos) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_rotate2d(float rotate) const {
+set_rotate2d(PN_stdfloat rotate) const {
   nassertr(!cnan(rotate), this);
   nassertr(!is_invalid(), this);
 
@@ -513,13 +519,13 @@ set_rotate2d(float rotate) const {
     switch (get_default_coordinate_system()) {
     default:
     case CS_zup_right:
-      return set_hpr(LVecBase3f(rotate, 0.0f, 0.0f));
+      return set_hpr(LVecBase3(rotate, 0.0f, 0.0f));
     case CS_zup_left:
-      return set_hpr(LVecBase3f(-rotate, 0.0f, 0.0f));
+      return set_hpr(LVecBase3(-rotate, 0.0f, 0.0f));
     case CS_yup_right:
-      return set_hpr(LVecBase3f(0.0f, 0.0f, -rotate));
+      return set_hpr(LVecBase3(0.0f, 0.0f, -rotate));
     case CS_yup_left:
-      return set_hpr(LVecBase3f(0.0f, 0.0f, rotate));
+      return set_hpr(LVecBase3(0.0f, 0.0f, rotate));
     }
   }
 
@@ -535,12 +541,12 @@ set_rotate2d(float rotate) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_scale2d(const LVecBase2f &scale) const {
+set_scale2d(const LVecBase2 &scale) const {
   nassertr(!scale.is_nan(), this);
   nassertr(!is_invalid(), this);
 
   if (!is_2d()) {
-    return set_scale(LVecBase3f(scale[0], scale[1], 1.0f));
+    return set_scale(LVecBase3(scale[0], scale[1], 1.0f));
   }
   return make_pos_rotate_scale_shear2d(get_pos2d(), get_rotate2d(),
                                        scale, get_shear2d());
@@ -554,11 +560,11 @@ set_scale2d(const LVecBase2f &scale) const {
 //               replaced with the indicated value, if possible.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
-set_shear2d(float shear) const {
+set_shear2d(PN_stdfloat shear) const {
   nassertr(!cnan(shear), this);
   nassertr(!is_invalid(), this);
   if (!is_2d()) {
-    return set_shear(LVecBase3f(shear, 0.0f, 0.0f));
+    return set_shear(LVecBase3(shear, 0.0f, 0.0f));
   }
   return make_pos_rotate_scale_shear2d(get_pos2d(), get_rotate2d(),
                                        get_scale2d(), shear);
@@ -579,10 +585,6 @@ set_shear2d(float shear) const {
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) TransformState::
 compose(const TransformState *other) const {
-  // This method isn't strictly const, because it updates the cache,
-  // but we pretend that it is because it's only a cache which is
-  // transparent to the rest of the interface.
-
   // We handle identity as a trivial special case.
   if (is_identity()) {
     return other;
@@ -599,72 +601,37 @@ compose(const TransformState *other) const {
     return other;
   }
 
-#ifndef NDEBUG
   if (!transform_cache) {
     return do_compose(other);
   }
-#endif  // NDEBUG
-
-  LightReMutexHolder holder(*_states_lock);
 
   // Is this composition already cached?
-  int index = _composition_cache.find(other);
-  if (index != -1) {
-    Composition &comp = ((TransformState *)this)->_composition_cache.modify_data(index);
-    if (comp._result == (const TransformState *)NULL) {
-      // Well, it wasn't cached already, but we already had an entry
-      // (probably created for the reverse direction), so use the same
-      // entry to store the new result.
-      CPT(TransformState) result = do_compose(other);
-      comp._result = result;
-
-      if (result != (const TransformState *)this) {
-        // See the comments below about the need to up the reference
-        // count only when the result is not the same as this.
-        result->cache_ref();
-      }
+  CPT(TransformState) result;
+  {
+    LightReMutexHolder holder(*_states_lock);
+    int index = _composition_cache.find(other);
+    if (index != -1) {
+      const Composition &comp = _composition_cache.get_data(index);
+      result = comp._result;
     }
-    // Here's the cache!
-    _cache_stats.inc_hits();
-    return comp._result;
-  }
-  _cache_stats.inc_misses();
-
-  // We need to make a new cache entry, both in this object and in the
-  // other object.  We make both records so the other TransformState
-  // object will know to delete the entry from this object when it
-  // destructs, and vice-versa.
-
-  // The cache entry in this object is the only one that indicates the
-  // result; the other will be NULL for now.
-  CPT(TransformState) result = do_compose(other);
-
-  _cache_stats.add_total_size(1);
-  _cache_stats.inc_adds(_composition_cache.get_size() == 0);
-
-  ((TransformState *)this)->_composition_cache[other]._result = result;
-
-  if (other != this) {
-    _cache_stats.add_total_size(1);
-    _cache_stats.inc_adds(other->_composition_cache.get_size() == 0);
-    ((TransformState *)other)->_composition_cache[this]._result = NULL;
+    if (result != (TransformState *)NULL) {
+      _cache_stats.inc_hits();
+    }
   }
 
-  if (result != (const TransformState *)this) {
-    // If the result of compose() is something other than this,
-    // explicitly increment the reference count.  We have to be sure
-    // to decrement it again later, when the composition entry is
-    // removed from the cache.
-    result->cache_ref();
-    
-    // (If the result was just this again, we still store the
-    // result, but we don't increment the reference count, since
-    // that would be a self-referential leak.)
+  if (result != (TransformState *)NULL) {
+    // Success!
+    return result;
   }
 
-  _cache_stats.maybe_report("TransformState");
+  // Not in the cache.  Compute a new result.  It's important that we
+  // don't hold the lock while we do this, or we lose the benefit of
+  // parallelization.
+  result = do_compose(other);
 
-  return result;
+  // It's OK to cast away the constness of this pointer, because the
+  // cache is a transparent property of the class.
+  return ((TransformState *)this)->store_compose(other, result);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -704,69 +671,38 @@ invert_compose(const TransformState *other) const {
     return make_identity();
   }
 
-#ifndef NDEBUG
   if (!transform_cache) {
     return do_invert_compose(other);
   }
-#endif  // NDEBUG
 
   LightReMutexHolder holder(*_states_lock);
 
-  // Is this composition already cached?
-  int index = _invert_composition_cache.find(other);
-  if (index != -1) {
-    Composition &comp = ((TransformState *)this)->_invert_composition_cache.modify_data(index);
-    if (comp._result == (const TransformState *)NULL) {
-      // Well, it wasn't cached already, but we already had an entry
-      // (probably created for the reverse direction), so use the same
-      // entry to store the new result.
-      CPT(TransformState) result = do_invert_compose(other);
-      comp._result = result;
-
-      if (result != (const TransformState *)this) {
-        // See the comments below about the need to up the reference
-        // count only when the result is not the same as this.
-        result->cache_ref();
-      }
+  CPT(TransformState) result;
+  {
+    LightReMutexHolder holder(*_states_lock);
+    int index = _invert_composition_cache.find(other);
+    if (index != -1) {
+      const Composition &comp = _invert_composition_cache.get_data(index);
+      result = comp._result;
     }
-    // Here's the cache!
-    _cache_stats.inc_hits();
-    return comp._result;
-  }
-  _cache_stats.inc_misses();
-
-  // We need to make a new cache entry, both in this object and in the
-  // other object.  We make both records so the other TransformState
-  // object will know to delete the entry from this object when it
-  // destructs, and vice-versa.
-
-  // The cache entry in this object is the only one that indicates the
-  // result; the other will be NULL for now.
-  CPT(TransformState) result = do_invert_compose(other);
-
-  _cache_stats.add_total_size(1);
-  _cache_stats.inc_adds(_invert_composition_cache.get_size() == 0);
-  ((TransformState *)this)->_invert_composition_cache[other]._result = result;
-
-  if (other != this) {
-    _cache_stats.add_total_size(1);
-    _cache_stats.inc_adds(other->_invert_composition_cache.get_size() == 0);
-    ((TransformState *)other)->_invert_composition_cache[this]._result = NULL;
+    if (result != (TransformState *)NULL) {
+      _cache_stats.inc_hits();
+    }
   }
 
-  if (result != (const TransformState *)this) {
-    // If the result of compose() is something other than this,
-    // explicitly increment the reference count.  We have to be sure
-    // to decrement it again later, when the composition entry is
-    // removed from the cache.
-    result->cache_ref();
-    
-    // (If the result was just this again, we still store the
-    // result, but we don't increment the reference count, since
-    // that would be a self-referential leak.)
+  if (result != (TransformState *)NULL) {
+    // Success!
+    return result;
   }
 
-  return result;
+  // Not in the cache.  Compute a new result.  It's important that we
+  // don't hold the lock while we do this, or we lose the benefit of
+  // parallelization.
+  result = do_invert_compose(other);
+
+  // It's OK to cast away the constness of this pointer, because the
+  // cache is a transparent property of the class.
+  return ((TransformState *)this)->store_invert_compose(other, result);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -781,8 +717,20 @@ invert_compose(const TransformState *other) const {
 ////////////////////////////////////////////////////////////////////
 bool TransformState::
 unref() const {
+  if (!transform_cache || garbage_collect_states) {
+    // If we're not using the cache at all, or if we're relying on
+    // garbage collection, just allow the pointer to unref normally.
+    return ReferenceCount::unref();
+  }
+
+  // Here is the normal refcounting case, with a normal cache, and
+  // without garbage collection in effect.  In this case we will pull
+  // the object out of the cache when its reference count goes to 0.
+
   // We always have to grab the lock, since we will definitely need to
   // be holding it if we happen to drop the reference count to 0.
+  // Having to grab the lock at every call to unref() is a big
+  // limiting factor on parallelization.
   LightReMutexHolder holder(*_states_lock);
 
   if (auto_break_cycles && uniquify_transforms) {
@@ -792,30 +740,7 @@ unref() const {
       // cache, leaving only references in the cache, then we need to
       // check for a cycle involving this TransformState and break it if
       // it exists.
-      
-      PStatTimer timer(_transform_break_cycles_pcollector);
-        
-      ++_last_cycle_detect;
-      if (r_detect_cycles(this, this, 1, _last_cycle_detect, NULL)) {
-        // Ok, we have a cycle.  This will be a leak unless we break the
-        // cycle by freeing the cache on this object.
-        if (pgraph_cat.is_debug()) {
-          pgraph_cat.debug()
-            << "Breaking cycle involving " << (*this) << "\n";
-        }
-        
-        ((TransformState *)this)->remove_cache_pointers();
-      } else {
-        ++_last_cycle_detect;
-        if (r_detect_reverse_cycles(this, this, 1, _last_cycle_detect, NULL)) {
-          if (pgraph_cat.is_debug()) {
-            pgraph_cat.debug()
-              << "Breaking cycle involving " << (*this) << "\n";
-          }
-          
-          ((TransformState *)this)->remove_cache_pointers();
-        }
-      }
+      ((TransformState *)this)->detect_and_break_cycles();
     }
   }
 
@@ -831,6 +756,66 @@ unref() const {
   ((TransformState *)this)->remove_cache_pointers();
   
   return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::validate_composition_cache
+//       Access: Published
+//  Description: Returns true if the composition cache and invert
+//               composition cache for this particular TransformState
+//               are self-consistent and valid, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool TransformState::
+validate_composition_cache() const {
+  LightReMutexHolder holder(*_states_lock);
+
+  int size = _composition_cache.get_size();
+  for (int i = 0; i < size; ++i) {
+    if (!_composition_cache.has_element(i)) {
+      continue;
+    }
+    const TransformState *source = _composition_cache.get_key(i);
+    if (source != (TransformState *)NULL) {
+      // Check that the source also has a pointer back to this one.  We
+      // always add entries to the composition cache in pairs.
+      int ri = source->_composition_cache.find(this);
+      if (ri == -1) {
+        // Failure!  There is no back-pointer.
+        pgraph_cat.error()
+          << "TransformState::composition cache is inconsistent!\n";
+        pgraph_cat.error(false)
+          << *this << " compose " << *source << "\n";
+        pgraph_cat.error(false)
+          << "but no reverse\n";
+        return false;
+      }
+    }
+  }
+
+  size = _invert_composition_cache.get_size();
+  for (int i = 0; i < size; ++i) {
+    if (!_invert_composition_cache.has_element(i)) {
+      continue;
+    }
+    const TransformState *source = _invert_composition_cache.get_key(i);
+    if (source != (TransformState *)NULL) {
+      // Check that the source also has a pointer back to this one.  We
+      // always add entries to the composition cache in pairs.
+      int ri = source->_invert_composition_cache.find(this);
+      if (ri == -1) {
+        // Failure!  There is no back-pointer.
+        pgraph_cat.error()
+          << "TransformState::invert composition cache is inconsistent!\n";
+        pgraph_cat.error(false)
+          << *this << " invert compose " << *source << "\n";
+        pgraph_cat.error(false)
+          << "but no reverse\n";
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 #ifdef HAVE_PYTHON
@@ -852,43 +837,47 @@ PyObject *TransformState::
 get_composition_cache() const {
   IMPORT_THIS struct Dtool_PyTypedObject Dtool_TransformState;
   LightReMutexHolder holder(*_states_lock);
-  size_t cache_size = _composition_cache.get_size();
-  PyObject *list = PyList_New(cache_size);
 
-  for (size_t i = 0; i < cache_size; ++i) {
+  size_t num_states = _composition_cache.get_num_entries();
+  PyObject *list = PyList_New(num_states);
+  size_t i = 0;
+
+  int size = _composition_cache.get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_composition_cache.has_element(si)) {
+      continue;
+    }
+
     PyObject *tuple = PyTuple_New(2);
     PyObject *a, *b;
-    if (!_composition_cache.has_element(i)) {
+
+    const TransformState *source = _composition_cache.get_key(si);
+    if (source == (TransformState *)NULL) {
       a = Py_None;
       Py_INCREF(a);
+    } else {
+      source->ref();
+      a = DTool_CreatePyInstanceTyped((void *)source, Dtool_TransformState, 
+                                      true, true, source->get_type_index());
+    }
+    const TransformState *result = _composition_cache.get_data(si)._result;
+    if (result == (TransformState *)NULL) {
       b = Py_None;
       Py_INCREF(b);
     } else {
-      const TransformState *source = _composition_cache.get_key(i);
-      if (source == (TransformState *)NULL) {
-        a = Py_None;
-        Py_INCREF(a);
-      } else {
-        source->ref();
-        a = DTool_CreatePyInstanceTyped((void *)source, Dtool_TransformState, 
-                                        true, true, source->get_type_index());
-      }
-      const TransformState *result = _composition_cache.get_data(i)._result;
-      if (result == (TransformState *)NULL) {
-        b = Py_None;
-        Py_INCREF(b);
-      } else {
-        result->ref();
-        b = DTool_CreatePyInstanceTyped((void *)result, Dtool_TransformState, 
-                                        true, true, result->get_type_index());
-      }
+      result->ref();
+      b = DTool_CreatePyInstanceTyped((void *)result, Dtool_TransformState, 
+                                      true, true, result->get_type_index());
     }
+
     PyTuple_SET_ITEM(tuple, 0, a);
     PyTuple_SET_ITEM(tuple, 1, b);
 
+    nassertr(i < num_states, list);
     PyList_SET_ITEM(list, i, tuple);
+    ++i;
   }
-
+  nassertr(i == num_states, list);
   return list;
 }
 #endif  // HAVE_PYTHON
@@ -912,43 +901,47 @@ PyObject *TransformState::
 get_invert_composition_cache() const {
   IMPORT_THIS struct Dtool_PyTypedObject Dtool_TransformState;
   LightReMutexHolder holder(*_states_lock);
-  size_t cache_size = _invert_composition_cache.get_size();
-  PyObject *list = PyList_New(cache_size);
 
-  for (size_t i = 0; i < cache_size; ++i) {
+  size_t num_states = _invert_composition_cache.get_num_entries();
+  PyObject *list = PyList_New(num_states);
+  size_t i = 0;
+
+  int size = _invert_composition_cache.get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_invert_composition_cache.has_element(si)) {
+      continue;
+    }
+
     PyObject *tuple = PyTuple_New(2);
     PyObject *a, *b;
-    if (!_invert_composition_cache.has_element(i)) {
+
+    const TransformState *source = _invert_composition_cache.get_key(si);
+    if (source == (TransformState *)NULL) {
       a = Py_None;
       Py_INCREF(a);
+    } else {
+      source->ref();
+      a = DTool_CreatePyInstanceTyped((void *)source, Dtool_TransformState, 
+                                      true, true, source->get_type_index());
+    }
+    const TransformState *result = _invert_composition_cache.get_data(si)._result;
+    if (result == (TransformState *)NULL) {
       b = Py_None;
       Py_INCREF(b);
     } else {
-      const TransformState *source = _invert_composition_cache.get_key(i);
-      if (source == (TransformState *)NULL) {
-        a = Py_None;
-        Py_INCREF(a);
-      } else {
-        source->ref();
-        a = DTool_CreatePyInstanceTyped((void *)source, Dtool_TransformState, 
-                                        true, true, source->get_type_index());
-      }
-      const TransformState *result = _invert_composition_cache.get_data(i)._result;
-      if (result == (TransformState *)NULL) {
-        b = Py_None;
-        Py_INCREF(b);
-      } else {
-        result->ref();
-        b = DTool_CreatePyInstanceTyped((void *)result, Dtool_TransformState, 
-                                        true, true, result->get_type_index());
-      }
+      result->ref();
+      b = DTool_CreatePyInstanceTyped((void *)result, Dtool_TransformState, 
+                                      true, true, result->get_type_index());
     }
+
     PyTuple_SET_ITEM(tuple, 0, a);
     PyTuple_SET_ITEM(tuple, 1, b);
 
+    nassertr(i < num_states, list);
     PyList_SET_ITEM(list, i, tuple);
+    ++i;
   }
-
+  nassertr(i == num_states, list);
   return list;
 }
 #endif  // HAVE_PYTHON
@@ -968,7 +961,7 @@ output(ostream &out) const {
     out << "(identity)";
 
   } else if (has_components()) {
-    bool output_hpr = !get_hpr().almost_equal(LVecBase3f(0.0f, 0.0f, 0.0f));
+    bool output_hpr = !get_hpr().almost_equal(LVecBase3(0.0f, 0.0f, 0.0f));
 
     if (!components_given()) {
       // A leading "m" indicates the transform was described as a full
@@ -986,7 +979,7 @@ output(ostream &out) const {
 
     char lead = '(';
     if (is_2d()) {
-      if (!get_pos2d().almost_equal(LVecBase2f(0.0f, 0.0f))) {
+      if (!get_pos2d().almost_equal(LVecBase2(0.0f, 0.0f))) {
         out << lead << "pos " << get_pos2d();
         lead = ' ';
       }
@@ -994,7 +987,7 @@ output(ostream &out) const {
         out << lead << "rotate " << get_rotate2d();
         lead = ' ';
       }
-      if (!get_scale2d().almost_equal(LVecBase2f(1.0f, 1.0f))) {
+      if (!get_scale2d().almost_equal(LVecBase2(1.0f, 1.0f))) {
         if (has_uniform_scale()) {
           out << lead << "scale " << get_uniform_scale();
           lead = ' ';
@@ -1008,7 +1001,7 @@ output(ostream &out) const {
         lead = ' ';
       }
     } else {
-      if (!get_pos().almost_equal(LVecBase3f(0.0f, 0.0f, 0.0f))) {
+      if (!get_pos().almost_equal(LVecBase3(0.0f, 0.0f, 0.0f))) {
         out << lead << "pos " << get_pos();
         lead = ' ';
       }
@@ -1016,7 +1009,7 @@ output(ostream &out) const {
         out << lead << "hpr " << get_hpr();
         lead = ' ';
       }
-      if (!get_scale().almost_equal(LVecBase3f(1.0f, 1.0f, 1.0f))) {
+      if (!get_scale().almost_equal(LVecBase3(1.0f, 1.0f, 1.0f))) {
         if (has_uniform_scale()) {
           out << lead << "scale " << get_uniform_scale();
           lead = ' ';
@@ -1082,7 +1075,7 @@ get_num_states() {
     return 0;
   }
   LightReMutexHolder holder(*_states_lock);
-  return _states->size();
+  return _states->get_num_entries();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1116,9 +1109,12 @@ get_num_unused_states() {
   typedef pmap<const TransformState *, int> StateCount;
   StateCount state_count;
 
-  States::iterator si;
-  for (si = _states->begin(); si != _states->end(); ++si) {
-    const TransformState *state = (*si);
+  int size = _states->get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_states->has_element(si)) {
+      continue;
+    }
+    const TransformState *state = _states->get_key(si);
 
     int i;
     int cache_size = state->_composition_cache.get_size();
@@ -1207,7 +1203,7 @@ clear_cache() {
   LightReMutexHolder holder(*_states_lock);
 
   PStatTimer timer(_cache_update_pcollector);
-  int orig_size = _states->size();
+  int orig_size = _states->get_num_entries();
 
   // First, we need to copy the entire set of states to a temporary
   // vector, reference-counting each object.  That way we can walk
@@ -1218,8 +1214,14 @@ clear_cache() {
     TempStates temp_states;
     temp_states.reserve(orig_size);
 
-    copy(_states->begin(), _states->end(),
-         back_inserter(temp_states));
+    int size = _states->get_size();
+    for (int si = 0; si < size; ++si) {
+      if (!_states->has_element(si)) {
+        continue;
+      }
+      const TransformState *state = _states->get_key(si);
+      temp_states.push_back(state);
+    }
 
     // Now it's safe to walk through the list, destroying the cache
     // within each object as we go.  Nothing will be destructed till
@@ -1261,7 +1263,76 @@ clear_cache() {
     // held only within the various objects' caches will go away.
   }
 
-  int new_size = _states->size();
+  int new_size = _states->get_num_entries();
+  return orig_size - new_size;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::garbage_collect
+//       Access: Published, Static
+//  Description: Performs a garbage-collection cycle.  This must be
+//               called periodically if garbage-collect-states is true
+//               to ensure that TransformStates get cleaned up
+//               appropriately.  It does no harm to call it even if
+//               this variable is not true, but there is probably no
+//               advantage in that case.
+////////////////////////////////////////////////////////////////////
+int TransformState::
+garbage_collect() {
+  if (_states == (States *)NULL || !garbage_collect_states) {
+    return 0;
+  }
+  LightReMutexHolder holder(*_states_lock);
+
+  PStatTimer timer(_garbage_collect_pcollector);
+  int orig_size = _states->get_num_entries();
+
+  // How many elements to process this pass?
+  int size = _states->get_size();
+  int num_this_pass = int(size * garbage_collect_states_rate);
+  if (num_this_pass <= 0) {
+    return 0;
+  }
+  num_this_pass = min(num_this_pass, size);
+  int stop_at_element = (_garbage_index + num_this_pass) % size;
+  
+  int num_elements = 0;
+  int si = _garbage_index;
+  do {
+    if (_states->has_element(si)) {
+      ++num_elements;
+      TransformState *state = (TransformState *)_states->get_key(si);
+      if (auto_break_cycles && uniquify_transforms) {
+        if (state->get_cache_ref_count() > 0 &&
+            state->get_ref_count() == state->get_cache_ref_count()) {
+          // If we have removed all the references to this state not in
+          // the cache, leaving only references in the cache, then we
+          // need to check for a cycle involving this TransformState and
+          // break it if it exists.
+          state->detect_and_break_cycles();
+        }
+      }
+
+      if (state->get_ref_count() == 1) {
+        // This state has recently been unreffed to 1 (the one we
+        // added when we stored it in the cache).  Now it's time to
+        // delete it.  This is safe, because we're holding the
+        // _states_lock, so it's not possible for some other thread to
+        // find the state in the cache and ref it while we're doing
+        // this.
+        state->release_new();
+        state->remove_cache_pointers();
+        state->cache_unref();
+        delete state;
+      }
+    }      
+    
+    si = (si + 1) % size;
+  } while (si != stop_at_element);
+  _garbage_index = si;
+  nassertr(_states->validate(), 0);
+
+  int new_size = _states->get_num_entries();
   return orig_size - new_size;
 }
 
@@ -1294,9 +1365,12 @@ list_cycles(ostream &out) {
   VisitedStates visited;
   CompositionCycleDesc cycle_desc;
 
-  States::iterator si;
-  for (si = _states->begin(); si != _states->end(); ++si) {
-    const TransformState *state = (*si);
+  int size = _states->get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_states->has_element(si)) {
+      continue;
+    }
+    const TransformState *state = _states->get_key(si);
 
     bool inserted = visited.insert(state).second;
     if (inserted) {
@@ -1370,10 +1444,14 @@ list_states(ostream &out) {
   }
   LightReMutexHolder holder(*_states_lock);
 
-  out << _states->size() << " states:\n";
-  States::const_iterator si;
-  for (si = _states->begin(); si != _states->end(); ++si) {
-    const TransformState *state = (*si);
+  out << _states->get_num_entries() << " states:\n";
+
+  int size = _states->get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_states->has_element(si)) {
+      continue;
+    }
+    const TransformState *state = _states->get_key(si);
     state->write(out, 2);
   }
 }
@@ -1397,36 +1475,55 @@ validate_states() {
   PStatTimer timer(_transform_validate_pcollector);
 
   LightReMutexHolder holder(*_states_lock);
-  if (_states->empty()) {
+  if (_states->is_empty()) {
     return true;
   }
 
-  States::const_iterator si = _states->begin();
-  States::const_iterator snext = si;
+  if (!_states->validate()) {
+    pgraph_cat.error()
+      << "TransformState::_states cache is invalid!\n";
+    return false;
+  }    
+
+  int size = _states->get_size();
+  int si = 0;
+  while (si < size && !_states->has_element(si)) {
+    ++si;
+  }
+  nassertr(si < size, false);
+  nassertr(_states->get_key(si)->get_ref_count() >= 0, false);
+  int snext = si;
   ++snext;
-  nassertr((*si)->get_ref_count() > 0, false);
-  while (snext != _states->end()) {
-    if (!(*(*si) < *(*snext))) {
-      pgraph_cat.error()
-        << "TransformStates out of order!\n";
-      (*si)->write(pgraph_cat.error(false), 2);
-      (*snext)->write(pgraph_cat.error(false), 2);
+  while (snext < size && !_states->has_element(snext)) {
+    ++snext;
+  }
+  while (snext < size) {
+    nassertr(_states->get_key(snext)->get_ref_count() >= 0, false);
+    const TransformState *ssi = _states->get_key(si);
+    if (!ssi->validate_composition_cache()) {
       return false;
     }
-    if ((*(*snext) < *(*si))) {
+    const TransformState *ssnext = _states->get_key(snext);
+    int c = ssi->compare_to(*ssnext);
+    int ci = ssnext->compare_to(*ssi);
+    if ((ci < 0) != (c > 0) ||
+        (ci > 0) != (c < 0) ||
+        (ci == 0) != (c == 0)) {
       pgraph_cat.error()
-        << "TransformState::operator < not defined properly!\n";
+        << "TransformState::compare_to() not defined properly!\n";
       pgraph_cat.error(false)
-        << "a < b: " << (*(*si) < *(*snext)) << "\n";
+        << "(a, b): " << c << "\n";
       pgraph_cat.error(false)
-        << "b < a: " << (*(*snext) < *(*si)) << "\n";
-      (*si)->write(pgraph_cat.error(false), 2);
-      (*snext)->write(pgraph_cat.error(false), 2);
+        << "(b, a): " << ci << "\n";
+      ssi->write(pgraph_cat.error(false), 2);
+      ssnext->write(pgraph_cat.error(false), 2);
       return false;
     }
     si = snext;
     ++snext;
-    nassertr((*si)->get_ref_count() > 0, false);
+    while (snext < size && !_states->has_element(snext)) {
+      ++snext;
+    }
   }
 
   return true;
@@ -1448,20 +1545,61 @@ get_states() {
   }
   LightReMutexHolder holder(*_states_lock);
 
-  size_t num_states = _states->size();
+  size_t num_states = _states->get_num_entries();
   PyObject *list = PyList_New(num_states);
-  States::const_iterator si;
-  size_t i;
-  for (si = _states->begin(), i = 0; si != _states->end(); ++si, ++i) {
-    nassertr(i < num_states, list);
-    const TransformState *state = (*si);
+  size_t i = 0;
+
+  int size = _states->get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_states->has_element(si)) {
+      continue;
+    }
+    const TransformState *state = _states->get_key(si);
     state->ref();
     PyObject *a = 
       DTool_CreatePyInstanceTyped((void *)state, Dtool_TransformState, 
                                   true, true, state->get_type_index());
+    nassertr(i < num_states, list);
     PyList_SET_ITEM(list, i, a);
+    ++i;
   }
   nassertr(i == num_states, list);
+  return list;
+}
+#endif  // HAVE_PYTHON
+
+#ifdef HAVE_PYTHON
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::get_unused_states
+//       Access: Published, Static
+//  Description: Returns a list of all of the "unused" TransformState
+//               objects in the state cache.  See
+//               get_num_unused_states().
+////////////////////////////////////////////////////////////////////
+PyObject *TransformState::
+get_unused_states() {
+  IMPORT_THIS struct Dtool_PyTypedObject Dtool_TransformState;
+  if (_states == (States *)NULL) {
+    return PyList_New(0);
+  }
+  LightReMutexHolder holder(*_states_lock);
+
+  PyObject *list = PyList_New(0);
+  int size = _states->get_size();
+  for (int si = 0; si < size; ++si) {
+    if (!_states->has_element(si)) {
+      continue;
+    }
+    const TransformState *state = _states->get_key(si);
+    if (state->get_cache_ref_count() == state->get_ref_count()) {
+      state->ref();
+      PyObject *a = 
+        DTool_CreatePyInstanceTyped((void *)state, Dtool_TransformState, 
+                                    true, true, state->get_type_index());
+      PyList_Append(list, a);
+      Py_DECREF(a);
+    }
+  }
   return list;
 }
 #endif  // HAVE_PYTHON
@@ -1526,11 +1664,9 @@ CPT(TransformState) TransformState::
 return_unique(TransformState *state) {
   nassertr(state != (TransformState *)NULL, state);
 
-#ifndef NDEBUG
   if (!transform_cache) {
     return state;
   }
-#endif
 
 #ifndef NDEBUG
   if (paranoid_const) {
@@ -1542,9 +1678,9 @@ return_unique(TransformState *state) {
 
   LightReMutexHolder holder(*_states_lock);
 
-  if (state->_saved_entry != _states->end()) {
+  if (state->_saved_entry != -1) {
     // This state is already in the cache.
-    nassertr(_states->find(state) == state->_saved_entry, state);
+    //nassertr(_states->find(state) == state->_saved_entry, state);
     return state;
   }
 
@@ -1552,17 +1688,24 @@ return_unique(TransformState *state) {
   // the end of this function if no one else uses it.
   CPT(TransformState) pt_state = state;
 
-  pair<States::iterator, bool> result = _states->insert(state);
-  if (result.second) {
-    // The state was inserted; save the iterator and return the
-    // input state.
-    state->_saved_entry = result.first;
-    return pt_state;
+  int si = _states->find(state);
+  if (si != -1) {
+    // There's an equivalent state already in the set.  Return it.
+    return _states->get_key(si);
   }
 
-  // The state was not inserted; there must be an equivalent one
-  // already in the set.  Return that one.
-  return *(result.first);
+  // Not already in the set; add it.
+  if (garbage_collect_states) {
+    // If we'll be garbage collecting states explicitly, we'll
+    // increment the reference count when we store it in the cache, so
+    // that it won't be deleted while it's in it.
+    state->cache_ref();
+  }
+  si = _states->store(state, Empty());
+
+  // Save the index and return the input state.
+  state->_saved_entry = si;
+  return pt_state;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1591,28 +1734,28 @@ do_compose(const TransformState *other) const {
     CPT(TransformState) result;
     if (is_2d() && other->is_2d()) {
       // Do a 2-d compose.
-      LVecBase2f pos = get_pos2d();
-      float rotate = get_rotate2d();
-      LQuaternionf quat = get_norm_quat();
-      float scale = get_uniform_scale();
+      LVecBase2 pos = get_pos2d();
+      PN_stdfloat rotate = get_rotate2d();
+      LQuaternion quat = get_norm_quat();
+      PN_stdfloat scale = get_uniform_scale();
 
-      LPoint3f op = quat.xform(other->get_pos());
-      pos += LVecBase2f(op[0], op[1]) * scale;
+      LPoint3 op = quat.xform(other->get_pos());
+      pos += LVecBase2(op[0], op[1]) * scale;
 
       rotate += other->get_rotate2d();
-      LVecBase2f new_scale = other->get_scale2d() * scale;
+      LVecBase2 new_scale = other->get_scale2d() * scale;
       
       result = make_pos_rotate_scale2d(pos, rotate, new_scale);
 
     } else {
       // A normal 3-d compose.
-      LVecBase3f pos = get_pos();
-      LQuaternionf quat = get_norm_quat();
-      float scale = get_uniform_scale();
+      LVecBase3 pos = get_pos();
+      LQuaternion quat = get_norm_quat();
+      PN_stdfloat scale = get_uniform_scale();
       
       pos += quat.xform(other->get_pos()) * scale;
       quat = other->get_norm_quat() * quat;
-      LVecBase3f new_scale = other->get_scale() * scale;
+      LVecBase3 new_scale = other->get_scale() * scale;
       
       result = make_pos_quat_scale(pos, quat, new_scale);
     }
@@ -1620,7 +1763,7 @@ do_compose(const TransformState *other) const {
 #ifndef NDEBUG
     if (paranoid_compose) {
       // Now verify against the matrix.
-      LMatrix4f new_mat;
+      LMatrix4 new_mat;
       new_mat.multiply(other->get_mat(), get_mat());
       if (!new_mat.almost_equal(result->get_mat(), 0.1)) {
         CPT(TransformState) correct = make_mat(new_mat);
@@ -1638,13 +1781,165 @@ do_compose(const TransformState *other) const {
 
   // Do the operation with matrices.
   if (is_2d() && other->is_2d()) {
-    LMatrix3f new_mat = other->get_mat3() * get_mat3();
+    LMatrix3 new_mat = other->get_mat3() * get_mat3();
     return make_mat3(new_mat);
   } else {
-    LMatrix4f new_mat;
+    LMatrix4 new_mat;
     new_mat.multiply(other->get_mat(), get_mat());
     return make_mat(new_mat);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::store_compose
+//       Access: Private
+//  Description: Stores the result of a composition in the cache.
+//               Returns the stored result (it may be a different
+//               object than the one passed in, due to another thread
+//               having computed the composition first).
+////////////////////////////////////////////////////////////////////
+CPT(TransformState) TransformState::
+store_compose(const TransformState *other, const TransformState *result) {
+  // Identity should have already been screened.
+  nassertr(!is_identity(), other);
+  nassertr(!other->is_identity(), this);
+
+  // So should have validity.
+  nassertr(!is_invalid(), this);
+  nassertr(!other->is_invalid(), other);
+
+  LightReMutexHolder holder(*_states_lock);
+
+  // Is this composition already cached?
+  int index = _composition_cache.find(other);
+  if (index != -1) {
+    Composition &comp = _composition_cache.modify_data(index);
+    if (comp._result == (const TransformState *)NULL) {
+      // Well, it wasn't cached already, but we already had an entry
+      // (probably created for the reverse direction), so use the same
+      // entry to store the new result.
+      comp._result = result;
+
+      if (result != (const TransformState *)this) {
+        // See the comments below about the need to up the reference
+        // count only when the result is not the same as this.
+        result->cache_ref();
+      }
+    }
+    // Here's the cache!
+    _cache_stats.inc_hits();
+    return comp._result;
+  }
+  _cache_stats.inc_misses();
+
+  // We need to make a new cache entry, both in this object and in the
+  // other object.  We make both records so the other TransformState
+  // object will know to delete the entry from this object when it
+  // destructs, and vice-versa.
+
+  // The cache entry in this object is the only one that indicates the
+  // result; the other will be NULL for now.
+  _cache_stats.add_total_size(1);
+  _cache_stats.inc_adds(_composition_cache.get_size() == 0);
+
+  _composition_cache[other]._result = result;
+
+  if (other != this) {
+    _cache_stats.add_total_size(1);
+    _cache_stats.inc_adds(other->_composition_cache.get_size() == 0);
+    ((TransformState *)other)->_composition_cache[this]._result = NULL;
+  }
+
+  if (result != (TransformState *)this) {
+    // If the result of do_compose() is something other than this,
+    // explicitly increment the reference count.  We have to be sure
+    // to decrement it again later, when the composition entry is
+    // removed from the cache.
+    result->cache_ref();
+    
+    // (If the result was just this again, we still store the
+    // result, but we don't increment the reference count, since
+    // that would be a self-referential leak.)
+  }
+
+  _cache_stats.maybe_report("TransformState");
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::store_invert_compose
+//       Access: Private
+//  Description: Stores the result of a composition in the cache.
+//               Returns the stored result (it may be a different
+//               object than the one passed in, due to another thread
+//               having computed the composition first).
+////////////////////////////////////////////////////////////////////
+CPT(TransformState) TransformState::
+store_invert_compose(const TransformState *other, const TransformState *result) {
+  // Identity should have already been screened.
+  nassertr(!is_identity(), other);
+
+  // So should have validity.
+  nassertr(!is_invalid(), this);
+  nassertr(!other->is_invalid(), other);
+
+  nassertr(other != this, make_identity());
+
+  LightReMutexHolder holder(*_states_lock);
+
+  // Is this composition already cached?
+  int index = _invert_composition_cache.find(other);
+  if (index != -1) {
+    Composition &comp = ((TransformState *)this)->_invert_composition_cache.modify_data(index);
+    if (comp._result == (const TransformState *)NULL) {
+      // Well, it wasn't cached already, but we already had an entry
+      // (probably created for the reverse direction), so use the same
+      // entry to store the new result.
+      comp._result = result;
+
+      if (result != (const TransformState *)this) {
+        // See the comments below about the need to up the reference
+        // count only when the result is not the same as this.
+        result->cache_ref();
+      }
+    }
+    // Here's the cache!
+    _cache_stats.inc_hits();
+    return comp._result;
+  }
+  _cache_stats.inc_misses();
+
+  // We need to make a new cache entry, both in this object and in the
+  // other object.  We make both records so the other TransformState
+  // object will know to delete the entry from this object when it
+  // destructs, and vice-versa.
+
+  // The cache entry in this object is the only one that indicates the
+  // result; the other will be NULL for now.
+  _cache_stats.add_total_size(1);
+  _cache_stats.inc_adds(_invert_composition_cache.get_size() == 0);
+  _invert_composition_cache[other]._result = result;
+
+  if (other != this) {
+    _cache_stats.add_total_size(1);
+    _cache_stats.inc_adds(other->_invert_composition_cache.get_size() == 0);
+    ((TransformState *)other)->_invert_composition_cache[this]._result = NULL;
+  }
+
+  if (result != (TransformState *)this) {
+    // If the result of compose() is something other than this,
+    // explicitly increment the reference count.  We have to be sure
+    // to decrement it again later, when the composition entry is
+    // removed from the cache.
+    result->cache_ref();
+    
+    // (If the result was just this again, we still store the
+    // result, but we don't increment the reference count, since
+    // that would be a self-referential leak.)
+  }
+
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1671,10 +1966,10 @@ do_invert_compose(const TransformState *other) const {
     CPT(TransformState) result;
     if (is_2d() && other->is_2d()) {
       // Do a 2-d invert compose.
-      LVecBase2f pos = get_pos2d();
-      float rotate = get_rotate2d();
-      LQuaternionf quat = get_norm_quat();
-      float scale = get_uniform_scale();
+      LVecBase2 pos = get_pos2d();
+      PN_stdfloat rotate = get_rotate2d();
+      LQuaternion quat = get_norm_quat();
+      PN_stdfloat scale = get_uniform_scale();
       
       // First, invert our own transform.
       if (scale == 0.0f) {
@@ -1684,14 +1979,14 @@ do_invert_compose(const TransformState *other) const {
       scale = 1.0f / scale;
       quat.invert_in_place();
       rotate = -rotate;
-      LVecBase3f mp = quat.xform(-LVecBase3f(pos[0], pos[1], 0.0f));
-      pos = LVecBase2f(mp[0], mp[1]) * scale;
-      LVecBase2f new_scale(scale, scale);
+      LVecBase3 mp = quat.xform(-LVecBase3(pos[0], pos[1], 0.0f));
+      pos = LVecBase2(mp[0], mp[1]) * scale;
+      LVecBase2 new_scale(scale, scale);
       
       // Now compose the inverted transform with the other transform.
       if (!other->is_identity()) {
-        LPoint3f op = quat.xform(other->get_pos());
-        pos += LVecBase2f(op[0], op[1]) * scale;
+        LPoint3 op = quat.xform(other->get_pos());
+        pos += LVecBase2(op[0], op[1]) * scale;
 
         rotate += other->get_rotate2d();
         new_scale = other->get_scale2d() * scale;
@@ -1701,9 +1996,9 @@ do_invert_compose(const TransformState *other) const {
 
     } else {
       // Do a normal, 3-d invert compose.
-      LVecBase3f pos = get_pos();
-      LQuaternionf quat = get_norm_quat();
-      float scale = get_uniform_scale();
+      LVecBase3 pos = get_pos();
+      LQuaternion quat = get_norm_quat();
+      PN_stdfloat scale = get_uniform_scale();
       
       // First, invert our own transform.
       if (scale == 0.0f) {
@@ -1713,7 +2008,7 @@ do_invert_compose(const TransformState *other) const {
       scale = 1.0f / scale;
       quat.invert_in_place();
       pos = quat.xform(-pos) * scale;
-      LVecBase3f new_scale(scale, scale, scale);
+      LVecBase3 new_scale(scale, scale, scale);
       
       // Now compose the inverted transform with the other transform.
       if (!other->is_identity()) {
@@ -1732,8 +2027,8 @@ do_invert_compose(const TransformState *other) const {
         pgraph_cat.warning()
           << "Unexpected singular matrix found for " << *this << "\n";
       } else {
-        nassertr(_inv_mat != (LMatrix4f *)NULL, make_invalid());
-        LMatrix4f new_mat;
+        nassertr(_inv_mat != (LMatrix4 *)NULL, make_invalid());
+        LMatrix4 new_mat;
         new_mat.multiply(other->get_mat(), *_inv_mat);
         if (!new_mat.almost_equal(result->get_mat(), 0.1)) {
           CPT(TransformState) correct = make_mat(new_mat);
@@ -1756,13 +2051,13 @@ do_invert_compose(const TransformState *other) const {
 
   // Now that is_singular() has returned false, we can assume that
   // _inv_mat has been allocated and filled in.
-  nassertr(_inv_mat != (LMatrix4f *)NULL, make_invalid());
+  nassertr(_inv_mat != (LMatrix4 *)NULL, make_invalid());
 
   if (is_2d() && other->is_2d()) {
-    const LMatrix4f &i = *_inv_mat;
-    LMatrix3f inv3(i(0, 0), i(0, 1), i(0, 3),
-                   i(1, 0), i(1, 1), i(1, 3),
-                   i(3, 0), i(3, 1), i(3, 3));
+    const LMatrix4 &i = *_inv_mat;
+    LMatrix3 inv3(i(0, 0), i(0, 1), i(0, 3),
+                  i(1, 0), i(1, 1), i(1, 3),
+                  i(3, 0), i(3, 1), i(3, 3));
     if (other->is_identity()) {
       return make_mat3(inv3);
     } else {
@@ -1773,6 +2068,40 @@ do_invert_compose(const TransformState *other) const {
       return make_mat(*_inv_mat);
     } else {
       return make_mat(other->get_mat() * (*_inv_mat));
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::detect_and_break_cycles
+//       Access: Private
+//  Description: Detects whether there is a cycle in the cache that
+//               begins with this state.  If any are detected, breaks
+//               them by removing this state from the cache.
+////////////////////////////////////////////////////////////////////
+void TransformState::
+detect_and_break_cycles() {
+  PStatTimer timer(_transform_break_cycles_pcollector);
+  
+  ++_last_cycle_detect;
+  if (r_detect_cycles(this, this, 1, _last_cycle_detect, NULL)) {
+    // Ok, we have a cycle.  This will be a leak unless we break the
+    // cycle by freeing the cache on this object.
+    if (pgraph_cat.is_debug()) {
+      pgraph_cat.debug()
+        << "Breaking cycle involving " << (*this) << "\n";
+    }
+    
+    remove_cache_pointers();
+  } else {
+    ++_last_cycle_detect;
+    if (r_detect_reverse_cycles(this, this, 1, _last_cycle_detect, NULL)) {
+      if (pgraph_cat.is_debug()) {
+        pgraph_cat.debug()
+          << "Breaking cycle involving " << (*this) << "\n";
+      }
+      
+      remove_cache_pointers();
     }
   }
 }
@@ -1940,10 +2269,11 @@ void TransformState::
 release_new() {
   nassertv(_states_lock->debug_is_locked());
    
-  if (_saved_entry != _states->end()) {
-    nassertv(_states->find(this) == _saved_entry);
-    _states->erase(_saved_entry);
-    _saved_entry = _states->end();
+  if (_saved_entry != -1) {
+    //nassertv(_states->find(this) == _saved_entry);
+    _saved_entry = _states->find(this);
+    _states->remove_element(_saved_entry);
+    _saved_entry = -1;
   }
 }
 
@@ -2096,8 +2426,7 @@ do_calc_hash() {
     // Only bother to put the rest of the stuff in the hash if the
     // transform is not invalid or empty.
     
-    if ((_flags & (F_components_given | F_hpr_given | F_quat_given)) == 
-        (F_components_given | F_hpr_given | F_quat_given)) {
+    if ((_flags & F_components_given) != 0) {
       // If the transform was specified componentwise, hash it
       // componentwise.
       _hash = _pos.add_hash(_hash);
@@ -2112,11 +2441,22 @@ do_calc_hash() {
       _hash = _shear.add_hash(_hash);
 
     } else {
-      // Otherwise, hash the pointer only--any two different
-      // matrix-based TransformStates are considered to be different,
-      // even if their matrices have the same values.
+      // Otherwise, hash the matrix . . .
+      if (uniquify_matrix) {
+        // . . . but only if the user thinks that's worthwhile.
+        if ((_flags & F_mat_known) == 0) {
+          // Calculate the matrix without doubly-locking.
+          do_calc_mat();
+        }
+        _hash = _mat.add_hash(_hash);
 
-      _hash = pointer_hash::add_hash(_hash, this);
+      } else {
+        // Otherwise, hash the pointer only--any two different
+        // matrix-based TransformStates are considered to be different,
+        // even if their matrices have the same values.
+
+        _hash = pointer_hash::add_hash(_hash, this);
+      }
     }
   }
 
@@ -2147,8 +2487,8 @@ calc_singular() {
   // someone is asking whether we're singular).
 
   // This should be NULL if no one has called calc_singular() yet.
-  nassertv(_inv_mat == (LMatrix4f *)NULL);
-  _inv_mat = new LMatrix4f;
+  nassertv(_inv_mat == (LMatrix4 *)NULL);
+  _inv_mat = new LMatrix4;
 
   if ((_flags & F_mat_known) == 0) {
     do_calc_mat();
@@ -2158,7 +2498,7 @@ calc_singular() {
   if (!inverted) {
     _flags |= F_is_singular;
     delete _inv_mat;
-    _inv_mat = (LMatrix4f *)NULL;
+    _inv_mat = (LMatrix4 *)NULL;
   }
   _flags |= F_singular_known;
 }
@@ -2183,7 +2523,7 @@ do_calc_components() {
     _scale.set(1.0f, 1.0f, 1.0f);
     _shear.set(0.0f, 0.0f, 0.0f);
     _hpr.set(0.0f, 0.0f, 0.0f);
-    _quat = LQuaternionf::ident_quat();
+    _quat = LQuaternion::ident_quat();
     _pos.set(0.0f, 0.0f, 0.0f);
     _flags |= F_has_components | F_components_known | F_hpr_known | F_quat_known | F_uniform_scale;
 
@@ -2278,7 +2618,7 @@ void TransformState::
 calc_norm_quat() {
   PStatTimer timer(_transform_calc_pcollector);
 
-  LQuaternionf quat = get_quat();
+  LQuaternion quat = get_quat();
   LightMutexHolder holder(_lock);
   _norm_quat = quat;
   _norm_quat.normalize();
@@ -2302,7 +2642,7 @@ do_calc_mat() {
 
   nassertv((_flags & F_is_invalid) == 0);
   if ((_flags & F_is_identity) != 0) {
-    _mat = LMatrix4f::ident_mat();
+    _mat = LMatrix4::ident_mat();
 
   } else {
     // If we don't have a matrix and we're not identity, the only

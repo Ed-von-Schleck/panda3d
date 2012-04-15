@@ -94,6 +94,8 @@ PUBLISHED:
 
   INLINE GeomVertexData *get_vertex_data() const;
   INLINE GeomVertexArrayData *get_array_data() const;
+  INLINE GeomVertexArrayDataHandle *get_array_handle() const;
+  INLINE size_t get_stride() const;
   INLINE Thread *get_current_thread() const;
 
   INLINE bool set_column(int column);
@@ -107,6 +109,7 @@ PUBLISHED:
   INLINE int get_array() const;
   INLINE const GeomVertexColumn *get_column() const;
 
+  INLINE void set_row_unsafe(int row);
   INLINE void set_row(int row);
 
   INLINE int get_start_row() const;
@@ -120,6 +123,22 @@ PUBLISHED:
   INLINE void set_data3f(const LVecBase3f &data);
   INLINE void set_data4f(float x, float y, float z, float w);
   INLINE void set_data4f(const LVecBase4f &data);
+
+  INLINE void set_data1d(double data);
+  INLINE void set_data2d(double x, double y);
+  INLINE void set_data2d(const LVecBase2d &data);
+  INLINE void set_data3d(double x, double y, double z);
+  INLINE void set_data3d(const LVecBase3d &data);
+  INLINE void set_data4d(double x, double y, double z, double w);
+  INLINE void set_data4d(const LVecBase4d &data);
+
+  INLINE void set_data1(PN_stdfloat data);
+  INLINE void set_data2(PN_stdfloat x, PN_stdfloat y);
+  INLINE void set_data2(const LVecBase2 &data);
+  INLINE void set_data3(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z);
+  INLINE void set_data3(const LVecBase3 &data);
+  INLINE void set_data4(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z, PN_stdfloat w);
+  INLINE void set_data4(const LVecBase4 &data);
 
   INLINE void set_data1i(int data);
   INLINE void set_data2i(int a, int b);
@@ -136,6 +155,22 @@ PUBLISHED:
   INLINE void add_data3f(const LVecBase3f &data);
   INLINE void add_data4f(float x, float y, float z, float w);
   INLINE void add_data4f(const LVecBase4f &data);
+
+  INLINE void add_data1d(double data);
+  INLINE void add_data2d(double x, double y);
+  INLINE void add_data2d(const LVecBase2d &data);
+  INLINE void add_data3d(double x, double y, double z);
+  INLINE void add_data3d(const LVecBase3d &data);
+  INLINE void add_data4d(double x, double y, double z, double w);
+  INLINE void add_data4d(const LVecBase4d &data);
+
+  INLINE void add_data1(PN_stdfloat data);
+  INLINE void add_data2(PN_stdfloat x, PN_stdfloat y);
+  INLINE void add_data2(const LVecBase2 &data);
+  INLINE void add_data3(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z);
+  INLINE void add_data3(const LVecBase3 &data);
+  INLINE void add_data4(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z, PN_stdfloat w);
+  INLINE void add_data4(const LVecBase4 &data);
 
   INLINE void add_data1i(int data);
   INLINE void add_data2i(int a, int b);
@@ -172,7 +207,7 @@ private:
   PT(GeomVertexData) _vertex_data;
   int _array;
   PT(GeomVertexArrayData) _array_data;
-
+    
   Thread *_current_thread;
   GeomVertexColumn::Packer *_packer;
   int _stride;

@@ -23,7 +23,10 @@
 ////////////////////////////////////////////////////////////////////
 LoaderOptions::
 LoaderOptions(int flags) : 
-  _flags(flags), _texture_flags(0)  
+  _flags(flags), 
+  _texture_flags(0),
+  _texture_num_views(0),
+  _auto_texture_scale(ATS_unspecified)
 {
   // Shadowing the variables in config_util for static init ordering
   // issues.
@@ -82,6 +85,10 @@ output(ostream &out) const {
   write_texture_flag(out, sep, "TF_generate_mipmaps", TF_generate_mipmaps);
   if (sep.empty()) {
     out << "0";
+  }
+
+  if (_auto_texture_scale != ATS_unspecified) {
+    out << ", ATS_" << _auto_texture_scale;
   }
 
   out << ")";

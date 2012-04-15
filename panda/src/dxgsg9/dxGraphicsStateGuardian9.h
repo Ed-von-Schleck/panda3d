@@ -33,12 +33,6 @@
 
 #include "lru.h"
 
-typedef LPDIRECT3DDEVICE9 DIRECT_3D_DEVICE;
-typedef D3DVERTEXELEMENT9 DIRECT_3D_VERTEX_ELEMENT;
-typedef LPDIRECT3DVERTEXDECLARATION9 DIRECT_3D_VERTEX_DECLARATION;
-typedef LPDIRECT3DVERTEXSHADER9 DIRECT_3D_VERTEX_SHADER;
-typedef LPDIRECT3DPIXELSHADER9 DIRECT_3D_PIXEL_SHADER;
-
 #include "vertexElementArray.h"
 #include "dxShaderContext9.h"
 
@@ -72,7 +66,7 @@ public:
     calc_fb_properties(DWORD cformat, DWORD dformat,
                        DWORD multisampletype, DWORD multisamplequality);
 
-  virtual TextureContext *prepare_texture(Texture *tex);
+  virtual TextureContext *prepare_texture(Texture *tex, int view);
   void apply_texture(int i, TextureContext *tc);
   virtual bool update_texture(TextureContext *tc, bool force);
   bool upload_texture(DXTextureContext9 *dtc, bool force);
@@ -83,9 +77,14 @@ public:
   void release_shader(ShaderContext *sc);
 
   virtual VertexBufferContext *prepare_vertex_buffer(GeomVertexArrayData *data);
-  bool apply_vertex_buffer(VertexBufferContext *vbc, CLP(ShaderContext) *shader_context,
-                           const GeomVertexArrayDataHandle *reader, bool force, string name);
+  bool apply_vertex_buffer(VertexBufferContext *vbc,
+                           const GeomVertexArrayDataHandle *reader,
+                           bool force);
   virtual void release_vertex_buffer(VertexBufferContext *vbc);
+
+  bool setup_array_data(CLP(VertexBufferContext)*& vbc,
+                        const GeomVertexArrayDataHandle* data,
+                        bool force);
 
   virtual IndexBufferContext *prepare_index_buffer(GeomPrimitive *data);
   bool apply_index_buffer(IndexBufferContext *ibc,
@@ -100,8 +99,7 @@ public:
 
   virtual void clear(DrawableRegion *clearable);
 
-  virtual void prepare_display_region(DisplayRegionPipelineReader *dr,
-                                      Lens::StereoChannel stereo_channel);
+  virtual void prepare_display_region(DisplayRegionPipelineReader *dr);
   virtual CPT(TransformState) calc_projection_mat(const Lens *lens);
   virtual bool prepare_lens();
 
@@ -148,7 +146,7 @@ public:
                           int light_id);
 
   static D3DFORMAT get_index_type(Geom::NumericType numeric_type);
-  INLINE static DWORD Colorf_to_D3DCOLOR(const Colorf &cColorf);
+  INLINE static DWORD LColor_to_D3DCOLOR(const LColor &cLColor);
 
   virtual void set_state_and_transform(const RenderState *state,
                                        const TransformState *transform);
@@ -159,9 +157,11 @@ public:
   INLINE HRESULT set_texture_stage_state (DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value);
   INLINE HRESULT set_sampler_state (DWORD sampler, D3DSAMPLERSTATETYPE type, DWORD value);
 
+  INLINE bool get_supports_render_texture() const;
+
   static bool get_gamma_table(void);
-  static bool static_set_gamma(bool restore, float gamma);
-  bool set_gamma(float gamma);
+  static bool static_set_gamma(bool restore, PN_stdfloat gamma);
+  bool set_gamma(PN_stdfloat gamma);
   void restore_gamma();
   static void atexit_function(void);
 
@@ -192,7 +192,7 @@ protected:
   virtual void reissue_transforms();
 
   virtual void enable_lighting(bool enable);
-  virtual void set_ambient_light(const Colorf &color);
+  virtual void set_ambient_light(const LColor &color);
   virtual void enable_light(int light_id, bool enable);
 
   virtual void enable_clip_plane(int plane_id, bool enable);
@@ -207,8 +207,8 @@ protected:
 
   void do_auto_rescale_normal();
 
-//  void disable_standard_vertex_arrays();
-//  void update_standard_vertex_arrays();
+  void disable_standard_vertex_arrays();
+  bool update_standard_vertex_arrays(bool force);
   void disable_standard_texture_bindings();
   void update_standard_texture_bindings();
 
@@ -271,15 +271,16 @@ protected:
   HRESULT _last_testcooplevel_result;
 
   bool _vertex_blending_enabled;
+  bool _supports_render_texture;
 
   RenderBuffer::Type _cur_read_pixel_buffer;  // source for copy_pixel_buffer operation
   bool _auto_rescale_normal;
 
-  float _material_ambient;
-  float _material_diffuse;
-  float _material_specular;
-  float _material_shininess;
-  float _material_emission;
+  PN_stdfloat _material_ambient;
+  PN_stdfloat _material_diffuse;
+  PN_stdfloat _material_specular;
+  PN_stdfloat _material_shininess;
+  PN_stdfloat _material_emission;
 
   enum DxgsgFogType {
     None,
@@ -302,7 +303,6 @@ protected:
   PT(Shader)  _texture_binding_shader;
   CLP(ShaderContext)  *_texture_binding_shader_context;
 
-  const DXVertexBufferContext9 *_active_vbuffer;
   const DXIndexBufferContext9 *_active_ibuffer;
 
   bool _overlay_windows_supported;
@@ -321,6 +321,7 @@ protected:
   UINT _available_texture_memory;
 
   DWORD _last_fvf;
+  int _num_bound_streams;
 
   // Cache the data necessary to bind each particular light each
   // frame, so if we bind a given light multiple times, we only have

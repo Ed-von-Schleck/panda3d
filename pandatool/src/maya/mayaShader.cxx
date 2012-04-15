@@ -40,7 +40,7 @@
 //               relevant shader properties.
 ////////////////////////////////////////////////////////////////////
 MayaShader::
-MayaShader(MObject engine, bool texture_copy, Filename tout_dir, bool legacy_shader) {
+MayaShader(MObject engine, bool legacy_shader) {
   MFnDependencyNode engine_fn(engine);
 
   set_name(engine_fn.name().asChar());
@@ -49,9 +49,6 @@ MayaShader(MObject engine, bool texture_copy, Filename tout_dir, bool legacy_sha
     maya_cat.debug()
       << "Reading shading engine " << get_name() << "\n";
   }
-  // passing the output texture dir to the shader constructor
-  _texture_copy = texture_copy;
-  _texture_out_dir = tout_dir;
   _legacy_mode = false;
   _flat_color.set(1,1,1,1);
 
@@ -142,14 +139,14 @@ get_color_def(size_t idx) const {
 //               color, so if a texture is also applied (_has_texture
 //               is true), this value is not used by Maya.
 ////////////////////////////////////////////////////////////////////
-Colorf MayaShader::
+LColor MayaShader::
 get_rgba(size_t idx) const {
-  Colorf rgba(1.0f, 1.0f, 1.0f, 1.0f);
+  LColor rgba(1.0f, 1.0f, 1.0f, 1.0f);
 
   if (_color.size() && _color[idx]->_has_flat_color) {
-    rgba[0] = (float)_color[idx]->_flat_color[0];
-    rgba[1] = (float)_color[idx]->_flat_color[1];
-    rgba[2] = (float)_color[idx]->_flat_color[2];
+    rgba[0] = (PN_stdfloat)_color[idx]->_flat_color[0];
+    rgba[1] = (PN_stdfloat)_color[idx]->_flat_color[1];
+    rgba[2] = (PN_stdfloat)_color[idx]->_flat_color[2];
   }
 
   if (_transparency._has_flat_color) {
@@ -160,7 +157,7 @@ get_rgba(size_t idx) const {
       _transparency._flat_color[0] * lumin_red + 
       _transparency._flat_color[1] * lumin_grn + 
       _transparency._flat_color[2] * lumin_blu;
-    rgba[3] = 1.0f - (float)trans;
+    rgba[3] = 1.0f - (PN_stdfloat)trans;
   }
 
   return rgba;
@@ -228,29 +225,29 @@ find_textures_modern(MObject shader) {
 
   string n = shader_fn.name().asChar();
   
-  MayaShaderColorDef::find_textures_modern(n, _color_maps,  shader_fn.findPlug("color"), _texture_copy, _texture_out_dir,false);
+  MayaShaderColorDef::find_textures_modern(n, _color_maps,  shader_fn.findPlug("color"), false);
   if (_color_maps.size() == 0) {
-    MayaShaderColorDef::find_textures_modern(n, _color_maps,  shader_fn.findPlug("colorR"),_texture_copy, _texture_out_dir, false);
+    MayaShaderColorDef::find_textures_modern(n, _color_maps,  shader_fn.findPlug("colorR"), false);
   }
-  MayaShaderColorDef::find_textures_modern(n, _trans_maps,  shader_fn.findPlug("transparency"),_texture_copy, _texture_out_dir, true);
+  MayaShaderColorDef::find_textures_modern(n, _trans_maps,  shader_fn.findPlug("transparency"), true);
   if (_trans_maps.size() == 0) {
-    MayaShaderColorDef::find_textures_modern(n, _trans_maps,  shader_fn.findPlug("transparencyR"),_texture_copy, _texture_out_dir, true);
+    MayaShaderColorDef::find_textures_modern(n, _trans_maps,  shader_fn.findPlug("transparencyR"), true);
   }
-  MayaShaderColorDef::find_textures_modern(n, _normal_maps, shader_fn.findPlug("normalCamera"),_texture_copy, _texture_out_dir, false);
+  MayaShaderColorDef::find_textures_modern(n, _normal_maps, shader_fn.findPlug("normalCamera"), false);
   if (_normal_maps.size() == 0) {
-    MayaShaderColorDef::find_textures_modern(n, _normal_maps, shader_fn.findPlug("normalCameraR"),_texture_copy, _texture_out_dir, false);
+    MayaShaderColorDef::find_textures_modern(n, _normal_maps, shader_fn.findPlug("normalCameraR"), false);
   }
-  MayaShaderColorDef::find_textures_modern(n, _gloss_maps,  shader_fn.findPlug("specularColor"),_texture_copy, _texture_out_dir, true);
+  MayaShaderColorDef::find_textures_modern(n, _gloss_maps,  shader_fn.findPlug("specularColor"), true);
   if (_gloss_maps.size() == 0) {
-    MayaShaderColorDef::find_textures_modern(n, _gloss_maps,  shader_fn.findPlug("specularColorR"),_texture_copy, _texture_out_dir, true);
+    MayaShaderColorDef::find_textures_modern(n, _gloss_maps,  shader_fn.findPlug("specularColorR"), true);
   }
-  MayaShaderColorDef::find_textures_modern(n, _glow_maps,  shader_fn.findPlug("incandescence"),_texture_copy, _texture_out_dir, true);
+  MayaShaderColorDef::find_textures_modern(n, _glow_maps,  shader_fn.findPlug("incandescence"), true);
   if (_glow_maps.size() == 0) {
-    MayaShaderColorDef::find_textures_modern(n, _glow_maps,  shader_fn.findPlug("incandescenceR"),_texture_copy, _texture_out_dir, true);
+    MayaShaderColorDef::find_textures_modern(n, _glow_maps,  shader_fn.findPlug("incandescenceR"), true);
   }
-  MayaShaderColorDef::find_textures_modern(n, _height_maps,  shader_fn.findPlug("surfaceThickness"),_texture_copy, _texture_out_dir, true);
+  MayaShaderColorDef::find_textures_modern(n, _height_maps,  shader_fn.findPlug("surfaceThickness"), true);
   if (_height_maps.size() == 0) {
-    MayaShaderColorDef::find_textures_modern(n, _height_maps,  shader_fn.findPlug("surfaceThicknessR"),_texture_copy, _texture_out_dir, true);
+    MayaShaderColorDef::find_textures_modern(n, _height_maps,  shader_fn.findPlug("surfaceThicknessR"), true);
   }
   
   collect_maps();
@@ -484,7 +481,7 @@ find_textures_legacy(MObject shader) {
     MayaShaderColorDef *color_p = new MayaShaderColorDef;
     for (size_t i = 0; i < color_pa.length(); i++) {
       maya_cat.spam() << "color_pa[" << i << "]:" << color_pa[i].name().asChar() << endl;
-      color_p->find_textures_legacy(this, color_pa[0].node(), _texture_copy, _texture_out_dir);
+      color_p->find_textures_legacy(this, color_pa[0].node());
     }
 
     if (color_pa.length() < 1) {
@@ -506,7 +503,7 @@ find_textures_legacy(MObject shader) {
 
     for (size_t i = 0; i < trans_pa.length(); i++) {
       maya_cat.spam() << "read a transparency texture" << endl;
-      _transparency.find_textures_legacy(this, trans_pa[0].node(), _texture_copy, _texture_out_dir, true);
+      _transparency.find_textures_legacy(this, trans_pa[0].node(), true);
     }
   }
 

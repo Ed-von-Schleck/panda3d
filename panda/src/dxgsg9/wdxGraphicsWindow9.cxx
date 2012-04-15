@@ -97,6 +97,14 @@ begin_frame(FrameMode mode, Thread *current_thread) {
     return false;
   }
 
+  if (!get_unexposed_draw() && !_got_expose_event) {
+    if (wdxdisplay9_cat.is_spam()) {
+      wdxdisplay9_cat.spam()
+        << "Not drawing " << this << ": unexposed.\n";
+    }
+    return false;
+  }
+
   if (_awaiting_restore) {
     // The fullscreen window was recently restored; we can't continue
     // until the GSG says we can.
@@ -129,7 +137,6 @@ begin_frame(FrameMode mode, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void wdxGraphicsWindow9::
 end_frame(FrameMode mode, Thread *current_thread) {
-
   end_frame_spam(mode);
   nassertv(_gsg != (GraphicsStateGuardian *)NULL);
 
@@ -141,9 +148,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
@@ -163,7 +167,7 @@ end_flip() {
   if (_dxgsg != (DXGraphicsStateGuardian9 *)NULL && is_active()) {
     _dxgsg->show_frame();
   }
-  GraphicsWindow::end_flip();
+  WinGraphicsWindow::end_flip();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -254,7 +258,6 @@ close_window() {
 
   if (_gsg != (GraphicsStateGuardian *)NULL) {
     _gsg.clear();
-    _active = false;
   }
 
   DXGraphicsStateGuardian9::set_cg_device(NULL);
@@ -747,29 +750,39 @@ create_screen_buffers_and_device(DXScreenData &display, bool force_16bpp_zbuffer
       return false;
     }
 
-    presentation_params->PresentationInterval = 0;
+    //From d3d8caps.h
+    //D3DPRESENT_INTERVAL_DEFAULT  = 0x00000000L 
+    //#define D3DPRESENT_INTERVAL_ONE         0x00000001L
+    //Next line is really sloppy, should either be D3DPRESENT_INTERVAL_DEFAULT or D3DPRESENT_INTERVAL_ONE
+    //not a direct number! but I'm not going to touch it because it's working as is. Zhao 12/15/2011
+    presentation_params->PresentationInterval = 0;    
 
-    if (supported_multisamples<2) {
-      if (do_sync) {
-  // It turns out that COPY_VSYNC has real performance problems
-  // on many nVidia cards--it syncs at some random interval,
-  // possibly skipping over several video syncs.  Screw it,
-  // we'll effectively disable sync-video with windowed mode
-  // using DirectX8.
-        //presentation_params->SwapEffect = D3DSWAPEFFECT_COPY_VSYNC;
-        presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
-      } else {
-        presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
-      }
-
-      // override presentation parameters for windowed mode, render and display at maximum speed
-      if (do_sync == false) {
-        presentation_params->SwapEffect = D3DSWAPEFFECT_FLIP;
+    //ATI 5450 doesn't like D3DSWAPEFFECT_FLIP
+    presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
+    if (do_sync == false) {
         presentation_params->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-      }
-    } else {
-      presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
     }
+    // if (supported_multisamples<2) {
+      // if (do_sync) {
+  // // It turns out that COPY_VSYNC has real performance problems
+  // // on many nVidia cards--it syncs at some random interval,
+  // // possibly skipping over several video syncs.  Screw it,
+  // // we'll effectively disable sync-video with windowed mode
+  // // using DirectX8.
+        // //presentation_params->SwapEffect = D3DSWAPEFFECT_COPY_VSYNC;
+        // presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
+      // } else {
+        // presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
+      // }
+
+      // // override presentation parameters for windowed mode, render and display at maximum speed
+      // if (do_sync == false) {
+        // presentation_params->SwapEffect = D3DSWAPEFFECT_FLIP;
+        // presentation_params->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+      // }
+    // } else {
+      // presentation_params->SwapEffect = D3DSWAPEFFECT_DISCARD;
+    // }
 
     //assert((dwRenderWidth == presentation_params->BackBufferWidth)&&(dwRenderHeight == presentation_params->BackBufferHeight));
 
@@ -1162,7 +1175,6 @@ consider_device(wdxGraphicsPipe9 *dxpipe, DXDeviceInfo *device_info) {
 ////////////////////////////////////////////////////////////////////
 bool wdxGraphicsWindow9::
 reset_device_resize_window(UINT new_xsize, UINT new_ysize) {
-  nassertr((new_xsize > 0) && (new_ysize > 0), false);
   bool retval = true;
 
   DXScreenData *screen = NULL;

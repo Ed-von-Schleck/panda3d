@@ -13,8 +13,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "pandaFramework.h"
-#include "geomQuad.h"
-#include "textureAttrib.h"
+#include "cardMaker.h"
+#include "texture.h"
+#include "pnmImage.h"
 #include "cmath.h"
 #include "mathNumbers.h"
 
@@ -22,12 +23,10 @@ NodePath bogus_scene;
 NodePath old_bogus_scene;
 
 void
-event_T(CPT_Event, void *data) {
+event_T(const Event *, void *data) {
   PandaFramework *framework = (PandaFramework *)data;
   WindowFramework *wf = framework->get_window(0);
 
-  GraphicsStateGuardian *gsg = wf->get_graphics_window()->get_gsg();
-  Camera *camera = wf->get_camera(0);
   NodePath models = framework->get_models();
   NodePath render = wf->get_render();
 
@@ -54,31 +53,26 @@ event_T(CPT_Event, void *data) {
   cerr << "Loading " << num_quads_side * num_quads_side << " textures at " 
        << tex_x_size << ", " << tex_y_size << "\n";
 
-  GeomNode *gnode = new GeomNode("quads");
-  bogus_scene.attach_new_node(gnode);
-
   PNMImage white_center(tex_x_size / 4, tex_y_size / 4);
   white_center.fill(1.0f, 1.0f, 1.0f);
 
-  PTA_Colorf colors;
-  colors.push_back(Colorf(1.0f, 1.0f, 1.0f, 1.0f));
   for (int yi = 0; yi < num_quads_side; yi++) {
-    float y0 = (float)yi / (float)num_quads_side;
-    float y1 = (float)(yi + 1) / (float)num_quads_side;
+    PN_stdfloat y0 = (PN_stdfloat)yi / (PN_stdfloat)num_quads_side;
+    PN_stdfloat y1 = (PN_stdfloat)(yi + 1) / (PN_stdfloat)num_quads_side;
 
     // Map the x, y vertices onto a sphere just for fun.
-    float px0 = ccos((y0 - 0.5f) * MathNumbers::pi_f);
-    float px1 = ccos((y1 - 0.5f) * MathNumbers::pi_f);
-    float py0 = csin((y0 - 0.5f) * MathNumbers::pi_f);
-    float py1 = csin((y1 - 0.5f) * MathNumbers::pi_f);
+    PN_stdfloat px0 = ccos((y0 - 0.5f) * MathNumbers::pi_f);
+    PN_stdfloat px1 = ccos((y1 - 0.5f) * MathNumbers::pi_f);
+    PN_stdfloat py0 = csin((y0 - 0.5f) * MathNumbers::pi_f);
+    PN_stdfloat py1 = csin((y1 - 0.5f) * MathNumbers::pi_f);
     for (int xi = 0; xi < num_quads_side; xi++) {
-      float x0 = (float)xi / (float)num_quads_side;
-      float x1 = (float)(xi + 1) / (float)num_quads_side;
+      PN_stdfloat x0 = (PN_stdfloat)xi / (PN_stdfloat)num_quads_side;
+      PN_stdfloat x1 = (PN_stdfloat)(xi + 1) / (PN_stdfloat)num_quads_side;
 
-      float hx0 = ccos(x0 * MathNumbers::pi_f * 2.0f);
-      float hx1 = ccos(x1 * MathNumbers::pi_f * 2.0f);
-      float hy0 = csin(x0 * MathNumbers::pi_f * 2.0f);
-      float hy1 = csin(x1 * MathNumbers::pi_f * 2.0f);
+      PN_stdfloat hx0 = ccos(x0 * MathNumbers::pi_f * 2.0f);
+      PN_stdfloat hx1 = ccos(x1 * MathNumbers::pi_f * 2.0f);
+      PN_stdfloat hy0 = csin(x0 * MathNumbers::pi_f * 2.0f);
+      PN_stdfloat hy1 = csin(x1 * MathNumbers::pi_f * 2.0f);
 
       PNMImage bogus_image(tex_x_size, tex_y_size);
       bogus_image.fill(x0, (xi + yi) & 1, y0);
@@ -90,23 +84,13 @@ event_T(CPT_Event, void *data) {
       tex->set_minfilter(Texture::FT_linear_mipmap_linear);
       tex->load(bogus_image);
 
-      PTA_Vertexf coords;
-      PTA_TexCoordf uvs;
-      coords.push_back(Vertexf(hx0 * px0, hy0 * px0, py0));
-      coords.push_back(Vertexf(hx1 * px0, hy1 * px0, py0));
-      coords.push_back(Vertexf(hx1 * px1, hy1 * px1, py1));
-      coords.push_back(Vertexf(hx0 * px1, hy0 * px1, py1));
-      uvs.push_back(TexCoordf(0.0f, 0.0f));
-      uvs.push_back(TexCoordf(1.0f, 0.0f));
-      uvs.push_back(TexCoordf(1.0f, 1.0f));
-      uvs.push_back(TexCoordf(0.0f, 1.0f));
-      
-      PT(GeomQuad) quad = new GeomQuad;
-      quad->set_coords(coords);
-      quad->set_colors(colors, G_OVERALL);
-      quad->set_num_prims(1);
-      quad->set_texcoords(uvs, G_PER_VERTEX);
-      gnode->add_geom(quad, RenderState::make(TextureAttrib::make(tex)));
+      CardMaker cm("card");
+      cm.set_frame(Vertexf(hx0 * px0, hy0 * px0, py0),
+                   Vertexf(hx1 * px0, hy1 * px0, py0),
+                   Vertexf(hx1 * px1, hy1 * px1, py1),
+                   Vertexf(hx0 * px1, hy0 * px1, py1));
+      NodePath card = bogus_scene.attach_new_node(cm.generate());
+      card.set_texture(tex);
     }
   }
   cerr << "Done.\n";
@@ -134,7 +118,7 @@ main(int argc, char *argv[]) {
     window->loop_animations();
 
     framework.enable_default_keys();
-    framework.get_event_handler().add_hook("shift-t", event_T, &framework);
+    framework.define_key("shift-t", "test texture memory", event_T, &framework);
     framework.main_loop();
   }
 

@@ -137,7 +137,7 @@ add_stage(TextureStage *stage, TexGenAttrib::Mode mode,
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TexGenAttrib::
 add_stage(TextureStage *stage, TexGenAttrib::Mode mode, 
-          const TexCoord3f &constant_value) const {
+          const LTexCoord3 &constant_value) const {
   nassertr(mode == M_constant, this);
 
   CPT(RenderAttrib) removed = remove_stage(stage);
@@ -282,13 +282,13 @@ get_light(TextureStage *stage) const {
 //               texture stage.  This is only meaningful if the mode
 //               is M_constant.
 ////////////////////////////////////////////////////////////////////
-const TexCoord3f &TexGenAttrib::
+const LTexCoord3 &TexGenAttrib::
 get_constant_value(TextureStage *stage) const {
   Stages::const_iterator mi = _stages.find(stage);
   if (mi != _stages.end()) {
     return (*mi).second._constant_value;
   }
-  return TexCoord3f::zero();
+  return LTexCoord3::zero();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -409,6 +409,34 @@ compare_to_impl(const RenderAttrib *other) const {
   }
 
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexGenAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t TexGenAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  Stages::const_iterator ri;
+  for (ri = _stages.begin(); ri != _stages.end(); ++ri) {
+    const TextureStage *stage = (*ri).first;
+    const ModeDef &mode_def = (*ri).second;
+
+    hash = pointer_hash::add_hash(hash, stage);
+    hash = int_hash::add_hash(hash, (int)mode_def._mode);
+    hash = string_hash::add_hash(hash, mode_def._source_name);
+    hash = mode_def._light.add_hash(hash);
+    hash = mode_def._constant_value.add_hash(hash);
+  }
+
+  return hash;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -533,6 +561,16 @@ invert_compose_impl(const RenderAttrib *other) const {
   attrib->filled_stages();
 
   return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexGenAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexGenAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////

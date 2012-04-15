@@ -30,7 +30,8 @@
 PfmTrans::
 PfmTrans() {
   _got_transform = false;
-  _transform = LMatrix4f::ident_mat();
+  _transform = LMatrix4::ident_mat();
+  _rotate = 0;
 
   add_transform_options();
 
@@ -38,11 +39,6 @@ PfmTrans() {
     ("pfm-trans reads an pfm file and transforms it, filters it, "
      "operates on it, writing the output to another pfm file.  A pfm "
      "file contains a 2-d table of floating-point values.");
-
-  add_option
-    ("r", "", 0,
-     "Reverses the rows of the pfm data vertically.",
-     &PfmTrans::dispatch_none, &_got_reverse);
 
   add_option
     ("z", "", 0,
@@ -56,6 +52,22 @@ PfmTrans() {
      "with -TS, which scales the individual point values, but doesn't "
      "change the number of points.",
      &PfmTrans::dispatch_int_pair, &_got_resize, &_resize);
+
+  add_option
+    ("rotate", "degrees", 0,
+     "Rotates the pfm file the specified number of degrees counterclockwise, "
+     "which must be a multiple of 90.",
+     &PfmTrans::dispatch_int, NULL, &_rotate);
+
+  add_option
+    ("mirror_x", "", 0,
+     "Flips the pfm file about the x axis.",
+     &PfmTrans::dispatch_none, &_got_mirror_x);
+
+  add_option
+    ("mirror_y", "", 0,
+     "Flips the pfm file about the y axis.",
+     &PfmTrans::dispatch_none, &_got_mirror_y);
 
   add_option
     ("o", "filename", 50,
@@ -104,6 +116,11 @@ PfmTrans() {
 ////////////////////////////////////////////////////////////////////
 void PfmTrans::
 run() {
+  if ((int)(_rotate / 90) * 90 != _rotate) {
+    nout << "-rotate can only accept a multiple of 90 degrees.\n";
+    exit(1);
+  }
+
   if (_got_vis_filename) {
     _mesh_root = NodePath("mesh_root");
   }
@@ -140,8 +157,37 @@ process_pfm(const Filename &input_filename, PfmFile &file) {
     file.resize(_resize[0], _resize[1]);
   }
 
-  if (_got_reverse) {
-    file.reverse_rows();
+  if (_rotate != 0) {
+    int r = (_rotate / 90) % 4;
+    if (r < 0) {
+      r += 4;
+    }
+    switch (r) {
+    case 0:
+      break;
+    case 1:
+      // Rotate 90 degrees ccw.
+      file.flip(true, false, true);
+      break;
+    case 2:
+      // Rotate 180 degrees.
+      file.flip(true, true, false);
+      break;
+    case 3:
+      // Rotate 90 degrees cw.
+      file.flip(false, true, true);
+      break;
+    default:
+      nassertr(false, false);
+    }
+  }
+
+  if (_got_mirror_x) {
+    file.flip(true, false, false);
+  }
+
+  if (_got_mirror_y) {
+    file.flip(false, true, false);
   }
 
   if (_got_transform) {
@@ -149,7 +195,7 @@ process_pfm(const Filename &input_filename, PfmFile &file) {
   }
 
   if (_got_vis_filename) {
-    NodePath mesh = file.generate_vis_mesh(true);
+    NodePath mesh = file.generate_vis_mesh(PfmFile::MF_both);
     if (_got_vistex_filename) {
       PT(Texture) tex = TexturePool::load_texture(_vistex_filename);
       if (tex == NULL) {
@@ -255,16 +301,16 @@ handle_args(ProgramBase::Args &args) {
 //     Function: PfmTrans::dispatch_scale
 //       Access: Protected, Static
 //  Description: Handles -TS, which specifies a scale transform.  Var
-//               is an LMatrix4f.
+//               is an LMatrix4.
 ////////////////////////////////////////////////////////////////////
 bool PfmTrans::
 dispatch_scale(const string &opt, const string &arg, void *var) {
-  LMatrix4f *transform = (LMatrix4f *)var;
+  LMatrix4 *transform = (LMatrix4 *)var;
 
   vector_string words;
   tokenize(arg, words, ",");
 
-  float sx, sy, sz;
+  PN_stdfloat sx, sy, sz;
 
   bool okflag = false;
   if (words.size() == 3) {
@@ -285,7 +331,7 @@ dispatch_scale(const string &opt, const string &arg, void *var) {
     return false;
   }
 
-  *transform = (*transform) * LMatrix4f::scale_mat(sx, sy, sz);
+  *transform = (*transform) * LMatrix4::scale_mat(sx, sy, sz);
 
   return true;
 }
@@ -294,7 +340,7 @@ dispatch_scale(const string &opt, const string &arg, void *var) {
 //     Function: PfmTrans::dispatch_rotate_xyz
 //       Access: Protected, Static
 //  Description: Handles -TR, which specifies a rotate transform about
-//               the three cardinal axes.  Var is an LMatrix4f.
+//               the three cardinal axes.  Var is an LMatrix4.
 ////////////////////////////////////////////////////////////////////
 bool PfmTrans::
 dispatch_rotate_xyz(ProgramBase *self, const string &opt, const string &arg, void *var) {
@@ -306,16 +352,16 @@ dispatch_rotate_xyz(ProgramBase *self, const string &opt, const string &arg, voi
 //     Function: PfmTrans::ns_dispatch_rotate_xyz
 //       Access: Protected
 //  Description: Handles -TR, which specifies a rotate transform about
-//               the three cardinal axes.  Var is an LMatrix4f.
+//               the three cardinal axes.  Var is an LMatrix4.
 ////////////////////////////////////////////////////////////////////
 bool PfmTrans::
 ns_dispatch_rotate_xyz(const string &opt, const string &arg, void *var) {
-  LMatrix4f *transform = (LMatrix4f *)var;
+  LMatrix4 *transform = (LMatrix4 *)var;
 
   vector_string words;
   tokenize(arg, words, ",");
 
-  LVecBase3f xyz;
+  LVecBase3 xyz;
 
   bool okflag = false;
   if (words.size() == 3) {
@@ -331,10 +377,10 @@ ns_dispatch_rotate_xyz(const string &opt, const string &arg, void *var) {
     return false;
   }
 
-  LMatrix4f mat =
-    LMatrix4f::rotate_mat(xyz[0], LVector3f(1.0, 0.0, 0.0)) *
-    LMatrix4f::rotate_mat(xyz[1], LVector3f(0.0, 1.0, 0.0)) *
-    LMatrix4f::rotate_mat(xyz[2], LVector3f(0.0, 0.0, 1.0));
+  LMatrix4 mat =
+    LMatrix4::rotate_mat(xyz[0], LVector3(1.0, 0.0, 0.0)) *
+    LMatrix4::rotate_mat(xyz[1], LVector3(0.0, 1.0, 0.0)) *
+    LMatrix4::rotate_mat(xyz[2], LVector3(0.0, 0.0, 1.0));
 
   *transform = (*transform) * mat;
 
@@ -345,7 +391,7 @@ ns_dispatch_rotate_xyz(const string &opt, const string &arg, void *var) {
 //     Function: PfmTrans::dispatch_rotate_axis
 //       Access: Protected, Static
 //  Description: Handles -TA, which specifies a rotate transform about
-//               an arbitrary axis.  Var is an LMatrix4f.
+//               an arbitrary axis.  Var is an LMatrix4.
 ////////////////////////////////////////////////////////////////////
 bool PfmTrans::
 dispatch_rotate_axis(ProgramBase *self, const string &opt, const string &arg, void *var) {
@@ -357,17 +403,17 @@ dispatch_rotate_axis(ProgramBase *self, const string &opt, const string &arg, vo
 //     Function: PfmTrans::ns_dispatch_rotate_axis
 //       Access: Protected
 //  Description: Handles -TA, which specifies a rotate transform about
-//               an arbitrary axis.  Var is an LMatrix4f.
+//               an arbitrary axis.  Var is an LMatrix4.
 ////////////////////////////////////////////////////////////////////
 bool PfmTrans::
 ns_dispatch_rotate_axis(const string &opt, const string &arg, void *var) {
-  LMatrix4f *transform = (LMatrix4f *)var;
+  LMatrix4 *transform = (LMatrix4 *)var;
 
   vector_string words;
   tokenize(arg, words, ",");
 
-  float angle;
-  LVecBase3f axis;
+  PN_stdfloat angle;
+  LVecBase3 axis;
 
   bool okflag = false;
   if (words.size() == 4) {
@@ -384,7 +430,7 @@ ns_dispatch_rotate_axis(const string &opt, const string &arg, void *var) {
     return false;
   }
 
-  *transform = (*transform) * LMatrix4f::rotate_mat(angle, axis);
+  *transform = (*transform) * LMatrix4::rotate_mat(angle, axis);
 
   return true;
 }
@@ -393,16 +439,16 @@ ns_dispatch_rotate_axis(const string &opt, const string &arg, void *var) {
 //     Function: PfmTrans::dispatch_translate
 //       Access: Protected, Static
 //  Description: Handles -TT, which specifies a translate transform.
-//               Var is an LMatrix4f.
+//               Var is an LMatrix4.
 ////////////////////////////////////////////////////////////////////
 bool PfmTrans::
 dispatch_translate(const string &opt, const string &arg, void *var) {
-  LMatrix4f *transform = (LMatrix4f *)var;
+  LMatrix4 *transform = (LMatrix4 *)var;
 
   vector_string words;
   tokenize(arg, words, ",");
 
-  LVector3f trans;
+  LVector3 trans;
 
   bool okflag = false;
   if (words.size() == 3) {
@@ -418,7 +464,7 @@ dispatch_translate(const string &opt, const string &arg, void *var) {
     return false;
   }
 
-  *transform = (*transform) * LMatrix4f::translate_mat(trans);
+  *transform = (*transform) * LMatrix4::translate_mat(trans);
 
   return true;
 }

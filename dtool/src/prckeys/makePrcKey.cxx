@@ -16,6 +16,8 @@
 #include "prcKeyRegistry.h"
 #include "filename.h"
 #include "pvector.h"
+#include "panda_getopt.h"
+#include "preprocess_argv.h"
 #include <stdio.h>
 
 // Pick up the public key definitions.
@@ -28,14 +30,6 @@
 #include "openssl/pem.h"
 #include "openssl/rand.h"
 #include "openssl/bio.h"
-
-#ifndef HAVE_GETOPT
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
 
 class KeyNumber {
 public:
@@ -324,7 +318,7 @@ usage() {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
   extern char *optarg;
   extern int optind;
   const char *optstr = "a:b:p:h";
@@ -336,6 +330,7 @@ main(int argc, char *argv[]) {
   string pass_phrase;
   bool got_pass_phrase = false;
 
+  preprocess_argv(argc, argv);
   int flag = getopt(argc, argv, optstr);
 
   while (flag != EOF) {

@@ -60,12 +60,50 @@ get_stride() const {
 //     Function: GeomVertexArrayFormat::set_stride
 //       Access: Published
 //  Description: Changes the total number of bytes reserved in the
-//               array for each vertex.
+//               array for each vertex.  You may not reduce this below
+//               get_total_bytes(), but you may increase it
+//               arbitrarily.
 ////////////////////////////////////////////////////////////////////
 INLINE void GeomVertexArrayFormat::
 set_stride(int stride) {
   nassertv(!_is_registered);
+  nassertv(_stride >= _total_bytes);
   _stride = stride;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexArrayFormat::get_pad_to
+//       Access: Published
+//  Description: Returns the byte divisor to which the data record
+//               must be padded to meet hardware limitations.  For
+//               instance, if this is 4, the stride will be
+//               automatically rounded up to the next multiple of 4
+//               bytes.  This value is automatically increased as
+//               needed to ensure the individual numeric components in
+//               the array are word-aligned.
+////////////////////////////////////////////////////////////////////
+INLINE int GeomVertexArrayFormat::
+get_pad_to() const {
+  return _pad_to;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexArrayFormat::set_pad_to
+//       Access: Published
+//  Description: Explicitly sets the byte divisor to which the data
+//               record must be padded to meet hardware limitations.
+//               See get_pad_to().  Normally it is not necessary to
+//               call this unless you have some specific requirements
+//               for row-to-row data alignment.  Note that this value
+//               may be automatically increased at each subsequent
+//               call to add_column().
+////////////////////////////////////////////////////////////////////
+INLINE void GeomVertexArrayFormat::
+set_pad_to(int pad_to) {
+  nassertv(pad_to >= 1);
+
+  _pad_to = pad_to;
+  _stride = ((_stride + _pad_to - 1) / _pad_to) * _pad_to;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,20 +116,6 @@ set_stride(int stride) {
 INLINE int GeomVertexArrayFormat::
 get_total_bytes() const {
   return _total_bytes;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GeomVertexArrayFormat::get_pad_to
-//       Access: Published
-//  Description: Returns the byte divisor to which the data record
-//               must be padded to meet hardware limitations.  For
-//               instance, if this is 4, the stride will be
-//               automatically rounded up to the next multiple of 4
-//               bytes.
-////////////////////////////////////////////////////////////////////
-INLINE int GeomVertexArrayFormat::
-get_pad_to() const {
-  return _pad_to;
 }
 
 ////////////////////////////////////////////////////////////////////

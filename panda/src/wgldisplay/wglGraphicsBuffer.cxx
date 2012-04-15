@@ -76,6 +76,11 @@ begin_frame(FrameMode mode, Thread *current_thread) {
   wglGraphicsStateGuardian *wglgsg;
   DCAST_INTO_R(wglgsg, _gsg, false);
 
+  HGLRC context = wglgsg->get_context(_pbuffer_dc);
+  if (context == 0) {
+    return false;
+  }
+
   if (_fb_properties.is_single_buffered()) {
     wglgsg->_wglReleaseTexImageARB(_pbuffer, WGL_FRONT_LEFT_ARB);
   } else {
@@ -87,15 +92,19 @@ begin_frame(FrameMode mode, Thread *current_thread) {
     return false;
   }
   
-  wglGraphicsPipe::wgl_make_current(_pbuffer_dc, wglgsg->get_context(_pbuffer_dc),
+  wglGraphicsPipe::wgl_make_current(_pbuffer_dc, context,
                                     &_make_current_pcollector);
   
   if (mode == FM_render) {
-    for (int i=0; i<count_textures(); i++) {
-      if (get_texture_plane(i) != RTP_color) {
-        if (get_rtm_mode(i) == RTM_bind_or_copy) {
-          _textures[i]._rtm_mode = RTM_copy_texture;
-        }
+    CDLockedReader cdata(_cycler);
+    for (size_t i = 0; i != cdata->_textures.size(); ++i) {
+      const RenderTexture &rt = cdata->_textures[i];
+      RenderTextureMode rtm_mode = rt._rtm_mode;
+      RenderTexturePlane plane = rt._plane;
+      if (rtm_mode == RTM_bind_or_copy && plane != RTP_color) {
+        CDWriter cdataw(_cycler, cdata, false);
+        nassertr(cdata->_textures.size() == cdataw->_textures.size(), false);
+        cdataw->_textures[i]._rtm_mode = RTM_copy_texture;
       }
     }
     clear_cube_map_selection();
@@ -126,9 +135,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
   
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
@@ -148,15 +154,19 @@ bind_texture_to_pbuffer() {
   // the framebuffer.  All others must be marked RTM_copy_to_texture.
 
   int tex_index = -1;
-  for (int i=0; i<count_textures(); i++) {
-    if (get_texture_plane(i) == RTP_color) {
+  CDLockedReader cdata(_cycler);
+  for (size_t i = 0; i != cdata->_textures.size(); ++i) {
+    const RenderTexture &rt = cdata->_textures[i];
+    RenderTexturePlane plane = rt._plane;
+    if (plane == RTP_color) {
       tex_index = i;
       break;
     }
   }
 
   if (tex_index >= 0) {
-    Texture *tex = get_texture(tex_index);
+    const RenderTexture &rt = cdata->_textures[tex_index];
+    Texture *tex = rt._texture;
     if ((_pbuffer_bound != 0)&&(_pbuffer_bound != tex)) {
       _pbuffer_bound->release(wglgsg->get_prepared_objects());
       _pbuffer_bound = 0;
@@ -169,12 +179,14 @@ bind_texture_to_pbuffer() {
         tex->set_format(Texture::F_rgb);
       }
     }
-    TextureContext *tc = tex->prepare_now(_gsg->get_prepared_objects(), _gsg);
+    TextureContext *tc = tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg);
     nassertv(tc != (TextureContext *)NULL);
     CLP(TextureContext) *gtc = DCAST(CLP(TextureContext), tc);
     GLenum target = wglgsg->get_texture_target(tex->get_texture_type());
     if (target == GL_NONE) {
-      _textures[tex_index]._rtm_mode = RTM_copy_texture;
+      CDWriter cdataw(_cycler, cdata, false);
+      nassertv(cdata->_textures.size() == cdataw->_textures.size());
+      cdataw->_textures[tex_index]._rtm_mode = RTM_copy_texture;
       return;
     }
     GLP(BindTexture)(target, gtc->_index);
@@ -247,6 +259,25 @@ process_events() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: wglGraphicsBuffer::get_supports_render_texture
+//       Access: Published, Virtual
+//  Description: Returns true if this particular GraphicsOutput can
+//               render directly into a texture, or false if it must
+//               always copy-to-texture at the end of each frame to
+//               achieve this effect.
+////////////////////////////////////////////////////////////////////
+bool wglGraphicsBuffer::
+get_supports_render_texture() const {
+  if (_gsg == (GraphicsStateGuardian *)NULL) {
+    return false;
+  }
+
+  wglGraphicsStateGuardian *wglgsg;
+  DCAST_INTO_R(wglgsg, _gsg, false);
+  return wglgsg->get_supports_wgl_render_texture();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: wglGraphicsBuffer::close_buffer
 //       Access: Protected, Virtual
 //  Description: Closes the buffer right now.  Called from the window
@@ -259,7 +290,6 @@ close_buffer() {
     DCAST_INTO_V(wglgsg, _gsg);
 
     _gsg.clear();
-    _active = false;
   }
   
   release_pbuffer();
@@ -311,14 +341,21 @@ open_buffer() {
   HDC twindow_dc = wglgsg->get_twindow_dc();
   if (twindow_dc == 0) {
     // If we couldn't make a window, we can't get a GL context.
+    _gsg = NULL;
     return false;
   }
-  wglGraphicsPipe::wgl_make_current(twindow_dc, wglgsg->get_context(twindow_dc),
+  HGLRC context = wglgsg->get_context(twindow_dc);
+  if (context == 0) {
+    _gsg = NULL;
+    return false;
+  }
+  wglGraphicsPipe::wgl_make_current(twindow_dc, context,
                                     &_make_current_pcollector);
   wglgsg->reset_if_new();
   wglgsg->report_my_gl_errors();
   if (!wglgsg->get_fb_properties().verify_hardware_software
       (_fb_properties,wglgsg->get_gl_renderer())) {
+    _gsg = NULL;
     return false;
   }
   _fb_properties = wglgsg->get_fb_properties();
@@ -329,6 +366,7 @@ open_buffer() {
 
   if (!rebuild_bitplanes()) {
     wglGraphicsPipe::wgl_make_current(0, 0, &_make_current_pcollector);
+    _gsg = NULL;
     return false;
   }
   
@@ -494,7 +532,11 @@ rebuild_bitplanes() {
     return false;
   }
   
-  wglGraphicsPipe::wgl_make_current(twindow_dc, wglgsg->get_context(twindow_dc),
+  HGLRC context = wglgsg->get_context(twindow_dc);
+  if (context == 0) {
+    return false;
+  }
+  wglGraphicsPipe::wgl_make_current(twindow_dc, context,
                                     &_make_current_pcollector);
 
   _pbuffer = wglgsg->_wglCreatePbufferARB(twindow_dc, pfnum, 

@@ -90,7 +90,7 @@ struct TimeCollectorProperties {
   bool is_active;
   const char *name;
   ColorDef color;
-  float suggested_scale;
+  double suggested_scale;
 };
 
 struct LevelCollectorProperties {
@@ -98,8 +98,8 @@ struct LevelCollectorProperties {
   const char *name;
   ColorDef color;
   const char *units;
-  float suggested_scale;
-  float inv_factor;
+  double suggested_scale;
+  double inv_factor;
 };
 
 static TimeCollectorProperties time_properties[] = {

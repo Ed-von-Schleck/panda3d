@@ -15,6 +15,7 @@
 #include "p3dMultifileReader.h"
 #include "p3dPackage.h"
 #include "mkdir_complete.h"
+#include "wstring_encode.h"
 
 #include <time.h>
 
@@ -108,7 +109,15 @@ extract_all(const string &to_dir, P3DPackage *package,
       return false;
     }
 
-    ofstream out(output_pathname.c_str(), ios::out | ios::binary);
+    ofstream out;
+#ifdef _WIN32
+    wstring output_pathname_w;
+    if (string_to_wstring(output_pathname_w, output_pathname)) {
+      out.open(output_pathname_w.c_str(), ios::out | ios::binary);
+    }
+#else // _WIN32
+    out.open(output_pathname.c_str(), ios::out | ios::binary);
+#endif  // _WIN32
     if (!out) {
       nout << "Unable to write to " << output_pathname << "\n";
       return false;
@@ -217,7 +226,14 @@ read_header(const string &pathname) {
   _cert_special.clear();
   _signatures.clear();
 
+#ifdef _WIN32
+  wstring pathname_w;
+  if (string_to_wstring(pathname_w, pathname)) {
+    _in.open(pathname_w.c_str(), ios::in | ios::binary);
+  }
+#else // _WIN32
   _in.open(pathname.c_str(), ios::in | ios::binary);
+#endif  // _WIN32
   if (!_in) {
     nout << "Couldn't open " << pathname << "\n";
     return false;
@@ -332,8 +348,8 @@ read_index() {
       // Otherwise, it's a regular file.
       _last_data_byte = max(_last_data_byte, s.get_last_byte_pos());
 
-      if (flags == 0) {
-        // We can only support subfiles with no particular flags set.
+      if ((flags & SF_ignore) == 0) {
+        // We can only support subfiles with none of SF_ignore set.
         _subfiles.push_back(s);
       }
     }
@@ -359,12 +375,12 @@ bool P3DMultifileReader::
 extract_subfile(ostream &out, const Subfile &s) {
   _in.seekg(s._data_start + _read_offset);
 
-  static const size_t buffer_size = 4096;
+  static const streamsize buffer_size = 4096;
   char buffer[buffer_size];
   
-  size_t remaining_data = s._data_length;
+  streamsize remaining_data = s._data_length;
   _in.read(buffer, min(buffer_size, remaining_data));
-  size_t count = _in.gcount();
+  streamsize count = _in.gcount();
   while (count != 0) {
     remaining_data -= count;
     out.write(buffer, count);
@@ -469,13 +485,13 @@ check_signatures() {
       // _last_data_byte.
       _in.seekg(_read_offset);
       streampos bytes_remaining = (streampos)_last_data_byte;
-      static const size_t buffer_size = 4096;
+      static const streamsize buffer_size = 4096;
       char buffer[buffer_size];
       _in.read(buffer, min((streampos)buffer_size, bytes_remaining));
-      size_t count = _in.gcount();
+      streamsize count = _in.gcount();
       while (count != 0) {
         assert(count <= buffer_size);
-        EVP_VerifyUpdate(md_ctx, buffer, count);
+        EVP_VerifyUpdate(md_ctx, buffer, (size_t)count);
         bytes_remaining -= count;
         _in.read(buffer, min((streampos)buffer_size, bytes_remaining));
         count = _in.gcount();

@@ -33,6 +33,8 @@
     handleStream.cxx handleStream.h handleStream.I \
     handleStreamBuf.cxx handleStreamBuf.h handleStreamBuf.I \
     mkdir_complete.cxx mkdir_complete.h \
+    parse_color.cxx parse_color.h \
+    wstring_encode.cxx wstring_encode.h \
     p3d_lock.h p3d_plugin.h \
     p3d_plugin_config.h \
     p3d_plugin_common.h \
@@ -67,6 +69,7 @@
     p3dWinSplashWindow.h p3dWinSplashWindow.I \
     p3dX11SplashWindow.h p3dX11SplashWindow.I \
     p3dWindowParams.h p3dWindowParams.I \
+    plugin_get_x11.h \
     run_p3dpython.h
 
 #define COREAPI_INCLUDED_SOURCES \
@@ -117,7 +120,7 @@
   #define LINK_FORCE_STATIC_RELEASE_C_RUNTIME $[P3D_PLUGIN_MT]
 
   #define OTHER_LIBS \
-    p3tinyxml$[_MT] $[if $[OSX_PLATFORM],subprocbuffer]
+    p3tinyxml$[_MT] $[if $[OSX_PLATFORM],p3subprocbuffer]
 
   #define COMBINED_SOURCES p3d_plugin_composite1.cxx
   #define SOURCES $[COREAPI_SOURCES]
@@ -142,7 +145,7 @@
   #define BUILDING_DLL BUILDING_P3D_PLUGIN
 
   #define OTHER_LIBS \
-    p3tinyxml $[if $[OSX_PLATFORM],subprocbuffer]
+    p3tinyxml $[if $[OSX_PLATFORM],p3subprocbuffer]
 
   #define COMBINED_SOURCES p3d_plugin_composite1.cxx
   #define SOURCES $[COREAPI_SOURCES]
@@ -170,6 +173,11 @@
 #endif
   #define TARGET p3dcert
 
+  #define SOURCES $[SOURCES] \
+    is_pathsep.h is_pathsep.I \
+    wstring_encode.cxx wstring_encode.h \
+    mkdir_complete.cxx mkdir_complete.h
+
   #define OSX_SYS_FRAMEWORKS Carbon
 
 #end bin_target
@@ -181,7 +189,11 @@
     find_root_dir.cxx find_root_dir.h \
     $[if $[IS_OSX],find_root_dir_assist.mm] \
     is_pathsep.h is_pathsep.I \
-    mkdir_complete.cxx mkdir_complete.h
+    mkdir_complete.cxx mkdir_complete.h \
+    get_twirl_data.cxx get_twirl_data.h \
+    parse_color.cxx parse_color.h \
+    wstring_encode.cxx wstring_encode.h
+
 
 #begin static_lib_target
 //
@@ -230,15 +242,15 @@
   #define TARGET p3dpython
 
   #define OTHER_LIBS \
-    dtoolutil:c dtoolbase:c dtool:m \
-    interrogatedb:c dconfig:c dtoolconfig:m \
-    express:c pandaexpress:m dxml:c \
-    pgraph:c pgraphnodes:c cull:c gsgbase:c gobj:c \
-    mathutil:c lerp:c downloader:c pnmimage:c \
-    prc:c pstatclient:c pandabase:c linmath:c putil:c \
-    pipeline:c event:c display:c panda:m \
-    $[if $[WANT_NATIVE_NET],nativenet:c] \
-    $[if $[HAVE_NET],net:c] \
+    p3dtoolutil:c p3dtoolbase:c p3dtool:m \
+    p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m p3dxml:c \
+    p3pgraph:c p3pgraphnodes:c p3cull:c p3gsgbase:c p3gobj:c \
+    p3mathutil:c p3downloader:c p3pnmimage:c \
+    p3prc:c p3pstatclient:c p3pandabase:c p3linmath:c p3putil:c \
+    p3pipeline:c p3event:c p3display:c panda:m \
+    $[if $[WANT_NATIVE_NET],p3nativenet:c] \
+    $[if $[HAVE_NET],p3net:c] \
     p3tinyxml
 
   #define SOURCES \
@@ -280,15 +292,15 @@
   #define EXTRA_CDEFS NON_CONSOLE
 
   #define OTHER_LIBS \
-    dtoolutil:c dtoolbase:c dtool:m \
-    interrogatedb:c dconfig:c dtoolconfig:m \
-    express:c pandaexpress:m dxml:c \
-    pgraph:c pgraphnodes:c cull:c gsgbase:c gobj:c \
-    mathutil:c lerp:c downloader:c pnmimage:c \
-    prc:c pstatclient:c pandabase:c linmath:c putil:c \
-    pipeline:c event:c display:c panda:m \
-    $[if $[WANT_NATIVE_NET],nativenet:c] \
-    $[if $[HAVE_NET],net:c] \
+    p3dtoolutil:c p3dtoolbase:c p3dtool:m \
+    p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m p3dxml:c \
+    p3pgraph:c p3pgraphnodes:c p3cull:c p3gsgbase:c p3gobj:c \
+    p3mathutil:c p3downloader:c p3pnmimage:c \
+    p3prc:c p3pstatclient:c p3pandabase:c p3linmath:c p3putil:c \
+    p3pipeline:c p3event:c p3display:c panda:m \
+    $[if $[WANT_NATIVE_NET],p3nativenet:c] \
+    $[if $[HAVE_NET],p3net:c] \
     p3tinyxml
 
   #define SOURCES \
@@ -326,15 +338,15 @@
   #define LIB_PREFIX
 
   #define OTHER_LIBS \
-    dtoolutil:c dtoolbase:c dtool:m \
-    interrogatedb:c dconfig:c dtoolconfig:m \
-    express:c pandaexpress:m dxml:c \
-    pgraph:c pgraphnodes:c cull:c gsgbase:c gobj:c \
-    mathutil:c lerp:c downloader:c pnmimage:c \
-    prc:c pstatclient:c pandabase:c linmath:c putil:c \
-    pipeline:c event:c display:c panda:m \
-    $[if $[WANT_NATIVE_NET],nativenet:c] \
-    $[if $[HAVE_NET],net:c] \
+    p3dtoolutil:c p3dtoolbase:c p3dtool:m \
+    p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m p3dxml:c \
+    p3pgraph:c p3pgraphnodes:c p3cull:c p3gsgbase:c p3gobj:c \
+    p3mathutil:c p3downloader:c p3pnmimage:c \
+    p3prc:c p3pstatclient:c p3pandabase:c p3linmath:c p3putil:c \
+    p3pipeline:c p3event:c p3display:c panda:m \
+    $[if $[WANT_NATIVE_NET],p3nativenet:c] \
+    $[if $[HAVE_NET],p3net:c] \
     p3tinyxml
 
   #define SOURCES \

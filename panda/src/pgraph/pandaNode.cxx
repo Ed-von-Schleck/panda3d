@@ -38,7 +38,7 @@ TypeHandle PandaNode::BamReaderAuxDataDown::_type_handle;
 
 PandaNode::SceneRootFunc *PandaNode::_scene_root_func;
 
-PandaNodeChain PandaNode::_dirty_prev_transforms;
+PandaNodeChain PandaNode::_dirty_prev_transforms("_dirty_prev_transforms");
 DrawMask PandaNode::_overall_bit = DrawMask::bit(31);
 
 PStatCollector PandaNode::_reset_prev_pcollector("App:Collisions:Reset");
@@ -108,7 +108,12 @@ PandaNode::
     pgraph_cat.debug()
       << "Destructing " << (void *)this << ", " << get_name() << "\n";
   }
-  clear_dirty_prev_transform();
+
+  if (_dirty_prev_transform) {
+    // Need to have this held before we grab any other locks.
+    LightMutexHolder holder(_dirty_prev_transforms._lock);
+    do_clear_dirty_prev_transform();
+  }
 
   // We shouldn't have any parents left by the time we destruct, or
   // there's a refcount fault somewhere.
@@ -155,6 +160,9 @@ PandaNode(const PandaNode &copy) :
   _unexpected_change_flags = 0;
 #endif // !NDEBUG
 
+  // Need to have this held before we grab any other locks.
+  LightMutexHolder holder(_dirty_prev_transforms._lock);
+
   // Copy the other node's state.
   {
     CDReader copy_cdata(copy._cycler);
@@ -163,7 +171,7 @@ PandaNode(const PandaNode &copy) :
     cdata->_transform = copy_cdata->_transform;
     cdata->_prev_transform = copy_cdata->_prev_transform;
     if (cdata->_transform != cdata->_prev_transform) {
-      set_dirty_prev_transform();
+      do_set_dirty_prev_transform();
     }
 
     cdata->_effects = copy_cdata->_effects;
@@ -356,7 +364,7 @@ void PandaNode::
 apply_attribs_to_vertices(const AccumulatedAttribs &attribs, int attrib_types,
                           GeomTransformer &transformer) {
   if ((attrib_types & SceneGraphReducer::TT_transform) != 0) {
-    const LMatrix4f &mat = attribs._transform->get_mat();
+    const LMatrix4 &mat = attribs._transform->get_mat();
     xform(mat);
 
     Thread *current_thread = Thread::get_current_thread();
@@ -378,7 +386,7 @@ apply_attribs_to_vertices(const AccumulatedAttribs &attribs, int attrib_types,
 //               most kinds of PandaNodes, this does nothing.
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
-xform(const LMatrix4f &) {
+xform(const LMatrix4 &) {
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -437,7 +445,7 @@ combine_with(PandaNode *other) {
 //               node's transform.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) PandaNode::
-calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point, bool &found_any,
+calc_tight_bounds(LPoint3 &min_point, LPoint3 &max_point, bool &found_any,
                   const TransformState *transform, Thread *current_thread) const {
   CPT(TransformState) next_transform = transform->compose(get_transform());
 
@@ -646,7 +654,6 @@ __copy__() const {
   int num_children = children.get_num_children();
 
   for (int i = 0; i < num_children; ++i) {
-    PandaNode *child = children.get_child(i);
     node_dupe->add_child(children.get_child(i), children.get_child_sort(i));
   }
 
@@ -1337,6 +1344,9 @@ set_effects(const RenderEffects *effects, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
 set_transform(const TransformState *transform, Thread *current_thread) {
+  // Need to have this held before we grab any other locks.
+  LightMutexHolder holder(_dirty_prev_transforms._lock);
+
   // Apply this operation to the current stage as well as to all
   // upstream stages.
   bool any_changed = false;
@@ -1349,7 +1359,7 @@ set_transform(const TransformState *transform, Thread *current_thread) {
 
       if (pipeline_stage == 0) {
         if (cdata->_transform != cdata->_prev_transform) {
-          set_dirty_prev_transform();
+          do_set_dirty_prev_transform();
         }
       }
     }
@@ -1373,6 +1383,9 @@ set_transform(const TransformState *transform, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
 set_prev_transform(const TransformState *transform, Thread *current_thread) {
+  // Need to have this held before we grab any other locks.
+  LightMutexHolder holder(_dirty_prev_transforms._lock);
+
   // Apply this operation to the current stage as well as to all
   // upstream stages.
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
@@ -1380,9 +1393,9 @@ set_prev_transform(const TransformState *transform, Thread *current_thread) {
     cdata->_prev_transform = transform;
     if (pipeline_stage == 0) {
       if (cdata->_transform != cdata->_prev_transform) {
-        set_dirty_prev_transform();
+        do_set_dirty_prev_transform();
       } else {
-        clear_dirty_prev_transform();
+        do_clear_dirty_prev_transform();
       }
     }
   }
@@ -1400,9 +1413,12 @@ set_prev_transform(const TransformState *transform, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
 reset_prev_transform(Thread *current_thread) {
+  // Need to have this held before we grab any other locks.
+  LightMutexHolder holder(_dirty_prev_transforms._lock);
+  do_clear_dirty_prev_transform();
+
   // Apply this operation to the current stage as well as to all
   // upstream stages.
-  clear_dirty_prev_transform();
 
   OPEN_ITERATE_CURRENT_AND_UPSTREAM(_cycler, current_thread) {
     CDStageWriter cdata(_cycler, pipeline_stage, current_thread);
@@ -1801,6 +1817,9 @@ copy_all_properties(PandaNode *other) {
     return;
   }
 
+  // Need to have this held before we grab any other locks.
+  LightMutexHolder holder(_dirty_prev_transforms._lock);
+
   bool any_transform_changed = false;
   bool any_state_changed = false;
   bool any_draw_mask_changed = false;
@@ -1872,7 +1891,7 @@ copy_all_properties(PandaNode *other) {
 
     if (pipeline_stage == 0) {
       if (cdataw->_transform != cdataw->_prev_transform) {
-        set_dirty_prev_transform();
+        do_set_dirty_prev_transform();
       }
     }
   }
@@ -2262,15 +2281,15 @@ get_off_clip_planes(Thread *current_thread) const {
 //               but this may take some of the overhead away from that
 //               process.
 //
-//               In particular, this will ensure that textures within
-//               the scene are loaded in texture memory, and display
-//               lists are built up from static geometry.
+//               In particular, this will ensure that textures and
+//               vertex buffers within the scene are loaded into
+//               graphics memory.
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
-prepare_scene(GraphicsStateGuardianBase *gsg, const RenderState *net_state) {
+prepare_scene(GraphicsStateGuardianBase *gsg, const RenderState *node_state) {
+  GeomTransformer transformer;
   Thread *current_thread = Thread::get_current_thread();
-  PreparedGraphicsObjects *prepared_objects = gsg->get_prepared_objects();
-  r_prepare_scene(net_state, prepared_objects, current_thread);
+  r_prepare_scene(gsg, node_state, transformer, current_thread);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2639,6 +2658,21 @@ is_geom_node() const {
 ////////////////////////////////////////////////////////////////////
 bool PandaNode::
 is_lod_node() const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaNode::is_collision_node
+//       Access: Published, Virtual
+//  Description: A simple downcast check.  Returns true if this kind
+//               of node happens to inherit from CollisionNode, false
+//               otherwise.
+//
+//               This is provided as a a faster alternative to calling
+//               is_of_type(CollisionNode::get_class_type()).
+////////////////////////////////////////////////////////////////////
+bool PandaNode::
+is_collision_node() const {
   return false;
 }
 
@@ -3047,24 +3081,23 @@ r_copy_children(const PandaNode *from, PandaNode::InstanceMap &inst_map,
 //               NodePath::prepare_scene() instead.
 ////////////////////////////////////////////////////////////////////
 void PandaNode::
-r_prepare_scene(const RenderState *state,
-                PreparedGraphicsObjects *prepared_objects,
-                Thread *current_thread) {
+r_prepare_scene(GraphicsStateGuardianBase *gsg, const RenderState *node_state,
+                GeomTransformer &transformer, Thread *current_thread) {
   Children children = get_children(current_thread);
   // We must call get_num_children() each time through the loop, in
   // case we're running SIMPLE_THREADS and we get interrupted.
   int i;
   for (i = 0; i < children.get_num_children(); i++) {
     PandaNode *child = children.get_child(i);
-    CPT(RenderState) child_state = state->compose(child->get_state());
-    child->r_prepare_scene(child_state, prepared_objects, current_thread);
+    CPT(RenderState) child_state = node_state->compose(child->get_state());
+    child->r_prepare_scene(gsg, child_state, transformer, current_thread);
   }
 
   Stashed stashed = get_stashed(current_thread);
   for (i = 0; i < stashed.get_num_stashed(); i++) {
     PandaNode *child = stashed.get_stashed(i);
-    CPT(RenderState) child_state = state->compose(child->get_state());
-    child->r_prepare_scene(child_state, prepared_objects, current_thread);
+    CPT(RenderState) child_state = node_state->compose(child->get_state());
+    child->r_prepare_scene(gsg, child_state, transformer, current_thread);
   }
 }
 
@@ -4395,6 +4428,7 @@ CData(const PandaNode::CData &copy) :
 
   _effects(copy._effects),
   _tag_data(copy._tag_data),
+  // _python_tag_data appears below.
   _draw_control_mask(copy._draw_control_mask),
   _draw_show_mask(copy._draw_show_mask),
   _into_collide_mask(copy._into_collide_mask),
@@ -4423,7 +4457,7 @@ CData(const PandaNode::CData &copy) :
 #ifdef HAVE_PYTHON
   // Copy and increment all of the Python objects held by the other
   // node.
-  _python_tag_data = _python_tag_data;
+  _python_tag_data = copy._python_tag_data;
   inc_py_refs();
 #endif  // HAVE_PYTHON
 }
@@ -4635,12 +4669,23 @@ fillin(DatagramIterator &scan, BamReader *manager) {
 ////////////////////////////////////////////////////////////////////
 void PandaNode::CData::
 inc_py_refs() {
-  PythonTagData::const_iterator ti;
-  for (ti = _python_tag_data.begin();
-       ti != _python_tag_data.end();
-       ++ti) {
-    PyObject *value = (*ti).second;
-    Py_XINCREF(value);
+  if (!_python_tag_data.empty()) {
+#if defined(HAVE_THREADS) && !defined(SIMPLE_THREADS)
+    // This might happen at any time, so be sure the Python state is
+    // ready for it.
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+#endif
+    PythonTagData::const_iterator ti;
+    for (ti = _python_tag_data.begin();
+         ti != _python_tag_data.end();
+         ++ti) {
+      PyObject *value = (*ti).second;
+      Py_XINCREF(value);
+    }
+#if defined(HAVE_THREADS) && !defined(SIMPLE_THREADS)
+    PyGILState_Release(gstate);
+#endif
   }
 }
 #endif  // HAVE_PYTHON
@@ -4654,12 +4699,25 @@ inc_py_refs() {
 ////////////////////////////////////////////////////////////////////
 void PandaNode::CData::
 dec_py_refs() {
-  PythonTagData::const_iterator ti;
-  for (ti = _python_tag_data.begin();
-       ti != _python_tag_data.end();
-       ++ti) {
-    PyObject *value = (*ti).second;
-    Py_XDECREF(value);
+  if (!_python_tag_data.empty()) {
+#if defined(HAVE_THREADS) && !defined(SIMPLE_THREADS)
+    // This might happen at any time, so be sure the Python state is
+    // ready for it.
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+#endif
+    
+    PythonTagData::const_iterator ti;
+    for (ti = _python_tag_data.begin();
+         ti != _python_tag_data.end();
+         ++ti) {
+      PyObject *value = (*ti).second;
+      Py_XDECREF(value);
+    }
+    
+#if defined(HAVE_THREADS) && !defined(SIMPLE_THREADS)
+    PyGILState_Release(gstate);
+#endif
   }
 }
 #endif  // HAVE_PYTHON

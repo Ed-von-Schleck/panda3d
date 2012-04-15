@@ -88,18 +88,23 @@ process_pfm(const Filename &input_filename, PfmFile &file) {
         << "Unable to open " << bba_filename << "\n";
       return false;
     }
+
+    LPoint3 points[8];
+    for (int i = 0; i < 8; ++i) {
+      points[i] = bounds->get_point(i);
+    }
+    LPlane plane(points[0], points[1], points[2]);
+    LVector3 normal = plane.get_normal();
+
+    static const PN_stdfloat scale = 20.0f;
+    normal *= scale;
+    points[0] += normal;
+    points[1] += normal;
+    points[2] += normal;
+    points[3] += normal;
     
-    // This is the order expected by our existing bba system.
-    static const int ri = 0;
-    static const int reorder_points[][8] = {
-      { 0, 1, 2, 3, 4, 5, 6, 7 },  // unfiltered
-      { 7, 5, 1, 3, 6, 4, 0, 2 },  // front, floor
-      { 4, 6, 2, 0, 5, 7, 3, 1 },  // left
-      { 7, 5, 1, 3, 2, 0, 4, 6 },  // right
-    };
-    
-    for (int i = 0; i < bounds->get_num_points(); ++i) {
-      LPoint3f p = bounds->get_point(reorder_points[ri][i]);
+    for (int i = 0; i < 8; ++i) {
+      const LPoint3 &p = points[i];
       out << p[0] << "," << p[1] << "," << p[2] << "\n";
     }
   }

@@ -95,7 +95,6 @@ reset() {
 
   // Build _inv_state_mask as a mask of 1's where we don't care, and
   // 0's where we do care, about the state.
-  _inv_state_mask = RenderState::SlotMask::all_on();
   _inv_state_mask.clear_bit(ColorAttrib::get_class_slot());
   _inv_state_mask.clear_bit(ColorScaleAttrib::get_class_slot());
   _inv_state_mask.clear_bit(CullFaceAttrib::get_class_slot());
@@ -233,7 +232,7 @@ clear(DrawableRegion *clearable) {
   bool clear_color = false;
   int r, g, b, a;
   if (clearable->get_clear_color_active()) {
-    Colorf v = clearable->get_clear_color();
+    LColor v = clearable->get_clear_color();
     r = (int)(v[0] * 0xffff);
     g = (int)(v[1] * 0xffff);
     b = (int)(v[2] * 0xffff);
@@ -263,15 +262,14 @@ clear(DrawableRegion *clearable) {
 //               scissor region and viewport)
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-prepare_display_region(DisplayRegionPipelineReader *dr,
-                       Lens::StereoChannel stereo_channel) {
+prepare_display_region(DisplayRegionPipelineReader *dr) {
   nassertv(dr != (DisplayRegionPipelineReader *)NULL);
-  GraphicsStateGuardian::prepare_display_region(dr, stereo_channel);
+  GraphicsStateGuardian::prepare_display_region(dr);
 
   int xmin, ymin, xsize, ysize;
   dr->get_region_pixels_i(xmin, ymin, xsize, ysize);
 
-  float pixel_factor = _current_display_region->get_pixel_factor();
+  PN_stdfloat pixel_factor = _current_display_region->get_pixel_factor();
   if (pixel_factor != 1.0) {
     // Render into an aux buffer, and zoom it up into the main
     // frame buffer later.
@@ -334,14 +332,14 @@ calc_projection_mat(const Lens *lens) {
   // matrix, and store the conversion to our coordinate system of
   // choice in the modelview matrix.
 
-  LMatrix4f result =
-    LMatrix4f::convert_mat(CS_yup_right, _current_lens->get_coordinate_system()) *
+  LMatrix4 result =
+    LMatrix4::convert_mat(CS_yup_right, _current_lens->get_coordinate_system()) *
     lens->get_projection_mat(_current_stereo_channel);
 
   if (_scene_setup->get_inverted()) {
     // If the scene is supposed to be inverted, then invert the
     // projection matrix.
-    result *= LMatrix4f::scale_mat(1.0f, -1.0f, 1.0f);
+    result *= LMatrix4::scale_mat(1.0f, -1.0f, 1.0f);
   }
 
   return TransformState::make_mat(result);
@@ -441,7 +439,7 @@ end_scene() {
     // up to the appropriate size.
     int xmin, ymin, xsize, ysize;
     _current_display_region->get_region_pixels_i(xmin, ymin, xsize, ysize);
-    float pixel_factor = _current_display_region->get_pixel_factor();
+    PN_stdfloat pixel_factor = _current_display_region->get_pixel_factor();
 
     int fb_xsize = int(xsize * pixel_factor);
     int fb_ysize = int(ysize * pixel_factor);
@@ -571,7 +569,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
     /* test to accelerate computation */
     _c->matrix_model_projection_no_w_transform = 0;
-    float *m = &_c->matrix_model_projection.m[0][0];
+    PN_stdfloat *m = &_c->matrix_model_projection.m[0][0];
     if (m[12] == 0.0 && m[13] == 0.0 && m[14] == 0.0) {
       _c->matrix_model_projection_no_w_transform = 1;
     }
@@ -677,8 +675,8 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
       break;
     }
-    tcdata[si]._r1.set_row(_min_vertex);
-    tcdata[si]._r2.set_row(_min_vertex);
+    tcdata[si]._r1.set_row_unsafe(_min_vertex);
+    tcdata[si]._r2.set_row_unsafe(_min_vertex);
     if (!tcdata[si]._r1.has_column()) {
       texgen_func[si] = &texgen_null;
     }
@@ -687,13 +685,13 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
   bool needs_color = false;
   if (_vertex_colors_enabled) {
     rcolor = GeomVertexReader(data_reader, InternalName::get_color(), force);
-    rcolor.set_row(_min_vertex);
+    rcolor.set_row_unsafe(_min_vertex);
     needs_color = rcolor.has_column();
   }
 
   if (!needs_color) {
-    const Colorf &d = _scene_graph_color;
-    const Colorf &s = _current_color_scale;
+    const LColor &d = _scene_graph_color;
+    const LColor &s = _current_color_scale;
     _c->current_color.v[0] = d[0] * s[0];
     _c->current_color.v[1] = d[1] * s[1];
     _c->current_color.v[2] = d[2] * s[2];
@@ -703,12 +701,12 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
   bool needs_normal = false;
   if (_c->lighting_enabled) {
     rnormal = GeomVertexReader(data_reader, InternalName::get_normal(), force);
-    rnormal.set_row(_min_vertex);
+    rnormal.set_row_unsafe(_min_vertex);
     needs_normal = rnormal.has_column();
   }
 
   GeomVertexReader rvertex(data_reader, InternalName::get_vertex(), force); 
-  rvertex.set_row(_min_vertex);
+  rvertex.set_row_unsafe(_min_vertex);
 
   if (!rvertex.has_column()) {
     // Whoops, guess the vertex data isn't resident.
@@ -737,7 +735,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
   for (i = 0; i < num_used_vertices; ++i) {
     GLVertex *v = &_vertices[i];
-    const LVecBase4f &d = rvertex.get_data4f();
+    const LVecBase4 &d = rvertex.get_data4();
     
     v->coord.v[0] = d[0];
     v->coord.v[1] = d[1];
@@ -746,13 +744,13 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
     // Texture coordinates.
     for (int si = 0; si < max_stage_index; ++si) {
-      TexCoordf d;
+      LTexCoord d;
       (*texgen_func[si])(v->tex_coord[si], tcdata[si]);
     }
 
     if (needs_color) {
-      const Colorf &d = rcolor.get_data4f();
-      const Colorf &s = _current_color_scale;
+      const LColor &d = rcolor.get_data4();
+      const LColor &s = _current_color_scale;
       _c->current_color.v[0] = d[0] * s[0];
       _c->current_color.v[1] = d[1] * s[1];
       _c->current_color.v[2] = d[2] * s[2];
@@ -773,7 +771,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     v->color = _c->current_color;
 
     if (lighting_enabled) {
-      const LVecBase3f &d = rnormal.get_data3f();
+      const LVecBase3 &d = rnormal.get_data3();
       _c->current_normal.v[0] = d[0];
       _c->current_normal.v[1] = d[1];
       _c->current_normal.v[2] = d[2];
@@ -840,7 +838,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     int op_a = get_color_blend_op(target_color_blend->get_operand_a());
     int op_b = get_color_blend_op(target_color_blend->get_operand_b());
     _c->zb->store_pix_func = store_pixel_funcs[op_a][op_b][color_channels];
-    Colorf c = target_color_blend->get_color();
+    LColor c = target_color_blend->get_color();
     _c->zb->blend_r = (int)(c[0] * ZB_POINT_RED_MAX);
     _c->zb->blend_g = (int)(c[1] * ZB_POINT_GREEN_MAX);
     _c->zb->blend_b = (int)(c[2] * ZB_POINT_BLUE_MAX);
@@ -1361,7 +1359,8 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
 
   tex->setup_2d_texture(w, h, Texture::T_unsigned_byte, Texture::F_rgba);
 
-  TextureContext *tc = tex->prepare_now(get_prepared_objects(), this);
+  int view = dr->get_tex_view_offset();
+  TextureContext *tc = tex->prepare_now(view, get_prepared_objects(), this);
   nassertr(tc != (TextureContext *)NULL, false);
   TinyTextureContext *gtc = DCAST(TinyTextureContext, tc);
 
@@ -1369,7 +1368,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   if (!setup_gltex(gltex, tex->get_x_size(), tex->get_y_size(), 1)) {
     return false;
   }
-  Colorf border_color = tex->get_border_color();
+  LColor border_color = tex->get_border_color();
   gltex->border_color.v[0] = border_color[0];
   gltex->border_color.v[1] = border_color[1];
   gltex->border_color.v[2] = border_color[2];
@@ -1610,7 +1609,7 @@ set_state_and_transform(const RenderState *target,
 //               prepare a texture.  Instead, call Texture::prepare().
 ////////////////////////////////////////////////////////////////////
 TextureContext *TinyGraphicsStateGuardian::
-prepare_texture(Texture *tex) {
+prepare_texture(Texture *tex, int view) {
   switch (tex->get_texture_type()) {
   case Texture::TT_1d_texture:
   case Texture::TT_2d_texture:
@@ -1637,7 +1636,7 @@ prepare_texture(Texture *tex) {
   }
   */
 
-  TinyTextureContext *gtc = new TinyTextureContext(_prepared_objects, tex);
+  TinyTextureContext *gtc = new TinyTextureContext(_prepared_objects, tex, view);
 
   return gtc;
 }
@@ -1766,7 +1765,7 @@ void TinyGraphicsStateGuardian::
 do_issue_light() {
   // Initialize the current ambient light total and newly enabled
   // light list
-  Colorf cur_ambient_light(0.0f, 0.0f, 0.0f, 0.0f);
+  LColor cur_ambient_light(0.0f, 0.0f, 0.0f, 0.0f);
 
   int num_enabled = 0;
   int num_on_lights = 0;
@@ -1810,7 +1809,7 @@ do_issue_light() {
         // property.
         GLLight *gl_light = _c->first_light;
         nassertv(gl_light != NULL);
-        const Colorf &diffuse = light_obj->get_color();
+        const LColor &diffuse = light_obj->get_color();
         gl_light->diffuse.v[0] = diffuse[0];
         gl_light->diffuse.v[1] = diffuse[1];
         gl_light->diffuse.v[2] = diffuse[2];
@@ -1845,7 +1844,7 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
     // It's a brand new light.  Define it.
     memset(gl_light, 0, sizeof(GLLight));
 
-    const Colorf &specular = light_obj->get_specular_color();
+    const LColor &specular = light_obj->get_specular_color();
     gl_light->specular.v[0] = specular[0];
     gl_light->specular.v[1] = specular[1];
     gl_light->specular.v[2] = specular[2];
@@ -1859,7 +1858,7 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
     CPT(TransformState) transform = light.get_transform(_scene_setup->get_scene_root().get_parent());
     CPT(TransformState) net_transform = render_transform->compose(transform);
 
-    LPoint3f pos = light_obj->get_point() * net_transform->get_mat();
+    LPoint3 pos = light_obj->get_point() * net_transform->get_mat();
     gl_light->position.v[0] = pos[0];
     gl_light->position.v[1] = pos[1];
     gl_light->position.v[2] = pos[2];
@@ -1871,7 +1870,7 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
     // Cutoff == 180 means uniform point light source
     gl_light->spot_cutoff = 180.0f;
 
-    const LVecBase3f &att = light_obj->get_attenuation();
+    const LVecBase3 &att = light_obj->get_attenuation();
     gl_light->attenuation[0] = att[0];
     gl_light->attenuation[1] = att[1];
     gl_light->attenuation[2] = att[2];
@@ -1900,7 +1899,7 @@ bind_light(DirectionalLight *light_obj, const NodePath &light, int light_id) {
     // It's a brand new light.  Define it.
     memset(gl_light, 0, sizeof(GLLight));
 
-    const Colorf &specular = light_obj->get_specular_color();
+    const LColor &specular = light_obj->get_specular_color();
     gl_light->specular.v[0] = specular[0];
     gl_light->specular.v[1] = specular[1];
     gl_light->specular.v[2] = specular[2];
@@ -1914,7 +1913,7 @@ bind_light(DirectionalLight *light_obj, const NodePath &light, int light_id) {
     CPT(TransformState) transform = light.get_transform(_scene_setup->get_scene_root().get_parent());
     CPT(TransformState) net_transform = render_transform->compose(transform);
 
-    LVector3f dir = light_obj->get_direction() * net_transform->get_mat();
+    LVector3 dir = light_obj->get_direction() * net_transform->get_mat();
     dir.normalize();
     gl_light->position.v[0] = -dir[0];
     gl_light->position.v[1] = -dir[1];
@@ -1962,7 +1961,7 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
     // It's a brand new light.  Define it.
     memset(gl_light, 0, sizeof(GLLight));
 
-    const Colorf &specular = light_obj->get_specular_color();
+    const LColor &specular = light_obj->get_specular_color();
     gl_light->specular.v[0] = specular[0];
     gl_light->specular.v[1] = specular[1];
     gl_light->specular.v[2] = specular[2];
@@ -1979,9 +1978,9 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
     CPT(TransformState) transform = light.get_transform(_scene_setup->get_scene_root().get_parent());
     CPT(TransformState) net_transform = render_transform->compose(transform);
 
-    const LMatrix4f &light_mat = net_transform->get_mat();
-    LPoint3f pos = lens->get_nodal_point() * light_mat;
-    LVector3f dir = lens->get_view_vector() * light_mat;
+    const LMatrix4 &light_mat = net_transform->get_mat();
+    LPoint3 pos = lens->get_nodal_point() * light_mat;
+    LVector3 dir = lens->get_view_vector() * light_mat;
     dir.normalize();
 
     gl_light->position.v[0] = pos[0];
@@ -2001,7 +2000,7 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
     gl_light->spot_exponent = light_obj->get_exponent();
     gl_light->spot_cutoff = lens->get_hfov() * 0.5f;
 
-    const LVecBase3f &att = light_obj->get_attenuation();
+    const LVecBase3 &att = light_obj->get_attenuation();
     gl_light->attenuation[0] = att[0];
     gl_light->attenuation[1] = att[1];
     gl_light->attenuation[2] = att[2];
@@ -2118,6 +2117,16 @@ do_issue_depth_offset() {
   const DepthOffsetAttrib *target_depth_offset = DCAST(DepthOffsetAttrib, _target_rs->get_attrib_def(DepthOffsetAttrib::get_class_slot()));
   int offset = target_depth_offset->get_offset();
   _c->zbias = offset;
+
+  PN_stdfloat min_value = target_depth_offset->get_min_value();
+  PN_stdfloat max_value = target_depth_offset->get_max_value();
+  if (min_value == 0.0f && max_value == 1.0f) {
+    _c->has_zrange = false;
+  } else {
+    _c->has_zrange = true;
+    _c->zmin = min_value;
+    _c->zrange = max_value - min_value;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2209,7 +2218,8 @@ do_issue_texture() {
     Texture *texture = _target_texture->get_on_texture(stage);
     nassertv(texture != (Texture *)NULL);
     
-    TextureContext *tc = texture->prepare_now(_prepared_objects, this);
+    int view = get_current_tex_view_offset() + stage->get_tex_view_offset();
+    TextureContext *tc = texture->prepare_now(view, _prepared_objects, this);
     if (tc == (TextureContext *)NULL) {
       // Something wrong with this texture; skip it.
       return;
@@ -2385,7 +2395,7 @@ do_issue_texture() {
 void TinyGraphicsStateGuardian::
 do_issue_scissor() {
   const ScissorAttrib *target_scissor = DCAST(ScissorAttrib, _target_rs->get_attrib_def(ScissorAttrib::get_class_slot()));
-  const LVecBase4f &frame = target_scissor->get_frame();
+  const LVecBase4 &frame = target_scissor->get_frame();
   set_scissor(frame[0], frame[1], frame[2], frame[3]);
 }
 
@@ -2396,23 +2406,23 @@ do_issue_scissor() {
 //               relative to the current viewport.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-set_scissor(float left, float right, float bottom, float top) {
+set_scissor(PN_stdfloat left, PN_stdfloat right, PN_stdfloat bottom, PN_stdfloat top) {
   _c->scissor.left = left;
   _c->scissor.right = right;
   _c->scissor.bottom = bottom;
   _c->scissor.top = top;
   gl_eval_viewport(_c);
 
-  float xsize = right - left;
-  float ysize = top - bottom;
-  float xcenter = (left + right) - 1.0f;
-  float ycenter = (bottom + top) - 1.0f;
+  PN_stdfloat xsize = right - left;
+  PN_stdfloat ysize = top - bottom;
+  PN_stdfloat xcenter = (left + right) - 1.0f;
+  PN_stdfloat ycenter = (bottom + top) - 1.0f;
   if (xsize == 0.0f || ysize == 0.0f) {
     // If the scissor region is zero, nothing will be drawn anyway, so
     // don't worry about it.
     _scissor_mat = TransformState::make_identity();
   } else {
-    _scissor_mat = TransformState::make_scale(LVecBase3f(1.0f / xsize, 1.0f / ysize, 1.0f))->compose(TransformState::make_pos(LPoint3f(-xcenter, -ycenter, 0.0f)));
+    _scissor_mat = TransformState::make_scale(LVecBase3(1.0f / xsize, 1.0f / ysize, 1.0f))->compose(TransformState::make_pos(LPoint3(-xcenter, -ycenter, 0.0f)));
   }
 }
 
@@ -2485,7 +2495,7 @@ upload_texture(TinyTextureContext *gtc, bool force) {
   if (!setup_gltex(gltex, tex->get_x_size(), tex->get_y_size(), num_levels)) {
     return false;
   }
-  Colorf border_color = tex->get_border_color();
+  LColor border_color = tex->get_border_color();
   gltex->border_color.v[0] = border_color[0];
   gltex->border_color.v[1] = border_color[1];
   gltex->border_color.v[2] = border_color[2];
@@ -2504,7 +2514,7 @@ upload_texture(TinyTextureContext *gtc, bool force) {
     case Texture::F_rgb8:
     case Texture::F_rgb12:
     case Texture::F_rgb332:
-      copy_rgb_image(dest, xsize, ysize, tex, level);
+      copy_rgb_image(dest, xsize, ysize, gtc, level);
       break;
 
     case Texture::F_rgba:
@@ -2515,32 +2525,32 @@ upload_texture(TinyTextureContext *gtc, bool force) {
     case Texture::F_rgba12:
     case Texture::F_rgba16:
     case Texture::F_rgba32:
-      copy_rgba_image(dest, xsize, ysize, tex, level);
+      copy_rgba_image(dest, xsize, ysize, gtc, level);
       break;
 
     case Texture::F_luminance:
-      copy_lum_image(dest, xsize, ysize, tex, level);
+      copy_lum_image(dest, xsize, ysize, gtc, level);
       break;
 
     case Texture::F_red:
-      copy_one_channel_image(dest, xsize, ysize, tex, level, 0);
+      copy_one_channel_image(dest, xsize, ysize, gtc, level, 0);
       break;
 
     case Texture::F_green:
-      copy_one_channel_image(dest, xsize, ysize, tex, level, 1);
+      copy_one_channel_image(dest, xsize, ysize, gtc, level, 1);
       break;
 
     case Texture::F_blue:
-      copy_one_channel_image(dest, xsize, ysize, tex, level, 2);
+      copy_one_channel_image(dest, xsize, ysize, gtc, level, 2);
       break;
 
     case Texture::F_alpha:
-      copy_alpha_image(dest, xsize, ysize, tex, level);
+      copy_alpha_image(dest, xsize, ysize, gtc, level);
       break;
 
     case Texture::F_luminance_alphamask:
     case Texture::F_luminance_alpha:
-      copy_la_image(dest, xsize, ysize, tex, level);
+      copy_la_image(dest, xsize, ysize, gtc, level);
       break;
     }
 
@@ -2595,7 +2605,7 @@ upload_simple_texture(TinyTextureContext *gtc) {
   if (!setup_gltex(gltex, width, height, 1)) {
     return false;
   }
-  Colorf border_color = tex->get_border_color();
+  LColor border_color = tex->get_border_color();
   gltex->border_color.v[0] = border_color[0];
   gltex->border_color.v[1] = border_color[1];
   gltex->border_color.v[2] = border_color[2];
@@ -2727,7 +2737,8 @@ get_tex_shift(int orig_size) {
 //               from the texture into the indicated ZTexture pixmap.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-copy_lum_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level) {
+copy_lum_image(ZTextureLevel *dest, int xsize, int ysize, TinyTextureContext *gtc, int level) {
+  Texture *tex = gtc->get_texture();
   nassertv(tex->get_num_components() == 1);
   nassertv(tex->get_expected_mipmap_x_size(level) == xsize &&
            tex->get_expected_mipmap_y_size(level) == ysize);
@@ -2735,6 +2746,8 @@ copy_lum_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int leve
   CPTA_uchar src_image = tex->get_ram_mipmap_image(level);
   nassertv(!src_image.is_null());
   const unsigned char *src = src_image.p();
+  size_t view_size = tex->get_ram_mipmap_view_size(level);
+  src += view_size * gtc->get_view();
 
   // Component width, and offset to the high-order byte.
   int cw = tex->get_component_width();
@@ -2764,12 +2777,15 @@ copy_lum_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int leve
 //               from the texture into the indicated ZTexture pixmap.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-copy_alpha_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level) {
+copy_alpha_image(ZTextureLevel *dest, int xsize, int ysize, TinyTextureContext *gtc, int level) {
+  Texture *tex = gtc->get_texture();
   nassertv(tex->get_num_components() == 1);
 
   CPTA_uchar src_image = tex->get_ram_mipmap_image(level);
   nassertv(!src_image.is_null());
   const unsigned char *src = src_image.p();
+  size_t view_size = tex->get_ram_mipmap_view_size(level);
+  src += view_size * gtc->get_view();
 
   // Component width, and offset to the high-order byte.
   int cw = tex->get_component_width();
@@ -2800,12 +2816,15 @@ copy_alpha_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int le
 //               the texture into the indicated ZTexture pixmap.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-copy_one_channel_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level, int channel) {
+copy_one_channel_image(ZTextureLevel *dest, int xsize, int ysize, TinyTextureContext *gtc, int level, int channel) {
+  Texture *tex = gtc->get_texture();
   nassertv(tex->get_num_components() == 1);
 
   CPTA_uchar src_image = tex->get_ram_mipmap_image(level);
   nassertv(!src_image.is_null());
   const unsigned char *src = src_image.p();
+  size_t view_size = tex->get_ram_mipmap_view_size(level);
+  src += view_size * gtc->get_view();
 
   // Component width, and offset to the high-order byte.
   int cw = tex->get_component_width();
@@ -2865,12 +2884,15 @@ copy_one_channel_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, 
 //               pixmap.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-copy_la_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level) {
+copy_la_image(ZTextureLevel *dest, int xsize, int ysize, TinyTextureContext *gtc, int level) {
+  Texture *tex = gtc->get_texture();
   nassertv(tex->get_num_components() == 2);
 
   CPTA_uchar src_image = tex->get_ram_mipmap_image(level);
   nassertv(!src_image.is_null());
   const unsigned char *src = src_image.p();
+  size_t view_size = tex->get_ram_mipmap_view_size(level);
+  src += view_size * gtc->get_view();
 
   // Component width, and offset to the high-order byte.
   int cw = tex->get_component_width();
@@ -2901,12 +2923,15 @@ copy_la_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level
 //               the texture into the indicated ZTexture pixmap.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-copy_rgb_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level) {
+copy_rgb_image(ZTextureLevel *dest, int xsize, int ysize, TinyTextureContext *gtc, int level) {
+  Texture *tex = gtc->get_texture();
   nassertv(tex->get_num_components() == 3);
 
   CPTA_uchar src_image = tex->get_ram_mipmap_image(level);
   nassertv(!src_image.is_null());
   const unsigned char *src = src_image.p();
+  size_t view_size = tex->get_ram_mipmap_view_size(level);
+  src += view_size * gtc->get_view();
 
   // Component width, and offset to the high-order byte.
   int cw = tex->get_component_width();
@@ -2937,12 +2962,15 @@ copy_rgb_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int leve
 //               the texture into the indicated ZTexture pixmap.
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
-copy_rgba_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int level) {
+copy_rgba_image(ZTextureLevel *dest, int xsize, int ysize, TinyTextureContext *gtc, int level) {
+  Texture *tex = gtc->get_texture();
   nassertv(tex->get_num_components() == 4);
 
   CPTA_uchar src_image = tex->get_ram_mipmap_image(level);
   nassertv(!src_image.is_null());
   const unsigned char *src = src_image.p();
+  size_t view_size = tex->get_ram_mipmap_view_size(level);
+  src += view_size * gtc->get_view();
 
   // Component width, and offset to the high-order byte.
   int cw = tex->get_component_width();
@@ -2974,13 +3002,13 @@ copy_rgba_image(ZTextureLevel *dest, int xsize, int ysize, Texture *tex, int lev
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
 setup_material(GLMaterial *gl_material, const Material *material) {
-  const Colorf &specular = material->get_specular();
+  const LColor &specular = material->get_specular();
   gl_material->specular.v[0] = specular[0];
   gl_material->specular.v[1] = specular[1];
   gl_material->specular.v[2] = specular[2];
   gl_material->specular.v[3] = specular[3];
 
-  const Colorf &emission = material->get_emission();
+  const LColor &emission = material->get_emission();
   gl_material->emission.v[0] = emission[0];
   gl_material->emission.v[1] = emission[1];
   gl_material->emission.v[2] = emission[2];
@@ -2992,7 +3020,7 @@ setup_material(GLMaterial *gl_material, const Material *material) {
   _color_material_flags = CMF_ambient | CMF_diffuse;
 
   if (material->has_ambient()) {
-    const Colorf &ambient = material->get_ambient();
+    const LColor &ambient = material->get_ambient();
     gl_material->ambient.v[0] = ambient[0];
     gl_material->ambient.v[1] = ambient[1];
     gl_material->ambient.v[2] = ambient[2];
@@ -3002,7 +3030,7 @@ setup_material(GLMaterial *gl_material, const Material *material) {
   }
 
   if (material->has_diffuse()) {
-    const Colorf &diffuse = material->get_diffuse();
+    const LColor &diffuse = material->get_diffuse();
     gl_material->diffuse.v[0] = diffuse[0];
     gl_material->diffuse.v[1] = diffuse[1];
     gl_material->diffuse.v[2] = diffuse[2];
@@ -3041,7 +3069,7 @@ do_auto_rescale_normal() {
 ////////////////////////////////////////////////////////////////////
 void TinyGraphicsStateGuardian::
 load_matrix(M4 *matrix, const TransformState *transform) {
-  const LMatrix4f &pm = transform->get_mat();
+  const LMatrix4 &pm = transform->get_mat();
   for (int i = 0; i < 4; ++i) {
     matrix->m[0][i] = pm.get_cell(i, 0);
     matrix->m[1][i] = pm.get_cell(i, 1);
@@ -3184,7 +3212,7 @@ texgen_null(V2 &result, TinyGraphicsStateGuardian::TexCoordData &) {
 void TinyGraphicsStateGuardian::
 texgen_simple(V2 &result, TinyGraphicsStateGuardian::TexCoordData &tcdata) {
   // No need to transform, so just extract as two-component.
-  const LVecBase2f &d = tcdata._r1.get_data2f();
+  const LVecBase2 &d = tcdata._r1.get_data2();
   result.v[0] = d[0];
   result.v[1] = d[1];
 }
@@ -3198,7 +3226,7 @@ texgen_simple(V2 &result, TinyGraphicsStateGuardian::TexCoordData &tcdata) {
 void TinyGraphicsStateGuardian::
 texgen_texmat(V2 &result, TinyGraphicsStateGuardian::TexCoordData &tcdata) {
   // Transform texcoords as a four-component vector for most generality.
-  LVecBase4f d = tcdata._r1.get_data4f() * tcdata._mat;
+  LVecBase4 d = tcdata._r1.get_data4() * tcdata._mat;
   result.v[0] = d[0] / d[3];
   result.v[1] = d[1] / d[3];
 }
@@ -3212,18 +3240,18 @@ texgen_texmat(V2 &result, TinyGraphicsStateGuardian::TexCoordData &tcdata) {
 void TinyGraphicsStateGuardian::
 texgen_sphere_map(V2 &result, TinyGraphicsStateGuardian::TexCoordData &tcdata) {
   // Get the normal and point in eye coordinates.
-  LVector3f n = tcdata._mat.xform_vec(tcdata._r1.get_data3f());
-  LVector3f u = tcdata._mat.xform_point(tcdata._r2.get_data3f());
+  LVector3 n = tcdata._mat.xform_vec(tcdata._r1.get_data3());
+  LVector3 u = tcdata._mat.xform_point(tcdata._r2.get_data3());
 
   // Normalize the vectors.
   n.normalize();
   u.normalize();
 
   // Compute the reflection vector.
-  LVector3f r = u - n * dot(n, u) * 2.0f;
+  LVector3 r = u - n * dot(n, u) * 2.0f;
   
   // compute the denominator, m.
-  float m = 2.0f * csqrt(r[0] * r[0] + r[1] * r[1] + (r[2] + 1.0f) * (r[2] + 1.0f));
+  PN_stdfloat m = 2.0f * csqrt(r[0] * r[0] + r[1] * r[1] + (r[2] + 1.0f) * (r[2] + 1.0f));
 
   // Now we can compute the s and t coordinates.
   result.v[0] = r[0] / m + 0.5f;

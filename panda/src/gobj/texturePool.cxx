@@ -92,42 +92,22 @@ get_texture_type(const string &extension) const {
 
   string c = downcase(extension);
   TypeRegistry::const_iterator ti;
-  ti = _type_registry.find(extension);
+  ti = _type_registry.find(c);
   if (ti != _type_registry.end()) {
     return (*ti).second;
   }
 
   // Check the PNM type registry.
   PNMFileTypeRegistry *pnm_reg = PNMFileTypeRegistry::get_global_ptr();
-  PNMFileType *type = pnm_reg->get_type_from_extension(extension);
+  PNMFileType *type = pnm_reg->get_type_from_extension(c);
   if (type != (PNMFileType *)NULL) {
     // This is a known image type; create an ordinary Texture.
-    ((TexturePool *)this)->_type_registry[extension] = Texture::make_texture;
+    ((TexturePool *)this)->_type_registry[c] = Texture::make_texture;
     return Texture::make_texture;
   }
 
   // This is an unknown texture type.
   return NULL;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: TexturePool::make_texture
-//       Access: Public
-//  Description: Creates a new Texture object of the appropriate type
-//               for the indicated filename extension, according to
-//               the types that have been registered via
-//               register_texture_type().
-////////////////////////////////////////////////////////////////////
-PT(Texture) TexturePool::
-make_texture(const string &extension) const {
-  MakeTextureFunc *func = get_texture_type(extension);
-  if (func != NULL) {
-    return func();
-  }
-
-  // We don't know what kind of file type this is; return an ordinary
-  // Texture in case it's an image file with no extension.
-  return new Texture;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -210,7 +190,7 @@ ns_has_texture(const Filename &orig_filename) {
   MutexHolder holder(_lock);
 
   Filename filename;
-  resolve_filename(filename, orig_filename);
+  resolve_filename(filename, orig_filename, false, LoaderOptions());
 
   Textures::const_iterator ti;
   ti = _textures.find(filename);
@@ -234,7 +214,7 @@ ns_load_texture(const Filename &orig_filename, int primary_file_num_channels,
 
   {
     MutexHolder holder(_lock);
-    resolve_filename(filename, orig_filename);
+    resolve_filename(filename, orig_filename, read_mipmaps, options);
     Textures::const_iterator ti;
     ti = _textures.find(filename);
     if (ti != _textures.end()) {
@@ -264,12 +244,48 @@ ns_load_texture(const Filename &orig_filename, int primary_file_num_channels,
     // cache; it needs to be loaded from its source image(s).
     gobj_cat.info()
       << "Loading texture " << filename << "\n";
-    tex = make_texture(filename.get_extension());
-    if (!tex->read(filename, Filename(), primary_file_num_channels, 0,
-                   0, 0, false, read_mipmaps, record, options)) {
-      // This texture was not found or could not be read.
-      report_texture_unreadable(filename);
-      return NULL;
+
+    string ext = downcase(filename.get_extension());
+    if (ext == "txo" || ext == "bam") {
+      // Assume this is a txo file, which might conceivably contain a
+      // movie file or some other subclass of Texture.  In that case,
+      // use make_from_txo() to load it instead of read().
+      VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+
+      filename.set_binary();
+      PT(VirtualFile) file = vfs->get_file(filename);
+      if (file == (VirtualFile *)NULL) {
+        // No such file.
+        gobj_cat.error()
+          << "Could not find " << filename << "\n";
+        return false;
+      }
+
+      if (gobj_cat.is_debug()) {
+        gobj_cat.debug()
+          << "Reading texture object " << filename << "\n";
+      }
+
+      istream *in = file->open_read_file(true);
+      tex = Texture::make_from_txo(*in, filename);
+      vfs->close_read_file(in);
+
+      if (tex == (Texture *)NULL) {
+        return false;
+      }
+      tex->set_fullpath(filename);
+      tex->clear_alpha_fullpath();
+      tex->set_keep_ram_image(false);
+        
+    } else {
+      // Read it the conventional way.
+      tex = ns_make_texture(ext);
+      if (!tex->read(filename, Filename(), primary_file_num_channels, 0,
+                     0, 0, false, read_mipmaps, record, options)) {
+        // This texture was not found or could not be read.
+        report_texture_unreadable(filename);
+        return NULL;
+      }
     }
 
     if (options.get_texture_flags() & LoaderOptions::TF_preload_simple) {
@@ -322,7 +338,7 @@ ns_load_texture(const Filename &orig_filename, int primary_file_num_channels,
     _textures[filename] = tex;
   }
 
-  if (store_record && tex->has_ram_image()) {
+  if (store_record && tex->is_cacheable()) {
     // Store the on-disk cache record for next time.
     record->set_data(tex, tex);
     cache->store(record);
@@ -362,8 +378,8 @@ ns_load_texture(const Filename &orig_filename,
 
   {
     MutexHolder holder(_lock);
-    resolve_filename(filename, orig_filename);
-    resolve_filename(alpha_filename, orig_alpha_filename);
+    resolve_filename(filename, orig_filename, read_mipmaps, options);
+    resolve_filename(alpha_filename, orig_alpha_filename, read_mipmaps, options);
 
     Textures::const_iterator ti;
     ti = _textures.find(filename);
@@ -394,7 +410,7 @@ ns_load_texture(const Filename &orig_filename,
     gobj_cat.info()
       << "Loading texture " << filename << " and alpha component "
       << alpha_filename << endl;
-    tex = make_texture(filename.get_extension());
+    tex = ns_make_texture(filename.get_extension());
     if (!tex->read(filename, alpha_filename, primary_file_num_channels,
                    alpha_file_channel, 0, 0, false, read_mipmaps, NULL,
                    options)) {
@@ -454,7 +470,7 @@ ns_load_texture(const Filename &orig_filename,
     _textures[filename] = tex;
   }
 
-  if (store_record && tex->has_ram_image()) {
+  if (store_record && tex->is_cacheable()) {
     // Store the on-disk cache record for next time.
     record->set_data(tex, tex);
     cache->store(record);
@@ -487,7 +503,7 @@ ns_load_3d_texture(const Filename &filename_pattern,
   Filename filename;
   {
     MutexHolder holder(_lock);
-    resolve_filename(filename, orig_filename);
+    resolve_filename(filename, orig_filename, read_mipmaps, options);
 
     Textures::const_iterator ti;
     ti = _textures.find(filename);
@@ -514,7 +530,7 @@ ns_load_3d_texture(const Filename &filename_pattern,
     // cache; it needs to be loaded from its source image(s).
     gobj_cat.info()
       << "Loading 3-d texture " << filename << "\n";
-    tex = make_texture(filename.get_extension());
+    tex = ns_make_texture(filename.get_extension());
     tex->setup_3d_texture();
     if (!tex->read(filename, 0, 0, true, read_mipmaps, options)) {
       // This texture was not found or could not be read.
@@ -566,7 +582,7 @@ ns_load_3d_texture(const Filename &filename_pattern,
     _textures[filename] = tex;
   }
 
-  if (store_record && tex->has_ram_image()) {
+  if (store_record && tex->is_cacheable()) {
     // Store the on-disk cache record for next time.
     record->set_data(tex, tex);
     cache->store(record);
@@ -591,7 +607,7 @@ ns_load_2d_texture_array(const Filename &filename_pattern,
   Filename unique_filename; //differentiate 3d-textures from 2d-texture arrays
   {
     MutexHolder holder(_lock);
-    resolve_filename(filename, orig_filename);
+    resolve_filename(filename, orig_filename, read_mipmaps, options);
     // Differentiate from preloaded 3d textures
     unique_filename = filename + ".2DARRAY";
 
@@ -620,7 +636,7 @@ ns_load_2d_texture_array(const Filename &filename_pattern,
     // cache; it needs to be loaded from its source image(s).
     gobj_cat.info()
       << "Loading 2-d texture array " << filename << "\n";
-    tex = make_texture(filename.get_extension());
+    tex = ns_make_texture(filename.get_extension());
     tex->setup_2d_texture_array();
     if (!tex->read(filename, 0, 0, true, read_mipmaps, options)) {
       // This texture was not found or could not be read.
@@ -672,7 +688,7 @@ ns_load_2d_texture_array(const Filename &filename_pattern,
     _textures[unique_filename] = tex;
   }
 
-  if (store_record && tex->has_ram_image()) {
+  if (store_record && tex->is_cacheable()) {
     // Store the on-disk cache record for next time.
     record->set_data(tex, tex);
     cache->store(record);
@@ -696,7 +712,7 @@ ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps,
   Filename filename;
   {
     MutexHolder holder(_lock);
-    resolve_filename(filename, orig_filename);
+    resolve_filename(filename, orig_filename, read_mipmaps, options);
 
     Textures::const_iterator ti;
     ti = _textures.find(filename);
@@ -721,7 +737,7 @@ ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps,
     // cache; it needs to be loaded from its source image(s).
     gobj_cat.info()
       << "Loading cube map texture " << filename << "\n";
-    tex = make_texture(filename.get_extension());
+    tex = ns_make_texture(filename.get_extension());
     tex->setup_cube_map();
     if (!tex->read(filename, 0, 0, true, read_mipmaps, options)) {
       // This texture was not found or could not be read.
@@ -771,7 +787,7 @@ ns_load_cube_map(const Filename &filename_pattern, bool read_mipmaps,
     _textures[filename] = tex;
   }
 
-  if (store_record && tex->has_ram_image()) {
+  if (store_record && tex->is_cacheable()) {
     // Store the on-disk cache record for next time.
     record->set_data(tex, tex);
     cache->store(record);
@@ -1009,6 +1025,26 @@ ns_find_all_textures(const string &name) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TexturePool::ns_make_texture
+//       Access: Public
+//  Description: Creates a new Texture object of the appropriate type
+//               for the indicated filename extension, according to
+//               the types that have been registered via
+//               register_texture_type().
+////////////////////////////////////////////////////////////////////
+PT(Texture) TexturePool::
+ns_make_texture(const string &extension) const {
+  MakeTextureFunc *func = get_texture_type(extension);
+  if (func != NULL) {
+    return func();
+  }
+
+  // We don't know what kind of file type this is; return an ordinary
+  // Texture in case it's an image file with no extension.
+  return new Texture;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TexturePool::resolve_filename
 //       Access: Private
 //  Description: Searches for the indicated filename along the
@@ -1017,7 +1053,8 @@ ns_find_all_textures(const string &name) const {
 //               optimization.  Assumes _lock is held.
 ////////////////////////////////////////////////////////////////////
 void TexturePool::
-resolve_filename(Filename &new_filename, const Filename &orig_filename) {
+resolve_filename(Filename &new_filename, const Filename &orig_filename,
+                 bool read_mipmaps, const LoaderOptions &options) {
   if (!_fake_texture_image.empty()) {
     new_filename = _fake_texture_image;
     return;
@@ -1030,6 +1067,10 @@ resolve_filename(Filename &new_filename, const Filename &orig_filename) {
   }
 
   new_filename = orig_filename;
+  if (read_mipmaps || (options.get_texture_flags() & LoaderOptions::TF_multiview)) {
+    new_filename.set_pattern(true);
+  }
+
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
   vfs->resolve_filename(new_filename, get_model_path());
 
@@ -1056,7 +1097,7 @@ try_load_cache(PT(Texture) &tex, BamCache *cache, const Filename &filename,
           compressed_cache_record = (tex->get_ram_image_compression() != Texture::CM_off);
           int x_size = tex->get_orig_file_x_size();
           int y_size = tex->get_orig_file_y_size();
-          Texture::adjust_size(x_size, y_size, filename.get_basename(), true);
+          tex->adjust_this_size(x_size, y_size, filename.get_basename(), true);
 
           if (!cache->get_cache_textures() && !compressed_cache_record) {
             // We're not supposed to be caching uncompressed textures.
@@ -1147,7 +1188,8 @@ try_load_cache(PT(Texture) &tex, BamCache *cache, const Filename &filename,
 void TexturePool::
 report_texture_unreadable(const Filename &filename) const {
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  if (!vfs->exists(filename)) {
+  bool has_hash = (filename.get_fullpath().find('#') != string::npos);
+  if (!has_hash && !vfs->exists(filename)) {
     if (filename.is_local()) {
       // The file doesn't exist, and it wasn't
       // fully-qualified--therefore, it wasn't found along either
@@ -1164,8 +1206,15 @@ report_texture_unreadable(const Filename &filename) const {
 
   } else {
     // The file exists, but it couldn't be read for some reason.
-    gobj_cat.error()
-      << "Texture \"" << filename << "\" exists but cannot be read.\n";
+    if (!has_hash) {
+      gobj_cat.error()
+        << "Texture \"" << filename << "\" exists but cannot be read.\n";
+    } else {
+      // If the filename contains a hash, we'll be noncommittal about
+      // whether it exists or not.
+      gobj_cat.error()
+        << "Texture \"" << filename << "\" cannot be read.\n";
+    }
 
     // Maybe the filename extension is unknown.
     MakeTextureFunc *func = get_texture_type(filename.get_extension());

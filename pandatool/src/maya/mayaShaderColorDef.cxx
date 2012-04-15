@@ -181,9 +181,9 @@ has_projection() const {
 //               are closed up by ensuring the point is in the same
 //               quadrant as the indicated reference point.
 ////////////////////////////////////////////////////////////////////
-TexCoordd MayaShaderColorDef::
+LTexCoordd MayaShaderColorDef::
 project_uv(const LPoint3d &pos, const LPoint3d &centroid) const {
-  nassertr(_map_uvs != NULL, TexCoordd::zero());
+  nassertr(_map_uvs != NULL, LTexCoordd::zero());
   return (this->*_map_uvs)(pos * _projection_matrix, centroid * _projection_matrix);
 }
 
@@ -266,9 +266,9 @@ get_panda_uvset_name() {
 //               properties.
 ////////////////////////////////////////////////////////////////////
 void MayaShaderColorDef::
-find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, Filename _texture_out_dir, bool trans) {
-  RGBColorf color_gain;
-  if (get_vec3f_attribute(color, "colorGain", color_gain)) {
+find_textures_legacy(MayaShader *shader, MObject color, bool trans) {
+  LRGBColor color_gain;
+  if (get_vec3_attribute(color, "colorGain", color_gain)) {
     color_gain[0] = color_gain[0] > 1.0 ? 1.0 : color_gain[0];
     color_gain[0] = color_gain[0] < 0.0 ? 0.0 : color_gain[0];
     _color_gain[0] *= color_gain[0];
@@ -279,7 +279,7 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
     color_gain[2] = color_gain[2] < 0.0 ? 0.0 : color_gain[2];
     _color_gain[2] *= color_gain[2];
   }
-  float alpha_gain;
+  PN_stdfloat alpha_gain;
   if (get_maya_attribute(color, "alphaGain", alpha_gain)) {
     alpha_gain = alpha_gain > 1.0 ? 1.0 : alpha_gain;
     alpha_gain = alpha_gain < 0.0 ? 0.0 : alpha_gain;
@@ -302,27 +302,10 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
         _has_texture = false;
         set_string_attribute(color, "fileTextureName", "");
       }
-      // create directory, copy texture, modify texture filename
-      if (_texture_copy) {
-        if (_texture_out_dir[_texture_out_dir.length()-1] != '/')
-          _texture_out_dir+="/";
-        _texture_out_dir.make_dir();
-        Filename texture_copy_filename=Filename(_texture_out_dir, _texture_filename.get_basename());
-        if (_texture_filename.copy_to(texture_copy_filename)) {       
-          _texture_filename=texture_copy_filename;
-        }
-        else {
-          maya_cat.warning()
-              <<"unable to copy texture files from "<<_texture_filename.get_dirname()
-              <<" to "<<_texture_out_dir<<"\n"
-              <<"make sure you have the access right to the assigned directory\n"
-              <<"the output egg file will adapt to the original texture files' path\n";
-        }
-      }
     }
 
-    get_vec2f_attribute(color, "coverage", _coverage);
-    get_vec2f_attribute(color, "translateFrame", _translate_frame);
+    get_vec2_attribute(color, "coverage", _coverage);
+    get_vec2_attribute(color, "translateFrame", _translate_frame);
     get_angle_attribute(color, "rotateFrame", _rotate_frame);
 
     //get_bool_attribute(color, "alphaIsLuminance", _alpha_is_luminance);
@@ -332,8 +315,8 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
     get_bool_attribute(color, "wrapU", _wrap_u);
     get_bool_attribute(color, "wrapV", _wrap_v);
 
-    get_vec2f_attribute(color, "repeatUV", _repeat_uv);
-    get_vec2f_attribute(color, "offset", _offset);
+    get_vec2_attribute(color, "repeatUV", _repeat_uv);
+    get_vec2_attribute(color, "offset", _offset);
     get_angle_attribute(color, "rotateUV", _rotate_uv);
 
     if (!trans) {
@@ -356,7 +339,7 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
       image_plug.connectedTo(image_pa, true, false);
       
       for (size_t i = 0; i < image_pa.length(); i++) {
-        find_textures_legacy(shader, image_pa[0].node(), _texture_copy, _texture_out_dir);
+        find_textures_legacy(shader, image_pa[0].node());
       }
     }
 
@@ -463,7 +446,7 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
             maya_cat.debug() << pl.name().asChar() << " next:connectedTo: " << pla_name << endl;
           }
           MayaShaderColorDef *color_p = new MayaShaderColorDef;
-          color_p->find_textures_legacy(shader, pla[j].node(), _texture_copy, _texture_out_dir);
+          color_p->find_textures_legacy(shader, pla[j].node());
           color_p->_blend_type = bt;
           size_t loc = color_p->_texture_name.find('.',0);
           if (loc != string::npos) {
@@ -477,7 +460,7 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
           if (maya_cat.is_debug()) {
             maya_cat.debug() << pl.name().asChar() << " first:connectedTo: " << pla_name << endl;
           }
-          find_textures_legacy(shader, pla[j].node(), _texture_copy, _texture_out_dir);
+          find_textures_legacy(shader, pla[j].node());
           _texture_name.assign(pla[j].name().asChar());
           _blend_type = bt;
           size_t loc = _texture_name.find('.',0);
@@ -519,7 +502,7 @@ find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, File
 //               to the provided MayaShaderColorList.
 ////////////////////////////////////////////////////////////////////
 void MayaShaderColorDef::
-find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug inplug,bool _texture_copy, Filename _texture_out_dir, bool is_alpha) {
+find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug inplug, bool is_alpha) {
 
   MPlugArray outplugs;
   inplug.connectedTo(outplugs, true, false);
@@ -558,28 +541,10 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
     
     def->_color_object = new MObject(source);
     def->_texture_filename = Filename::from_os_specific(filename);
-    // create directory, copy texture, modify texture filename
-    if (_texture_copy) {
-      if (_texture_out_dir[_texture_out_dir.length()-1] != '/') {
-        _texture_out_dir+="/";
-	  }	
-      _texture_out_dir.make_dir();
-      Filename texture_copy_filename=Filename(_texture_out_dir, def->_texture_filename.get_basename());
-      if (def->_texture_filename.copy_to(texture_copy_filename)) {       
-        def->_texture_filename=texture_copy_filename;
-      }
-      else {
-        maya_cat.warning()
-          <<"unable to copy texture files from "<<def->_texture_filename.get_dirname()
-          <<" to "<<_texture_out_dir<<"\n"
-          <<"make sure you have the access right to the assigned directory\n"
-          <<"the output egg file will adapt to the original texture files' path\n";
-      }
-    }
     def->_texture_name = sourceFn.name().asChar();
 
-    get_vec2f_attribute(source, "coverage",       def->_coverage);
-    get_vec2f_attribute(source, "translateFrame", def->_translate_frame);
+    get_vec2_attribute(source, "coverage",       def->_coverage);
+    get_vec2_attribute(source, "translateFrame", def->_translate_frame);
     get_angle_attribute(source, "rotateFrame",    def->_rotate_frame);
     
     get_bool_attribute(source, "mirror",          def->_mirror);
@@ -587,13 +552,13 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
     get_bool_attribute(source, "wrapU",           def->_wrap_u);
     get_bool_attribute(source, "wrapV",           def->_wrap_v);
 
-    get_vec2f_attribute(source, "repeatUV",       def->_repeat_uv);
-    get_vec2f_attribute(source, "offset",         def->_offset);
+    get_vec2_attribute(source, "repeatUV",       def->_repeat_uv);
+    get_vec2_attribute(source, "offset",         def->_offset);
     get_angle_attribute(source, "rotateUV",       def->_rotate_uv);
 
-    RGBColorf color_gain;
-    float alpha_gain;
-    get_vec3f_attribute(source, "colorGain",      color_gain);
+    LRGBColor color_gain;
+    PN_stdfloat alpha_gain;
+    get_vec3_attribute(source, "colorGain",      color_gain);
     get_maya_attribute(source, "alphaGain",       alpha_gain);
     def->_color_gain[0] = color_gain[0];
     def->_color_gain[1] = color_gain[1];
@@ -620,7 +585,7 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
       image_plug.connectedTo(image_pa, true, false);
       
       for (size_t i = 0; i < image_pa.length(); i++) {
-        find_textures_modern(shadername, list, image_pa[0], _texture_copy, _texture_out_dir, is_alpha);
+        find_textures_modern(shadername, list, image_pa[0], is_alpha);
       }
     }
     
@@ -672,7 +637,7 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
         return;
       }
       size_t before = list.size();
-      find_textures_modern(shadername, list, color, _texture_copy, _texture_out_dir, is_alpha);
+      find_textures_modern(shadername, list, color, is_alpha);
       int blendValue;
       blend.getValue(blendValue);
       for (size_t sub=before; sub<list.size(); sub++) {
@@ -689,7 +654,7 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
 
   if (source.apiType() == MFn::kReverse) {
     MPlug input_plug = sourceFn.findPlug("input");
-    find_textures_modern(shadername, list, input_plug, _texture_copy, _texture_out_dir, is_alpha);
+    find_textures_modern(shadername, list, input_plug, is_alpha);
     return;
   }
   

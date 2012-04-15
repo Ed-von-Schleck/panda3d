@@ -71,6 +71,9 @@ PUBLISHED:
   void set_close_request_event(const string &close_request_event);
   string get_close_request_event() const;
 
+  INLINE void set_unexposed_draw(bool unexposed_draw);
+  INLINE bool get_unexposed_draw() const;
+
   INLINE WindowHandle *get_window_handle() const;
   
   // Mouse and keyboard routines
@@ -141,7 +144,7 @@ protected:
   void system_changed_size(int x_size, int y_size);
 
 protected:
-  INLINE void add_input_device(const GraphicsWindowInputDevice &device);
+  int add_input_device(const GraphicsWindowInputDevice &device);
   typedef vector_GraphicsWindowInputDevice InputDevices;
   InputDevices _input_devices;
   LightMutex _input_lock;
@@ -150,6 +153,8 @@ protected:
   WindowProperties _properties;
   PT(WindowHandle) _window_handle;
   PT(WindowHandle) _parent_window_handle;
+
+  bool _got_expose_event;
 
 private:
   LightReMutex _properties_lock; 
@@ -160,6 +165,7 @@ private:
   WindowProperties _rejected_properties;
   string _window_event;
   string _close_request_event;
+  bool _unexposed_draw;
 
 #ifdef HAVE_PYTHON
   typedef pset<PythonGraphicsWindowProc*> PythonWinProcClasses;

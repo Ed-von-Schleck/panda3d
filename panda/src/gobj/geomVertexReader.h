@@ -82,6 +82,8 @@ PUBLISHED:
 
   INLINE const GeomVertexData *get_vertex_data() const;
   INLINE const GeomVertexArrayData *get_array_data() const;
+  INLINE const GeomVertexArrayDataHandle *get_array_handle() const;
+  INLINE size_t get_stride() const;
   INLINE Thread *get_current_thread() const;
 
   INLINE void set_force(bool force);
@@ -97,6 +99,7 @@ PUBLISHED:
   INLINE int get_array() const;
   INLINE const GeomVertexColumn *get_column() const;
 
+  INLINE void set_row_unsafe(int row);
   INLINE void set_row(int row);
 
   INLINE int get_start_row() const;
@@ -107,6 +110,16 @@ PUBLISHED:
   INLINE const LVecBase2f &get_data2f();
   INLINE const LVecBase3f &get_data3f();
   INLINE const LVecBase4f &get_data4f();
+
+  INLINE double get_data1d();
+  INLINE const LVecBase2d &get_data2d();
+  INLINE const LVecBase3d &get_data3d();
+  INLINE const LVecBase4d &get_data4d();
+
+  INLINE PN_stdfloat get_data1();
+  INLINE const LVecBase2 &get_data2();
+  INLINE const LVecBase3 &get_data3();
+  INLINE const LVecBase4 &get_data4();
 
   INLINE int get_data1i();
   INLINE const int *get_data2i();

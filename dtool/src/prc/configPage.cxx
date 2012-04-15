@@ -41,6 +41,7 @@ ConfigPage(const string &name, bool implicit_load, int page_seq) :
   _name(name),
   _implicit_load(implicit_load),
   _page_seq(page_seq),
+  _sort(implicit_load ? 10 : 0),
   _next_decl_seq(1),
   _trust_level(0)
 {
@@ -87,6 +88,26 @@ get_local_page() {
     _local_page = new ConfigPage("local", false, 0);
   }
   return _local_page;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ConfigPage::set_sort
+//       Access: Published
+//  Description: Changes the explicit sort order of this particular
+//               ConfigPage.  Lower-numbered pages supercede
+//               higher-numbered pages.  Initially, all
+//               explicitly-loaded pages have sort value 0, and
+//               implicitly-loaded pages (found on disk) have sort
+//               value 10; you may set an individual page higher or
+//               lower to influence its priority relative to other
+//               pages.
+////////////////////////////////////////////////////////////////////
+void ConfigPage::
+set_sort(int sort) {
+  if (_sort != sort) {
+    _sort = sort;
+    ConfigPageManager::get_global_ptr()->mark_unsorted();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -312,6 +333,20 @@ get_num_declarations() const {
 ////////////////////////////////////////////////////////////////////
 const ConfigDeclaration *ConfigPage::
 get_declaration(int n) const {
+  nassertr(n >= 0 && n < (int)_declarations.size(), (ConfigDeclaration *)NULL);
+  return _declarations[n];
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ConfigPage::modify_declaration
+//       Access: Published
+//  Description: Returns a modifiable pointer to the nth declaration
+//               on the page.  Any modifications will appear in the
+//               output, if the page is written out with
+//               ConfigPage::write().
+////////////////////////////////////////////////////////////////////
+ConfigDeclaration *ConfigPage::
+modify_declaration(int n) {
   nassertr(n >= 0 && n < (int)_declarations.size(), (ConfigDeclaration *)NULL);
   return _declarations[n];
 }

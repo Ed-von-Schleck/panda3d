@@ -29,7 +29,7 @@ int AlphaTestAttrib::_attrib_slot;
 //  Description: Constructs a new AlphaTestAttrib object.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) AlphaTestAttrib::
-make(PandaCompareFunc mode, float reference_value) {
+make(PandaCompareFunc mode, PN_stdfloat reference_value) {
   assert((reference_value >=0.0f) && (reference_value <=1.0f));
   AlphaTestAttrib *attrib = new AlphaTestAttrib(mode,reference_value);
   return return_new(attrib);
@@ -79,11 +79,43 @@ compare_to_impl(const RenderAttrib *other) const {
   const AlphaTestAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   int compare_result = ((int)_mode - (int)ta->_mode) ;
-  if (compare_result!=0) {
+  if (compare_result != 0) {
     return compare_result;
-  } else {
-    return (int) (255.0f*(_reference_alpha - ta->_reference_alpha));
   }
+   
+  if (_reference_alpha != ta->_reference_alpha) {
+    return _reference_alpha < ta->_reference_alpha ? -1 : 1;
+  }
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: AlphaTestAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t AlphaTestAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  hash = int_hash::add_hash(hash, (int)_mode);
+  hash = float_hash().add_hash(hash, _reference_alpha);
+  return hash;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: AlphaTestAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) AlphaTestAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -108,7 +140,7 @@ write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
 
   dg.add_int8(_mode);
-  dg.add_float32(_reference_alpha);
+  dg.add_stdfloat(_reference_alpha);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -143,5 +175,5 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   RenderAttrib::fillin(scan, manager);
 
   _mode = (PandaCompareFunc)scan.get_int8();
-  _reference_alpha = scan.get_float32();
+  _reference_alpha = scan.get_stdfloat();
 }

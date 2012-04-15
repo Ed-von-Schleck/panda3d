@@ -23,27 +23,19 @@
 #include "configVariableDouble.h"
 #include "configVariableFilename.h"
 #include "configVariableString.h"
+#include "autoTextureScale.h"
 
 NotifyCategoryDecl(gobj, EXPCL_PANDA_GOBJ, EXPTP_PANDA_GOBJ);
 
 BEGIN_PUBLISH
-enum AutoTextureScale {
-  ATS_none,
-  ATS_down,
-  ATS_up,
-  ATS_pad,
-  ATS_UNSPECIFIED,
-};
 enum ShaderUtilization {
   SUT_none,
   SUT_basic,
   SUT_advanced,
-  SUT_UNSPECIFIED,
+  SUT_unspecified,
 };
 END_PUBLISH
 
-EXPCL_PANDA_GOBJ ostream &operator << (ostream &out, AutoTextureScale ats);
-EXPCL_PANDA_GOBJ istream &operator >> (istream &in, AutoTextureScale &ats);
 EXPCL_PANDA_GOBJ ostream &operator << (ostream &out, ShaderUtilization sut);
 EXPCL_PANDA_GOBJ istream &operator >> (istream &in, ShaderUtilization &sut);
 
@@ -71,6 +63,9 @@ extern EXPCL_PANDA_GOBJ ConfigVariableBool connect_triangle_strips;
 extern EXPCL_PANDA_GOBJ ConfigVariableBool preserve_triangle_strips;
 extern EXPCL_PANDA_GOBJ ConfigVariableBool dump_generated_shaders;
 extern EXPCL_PANDA_GOBJ ConfigVariableBool enforce_attrib_lock;
+extern EXPCL_PANDA_GOBJ ConfigVariableBool vertices_float64;
+extern EXPCL_PANDA_GOBJ ConfigVariableInt vertex_column_alignment;
+extern EXPCL_PANDA_GOBJ ConfigVariableBool vertex_animation_align_16;
 
 extern EXPCL_PANDA_GOBJ ConfigVariableEnum<AutoTextureScale> textures_power_2;
 extern EXPCL_PANDA_GOBJ ConfigVariableEnum<AutoTextureScale> textures_square;
@@ -102,6 +97,7 @@ extern EXPCL_PANDA_GOBJ ConfigVariableInt graphics_memory_limit;
 extern EXPCL_PANDA_GOBJ ConfigVariableDouble adaptive_lru_weight;
 extern EXPCL_PANDA_GOBJ ConfigVariableInt adaptive_lru_max_updates_per_frame;
 extern EXPCL_PANDA_GOBJ ConfigVariableDouble async_load_delay;
+extern EXPCL_PANDA_GOBJ ConfigVariableInt lens_geom_segments;
 
 #endif
 

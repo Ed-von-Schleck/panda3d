@@ -1,1 +1,0 @@
-makepanda\makepanda.bat --everything --installer

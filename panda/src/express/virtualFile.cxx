@@ -17,6 +17,7 @@
 #include "virtualFileList.h"
 #include "config_express.h"
 #include "pvector.h"
+#include <iterator>
 
 TypeHandle VirtualFile::_type_handle;
 
@@ -49,6 +50,65 @@ is_directory() const {
 ////////////////////////////////////////////////////////////////////
 bool VirtualFile::
 is_regular_file() const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::is_writable
+//       Access: Published, Virtual
+//  Description: Returns true if this file may be written to, which
+//               implies write_file() may be called (unless it is a
+//               directory instead of a regular file).
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+is_writable() const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::delete_file
+//       Access: Public
+//  Description: Attempts to delete this file or directory.  This can
+//               remove a single file or an empty directory.  It will
+//               not remove a nonempty directory.  Returns true on
+//               success, false on failure.
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+delete_file() {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::rename_file
+//       Access: Public
+//  Description: Attempts to move or rename this file or directory.
+//               If the original file is an ordinary file, it will
+//               quietly replace any already-existing file in the new
+//               filename (but not a directory).  If the original file
+//               is a directory, the new filename must not already
+//               exist.
+//
+//               If the file is a directory, the new filename must be
+//               within the same mount point.  If the file is an
+//               ordinary file, the new filename may be anywhere; but
+//               if it is not within the same mount point then the
+//               rename operation is automatically performed as a
+//               two-step copy-and-delete operation.
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+rename_file(VirtualFile *new_file) {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::copy_file
+//       Access: Public
+//  Description: Attempts to copy the contents of this file to the
+//               indicated file.  Returns true on success, false on
+//               failure.
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+copy_file(VirtualFile *new_file) {
   return false;
 }
 
@@ -170,6 +230,115 @@ open_read_file(bool auto_unwrap) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::close_read_file
+//       Access: Published
+//  Description: Closes a file opened by a previous call to
+//               open_read_file().  This really just deletes the
+//               istream pointer, but it is recommended to use this
+//               interface instead of deleting it explicitly, to help
+//               work around compiler issues.
+////////////////////////////////////////////////////////////////////
+void VirtualFile::
+close_read_file(istream *stream) const {
+  nassertv(false);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::was_read_successful
+//       Access: Published, Virtual
+//  Description: Call this method after a reading the istream returned
+//               by open_read_file() to completion.  If it returns
+//               true, the file was read completely and without error;
+//               if it returns false, there may have been some errors
+//               or a truncated file read.  This is particularly
+//               likely if the stream is a VirtualFileHTTP.
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+was_read_successful() const {
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::open_write_file
+//       Access: Published, Virtual
+//  Description: Opens the file for writing.  Returns a newly
+//               allocated ostream on success (which you should
+//               eventually delete when you are done writing).
+//               Returns NULL on failure.
+////////////////////////////////////////////////////////////////////
+ostream *VirtualFile::
+open_write_file(bool auto_wrap, bool truncate) {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::open_append_file
+//       Access: Published, Virtual
+//  Description: Works like open_write_file(), but the file is opened
+//               in append mode.  Like open_write_file, the returned
+//               pointer should eventually be passed to
+//               close_write_file().
+////////////////////////////////////////////////////////////////////
+ostream *VirtualFile::
+open_append_file() {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::close_write_file
+//       Access: Published
+//  Description: Closes a file opened by a previous call to
+//               open_write_file().  This really just deletes the
+//               ostream pointer, but it is recommended to use this
+//               interface instead of deleting it explicitly, to help
+//               work around compiler issues.
+////////////////////////////////////////////////////////////////////
+void VirtualFile::
+close_write_file(ostream *stream) {
+  nassertv(false);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::open_read_write_file
+//       Access: Published, Virtual
+//  Description: Opens the file for writing.  Returns a newly
+//               allocated iostream on success (which you should
+//               eventually delete when you are done writing).
+//               Returns NULL on failure.
+////////////////////////////////////////////////////////////////////
+iostream *VirtualFile::
+open_read_write_file(bool truncate) {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::open_read_append_file
+//       Access: Published, Virtual
+//  Description: Works like open_read_write_file(), but the file is opened
+//               in append mode.  Like open_read_write_file, the returned
+//               pointer should eventually be passed to
+//               close_read_write_file().
+////////////////////////////////////////////////////////////////////
+iostream *VirtualFile::
+open_read_append_file() {
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::close_read_write_file
+//       Access: Published
+//  Description: Closes a file opened by a previous call to
+//               open_read_write_file().  This really just deletes the
+//               iostream pointer, but it is recommended to use this
+//               interface instead of deleting it explicitly, to help
+//               work around compiler issues.
+////////////////////////////////////////////////////////////////////
+void VirtualFile::
+close_read_write_file(iostream *stream) {
+  nassertv(false);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: VirtualFile::get_file_size
 //       Access: Published, Virtual
 //  Description: Returns the current size on disk (or wherever it is)
@@ -214,43 +383,40 @@ get_timestamp() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: VirtualFile::close_read_file
-//       Access: Public
-//  Description: Closes a file opened by a previous call to
-//               open_read_file().  This really just deletes the
-//               istream pointer, but it is recommended to use this
-//               interface instead of deleting it explicitly, to help
-//               work around compiler issues.
+//     Function: VirtualFile::get_system_info
+//       Access: Published, Virtual
+//  Description: Populates the SubfileInfo structure with the data
+//               representing where the file actually resides on disk,
+//               if this is knowable.  Returns true if the file might
+//               reside on disk, and the info is populated, or false
+//               if it does not (or it is not known where the file
+//               resides), in which case the info is meaningless.
 ////////////////////////////////////////////////////////////////////
-void VirtualFile::
-close_read_file(istream *stream) const {
-  if (stream != (istream *)NULL) {
-    // For some reason--compiler bug in gcc 3.2?--explicitly deleting
-    // the stream pointer does not call the appropriate global delete
-    // function; instead apparently calling the system delete
-    // function.  So we call the delete function by hand instead.
-#if !defined(USE_MEMORY_NOWRAPPERS) && defined(REDEFINE_GLOBAL_OPERATOR_NEW)
-    stream->~istream();
-    (*global_operator_delete)(stream);
-#else
-    delete stream;
-#endif
-  }
+bool VirtualFile::
+get_system_info(SubfileInfo &info) {
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: VirtualFile::was_read_successful
-//       Access: Public
-//  Description: Call this method after a reading the istream returned
-//               by open_read_file() to completion.  If it returns
-//               true, the file was read completely and without error;
-//               if it returns false, there may have been some errors
-//               or a truncated file read.  This is particularly
-//               likely if the stream is a VirtualFileHTTP.
+//     Function: VirtualFile::atomic_compare_and_exchange_contents
+//       Access: Public, Virtual
+//  Description: See Filename::atomic_compare_and_exchange_contents().
 ////////////////////////////////////////////////////////////////////
 bool VirtualFile::
-was_read_successful() const {
-  return true;
+atomic_compare_and_exchange_contents(string &orig_contents,
+                                     const string &old_contents, 
+                                     const string &new_contents) {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::atomic_read_contents
+//       Access: Public, Virtual
+//  Description: See Filename::atomic_read_contents().
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+atomic_read_contents(string &contents) const {
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -285,6 +451,17 @@ read_file(string &result, bool auto_unwrap) const {
 ////////////////////////////////////////////////////////////////////
 bool VirtualFile::
 read_file(pvector<unsigned char> &result, bool auto_unwrap) const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: VirtualFile::write_file
+//       Access: Public, Virtual
+//  Description: Writes the indicated data to the file, if it is
+//               writable.  Returns true on success, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool VirtualFile::
+write_file(const unsigned char *data, size_t data_size, bool auto_wrap) {
   return false;
 }
 

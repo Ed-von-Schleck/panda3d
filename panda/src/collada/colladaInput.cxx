@@ -184,7 +184,7 @@ make_vertex_columns(GeomVertexArrayFormat *format) const {
 
   nassertr(_column_name != NULL, 0);
 
-  format->add_column(_column_name, _num_bound_params, GeomEnums::NT_float32, _column_contents);
+  format->add_column(_column_name, _num_bound_params, GeomEnums::NT_stdfloat, _column_contents);
   return 1;
 }
 
@@ -224,7 +224,7 @@ read_data(domSource &source) {
     LVecBase4f v (0, 0, 0, 1);
     for (domUint p = 0; p < params.getCount(); ++p) {
       if (params[c]->getName()) {
-        v._v.data[c++] = floats[pos + p];
+        v[c++] = floats[pos + p];
       }
     }
     _data.push_back(v);
@@ -260,7 +260,7 @@ void ColladaInput::
 write_data(GeomVertexData *vdata, int start_row, domP &p, unsigned int stride, unsigned int offset) const {
   nassertv(_column_name != NULL);
   GeomVertexWriter writer (vdata, _column_name);
-  writer.set_row(start_row);
+  writer.set_row_unsafe(start_row);
 
   domList_of_uints &indices = p.getValue();
 

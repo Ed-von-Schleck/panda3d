@@ -26,9 +26,9 @@
 #include "config_util.h"
 #include "fmodAudioManager.h"
 #include "fmodAudioSound.h"
-//Needed so People use Panda's Generic UNIX Style Paths for Filename.
 #include "filename.h"
 #include "virtualFileSystem.h"
+#include "reMutexHolder.h"
 
 //FMOD Headers.
 #include <fmod.hpp>
@@ -38,7 +38,9 @@
 
 TypeHandle FmodAudioManager::_type_handle;
 
+ReMutex FmodAudioManager::_lock;
 FMOD::System *FmodAudioManager::_system; 
+
 pset<FmodAudioManager *> FmodAudioManager::_all_managers;
 
 bool FmodAudioManager::_system_is_valid = false;
@@ -49,11 +51,11 @@ bool FmodAudioManager::_system_is_valid = false;
 //  Since Panda use feet we need to compensate for that with a factor of 3.28
 //
 //  This can be overwritten.  You just need to call
-//  audio_3d_set_distance_factor(float factor) and set your new factor.
+//  audio_3d_set_distance_factor(PN_stdfloat factor) and set your new factor.
 
-float FmodAudioManager::_doppler_factor = 1;
-float FmodAudioManager::_distance_factor = 3.28;
-float FmodAudioManager::_drop_off_factor = 1;
+PN_stdfloat FmodAudioManager::_doppler_factor = 1;
+PN_stdfloat FmodAudioManager::_distance_factor = 3.28;
+PN_stdfloat FmodAudioManager::_drop_off_factor = 1;
 
 
 ////////////////////////////////////////////////////////////////////
@@ -84,6 +86,7 @@ AudioManager *Create_FmodAudioManager() {
 ////////////////////////////////////////////////////////////////////
 FmodAudioManager::
 FmodAudioManager() {
+  ReMutexHolder holder(_lock);
   FMOD_RESULT result;
 
   //We need a varible temporary to check the FMOD Version.
@@ -128,27 +131,28 @@ FmodAudioManager() {
     //Stick Surround Sound 5.1 thing Here.
     if (fmod_use_surround_sound) {
       audio_debug("Setting FMOD to use 5.1 Surround Sound.");
-      result = _system->setSpeakerMode( FMOD_SPEAKERMODE_5POINT1 );
+      result = _system->setSpeakerMode(FMOD_SPEAKERMODE_5POINT1);
       fmod_audio_errcheck("_system->setSpeakerMode()", result);
     }
 
     //Now we Initialize the System.
-	int nchan = fmod_number_of_sound_channels;
-    result = _system->init(nchan, FMOD_INIT_NORMAL, 0);
-    fmod_audio_errcheck("_system->init()", result);
+    int nchan = fmod_number_of_sound_channels;
+    int flags = FMOD_INIT_NORMAL;
+
+    result = _system->init(nchan, flags, 0);
+    if (result == FMOD_ERR_TOOMANYCHANNELS) {
+      fmodAudio_cat.error()
+        << "Value too large for fmod-number-of-sound-channels: " << nchan
+        << "\n";
+    } else {
+      fmod_audio_errcheck("_system->init()", result);
+    }
 
     _system_is_valid = (result == FMOD_OK);
 
     if (_system_is_valid) {
       result = _system->set3DSettings( _doppler_factor, _distance_factor, _drop_off_factor);
       fmod_audio_errcheck("_system->set3DSettings()", result);
-
-#if (FMOD_VERSION >= 0x00043100) // FMod 4.31.00 changed this API
-      result = _system->setFileSystem(open_callback, close_callback, read_callback, seek_callback, 0, 0, -1);
-#else
-      result = _system->setFileSystem(open_callback, close_callback, read_callback, seek_callback, -1);
-#endif
-      fmod_audio_errcheck("_system->setFileSystem()", result);
     }
   }
 
@@ -172,8 +176,10 @@ FmodAudioManager() {
     _midi_info.dlsname = _dlsname.c_str();
   }
 
-  result = _system->createChannelGroup("UserGroup", &_channelgroup);
-  fmod_audio_errcheck("_system->createChannelGroup()", result);
+  if (_is_valid) {
+    result = _system->createChannelGroup("UserGroup", &_channelgroup);
+    fmod_audio_errcheck("_system->createChannelGroup()", result);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -183,6 +189,7 @@ FmodAudioManager() {
 ////////////////////////////////////////////////////////////////////
 FmodAudioManager::
 ~FmodAudioManager() {
+  ReMutexHolder holder(_lock);
   // Be sure to delete associated sounds before deleting the manager!
   FMOD_RESULT result;
 
@@ -218,6 +225,7 @@ is_valid() {
 ////////////////////////////////////////////////////////////////////
 FMOD::DSP *FmodAudioManager::
 make_dsp(const FilterProperties::FilterConfig &conf) {
+  ReMutexHolder holder(_lock);
   FMOD_DSP_TYPE dsptype;
   FMOD_RESULT result;
   FMOD::DSP *dsp;
@@ -344,6 +352,7 @@ make_dsp(const FilterProperties::FilterConfig &conf) {
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
 update_dsp_chain(FMOD::DSP *head, FilterProperties *config) {
+  ReMutexHolder holder(_lock);
   const FilterProperties::ConfigVector &conf = config->get_config();
   FMOD_RESULT result;
 
@@ -387,6 +396,7 @@ update_dsp_chain(FMOD::DSP *head, FilterProperties *config) {
 ////////////////////////////////////////////////////////////////////
 bool FmodAudioManager::
 configure_filters(FilterProperties *config) {
+  ReMutexHolder holder(_lock);
   FMOD_RESULT result;
   FMOD::DSP *head;
   result = _channelgroup->getDSPHead(&head);
@@ -405,6 +415,7 @@ configure_filters(FilterProperties *config) {
 ////////////////////////////////////////////////////////////////////
 PT(AudioSound) FmodAudioManager::
 get_sound(const string &file_name, bool positional, int) {
+  ReMutexHolder holder(_lock);
   //Needed so People use Panda's Generic UNIX Style Paths for Filename.
   //path.to_os_specific() converts it back to the proper OS version later on.
   
@@ -442,6 +453,7 @@ get_sound(MovieAudio *source, bool positional, int) {
 ////////////////////////////////////////////////////////////////////
 int FmodAudioManager::
 getSpeakerSetup() {
+  ReMutexHolder holder(_lock);
   FMOD_RESULT result;
   FMOD_SPEAKERMODE speakerMode;
   int returnMode;
@@ -506,6 +518,7 @@ getSpeakerSetup() {
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
 setSpeakerSetup(AudioManager::SpeakerModeCategory cat) {
+  ReMutexHolder holder(_lock);
   FMOD_RESULT result;
   FMOD_SPEAKERMODE speakerModeType = (FMOD_SPEAKERMODE)cat;
   result = _system->setSpeakerMode( speakerModeType);
@@ -513,13 +526,14 @@ setSpeakerSetup(AudioManager::SpeakerModeCategory cat) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::set_volume(float volume)
+//     Function: FmodAudioManager::set_volume(PN_stdfloat volume)
 //       Access: Public
 //  Description: Sets the volume of the AudioManager.
 //               It is not an override, but a multiplier.
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
-set_volume(float volume) {
+set_volume(PN_stdfloat volume) {
+  ReMutexHolder holder(_lock);
   FMOD_RESULT result;
   result = _channelgroup->setVolume(volume);
   fmod_audio_errcheck("_channelgroup->setVolume()", result);
@@ -530,13 +544,14 @@ set_volume(float volume) {
 //       Access: Public
 //  Description: Returns the AudioManager's volume.
 ////////////////////////////////////////////////////////////////////
-float FmodAudioManager::
+PN_stdfloat FmodAudioManager::
 get_volume() const {
+  ReMutexHolder holder(_lock);
   float volume;
   FMOD_RESULT result;
   result = _channelgroup->getVolume(&volume);
   fmod_audio_errcheck("_channelgroup->getVolume()", result);
-  return volume;
+  return (PN_stdfloat)volume;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -547,6 +562,7 @@ get_volume() const {
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
 set_active(bool active) {
+  ReMutexHolder holder(_lock);
   if (_active != active) {
     _active = active;
 
@@ -576,6 +592,7 @@ get_active() const {
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
 stop_all_sounds() {
+  ReMutexHolder holder(_lock);
   // We have to walk through this list with some care, since stopping
   // a sound may also remove it from the set (if there are no other
   // references to the sound).
@@ -597,6 +614,7 @@ stop_all_sounds() {
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
 update() {
+  ReMutexHolder holder(_lock);
   _system->update();
 }
 
@@ -616,7 +634,8 @@ update() {
 //        I told you, so you can't say I didn't.
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
-audio_3d_set_listener_attributes(float px, float py, float pz, float vx, float vy, float vz, float fx, float fy, float fz, float ux, float uy, float uz) {
+audio_3d_set_listener_attributes(PN_stdfloat px, PN_stdfloat py, PN_stdfloat pz, PN_stdfloat vx, PN_stdfloat vy, PN_stdfloat vz, PN_stdfloat fx, PN_stdfloat fy, PN_stdfloat fz, PN_stdfloat ux, PN_stdfloat uy, PN_stdfloat uz) {
+  ReMutexHolder holder(_lock);
   audio_debug("FmodAudioManager::audio_3d_set_listener_attributes()");
 
   FMOD_RESULT result;
@@ -648,7 +667,7 @@ audio_3d_set_listener_attributes(float px, float py, float pz, float vx, float v
 //  Description: Get position of the "ear" that picks up 3d sounds
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
-audio_3d_get_listener_attributes(float *px, float *py, float *pz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float *ux, float *uy, float *uz) {
+audio_3d_get_listener_attributes(PN_stdfloat *px, PN_stdfloat *py, PN_stdfloat *pz, PN_stdfloat *vx, PN_stdfloat *vy, PN_stdfloat *vz, PN_stdfloat *fx, PN_stdfloat *fy, PN_stdfloat *fz, PN_stdfloat *ux, PN_stdfloat *uy, PN_stdfloat *uz) {
   audio_error("audio3dGetListenerAttributes: currently unimplemented. Get the attributes of the attached object");
 
 }
@@ -661,7 +680,8 @@ audio_3d_get_listener_attributes(float *px, float *py, float *pz, float *vx, flo
 //               its sound-spacialization calculations)
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
-audio_3d_set_distance_factor(float factor) {
+audio_3d_set_distance_factor(PN_stdfloat factor) {
+  ReMutexHolder holder(_lock);
   audio_debug( "FmodAudioManager::audio_3d_set_distance_factor( factor= " << factor << ")" );
   
   FMOD_RESULT result;
@@ -680,7 +700,7 @@ audio_3d_set_distance_factor(float factor) {
 //  Description: Gets units per meter (Fmod uses meters internally for
 //               its sound-spacialization calculations)
 ////////////////////////////////////////////////////////////////////
-float FmodAudioManager::
+PN_stdfloat FmodAudioManager::
 audio_3d_get_distance_factor() const {
   audio_debug("FmodAudioManager::audio_3d_get_distance_factor()");
 
@@ -694,7 +714,8 @@ audio_3d_get_distance_factor() const {
 //               Defaults to 1.0
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
-audio_3d_set_doppler_factor(float factor) {
+audio_3d_set_doppler_factor(PN_stdfloat factor) {
+  ReMutexHolder holder(_lock);
   audio_debug("FmodAudioManager::audio_3d_set_doppler_factor(factor="<<factor<<")");
 
   FMOD_RESULT result;
@@ -711,7 +732,7 @@ audio_3d_set_doppler_factor(float factor) {
 //       Access: Public
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-float FmodAudioManager::
+PN_stdfloat FmodAudioManager::
 audio_3d_get_doppler_factor() const {
   audio_debug("FmodAudioManager::audio_3d_get_doppler_factor()");
 
@@ -725,7 +746,8 @@ audio_3d_get_doppler_factor() const {
 //               Defaults to 1.0
 ////////////////////////////////////////////////////////////////////
 void FmodAudioManager::
-audio_3d_set_drop_off_factor(float factor) {
+audio_3d_set_drop_off_factor(PN_stdfloat factor) {
+  ReMutexHolder holder(_lock);
   audio_debug("FmodAudioManager::audio_3d_set_drop_off_factor("<<factor<<")");
 
   FMOD_RESULT result;
@@ -742,8 +764,9 @@ audio_3d_set_drop_off_factor(float factor) {
 //       Access: Public
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-float FmodAudioManager::
+PN_stdfloat FmodAudioManager::
 audio_3d_get_drop_off_factor() const {
+  ReMutexHolder holder(_lock);
   audio_debug("FmodAudioManager::audio_3d_get_drop_off_factor()");
 
   return _drop_off_factor;
@@ -832,98 +855,5 @@ get_cache_limit() const {
   //return _cache_limit;
   return 0;
 }
-
-////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::open_callback
-//       Access: Private, Static
-//  Description: A hook into Panda's virtual file system.
-////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK FmodAudioManager::
-open_callback(const char *name, int, unsigned int *file_size,
-              void **handle, void **user_data) {
-  if (name == (const char *)NULL || name[0] == '\0') {
-    // An invalid attempt to open an unnamed file.
-    return FMOD_ERR_FILE_NOTFOUND;
-  }
-    
-  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-
-  PT(VirtualFile) file = vfs->get_file(Filename(name));
-  if (file == (VirtualFile *)NULL) {
-    return FMOD_ERR_FILE_NOTFOUND;
-  }
-  istream *str = file->open_read_file(true);
-
-  (*file_size) = file->get_file_size(str);
-  (*handle) = (void *)str;
-  (*user_data) = NULL;
-
-  return FMOD_OK;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::close_callback
-//       Access: Private, Static
-//  Description: A hook into Panda's virtual file system.
-////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK FmodAudioManager::
-close_callback(void *handle, void *user_data) {
-  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-
-  istream *str = (istream *)handle;
-  vfs->close_read_file(str);
-
-  return FMOD_OK;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::read_callback
-//       Access: Private, Static
-//  Description: A hook into Panda's virtual file system.
-////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK FmodAudioManager::
-read_callback(void *handle, void *buffer, unsigned int size_bytes,
-              unsigned int *bytes_read, void *user_data) {
-  istream *str = (istream *)handle;
-  str->read((char *)buffer, size_bytes);
-  (*bytes_read) = str->gcount();
-
-  // We can't yield here, since this callback is made within a
-  // sub-thread--an OS-level sub-thread spawned by FMod, not a Panda
-  // thread.
-  //thread_consider_yield();
-
-  if (str->eof()) {
-    if ((*bytes_read) == 0) {
-      return FMOD_ERR_FILE_EOF;
-    } else {
-      // Report the EOF next time.
-      return FMOD_OK;
-    }
-  } if (str->fail()) {
-    return FMOD_ERR_FILE_BAD;
-  } else {
-    return FMOD_OK;
-  }
-}
-  
-////////////////////////////////////////////////////////////////////
-//     Function: FmodAudioManager::seek_callback
-//       Access: Private, Static
-//  Description: A hook into Panda's virtual file system.
-////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK FmodAudioManager::
-seek_callback(void *handle, unsigned int pos, void *user_data) {
-  istream *str = (istream *)handle;
-  str->clear();
-  str->seekg(pos);
-
-  if (str->fail() && !str->eof()) {
-    return FMOD_ERR_FILE_COULDNOTSEEK;
-  } else {
-    return FMOD_OK;
-  }
-}
-
 
 #endif //]

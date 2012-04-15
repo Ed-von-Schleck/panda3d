@@ -1,15 +1,15 @@
 #define BUILD_DIRECTORY $[HAVE_EGG]
 
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
-                   dtoolutil:c dtoolbase:c dtool:m prc:c
+#define OTHER_LIBS p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+                   p3dtoolutil:c p3dtoolbase:c p3dtool:m p3prc:c
 #define YACC_PREFIX eggyy
 #define LFLAGS -i
 #define USE_PACKAGES zlib
 
 #begin lib_target
-  #define TARGET egg
+  #define TARGET p3egg
   #define LOCAL_LIBS \
-    mathutil linmath putil
+    p3mathutil p3linmath p3putil
     
   #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx 
 
@@ -49,7 +49,9 @@
      eggTransform.I eggTransform.h \
      eggUserData.I eggUserData.h \
      eggUtilities.I eggUtilities.h \
-     eggVertex.I eggVertex.h eggVertexPool.I eggVertexPool.h \
+     eggVertex.I eggVertex.h \
+     eggVertexAux.I eggVertexAux.h \
+     eggVertexPool.I eggVertexPool.h \
      eggVertexUV.I eggVertexUV.h \
      eggXfmAnimData.I  \
      eggXfmAnimData.h eggXfmSAnim.I eggXfmSAnim.h parserDefs.h  \
@@ -83,7 +85,9 @@
      eggTriangleFan.cxx \
      eggTriangleStrip.cxx \
      eggUserData.cxx \
-     eggUtilities.cxx eggVertex.cxx eggVertexPool.cxx eggVertexUV.cxx \
+     eggUtilities.cxx eggVertex.cxx \
+     eggVertexAux.cxx \
+     eggVertexPool.cxx eggVertexUV.cxx \
      eggXfmAnimData.cxx eggXfmSAnim.cxx pt_EggMaterial.cxx  \
      vector_PT_EggMaterial.cxx pt_EggTexture.cxx  \
      vector_PT_EggTexture.cxx pt_EggVertex.cxx  \
@@ -116,7 +120,9 @@
     eggTriangleFan.I eggTriangleFan.h \
     eggTriangleStrip.I eggTriangleStrip.h \
     eggUserData.I eggUserData.h \
-    eggUtilities.I eggUtilities.h eggVertex.I eggVertex.h \
+    eggUtilities.I eggUtilities.h \
+    eggVertex.I eggVertex.h \
+    eggVertexAux.I eggVertexAux.h \
     eggVertexPool.I eggVertexPool.h \
     eggVertexUV.I eggVertexUV.h \
     eggXfmAnimData.I eggXfmAnimData.h \
@@ -132,7 +138,7 @@
 #begin test_bin_target
   #define TARGET test_egg
   #define LOCAL_LIBS \
-    egg putil mathutil
+    p3egg p3putil p3mathutil
 
   #define SOURCES \
     test_egg.cxx

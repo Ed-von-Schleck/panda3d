@@ -12,8 +12,6 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-//typedef struct {FLOATTYPE _0, _1} FLOATNAME(data);
-
 
 ////////////////////////////////////////////////////////////////////
 //       Class : LVecBase2
@@ -125,25 +123,34 @@ PUBLISHED:
   INLINE_LINMATH void output(ostream &out) const;
   EXTENSION(INLINE_LINMATH void python_repr(ostream &out, const string &class_name) const);
 
-public:
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen) const;
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen,
                                     FLOATTYPE threshold) const;
 
+  INLINE_LINMATH void write_datagram_fixed(Datagram &destination) const;
+  INLINE_LINMATH void read_datagram_fixed(DatagramIterator &source);
+  INLINE_LINMATH void write_datagram(Datagram &destination) const;
+  INLINE_LINMATH void read_datagram(DatagramIterator &source);
+
 public:
-   union {
-        FLOATTYPE data[2];
-        struct {FLOATTYPE _0, _1;} v;
-   } _v;
+  // The underlying implementation is via the Eigen library, if available.
+
+  // We don't bother to align LVecBase2.  The float version is too
+  // small to benefit from SSE2 optimizations.  The double version
+  // *would* benefit, but we use this class infrequently throughout
+  // the Panda codebase, and the nuisance value of maintaining aligned
+  // and unaligned versions of this class outweighs the benefits of
+  // having SSE2 optimizations in the stdfloat-double compilation
+  // mode.
+  typedef UNALIGNED_LINMATH_MATRIX(FLOATTYPE, 1, 2) EVector2;
+  EVector2 _v;
+
+  INLINE_LINMATH FLOATNAME(LVecBase2)(const EVector2 &v) : _v(v) { }
 
 private:
   static const FLOATNAME(LVecBase2) _zero;
   static const FLOATNAME(LVecBase2) _unit_x;
   static const FLOATNAME(LVecBase2) _unit_y;
-
-public:
-  INLINE_LINMATH void write_datagram(Datagram &destination) const;
-  INLINE_LINMATH void read_datagram(DatagramIterator &source);
 
 public:
   static TypeHandle get_class_type() {
@@ -155,8 +162,7 @@ private:
   static TypeHandle _type_handle;
 };
 
-
-INLINE_LINMATH ostream &operator << (ostream &out, const FLOATNAME(LVecBase2) &vec) {
+INLINE ostream &operator << (ostream &out, const FLOATNAME(LVecBase2) &vec) {
   vec.output(out);
   return out;
 }

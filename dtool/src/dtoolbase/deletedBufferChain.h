@@ -93,6 +93,7 @@ private:
 
   static INLINE void *node_to_buffer(ObjectNode *node);
   static INLINE ObjectNode *buffer_to_node(void *buffer);
+  static INLINE size_t get_flag_reserved_bytes();
 
   ObjectNode *_deleted_chain;
   

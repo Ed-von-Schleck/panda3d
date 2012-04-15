@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "config_collide.h"
+#include "collisionBox.h"
 #include "collisionEntry.h"
 #include "collisionHandler.h"
 #include "collisionHandlerEvent.h"
@@ -23,7 +24,6 @@
 #include "collisionHandlerPusher.h"
 #include "collisionHandlerFluidPusher.h"
 #include "collisionHandlerQueue.h"
-#include "collisionDSSolid.h"
 #include "collisionInvSphere.h"
 #include "collisionLine.h"
 #include "collisionLevelStateBase.h"
@@ -40,7 +40,6 @@
 #include "collisionSphere.h"
 #include "collisionTraverser.h"
 #include "collisionTube.h"
-#include "collisionBox.h"
 #include "collisionVisualizer.h"
 #include "dconfig.h"
 
@@ -99,9 +98,15 @@ ConfigVariableInt collision_parabola_bounds_sample
  PRC_DESC("This is the number of points along a CollisionParabola to "
           "sample in order to determine an accurate bounding box."));
 
-ConfigVariableInt fluid_cap_amount 
+ConfigVariableInt fluid_cap_amount
 ("fluid-cap-amount", 100,
  PRC_DESC("ensures that fluid pos doesn't check beyond X feet"));
+
+ConfigVariableBool pushers_horizontal
+("pushers-horizontal", false,
+ PRC_DESC("Set this true to make all CollisionHandlerPushers have the "
+          "set_horizontal() flag by default, false to let the move "
+          "in three dimensions by default."));
 
 ////////////////////////////////////////////////////////////////////
 //     Function: init_libcollide
@@ -119,6 +124,7 @@ init_libcollide() {
   }
   initialized = true;
 
+  CollisionBox::init_type();
   CollisionEntry::init_type();
   CollisionHandler::init_type();
   CollisionHandlerEvent::init_type();
@@ -129,7 +135,6 @@ init_libcollide() {
   CollisionHandlerPusher::init_type();
   CollisionHandlerFluidPusher::init_type();
   CollisionHandlerQueue::init_type();
-  CollisionDSSolid::init_type();
   CollisionInvSphere::init_type();
   CollisionLine::init_type();
   CollisionLevelStateBase::init_type();
@@ -145,14 +150,13 @@ init_libcollide() {
   CollisionSphere::init_type();
   CollisionTraverser::init_type();
   CollisionTube::init_type();
-  CollisionBox::init_type();
 
 #ifdef DO_COLLISION_RECORDING
   CollisionRecorder::init_type();
   CollisionVisualizer::init_type();
 #endif
 
-  CollisionDSSolid::register_with_read_factory();
+  CollisionBox::register_with_read_factory();
   CollisionInvSphere::register_with_read_factory();
   CollisionLine::register_with_read_factory();
   CollisionNode::register_with_read_factory();
@@ -164,5 +168,4 @@ init_libcollide() {
   CollisionSegment::register_with_read_factory();
   CollisionSphere::register_with_read_factory();
   CollisionTube::register_with_read_factory();
-  CollisionBox::register_with_read_factory();
 }

@@ -28,4 +28,21 @@
 #include "dblnames.h"
 #include "frustum_src.h"
 
+#ifndef STDFLOAT_DOUBLE
+typedef LFrustumf LFrustum;
+#else
+typedef LFrustumd LFrustum;
+#endif
+
+// Bogus typedefs for interrogate and legacy Python code.
+#ifdef CPPPARSER
+typedef LFrustumf FrustumF;
+typedef LFrustumd FrustumD;
+#ifndef STDFLOAT_DOUBLE
+typedef LFrustumf Frustum;
+#else
+typedef LFrustumd Frustum;
+#endif
+#endif  // CPPPARSER
+
 #endif

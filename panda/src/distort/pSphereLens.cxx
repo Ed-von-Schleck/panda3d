@@ -19,7 +19,7 @@ TypeHandle PSphereLens::_type_handle;
 
 // This is the focal-length constant for fisheye lenses.  See
 // fisheyeLens.cxx.
-static const float pspherical_k = 60.0f;
+static const PN_stdfloat pspherical_k = 60.0f;
 
 
 ////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ make_copy() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PSphereLens::extrude_impl
+//     Function: PSphereLens::do_extrude
 //       Access: Protected, Virtual
 //  Description: Given a 2-d point in the range (-1,1) in both
 //               dimensions, where (0,0) is the center of the
@@ -50,30 +50,32 @@ make_copy() const {
 //               otherwise.
 ////////////////////////////////////////////////////////////////////
 bool PSphereLens::
-extrude_impl(const LPoint3f &point2d, LPoint3f &near_point, LPoint3f &far_point) const {
+do_extrude(const Lens::CData *lens_cdata, 
+           const LPoint3 &point2d, LPoint3 &near_point, LPoint3 &far_point) const {
   // Undo the shifting from film offsets, etc.  This puts the point
   // into the range [-film_size/2, film_size/2] in x and y.
-  LPoint3f f = point2d * get_film_mat_inv();
+  LPoint3 f = point2d * do_get_film_mat_inv(lens_cdata);
 
-  float focal_length = get_focal_length();
+  PN_stdfloat focal_length = do_get_focal_length(lens_cdata);
 
   // Rotate the forward vector through the rotation angles
   // corresponding to this point.
-  LPoint3f v = LPoint3f(0.0f, 1.0f, 0.0f) *
-    LMatrix3f::rotate_mat(f[1] * pspherical_k / focal_length, LVector3f(1.0f, 0.0f, 0.0f)) *
-    LMatrix3f::rotate_mat(f[0] * pspherical_k / focal_length, LVector3f(0.0f, 0.0f, -1.0f));
+  LPoint3 v = LPoint3(0.0f, 1.0f, 0.0f) *
+    LMatrix3::rotate_mat(f[1] * pspherical_k / focal_length, LVector3(1.0f, 0.0f, 0.0f)) *
+    LMatrix3::rotate_mat(f[0] * pspherical_k / focal_length, LVector3(0.0f, 0.0f, -1.0f));
 
   // And we'll need to account for the lens's rotations, etc. at the
   // end of the day.
-  const LMatrix4f &lens_mat = get_lens_mat();
+  const LMatrix4 &lens_mat = do_get_lens_mat(lens_cdata);
+  const LMatrix4 &proj_inv_mat = do_get_projection_mat_inv(lens_cdata);
 
-  near_point = (v * get_near()) * lens_mat;
-  far_point = (v * get_far()) * lens_mat;
+  near_point = (v * do_get_near(lens_cdata)) * proj_inv_mat * lens_mat;
+  far_point = (v * do_get_far(lens_cdata)) * proj_inv_mat * lens_mat;
   return true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PSphereLens::project_impl
+//     Function: PSphereLens::do_project
 //       Access: Protected, Virtual
 //  Description: Given a 3-d point in space, determine the 2-d point
 //               this maps to, in the range (-1,1) in both dimensions,
@@ -90,10 +92,10 @@ extrude_impl(const LPoint3f &point2d, LPoint3f &near_point, LPoint3f &far_point)
 //               is filled in), or false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool PSphereLens::
-project_impl(const LPoint3f &point3d, LPoint3f &point2d) const {
+do_project(const Lens::CData *lens_cdata, const LPoint3 &point3d, LPoint3 &point2d) const {
   // First, account for any rotations, etc. on the lens.
-  LVector3f v3 = point3d * get_lens_mat_inv();
-  float dist = v3.length();
+  LVector3 v3 = point3d * do_get_lens_mat_inv(lens_cdata) * do_get_projection_mat(lens_cdata);
+  PN_stdfloat dist = v3.length();
   if (dist == 0.0f) {
     point2d.set(0.0f, 0.0f, 0.0f);
     return false;
@@ -101,12 +103,12 @@ project_impl(const LPoint3f &point3d, LPoint3f &point2d) const {
 
   v3 /= dist;
 
-  float focal_length = get_focal_length();
+  PN_stdfloat focal_length = do_get_focal_length(lens_cdata);
 
   // To compute the x position on the frame, we only need to consider
   // the angle of the vector about the Z axis.  Project the vector
   // into the XY plane to do this.
-  LVector2f xy(v3[0], v3[1]);
+  LVector2 xy(v3[0], v3[1]);
 
   // Unroll the Z angle, and the y position is the angle about the X
   // axis.
@@ -120,12 +122,12 @@ project_impl(const LPoint3f &point3d, LPoint3f &point2d) const {
      // The y position is the angle about the X axis.
      rad_2_deg(catan2(yz[1], yz[0])) * focal_length / pspherical_k,
      // Z is the distance scaled into the range (1, -1).
-     (get_near() - dist) / (get_far() - get_near())
+     (do_get_near(lens_cdata) - dist) / (do_get_far(lens_cdata) - do_get_near(lens_cdata))
      );
 
   // Now we have to transform the point according to the film
   // adjustments.
-  point2d = point2d * get_film_mat();
+  point2d = point2d * do_get_film_mat(lens_cdata);
 
   return
     point2d[0] >= -1.0f && point2d[0] <= 1.0f && 
@@ -141,8 +143,8 @@ project_impl(const LPoint3f &point3d, LPoint3f &point2d) const {
 //               direction; otherwise, it is in the vertical direction
 //               (some lenses behave differently in each direction).
 ////////////////////////////////////////////////////////////////////
-float PSphereLens::
-fov_to_film(float fov, float focal_length, bool) const {
+PN_stdfloat PSphereLens::
+fov_to_film(PN_stdfloat fov, PN_stdfloat focal_length, bool) const {
   return focal_length * fov / pspherical_k;
 }
 
@@ -155,8 +157,8 @@ fov_to_film(float fov, float focal_length, bool) const {
 //               direction; otherwise, it is in the vertical direction
 //               (some lenses behave differently in each direction).
 ////////////////////////////////////////////////////////////////////
-float PSphereLens::
-fov_to_focal_length(float fov, float film_size, bool) const {
+PN_stdfloat PSphereLens::
+fov_to_focal_length(PN_stdfloat fov, PN_stdfloat film_size, bool) const {
   return film_size * pspherical_k / fov;
 }
 
@@ -169,7 +171,7 @@ fov_to_focal_length(float fov, float film_size, bool) const {
 //               otherwise, it is in the vertical direction (some
 //               lenses behave differently in each direction).
 ////////////////////////////////////////////////////////////////////
-float PSphereLens::
-film_to_fov(float film_size, float focal_length, bool) const {
+PN_stdfloat PSphereLens::
+film_to_fov(PN_stdfloat film_size, PN_stdfloat focal_length, bool) const {
   return film_size * pspherical_k / focal_length;
 }

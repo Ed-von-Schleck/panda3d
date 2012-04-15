@@ -49,7 +49,7 @@ get_y_size() const {
 //  Description: The "scale" is reported in the pfm header and is
 //               probably meaningless.
 ////////////////////////////////////////////////////////////////////
-INLINE float PfmFile::
+INLINE PN_stdfloat PfmFile::
 get_scale() const {
   return _scale;
 }
@@ -73,15 +73,15 @@ get_num_channels() const {
 //     Function: PfmFile::has_point
 //       Access: Published
 //  Description: Returns true if there is a valid point at x, y.  This
-//               always returns true unless the zero_special flag is
-//               enabled, in which case it returns false if the point
-//               at x, y is zero.
+//               always returns true unless a "no data" value has been
+//               set, in which case it returns false if the point at
+//               x, y is the "no data" value.
 ////////////////////////////////////////////////////////////////////
 INLINE bool PfmFile::
 has_point(int x, int y) const {
   if ((x >= 0 && x < _x_size) && 
       (y >= 0 && y < _y_size)) {
-    return (!_zero_special || _table[y * _x_size + x] != LPoint3f::zero());
+    return (!_has_no_data_value || _table[y * _x_size + x] != _no_data_value);
   }
   return false;
 }
@@ -93,10 +93,10 @@ has_point(int x, int y) const {
 //               point.  In a 1-channel image, the channel value is in
 //               the x component.
 ////////////////////////////////////////////////////////////////////
-INLINE const LPoint3f &PfmFile::
+INLINE const LPoint3 &PfmFile::
 get_point(int x, int y) const {
-  nassertr(x >= 0 && x < _x_size, LPoint3f::zero());
-  nassertr(y >= 0 && y < _y_size, LPoint3f::zero());
+  nassertr(x >= 0 && x < _x_size, LPoint3::zero());
+  nassertr(y >= 0 && y < _y_size, LPoint3::zero());
   return _table[y * _x_size + x];
 }
 
@@ -108,7 +108,8 @@ get_point(int x, int y) const {
 //               the x component.
 ////////////////////////////////////////////////////////////////////
 INLINE void PfmFile::
-set_point(int x, int y, const LVecBase3f &point) {
+set_point(int x, int y, const LVecBase3 &point) {
+  nassertv(!point.is_nan());
   nassertv(x >= 0 && x < _x_size);
   nassertv(y >= 0 && y < _y_size);
   _table[y * _x_size + x] = point;
@@ -120,10 +121,10 @@ set_point(int x, int y, const LVecBase3f &point) {
 //  Description: Returns a modifiable 3-component point value at the
 //               indicated point.
 ////////////////////////////////////////////////////////////////////
-INLINE LPoint3f &PfmFile::
+INLINE LPoint3 &PfmFile::
 modify_point(int x, int y) {
 #ifndef NDEBUG
-  static LPoint3f dummy_value = LPoint3f::zero();
+  static LPoint3 dummy_value = LPoint3::zero();
   nassertr(x >= 0 && x < _x_size, dummy_value);
   nassertr(y >= 0 && y < _y_size, dummy_value);
 #endif
@@ -137,22 +138,64 @@ modify_point(int x, int y) {
 //  Description: Sets the zero_special flag.  When this flag is true,
 //               values of (0, 0, 0) in the pfm file are treated as a
 //               special case, and are not processed.
+//
+//               This is a special case of set_no_data_value().
 ////////////////////////////////////////////////////////////////////
 INLINE void PfmFile::
 set_zero_special(bool zero_special) {
-  _zero_special = zero_special;
+  if (zero_special) {
+    set_no_data_value(LPoint3::zero());
+  } else {
+    clear_no_data_value();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PfmFile::get_zero_special
+//     Function: PfmFile::set_no_data_value
 //       Access: Published
-//  Description: Returns the zero_special flag.  When this flag is true,
-//               values of (0, 0, 0) in the pfm file are treated as a
-//               special case, and are not processed.
+//  Description: Sets the special value that means "no data" when it
+//               appears in the pfm file.
+////////////////////////////////////////////////////////////////////
+INLINE void PfmFile::
+set_no_data_value(const LPoint3 &no_data_value) {
+  _has_no_data_value = true;
+  _no_data_value = no_data_value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PfmFile::set_no_data_value
+//       Access: Published
+//  Description: Removes the special value that means "no data" when it
+//               appears in the pfm file.  All points will thus be
+//               considered valid.
+////////////////////////////////////////////////////////////////////
+INLINE void PfmFile::
+clear_no_data_value() {
+  _has_no_data_value = false;
+  _no_data_value = LPoint3::zero();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PfmFile::has_no_data_value
+//       Access: Published
+//  Description: Returns whether a "no data" value has been
+//               established by set_no_data_value().
 ////////////////////////////////////////////////////////////////////
 INLINE bool PfmFile::
-get_zero_special() const {
-  return _zero_special;
+has_no_data_value() const {
+  return _has_no_data_value;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PfmFile::get_no_data_value
+//       Access: Published
+//  Description: If has_no_data_value() returns true, this returns the
+//               particular "no data" value.
+////////////////////////////////////////////////////////////////////
+INLINE const LPoint3 &PfmFile::
+get_no_data_value() const {
+  nassertr(_has_no_data_value, LPoint3::zero());
+  return _no_data_value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -179,6 +222,45 @@ set_vis_inverse(bool vis_inverse) {
 INLINE bool PfmFile::
 get_vis_inverse() const {
   return _vis_inverse;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PfmFile::set_flat_texcoord_name
+//       Access: Published
+//  Description: If the flat_texcoord_name is specified, it is the
+//               name of an additional vertex column that will be
+//               created for the "flat" texture coordinates, i.e. the
+//               original 0..1 values that correspond to the 2-D index
+//               position of each point in the original pfm file.
+//
+//               These are the same values that will be assigned to
+//               the default texture coordinates if the vis_inverse
+//               flag is *not* true.
+////////////////////////////////////////////////////////////////////
+INLINE void PfmFile::
+set_flat_texcoord_name(InternalName *flat_texcoord_name) {
+  _flat_texcoord_name = flat_texcoord_name;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PfmFile::clear_flat_texcoord_name
+//       Access: Published
+//  Description: Resets the flat_texcoord_name to empty, so that
+//               additional texture coordinates are not created.
+////////////////////////////////////////////////////////////////////
+INLINE void PfmFile::
+clear_flat_texcoord_name() {
+  _flat_texcoord_name = NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PfmFile::get_flat_texcoord_name
+//       Access: Published
+//  Description: Returns the flat_texcoord_name.  See set_flat_texcoord_name().
+////////////////////////////////////////////////////////////////////
+INLINE InternalName *PfmFile::
+get_flat_texcoord_name() const {
+  return _flat_texcoord_name;
 }
 
 ////////////////////////////////////////////////////////////////////

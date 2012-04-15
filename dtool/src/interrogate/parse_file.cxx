@@ -21,16 +21,9 @@
 #include "cppExpression.h"
 #include "cppType.h"
 #include "cppGlobals.h"
-
+#include "panda_getopt_long.h"
+#include "preprocess_argv.h"
 #include <stdlib.h>
-
-#ifndef HAVE_GETOPT_LONG_ONLY
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
 
 CPPParser parser;
 
@@ -200,10 +193,11 @@ show_typedefs(const string &str) {
 
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
   extern char *optarg;
   extern int optind;
   const char *optstr = "I:S:D:o:l:vp";
+  preprocess_argv(argc, argv);
 
   parser.set_verbose(2);
   bool prompt = false;

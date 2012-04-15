@@ -290,7 +290,9 @@ analyze_renderstate(const RenderState *rs) {
   for (int i=0; i<_num_textures; i++) {
     TextureStage *stage = texture->get_on_stage(i);
     TextureStage::Mode mode = stage->get_mode();
-    if ((mode == TextureStage::M_normal)||(mode == TextureStage::M_normal_height)) {
+    if ((mode == TextureStage::M_normal)||
+        (mode == TextureStage::M_normal_height)||
+        (mode == TextureStage::M_normal_gloss)) {
       _map_index_normal = i;
     }
     if ((mode == TextureStage::M_height)||(mode == TextureStage::M_normal_height)) {
@@ -299,7 +301,9 @@ analyze_renderstate(const RenderState *rs) {
     if ((mode == TextureStage::M_glow)||(mode == TextureStage::M_modulate_glow)) {
       _map_index_glow = i;
     }
-    if ((mode == TextureStage::M_gloss)||(mode == TextureStage::M_modulate_gloss)) {
+    if ((mode == TextureStage::M_gloss)||
+        (mode == TextureStage::M_modulate_gloss)||
+        (mode == TextureStage::M_normal_gloss)) {
       _map_index_gloss = i;
     }
     if (mode == TextureStage::M_height) {
@@ -310,18 +314,20 @@ analyze_renderstate(const RenderState *rs) {
     }
     if (tex_gen->has_stage(stage)) {
       switch (tex_gen->get_mode(stage)) {
-        case TexGenAttrib::M_world_position:
-          _need_world_position = true;
-          break;
-        case TexGenAttrib::M_world_normal:
-          _need_world_normal = true;
-          break;
-        case TexGenAttrib::M_eye_position:
-          _need_eye_position = true;
-          break;
-        case TexGenAttrib::M_eye_normal:
-          _need_eye_normal = true;
-          break;
+      case TexGenAttrib::M_world_position:
+        _need_world_position = true;
+        break;
+      case TexGenAttrib::M_world_normal:
+        _need_world_normal = true;
+        break;
+      case TexGenAttrib::M_eye_position:
+        _need_eye_position = true;
+        break;
+      case TexGenAttrib::M_eye_normal:
+        _need_eye_normal = true;
+        break;
+      default:
+        break;
       }
     }
   }
@@ -348,7 +354,7 @@ analyze_renderstate(const RenderState *rs) {
 
   if (_lighting && (_alights.size() > 0)) {
     if (_material->has_ambient()) {
-      Colorf a = _material->get_ambient();
+      LColor a = _material->get_ambient();
       if ((a[0]!=0.0)||(a[1]!=0.0)||(a[2]!=0.0)) {
         _have_ambient = true;
       }
@@ -359,7 +365,7 @@ analyze_renderstate(const RenderState *rs) {
 
   if (_lighting && (_dlights.size() + _plights.size() + _slights.size())) {
     if (_material->has_diffuse()) {
-      Colorf d = _material->get_diffuse();
+      LColor d = _material->get_diffuse();
       if ((d[0]!=0.0)||(d[1]!=0.0)||(d[2]!=0.0)) {
         _have_diffuse = true;
       }
@@ -369,7 +375,7 @@ analyze_renderstate(const RenderState *rs) {
   }
 
   if (_lighting && (_material->has_emission())) {
-    Colorf e = _material->get_emission();
+    LColor e = _material->get_emission();
     if ((e[0]!=0.0)||(e[1]!=0.0)||(e[2]!=0.0)) {
       _have_emission = true;
     }
@@ -377,7 +383,7 @@ analyze_renderstate(const RenderState *rs) {
 
   if (_lighting && (_dlights.size() + _plights.size() + _slights.size())) {
     if (_material->has_specular()) {
-      Colorf s = _material->get_specular();
+      LColor s = _material->get_specular();
       if ((s[0]!=0.0)||(s[1]!=0.0)||(s[2]!=0.0)) {
         _have_specular = true;
       }
@@ -440,10 +446,10 @@ analyze_renderstate(const RenderState *rs) {
     _auto_shadow_on = shader_attrib->auto_shadow_on();
   }
 
-  // Check for unimplemented features and issue warnings.
+  // Check for fog.
   const FogAttrib *fog = DCAST(FogAttrib, rs->get_attrib_def(FogAttrib::get_class_slot()));
   if (!fog->is_off()) {
-    pgraph_cat.error() << "Shader Generator does not support Fog yet.\n";
+    _fog = true;
   }
 }
 
@@ -460,6 +466,7 @@ clear_analysis() {
   _flat_colors = false;
   _lighting = false;
   _shadows = false;
+  _fog = false;
   _have_ambient = false;
   _have_diffuse = false;
   _have_emission = false;
@@ -606,10 +613,10 @@ update_shadow_buffer(NodePath light_np) {
 //               - most texgen modes
 //               - texmatrix
 //               - 1D/2D/3D textures, cube textures
+//               - linear/exp/exp2 fog
 //
 //               Not yet supported:
 //               - dot3_rgb and dot3_rgba combine modes
-//               - fog
 //
 //               Potential optimizations
 //               - omit attenuation calculations if attenuation off
@@ -620,7 +627,10 @@ synthesize_shader(const RenderState *rs) {
   analyze_renderstate(rs);
   reset_register_allocator();
 
-  pgraph_cat.info() << "Generating shader for render state " << rs << "\n";
+  if (pgraph_cat.is_debug()) {
+    pgraph_cat.debug()
+      << "Generating shader for render state " << *rs << "\n";
+  }
 
   // These variables will hold the results of register allocation.
 
@@ -633,11 +643,13 @@ synthesize_shader(const RenderState *rs) {
   char *hbinormal_vreg = 0;
   pvector<char *> texcoord_vreg;
   pvector<char *> texcoord_freg;
-  pvector<char *> tslightvec_freg;
+  pvector<char *> dlightcoord_freg;
+  pvector<char *> slightcoord_freg;
   char *world_position_freg = 0;
   char *world_normal_freg = 0;
   char *eye_position_freg = 0;
   char *eye_normal_freg = 0;
+  char *hpos_freg = 0;
 
   if (_vertex_colors) {
     _vcregs_used = 1;
@@ -717,17 +729,27 @@ synthesize_shader(const RenderState *rs) {
     if (_shadows && _auto_shadow_on) {
       for (int i=0; i<(int)_dlights.size(); i++) {
         if (_dlights[i]->_shadow_caster) {
+          dlightcoord_freg.push_back(alloc_freg());
           text << "\t uniform float4x4 trans_model_to_clip_of_dlight" << i << ",\n";
-          text << "\t out float4 l_dlightcoord" << i << ",\n";
+          text << "\t out float4 l_dlightcoord" << i << " : " << dlightcoord_freg[i] << ",\n";
+        } else {
+          dlightcoord_freg.push_back(NULL);
         }
       }
       for (int i=0; i<(int)_slights.size(); i++) {
         if (_slights[i]->_shadow_caster) {
+          slightcoord_freg.push_back(alloc_freg());
           text << "\t uniform float4x4 trans_model_to_clip_of_slight" << i << ",\n";
-          text << "\t out float4 l_slightcoord" << i << ",\n";
+          text << "\t out float4 l_slightcoord" << i << " : " << slightcoord_freg[i] << ",\n";
+        } else {
+          slightcoord_freg.push_back(NULL);
         }
       }
     }
+  }
+  if (_fog) {
+    hpos_freg = alloc_freg();
+    text << "\t out float4 l_hpos : " << hpos_freg << ",\n";
   }
   text << "\t float4 vtx_position : POSITION,\n";
   text << "\t out float4 l_position : POSITION,\n";
@@ -735,6 +757,9 @@ synthesize_shader(const RenderState *rs) {
   text << ") {\n";
 
   text << "\t l_position = mul(mat_modelproj, vtx_position);\n";
+  if (_fog) {
+    text << "\t l_hpos = l_position;\n";
+  }
   if (_need_world_position) {
     text << "\t l_world_position = mul(trans_model_to_world, vtx_position);\n";
   }
@@ -784,7 +809,14 @@ synthesize_shader(const RenderState *rs) {
   }
   text << "}\n\n";
 
+  // Fragment shader
+
   text << "void fshader(\n";
+  if (_fog) {
+    text << "\t in float4 l_hpos : " << hpos_freg << ",\n";
+    text << "\t in uniform float4 attr_fog,\n";
+    text << "\t in uniform float4 attr_fogcolor,\n";
+  }
   if (_need_world_position) {
     text << "\t in float4 l_world_position : " << world_position_freg << ",\n";
   }
@@ -826,7 +858,7 @@ synthesize_shader(const RenderState *rs) {
         } else {
           text << "\t uniform sampler2D k_dlighttex" << i << ",\n";
         }
-        text << "\t float4 l_dlightcoord" << i << ",\n";
+        text << "\t in float4 l_dlightcoord" << i << " : " << dlightcoord_freg[i] << ",\n";
       }
     }
     for (int i=0; i<(int)_plights.size(); i++) {
@@ -841,7 +873,7 @@ synthesize_shader(const RenderState *rs) {
         } else {
           text << "\t uniform sampler2D k_slighttex" << i << ",\n";
         }
-        text << "\t float4 l_slightcoord" << i << ",\n";
+        text << "\t in float4 l_slightcoord" << i << " : " << slightcoord_freg[i] << ",\n";
       }
     }
     if (_need_material_props) {
@@ -917,11 +949,19 @@ synthesize_shader(const RenderState *rs) {
     nassertr(tex != NULL, NULL);
     text << "\t float4 tex" << _map_index_height << " = tex" << texture_type_as_string(tex->get_texture_type());
     text << "(tex_" << _map_index_height << ", l_texcoord" << _map_index_height << ".";
-    switch(tex->get_texture_type()) {
-      case Texture::TT_cube_map:
-      case Texture::TT_3d_texture: text << "xyz"; break;
-      case Texture::TT_2d_texture: text << "xy";  break;
-      case Texture::TT_1d_texture: text << "x";   break;
+    switch (tex->get_texture_type()) {
+    case Texture::TT_cube_map:
+    case Texture::TT_3d_texture: 
+      text << "xyz";
+      break;
+    case Texture::TT_2d_texture: 
+      text << "xy";  
+      break;
+    case Texture::TT_1d_texture:
+      text << "x";   
+      break;
+    default:
+      break;
     }
     text << ");\n\t float3 parallax_offset = l_eyevec.xyz * (tex" << _map_index_height;
     if (_map_height_in_alpha) {
@@ -952,10 +992,18 @@ synthesize_shader(const RenderState *rs) {
       text << "\t float4 tex" << i << " = tex" << texture_type_as_string(tex->get_texture_type());
       text << "(tex_" << i << ", l_texcoord" << i << ".";
       switch(tex->get_texture_type()) {
-        case Texture::TT_cube_map:
-        case Texture::TT_3d_texture: text << "xyz"; break;
-        case Texture::TT_2d_texture: text << "xy";  break;
-        case Texture::TT_1d_texture: text << "x";   break;
+      case Texture::TT_cube_map:
+      case Texture::TT_3d_texture: 
+        text << "xyz"; 
+        break;
+      case Texture::TT_2d_texture: 
+        text << "xy";
+        break;
+      case Texture::TT_1d_texture: 
+        text << "x";   
+        break;
+      default:
+        break;
       }
       text << ");\n";
     }
@@ -980,7 +1028,7 @@ synthesize_shader(const RenderState *rs) {
   if (_lighting) {
     text << "\t // Begin view-space light calculations\n";
     text << "\t float ldist,lattenv,langle;\n";
-    text << "\t float4 lcolor,lspec,lvec,lpoint,latten,ldir,leye,lhalf;";
+    text << "\t float4 lcolor,lspec,lvec,lpoint,latten,ldir,leye,lhalf;\n";
     if (_shadows && _auto_shadow_on) {
       text << "\t float lshad;\n";
     }
@@ -1110,8 +1158,8 @@ synthesize_shader(const RenderState *rs) {
       switch (light_ramp->get_mode()) {
       case LightRampAttrib::LRT_single_threshold:
         {
-          float t = light_ramp->get_threshold(0);
-          float l0 = light_ramp->get_level(0);
+          PN_stdfloat t = light_ramp->get_threshold(0);
+          PN_stdfloat l0 = light_ramp->get_level(0);
           text << "\t // Single-threshold light ramp\n";
           text << "\t float lr_in = dot(tot_diffuse.rgb, float3(0.33,0.34,0.33));\n";
           text << "\t float lr_scale = (lr_in < " << t << ") ? 0.0 : (" << l0 << "/lr_in);\n";
@@ -1120,11 +1168,11 @@ synthesize_shader(const RenderState *rs) {
         }
       case LightRampAttrib::LRT_double_threshold:
         {
-          float t0 = light_ramp->get_threshold(0);
-          float t1 = light_ramp->get_threshold(1);
-          float l0 = light_ramp->get_level(0);
-          float l1 = light_ramp->get_level(1);
-          float l2 = light_ramp->get_level(2);
+          PN_stdfloat t0 = light_ramp->get_threshold(0);
+          PN_stdfloat t1 = light_ramp->get_threshold(1);
+          PN_stdfloat l0 = light_ramp->get_level(0);
+          PN_stdfloat l1 = light_ramp->get_level(1);
+          PN_stdfloat l2 = light_ramp->get_level(2);
           text << "\t // Double-threshold light ramp\n";
           text << "\t float lr_in = dot(tot_diffuse.rgb, float3(0.33,0.34,0.33));\n";
           text << "\t float lr_out = " << l0 << "\n";
@@ -1133,6 +1181,8 @@ synthesize_shader(const RenderState *rs) {
           text << "\t tot_diffuse = tot_diffuse * (lr_out / lr_in);\n";
           break;
         }
+      default:
+        break;
       }
     }
     text << "\t // Begin view-space light summation\n";
@@ -1217,27 +1267,18 @@ synthesize_shader(const RenderState *rs) {
   for (int i=0; i<_num_textures; i++) {
     TextureStage *stage = texture->get_on_stage(i);
     switch (stage->get_mode()) {
-    case TextureStage::M_modulate:
-      //if the format of the texture is RGB, we simply multiply results
-      //RGB by the texture's RGB
-      if (texture->get_on_texture(texture->get_on_stage(i))->get_format() == Texture::F_rgb){
-        text << "\t result.rgb *= tex" << i << ";\n";
-      }
-      //if it's an RGBA texture...multiply by the whole set of values (R,G,B,A) together
-      //NOTE: if you want an RGBA map as an additional transparency map then this
-      //will not work correctly. You must store the transparency information either in the alpha channel
-      //of the color map, or use a separate alpha may with no color info at all (thus it gets treated as
-      //as F_alpha, not F_RGBA). Also, you can store the alpha map file inside a standard RGB map by
-      //using the same prefix for both textures.  This is equivalent to RGBA.
-      else if (texture->get_on_texture(texture->get_on_stage(i))->get_format() == Texture::F_rgba){
-        text << "\t result.rgba *= tex" << i << ";\n";
-      }
-      //if it's an alpha formatted texture (ie. an alpha or mask in a separate texture Ref) then 
-      //multiply the alpha channels only. That way color of the result is preserved
-      else if (texture->get_on_texture(texture->get_on_stage(i))->get_format() == Texture::F_alpha){
+    case TextureStage::M_modulate: {
+      int num_components = texture->get_on_texture(texture->get_on_stage(i))->get_num_components();
+
+      if (num_components == 1) {
         text << "\t result.a *= tex" << i << ".a;\n";
+      } else if (num_components == 3) {
+        text << "\t result.rgb *= tex" << i << ".rgb;\n";
+      } else {
+        text << "\t result.rgba *= tex" << i << ".rgba;\n";
       }
-      break;
+
+      break; }
     case TextureStage::M_modulate_glow:
     case TextureStage::M_modulate_gloss:
       //in the case of glow or spec we currently see the specularity evenly across the surface
@@ -1253,7 +1294,7 @@ synthesize_shader(const RenderState *rs) {
       text << "\t result.rgb = lerp(result, tex" << i << ", tex" << i << ".a).rgb;\n";
       break;
     case TextureStage::M_blend: {
-      LVecBase4f c = stage->get_color();
+      LVecBase4 c = stage->get_color();
       text << "\t result.rgb = lerp(result, tex" << i << " * float4("
            << c[0] << ", " << c[1] << ", " << c[2] << ", " << c[3] << "), tex" << i << ".r).rgb;\n";
       break; }
@@ -1312,6 +1353,8 @@ synthesize_shader(const RenderState *rs) {
     case RenderAttrib::M_greater:        text<<"\t if (result.a <= "<<ref<<") discard;\n";
     case RenderAttrib::M_not_equal:      text<<"\t if (result.a == "<<ref<<") discard;\n";
     case RenderAttrib::M_greater_equal:  text<<"\t if (result.a <  "<<ref<<") discard;\n";
+    case RenderAttrib::M_none: break;
+    case RenderAttrib::M_always: break;
     }
   }
 
@@ -1354,6 +1397,24 @@ synthesize_shader(const RenderState *rs) {
       text << "\t result.rgb = result / (result + 1);\n";
       break;
     default: break;
+    }
+  }
+
+  // Apply fog.
+  if (_fog) {
+    const FogAttrib *fog_attr = DCAST(FogAttrib, rs->get_attrib_def(FogAttrib::get_class_slot()));
+    Fog *fog = fog_attr->get_fog();
+
+    switch (fog->get_mode()) {
+    case Fog::M_linear:
+      text << "\t result.rgb = lerp(attr_fogcolor.rgb, result.rgb, saturate((attr_fog.z - l_hpos.z) * attr_fog.w));\n";
+      break;
+    case Fog::M_exponential:
+      text << "\t result.rgb = lerp(attr_fogcolor.rgb, result.rgb, saturate(exp2(attr_fog.x * l_hpos.z * -1.442695f)));\n";
+      break;
+    case Fog::M_exponential_squared:
+      text << "\t result.rgb = lerp(attr_fogcolor.rgb, result.rgb, saturate(exp2(attr_fog.x * attr_fog.x * l_hpos.z * l_hpos.z * -1.442695f)));\n";
+      break;
     }
   }
 
@@ -1481,7 +1542,7 @@ combine_source_as_string(CPT(TextureStage) stage, short num, bool alpha, bool si
       csource << "tex" << texindex;
       break;
     case TextureStage::CS_constant: {
-      LVecBase4f c = stage->get_color();
+      LVecBase4 c = stage->get_color();
       csource << "float4(" << c[0] << ", " << c[1] << ", " << c[2] << ", " << c[3] << ")";
       break; }
     case TextureStage::CS_primary_color:
@@ -1495,6 +1556,8 @@ combine_source_as_string(CPT(TextureStage) stage, short num, bool alpha, bool si
       break;
     case TextureStage::CS_last_saved_result:
       csource << "last_saved_result";
+      break;
+    case TextureStage::CS_undefined:
       break;
   }
   if (c_op == TextureStage::CO_src_color || c_op == TextureStage::CO_one_minus_src_color) {

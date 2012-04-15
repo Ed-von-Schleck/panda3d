@@ -35,4 +35,3 @@ init_type() {
     register_type(_type_handle, name);
   }
 }
-

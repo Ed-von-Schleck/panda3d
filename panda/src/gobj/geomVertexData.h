@@ -42,6 +42,7 @@
 
 class FactoryParams;
 class GeomVertexColumn;
+class GeomVertexRewriter;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : GeomVertexData
@@ -138,20 +139,22 @@ PUBLISHED:
                      int source_row, Thread *current_thread);
   CPT(GeomVertexData) convert_to(const GeomVertexFormat *new_format) const;
   CPT(GeomVertexData) 
-    scale_color(const LVecBase4f &color_scale) const;
+    scale_color(const LVecBase4 &color_scale) const;
   CPT(GeomVertexData) 
-    scale_color(const LVecBase4f &color_scale, int num_components,
+    scale_color(const LVecBase4 &color_scale, int num_components,
                 NumericType numeric_type, Contents contents) const;
   CPT(GeomVertexData) 
-    set_color(const Colorf &color) const;
+    set_color(const LColor &color) const;
   CPT(GeomVertexData) 
-    set_color(const Colorf &color, int num_components,
+    set_color(const LColor &color, int num_components,
               NumericType numeric_type, Contents contents) const;
 
   CPT(GeomVertexData) reverse_normals() const;
 
   CPT(GeomVertexData) animate_vertices(bool force, Thread *current_thread) const;
   void clear_animated_vertices();
+  void transform_vertices(const LMatrix4 &mat);
+  void transform_vertices(const LMatrix4 &mat, int begin_row, int end_row);
 
   PT(GeomVertexData) 
     replace_column(InternalName *name, int num_components,
@@ -229,7 +232,7 @@ public:
   // separate class so we can easily look up a new entry in the map,
   // without having to execute the relatively expensive CacheEntry
   // constructor.
-  class CacheKey {
+  class EXPCL_PANDA_GOBJ CacheKey {
   public:
     INLINE CacheKey(const GeomVertexFormat *modifier);
     INLINE bool operator < (const CacheKey &other) const;
@@ -237,7 +240,7 @@ public:
     CPT(GeomVertexFormat) _modifier;
   };
   // It is not clear why MSVC7 needs this class to be public.  
-  class CacheEntry : public GeomCacheEntry {
+  class EXPCL_PANDA_GOBJ CacheEntry : public GeomCacheEntry {
   public:
     INLINE CacheEntry(GeomVertexData *source,
                       const GeomVertexFormat *modifier);
@@ -256,7 +259,9 @@ public:
       return _type_handle;
     }
     static void init_type() {
-      register_type(_type_handle, "GeomVertexData::CacheEntry");
+      GeomCacheEntry::init_type();
+      register_type(_type_handle, "GeomVertexData::CacheEntry",
+                    GeomCacheEntry::get_class_type());
     }
     
   private:
@@ -313,6 +318,16 @@ private:
 
 private:
   void update_animated_vertices(CData *cdata, Thread *current_thread);
+  void do_transform_point_column(const GeomVertexFormat *format, GeomVertexRewriter &data,
+                                 const LMatrix4 &mat, int begin_row, int end_row);
+  void do_transform_vector_column(const GeomVertexFormat *format, GeomVertexRewriter &data,
+                                  const LMatrix4 &mat, int begin_row, int end_row);
+  static void table_xform_point3f(unsigned char *datat, size_t num_rows, 
+                                  size_t stride, const LMatrix4f &matf);
+  static void table_xform_vector3f(unsigned char *datat, size_t num_rows, 
+                                   size_t stride, const LMatrix4f &matf);
+  static void table_xform_vecbase4f(unsigned char *datat, size_t num_rows, 
+                                    size_t stride, const LMatrix4f &matf);
 
   static PStatCollector _convert_pcollector;
   static PStatCollector _scale_color_pcollector;
@@ -322,6 +337,7 @@ private:
   PStatCollector _char_pcollector;
   PStatCollector _skinning_pcollector;
   PStatCollector _morphs_pcollector;
+  PStatCollector _blends_pcollector;
 
 public:
   static void register_with_read_factory();

@@ -43,24 +43,46 @@ public:
   virtual PT(VirtualFile) make_virtual_file(const Filename &local_filename,
                                             const Filename &original_filename,
                                             bool implicit_pz_file,
-                                            bool status_only);
+                                            int open_flags);
 
   virtual bool has_file(const Filename &file) const=0;
+  virtual bool create_file(const Filename &file);
+  virtual bool make_directory(const Filename &file);
+  virtual bool delete_file(const Filename &file);
+  virtual bool rename_file(const Filename &orig_filename, const Filename &new_filename);
+  virtual bool copy_file(const Filename &orig_filename, const Filename &new_filename);
   virtual bool is_directory(const Filename &file) const=0;
   virtual bool is_regular_file(const Filename &file) const=0;
+  virtual bool is_writable(const Filename &file) const;
 
   virtual bool read_file(const Filename &file, bool do_uncompress,
                          pvector<unsigned char> &result) const;
+  virtual bool write_file(const Filename &file, bool do_compress,
+                          const unsigned char *data, size_t data_size);
 
   virtual istream *open_read_file(const Filename &file) const=0;
   istream *open_read_file(const Filename &file, bool do_uncompress) const;
-  void close_read_file(istream *stream) const;
+  virtual void close_read_file(istream *stream) const;
+
+  virtual ostream *open_write_file(const Filename &file, bool truncate);
+  ostream *open_write_file(const Filename &file, bool do_compress, bool truncate);
+  virtual ostream *open_append_file(const Filename &file);
+  virtual void close_write_file(ostream *stream);
+
+  virtual iostream *open_read_write_file(const Filename &file, bool truncate);
+  virtual iostream *open_read_append_file(const Filename &file);
+  virtual void close_read_write_file(iostream *stream);
+
   virtual off_t get_file_size(const Filename &file, istream *stream) const=0;
   virtual off_t get_file_size(const Filename &file) const=0;
   virtual time_t get_timestamp(const Filename &file) const=0;
+  virtual bool get_system_info(const Filename &file, SubfileInfo &info);
 
   virtual bool scan_directory(vector_string &contents, 
                               const Filename &dir) const=0;
+
+  virtual bool atomic_compare_and_exchange_contents(const Filename &file, string &orig_contents, const string &old_contents, const string &new_contents);
+  virtual bool atomic_read_contents(const Filename &file, string &contents) const;
 
 PUBLISHED:
   virtual void output(ostream &out) const;

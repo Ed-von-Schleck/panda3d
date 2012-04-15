@@ -227,26 +227,6 @@ alpha_fill_val(xelval alpha) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PNMImage::remix_channels
-//       Access: Published
-//  Description: Transforms every pixel using the operation
-//               (Ro,Go,Bo) = conv.xform_point(Ri,Gi,Bi);
-//               Input must be a color image.
-////////////////////////////////////////////////////////////////////
-void PNMImage::
-remix_channels(const LMatrix4f &conv) {
-  int nchannels = get_num_channels();
-  nassertv((nchannels >= 3) && (nchannels <= 4));
-  for (int y = 0; y < get_y_size(); y++) {
-    for (int x = 0; x < get_x_size(); x++) {
-      LVector3f inv(get_red(x,y),get_green(x,y),get_blue(x,y));
-      LVector3f outv(conv.xform_point(inv));
-      set_xel(x,y,outv[0],outv[1],outv[2]);
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PNMImage::read
 //       Access: Published
 //  Description: Reads the indicated image filename.  If type is
@@ -420,6 +400,15 @@ write(PNMWriter *writer) const {
   }
 
   writer->copy_header_from(*this);
+  if (is_grayscale() && !writer->supports_grayscale()) {
+    // Copy the gray values to all channels to help out the writer.
+    for (int y = 0; y < get_y_size(); y++) {
+      for (int x = 0; x<get_x_size(); x++) {
+        ((PNMImage *)this)->set_xel_val(x, y, get_gray_val(x, y));
+      }
+    }
+  }
+
   int result = writer->write_data(_array, _alpha);
   delete writer;
 
@@ -502,6 +491,34 @@ make_grayscale(double rc, double gc, double bc) {
 
   _num_channels = has_alpha() ? 2 : 1;
   setup_rc();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::reverse_rows
+//       Access: Published
+//  Description: Performs an in-place reversal of the row (y) data.
+////////////////////////////////////////////////////////////////////
+void PNMImage::
+reverse_rows() {
+  if (_array != NULL) {
+    xel *new_array = (xel *)PANDA_MALLOC_ARRAY(_x_size * _y_size * sizeof(xel));
+    for (int y = 0; y < _y_size; y++) {
+      int new_y = _y_size - 1 - y;
+      memcpy(new_array + new_y * _x_size, _array + y * _x_size, _x_size * sizeof(xel));
+    }
+    PANDA_FREE_ARRAY(_array);
+    _array = new_array;
+  }
+
+  if (_alpha != NULL) {
+    xelval *new_alpha = (xelval *)PANDA_MALLOC_ARRAY(_x_size * _y_size * sizeof(xelval));
+    for (int y = 0; y < _y_size; y++) {
+      int new_y = _y_size - 1 - y;
+      memcpy(new_alpha + new_y * _x_size, _alpha + y * _x_size, _x_size * sizeof(xelval));
+    }
+    PANDA_FREE_ARRAY(_alpha);
+    _alpha = new_alpha;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -685,7 +702,7 @@ blend(int x, int y, double r, double g, double b, double alpha) {
 
     } else {
       // Blend the color with the previous color.
-      RGBColord prev_rgb = get_xel(x, y);
+      LRGBColord prev_rgb = get_xel(x, y);
       r = r + (1.0 - alpha) * (get_red(x, y) - r);
       g = g + (1.0 - alpha) * (get_green(x, y) - g);
       b = b + (1.0 - alpha) * (get_blue(x, y) - b);
@@ -849,9 +866,9 @@ darken_sub_image(const PNMImage &copy, int xto, int yto,
     int x, y;
     for (y = ymin; y < ymax; y++) {
       for (x = xmin; x < xmax; x++) {
-        RGBColord c = copy.get_xel(x - xmin + xfrom, y - ymin + yfrom);
-        RGBColord o = get_xel(x, y);
-        RGBColord p;
+        LRGBColord c = copy.get_xel(x - xmin + xfrom, y - ymin + yfrom);
+        LRGBColord o = get_xel(x, y);
+        LRGBColord p;
         p.set(min(1.0 - ((1.0 - c[0]) * pixel_scale), o[0]),
               min(1.0 - ((1.0 - c[1]) * pixel_scale), o[1]),
               min(1.0 - ((1.0 - c[2]) * pixel_scale), o[2]));
@@ -919,9 +936,9 @@ lighten_sub_image(const PNMImage &copy, int xto, int yto,
     int x, y;
     for (y = ymin; y < ymax; y++) {
       for (x = xmin; x < xmax; x++) {
-        RGBColord c = copy.get_xel(x - xmin + xfrom, y - ymin + yfrom);
-        RGBColord o = get_xel(x, y);
-        RGBColord p;
+        LRGBColord c = copy.get_xel(x - xmin + xfrom, y - ymin + yfrom);
+        LRGBColord o = get_xel(x, y);
+        LRGBColord p;
         p.set(max(c[0] * pixel_scale, o[0]),
               max(c[1] * pixel_scale, o[1]),
               max(c[2] * pixel_scale, o[2]));
@@ -1132,7 +1149,7 @@ copy_channel(const PNMImage &copy, int xto, int yto, int cto,
 //               between fg and bg colors.
 ////////////////////////////////////////////////////////////////////
 void PNMImage::
-render_spot(const Colord &fg, const Colord &bg,
+render_spot(const LColord &fg, const LColord &bg,
             double min_radius, double max_radius) {
   if (_x_size == 0 || _y_size == 0) {
     return;
@@ -1184,14 +1201,14 @@ render_spot(const Colord &fg, const Colord &bg,
 
       } else {
         // This pixel is in a feathered area or along the antialiased edge.
-        Colord c_outer, c_inner, c_a, c_b;
+        LColord c_outer, c_inner, c_a, c_b;
         compute_spot_pixel(c_outer, d2_outer, min_radius, max_radius, fg, bg);
         compute_spot_pixel(c_inner, d2_inner, min_radius, max_radius, fg, bg);
         compute_spot_pixel(c_a, d2_a, min_radius, max_radius, fg, bg);
         compute_spot_pixel(c_b, d2_b, min_radius, max_radius, fg, bg);
 
         // Now average all four pixels for the antialiased result.
-        Colord c;
+        LColord c;
         c = (c_outer + c_inner + c_a + c_b) * 0.25;
 
         set_xel_a(x_center1 - 1 - xi, y_center1 - 1 - yi, c);
@@ -1215,7 +1232,7 @@ render_spot(const Colord &fg, const Colord &bg,
 ////////////////////////////////////////////////////////////////////
 void PNMImage::
 expand_border(int left, int right, int bottom, int top,
-              const Colord &color) {
+              const LColord &color) {
   PNMImage new_image(get_x_size() + left + right,
                      get_y_size() + bottom + top,
                      get_num_channels(), get_maxval(), get_type());
@@ -1297,6 +1314,122 @@ perlin_noise_fill(StackedPerlinNoise2 &perlin) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::remix_channels
+//       Access: Published
+//  Description: Transforms every pixel using the operation
+//               (Ro,Go,Bo) = conv.xform_point(Ri,Gi,Bi);
+//               Input must be a color image.
+////////////////////////////////////////////////////////////////////
+void PNMImage::
+remix_channels(const LMatrix4 &conv) {
+  int nchannels = get_num_channels();
+  nassertv((nchannels >= 3) && (nchannels <= 4));
+  for (int y = 0; y < get_y_size(); y++) {
+    for (int x = 0; x < get_x_size(); x++) {
+      LVector3 inv(get_red(x,y), get_green(x,y), get_blue(x,y));
+      LVector3 outv(conv.xform_point(inv));
+      set_xel(x, y, outv[0], outv[1], outv[2]);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::apply_exponent
+//       Access: Published
+//  Description: Adjusts each channel of the image by raising the
+//               corresponding component value to the indicated
+//               exponent, such that L' = L ^ exponent.  For a
+//               grayscale image, the blue_exponent value is used for
+//               the grayscale value, and red_exponent and
+//               green_exponent are unused.
+////////////////////////////////////////////////////////////////////
+void PNMImage::
+apply_exponent(double red_exponent, double green_exponent, double blue_exponent, 
+               double alpha_exponent) {
+  int num_channels = _num_channels;
+  if (has_alpha() && alpha_exponent == 1.0) {
+    // If the alpha_exponent is 1, don't bother to apply it.
+    --num_channels;
+  }
+
+  int x, y;
+
+  if (red_exponent == 1.0 && green_exponent == 1.0 && blue_exponent == 1.0) {
+    // If the RGB components are all 1, apply only to the alpha channel.
+    switch (num_channels) {
+    case 1:
+    case 3:
+      break;
+
+    case 2:
+    case 4:
+      for (y = 0; y < _y_size; ++y) {
+        for (x = 0; x < _x_size; ++x) {
+          double alpha = get_alpha(x, y);
+          alpha = cpow(alpha, blue_exponent);
+          set_alpha(x, y, alpha);
+        }
+      }
+      break;
+    }
+
+  } else {
+    // Apply to the color and/or alpha channels.
+
+    switch (num_channels) {
+    case 1:
+      for (y = 0; y < _y_size; ++y) {
+        for (x = 0; x < _x_size; ++x) {
+          double gray = get_gray(x, y);
+          gray = cpow(gray, blue_exponent);
+          set_gray(x, y, gray);
+        }
+      }
+      break;
+
+    case 2:
+      for (y = 0; y < _y_size; ++y) {
+        for (x = 0; x < _x_size; ++x) {
+          double gray = get_gray(x, y);
+          gray = cpow(gray, blue_exponent);
+          set_gray(x, y, gray);
+
+          double alpha = get_alpha(x, y);
+          alpha = cpow(alpha, blue_exponent);
+          set_alpha(x, y, alpha);
+        }
+      }
+      break;
+
+    case 3:
+      for (y = 0; y < _y_size; ++y) {
+        for (x = 0; x < _x_size; ++x) {
+          LRGBColord color = get_xel(x, y);
+          color[0] = cpow(color[0], red_exponent);
+          color[1] = cpow(color[1], green_exponent);
+          color[2] = cpow(color[2], blue_exponent);
+          set_xel(x, y, color);
+        }
+      }
+      break;
+
+    case 4:
+      for (y = 0; y < _y_size; ++y) {
+        for (x = 0; x < _x_size; ++x) {
+          LColord color = get_xel_a(x, y);
+          color[0] = cpow(color[0], red_exponent);
+          color[1] = cpow(color[1], green_exponent);
+          color[2] = cpow(color[2], blue_exponent);
+          color[3] = cpow(color[3], alpha_exponent);
+          set_xel_a(x, y, color);
+        }
+      }
+      break;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PNMImage::setup_rc
 //       Access: Private
 //  Description: Sets the _default_rc,bc,gc values appropriately
@@ -1323,9 +1456,9 @@ setup_rc() {
 //  Description: Returns the average color of all of the pixels
 //               in the image.
 ////////////////////////////////////////////////////////////////////
-RGBColord PNMImage::
+LRGBColord PNMImage::
 get_average_xel() const {
-  RGBColord color (RGBColord::zero());
+  LRGBColord color (LRGBColord::zero());
   if (_x_size == 0 || _y_size == 0) {
     return color;
   }
@@ -1347,9 +1480,9 @@ get_average_xel() const {
 //  Description: Returns the average color of all of the pixels
 //               in the image, including the alpha channel.
 ////////////////////////////////////////////////////////////////////
-Colord PNMImage::
+LColord PNMImage::
 get_average_xel_a() const {
-  Colord color (Colord::zero());
+  LColord color (LColord::zero());
   if (_x_size == 0 || _y_size == 0) {
     return color;
   }
@@ -1462,7 +1595,7 @@ operator += (const PNMImage &other) {
 //               is added to each pixel in the provided image.
 ////////////////////////////////////////////////////////////////////
 void PNMImage::
-operator += (const Colord &other) {
+operator += (const LColord &other) {
   size_t array_size = _x_size * _y_size;
   // Note: don't use to_val here because it clamps values below 0
   int add_r = (int)(other.get_x() * get_maxval() + 0.5);
@@ -1531,7 +1664,7 @@ operator -= (const PNMImage &other) {
 //               is subtracted from each pixel in the provided image.
 ////////////////////////////////////////////////////////////////////
 void PNMImage::
-operator -= (const Colord &other) {
+operator -= (const LColord &other) {
   (*this) += (-other);
 }
 

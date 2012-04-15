@@ -53,6 +53,7 @@
 #include "depthWriteAttrib.h"
 #include "shadeModelAttrib.h"
 #include "rescaleNormalAttrib.h"
+#include "clipPlaneAttrib.h"
 #include "alphaTestAttrib.h"
 #include "cullFaceAttrib.h"
 #include "fogAttrib.h"
@@ -275,6 +276,16 @@ fix_component_ordering(PTA_uchar &new_image,
   return result;
 }
 
+//#--- Zhao Nov/2011
+string CLP(GraphicsStateGuardian)::get_driver_vendor() { return _gl_vendor; }
+string CLP(GraphicsStateGuardian)::get_driver_renderer() { return _gl_renderer; }
+
+string CLP(GraphicsStateGuardian)::get_driver_version() { return _gl_version; }
+int CLP(GraphicsStateGuardian)::get_driver_version_major() { return _gl_version_major; }
+int CLP(GraphicsStateGuardian)::get_driver_version_minor() { return _gl_version_minor; }
+int CLP(GraphicsStateGuardian)::get_driver_shader_version_major() { return _gl_shadlang_ver_major; }
+int CLP(GraphicsStateGuardian)::get_driver_shader_version_minor() { return _gl_shadlang_ver_minor; }
+
 ////////////////////////////////////////////////////////////////////
 //     Function: GLGraphicsStateGuardian::Constructor
 //       Access: Public
@@ -340,7 +351,7 @@ reset() {
 
   // Build _inv_state_mask as a mask of 1's where we don't care, and
   // 0's where we do care, about the state.
-  _inv_state_mask = RenderState::SlotMask::all_on();
+  //_inv_state_mask = RenderState::SlotMask::all_on();
   _inv_state_mask.clear_bit(ShaderAttrib::get_class_slot());
   _inv_state_mask.clear_bit(AlphaTestAttrib::get_class_slot());
   _inv_state_mask.clear_bit(AntialiasAttrib::get_class_slot());
@@ -368,6 +379,12 @@ reset() {
 
   // Output the vendor and version strings.
   query_gl_version();
+
+  if (_gl_version_major == 0) {
+    // Couldn't get GL.  Fail.
+    mark_new();
+    return;
+  }
 
   // Save the extensions tokens.
   save_extensions((const char *)GLP(GetString)(GL_EXTENSIONS));
@@ -418,15 +435,17 @@ reset() {
   _supports_vertex_blend = has_extension("GL_ARB_vertex_blend");
 
   if (_supports_vertex_blend) {
-    _glWeightPointerARB = (PFNGLWEIGHTPOINTERARBPROC)
+    _glWeightPointer = (PFNGLWEIGHTPOINTERARBPROC)
       get_extension_func(GLPREFIX_QUOTED, "WeightPointerARB");
-    _glVertexBlendARB = (PFNGLVERTEXBLENDARBPROC)
+    _glVertexBlend = (PFNGLVERTEXBLENDARBPROC)
       get_extension_func(GLPREFIX_QUOTED, "VertexBlendARB");
-    _glWeightfvARB = (PFNGLWEIGHTFVARBPROC)
+    _glWeightfv = (PFNGLWEIGHTFVARBPROC)
       get_extension_func(GLPREFIX_QUOTED, "WeightfvARB");
+    _glWeightdv = (PFNGLWEIGHTDVARBPROC)
+      get_extension_func(GLPREFIX_QUOTED, "WeightdvARB");
 
-    if (_glWeightPointerARB == NULL || _glVertexBlendARB == NULL ||
-        _glWeightfvARB == NULL) {
+    if (_glWeightPointer == NULL || _glVertexBlend == NULL ||
+        GLfv(_glWeight) == NULL) {
       GLCAT.warning()
         << "Vertex blending advertised as supported by OpenGL runtime, but could not get pointers to extension functions.\n";
       _supports_vertex_blend = false;
@@ -558,7 +577,7 @@ reset() {
   if (is_at_least_gl_version(1, 2)) {
     _supports_3d_texture = true;
 
-    _glTexImage3D = (PFNGLTEXIMAGE3DPROC)
+    _glTexImage3D = (PFNGLTEXIMAGE3DPROC_P)
       get_extension_func(GLPREFIX_QUOTED, "TexImage3D");
     _glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)
       get_extension_func(GLPREFIX_QUOTED, "TexSubImage3D");
@@ -566,14 +585,14 @@ reset() {
   } else if (has_extension("GL_EXT_texture3D")) {
     _supports_3d_texture = true;
 
-    _glTexImage3D = (PFNGLTEXIMAGE3DPROC)
+    _glTexImage3D = (PFNGLTEXIMAGE3DPROC_P)
       get_extension_func(GLPREFIX_QUOTED, "TexImage3DEXT");
     _glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)
       get_extension_func(GLPREFIX_QUOTED, "TexSubImage3DEXT");
   } else if (has_extension("GL_OES_texture3D") || has_extension("GL_OES_texture_3D")) {
     _supports_3d_texture = true;
 
-    _glTexImage3D = (PFNGLTEXIMAGE3DPROC)
+    _glTexImage3D = (PFNGLTEXIMAGE3DPROC_P)
       get_extension_func(GLPREFIX_QUOTED, "TexImage3DOES");
     _glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)
       get_extension_func(GLPREFIX_QUOTED, "TexSubImage3DOES");
@@ -745,8 +764,8 @@ reset() {
   _supports_multisample =
     has_extension("GL_ARB_multisample") || is_at_least_gl_version(1, 3);
 
-#ifndef OPENGLES_2
-  _supports_generate_mipmap = false;
+#ifdef OPENGLES_2
+  _supports_generate_mipmap = true;
 #else
   _supports_generate_mipmap =
     has_extension("GL_SGIS_generate_mipmap") || is_at_least_gl_version(1, 4) || is_at_least_gles_version(1, 1);
@@ -785,6 +804,14 @@ reset() {
       get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord3f");
     _glMultiTexCoord4f = (PFNGLMULTITEXCOORD4FPROC)
       get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord4f");
+    _glMultiTexCoord1d = (PFNGLMULTITEXCOORD1DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord1d");
+    _glMultiTexCoord2d = (PFNGLMULTITEXCOORD2DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord2d");
+    _glMultiTexCoord3d = (PFNGLMULTITEXCOORD3DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord3d");
+    _glMultiTexCoord4d = (PFNGLMULTITEXCOORD4DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord4d");
 
   } else if (has_extension("GL_ARB_multitexture")) {
     _supports_multitexture = true;
@@ -801,13 +828,21 @@ reset() {
       get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord3fARB");
     _glMultiTexCoord4f = (PFNGLMULTITEXCOORD4FPROC)
       get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord4fARB");
+    _glMultiTexCoord1d = (PFNGLMULTITEXCOORD1DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord1dARB");
+    _glMultiTexCoord2d = (PFNGLMULTITEXCOORD2DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord2dARB");
+    _glMultiTexCoord3d = (PFNGLMULTITEXCOORD3DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord3dARB");
+    _glMultiTexCoord4d = (PFNGLMULTITEXCOORD4DPROC)
+      get_extension_func(GLPREFIX_QUOTED, "MultiTexCoord4dARB");
   }
 
   if (_supports_multitexture) {
     if (_glActiveTexture == NULL || _glClientActiveTexture == NULL
 #ifdef SUPPORT_IMMEDIATE_MODE
-        || _glMultiTexCoord1f == NULL || _glMultiTexCoord2f == NULL
-        || _glMultiTexCoord3f == NULL || _glMultiTexCoord4f == NULL
+        || GLf(_glMultiTexCoord1) == NULL || GLf(_glMultiTexCoord2) == NULL
+        || GLf(_glMultiTexCoord3) == NULL || GLf(_glMultiTexCoord4) == NULL
 #endif
         ) {
       GLCAT.warning()
@@ -971,6 +1006,8 @@ reset() {
        get_extension_func(GLPREFIX_QUOTED, "UseProgram");
     _glUniform4f = (PFNGLUNIFORM4FPROC)
        get_extension_func(GLPREFIX_QUOTED, "Uniform4f");
+    _glUniform4d = (PFNGLUNIFORM4DPROC)
+       get_extension_func(GLPREFIX_QUOTED, "Uniform4d");
     _glUniform1i = (PFNGLUNIFORM1IPROC)
        get_extension_func(GLPREFIX_QUOTED, "Uniform1i");
     _glUniform1fv = (PFNGLUNIFORM1FVPROC)
@@ -981,8 +1018,18 @@ reset() {
        get_extension_func(GLPREFIX_QUOTED, "Uniform3fv");
     _glUniform4fv = (PFNGLUNIFORM4FVPROC)
        get_extension_func(GLPREFIX_QUOTED, "Uniform4fv");
+    _glUniform1dv = (PFNGLUNIFORM1DVPROC)
+       get_extension_func(GLPREFIX_QUOTED, "Uniform1dv");
+    _glUniform2dv = (PFNGLUNIFORM2DVPROC)
+       get_extension_func(GLPREFIX_QUOTED, "Uniform2dv");
+    _glUniform3dv = (PFNGLUNIFORM3DVPROC)
+       get_extension_func(GLPREFIX_QUOTED, "Uniform3dv");
+    _glUniform4dv = (PFNGLUNIFORM4DVPROC)
+       get_extension_func(GLPREFIX_QUOTED, "Uniform4dv");
     _glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)
        get_extension_func(GLPREFIX_QUOTED, "UniformMatrix4fv");
+    _glUniformMatrix4dv = (PFNGLUNIFORMMATRIX4DVPROC)
+       get_extension_func(GLPREFIX_QUOTED, "UniformMatrix4dv");
     _glValidateProgram = (PFNGLVALIDATEPROGRAMPROC)
        get_extension_func(GLPREFIX_QUOTED, "ValidateProgram");
     _glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)
@@ -1022,12 +1069,18 @@ reset() {
   _glShaderSource = glShaderSource;
   _glUseProgram = glUseProgram;
   _glUniform4f = glUniform4f;
+  _glUniform4d = NULL;
   _glUniform1i = glUniform1i;
   _glUniform1fv = glUniform1fv;
   _glUniform2fv = glUniform2fv;
   _glUniform3fv = glUniform3fv;
   _glUniform4fv = glUniform4fv;
+  _glUniform1dv = NULL;
+  _glUniform2dv = NULL;
+  _glUniform3dv = NULL;
+  _glUniform4dv = NULL;
   _glUniformMatrix4fv = glUniformMatrix4fv;
+  _glUniformMatrix4dv = NULL;
   _glValidateProgram = glValidateProgram;
   _glVertexAttribPointer = glVertexAttribPointer;
 
@@ -1500,7 +1553,7 @@ reset() {
   if (has_extension("GL_EXT_texture_filter_anisotropic")) {
     GLfloat max_anisotropy;
     GLP(GetFloatv)(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
-    _max_anisotropy = (float)max_anisotropy;
+    _max_anisotropy = (PN_stdfloat)max_anisotropy;
     _supports_anisotropy = true;
   } 
 
@@ -1818,7 +1871,7 @@ clear(DrawableRegion *clearable) {
     int layerid = GraphicsOutput::RTP_aux_rgba_0 + i;
     int layerbit = RenderBuffer::T_aux_rgba_0 << i;
     if (clearable->get_clear_active(layerid)) {
-      Colorf v = clearable->get_clear_value(layerid);
+      LColor v = clearable->get_clear_value(layerid);
       GLP(ClearColor)(v[0],v[1],v[2],v[3]);
       set_draw_buffer(layerbit);
       GLP(Clear)(GL_COLOR_BUFFER_BIT);
@@ -1828,7 +1881,7 @@ clear(DrawableRegion *clearable) {
     int layerid = GraphicsOutput::RTP_aux_hrgba_0 + i;
     int layerbit = RenderBuffer::T_aux_hrgba_0 << i;
     if (clearable->get_clear_active(layerid)) {
-      Colorf v = clearable->get_clear_value(layerid);
+      LColor v = clearable->get_clear_value(layerid);
       GLP(ClearColor)(v[0],v[1],v[2],v[3]);
       set_draw_buffer(layerbit);
       GLP(Clear)(GL_COLOR_BUFFER_BIT);
@@ -1838,7 +1891,7 @@ clear(DrawableRegion *clearable) {
     int layerid = GraphicsOutput::RTP_aux_float_0 + i;
     int layerbit = RenderBuffer::T_aux_float_0 << i;
     if (clearable->get_clear_active(layerid)) {
-      Colorf v = clearable->get_clear_value(layerid);
+      LColor v = clearable->get_clear_value(layerid);
       GLP(ClearColor)(v[0],v[1],v[2],v[3]);
       set_draw_buffer(layerbit);
       GLP(Clear)(GL_COLOR_BUFFER_BIT);
@@ -1846,7 +1899,7 @@ clear(DrawableRegion *clearable) {
   }
 
   if (clearable->get_clear_color_active()) {
-    Colorf v = clearable->get_clear_color();
+    LColor v = clearable->get_clear_color();
     GLP(ClearColor)(v[0],v[1],v[2],v[3]);
     if (CLP(color_mask)) {
       GLP(ColorMask)(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -1862,6 +1915,10 @@ clear(DrawableRegion *clearable) {
 #else
     GLP(ClearDepth)(clearable->get_clear_depth());
 #endif  // OPENGLES
+#ifdef GSG_VERBOSE
+    GLCAT.spam()
+      << "glDepthMask(GL_TRUE)" << endl;
+#endif
     GLP(DepthMask)(GL_TRUE);
     _state_mask.clear_bit(DepthWriteAttrib::get_class_slot());
     mask |= GL_DEPTH_BUFFER_BIT;
@@ -1913,10 +1970,9 @@ clear(DrawableRegion *clearable) {
 //               scissor region and viewport)
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
-prepare_display_region(DisplayRegionPipelineReader *dr,
-                       Lens::StereoChannel stereo_channel) {
+prepare_display_region(DisplayRegionPipelineReader *dr) {
   nassertv(dr != (DisplayRegionPipelineReader *)NULL);
-  GraphicsStateGuardian::prepare_display_region(dr, stereo_channel);
+  GraphicsStateGuardian::prepare_display_region(dr);
 
   int l, b, w, h;
   dr->get_region_pixels(l, b, w, h);
@@ -1990,14 +2046,14 @@ calc_projection_mat(const Lens *lens) {
   // matrix, and store the conversion to our coordinate system of
   // choice in the modelview matrix.
 
-  LMatrix4f result =
-    LMatrix4f::convert_mat(CS_yup_right, lens->get_coordinate_system()) *
+  LMatrix4 result =
+    LMatrix4::convert_mat(CS_yup_right, lens->get_coordinate_system()) *
     lens->get_projection_mat(_current_stereo_channel);
 
   if (_scene_setup->get_inverted()) {
     // If the scene is supposed to be inverted, then invert the
     // projection matrix.
-    result *= LMatrix4f::scale_mat(1.0f, -1.0f, 1.0f);
+    result *= LMatrix4::scale_mat(1.0f, -1.0f, 1.0f);
   }
   
   return TransformState::make_mat(result);
@@ -2023,7 +2079,7 @@ prepare_lens() {
   }
 #ifndef OPENGLES_2
   GLP(MatrixMode)(GL_PROJECTION);
-  GLP(LoadMatrixf)(_projection_mat->get_mat().get_data());
+  GLPf(LoadMatrix)(_projection_mat->get_mat().get_data());
 #endif
   report_my_gl_errors();
 
@@ -2192,7 +2248,7 @@ end_frame(Thread *current_thread) {
            ++ddli) {
         if (GLCAT.is_debug()) {
           GLCAT.debug()
-            << "releasing display list index " << (*ddli) << "\n";
+            << "releasing display list index " << (int)(*ddli) << "\n";
         }
         GLP(DeleteLists)((*ddli), 1);
       }
@@ -2207,7 +2263,7 @@ end_frame(Thread *current_thread) {
            ++ddli) {
         if (GLCAT.is_debug()) {
           GLCAT.debug()
-            << "releasing query index " << (*ddli) << "\n";
+            << "releasing query index " << (int)(*ddli) << "\n";
         }
         _glDeleteQueries(1, &(*ddli));
       }
@@ -2291,7 +2347,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     // Set up the transform matrices for vertex blending.
     nassertr(_supports_vertex_blend, false);
     GLP(Enable)(GL_VERTEX_BLEND_ARB);
-    _glVertexBlendARB(animation.get_num_transforms());
+    _glVertexBlend(animation.get_num_transforms());
 
     const TransformTable *table = _data_reader->get_transform_table();
     if (table != (TransformTable *)NULL) {
@@ -2306,10 +2362,10 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
         GLP(MatrixMode)(GL_MATRIX_PALETTE_ARB);
 
         for (int i = 0; i < table->get_num_transforms(); ++i) {
-          LMatrix4f mat;
+          LMatrix4 mat;
           table->get_transform(i)->mult_matrix(mat, _internal_transform->get_mat());
           _glCurrentPaletteMatrix(i);
-          GLP(LoadMatrixf)(mat.get_data());
+          GLPf(LoadMatrix)(mat.get_data());
         }
 
         // Presumably loading the matrix palette does not step on the
@@ -2326,24 +2382,24 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
         // GL_MODELVIEW0 and 1 are different than the rest.
         int i = 0;
         if (i < table->get_num_transforms()) {
-          LMatrix4f mat;
+          LMatrix4 mat;
           table->get_transform(i)->mult_matrix(mat, _internal_transform->get_mat());
           GLP(MatrixMode)(GL_MODELVIEW0_ARB);
-          GLP(LoadMatrixf)(mat.get_data());
+          GLPf(LoadMatrix)(mat.get_data());
           ++i;
         }
         if (i < table->get_num_transforms()) {
-          LMatrix4f mat;
+          LMatrix4 mat;
           table->get_transform(i)->mult_matrix(mat, _internal_transform->get_mat());
           GLP(MatrixMode)(GL_MODELVIEW1_ARB);
-          GLP(LoadMatrixf)(mat.get_data());
+          GLPf(LoadMatrix)(mat.get_data());
           ++i;
         }
         while (i < table->get_num_transforms()) {
-          LMatrix4f mat;
+          LMatrix4 mat;
           table->get_transform(i)->mult_matrix(mat, _internal_transform->get_mat());
           GLP(MatrixMode)(GL_MODELVIEW2_ARB + i - 2);
-          GLP(LoadMatrixf)(mat.get_data());
+          GLPf(LoadMatrix)(mat.get_data());
           ++i;
         }
 
@@ -2366,7 +2422,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
     if (_transform_stale) {
       GLP(MatrixMode)(GL_MODELVIEW);
-      GLP(LoadMatrixf)(_internal_transform->get_mat().get_data());
+      GLPf(LoadMatrix)(_internal_transform->get_mat().get_data());
     }
   }
 #endif
@@ -2406,7 +2462,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
       // If it hasn't been modified, just play the display list again.
       if (GLCAT.is_spam()) {
         GLCAT.spam()
-          << "calling display list " << _geom_display_list << "\n";
+          << "calling display list " << (int)_geom_display_list << "\n";
       }
 
       GLP(CallList)(_geom_display_list);
@@ -2427,7 +2483,7 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
 
     if (GLCAT.is_debug()) {
       GLCAT.debug()
-        << "compiling display list " << _geom_display_list << "\n";
+        << "compiling display list " << (int)_geom_display_list << "\n";
     }
 
     // If it has been modified, or this is the first time, then we
@@ -2519,18 +2575,18 @@ update_standard_vertex_arrays(bool force) {
     _sender.clear();
 
     _sender.add_column(_data_reader, InternalName::get_normal(),
-                       NULL, NULL, GLP(Normal3f), NULL);
+                       NULL, NULL, GLPf(Normal3), NULL);
 #ifndef NDEBUG
     if (_show_texture_usage) {
       // In show_texture_usage mode, all colors are white, so as not
       // to contaminate the texture color.
-      GLP(Color4f)(1.0f, 1.0f, 1.0f, 1.0f);
+      GLPf(Color4)(1.0f, 1.0f, 1.0f, 1.0f);
     } else
 #endif // NDEBUG
       if (!_sender.add_column(_data_reader, InternalName::get_color(),
-                              NULL, NULL, GLP(Color3f), GLP(Color4f))) {
+                              NULL, NULL, GLPf(Color3), GLPf(Color4))) {
         // If we didn't have a color column, the item color is white.
-        GLP(Color4f)(1.0f, 1.0f, 1.0f, 1.0f);
+        GLPf(Color4)(1.0f, 1.0f, 1.0f, 1.0f);
       }
 
     // Now set up each of the active texture coordinate stages--or at
@@ -2548,14 +2604,14 @@ update_standard_vertex_arrays(bool force) {
           // Use the original functions for stage 0, in case we don't
           // support multitexture.
           _sender.add_column(_data_reader, name,
-                             GLP(TexCoord1f), GLP(TexCoord2f),
-                             GLP(TexCoord3f), GLP(TexCoord4f));
+                             GLPf(TexCoord1), GLPf(TexCoord2),
+                             GLPf(TexCoord3), GLPf(TexCoord4));
 
         } else {
           // Other stages require the multitexture functions.
           _sender.add_texcoord_column(_data_reader, name, stage_index,
-                                      _glMultiTexCoord1f, _glMultiTexCoord2f,
-                                      _glMultiTexCoord3f, _glMultiTexCoord4f);
+                                      GLf(_glMultiTexCoord1), GLf(_glMultiTexCoord2),
+                                      GLf(_glMultiTexCoord3), GLf(_glMultiTexCoord4));
         }
       }
 
@@ -2574,7 +2630,7 @@ update_standard_vertex_arrays(bool force) {
       if (hardware_animation) {
         // Issue the weights and/or transform indices for vertex blending.
         _sender.add_vector_column(_data_reader, InternalName::get_transform_weight(),
-                                  _glWeightfvARB);
+                                  GLfv(_glWeight));
 
         if (animation.get_indexed_transforms()) {
           // Issue the matrix palette indices.
@@ -2587,7 +2643,7 @@ update_standard_vertex_arrays(bool force) {
     // We must add vertex last, because glVertex3f() is the key
     // function call that actually issues the vertex.
     _sender.add_column(_data_reader, InternalName::get_vertex(),
-                       NULL, GLP(Vertex2f), GLP(Vertex3f), GLP(Vertex4f));
+                       NULL, GLPf(Vertex2), GLPf(Vertex3), GLPf(Vertex4));
 
   } else
 #endif  // SUPPORT_IMMEDIATE_MODE
@@ -2617,7 +2673,7 @@ update_standard_vertex_arrays(bool force) {
       // In show_texture_usage mode, all colors are white, so as not
       // to contaminate the texture color.
       GLP(DisableClientState)(GL_COLOR_ARRAY);
-      GLP(Color4f)(1.0f, 1.0f, 1.0f, 1.0f);
+      GLPf(Color4)(1.0f, 1.0f, 1.0f, 1.0f);
     } else
 #endif // NDEBUG
       if (_data_reader->get_color_info(array_reader, num_values, numeric_type,
@@ -2634,7 +2690,7 @@ update_standard_vertex_arrays(bool force) {
         
         // Since we don't have per-vertex color, the implicit color is
         // white.
-        GLP(Color4f)(1.0f, 1.0f, 1.0f, 1.0f);
+        GLPf(Color4)(1.0f, 1.0f, 1.0f, 1.0f);
       }
     
     // Now set up each of the active texture coordinate stages--or at
@@ -2691,8 +2747,8 @@ update_standard_vertex_arrays(bool force) {
           if (!setup_array_data(client_pointer, array_reader, force)) {
             return false;
           }
-          _glWeightPointerARB(num_values, get_numeric_type(numeric_type),
-                              stride, client_pointer + start);
+          _glWeightPointer(num_values, get_numeric_type(numeric_type),
+                           stride, client_pointer + start);
           GLP(EnableClientState)(GL_WEIGHT_ARRAY_ARB);
         } else {
           GLP(DisableClientState)(GL_WEIGHT_ARRAY_ARB);
@@ -2749,16 +2805,16 @@ update_standard_vertex_arrays(bool force) {
 void CLP(GraphicsStateGuardian)::
 unbind_buffers() {
   if (_current_vbuffer_index != 0) {
-    if (GLCAT.is_debug() && CLP(debug_buffers)) {
-      GLCAT.debug()
+    if (GLCAT.is_spam() && CLP(debug_buffers)) {
+      GLCAT.spam()
         << "unbinding vertex buffer\n";
     }
     _glBindBuffer(GL_ARRAY_BUFFER, 0);
     _current_vbuffer_index = 0;
   }
   if (_current_ibuffer_index != 0) {
-    if (GLCAT.is_debug() && CLP(debug_buffers)) {
-      GLCAT.debug()
+    if (GLCAT.is_spam() && CLP(debug_buffers)) {
+      GLCAT.spam()
         << "unbinding index buffer\n";
     }
     _glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -2788,7 +2844,7 @@ disable_standard_vertex_arrays()
 
   GLP(DisableClientState)(GL_NORMAL_ARRAY);
   GLP(DisableClientState)(GL_COLOR_ARRAY);
-  GLP(Color4f)(1.0f, 1.0f, 1.0f, 1.0f);
+  GLPf(Color4)(1.0f, 1.0f, 1.0f, 1.0f);
   report_my_gl_errors();
 
   for (int stage_index=0; stage_index < _last_max_stage_index; stage_index++) {
@@ -3258,7 +3314,7 @@ end_draw_primitives() {
 #ifndef OPENGLES_2
   if (_transform_stale) {
     GLP(MatrixMode)(GL_MODELVIEW);
-    GLP(LoadMatrixf)(_internal_transform->get_mat().get_data());
+    GLPf(LoadMatrix)(_internal_transform->get_mat().get_data());
   }
 
   if (_data_reader->is_vertex_transformed()) {
@@ -3289,7 +3345,7 @@ end_draw_primitives() {
 //               prepare a texture.  Instead, call Texture::prepare().
 ////////////////////////////////////////////////////////////////////
 TextureContext *CLP(GraphicsStateGuardian)::
-prepare_texture(Texture *tex) {
+prepare_texture(Texture *tex, int view) {
   report_my_gl_errors();
   // Make sure we'll support this texture when it's rendered.  Don't
   // bother to prepare it if we won't.
@@ -3321,9 +3377,7 @@ prepare_texture(Texture *tex) {
     break;
   }
 
-  report_my_gl_errors();
-  CLP(TextureContext) *gtc = new CLP(TextureContext)(_prepared_objects, tex);
-  report_my_gl_errors();
+  CLP(TextureContext) *gtc = new CLP(TextureContext)(_prepared_objects, tex, view);
   GLP(GenTextures)(1, &gtc->_index);
   report_my_gl_errors();
 
@@ -3423,14 +3477,22 @@ release_texture(TextureContext *tc) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 extract_texture_data(Texture *tex) {
+  bool success = true;
   // Make sure the error stack is cleared out before we begin.
   report_my_gl_errors();
 
-  TextureContext *tc = tex->prepare_now(get_prepared_objects(), this);
-  nassertr(tc != (TextureContext *)NULL, false);
-  CLP(TextureContext) *gtc = DCAST(CLP(TextureContext), tc);
+  int num_views = tex->get_num_views();
+  for (int view = 0; view < num_views; ++view) {
+    TextureContext *tc = tex->prepare_now(view, get_prepared_objects(), this);
+    nassertr(tc != (TextureContext *)NULL, false);
+    CLP(TextureContext) *gtc = DCAST(CLP(TextureContext), tc);
 
-  return do_extract_texture_data(gtc);
+    if (!do_extract_texture_data(gtc)) {
+      success = false;
+    }
+  }
+
+  return success;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -3531,12 +3593,13 @@ prepare_vertex_buffer(GeomVertexArrayData *data) {
 
     if (GLCAT.is_debug() && CLP(debug_buffers)) {
       GLCAT.debug()
-        << "creating vertex buffer " << gvbc->_index << ": "
+        << "creating vertex buffer " << (int)gvbc->_index << ": "
         << data->get_num_rows() << " vertices "
         << *data->get_array_format() << "\n";
     }
 
     report_my_gl_errors();
+    apply_vertex_buffer(gvbc, data->get_handle(), false);
     return gvbc;
   }
 
@@ -3553,14 +3616,17 @@ bool CLP(GraphicsStateGuardian)::
 apply_vertex_buffer(VertexBufferContext *vbc,
                     const GeomVertexArrayDataHandle *reader, bool force) {
   nassertr(_supports_buffers, false);
-  nassertr(reader->get_modified() != UpdateSeq::initial(), false);
+  if (reader->get_modified() == UpdateSeq::initial()) {
+    // No need to re-apply.
+    return true;
+  }
 
   CLP(VertexBufferContext) *gvbc = DCAST(CLP(VertexBufferContext), vbc);
 
   if (_current_vbuffer_index != gvbc->_index) {
-    if (GLCAT.is_debug() && CLP(debug_buffers)) {
-      GLCAT.debug()
-        << "binding vertex buffer " << gvbc->_index << "\n";
+    if (GLCAT.is_spam() && CLP(debug_buffers)) {
+      GLCAT.spam()
+        << "binding vertex buffer " << (int)gvbc->_index << "\n";
     }
     _glBindBuffer(GL_ARRAY_BUFFER, gvbc->_index);
     _current_vbuffer_index = gvbc->_index;
@@ -3572,7 +3638,7 @@ apply_vertex_buffer(VertexBufferContext *vbc,
     if (GLCAT.is_debug() && CLP(debug_buffers)) {
       GLCAT.debug()
         << "copying " << num_bytes
-        << " bytes into vertex buffer " << gvbc->_index << "\n";
+        << " bytes into vertex buffer " << (int)gvbc->_index << "\n";
     }
     if (num_bytes != 0) {
       const unsigned char *client_pointer = reader->get_read_pointer(force);
@@ -3616,7 +3682,7 @@ release_vertex_buffer(VertexBufferContext *vbc) {
 
   if (GLCAT.is_debug() && CLP(debug_buffers)) {
     GLCAT.debug()
-      << "deleting vertex buffer " << gvbc->_index << "\n";
+      << "deleting vertex buffer " << (int)gvbc->_index << "\n";
   }
 
   // Make sure the buffer is unbound before we delete it.  Not
@@ -3624,8 +3690,8 @@ release_vertex_buffer(VertexBufferContext *vbc) {
   // help out a flaky driver, and we need to keep our internal state
   // consistent anyway.
   if (_current_vbuffer_index == gvbc->_index) {
-    if (GLCAT.is_debug() && CLP(debug_buffers)) {
-      GLCAT.debug()
+    if (GLCAT.is_spam() && CLP(debug_buffers)) {
+      GLCAT.spam()
         << "unbinding vertex buffer\n";
     }
     _glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3672,8 +3738,8 @@ setup_array_data(const unsigned char *&client_pointer,
     // The array specifies client rendering only, or buffer objects
     // are configured off.
     if (_current_vbuffer_index != 0) {
-      if (GLCAT.is_debug() && CLP(debug_buffers)) {
-        GLCAT.debug()
+      if (GLCAT.is_spam() && CLP(debug_buffers)) {
+        GLCAT.spam()
           << "unbinding vertex buffer\n";
       }
       _glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3716,13 +3782,15 @@ prepare_index_buffer(GeomPrimitive *data) {
 
     if (GLCAT.is_debug() && CLP(debug_buffers)) {
       GLCAT.debug()
-        << "creating index buffer " << gibc->_index << ": "
+        << "creating index buffer " << (int)gibc->_index << ": "
         << data->get_num_vertices() << " indices ("
         << data->get_vertices()->get_array_format()->get_column(0)->get_numeric_type()
         << ")\n";
     }
 
     report_my_gl_errors();
+    GeomPrimitivePipelineReader reader(data, Thread::get_current_thread());
+    apply_index_buffer(gibc, &reader, false);
     return gibc;
   }
 
@@ -3740,14 +3808,17 @@ apply_index_buffer(IndexBufferContext *ibc,
                    const GeomPrimitivePipelineReader *reader,
                    bool force) {
   nassertr(_supports_buffers, false);
-  nassertr(reader->get_modified() != UpdateSeq::initial(), false);
+  if (reader->get_modified() == UpdateSeq::initial()) {
+    // No need to re-apply.
+    return true;
+  }
 
   CLP(IndexBufferContext) *gibc = DCAST(CLP(IndexBufferContext), ibc);
 
   if (_current_ibuffer_index != gibc->_index) {
-    if (GLCAT.is_debug() && CLP(debug_buffers)) {
-      GLCAT.debug()
-        << "binding index buffer " << gibc->_index << "\n";
+    if (GLCAT.is_spam() && CLP(debug_buffers)) {
+      GLCAT.spam()
+        << "binding index buffer " << (int)gibc->_index << "\n";
     }
     _glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gibc->_index);
     _current_ibuffer_index = gibc->_index;
@@ -3756,10 +3827,10 @@ apply_index_buffer(IndexBufferContext *ibc,
 
   if (gibc->was_modified(reader)) {
     int num_bytes = reader->get_data_size_bytes();
-    if (GLCAT.is_spam()) {
-      GLCAT.spam()
+    if (GLCAT.is_debug() && CLP(debug_buffers)) {
+      GLCAT.debug()
         << "copying " << num_bytes
-        << " bytes into index buffer " << gibc->_index << "\n";
+        << " bytes into index buffer " << (int)gibc->_index << "\n";
     }
     if (num_bytes != 0) {
       const unsigned char *client_pointer = reader->get_read_pointer(force);
@@ -3803,7 +3874,7 @@ release_index_buffer(IndexBufferContext *ibc) {
 
   if (GLCAT.is_debug() && CLP(debug_buffers)) {
     GLCAT.debug()
-      << "deleting index buffer " << gibc->_index << "\n";
+      << "deleting index buffer " << (int)gibc->_index << "\n";
   }
 
   // Make sure the buffer is unbound before we delete it.  Not
@@ -3811,8 +3882,8 @@ release_index_buffer(IndexBufferContext *ibc) {
   // help out a flaky driver, and we need to keep our internal state
   // consistent anyway.
   if (_current_ibuffer_index == gibc->_index) {
-    if (GLCAT.is_debug() && CLP(debug_buffers)) {
-      GLCAT.debug()
+    if (GLCAT.is_spam() && CLP(debug_buffers)) {
+      GLCAT.spam()
         << "unbinding index buffer\n";
     }
     _glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -3859,8 +3930,8 @@ setup_primitive(const unsigned char *&client_pointer,
     // The array specifies client rendering only, or buffer objects
     // are configured off.
     if (_current_ibuffer_index != 0) {
-      if (GLCAT.is_debug() && CLP(debug_buffers)) {
-        GLCAT.debug()
+      if (GLCAT.is_spam() && CLP(debug_buffers)) {
+        GLCAT.spam()
           << "unbinding index buffer\n";
       }
       _glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -3912,7 +3983,7 @@ begin_occlusion_query() {
 
   if (GLCAT.is_debug()) {
     GLCAT.debug()
-      << "beginning occlusion query index " << query->_index << "\n";
+      << "beginning occlusion query index " << (int)query->_index << "\n";
   }
 
   _glBeginQuery(GL_SAMPLES_PASSED, query->_index);
@@ -3945,7 +4016,7 @@ end_occlusion_query() {
     
   if (GLCAT.is_debug()) {
     GLCAT.debug()
-      << "ending occlusion query index " << index << "\n";
+      << "ending occlusion query index " << (int)index << "\n";
   }
 
   _current_occlusion_query = NULL;
@@ -4046,7 +4117,8 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
     }
   }
 
-  TextureContext *tc = tex->prepare_now(get_prepared_objects(), this);
+  int view = dr->get_tex_view_offset();
+  TextureContext *tc = tex->prepare_now(view, get_prepared_objects(), this);
   nassertr(tc != (TextureContext *)NULL, false);
   CLP(TextureContext) *gtc = DCAST(CLP(TextureContext), tc);
 
@@ -4292,7 +4364,7 @@ apply_fog(Fog *fog) {
   GLP(Fogf)(GL_FOG_MODE, get_fog_mode_type(fmode));
 
   if (fmode == Fog::M_linear) {
-    float onset, opaque;
+    PN_stdfloat onset, opaque;
     fog->get_linear_range(onset, opaque);
     GLP(Fogf)(GL_FOG_START, onset);
     GLP(Fogf)(GL_FOG_END, opaque);
@@ -4302,7 +4374,7 @@ apply_fog(Fog *fog) {
     GLP(Fogf)(GL_FOG_DENSITY, fog->get_exp_density());
   }
 
-  GLP(Fogfv)(GL_FOG_COLOR, fog->get_color().get_data());
+  call_glFogfv(GL_FOG_COLOR, fog->get_color());
   report_my_gl_errors();
 #endif
 }
@@ -4327,7 +4399,7 @@ do_issue_transform() {
   DO_PSTATS_STUFF(_transform_state_pcollector.add_level(1));
 #ifndef OPENGLES_2
   GLP(MatrixMode)(GL_MODELVIEW);
-  GLP(LoadMatrixf)(transform->get_mat().get_data());
+  GLPf(LoadMatrix)(transform->get_mat().get_data());
 #endif
   _transform_stale = false;
 
@@ -4641,8 +4713,16 @@ do_issue_depth_write() {
   const DepthWriteAttrib *target_depth_write = DCAST(DepthWriteAttrib, _target_rs->get_attrib_def(DepthWriteAttrib::get_class_slot()));
   DepthWriteAttrib::Mode mode = target_depth_write->get_mode();
   if (mode == DepthWriteAttrib::M_off) {
+#ifdef GSG_VERBOSE
+    GLCAT.spam()
+      << "glDepthMask(GL_FALSE)" << endl;
+#endif
     GLP(DepthMask)(GL_FALSE);
   } else {
+#ifdef GSG_VERBOSE
+    GLCAT.spam()
+      << "glDepthMask(GL_TRUE)" << endl;
+#endif
     GLP(DepthMask)(GL_TRUE);
   }
   report_my_gl_errors();
@@ -4717,6 +4797,20 @@ do_issue_depth_offset() {
     enable_polygon_offset(false);
   }
 
+  PN_stdfloat min_value = target_depth_offset->get_min_value();
+  PN_stdfloat max_value = target_depth_offset->get_max_value();
+#ifdef GSG_VERBOSE
+    GLCAT.spam()
+      << "glDepthRange(" << min_value << ", " << max_value << ")" << endl;
+#endif
+#ifdef OPENGLES
+  // OpenGL ES uses a single-precision call.
+  GLP(DepthRangef)((GLclampf)min_value, (GLclampf)max_value);
+#else
+  // Mainline OpenGL uses a double-precision call.
+  GLP(DepthRange)((GLclampd)min_value, (GLclampd)max_value);
+#endif  // OPENGLES
+
   report_my_gl_errors();
 }
 
@@ -4758,24 +4852,24 @@ do_issue_material() {
   static const GLenum face = GL_FRONT_AND_BACK;
 #endif  // OPENGLES
 
-  GLP(Materialfv)(face, GL_SPECULAR, material->get_specular().get_data());
-  GLP(Materialfv)(face, GL_EMISSION, material->get_emission().get_data());
-  GLP(Materialf)(face, GL_SHININESS, min(material->get_shininess(), 128.0f));
+  call_glMaterialfv(face, GL_SPECULAR, material->get_specular());
+  call_glMaterialfv(face, GL_EMISSION, material->get_emission());
+  GLP(Materialf)(face, GL_SHININESS, min(material->get_shininess(), (PN_stdfloat)128.0));
 
   if (material->has_ambient() && material->has_diffuse()) {
     // The material has both an ambient and diffuse specified.  This
     // means we do not need glMaterialColor().
     GLP(Disable)(GL_COLOR_MATERIAL);
-    GLP(Materialfv)(face, GL_AMBIENT, material->get_ambient().get_data());
-    GLP(Materialfv)(face, GL_DIFFUSE, material->get_diffuse().get_data());
+    call_glMaterialfv(face, GL_AMBIENT, material->get_ambient());
+    call_glMaterialfv(face, GL_DIFFUSE, material->get_diffuse());
 
   } else if (material->has_ambient()) {
     // The material specifies an ambient, but not a diffuse component.
     // The diffuse component comes from the object's color.
-    GLP(Materialfv)(face, GL_AMBIENT, material->get_ambient().get_data());
+    call_glMaterialfv(face, GL_AMBIENT, material->get_ambient());
     if (has_material_force_color) {
       GLP(Disable)(GL_COLOR_MATERIAL);
-      GLP(Materialfv)(face, GL_DIFFUSE, _material_force_color.get_data());
+      call_glMaterialfv(face, GL_DIFFUSE, _material_force_color);
     } else {
 #ifndef OPENGLES
       GLP(ColorMaterial)(face, GL_DIFFUSE);
@@ -4786,10 +4880,10 @@ do_issue_material() {
   } else if (material->has_diffuse()) {
     // The material specifies a diffuse, but not an ambient component.
     // The ambient component comes from the object's color.
-    GLP(Materialfv)(face, GL_DIFFUSE, material->get_diffuse().get_data());
+    call_glMaterialfv(face, GL_DIFFUSE, material->get_diffuse());
     if (has_material_force_color) {
       GLP(Disable)(GL_COLOR_MATERIAL);
-      GLP(Materialfv)(face, GL_AMBIENT, _material_force_color.get_data());
+      call_glMaterialfv(face, GL_AMBIENT, _material_force_color);
     } else {
 #ifndef OPENGLES
       GLP(ColorMaterial)(face, GL_AMBIENT);
@@ -4802,8 +4896,8 @@ do_issue_material() {
     // component.  Both components come from the object's color.
     if (has_material_force_color) {
       GLP(Disable)(GL_COLOR_MATERIAL);
-      GLP(Materialfv)(face, GL_AMBIENT, _material_force_color.get_data());
-      GLP(Materialfv)(face, GL_DIFFUSE, _material_force_color.get_data());
+      call_glMaterialfv(face, GL_AMBIENT, _material_force_color);
+      call_glMaterialfv(face, GL_DIFFUSE, _material_force_color);
     } else {
 #ifndef OPENGLES
       GLP(ColorMaterial)(face, GL_AMBIENT_AND_DIFFUSE);
@@ -4885,7 +4979,7 @@ do_issue_blending() {
                     _current_color_scale[2], _current_color_scale[3]);
 
     } else {
-      Colorf c = color_blend->get_color();
+      LColor c = color_blend->get_color();
       _glBlendColor(c[0], c[1], c[2], c[3]);
     }
     return;
@@ -4966,20 +5060,19 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
   //  static PStatCollector _draw_set_state_light_bind_point_pcollector("Draw:Set State:Light:Bind:Point");
   //  PStatTimer timer(_draw_set_state_light_bind_point_pcollector);
   
-  float light_color[4];
   GLenum id = get_light_id(light_id);
-  static const Colorf black(0.0f, 0.0f, 0.0f, 1.0f);
-  GLP(Lightfv)(id, GL_AMBIENT, black.get_data());
-  GLP(Lightfv)(id, GL_DIFFUSE, get_light_color(light_color, light_obj));
-  GLP(Lightfv)(id, GL_SPECULAR, light_obj->get_specular_color().get_data());
+  static const LColor black(0.0f, 0.0f, 0.0f, 1.0f);
+  call_glLightfv(id, GL_AMBIENT, black);
+  call_glLightfv(id, GL_DIFFUSE, get_light_color(light_obj));
+  call_glLightfv(id, GL_SPECULAR, light_obj->get_specular_color());
 
   // Position needs to specify x, y, z, and w
   // w == 1 implies non-infinite position
   CPT(TransformState) transform = light.get_transform(_scene_setup->get_scene_root().get_parent());
-  LPoint3f pos = light_obj->get_point() * transform->get_mat();
+  LPoint3 pos = light_obj->get_point() * transform->get_mat();
 
-  LPoint4f fpos(pos[0], pos[1], pos[2], 1.0f);
-  GLP(Lightfv)(id, GL_POSITION, fpos.get_data());
+  LPoint4 fpos(pos[0], pos[1], pos[2], 1.0f);
+  call_glLightfv(id, GL_POSITION, fpos);
 
   // GL_SPOT_DIRECTION is not significant when cutoff == 180
 
@@ -4989,7 +5082,7 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
   // Cutoff == 180 means uniform point light source
   GLP(Lightf)(id, GL_SPOT_CUTOFF, 180.0f);
 
-  const LVecBase3f &att = light_obj->get_attenuation();
+  const LVecBase3 &att = light_obj->get_attenuation();
   GLP(Lightf)(id, GL_CONSTANT_ATTENUATION, att[0]);
   GLP(Lightf)(id, GL_LINEAR_ATTENUATION, att[1]);
   GLP(Lightf)(id, GL_QUADRATIC_ATTENUATION, att[2]);
@@ -5017,20 +5110,19 @@ bind_light(DirectionalLight *light_obj, const NodePath &light, int light_id) {
   if (lookup.second) {
     // The light was not computed yet this frame.  Compute it now.
     CPT(TransformState) transform = light.get_transform(_scene_setup->get_scene_root().get_parent());
-    LVector3f dir = light_obj->get_direction() * transform->get_mat();
+    LVector3 dir = light_obj->get_direction() * transform->get_mat();
     fdata._neg_dir.set(-dir[0], -dir[1], -dir[2], 0);
   }
 
-  float light_color[4];
   GLenum id = get_light_id( light_id );
-  static const Colorf black(0.0f, 0.0f, 0.0f, 1.0f);
-  GLP(Lightfv)(id, GL_AMBIENT, black.get_data());
-  GLP(Lightfv)(id, GL_DIFFUSE, get_light_color(light_color, light_obj));
-  GLP(Lightfv)(id, GL_SPECULAR, light_obj->get_specular_color().get_data());
+  static const LColor black(0.0f, 0.0f, 0.0f, 1.0f);
+  call_glLightfv(id, GL_AMBIENT, black);
+  call_glLightfv(id, GL_DIFFUSE, get_light_color(light_obj));
+  call_glLightfv(id, GL_SPECULAR, light_obj->get_specular_color());
 
   // Position needs to specify x, y, z, and w.
   // w == 0 implies light is at infinity
-  GLP(Lightfv)(id, GL_POSITION, fdata._neg_dir.get_data());
+  call_glLightfv(id, GL_POSITION, fdata._neg_dir);
 
   // GL_SPOT_DIRECTION is not significant when cutoff == 180
   // In this case, position x, y, z specifies direction
@@ -5068,28 +5160,27 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
   Lens *lens = light_obj->get_lens();
   nassertv(lens != (Lens *)NULL);
 
-  float light_color[4];
   GLenum id = get_light_id(light_id);
-  static const Colorf black(0.0f, 0.0f, 0.0f, 1.0f);
-  GLP(Lightfv)(id, GL_AMBIENT, black.get_data());
-  GLP(Lightfv)(id, GL_DIFFUSE, get_light_color(light_color, light_obj));
-  GLP(Lightfv)(id, GL_SPECULAR, light_obj->get_specular_color().get_data());
+  static const LColor black(0.0f, 0.0f, 0.0f, 1.0f);
+  call_glLightfv(id, GL_AMBIENT, black);
+  call_glLightfv(id, GL_DIFFUSE, get_light_color(light_obj));
+  call_glLightfv(id, GL_SPECULAR, light_obj->get_specular_color());
 
   // Position needs to specify x, y, z, and w
   // w == 1 implies non-infinite position
   CPT(TransformState) transform = light.get_transform(_scene_setup->get_scene_root().get_parent());
-  const LMatrix4f &light_mat = transform->get_mat();
-  LPoint3f pos = lens->get_nodal_point() * light_mat;
-  LVector3f dir = lens->get_view_vector() * light_mat;
+  const LMatrix4 &light_mat = transform->get_mat();
+  LPoint3 pos = lens->get_nodal_point() * light_mat;
+  LVector3 dir = lens->get_view_vector() * light_mat;
 
-  LPoint4f fpos(pos[0], pos[1], pos[2], 1.0f);
-  GLP(Lightfv)(id, GL_POSITION, fpos.get_data());
-  GLP(Lightfv)(id, GL_SPOT_DIRECTION, dir.get_data());
+  LPoint4 fpos(pos[0], pos[1], pos[2], 1.0f);
+  call_glLightfv(id, GL_POSITION, fpos);
+  call_glLightfv(id, GL_SPOT_DIRECTION, dir);
 
   GLP(Lightf)(id, GL_SPOT_EXPONENT, light_obj->get_exponent());
   GLP(Lightf)(id, GL_SPOT_CUTOFF, lens->get_hfov() * 0.5f);
 
-  const LVecBase3f &att = light_obj->get_attenuation();
+  const LVecBase3 &att = light_obj->get_attenuation();
   GLP(Lightf)(id, GL_CONSTANT_ATTENUATION, att[0]);
   GLP(Lightf)(id, GL_LINEAR_ATTENUATION, att[1]);
   GLP(Lightf)(id, GL_QUADRATIC_ATTENUATION, att[2]);
@@ -5279,8 +5370,10 @@ show_gl_string(const string &name, GLenum id) {
   const GLubyte *text = GLP(GetString)(id);
 
   if (text == (const GLubyte *)NULL) {
-    GLCAT.warning()
-      << "Unable to query " << name << "\n";
+    if (GLCAT.is_debug()) {
+      GLCAT.debug()
+        << "Unable to query " << name << "\n";
+    }
   } else {
     result = (const char *)text;
     if (GLCAT.is_debug()) {
@@ -5349,6 +5442,25 @@ query_gl_version() {
         << _gl_version_major << "." << _gl_version_minor
         << "\n";
     }
+#ifndef OPENGLES
+    if (_gl_version_major==1) {
+        const char *extstr = (const char *) GLP(GetString)(GL_EXTENSIONS);
+        if (extstr != NULL) {
+            if (strstr( extstr, "GL_ARB_shading_language_100") != NULL)
+            {
+                _gl_shadlang_ver_major = 1;
+                _gl_shadlang_ver_minor = 0;
+            }
+        }
+    } 
+    else if (_gl_version_major >= 2) {
+        const char *verstr = (const char *) GLP(GetString)(GL_SHADING_LANGUAGE_VERSION);
+        if ((verstr == NULL) || (sscanf(verstr, "%d.%d", &_gl_shadlang_ver_major, &_gl_shadlang_ver_minor) != 2))
+        {
+            GLCAT.warning()  << "Invalid GL_SHADING_LANGUAGE_VERSION format.\n";            
+        }
+    }
+#endif
   }
 }
 
@@ -5459,9 +5571,9 @@ get_extension_func(const char *prefix, const char *name) {
     { "CompressedTexSubImage3D", (void *)&GLP(CompressedTexSubImage3D) },
     { "GetCompressedTexImage", (void *)&GLP(GetCompressedTexImage) },
     { "MultiTexCoord1f", (void *)&GLP(MultiTexCoord1f) },
-    { "MultiTexCoord2f", (void *)&GLP(MultiTexCoord2f) },
-    { "MultiTexCoord3f", (void *)&GLP(MultiTexCoord3f) },
-    { "MultiTexCoord4f", (void *)&GLP(MultiTexCoord4f) },
+    { "MultiTexCoord2", (void *)&GLP(MultiTexCoord2) },
+    { "MultiTexCoord3", (void *)&GLP(MultiTexCoord3) },
+    { "MultiTexCoord4", (void *)&GLP(MultiTexCoord4) },
 #endif
 #ifdef EXPECT_GL_VERSION_1_4
     { "PointParameterfv", (void *)&GLP(PointParameterfv) },
@@ -5727,6 +5839,11 @@ get_numeric_type(Geom::NumericType numeric_type) {
 
   case Geom::NT_float32:
     return GL_FLOAT;
+
+#ifndef OPENGLES
+  case Geom::NT_float64:
+    return GL_DOUBLE;
+#endif
   }
 
   GLCAT.error()
@@ -6783,33 +6900,27 @@ print_gfx_visual() {
 ////////////////////////////////////////////////////////////////////
 //     Function: GLGraphicsStateGuardian::get_light_color
 //       Access: Public
-//  Description: Fills the array of four floats with the values that
-//               that should be issued as the light's color, as scaled
-//               by the current value of _light_color_scale, in the
-//               case of color_scale_via_lighting.  Returns
-//               light_color.
+//  Description: Returns the value that that should be issued as the
+//               light's color, as scaled by the current value of
+//               _light_color_scale, in the case of
+//               color_scale_via_lighting.
 ////////////////////////////////////////////////////////////////////
-float *CLP(GraphicsStateGuardian)::
-get_light_color(float light_color[4], Light *light) const {
+LVecBase4 CLP(GraphicsStateGuardian)::
+get_light_color(Light *light) const {
 #ifndef NDEBUG
   if (_show_texture_usage) {
     // In show_texture_usage mode, all lights are white, so as not to
     // contaminate the texture color.
-    light_color[0] = 1.0f;
-    light_color[1] = 1.0f;
-    light_color[2] = 1.0f;
-    light_color[3] = 1.0f;
-    return light_color;
+    return LVecBase4(1.0, 1.0, 1.0, 1.0);
   }
 #endif  // NDEBUG
 
-  const Colorf &c = light->get_color();
+  const LColor &c = light->get_color();
 
-  light_color[0] = c[0] * _light_color_scale[0];
-  light_color[1] = c[1] * _light_color_scale[1];
-  light_color[2] = c[2] * _light_color_scale[2];
-  light_color[3] = c[3] * _light_color_scale[3];
-
+  LVecBase4 light_color(c[0] * _light_color_scale[0],
+                        c[1] * _light_color_scale[1],
+                        c[2] * _light_color_scale[2],
+                        c[3] * _light_color_scale[3]);
   return light_color;
 }
 
@@ -6859,17 +6970,17 @@ enable_lighting(bool enable) {
 //               all other lights have been enabled or disabled.
 ////////////////////////////////////////////////////////////////////
 void CLP(GraphicsStateGuardian)::
-set_ambient_light(const Colorf &color) {
+set_ambient_light(const LColor &color) {
 #ifndef OPENGLES_2
   //  static PStatCollector _draw_set_state_light_ambient_pcollector("Draw:Set State:Light:Ambient");
   //  PStatTimer timer(_draw_set_state_light_ambient_pcollector);
   
-  Colorf c = color;
+  LColor c = color;
   c.set(c[0] * _light_color_scale[0],
         c[1] * _light_color_scale[1],
         c[2] * _light_color_scale[2],
         c[3] * _light_color_scale[3]);
-  GLP(LightModelfv)(GL_LIGHT_MODEL_AMBIENT, c.get_data());
+  call_glLightModelfv(GL_LIGHT_MODEL_AMBIENT, c);
 #endif
 }
 
@@ -6922,7 +7033,7 @@ begin_bind_lights() {
 
   GLP(MatrixMode)(GL_MODELVIEW);
   GLP(PushMatrix)();
-  GLP(LoadMatrixf)(render_transform->get_mat().get_data());
+  GLPf(LoadMatrix)(render_transform->get_mat().get_data());
 #endif
 }
 
@@ -6990,7 +7101,7 @@ begin_bind_clip_planes() {
 
   GLP(MatrixMode)(GL_MODELVIEW);
   GLP(PushMatrix)();
-  GLP(LoadMatrixf)(render_transform->get_mat().get_data());
+  GLPf(LoadMatrix)(render_transform->get_mat().get_data());
 #endif
 }
 
@@ -7009,15 +7120,16 @@ bind_clip_plane(const NodePath &plane, int plane_id) {
   CPT(TransformState) transform = plane.get_transform(_scene_setup->get_scene_root().get_parent());
   const PlaneNode *plane_node;
   DCAST_INTO_V(plane_node, plane.node());
-  Planef xformed_plane = plane_node->get_plane() * transform->get_mat();
+  LPlane xformed_plane = plane_node->get_plane() * transform->get_mat();
 
 #ifndef OPENGLES_2 // OpenGL ES 2.0 doesn't support clip planes at all.
 #ifdef OPENGLES
   // OpenGL ES uses a single-precision call.
-  GLP(ClipPlanef)(id, xformed_plane.get_data());
+  LPlanef single_plane(LCAST(float, xformed_plane));
+  GLP(ClipPlanef)(id, single_plane.get_data());
 #else
   // Mainline OpenGL uses a double-precision call.
-  Planed double_plane(LCAST(double, xformed_plane));
+  LPlaned double_plane(LCAST(double, xformed_plane));
   GLP(ClipPlane)(id, double_plane.get_data());
 #endif  // OPENGLES
 #endif  // OPENGLES_2
@@ -7092,13 +7204,14 @@ set_state_and_transform(const RenderState *target,
 #ifndef OPENGLES_1
   if (_target_shader->auto_shader()) {
     // If we don't have a generated shader, make sure we have a ShaderGenerator, then generate the shader.
-    if (_target_rs->_generated_shader == NULL) {
+    CPT(RenderState) shader = _target_rs->get_auto_shader_state();
+    if (shader->_generated_shader == NULL) {
       if (_shader_generator == NULL) {
         _shader_generator = new ShaderGenerator(this, _scene_setup->get_display_region()->get_window());
       }
-      const_cast<RenderState*>(_target_rs.p())->_generated_shader = DCAST(ShaderAttrib, _shader_generator->synthesize_shader(_target_rs));
+      const_cast<RenderState*>(shader.p())->_generated_shader = DCAST(ShaderAttrib, _shader_generator->synthesize_shader(shader));
     }
-    _target_shader = DCAST(ShaderAttrib, _target_rs->_generated_shader);
+    _target_shader = DCAST(ShaderAttrib, shader->_generated_shader);
   }
 #endif
 
@@ -7320,6 +7433,11 @@ set_state_and_transform(const RenderState *target,
     //PStatTimer timer(_draw_set_state_fog_pcollector);
     do_issue_fog();
     _state_mask.set_bit(fog_slot);
+#ifndef OPENGLES_1
+    if (_current_shader_context) {
+      _current_shader_context->issue_parameters(this, Shader::SSD_fog);
+    }
+#endif
   }
 
   int scissor_slot = ScissorAttrib::get_class_slot();
@@ -7510,8 +7628,9 @@ update_standard_texture_bindings() {
       GLP(Disable)(GL_TEXTURE_CUBE_MAP);
     }
 #endif // OPENGLES_2
-    
-    TextureContext *tc = texture->prepare_now(_prepared_objects, this);
+
+    int view = get_current_tex_view_offset() + stage->get_tex_view_offset();
+    TextureContext *tc = texture->prepare_now(view, _prepared_objects, this);
     if (tc == (TextureContext *)NULL) {
       // Something wrong with this texture; skip it.
       break;
@@ -7535,15 +7654,15 @@ update_standard_texture_bindings() {
     }
     
     if (stage->involves_color_scale() && _color_scale_enabled) {
-      Colorf color = stage->get_color();
+      LColor color = stage->get_color();
       color.set(color[0] * _current_color_scale[0],
                 color[1] * _current_color_scale[1],
                 color[2] * _current_color_scale[2],
                 color[3] * _current_color_scale[3]);
       _texture_involves_color_scale = true;
-      GLP(TexEnvfv)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color.get_data());
+      call_glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
     } else {
-      GLP(TexEnvfv)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, stage->get_color().get_data());
+      call_glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, stage->get_color());
     }
     
     if (stage->get_mode() == TextureStage::M_decal) {
@@ -7715,7 +7834,8 @@ update_show_usage_texture_bindings(int show_stage_index) {
     Texture *texture = _target_texture->get_on_texture(stage);
     nassertv(texture != (Texture *)NULL);
 
-    TextureContext *tc = texture->prepare_now(_prepared_objects, this);
+    int view = get_current_tex_view_offset() + stage->get_tex_view_offset();
+    TextureContext *tc = texture->prepare_now(view, _prepared_objects, this);
     if (tc == (TextureContext *)NULL) {
       // Something wrong with this texture; skip it.
       break;
@@ -7804,10 +7924,10 @@ upload_usage_texture(int width, int height) {
       << "upload_usage_texture(" << width << ", " << height << ")\n";
   }
 
-  static Colorf colors[3] = {
-    Colorf(0.4f, 0.5f, 0.8f, 1.0f),   // mipmap 0: blue
-    Colorf(1.0f, 1.0f, 0.0f, 1.0f),   // mipmap 1: yellow
-    Colorf(0.8f, 0.3f, 0.3f, 1.0f),   // mipmap 2 and higher: red
+  static LColor colors[3] = {
+    LColor(0.4, 0.5f, 0.8f, 1.0f),   // mipmap 0: blue
+    LColor(1.0f, 1.0f, 0.0f, 1.0f),   // mipmap 1: yellow
+    LColor(0.8f, 0.3, 0.3, 1.0f),   // mipmap 2 and higher: red
   };
 
 
@@ -7818,7 +7938,7 @@ upload_usage_texture(int width, int height) {
   int n = 0;
   while (true) {
     // Choose the color for the nth mipmap.
-    Colorf c = colors[min(n, 2)];
+    LColor c = colors[min(n, 2)];
 
     // A simple union to store the colors values bytewise, and get the
     // answer wordwise, independently of machine byte-ordernig.
@@ -7905,7 +8025,7 @@ do_issue_tex_matrix() {
 
     const TexMatrixAttrib *target_tex_matrix = DCAST(TexMatrixAttrib, _target_rs->get_attrib_def(TexMatrixAttrib::get_class_slot()));
     if (target_tex_matrix->has_stage(stage)) {
-      GLP(LoadMatrixf)(target_tex_matrix->get_mat(stage).get_data());
+      GLPf(LoadMatrix)(target_tex_matrix->get_mat(stage).get_data());
     } else {
       GLP(LoadIdentity)();
 
@@ -7915,7 +8035,7 @@ do_issue_tex_matrix() {
       // an identity matrix does work.  But this buggy-driver
       // workaround might have other performance implications, so I
       // leave it out.
-      // GLP(LoadMatrixf)(LMatrix4f::ident_mat().get_data());
+      // GLPf(LoadMatrix)(LMatrix4::ident_mat().get_data());
     }
   }
   report_my_gl_errors();
@@ -7938,10 +8058,10 @@ do_issue_tex_gen() {
   // the spatial coordinates one-for-one to UV's.  If you want a
   // mapping other than identity, use a TexMatrixAttrib (or a
   // TexProjectorEffect).
-  static const float s_data[4] = { 1, 0, 0, 0 };
-  static const float t_data[4] = { 0, 1, 0, 0 };
-  static const float r_data[4] = { 0, 0, 1, 0 };
-  static const float q_data[4] = { 0, 0, 0, 1 };
+  static const PN_stdfloat s_data[4] = { 1, 0, 0, 0 };
+  static const PN_stdfloat t_data[4] = { 0, 1, 0, 0 };
+  static const PN_stdfloat r_data[4] = { 0, 0, 1, 0 };
+  static const PN_stdfloat q_data[4] = { 0, 0, 0, 1 };
 
   _tex_gen_modifies_mat = false;
 
@@ -7985,10 +8105,10 @@ do_issue_tex_gen() {
         // We need to rotate the normals out of GL's coordinate
         // system and into the user's coordinate system.  We do this
         // by composing a transform onto the texture matrix.
-        LMatrix4f mat = _inv_cs_transform->get_mat();
-        mat.set_row(3, LVecBase3f(0.0f, 0.0f, 0.0f));
+        LMatrix4 mat = _inv_cs_transform->get_mat();
+        mat.set_row(3, LVecBase3(0.0f, 0.0f, 0.0f));
         GLP(MatrixMode)(GL_TEXTURE);
-        GLP(MultMatrixf)(mat.get_data());
+        GLPf(MultMatrix)(mat.get_data());
 
         // Now we need to reset the texture matrix next time
         // around to undo this.
@@ -8014,10 +8134,10 @@ do_issue_tex_gen() {
         // GL_REFLECTION_MAP.
         CPT(TransformState) camera_transform = _scene_setup->get_camera_transform()->compose(_inv_cs_transform);
 
-        LMatrix4f mat = camera_transform->get_mat();
-        mat.set_row(3, LVecBase3f(0.0f, 0.0f, 0.0f));
+        LMatrix4 mat = camera_transform->get_mat();
+        mat.set_row(3, LVecBase3(0.0f, 0.0f, 0.0f));
         GLP(MatrixMode)(GL_TEXTURE);
-        GLP(MultMatrixf)(mat.get_data());
+        GLPf(MultMatrix)(mat.get_data());
 
         // Now we need to reset the texture matrix next time
         // around to undo this.
@@ -8038,10 +8158,10 @@ do_issue_tex_gen() {
         // We need to rotate the normals out of GL's coordinate
         // system and into the user's coordinate system.  We do this
         // by composing a transform onto the texture matrix.
-        LMatrix4f mat = _inv_cs_transform->get_mat();
-        mat.set_row(3, LVecBase3f(0.0f, 0.0f, 0.0f));
+        LMatrix4 mat = _inv_cs_transform->get_mat();
+        mat.set_row(3, LVecBase3(0.0f, 0.0f, 0.0f));
         GLP(MatrixMode)(GL_TEXTURE);
-        GLP(MultMatrixf)(mat.get_data());
+        GLPf(MultMatrix)(mat.get_data());
 
         // Now we need to reset the texture matrix next time
         // around to undo this.
@@ -8067,10 +8187,10 @@ do_issue_tex_gen() {
         // GL_NORMAL_MAP.
         CPT(TransformState) camera_transform = _scene_setup->get_camera_transform()->compose(_inv_cs_transform);
 
-        LMatrix4f mat = camera_transform->get_mat();
-        mat.set_row(3, LVecBase3f(0.0f, 0.0f, 0.0f));
+        LMatrix4 mat = camera_transform->get_mat();
+        mat.set_row(3, LVecBase3(0.0f, 0.0f, 0.0f));
         GLP(MatrixMode)(GL_TEXTURE);
-        GLP(MultMatrixf)(mat.get_data());
+        GLPf(MultMatrix)(mat.get_data());
 
         // Now we need to reset the texture matrix next time
         // around to undo this.
@@ -8091,17 +8211,17 @@ do_issue_tex_gen() {
       // load the coordinate-system transform.
       GLP(MatrixMode)(GL_MODELVIEW);
       GLP(PushMatrix)();
-      GLP(LoadMatrixf)(_cs_transform->get_mat().get_data());
+      GLPf(LoadMatrix)(_cs_transform->get_mat().get_data());
 
       GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
       GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
       GLP(TexGeni)(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
       GLP(TexGeni)(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
 
-      GLP(TexGenfv)(GL_S, GL_EYE_PLANE, s_data);
-      GLP(TexGenfv)(GL_T, GL_EYE_PLANE, t_data);
-      GLP(TexGenfv)(GL_R, GL_EYE_PLANE, r_data);
-      GLP(TexGenfv)(GL_Q, GL_EYE_PLANE, q_data);
+      GLPfv(TexGen)(GL_S, GL_EYE_PLANE, s_data);
+      GLPfv(TexGen)(GL_T, GL_EYE_PLANE, t_data);
+      GLPfv(TexGen)(GL_R, GL_EYE_PLANE, r_data);
+      GLPfv(TexGen)(GL_Q, GL_EYE_PLANE, q_data);
 
       GLP(Enable)(GL_TEXTURE_GEN_S);
       GLP(Enable)(GL_TEXTURE_GEN_T);
@@ -8120,16 +8240,16 @@ do_issue_tex_gen() {
         GLP(MatrixMode)(GL_MODELVIEW);
         GLP(PushMatrix)();
         CPT(TransformState) root_transform = _cs_transform->compose(_scene_setup->get_world_transform());
-        GLP(LoadMatrixf)(root_transform->get_mat().get_data());
+        GLPf(LoadMatrix)(root_transform->get_mat().get_data());
         GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
         GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
         GLP(TexGeni)(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
         GLP(TexGeni)(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
 
-        GLP(TexGenfv)(GL_S, GL_EYE_PLANE, s_data);
-        GLP(TexGenfv)(GL_T, GL_EYE_PLANE, t_data);
-        GLP(TexGenfv)(GL_R, GL_EYE_PLANE, r_data);
-        GLP(TexGenfv)(GL_Q, GL_EYE_PLANE, q_data);
+        GLPfv(TexGen)(GL_S, GL_EYE_PLANE, s_data);
+        GLPfv(TexGen)(GL_T, GL_EYE_PLANE, t_data);
+        GLPfv(TexGen)(GL_R, GL_EYE_PLANE, r_data);
+        GLPfv(TexGen)(GL_Q, GL_EYE_PLANE, q_data);
 
         GLP(Enable)(GL_TEXTURE_GEN_S);
         GLP(Enable)(GL_TEXTURE_GEN_T);
@@ -8158,21 +8278,21 @@ do_issue_tex_gen() {
       // flattens the vertex position to zero and then adds our
       // desired value.
       {
-        const TexCoord3f &v = _target_tex_gen->get_constant_value(stage);
+        const LTexCoord3 &v = _target_tex_gen->get_constant_value(stage);
 
         GLP(TexGeni)(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
         GLP(TexGeni)(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
         GLP(TexGeni)(GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
         GLP(TexGeni)(GL_Q, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 
-        LVecBase4f s(0.0f, 0.0f, 0.0f, v[0]);
-        LVecBase4f t(0.0f, 0.0f, 0.0f, v[1]);
-        LVecBase4f r(0.0f, 0.0f, 0.0f, v[2]);
+        LVecBase4 s(0.0f, 0.0f, 0.0f, v[0]);
+        LVecBase4 t(0.0f, 0.0f, 0.0f, v[1]);
+        LVecBase4 r(0.0f, 0.0f, 0.0f, v[2]);
 
-        GLP(TexGenfv)(GL_S, GL_OBJECT_PLANE, s.get_data());
-        GLP(TexGenfv)(GL_T, GL_OBJECT_PLANE, t.get_data());
-        GLP(TexGenfv)(GL_R, GL_OBJECT_PLANE, r.get_data());
-        GLP(TexGenfv)(GL_Q, GL_OBJECT_PLANE, q_data);
+        GLPfv(TexGen)(GL_S, GL_OBJECT_PLANE, s.get_data());
+        GLPfv(TexGen)(GL_T, GL_OBJECT_PLANE, t.get_data());
+        GLPfv(TexGen)(GL_R, GL_OBJECT_PLANE, r.get_data());
+        GLPfv(TexGen)(GL_Q, GL_OBJECT_PLANE, q_data);
 
         GLP(Enable)(GL_TEXTURE_GEN_S);
         GLP(Enable)(GL_TEXTURE_GEN_T);
@@ -8245,9 +8365,8 @@ specify_texture(CLP(TextureContext) *gtc) {
                        get_texture_wrap_mode(tex->get_wrap_w()));
   }
 
-  Colorf border_color = tex->get_border_color();
-  GLP(TexParameterfv)(target, GL_TEXTURE_BORDER_COLOR,
-                      border_color.get_data());
+  LColor border_color = tex->get_border_color();
+  call_glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, border_color);
 #endif  // OPENGLES
 
   Texture::FilterType minfilter = tex->get_effective_minfilter();
@@ -8283,9 +8402,9 @@ specify_texture(CLP(TextureContext) *gtc) {
 
   // Set anisotropic filtering.
   if (_supports_anisotropy) {
-    float anisotropy = tex->get_effective_anisotropic_degree();
+    PN_stdfloat anisotropy = tex->get_effective_anisotropic_degree();
     anisotropy = min(anisotropy, _max_anisotropy);
-    anisotropy = max(anisotropy, 1.0f);
+    anisotropy = max(anisotropy, (PN_stdfloat)1.0);
     GLP(TexParameterf)(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
   }
 
@@ -8333,7 +8452,13 @@ apply_texture(TextureContext *tc) {
   if (target == GL_NONE) {
     return false;
   }
-  report_my_gl_errors();
+
+  if (gtc->_target != target) {
+    // The target has changed.  That means we have to re-bind a new
+    // texture object.
+    gtc->reset_data();
+    gtc->_target = target;
+  }
   GLP(BindTexture)(target, gtc->_index);
 
   report_my_gl_errors();
@@ -8522,6 +8647,7 @@ upload_texture(CLP(TextureContext) *gtc, bool force) {
 
   bool success = true;
 
+  GLenum target = get_texture_target(tex->get_texture_type());
   if (tex->get_texture_type() == Texture::TT_cube_map) {
     // A cube map must load six different 2-d images (which are stored
     // as the six pages of the system ram image).
@@ -8529,6 +8655,7 @@ upload_texture(CLP(TextureContext) *gtc, bool force) {
       report_my_gl_errors();
       return false;
     }
+    nassertr(target == GL_TEXTURE_CUBE_MAP, false);
 
     success = success && upload_texture_image
       (gtc, uses_mipmaps, mipmap_bias,
@@ -8568,7 +8695,6 @@ upload_texture(CLP(TextureContext) *gtc, bool force) {
 
   } else {
     // Any other kind of texture can be loaded all at once.
-    GLenum target = get_texture_target(tex->get_texture_type());
     success = upload_texture_image
       (gtc, uses_mipmaps, mipmap_bias, target, target,
        internal_format, external_format, component_type,
@@ -8783,17 +8909,20 @@ upload_texture_image(CLP(TextureContext) *gtc,
         image_ptr = ptimage;
       }
 
-      size_t image_size = tex->get_ram_mipmap_image_size(n);
+      const unsigned char *orig_image_ptr = image_ptr;
+      size_t view_size = tex->get_ram_mipmap_view_size(n);
+      image_ptr += view_size * gtc->get_view();
       if (one_page_only) {
-        image_size = tex->get_ram_mipmap_page_size(n);
-        image_ptr += image_size * z;
+        view_size = tex->get_ram_mipmap_page_size(n);
+        image_ptr += view_size * z;
       }
+      nassertr(image_ptr >= orig_image_ptr && image_ptr + view_size <= orig_image_ptr + tex->get_ram_mipmap_image_size(n), false);
 
       PTA_uchar bgr_image;
       if (!_supports_bgr && image_compression == Texture::CM_off) {
         // If the GL doesn't claim to support BGR, we may have to reverse
         // the component ordering of the image.
-        image_ptr = fix_component_ordering(bgr_image, image_ptr, image_size,
+        image_ptr = fix_component_ordering(bgr_image, image_ptr, view_size,
                                            external_format, tex);
       }
 
@@ -8802,7 +8931,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
       int depth = tex->get_expected_mipmap_z_size(n);
 
 #ifdef DO_PSTATS
-      _data_transferred_pcollector.add_level(image_size);
+      _data_transferred_pcollector.add_level(view_size);
 #endif
       switch (texture_target) {
       case GL_TEXTURE_1D:
@@ -8811,7 +8940,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
                              external_format, component_type, image_ptr);
         } else {
           _glCompressedTexSubImage1D(page_target, n - mipmap_bias, 0, width,
-                                     external_format, image_size, image_ptr);
+                                     external_format, view_size, image_ptr);
         }
         break;
 
@@ -8828,7 +8957,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
                              external_format, component_type, image_ptr);
           } else {
             _glCompressedTexSubImage3D(page_target, n - mipmap_bias, 0, 0, 0, width, height, depth,
-                                       external_format, image_size, image_ptr);
+                                       external_format, view_size, image_ptr);
           }
         } else {
           report_my_gl_errors();
@@ -8844,7 +8973,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
                              external_format, component_type, image_ptr);
           } else {
             _glCompressedTexSubImage3D(page_target, n - mipmap_bias, 0, 0, 0, width, height, depth,
-                                       external_format, image_size, image_ptr);
+                                       external_format, view_size, image_ptr);
           }
         } else {
           report_my_gl_errors();
@@ -8863,7 +8992,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
                              external_format, component_type, image_ptr);
         } else {
           _glCompressedTexSubImage2D(page_target, n - mipmap_bias, 0, 0, width, height,
-                                     external_format, image_size, image_ptr);
+                                     external_format, view_size, image_ptr);
         }
         break;
       }
@@ -8931,17 +9060,20 @@ upload_texture_image(CLP(TextureContext) *gtc,
         image_ptr = ptimage;
       }
 
-      size_t image_size = tex->get_ram_mipmap_image_size(n);
+      const unsigned char *orig_image_ptr = image_ptr;
+      size_t view_size = tex->get_ram_mipmap_view_size(n);
+      image_ptr += view_size * gtc->get_view();
       if (one_page_only) {
-        image_size = tex->get_ram_mipmap_page_size(n);
-        image_ptr += image_size * z;
+        view_size = tex->get_ram_mipmap_page_size(n);
+        image_ptr += view_size * z;
       }
+      nassertr(image_ptr >= orig_image_ptr && image_ptr + view_size <= orig_image_ptr + tex->get_ram_mipmap_image_size(n), false);
 
       PTA_uchar bgr_image;
       if (!_supports_bgr && image_compression == Texture::CM_off) {
         // If the GL doesn't claim to support BGR, we may have to reverse
         // the component ordering of the image.
-        image_ptr = fix_component_ordering(bgr_image, image_ptr, image_size,
+        image_ptr = fix_component_ordering(bgr_image, image_ptr, view_size,
                                            external_format, tex);
       }
 
@@ -8950,7 +9082,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
       int depth = tex->get_expected_mipmap_z_size(n);
 
 #ifdef DO_PSTATS
-      _data_transferred_pcollector.add_level(image_size);
+      _data_transferred_pcollector.add_level(view_size);
 #endif
       switch (texture_target) {
 #ifndef OPENGLES  // 1-d textures not supported by OpenGL ES.  Fall through.
@@ -8961,7 +9093,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
                           external_format, component_type, image_ptr);
         } else {
           _glCompressedTexImage1D(page_target, n - mipmap_bias, external_format, width,
-                                  0, image_size, image_ptr);
+                                  0, view_size, image_ptr);
         }
         break;
 #endif  // OPENGLES  // OpenGL ES will fall through.
@@ -8981,7 +9113,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
           } else {
             _glCompressedTexImage3D(page_target, n - mipmap_bias, external_format, width,
                                     height, depth,
-                                    0, image_size, image_ptr);
+                                    0, view_size, image_ptr);
           }
         } else {
           report_my_gl_errors();
@@ -8999,7 +9131,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
           } else {
             _glCompressedTexImage3D(page_target, n - mipmap_bias, external_format, width,
                                     height, depth,
-                                    0, image_size, image_ptr);
+                                    0, view_size, image_ptr);
           }
         } else {
           report_my_gl_errors();
@@ -9015,7 +9147,7 @@ upload_texture_image(CLP(TextureContext) *gtc,
                           external_format, component_type, image_ptr);
         } else {
           _glCompressedTexImage2D(page_target, n - mipmap_bias, external_format, width, height,
-                                  0, image_size, image_ptr);
+                                  0, view_size, image_ptr);
         }
       }
 
@@ -9284,9 +9416,13 @@ bool CLP(GraphicsStateGuardian)::
 do_extract_texture_data(CLP(TextureContext) *gtc) {
   report_my_gl_errors();
 
-  Texture *tex = gtc->get_texture();
-  GLenum target = get_texture_target(tex->get_texture_type());
+  GLenum target = gtc->_target;
+  if (target == GL_NONE) {
+    return false;
+  }
   GLP(BindTexture)(target, gtc->_index);
+
+  Texture *tex = gtc->get_texture();
 
   GLint wrap_u, wrap_v, wrap_w;
   GLint minfilter, magfilter;
@@ -9375,7 +9511,12 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
     format = Texture::F_color_index;
     break;
 #endif
+#if GL_DEPTH_COMPONENT != GL_DEPTH_COMPONENT24
   case GL_DEPTH_COMPONENT:
+#endif
+  case GL_DEPTH_COMPONENT16:
+  case GL_DEPTH_COMPONENT24:
+  case GL_DEPTH_COMPONENT32:
     type = Texture::T_float;
     format = Texture::F_depth_component;
     break;
@@ -9535,7 +9676,7 @@ do_extract_texture_data(CLP(TextureContext) *gtc) {
   tex->set_wrap_u(get_panda_wrap_mode(wrap_u));
   tex->set_wrap_v(get_panda_wrap_mode(wrap_v));
   tex->set_wrap_w(get_panda_wrap_mode(wrap_w));
-  tex->set_border_color(Colorf(border_color[0], border_color[1],
+  tex->set_border_color(LColor(border_color[0], border_color[1],
                                border_color[2], border_color[3]));
 
   tex->set_minfilter(get_panda_filter_type(minfilter));
@@ -9722,9 +9863,9 @@ do_point_size() {
     // units.  To arrange that, we need to figure out the appropriate
     // scaling factor based on the current viewport and projection
     // matrix.
-    LVector3f height(0.0f, _point_size, 1.0f);
+    LVector3 height(0.0f, _point_size, 1.0f);
     height = height * _projection_mat->get_mat();
-    float s = height[1] * _viewport_height / _point_size;
+    PN_stdfloat s = height[1] * _viewport_height / _point_size;
 
     if (_current_lens->is_orthographic()) {
       // If we have an orthographic lens in effect, we don't actually
@@ -9761,7 +9902,7 @@ get_supports_cg_profile(const string &name) const {
     GLCAT.error() << name <<", unknown Cg-profile\n";
     return false;
   }
-  return cgGLIsProfileSupported(profile);
+  return (cgGLIsProfileSupported(profile) != 0);
 #endif
 }
 
@@ -9773,13 +9914,11 @@ get_supports_cg_profile(const string &name) const {
 void CLP(GraphicsStateGuardian)::
 bind_fbo(GLuint fbo) {
   nassertv(_glBindFramebuffer != 0);
-#ifdef OPENGLES_2
+#if defined(OPENGLES_2)
   _glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-#endif
-#ifdef OPENGLES_1
+#elif defined(OPENGLES_1)
   _glBindFramebuffer(GL_FRAMEBUFFER_OES, fbo);
-#endif
-#ifndef OPENGLES
+#else
   _glBindFramebuffer(GL_FRAMEBUFFER_EXT, fbo);
 #endif
   _current_fbo = fbo;
@@ -9977,19 +10116,19 @@ do_issue_stencil() {
     if (false) {
       GLCAT.debug() << "STENCIL STATE CHANGE\n";
       GLCAT.debug() << "\n"
-                    << "SRS_front_enable " << stencil -> get_render_state (StencilAttrib::SRS_front_enable) << "\n"
-                    << "SRS_back_enable " << stencil -> get_render_state (StencilAttrib::SRS_back_enable) << "\n"
-                    << "SRS_front_comparison_function " << stencil -> get_render_state (StencilAttrib::SRS_front_comparison_function) << "\n"
-                    << "SRS_front_stencil_fail_operation " << stencil -> get_render_state (StencilAttrib::SRS_front_stencil_fail_operation) << "\n"
-                    << "SRS_front_stencil_pass_z_fail_operation " << stencil -> get_render_state (StencilAttrib::SRS_front_stencil_pass_z_fail_operation) << "\n"
-                    << "SRS_front_stencil_pass_z_pass_operation " << stencil -> get_render_state (StencilAttrib::SRS_front_stencil_pass_z_pass_operation) << "\n"
-                    << "SRS_reference " << stencil -> get_render_state (StencilAttrib::SRS_reference) << "\n"
-                    << "SRS_read_mask " << stencil -> get_render_state (StencilAttrib::SRS_read_mask) << "\n"
-                    << "SRS_write_mask " << stencil -> get_render_state (StencilAttrib::SRS_write_mask) << "\n"
-                    << "SRS_back_comparison_function " << stencil -> get_render_state (StencilAttrib::SRS_back_comparison_function) << "\n"
-                    << "SRS_back_stencil_fail_operation " << stencil -> get_render_state (StencilAttrib::SRS_back_stencil_fail_operation) << "\n"
-                    << "SRS_back_stencil_pass_z_fail_operation " << stencil -> get_render_state (StencilAttrib::SRS_back_stencil_pass_z_fail_operation) << "\n"
-                    << "SRS_back_stencil_pass_z_pass_operation " << stencil -> get_render_state (StencilAttrib::SRS_back_stencil_pass_z_pass_operation) << "\n";
+                    << "SRS_front_enable " << (int)stencil -> get_render_state (StencilAttrib::SRS_front_enable) << "\n"
+                    << "SRS_back_enable " << (int)stencil -> get_render_state (StencilAttrib::SRS_back_enable) << "\n"
+                    << "SRS_front_comparison_function " << (int)stencil -> get_render_state (StencilAttrib::SRS_front_comparison_function) << "\n"
+                    << "SRS_front_stencil_fail_operation " << (int)stencil -> get_render_state (StencilAttrib::SRS_front_stencil_fail_operation) << "\n"
+                    << "SRS_front_stencil_pass_z_fail_operation " << (int)stencil -> get_render_state (StencilAttrib::SRS_front_stencil_pass_z_fail_operation) << "\n"
+                    << "SRS_front_stencil_pass_z_pass_operation " << (int)stencil -> get_render_state (StencilAttrib::SRS_front_stencil_pass_z_pass_operation) << "\n"
+                    << "SRS_reference " << (int)stencil -> get_render_state (StencilAttrib::SRS_reference) << "\n"
+                    << "SRS_read_mask " << (int)stencil -> get_render_state (StencilAttrib::SRS_read_mask) << "\n"
+                    << "SRS_write_mask " << (int)stencil -> get_render_state (StencilAttrib::SRS_write_mask) << "\n"
+                    << "SRS_back_comparison_function " << (int)stencil -> get_render_state (StencilAttrib::SRS_back_comparison_function) << "\n"
+                    << "SRS_back_stencil_fail_operation " << (int)stencil -> get_render_state (StencilAttrib::SRS_back_stencil_fail_operation) << "\n"
+                    << "SRS_back_stencil_pass_z_fail_operation " << (int)stencil -> get_render_state (StencilAttrib::SRS_back_stencil_pass_z_fail_operation) << "\n"
+                    << "SRS_back_stencil_pass_z_pass_operation " << (int)stencil -> get_render_state (StencilAttrib::SRS_back_stencil_pass_z_pass_operation) << "\n";
     }
 
     {
@@ -10044,7 +10183,7 @@ do_issue_stencil() {
 void CLP(GraphicsStateGuardian)::
 do_issue_scissor() {
   const ScissorAttrib *target_scissor = DCAST(ScissorAttrib, _target_rs->get_attrib_def(ScissorAttrib::get_class_slot()));
-  const LVecBase4f &frame = target_scissor->get_frame();
+  const LVecBase4 &frame = target_scissor->get_frame();
 
   int x = (int)(_viewport_x + _viewport_width * frame[0] + 0.5f);
   int y = (int)(_viewport_y + _viewport_height * frame[2] + 0.5f);

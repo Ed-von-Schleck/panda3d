@@ -1,7 +1,7 @@
 from direct.showbase.DirectObject import DirectObject
 from direct.directtools.DirectGeometry import *
 
-from pandac.PandaModules import NodePath
+from panda3d.core import NodePath, LineSegs
 
 class Mopath(DirectObject):
 
@@ -18,6 +18,8 @@ class Mopath(DirectObject):
         self.hprPoint = Point3(0)
         self.tangentVec = Vec3(0)
         self.fFaceForward = 0
+        self.faceForwardDelta = None
+        self.faceForwardNode = None
         self.timeScale = 1
         self.upVectorNodePath = upVectorNodePath
         self.reverseUpVector = reverseUpVector
@@ -118,16 +120,27 @@ class Mopath(DirectObject):
             self.hprNurbsCurve.getPoint(self.playbackTime, self.hprPoint)
             node.setHpr(self.hprPoint)
         elif (self.fFaceForward and (self.xyzNurbsCurve != None)):
-            self.xyzNurbsCurve.getTangent(self.playbackTime, self.tangentVec)
-            #use the self.upVectorNodePath position if it exists to create an up vector for lookAt
+            if self.faceForwardDelta:
+                # Look at a point a bit ahead in parametric time.
+                t = min(self.playbackTime + self.faceForwardDelta, self.xyzNurbsCurve.getMaxT())
+                lookPoint = Point3()
+                self.xyzNurbsCurve.getPoint(t, lookPoint)
+                if self.faceForwardNode:
+                    self.faceForwardNode.setPos(lookPoint)
+            else:
+                self.xyzNurbsCurve.getTangent(self.playbackTime, self.tangentVec)
+                lookPoint = self.posPoint + self.tangentVec
+
+            # use the self.upVectorNodePath position if it exists to
+            # create an up vector for lookAt
             if (self.upVectorNodePath is None):
-                node.lookAt(Point3(self.posPoint + self.tangentVec))
+                node.lookAt(lookPoint)
             else:
                 if (self.reverseUpVector == False):
-                     node.lookAt(Point3(self.posPoint + self.tangentVec),
+                     node.lookAt(lookPoint,
                                  self.upVectorNodePath.getPos() - self.posPoint)
                 else:
-                     node.lookAt(Point3(self.posPoint + self.tangentVec),
+                     node.lookAt(lookPoint,
                                  self.posPoint - self.upVectorNodePath.getPos())
 
     def play(self, node, time = 0.0, loop = 0):
@@ -144,19 +157,34 @@ class Mopath(DirectObject):
     def stop(self):
         taskMgr.remove(self.name + '-play')
 
-    def __playTask(self, state):
+    def __playTask(self, task):
         time = globalClock.getFrameTime()
-        dTime = time - state.lastTime
-        state.lastTime = time
+        dTime = time - task.lastTime
+        task.lastTime = time
         if (self.loop):
-            cTime = (state.currentTime + dTime) % self.getMaxT()
+            cTime = (task.currentTime + dTime) % self.getMaxT()
         else:
-            cTime = state.currentTime + dTime
+            cTime = task.currentTime + dTime
         if ((self.loop == 0) and (cTime > self.getMaxT())):
             self.stop()
             messenger.send(self.name + '-done')
             self.node = None
-            return Task.done
+            return task.done
         self.goTo(self.node, cTime)
-        state.currentTime = cTime
-        return Task.cont
+        task.currentTime = cTime
+        return task.cont
+
+    def draw(self, subdiv = 1000):
+        """ Draws a quick and cheesy visualization of the Mopath using
+        LineSegs.  Returns the NodePath representing the drawing. """
+
+        ls = LineSegs('mopath')
+        p = Point3()
+        for ti in range(subdiv):
+            t = float(ti) / float(subdiv) * self.maxT
+            tp = self.calcTime(t)
+            self.xyzNurbsCurve.getPoint(tp, p)
+            ls.drawTo(p)
+        
+        return NodePath(ls.create())
+    

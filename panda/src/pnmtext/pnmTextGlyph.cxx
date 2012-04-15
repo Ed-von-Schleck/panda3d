@@ -49,12 +49,12 @@ PNMTextGlyph::
 //               other pixels alone.
 ////////////////////////////////////////////////////////////////////
 void PNMTextGlyph::
-place(PNMImage &dest_image, int xp, int yp, const Colorf &fg) {
+place(PNMImage &dest_image, int xp, int yp, const LColor &fg) {
   if (!_image.is_valid()) {
     // If we have no image, do nothing.
     return;
   }
-  RGBColord fg_rgb(fg[0], fg[1], fg[2]);
+  LRGBColord fg_rgb(fg[0], fg[1], fg[2]);
   double fg_alpha = fg[3];
 
   int left = xp + _left;
@@ -78,7 +78,7 @@ place(PNMImage &dest_image, int xp, int yp, const Colorf &fg) {
         }
 
       } else if (gval > 0.0) {
-        RGBColord bg_rgb = dest_image.get_xel(x, y);
+        LRGBColord bg_rgb = dest_image.get_xel(x, y);
         dest_image.set_xel(x, y, fg_rgb * gval + bg_rgb * (1.0 - gval));
         if (dest_image.has_alpha()) {
           double bg_alpha = dest_image.get_alpha(x, y);
@@ -97,15 +97,15 @@ place(PNMImage &dest_image, int xp, int yp, const Colorf &fg) {
 //               called earlier.
 ////////////////////////////////////////////////////////////////////
 void PNMTextGlyph::
-place(PNMImage &dest_image, int xp, int yp, const Colorf &fg, 
-      const Colorf &interior) {
+place(PNMImage &dest_image, int xp, int yp, const LColor &fg, 
+      const LColor &interior) {
   if (!_image.is_valid()) {
     // If we have no image, do nothing.
     return;
   }
-  RGBColord fg_rgb(fg[0], fg[1], fg[2]);
+  LRGBColord fg_rgb(fg[0], fg[1], fg[2]);
   double fg_alpha = fg[3];
-  RGBColord interior_rgb(interior[0], interior[1], interior[2]);
+  LRGBColord interior_rgb(interior[0], interior[1], interior[2]);
   double interior_alpha = interior[3];
 
   int left = xp + _left;
@@ -130,7 +130,7 @@ place(PNMImage &dest_image, int xp, int yp, const Colorf &fg,
 
       } else if (gval > 0.0) {
         bool is_interior = get_interior_flag(x - left, y - top);
-        RGBColord bg_rgb;
+        LRGBColord bg_rgb;
         if (is_interior) {
           bg_rgb = interior_rgb;
         } else {

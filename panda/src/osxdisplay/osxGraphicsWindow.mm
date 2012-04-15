@@ -409,8 +409,8 @@ do_resize() {
     };
 
     GetWindowPortBounds(_osx_window, &rectPort); 
-    viewRect.size.width = (float)(rectPort.right - rectPort.left);
-    viewRect.size.height = (float)(rectPort.bottom - rectPort.top);
+    viewRect.size.width = (PN_stdfloat)(rectPort.right - rectPort.left);
+    viewRect.size.height = (PN_stdfloat)(rectPort.bottom - rectPort.top);
 
     // tell panda
     WindowProperties properties;
@@ -922,7 +922,7 @@ end_frame(FrameMode mode, Thread *current_thread) {
       // so the user knows he's supposed to be able to drag the window
       // if he wants.
       DisplayRegionPipelineReader dr_reader(_overlay_display_region, current_thread);
-      _gsg->prepare_display_region(&dr_reader, Lens::SC_mono);
+      _gsg->prepare_display_region(&dr_reader);
       DCAST(osxGraphicsStateGuardian, _gsg)->draw_resize_box();
     }
     
@@ -995,8 +995,7 @@ close_window() {
 
   release_system_resources(false);
   _gsg.clear();
-  _active = false;
-  GraphicsWindow::close_window();
+ GraphicsWindow::close_window();
 }
 
 //////////////////////////////////////////////////////////
@@ -1353,7 +1352,24 @@ os_open_window(WindowProperties &req_properties) {
   if (req_properties.has_icon_filename()) {
     set_icon_filename(req_properties.get_icon_filename());
   }
-    
+
+  if (req_properties.has_cursor_hidden()) { 
+    _properties.set_cursor_hidden(req_properties.get_cursor_hidden()); 
+    _cursor_hidden = req_properties.get_cursor_hidden();
+    if (_cursor_hidden) {
+      if (!_display_hide_cursor) {
+        CGDisplayHideCursor(kCGDirectMainDisplay);
+        _display_hide_cursor = true;
+      }
+    } else {
+      if (_display_hide_cursor) {
+        CGDisplayShowCursor(kCGDirectMainDisplay);
+        _display_hide_cursor = false;
+      }
+    }
+    req_properties.clear_cursor_hidden();
+  }
+
   _properties.set_open(true);
 
   if (_properties.has_size()) {
@@ -2025,19 +2041,19 @@ set_properties_now(WindowProperties &properties) {
   if (properties.has_cursor_hidden()) { 
     _properties.set_cursor_hidden(properties.get_cursor_hidden()); 
     _cursor_hidden = properties.get_cursor_hidden();
-    if (_cursor_hidden && _input_devices[0].has_pointer()) { 
+    if (_cursor_hidden) {
       if (!_display_hide_cursor) {
-        CGDisplayHideCursor(kCGDirectMainDisplay); 
+        CGDisplayHideCursor(kCGDirectMainDisplay);
         _display_hide_cursor = true;
       }
-    } else { 
+    } else {
       if (_display_hide_cursor) {
-        CGDisplayShowCursor(kCGDirectMainDisplay); 
+        CGDisplayShowCursor(kCGDirectMainDisplay);
         _display_hide_cursor = false;
       }
-    } 
-    properties.clear_cursor_hidden(); 
-  } 
+    }
+    properties.clear_cursor_hidden();
+  }
 
   if (properties.has_minimized()) {
     if (_properties.get_minimized() != properties.get_minimized()) {

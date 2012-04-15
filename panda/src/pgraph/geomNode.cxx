@@ -1,5 +1,5 @@
 // Filename: geomNode.cxx
-// Created by:  drose (23Feb02)
+// Created by:  drose (23eb02)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -162,7 +162,7 @@ apply_attribs_to_vertices(const AccumulatedAttribs &attribs, int attrib_types,
       if ((attrib_types & SceneGraphReducer::TT_color_scale) != 0) {
         if (geom_attribs._color_scale != (const RenderAttrib *)NULL) {
           CPT(ColorScaleAttrib) csa = DCAST(ColorScaleAttrib, geom_attribs._color_scale);
-          if (csa->get_scale() != LVecBase4f(1.0f, 1.0f, 1.0f, 1.0f)) {
+          if (csa->get_scale() != LVecBase4(1.0f, 1.0f, 1.0f, 1.0f)) {
 
             
             // Now, if we have an "off" or "flat" color attribute, we
@@ -184,9 +184,9 @@ apply_attribs_to_vertices(const AccumulatedAttribs &attribs, int attrib_types,
               } else if (ca->get_color_type() == ColorAttrib::T_flat) {
                 // ColorAttrib::T_flat means the color scale modulates
                 // the specified color to produce a new color.
-                const Colorf &c1 = ca->get_color();
-                const LVecBase4f &c2 = csa->get_scale();
-                Colorf color(c1[0] * c2[0], c1[1] * c2[1], 
+                const LColor &c1 = ca->get_color();
+                const LVecBase4 &c2 = csa->get_scale();
+                LColor color(c1[0] * c2[0], c1[1] * c2[1], 
                              c1[2] * c2[2], c1[3] * c2[3]);
                 entry->_state = entry->_state->set_attrib(ColorAttrib::make_flat(color));
               
@@ -331,7 +331,7 @@ apply_attribs_to_vertices(const AccumulatedAttribs &attribs, int attrib_types,
 //               GeomNodes.
 ////////////////////////////////////////////////////////////////////
 void GeomNode::
-xform(const LMatrix4f &mat) {
+xform(const LMatrix4 &mat) {
   GeomTransformer transformer;
   transformer.transform_vertices(this, mat);
 }
@@ -384,14 +384,40 @@ safe_to_combine() const {
 //               NodePath::prepare_scene() instead.
 ////////////////////////////////////////////////////////////////////
 void GeomNode::
-r_prepare_scene(const RenderState *state,
-                PreparedGraphicsObjects *prepared_objects,
-                Thread *current_thread) {
+r_prepare_scene(GraphicsStateGuardianBase *gsg, const RenderState *node_state,
+                GeomTransformer &transformer, Thread *current_thread) {
+  PreparedGraphicsObjects *prepared_objects = gsg->get_prepared_objects();
+
   CDReader cdata(_cycler, current_thread);
   GeomList::const_iterator gi;
   CPT(GeomList) geoms = cdata->get_geoms();
   for (gi = geoms->begin(); gi != geoms->end(); ++gi) {
-    CPT(RenderState) geom_state = state->compose((*gi)._state);
+    const GeomEntry &entry = (*gi);
+    CPT(RenderState) geom_state = node_state->compose(entry._state);
+    CPT(Geom) geom = entry._geom.get_read_pointer();
+
+    // Munge the geom as required by the GSG.
+    PT(GeomMunger) munger = gsg->get_geom_munger(geom_state, current_thread);
+    geom = transformer.premunge_geom(geom, munger);
+
+    // Prepare each of the vertex arrays in the munged Geom.
+    CPT(GeomVertexData) vdata = geom->get_vertex_data(current_thread);
+    vdata = vdata->animate_vertices(false, current_thread);
+    GeomVertexDataPipelineReader vdata_reader(vdata, current_thread);
+    int num_arrays = vdata_reader.get_num_arrays();
+    for (int i = 0; i < num_arrays; ++i) {
+      CPT(GeomVertexArrayData) array = vdata_reader.get_array(i);
+      ((GeomVertexArrayData *)array.p())->prepare(prepared_objects);
+    }
+
+    // And also each of the index arrays.
+    int num_primitives = geom->get_num_primitives();
+    for (int i = 0; i < num_primitives; ++i) {
+      CPT(GeomPrimitive) prim = geom->get_primitive(i);
+      ((GeomPrimitive *)prim.p())->prepare(prepared_objects);
+    }
+
+    // And now prepare each of the textures.
     const RenderAttrib *attrib = 
       geom_state->get_attrib(TextureAttrib::get_class_slot());
     if (attrib != (const RenderAttrib *)NULL) {
@@ -407,7 +433,7 @@ r_prepare_scene(const RenderState *state,
     }
   }
   
-  PandaNode::r_prepare_scene(state, prepared_objects, current_thread);
+  PandaNode::r_prepare_scene(gsg, node_state, transformer, current_thread);
 }
 
 
@@ -456,13 +482,13 @@ combine_with(PandaNode *other) {
 //               already set.
 ////////////////////////////////////////////////////////////////////
 CPT(TransformState) GeomNode::
-calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point, bool &found_any,
+calc_tight_bounds(LPoint3 &min_point, LPoint3 &max_point, bool &found_any,
                   const TransformState *transform, Thread *current_thread) const {
   CPT(TransformState) next_transform = 
     PandaNode::calc_tight_bounds(min_point, max_point, found_any, transform,
                                  current_thread);
 
-  const LMatrix4f &mat = next_transform->get_mat();
+  const LMatrix4 &mat = next_transform->get_mat();
 
   CDReader cdata(_cycler, current_thread);
   GeomList::const_iterator gi;
@@ -517,7 +543,7 @@ add_for_draw(CullTraverser *trav, CullTraverserData &data) {
   trav->_geoms_pcollector.add_level(num_geoms);
   CPT(TransformState) net_transform = data.get_net_transform(trav);
   CPT(TransformState) modelview_transform = data.get_modelview_transform(trav);
-  CPT(TransformState) internal_transform = trav->get_gsg()->get_cs_transform()->compose(modelview_transform);
+  CPT(TransformState) internal_transform = trav->get_scene()->get_cs_transform()->compose(modelview_transform);
 
   for (int i = 0; i < num_geoms; i++) {
     const Geom *geom = geoms.get_geom(i);

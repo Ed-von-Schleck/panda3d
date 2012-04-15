@@ -17,10 +17,11 @@
 
 #include "pandabase.h"
 
+#include "pvector.h"
 #include "pointerToArray.h"
-#include "vector_float.h"
+#include "vector_stdfloat.h"
 #include "vector_double.h"
-#include "vector_LVecBase3f.h"
+#include "luse.h"
 
 class Datagram;
 class DatagramIterator;
@@ -57,14 +58,14 @@ public:
   bool get_transpose_quats() const;
 
   void write_header(Datagram &datagram);
-  void write_reals(Datagram &datagram, const float *array, int length);
-  void write_hprs(Datagram &datagram, const LVecBase3f *array, int length);
+  void write_reals(Datagram &datagram, const PN_stdfloat *array, int length);
+  void write_hprs(Datagram &datagram, const LVecBase3 *array, int length);
 
   bool read_header(DatagramIterator &di, int bam_minor_version);
-  bool read_reals(DatagramIterator &di, vector_float &array);
-  bool read_hprs(DatagramIterator &di, vector_LVecBase3f &array,
+  bool read_reals(DatagramIterator &di, vector_stdfloat &array);
+  bool read_hprs(DatagramIterator &di, pvector<LVecBase3> &array,
                  bool new_hpr);
-  bool read_hprs(DatagramIterator &di, vector_LVecBase3f &array);
+  bool read_hprs(DatagramIterator &di, pvector<LVecBase3> &array);
 
   static void free_storage();
 
@@ -90,7 +91,7 @@ private:
   double get_scale_factor(int i, int length) const;
   static double interpolate(double t, double a, double b);
 
-  float get_compressability(const float *data, int length) const;
+  PN_stdfloat get_compressability(const PN_stdfloat *data, int length) const;
 
   int _bam_minor_version;
   int _quality;

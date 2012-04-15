@@ -43,6 +43,8 @@ EggTexture(const string &tref_name, const Filename &filename)
   _anisotropic_degree = 0;
   _env_type = ET_unspecified;
   _saved_result = false;
+  _multiview = false;
+  _num_views = 0;
   _tex_gen = TG_unspecified;
   _quality_level = QL_unspecified;
   _priority = 0;
@@ -89,6 +91,8 @@ operator = (const EggTexture &copy) {
   _anisotropic_degree = copy._anisotropic_degree;
   _env_type = copy._env_type;
   _saved_result = copy._saved_result;
+  _multiview = copy._multiview;
+  _num_views = copy._num_views;
   _tex_gen = copy._tex_gen;
   _quality_level = copy._quality_level;
   _stage_name = copy._stage_name;
@@ -285,6 +289,16 @@ write(ostream &out, int indent_level) const {
   if (has_alpha_scale()) {
     indent(out, indent_level + 2)
       << "<Scalar> alpha-scale { " << get_alpha_scale() << " }\n";
+  }
+
+  if (get_multiview()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> multiview { 1 }\n";
+  }
+
+  if (has_num_views()) {
+    indent(out, indent_level + 2)
+      << "<Scalar> num-views { " << get_num_views() << " }\n";
   }
 
   EggRenderMode::write(out, indent_level + 2);
@@ -550,7 +564,7 @@ has_alpha_channel(int num_components) const {
 //     Function: EggTexture::affects_polygon_alpha
 //       Access: Published
 //  Description: Returns true if this texture's environment type or
-//               combine mode allows the texture to have an affect on
+//               combine mode allows the texture to have an effect on
 //               the polygon's alpha values, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool EggTexture::
@@ -564,13 +578,14 @@ affects_polygon_alpha() const {
   case ET_blend:
   case ET_add:
   case ET_blend_color_scale:
-    return false;
   case ET_modulate_glow:
   case ET_modulate_gloss:
   case ET_normal:
   case ET_normal_height:
   case ET_glow:
   case ET_gloss:
+  case ET_height:
+  case ET_normal_gloss:
     return false;
 
   case ET_selector:
@@ -910,6 +925,9 @@ string_env_type(const string &string) {
 
   } else if (cmp_nocase_uh(string, "selector") == 0) {
     return ET_selector;
+
+  } else if (cmp_nocase_uh(string, "normal_gloss") == 0) {
+    return ET_normal_gloss;
 
   } else {
     return ET_unspecified;
@@ -1362,6 +1380,9 @@ ostream &operator << (ostream &out, EggTexture::EnvType type) {
     
   case EggTexture::ET_selector:
     return out << "selector";
+
+  case EggTexture::ET_normal_gloss:
+    return out << "normal_gloss";
   }
 
   nassertr(false, out);

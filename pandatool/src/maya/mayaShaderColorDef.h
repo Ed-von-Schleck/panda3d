@@ -45,7 +45,7 @@ public:
   
   LMatrix3d compute_texture_matrix() const;
   bool has_projection() const;
-  TexCoordd project_uv(const LPoint3d &pos, const LPoint3d &ref_point) const;
+  LTexCoordd project_uv(const LPoint3d &pos, const LPoint3d &ref_point) const;
   bool reset_maya_texture(const Filename &texture);
   
   void write(ostream &out) const;
@@ -88,10 +88,10 @@ public:
     
   Filename _texture_filename;
   string _texture_name;
-  Colorf _color_gain;
+  LColor _color_gain;
   
-  LVector2f _coverage;
-  LVector2f _translate_frame;
+  LVector2 _coverage;
+  LVector2 _translate_frame;
   double _rotate_frame;
   
   bool _mirror;
@@ -99,8 +99,8 @@ public:
   bool _wrap_u;
   bool _wrap_v;
 
-  LVector2f _repeat_uv;
-  LVector2f _offset;
+  LVector2 _repeat_uv;
+  LVector2 _offset;
   double _rotate_uv;
 
   bool _is_alpha;
@@ -114,8 +114,8 @@ private:
   MObject *_color_object;
   
 private:
-  static void find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug inplug, bool _texture_copy, Filename tout_dir, bool is_alpha);
-  void find_textures_legacy(MayaShader *shader, MObject color, bool _texture_copy, Filename tout_dir, bool trans=false);
+  static void find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug inplug, bool is_alpha);
+  void find_textures_legacy(MayaShader *shader, MObject color, bool trans=false);
 
   void set_projection_type(const string &type);
 
@@ -150,7 +150,7 @@ private:
 public:
   bool     _has_texture;       // deprecated, see above.
   bool     _has_flat_color;    // deprecated, see above.
-  Colord   _flat_color;        // deprecated, see above.
+  LColord   _flat_color;        // deprecated, see above.
   bool     _has_alpha_channel; // deprecated, see above.
   bool     _keep_color;        // deprecated, see above.
   bool     _keep_alpha;        // deprecated, see above.

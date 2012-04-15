@@ -1,15 +1,16 @@
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
-                  dtoolutil:c dtoolbase:c dtool:m prc:c
-#define LOCAL_LIBS pipeline express pandabase
+#define OTHER_LIBS p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+                  p3dtoolutil:c p3dtoolbase:c p3dtool:m p3prc:c
+#define LOCAL_LIBS p3pipeline p3express p3pandabase
 #define USE_PACKAGES zlib
 
 #begin lib_target
-  #define TARGET putil
+  #define TARGET p3putil
  
   #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx   
   
   #define SOURCES \
     animInterface.h animInterface.I \
+    autoTextureScale.h \
     bam.h \
     bamCache.h bamCache.I \
     bamCacheIndex.h bamCacheIndex.I \
@@ -57,7 +58,6 @@
     nodeCachedReferenceCount.h nodeCachedReferenceCount.I \
     pbitops.I pbitops.h \
     portalMask.h \
-    pta_double.h \
     pta_ushort.h \
     pythonCallbackObject.h pythonCallbackObject.I \
     simpleHashMap.I simpleHashMap.h \
@@ -67,13 +67,14 @@
     typedWritable.h typedWritableReferenceCount.I \
     typedWritableReferenceCount.h updateSeq.I updateSeq.h \
     uniqueIdAllocator.h \
-    vector_double.h vector_typedWritable.h \
+    vector_typedWritable.h \
     vector_ushort.h vector_writable.h \
     writableConfigurable.h \
     writableParam.I writableParam.h 
     
  #define INCLUDED_SOURCES \
     animInterface.cxx \
+    autoTextureScale.cxx \
     bamCache.cxx \
     bamCacheIndex.cxx \
     bamCacheRecord.cxx \
@@ -106,7 +107,6 @@
     nameUniquifier.cxx \
     nodeCachedReferenceCount.cxx \
     pbitops.cxx \
-    pta_double.cxx \
     pta_ushort.cxx \
     pythonCallbackObject.cxx \
     simpleHashMap.cxx \
@@ -115,13 +115,13 @@
     timedCycle.cxx typedWritable.cxx \
     typedWritableReferenceCount.cxx updateSeq.cxx \
     uniqueIdAllocator.cxx \
-    vector_double.cxx \
     vector_typedWritable.cxx \
     vector_ushort.cxx vector_writable.cxx \
     writableConfigurable.cxx writableParam.cxx 
 
   #define INSTALL_HEADERS \
     animInterface.h animInterface.I \
+    autoTextureScale.h \
     bam.h \
     bamCache.h bamCache.I \
     bamCacheIndex.h bamCacheIndex.I \
@@ -168,7 +168,6 @@
     nodeCachedReferenceCount.h nodeCachedReferenceCount.I \
     portalMask.h \
     pbitops.I pbitops.h \
-    pta_double.h \
     pta_ushort.h \
     pythonCallbackObject.h pythonCallbackObject.I \
     simpleHashMap.I simpleHashMap.h \
@@ -178,7 +177,7 @@
     typedWritable.h typedWritableReferenceCount.I \
     typedWritableReferenceCount.h updateSeq.I updateSeq.h \
     uniqueIdAllocator.h \
-    vector_double.h vector_typedWritable.h \
+    vector_typedWritable.h \
     vector_ushort.h vector_writable.h \
     writableConfigurable.h writableParam.I \
     writableParam.h
@@ -190,7 +189,7 @@
 #begin test_bin_target
   #define TARGET test_bamRead
   #define LOCAL_LIBS \
-    putil pgraph
+    p3putil p3pgraph
 
   #define SOURCES \
     test_bam.cxx test_bam.h test_bamRead.cxx
@@ -200,7 +199,7 @@
 #begin test_bin_target
   #define TARGET test_bamWrite
   #define LOCAL_LIBS \
-    putil pgraph
+    p3putil p3pgraph
 
   #define SOURCES \
     test_bam.cxx test_bam.h test_bamWrite.cxx
@@ -229,8 +228,8 @@
   #define SOURCES \
     test_glob.cxx
 
-  #define LOCAL_LIBS $[LOCAL_LIBS] putil
-  #define OTHER_LIBS $[OTHER_LIBS] pystub
+  #define LOCAL_LIBS $[LOCAL_LIBS] p3putil
+  #define OTHER_LIBS $[OTHER_LIBS] p3pystub
 
 #end test_bin_target
 
@@ -240,7 +239,7 @@
   #define SOURCES \
     test_linestream.cxx
 
-  #define LOCAL_LIBS $[LOCAL_LIBS] putil
-  #define OTHER_LIBS $[OTHER_LIBS] pystub
+  #define LOCAL_LIBS $[LOCAL_LIBS] p3putil
+  #define OTHER_LIBS $[OTHER_LIBS] p3pystub
 
 #end test_bin_target

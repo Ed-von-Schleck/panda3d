@@ -15,14 +15,8 @@
 #include "filename.h"
 #include "encrypt_string.h"
 #include "pnotify.h"
-
-#ifndef HAVE_GETOPT
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
+#include "panda_getopt.h"
+#include "preprocess_argv.h"
 
 string password;
 bool got_password = false;
@@ -89,7 +83,7 @@ usage() {
 }
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
   extern char *optarg;
   extern int optind;
   const char *optstr = "o:p:ta:k:i:h";
@@ -98,6 +92,7 @@ main(int argc, char *argv[]) {
   bool got_dest_filename = false;
   bool text_file = false;
 
+  preprocess_argv(argc, argv);
   int flag = getopt(argc, argv, optstr);
 
   while (flag != EOF) {

@@ -18,6 +18,7 @@
 #include "p3dMultifileReader.h"
 #include "p3d_plugin_config.h"
 #include "mkdir_complete.h"
+#include "wstring_encode.h"
 
 #include <ctype.h>
 
@@ -176,21 +177,43 @@ start_p3dcert() {
 #endif
 
   // Populate the new process' environment.
+
+#ifdef _WIN32
+  // These are the enviroment variables we forward from the current
+  // environment, if they are set.
+  const wchar_t *keep[] = {
+    L"TMP", L"TEMP", L"HOME", L"USER", 
+    L"SYSTEMROOT", L"USERPROFILE", L"COMSPEC",
+    NULL
+  };
+
+  wstring env_w;
+
+  for (int ki = 0; keep[ki] != NULL; ++ki) {
+    wchar_t *value = _wgetenv(keep[ki]);
+    if (value != NULL) {
+      env_w += keep[ki];
+      env_w += L"=";
+      env_w += value;
+      env_w += (wchar_t)'\0';
+    }
+  }
+
+  wstring_to_string(_env, env_w);
+
+#else  // _WIN32
+
   _env = string();
 
   // These are the enviroment variables we forward from the current
   // environment, if they are set.
   const char *keep[] = {
     "TMP", "TEMP", "HOME", "USER", 
-#ifdef _WIN32
-    "SYSTEMROOT", "USERPROFILE", "COMSPEC",
-#endif
 #ifdef HAVE_X11
     "DISPLAY", "XAUTHORITY",
 #endif
     NULL
   };
-
   for (int ki = 0; keep[ki] != NULL; ++ki) {
     char *value = getenv(keep[ki]);
     if (value != NULL) {
@@ -200,6 +223,7 @@ start_p3dcert() {
       _env += '\0';
     }
   }
+#endif  // _WIN32
 
   // Define some new environment variables.
   _env += "PATH=";
@@ -217,6 +241,9 @@ start_p3dcert() {
   _env += "P3DCERT_ROOT=";
   _env += root_dir;
   _env += '\0';
+
+  nout << "Setting environment:\n";
+  write_env();
 
   nout << "Attempting to start p3dcert from " << _p3dcert_exe << "\n";
 
@@ -265,6 +292,27 @@ join_wait_thread() {
 
   JOIN_THREAD(_wait_thread);
   _started_wait_thread = false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DAuthSession::write_env
+//       Access: Private
+//  Description: Writes _env, which is formatted as a string
+//               containing zero-byte-terminated environment
+//               defintions, to the nout stream, one definition per
+//               line.
+////////////////////////////////////////////////////////////////////
+void P3DAuthSession::
+write_env() const {
+  size_t p = 0;
+  size_t zero = _env.find('\0', p);
+  while (zero != string::npos) {
+    nout << "  ";
+    nout.write(_env.data() + p, zero - p);
+    nout << "\n";
+    p = zero + 1;
+    zero = _env.find('\0', p);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -332,7 +380,7 @@ win_create_process() {
   SetErrorMode(0);
 
   STARTUPINFO startup_info;
-  ZeroMemory(&startup_info, sizeof(STARTUPINFO));
+  ZeroMemory(&startup_info, sizeof(startup_info));
   startup_info.cb = sizeof(startup_info); 
 
   // Make sure the initial window is *shown* for this graphical app.
@@ -345,22 +393,26 @@ win_create_process() {
   // command-line arguments.
   ostringstream stream;
   stream << "\"" << _p3dcert_exe << "\" \"" 
-         << _cert_filename->get_filename() << "\" \"" 
-         << _cert_dir << "\"";
+         << _cert_filename->get_filename() << "\" \"" << _cert_dir << "\"";
 
   // I'm not sure why CreateProcess wants a non-const char pointer for
   // its command-line string, but I'm not taking chances.  It gets a
   // non-const char array that it can modify.
   string command_line_str = stream.str();
-  nout << "command is: " << command_line_str << "\n";
   char *command_line = new char[command_line_str.size() + 1];
-  strcpy(command_line, command_line_str.c_str());
+  memcpy(command_line, command_line_str.c_str(), command_line_str.size() + 1);
 
+  nout << "Command line: " << command_line_str << "\n";
+
+  // Something about p3dCert_wx tends to become crashy when we call it
+  // from CreateProcessW().  Something about the way wx parses the
+  // command-line parameters?  Well, whatever, we don't really need
+  // the Unicode form anyway.
   PROCESS_INFORMATION process_info; 
   BOOL result = CreateProcess
-    (_p3dcert_exe.c_str(), command_line, NULL, NULL, TRUE, 0,
-     (void *)_env.c_str(), start_dir_cstr,
-     &startup_info, &process_info);
+    (_p3dcert_exe.c_str(), command_line, NULL, NULL, TRUE,
+     0, (void *)_env.c_str(), 
+     start_dir_cstr, &startup_info, &process_info);
   bool started_program = (result != 0);
 
   delete[] command_line;

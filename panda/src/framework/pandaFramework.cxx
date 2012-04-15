@@ -29,6 +29,8 @@
 #include "throw_event.h"
 #include "executionEnvironment.h"
 #include "sceneGraphAnalyzer.h"
+#include "transformState.h"
+#include "renderState.h"
 
 LoaderOptions PandaFramework::_loader_options;
 
@@ -104,10 +106,6 @@ open_framework(int &argc, char **&argv) {
   init_libtinydisplay();
   #endif
 
-  // Get the available image types too.
-  extern EXPCL_PANDA_PNMIMAGETYPES void init_libpnmimagetypes();
-  init_libpnmimagetypes();
-
   // Ensure the animation subsystem is available.
   extern EXPCL_PANDA_CHAR void init_libchar();
   init_libchar();
@@ -120,6 +118,11 @@ open_framework(int &argc, char **&argv) {
 
 #endif
 
+  // Let's explicitly make a call to the image type library to ensure
+  // it gets pulled in by the dynamic linker.
+  extern EXPCL_PANDA_PNMIMAGETYPES void init_libpnmimagetypes();
+  init_libpnmimagetypes();
+
   reset_frame_rate();
 
   {
@@ -131,6 +134,12 @@ open_framework(int &argc, char **&argv) {
   {
     PT(GenericAsyncTask) task = new GenericAsyncTask("data_loop", task_data_loop, this);
     task->set_sort(-50);
+    _task_mgr.add(task);
+  }
+
+  if (garbage_collect_states) {
+    PT(GenericAsyncTask) task = new GenericAsyncTask("garbageCollectStates", task_garbage_collect, this);
+    task->set_sort(46);
     _task_mgr.add(task);
   }
 
@@ -1376,7 +1385,7 @@ event_f9(const Event *event, void *data) {
     self->_screenshot_text = NodePath(text_node);
     text_node->set_align(TextNode::A_center);
     text_node->set_shadow_color(0.0f, 0.0f, 0.0f, 1.0f);
-    text_node->set_shadow(0.04f, 0.04f);
+    text_node->set_shadow(0.04, 0.04);
     text_node->set_text(output_text);
     self->_screenshot_text.set_scale(0.06);
     self->_screenshot_text.set_pos(0.0, 0.0, -0.7);
@@ -1454,16 +1463,16 @@ event_question(const Event *event, void *data) {
       self->_help_text = NodePath(text_node);
       text_node->set_align(TextNode::A_left);
       text_node->set_shadow_color(0.0f, 0.0f, 0.0f, 1.0f);
-      text_node->set_shadow(0.04f, 0.04f);
+      text_node->set_shadow(0.04, 0.04);
       text_node->set_text(help_text);
 
-      LVecBase4f frame = text_node->get_frame_actual();
+      LVecBase4 frame = text_node->get_frame_actual();
 
-      float height = frame[3] - frame[2];
-      float scale = min(0.06, 1.8 / height);
+      PN_stdfloat height = frame[3] - frame[2];
+      PN_stdfloat scale = min(0.06, 1.8 / height);
       self->_help_text.set_scale(scale);
 
-      float pos_scale = scale / -2.0;
+      PN_stdfloat pos_scale = scale / -2.0;
       self->_help_text.set_pos((frame[0] + frame[1]) * pos_scale,
                                0.0,
                                (frame[2] + frame[3]) * pos_scale);
@@ -1518,7 +1527,7 @@ event_window_event(const Event *event, void *data) {
         // Adjust aspect ratio.
         for (int n = 0; n < (int)self->_windows.size(); n++) {
           if (self->_windows[n]->get_graphics_output() == win) {
-            return self->_windows[n]->adjust_aspect_ratio();
+            self->_windows[n]->adjust_dimensions();
           }
         }
       }
@@ -1617,5 +1626,20 @@ task_clear_text(GenericAsyncTask *task, void *data) {
   PandaFramework *self = (PandaFramework *)data;
 
   self->clear_text();
+  return AsyncTask::DS_cont;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PandaFramework::task_garbage_collect
+//       Access: Public, Static
+//  Description: This task is created automatically if
+//               garbage_collect_states is true.  It calls the needed
+//               TransformState::garbage_collect() and
+//               RenderState::garbage_collect() methods each frame.
+////////////////////////////////////////////////////////////////////
+AsyncTask::DoneStatus PandaFramework::
+task_garbage_collect(GenericAsyncTask *task, void *data) {
+  TransformState::garbage_collect();
+  RenderState::garbage_collect();
   return AsyncTask::DS_cont;
 }

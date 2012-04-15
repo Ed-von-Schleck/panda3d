@@ -59,6 +59,10 @@ PGEntry(const string &name) :
   _blink_rate = 1.0f;
 
   _text_render_root = NodePath("text_root");
+
+  CPT(TransformState) transform = TransformState::make_mat(LMatrix4::convert_mat(CS_default, CS_zup_right));
+  _text_render_root.set_transform(transform);
+
   _cursor_scale = _text_render_root.attach_new_node("cursor_scale");
   _cursor_def = _cursor_scale.attach_new_node("cursor");
   _cursor_visible = true;
@@ -153,7 +157,7 @@ make_copy() const {
 //               kinds of nodes, this does nothing.
 ////////////////////////////////////////////////////////////////////
 void PGEntry::
-xform(const LMatrix4f &mat) {
+xform(const LMatrix4 &mat) {
   LightReMutexHolder holder(_lock);
   PGItem::xform(mat);
   _text_render_root.set_mat(_text_render_root.get_mat() * mat);
@@ -371,7 +375,7 @@ keystroke(const MouseWatcherParameter &param, bool background) {
               // the end).
               int r = _num_lines - 1;
               int c = _text.get_num_cols(r);
-              float last_line_width = 
+              PN_stdfloat last_line_width = 
                 _text.get_xpos(r, c) - _text.get_xpos(r, 0);
               too_long = (last_line_width > _max_width);
             }
@@ -394,7 +398,7 @@ keystroke(const MouseWatcherParameter &param, bool background) {
                   // Ok, the user is putting multiple spaces on the
                   // end of a line; we need to make sure the line does
                   // not grow too wide.  Measure the line's width.
-                  float current_line_width = 
+                  PN_stdfloat current_line_width = 
                     _text.get_xpos(r, c + 1) - _text.get_xpos(r, 0);
                   if (current_line_width > _max_width) {
                     // We have to reject the space, but we don't treat
@@ -561,46 +565,68 @@ cursormove() {
 //               of the entry, based on the TextNode in effect.
 ////////////////////////////////////////////////////////////////////
 void PGEntry::
-setup(float width, int num_lines) {
+setup(PN_stdfloat width, int num_lines) {
   LightReMutexHolder holder(_lock);
   setup_minimal(width, num_lines);
 
   TextNode *text_node = get_text_def(S_focus);
-  float line_height = text_node->get_line_height();
+  PN_stdfloat line_height = text_node->get_line_height();
 
   // Determine the four corners of the frame.
-  LPoint3f ll(0.0f, 0.0f, -0.3f * line_height - (line_height * (num_lines - 1)));
-  LPoint3f ur(width, 0.0f, line_height);
-  LPoint3f lr(ur[0], 0.0f, ll[2]);
-  LPoint3f ul(ll[0], 0.0f, ur[2]);
-
+  float bottom = -0.3f * line_height - (line_height * (num_lines - 1));
   // Transform each corner by the TextNode's transform.
-  LMatrix4f mat = text_node->get_transform();
-  ll = ll * mat;
-  ur = ur * mat;
-  lr = lr * mat;
-  ul = ul * mat;
+  LMatrix4 mat = text_node->get_transform();
+  LPoint3 ll = LPoint3::rfu(0.0f, 0.0f, bottom) * mat;
+  LPoint3 ur = LPoint3::rfu(width, 0.0f, line_height) * mat;
+  LPoint3 lr = LPoint3::rfu(width, 0.0f, bottom) * mat;
+  LPoint3 ul = LPoint3::rfu(0.0f, 0.0f, line_height) * mat;
+
+  LVector3 up = LVector3::up();
+  int up_axis;
+  if (up[1]) {
+    up_axis = 1;
+  }
+  else if (up[2]) {
+    up_axis = 2;
+  }
+  else {
+    up_axis = 0;
+  }
+  LVector3 right = LVector3::right();
+  int right_axis;
+  if (right[0]) {
+    right_axis = 0;
+  }
+  else if (right[2]) {
+    right_axis = 2;
+  }
+  else {
+    right_axis = 1;
+  }
 
   // And get the new minmax to define the frame.  We do all this work
   // instead of just using the lower-left and upper-right corners,
   // just in case the text was rotated.
-  LVecBase4f frame;
-  frame[0] = min(min(ll[0], ur[0]), min(lr[0], ul[0]));
-  frame[1] = max(max(ll[0], ur[0]), max(lr[0], ul[0]));
-  frame[2] = min(min(ll[2], ur[2]), min(lr[2], ul[2]));
-  frame[3] = max(max(ll[2], ur[2]), max(lr[2], ul[2]));
+  LVecBase4 frame;
+  frame[0] = min(min(ll[right_axis], ur[right_axis]), min(lr[right_axis], ul[right_axis]));
+  frame[1] = max(max(ll[right_axis], ur[right_axis]), max(lr[right_axis], ul[right_axis]));
+  frame[2] = min(min(ll[up_axis], ur[up_axis]), min(lr[up_axis], ul[up_axis]));
+  frame[3] = max(max(ll[up_axis], ur[up_axis]), max(lr[up_axis], ul[up_axis]));
 
   switch (text_node->get_align()) {
   case TextNode::A_left:
+  case TextNode::A_boxed_left:
     // The default case.
     break;
 
   case TextNode::A_center:
+  case TextNode::A_boxed_center:
     frame[0] = -width / 2.0;
     frame[1] = width / 2.0;
     break;
 
   case TextNode::A_right:
+  case TextNode::A_boxed_right:
     frame[0] = -width;
     frame[1] = 0.0f;
     break;
@@ -629,7 +655,7 @@ setup(float width, int num_lines) {
 //               decoration.
 ////////////////////////////////////////////////////////////////////
 void PGEntry::
-setup_minimal(float width, int num_lines) {
+setup_minimal(PN_stdfloat width, int num_lines) {
   LightReMutexHolder holder(_lock);
   set_text(string());
   _cursor_position = 0;
@@ -641,7 +667,7 @@ setup_minimal(float width, int num_lines) {
   _accept_enabled = true;
 
   TextNode *text_node = get_text_def(S_focus);
-  float line_height = text_node->get_line_height();
+  PN_stdfloat line_height = text_node->get_line_height();
 
   // Set up a default cursor: a vertical bar.
   clear_cursor_def();
@@ -841,8 +867,8 @@ update_text() {
 
     if (get_overflow_mode() && _num_lines == 1){
       // We determine the minimum required padding:
-      float cursor_graphic_pos = _text.get_xpos(0, _cursor_position);
-      float min_padding = (cursor_graphic_pos - _max_width);
+      PN_stdfloat cursor_graphic_pos = _text.get_xpos(0, _cursor_position);
+      PN_stdfloat min_padding = (cursor_graphic_pos - _max_width);
 
       // If the current padding would produce a caret outside the text entry,
       // we relocate it.
@@ -872,8 +898,8 @@ update_text() {
 
       _current_text.set_x(_current_text.get_x() - _current_padding);
       _current_text.set_scissor(NodePath(this),
-        LPoint3f(0, 0, -0.5), LPoint3f(_max_width, 0, -0.5),
-        LPoint3f(_max_width, 0, 1.5), LPoint3f(0, 0, 1.5));
+      LPoint3::rfu(0, 0, -0.5), LPoint3::rfu(_max_width, 0, -0.5),
+      LPoint3::rfu(_max_width, 0, 1.5), LPoint3::rfu(0, 0, 1.5));
     }
 
     _text_geom_stale = false;
@@ -908,7 +934,7 @@ update_cursor() {
 
     // Determine the row and column of the cursor.
     int row, column;
-    float xpos, ypos;
+    PN_stdfloat xpos, ypos;
     if (_obscure_mode) {
       _obscure_text.calc_r_c(row, column, _cursor_position);
       xpos = _obscure_text.get_xpos(row, column);

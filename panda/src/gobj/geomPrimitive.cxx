@@ -231,7 +231,7 @@ add_vertex(int vertex) {
 
   PT(GeomVertexArrayData) array_obj = cdata->_vertices.get_write_pointer();
   GeomVertexWriter index(array_obj, 0);
-  index.set_row(array_obj->get_num_rows());
+  index.set_row_unsafe(array_obj->get_num_rows());
 
   index.add_data1i(vertex);
 
@@ -295,7 +295,7 @@ add_consecutive_vertices(int start, int num_vertices) {
 
   PT(GeomVertexArrayData) array_obj = cdata->_vertices.get_write_pointer();
   GeomVertexWriter index(array_obj, 0);
-  index.set_row(array_obj->get_num_rows());
+  index.set_row_unsafe(array_obj->get_num_rows());
 
   for (int v = start; v <= end; ++v) {
     index.add_data1i(v);
@@ -680,7 +680,7 @@ get_primitive_min_vertex(int n) const {
     nassertr(n >= 0 && n < mins->get_num_rows(), -1);
 
     GeomVertexReader index(mins, 0);
-    index.set_row(n);
+    index.set_row_unsafe(n);
     return index.get_data1i();
   } else {
     return get_primitive_start(n);
@@ -700,7 +700,7 @@ get_primitive_max_vertex(int n) const {
     nassertr(n >= 0 && n < maxs->get_num_rows(), -1);
 
     GeomVertexReader index(maxs, 0);
-    index.set_row(n);
+    index.set_row_unsafe(n);
     return index.get_data1i();
   } else {
     return get_primitive_end(n) - 1;
@@ -1309,7 +1309,9 @@ get_num_unused_vertices_per_primitive() const {
 ////////////////////////////////////////////////////////////////////
 void GeomPrimitive::
 prepare(PreparedGraphicsObjects *prepared_objects) {
-  prepared_objects->enqueue_index_buffer(this);
+  if (is_indexed()) {
+    prepared_objects->enqueue_index_buffer(this);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1348,6 +1350,8 @@ is_prepared(PreparedGraphicsObjects *prepared_objects) const {
 IndexBufferContext *GeomPrimitive::
 prepare_now(PreparedGraphicsObjects *prepared_objects, 
             GraphicsStateGuardianBase *gsg) {
+  nassertr(is_indexed(), NULL);
+
   Contexts::const_iterator ci;
   ci = _contexts.find(prepared_objects);
   if (ci != _contexts.end()) {
@@ -1413,6 +1417,22 @@ release_all() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GeomPrimitive::get_index_format
+//       Access: Public
+//  Description: Returns a registered format appropriate for using to
+//               store the index table.
+////////////////////////////////////////////////////////////////////
+CPT(GeomVertexArrayFormat) GeomPrimitive::
+get_index_format() const {
+  PT(GeomVertexArrayFormat) format = new GeomVertexArrayFormat;
+  // It's important that the index format *not* respect the global
+  // setting of vertex-column-alignment.  It needs to be tightly
+  // packed, so we specify an explict column_alignment of 1.
+  format->add_column(InternalName::get_index(), 1, get_index_type(), C_index, 0, 1);
+  return GeomVertexArrayFormat::register_format(format);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GeomPrimitive::clear_prepared
 //       Access: Private
 //  Description: Removes the indicated PreparedGraphicsObjects table
@@ -1472,10 +1492,10 @@ get_highest_index_value(NumericType index_type) {
 //               before calling this function.
 ////////////////////////////////////////////////////////////////////
 void GeomPrimitive::
-calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
+calc_tight_bounds(LPoint3 &min_point, LPoint3 &max_point,
                   bool &found_any, 
                   const GeomVertexData *vertex_data,
-                  bool got_mat, const LMatrix4f &mat,
+                  bool got_mat, const LMatrix4 &mat,
                   const InternalName *column_name,
                   Thread *current_thread) const {
   GeomVertexReader reader(vertex_data, column_name, current_thread);
@@ -1491,8 +1511,8 @@ calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
     nassertv(cdata->_num_vertices != -1);
     if (got_mat) {
       for (int i = 0; i < cdata->_num_vertices; i++) {
-        reader.set_row(cdata->_first_vertex + i);
-        LPoint3f vertex = mat.xform_point(reader.get_data3f());
+        reader.set_row_unsafe(cdata->_first_vertex + i);
+        LPoint3 vertex = mat.xform_point(reader.get_data3());
         
         if (found_any) {
           min_point.set(min(min_point[0], vertex[0]),
@@ -1509,8 +1529,8 @@ calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
       }
     } else {
       for (int i = 0; i < cdata->_num_vertices; i++) {
-        reader.set_row(cdata->_first_vertex + i);
-        const LVecBase3f &vertex = reader.get_data3f();
+        reader.set_row_unsafe(cdata->_first_vertex + i);
+        const LVecBase3 &vertex = reader.get_data3();
         
         if (found_any) {
           min_point.set(min(min_point[0], vertex[0]),
@@ -1534,8 +1554,8 @@ calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
     if (got_mat) {
       while (!index.is_at_end()) {
         int ii = index.get_data1i();
-        reader.set_row(ii);
-        LPoint3f vertex = mat.xform_point(reader.get_data3f());
+        reader.set_row_unsafe(ii);
+        LPoint3 vertex = mat.xform_point(reader.get_data3());
         
         if (found_any) {
           min_point.set(min(min_point[0], vertex[0]),
@@ -1553,8 +1573,8 @@ calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
     } else {
       while (!index.is_at_end()) {
         int ii = index.get_data1i();
-        reader.set_row(ii);
-        const LVecBase3f &vertex = reader.get_data3f();
+        reader.set_row_unsafe(ii);
+        const LVecBase3 &vertex = reader.get_data3();
         
         if (found_any) {
           min_point.set(min(min_point[0], vertex[0]),
@@ -1983,8 +2003,16 @@ check_minmax() const {
     // already have modified the pointer on the object since we
     // queried it.
     {
+#ifdef DO_PIPELINING
+      unref_delete((CycleData *)_cdata);
+#endif
       GeomPrimitive::CDWriter fresh_cdata(((GeomPrimitive *)_object.p())->_cycler, 
                                           false, _current_thread);
+      ((GeomPrimitivePipelineReader *)this)->_cdata = fresh_cdata;
+#ifdef DO_PIPELINING
+      _cdata->ref();
+#endif
+
       if (!fresh_cdata->_got_minmax) {
         // The cache is still stale.  We have to do the work of
         // freshening it.
@@ -1992,14 +2020,9 @@ check_minmax() const {
         nassertv(fresh_cdata->_got_minmax);
       }
 
-      // Save the new pointer, and then let the lock release itself.
-#ifdef DO_PIPELINING
-      unref_delete((CycleData *)_cdata);
-#endif
-      ((GeomPrimitivePipelineReader *)this)->_cdata = fresh_cdata;
-#ifdef DO_PIPELINING
-      _cdata->ref();
-#endif
+      // When fresh_cdata goes out of scope, its write lock is
+      // released, and _cdata reverts to our usual convention of an
+      // unlocked copy of the data.
     }
   }
 
@@ -2035,7 +2058,7 @@ get_vertex(int i) const {
     nassertr(i >= 0 && i < _vertices_reader->get_num_rows(), -1);
 
     GeomVertexReader index(_cdata->_vertices.get_read_pointer(), 0);
-    index.set_row(i);
+    index.set_row_unsafe(i);
     return index.get_data1i();
 
   } else {

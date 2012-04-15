@@ -18,7 +18,15 @@
 #include "pandabase.h"
 #include "texture.h"
 #include "pointerTo.h"
+#include "memoryBase.h"
+#include "pStatCollector.h"
+#include "deletedChain.h"
+#include "typedReferenceCount.h"
+
 class MovieVideo;
+class FactoryParams;
+class BamWriter;
+class BamReader;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : MovieVideoCursor
@@ -35,9 +43,10 @@ class MovieVideo;
 //               use separate MovieVideoCursor objects.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_MOVIES MovieVideoCursor : public TypedWritableReferenceCount {
+protected:
+  MovieVideoCursor(MovieVideo *src = NULL);
 
- PUBLISHED:
-  MovieVideoCursor(MovieVideo *src);
+PUBLISHED:
   virtual ~MovieVideoCursor();
   PT(MovieVideo) get_source() const;
   INLINE int size_x() const;
@@ -47,24 +56,59 @@ class EXPCL_PANDA_MOVIES MovieVideoCursor : public TypedWritableReferenceCount {
   INLINE bool can_seek() const;
   INLINE bool can_seek_fast() const;
   INLINE bool aborted() const;
-  INLINE double last_start() const;
-  INLINE double next_start() const;
+
   INLINE bool ready() const;
   INLINE bool streaming() const;
   void setup_texture(Texture *tex) const;
-  virtual void fetch_into_bitbucket(double time);
-  virtual void fetch_into_texture(double time, Texture *t, int page);
-  virtual void fetch_into_texture_rgb(double time, Texture *t, int page);
-  virtual void fetch_into_texture_alpha(double time, Texture *t, int page, int alpha_src);
 
- public:
-  virtual void fetch_into_buffer(double time, unsigned char *block, bool bgra);
+  virtual bool set_time(double timestamp, int loop_count);
+
+  class EXPCL_PANDA_MOVIES Buffer : public TypedReferenceCount {
+  public:
+    ALLOC_DELETED_CHAIN(Buffer);
+    Buffer(size_t block_size);
+
+  PUBLISHED:
+    virtual ~Buffer();
+
+    virtual int compare_timestamp(const Buffer *other) const;
+    virtual double get_timestamp() const;
+
+  public:
+    unsigned char *_block;
+    size_t _block_size;
+
+  private:
+    DeletedBufferChain *_deleted_chain;
+
+  public:
+    static TypeHandle get_class_type() {
+      return _type_handle;
+    }
+    static void init_type() {
+      TypedReferenceCount::init_type();
+      register_type(_type_handle, "MovieVideoCursor::Buffer",
+                    TypedReferenceCount::get_class_type());
+    }
+    virtual TypeHandle get_type() const {
+      return get_class_type();
+    }
+    virtual TypeHandle force_init_type() {init_type(); return get_class_type();}
+
+  private:
+    static TypeHandle _type_handle;
+  };
+  virtual PT(Buffer) fetch_buffer();
+
+  virtual void apply_to_texture(const Buffer *buffer, Texture *t, int page);
+  virtual void apply_to_texture_rgb(const Buffer *buffer, Texture *t, int page);
+  virtual void apply_to_texture_alpha(const Buffer *buffer, Texture *t, int page, int alpha_src);
   
- private:
-  void allocate_conversion_buffer();
-  unsigned char *_conversion_buffer;
+protected:
+  Buffer *get_standard_buffer();
+  virtual PT(Buffer) make_new_buffer();
   
- protected:
+protected:
   PT(MovieVideo) _source;
   int _size_x;
   int _size_y;
@@ -73,10 +117,21 @@ class EXPCL_PANDA_MOVIES MovieVideoCursor : public TypedWritableReferenceCount {
   bool _can_seek;
   bool _can_seek_fast;
   bool _aborted;
-  double _last_start;
-  double _next_start;
   bool _streaming;
   bool _ready;
+
+  PT(Buffer) _standard_buffer;
+
+  static PStatCollector _copy_pcollector;
+  static PStatCollector _copy_pcollector_ram;
+  static PStatCollector _copy_pcollector_copy;
+
+public:
+  virtual void write_datagram(BamWriter *manager, Datagram &dg);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
+
+protected:
+  void fillin(DatagramIterator &scan, BamReader *manager);
   
 public:
   static TypeHandle get_class_type() {
@@ -86,6 +141,7 @@ public:
     TypedWritableReferenceCount::init_type();
     register_type(_type_handle, "MovieVideoCursor",
                   TypedWritableReferenceCount::get_class_type());
+    Buffer::init_type();
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

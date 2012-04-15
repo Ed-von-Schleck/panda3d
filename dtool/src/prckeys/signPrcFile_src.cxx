@@ -20,6 +20,8 @@
 
 #include "filename.h"
 #include "executionEnvironment.h"
+#include "panda_getopt.h"
+#include "preprocess_argv.h"
 
 #include <time.h>
 
@@ -28,14 +30,6 @@
 #include "openssl/rand.h"
 #include "openssl/bio.h"
 #include "openssl/evp.h"
-
-#ifndef HAVE_GETOPT
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
 
 string progname = PROGNAME;
 
@@ -292,7 +286,8 @@ usage() {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
+  preprocess_argv(argc, argv);
   if (argv[0] != NULL && *argv[0]) {
     // Get the program name from the command-line arguments, if the OS
     // provides it.

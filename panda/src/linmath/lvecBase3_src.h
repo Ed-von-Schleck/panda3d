@@ -12,6 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+
 ////////////////////////////////////////////////////////////////////
 //       Class : LVecBase3
 // Description : This is the base class for all three-component
@@ -135,16 +136,24 @@ PUBLISHED:
   INLINE_LINMATH void output(ostream &out) const;
   EXTENSION(INLINE_LINMATH void python_repr(ostream &out, const string &class_name) const);
 
-public:
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen) const;
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen,
                                     FLOATTYPE threshold) const;
 
+  INLINE_LINMATH void write_datagram_fixed(Datagram &destination) const;
+  INLINE_LINMATH void read_datagram_fixed(DatagramIterator &source);
+  INLINE_LINMATH void write_datagram(Datagram &destination) const;
+  INLINE_LINMATH void read_datagram(DatagramIterator &source);
+
 public:
-  union {
-        FLOATTYPE data[3];
-        struct {FLOATTYPE _0, _1, _2;} v;
-   } _v;
+  // The underlying implementation is via the Eigen library, if available.
+
+  // We don't bother to align LVecBase3, since it won't benefit from
+  // SSE2 optimizations anyway (it's an add number of floats).
+  typedef UNALIGNED_LINMATH_MATRIX(FLOATTYPE, 1, 3) EVector3;
+  EVector3 _v;
+
+  INLINE_LINMATH FLOATNAME(LVecBase3)(const EVector3 &v) : _v(v) { }
 
 private:
   static const FLOATNAME(LVecBase3) _zero;
@@ -153,21 +162,17 @@ private:
   static const FLOATNAME(LVecBase3) _unit_z;
 
 public:
-  INLINE_LINMATH void write_datagram(Datagram &destination) const;
-  INLINE_LINMATH void read_datagram(DatagramIterator &source);
-
-public:
   static TypeHandle get_class_type() {
     return _type_handle;
   }
   static void init_type();
-
+ 
 private:
   static TypeHandle _type_handle;
 };
 
 
-INLINE_LINMATH ostream &operator << (ostream &out, const FLOATNAME(LVecBase3) &vec) {
+INLINE ostream &operator << (ostream &out, const FLOATNAME(LVecBase3) &vec) {
   vec.output(out);
   return out;
 };

@@ -29,6 +29,17 @@ Filename(const string &filename) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE Filename::
+Filename(const wstring &filename) {
+  _flags = 0;
+  (*this) = filename;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::Constructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE Filename::
 Filename(const char *filename) {
   _flags = 0;
   (*this) = filename;
@@ -59,9 +70,33 @@ Filename(const Filename &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE Filename Filename::
+text_filename(const Filename &filename) {
+  Filename result(filename);
+  result.set_text();
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::text_filename named constructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE Filename Filename::
 text_filename(const string &filename) {
   Filename result(filename);
   result.set_text();
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::binary_filename named constructor
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE Filename Filename::
+binary_filename(const Filename &filename) {
+  Filename result(filename);
+  result.set_binary();
   return result;
 }
 
@@ -137,6 +172,19 @@ operator = (const string &filename) {
   locate_extension();
   locate_hash();
   return *this;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::Assignment operator
+//       Access: Published
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE Filename &Filename::
+operator = (const wstring &filename) {
+  TextEncoder encoder;
+  encoder.set_encoding(get_filesystem_encoding());
+  encoder.set_wtext(filename);
+  return operator = (encoder.get_text());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -264,12 +312,25 @@ operator + (const string &other) const {
 //       Access: Published
 //  Description: Returns the entire filename: directory, basename,
 //               extension.  This is the same thing returned by the
-//               string typecast operator, so this function is a
-//               little redundant.
+//               string typecast operator.
 ////////////////////////////////////////////////////////////////////
 INLINE string Filename::
 get_fullpath() const {
-  return _filename.c_str();
+  return _filename;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::get_fullpath_w
+//       Access: Published
+//  Description: Returns the entire filename as a wide-character
+//               string.
+////////////////////////////////////////////////////////////////////
+INLINE wstring Filename::
+get_fullpath_w() const {
+  TextEncoder encoder;
+  encoder.set_encoding(get_filesystem_encoding());
+  encoder.set_text(get_fullpath());
+  return encoder.get_wtext();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -379,6 +440,19 @@ set_text() {
 INLINE bool Filename::
 is_binary() const {
   return ((_flags & F_binary) != 0);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::is_binary_or_text
+//       Access: Published
+//  Description: Returns true either is_binary() or is_text() is true;
+//               that is, that the filename has been specified as
+//               either binary or text.  If this is false, the
+//               filename has not been specified.
+////////////////////////////////////////////////////////////////////
+INLINE bool Filename::
+is_binary_or_text() const {
+  return ((_flags & (F_binary | F_text)) != 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -597,4 +671,30 @@ __nonzero__() const {
 INLINE void Filename::
 output(ostream &out) const {
   out << _filename;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::set_filesystem_encoding
+//       Access: Published, Static
+//  Description: Specifies the default encoding to be used for all
+//               subsequent Filenames.  This is used to represent
+//               wide-character (Unicode) filenames internally.  On
+//               non-Windows-based systems, the encoded filename is
+//               also passed to the underlying operating system.
+////////////////////////////////////////////////////////////////////
+INLINE void Filename::
+set_filesystem_encoding(TextEncoder::Encoding encoding) {
+  _filesystem_encoding = encoding;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Filename::get_filesystem_encoding
+//       Access: Published, Static
+//  Description: Specifies the default encoding to be used for all
+//               subsequent Filenames objects.  See
+//               set_filesystem_encoding().
+////////////////////////////////////////////////////////////////////
+INLINE TextEncoder::Encoding Filename::
+get_filesystem_encoding() {
+  return _filesystem_encoding;
 }

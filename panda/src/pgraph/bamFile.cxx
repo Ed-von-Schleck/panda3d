@@ -60,9 +60,6 @@ open_read(const Filename &bam_filename, bool report_errors) {
     return false;
   }
 
-  loader_cat.info()
-    << "Reading " << bam_filename << "\n";
-
   return continue_open_read(bam_filename, report_errors);
 }
 
@@ -220,9 +217,8 @@ bool BamFile::
 open_write(const Filename &bam_filename, bool report_errors) {
   close();
 
-  loader_cat.info() << "Writing " << bam_filename << "\n";
-
-  bam_filename.unlink();
+  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+  vfs->delete_file(bam_filename);
   if (!_dout.open(bam_filename)) {
     if (report_errors) {
       loader_cat.error() << "Unable to open " << bam_filename << "\n";
@@ -344,6 +340,25 @@ get_file_endian() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamFile::get_file_stdfloat_double
+//       Access: Public
+//  Description: Returns true if the file stores all "standard"
+//               floats as 64-bit doubles, or false if they are 32-bit
+//               floats.
+////////////////////////////////////////////////////////////////////
+bool BamFile::
+get_file_stdfloat_double() const {
+  if (_writer != (BamWriter *)NULL) {
+    return _writer->get_file_stdfloat_double();
+  }
+  if (_reader != (BamReader *)NULL) {
+    return _reader->get_file_stdfloat_double();
+  }
+
+  return bam_stdfloat_double;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: BamFile::get_current_major_ver
 //       Access: Public
 //  Description: Returns the system current major version number.
@@ -402,6 +417,11 @@ bool BamFile::
 continue_open_read(const string &bam_filename, bool report_errors) {
   _bam_filename = bam_filename;
 
+  if (!_bam_filename.empty()) {
+    loader_cat.info()
+      << "Reading " << _bam_filename << "\n";
+  }
+
   string head;
   if (!_din.read_header(head, _bam_header.size())) {
     if (report_errors) {
@@ -417,7 +437,7 @@ continue_open_read(const string &bam_filename, bool report_errors) {
     return false;
   }
 
-  _reader = new BamReader(&_din, _bam_filename);
+  _reader = new BamReader(&_din);
   if (!_reader->init()) {
     close();
     return false;
@@ -437,6 +457,10 @@ bool BamFile::
 continue_open_write(const string &bam_filename, bool report_errors) {
   _bam_filename = bam_filename;
 
+  if (!_bam_filename.empty()) {
+    loader_cat.info() << "Writing " << _bam_filename << "\n";
+  }
+
   if (!_dout.write_header(_bam_header)) {
     if (report_errors) {
       loader_cat.error() << "Unable to write to " << _bam_filename << "\n";
@@ -444,7 +468,7 @@ continue_open_write(const string &bam_filename, bool report_errors) {
     return false;
   }
 
-  _writer = new BamWriter(&_dout, _bam_filename);
+  _writer = new BamWriter(&_dout);
 
   if (!_writer->init()) {
     close();

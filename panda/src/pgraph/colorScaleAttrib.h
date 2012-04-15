@@ -29,12 +29,12 @@ class FactoryParams;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_PGRAPH ColorScaleAttrib : public RenderAttrib {
 protected:
-  ColorScaleAttrib(bool off, const LVecBase4f &scale);
+  ColorScaleAttrib(bool off, const LVecBase4 &scale);
   INLINE ColorScaleAttrib(const ColorScaleAttrib &copy);
 
 PUBLISHED:
   static CPT(RenderAttrib) make_identity();
-  static CPT(RenderAttrib) make(const LVecBase4f &scale);
+  static CPT(RenderAttrib) make(const LVecBase4 &scale);
   static CPT(RenderAttrib) make_off();
   static CPT(RenderAttrib) make_default();
 
@@ -43,8 +43,8 @@ PUBLISHED:
   INLINE bool has_scale() const;
   INLINE bool has_rgb_scale() const;
   INLINE bool has_alpha_scale() const;
-  INLINE const LVecBase4f &get_scale() const;
-  CPT(RenderAttrib) set_scale(const LVecBase4f &scale) const;
+  INLINE const LVecBase4 &get_scale() const;
+  CPT(RenderAttrib) set_scale(const LVecBase4 &scale) const;
 
 public:
   virtual bool lower_attrib_can_override() const;
@@ -52,8 +52,10 @@ public:
 
 protected:
   virtual int compare_to_impl(const RenderAttrib *other) const;
+  virtual size_t get_hash_impl() const;
   virtual CPT(RenderAttrib) compose_impl(const RenderAttrib *other) const;
   virtual CPT(RenderAttrib) invert_compose_impl(const RenderAttrib *other) const;
+  virtual CPT(RenderAttrib) get_auto_shader_attrib_impl(const RenderState *state) const;
 
 private:
   void quantize_scale();
@@ -63,7 +65,7 @@ private:
   bool _has_scale;
   bool _has_rgb_scale;
   bool _has_alpha_scale;
-  LVecBase4f _scale;
+  LVecBase4 _scale;
   static CPT(RenderAttrib) _identity_attrib;
 
 PUBLISHED:

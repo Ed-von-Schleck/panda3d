@@ -1,12 +1,12 @@
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
-                   dtoolutil:c dtoolbase:c dtool:m prc:c
+#define OTHER_LIBS p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+                   p3dtoolutil:c p3dtoolbase:c p3dtool:m p3prc:c
 #define WIN_SYS_LIBS $[WIN_SYS_LIBS] ws2_32.lib
                    
 #begin lib_target
-  #define TARGET display
+  #define TARGET p3display
   #define LOCAL_LIBS \
-    pgraph pgraphnodes cull putil gsgbase gobj linmath mathutil \
-    pstatclient
+    p3pgraph p3pgraphnodes p3cull p3putil p3gsgbase p3gobj p3linmath p3mathutil \
+    p3pstatclient
 
   #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx 
  
@@ -14,11 +14,13 @@
     standardMunger.I standardMunger.h \
     config_display.h \
     $[if $[HAVE_PYTHON], pythonGraphicsWindowProc.h] \
+    callbackGraphicsWindow.I callbackGraphicsWindow.h \
     drawableRegion.I drawableRegion.h \
     displayRegion.I displayRegion.h  \
     displayRegionCullCallbackData.I displayRegionCullCallbackData.h \
     displayRegionDrawCallbackData.I displayRegionDrawCallbackData.h \
     frameBufferProperties.I frameBufferProperties.h \
+    get_x11.h pre_x11_include.h post_x11_include.h \
     graphicsEngine.I graphicsEngine.h \
     graphicsOutput.I graphicsOutput.h \
     graphicsBuffer.I graphicsBuffer.h \
@@ -52,6 +54,7 @@
     standardMunger.cxx \
     config_display.cxx \
     $[if $[HAVE_PYTHON], pythonGraphicsWindowProc.cxx] \
+    callbackGraphicsWindow.cxx \
     drawableRegion.cxx \
     displayRegion.cxx \
     displayRegionCullCallbackData.cxx \
@@ -68,7 +71,7 @@
     graphicsThreadingModel.cxx \
     graphicsWindow.cxx graphicsWindowInputDevice.cxx  \
     graphicsWindowProc.cxx \
-    graphicsWindowProcCalbackData.cxx \
+    graphicsWindowProcCallbackData.cxx \
     graphicsDevice.cxx \
     lru.cxx \
     nativeWindowHandle.cxx \
@@ -84,6 +87,7 @@
     standardMunger.I standardMunger.h \
     config_display.h \
     $[if $[HAVE_PYTHON], pythonGraphicsWindowProc.h] \
+    callbackGraphicsWindow.I callbackGraphicsWindow.h \
     drawableRegion.I drawableRegion.h \
     displayInformation.h \
     displayRegion.I displayRegion.h \
@@ -91,6 +95,7 @@
     displayRegionDrawCallbackData.I displayRegionDrawCallbackData.h \
     displaySearchParameters.h \
     frameBufferProperties.I frameBufferProperties.h \
+    get_x11.h pre_x11_include.h post_x11_include.h \
     graphicsEngine.I graphicsEngine.h \
     graphicsOutput.I graphicsOutput.h \
     graphicsBuffer.I graphicsBuffer.h \
@@ -128,7 +133,7 @@
 
   #define BUILD_TARGET $[and $[OSX_PLATFORM],$[HAVE_P3D_PLUGIN]]
 
-  #define TARGET subprocbuffer
+  #define TARGET p3subprocbuffer
 
   #define SOURCES \
     subprocessWindowBuffer.h subprocessWindowBuffer.I \
@@ -140,7 +145,7 @@
 #begin test_bin_target
   #define TARGET test_display
   #define LOCAL_LIBS \
-    display putil
+    p3display p3putil
 
   #define SOURCES \
     test_display.cxx

@@ -230,18 +230,14 @@ unref() const {
 int GeomVertexArrayFormat::
 add_column(InternalName *name, int num_components, 
            GeomVertexArrayFormat::NumericType numeric_type, 
-           GeomVertexArrayFormat::Contents contents, int start) {
+           GeomVertexArrayFormat::Contents contents, int start,
+           int column_alignment) {
   if (start < 0) {
     start = _total_bytes;
-
-    GeomVertexColumn temp_column
-      (name, num_components, numeric_type, contents, 0);
-    int pad_to = temp_column.get_component_bytes();
-    start = ((start + pad_to - 1) / pad_to) * pad_to;
   }
 
-  return add_column(GeomVertexColumn(name, num_components, 
-                                     numeric_type, contents, start));
+  return add_column(GeomVertexColumn(name, num_components, numeric_type, contents, 
+                                     start, column_alignment));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -276,8 +272,11 @@ add_column(const GeomVertexColumn &column) {
   }
 
   _total_bytes = max(_total_bytes, column.get_start() + column.get_total_bytes());
-  _pad_to = max(_pad_to, column.get_component_bytes());
-  _stride = max(_stride, ((_total_bytes + _pad_to - 1) / _pad_to) * _pad_to);
+  _pad_to = max(_pad_to, column.get_column_alignment());
+  _stride = max(_stride, _total_bytes);
+  if (_pad_to > 1) {
+    _stride = ((_stride + _pad_to - 1) / _pad_to) * _pad_to;
+  }
 
   GeomVertexColumn *new_column = new GeomVertexColumn(column);
 
@@ -364,6 +363,41 @@ pack_columns() {
                column->get_numeric_type(), column->get_contents());
   }
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexArrayFormat::align_columns_for_animation
+//       Access: Published
+//  Description: Reprocesses the columns in the format to align the
+//               C_point and C_vector columns to 16-byte boundaries to
+//               allow for the more efficient SSE2 operations
+//               (assuming SSE2 is enabled in the build).
+//
+//               The caller is responsible for testing
+//               vertex_animation_align_16 to decide whether to call
+//               this method.
+////////////////////////////////////////////////////////////////////
+void GeomVertexArrayFormat::
+align_columns_for_animation() {
+  nassertv(!_is_registered);
+
+  Columns orig_columns;
+  orig_columns.swap(_columns);
+  clear_columns();
+
+  Columns::const_iterator ci;
+  for (ci = orig_columns.begin(); ci != orig_columns.end(); ++ci) {
+    GeomVertexColumn *column = (*ci);
+    if ((column->get_contents() == C_point || column->get_contents() == C_vector) &&
+        (column->get_numeric_type() == NT_float32 || column->get_numeric_type() == NT_float64) &&
+        column->get_num_components() >= 3) {
+      add_column(column->get_name(), 4, column->get_numeric_type(), column->get_contents(), -1, 16);
+    } else {
+      add_column(column->get_name(), column->get_num_components(),
+                 column->get_numeric_type(), column->get_contents());
+    }
+  }
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexArrayFormat::get_column
@@ -476,7 +510,7 @@ output(ostream &out) const {
   for (ci = _columns.begin(); ci != _columns.end(); ++ci) {
     const GeomVertexColumn *column = (*ci);
     if (column->get_start() > last_pos) {
-      out << " ..." << (column->get_start() - last_pos) << "...";
+      out << " (..." << (column->get_start() - last_pos) << "...)";
     }
     out << " " << *column;
     last_pos = column->get_start() + column->get_total_bytes();
@@ -526,7 +560,7 @@ write_with_data(ostream &out, int indent_level,
   for (int i = 0; i < num_rows; i++) {
     indent(out, indent_level)
       << "row " << i << ":\n";
-    reader.set_row(i);
+    reader.set_row_unsafe(i);
     Columns::const_iterator ci;
     for (ci = _columns.begin(); ci != _columns.end(); ++ci) {
       const GeomVertexColumn *column = (*ci);

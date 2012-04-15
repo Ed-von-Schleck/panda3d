@@ -22,10 +22,11 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_GL CLP(TextureContext) : public TextureContext {
 public:
-  INLINE CLP(TextureContext)(PreparedGraphicsObjects *pgo, Texture *tex);
+  INLINE CLP(TextureContext)(PreparedGraphicsObjects *pgo, Texture *tex, int view);
   ALLOC_DELETED_CHAIN(CLP(TextureContext));
 
   virtual void evict_lru();
+  void reset_data();
 
   // This is the GL "name" of the texture object.
   GLuint _index;
@@ -39,6 +40,7 @@ public:
   GLsizei _width;
   GLsizei _height;
   GLsizei _depth;
+  GLenum _target;
 
 public:
   static TypeHandle get_class_type() {

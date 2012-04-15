@@ -95,9 +95,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
@@ -115,7 +112,6 @@ close_buffer() {
     DCAST_INTO_V(tinygsg, _gsg);
     tinygsg->_current_frame_buffer = NULL;
     _gsg.clear();
-    _active = false;
   }
 
   _is_valid = false;

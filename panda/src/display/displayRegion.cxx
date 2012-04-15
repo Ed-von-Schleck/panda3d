@@ -14,6 +14,7 @@
 
 #include "displayRegion.h"
 #include "stereoDisplayRegion.h"
+#include "graphicsEngine.h"
 #include "graphicsOutput.h"
 #include "config_display.h"
 #include "texture.h"
@@ -32,7 +33,7 @@ TypeHandle DisplayRegionPipelineReader::_type_handle;
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DisplayRegion::
-DisplayRegion(GraphicsOutput *window, const LVecBase4f &dimensions) :
+DisplayRegion(GraphicsOutput *window, const LVecBase4 &dimensions) :
   _window(window),
   _incomplete_render(true),
   _texture_reload_priority(0),
@@ -43,6 +44,8 @@ DisplayRegion(GraphicsOutput *window, const LVecBase4f &dimensions) :
   _draw_buffer_type = window->get_draw_buffer_type();
   set_dimensions(dimensions);
   compute_pixels_all_stages();
+
+  _window->add_display_region(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -124,7 +127,7 @@ set_lens_index(int index) {
 //               whole screen.
 ////////////////////////////////////////////////////////////////////
 void DisplayRegion::
-set_dimensions(const LVecBase4f &dimensions) {
+set_dimensions(const LVecBase4 &dimensions) {
   int pipeline_stage = Thread::get_current_pipeline_stage();
   nassertv(pipeline_stage == 0);
   CDWriter cdata(_cycler);
@@ -174,8 +177,11 @@ is_stereo() const {
 void DisplayRegion::
 set_camera(const NodePath &camera) {
   int pipeline_stage = Thread::get_current_pipeline_stage();
-  nassertv(pipeline_stage == 0);
-  CDWriter cdata(_cycler);
+
+  // We allow set_camera(NodePath()) to happen in cleanup(), which can
+  // be called from any pipeline stage.
+  nassertv(pipeline_stage == 0 || camera.is_empty());
+  CDStageWriter cdata(_cycler, 0);
 
   Camera *camera_node = (Camera *)NULL;
   if (!camera.is_empty()) {
@@ -269,6 +275,11 @@ set_sort(int sort) {
 //               An ordinary DisplayRegion may be set to SC_mono,
 //               SC_left, or SC_right.  You may set SC_stereo only on
 //               a StereoDisplayRegion.
+//
+//               This call also resets tex_view_offset to its default
+//               value, which is 0 for the left eye or 1 for the right
+//               eye of a stereo display region, or 0 for a mono
+//               display region.
 ////////////////////////////////////////////////////////////////////
 void DisplayRegion::
 set_stereo_channel(Lens::StereoChannel stereo_channel) {
@@ -278,6 +289,29 @@ set_stereo_channel(Lens::StereoChannel stereo_channel) {
 
   CDWriter cdata(_cycler);
   cdata->_stereo_channel = stereo_channel;
+  cdata->_tex_view_offset = (stereo_channel == Lens::SC_right) ? 1 : 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegion::set_tex_view_offset
+//       Access: Published, Virtual
+//  Description: Sets the current texture view offset for this
+//               DisplayRegion.  This is normally set to zero.  If
+//               nonzero, it is used to select a particular view of
+//               any multiview textures that are rendered within this
+//               DisplayRegion.
+//
+//               For a StereoDisplayRegion, this is normally 0 for the
+//               left eye, and 1 for the right eye, to support stereo
+//               textures.  This is set automatically when you call
+//               set_stereo_channel().
+////////////////////////////////////////////////////////////////////
+void DisplayRegion::
+set_tex_view_offset(int tex_view_offset) {
+  nassertv(Thread::get_current_pipeline_stage() == 0);
+
+  CDWriter cdata(_cycler);
+  cdata->_tex_view_offset = tex_view_offset;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -533,10 +567,10 @@ get_screenshot() {
   Thread *current_thread = Thread::get_current_thread();
 
   GraphicsOutput *window = get_window();
-  nassertr(window != (GraphicsOutput *)NULL, false);
+  nassertr(window != (GraphicsOutput *)NULL, NULL);
   
   GraphicsStateGuardian *gsg = window->get_gsg();
-  nassertr(gsg != (GraphicsStateGuardian *)NULL, false);
+  nassertr(gsg != (GraphicsStateGuardian *)NULL, NULL);
   
   if (!window->begin_frame(GraphicsOutput::FM_refresh, current_thread)) {
     return NULL;
@@ -594,11 +628,8 @@ make_cull_result_graph() {
 ////////////////////////////////////////////////////////////////////
 void DisplayRegion::
 compute_pixels() {
-  int pipeline_stage = Thread::get_current_pipeline_stage();
-  nassertv(pipeline_stage == 0);
-
   if (_window != (GraphicsOutput *)NULL) {
-    CDWriter cdata(_cycler);
+    CDWriter cdata(_cycler, false);
     do_compute_pixels(_window->get_fb_x_size(), _window->get_fb_y_size(), 
                       cdata);
   }
@@ -635,9 +666,7 @@ compute_pixels_all_stages() {
 ////////////////////////////////////////////////////////////////////
 void DisplayRegion::
 compute_pixels(int x_size, int y_size) {
-  int pipeline_stage = Thread::get_current_pipeline_stage();
-  nassertv(pipeline_stage == 0);
-  CDWriter cdata(_cycler);
+  CDWriter cdata(_cycler, false);
   do_compute_pixels(x_size, y_size, cdata);
 }
 
@@ -712,6 +741,9 @@ do_compute_pixels(int x_size, int y_size, CData *cdata) {
       << "DisplayRegion::do_compute_pixels(" << x_size << ", " << y_size << ")\n";
   }
 
+  int old_w = cdata->_pr - cdata->_pl;
+  int old_h = cdata->_pt - cdata->_pb;
+
   cdata->_pl = int((cdata->_dimensions[0] * x_size) + 0.5);
   cdata->_pr = int((cdata->_dimensions[1] * x_size) + 0.5);
 
@@ -757,6 +789,19 @@ set_active_index(int index) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegion::do_cull
+//       Access: Protected, Virtual
+//  Description: Performs a cull traversal.  The default
+//               implementation simply calls GraphicsEngine::do_cull.
+////////////////////////////////////////////////////////////////////
+void DisplayRegion::
+do_cull(CullHandler *cull_handler, SceneSetup *scene_setup,
+        GraphicsStateGuardian *gsg, Thread *current_thread) {
+
+  GraphicsEngine::do_cull(cull_handler, scene_setup, gsg, current_thread);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: DisplayRegion::CData::Constructor
 //       Access: Public
 //  Description:
@@ -770,6 +815,7 @@ CData() :
   _active(true),
   _sort(0),
   _stereo_channel(Lens::SC_mono),
+  _tex_view_offset(0),
   _cube_map_index(-1)
 {
 }
@@ -794,6 +840,7 @@ CData(const DisplayRegion::CData &copy) :
   _active(copy._active),
   _sort(copy._sort),
   _stereo_channel(copy._stereo_channel),
+  _tex_view_offset(copy._tex_view_offset),
   _cube_map_index(copy._cube_map_index)
 {
 }

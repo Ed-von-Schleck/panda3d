@@ -1,10 +1,10 @@
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
-                   dtoolutil:c dtoolbase:c dtool:m prc:c
+#define OTHER_LIBS p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+                   p3dtoolutil:c p3dtoolbase:c p3dtool:m p3prc:c
 
 #begin lib_target
-  #define TARGET mathutil
+  #define TARGET p3mathutil
   #define LOCAL_LIBS \
-    linmath putil event express
+    p3linmath p3putil p3event p3express
   #define USE_PACKAGES fftw
   #define UNIX_SYS_LIBS m
 
@@ -20,6 +20,7 @@
     fftCompressor.h finiteBoundingVolume.h frustum.h  \
     frustum_src.I frustum_src.h geometricBoundingVolume.I  \
     geometricBoundingVolume.h \
+    intersectionBoundingVolume.h intersectionBoundingVolume.I \
     linmath_events.h \
     look_at.h look_at_src.I  \
     look_at_src.cxx look_at_src.h \
@@ -32,13 +33,14 @@
     perlinNoise2.h perlinNoise2.I \
     perlinNoise3.h perlinNoise3.I \
     plane.h plane_src.I plane_src.cxx plane_src.h \
-    pta_LMatrix4f.h pta_LMatrix3f.h pta_LVecBase3f.h \
-    pta_LVecBase4f.h pta_LVecBase2f.h \
+    pta_LMatrix4.h pta_LMatrix3.h pta_LVecBase3.h \
+    pta_LVecBase4.h pta_LVecBase2.h \
     randomizer.h randomizer.I \
     rotate_to.h rotate_to_src.cxx \
     stackedPerlinNoise2.h stackedPerlinNoise2.I \
     stackedPerlinNoise3.h stackedPerlinNoise3.I \
-    triangulator.h triangulator.I
+    triangulator.h triangulator.I \
+    unionBoundingVolume.h unionBoundingVolume.I
 
   #define INCLUDED_SOURCES \
     boundingHexahedron.cxx boundingLine.cxx \
@@ -47,6 +49,7 @@
     boundingSphere.cxx  \
     boundingVolume.cxx config_mathutil.cxx fftCompressor.cxx  \
     finiteBoundingVolume.cxx geometricBoundingVolume.cxx  \
+    intersectionBoundingVolume.cxx \
     look_at.cxx \
     linmath_events.cxx \
     mersenne.cxx \
@@ -56,13 +59,14 @@
     perlinNoise2.cxx \
     perlinNoise3.cxx \
     plane.cxx \
-    pta_LMatrix4f.cxx pta_LMatrix3f.cxx pta_LVecBase3f.cxx \
-    pta_LVecBase4f.cxx pta_LVecBase2f.cxx \
+    pta_LMatrix4.cxx pta_LMatrix3.cxx pta_LVecBase3.cxx \
+    pta_LVecBase4.cxx pta_LVecBase2.cxx \
     randomizer.cxx \
     rotate_to.cxx \
     stackedPerlinNoise2.cxx \
     stackedPerlinNoise3.cxx \
-    triangulator.cxx
+    triangulator.cxx \
+    unionBoundingVolume.cxx
 
   #define INSTALL_HEADERS \
     boundingHexahedron.I boundingHexahedron.h boundingLine.I \
@@ -71,10 +75,11 @@
     boundingPlane.I boundingPlane.h \
     boundingSphere.I boundingSphere.h boundingVolume.I \
     boundingVolume.h config_mathutil.h fftCompressor.h \
-    pta_LMatrix4f.h pta_LMatrix3f.h pta_LVecBase3f.h \
-    pta_LVecBase4f.h pta_LVecBase2f.h \
+    pta_LMatrix4.h pta_LMatrix3.h pta_LVecBase3.h \
+    pta_LVecBase4.h pta_LVecBase2.h \
     finiteBoundingVolume.h frustum.h frustum_src.I frustum_src.h \
     geometricBoundingVolume.I geometricBoundingVolume.h look_at.h \
+    intersectionBoundingVolume.h intersectionBoundingVolume.I \
     look_at_src.I look_at_src.h \
     linmath_events.h \
     mersenne.h \
@@ -88,7 +93,8 @@
     rotate_to.h rotate_to_src.cxx \
     stackedPerlinNoise2.h stackedPerlinNoise2.I \
     stackedPerlinNoise3.h stackedPerlinNoise3.I \
-    triangulator.h triangulator.I
+    triangulator.h triangulator.I \
+    unionBoundingVolume.h unionBoundingVolume.I
 
 
 
@@ -99,8 +105,8 @@
 #begin test_bin_target
   #define TARGET test_mathutil
   #define LOCAL_LIBS \
-    mathutil pipeline
-  #define OTHER_LIBS $[OTHER_LIBS] pystub
+    p3mathutil p3pipeline
+  #define OTHER_LIBS $[OTHER_LIBS] p3pystub
 
   #define SOURCES \
     test_mathutil.cxx
@@ -111,8 +117,8 @@
 #begin test_bin_target
   #define TARGET test_tri
   #define LOCAL_LIBS \
-    mathutil pipeline
-  #define OTHER_LIBS $[OTHER_LIBS] pystub
+    p3mathutil p3pipeline
+  #define OTHER_LIBS $[OTHER_LIBS] p3pystub
 
   #define SOURCES \
     test_tri.cxx

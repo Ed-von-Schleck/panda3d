@@ -35,7 +35,7 @@
 //               It exists as a syntactic convenience to access the
 //               data in the CycleData.  It also allows the whole
 //               system to compile down to nothing if
-//               SUPPORT_PIPELINING is not defined.
+//               DO_PIPELINING is not defined.
 ////////////////////////////////////////////////////////////////////
 template<class CycleDataType>
 class CycleDataReader {
@@ -52,6 +52,7 @@ public:
 
   INLINE const CycleDataType *operator -> () const;
   INLINE operator const CycleDataType * () const;
+  INLINE const CycleDataType *p() const;
 
   INLINE Thread *get_current_thread() const;
 

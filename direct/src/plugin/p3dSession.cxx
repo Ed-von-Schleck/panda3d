@@ -26,6 +26,7 @@
 #include "p3dConcreteStruct.h"
 #include "binaryXml.h"
 #include "mkdir_complete.h"
+#include "wstring_encode.h"
 #include "run_p3dpython.h"
 
 #include <ctype.h>
@@ -794,21 +795,14 @@ start_p3dpython(P3DInstance *inst) {
     // This allows the caller's on-disk Python files to shadow the
     // similar-named files in the p3d file, allowing easy iteration on
     // the code in the p3d file.
-    const char *pypath = getenv("PYTHONPATH");
-    if (pypath != (char *)NULL) {
-      python_path = pypath;
+    if (get_env(python_path, "PYTHONPATH")) {
       replace_slashes(python_path);
       python_path += sep;
       python_path += search_path;
     }
 
     // We also preserve PRC_PATH.
-    const char *prcpath = getenv("PRC_PATH");
-    if (prcpath == NULL) {
-      prcpath = getenv("PANDA_PRC_PATH");
-    }
-    if (prcpath != (char *)NULL) {
-      prc_path = prcpath;
+    if (get_env(prc_path, "PRC_PATH") || get_env(prc_path, "PANDA_PRC_PATH")) {
       replace_slashes(prc_path);
       prc_path += sep;
       prc_path += search_path;
@@ -890,8 +884,8 @@ start_p3dpython(P3DInstance *inst) {
       NULL
     };
     for (int ki = 0; keep[ki] != NULL; ++ki) {
-      char *value = getenv(keep[ki]);
-      if (value != NULL) {
+      string value;
+      if (get_env(value, keep[ki])) {
         _env += keep[ki];
         _env += "=";
         _env += value;
@@ -949,18 +943,18 @@ start_p3dpython(P3DInstance *inst) {
   // definitions, even if keep_user_env is not set.  This is necessary
   // for os.system() and such to work as expected within the embedded
   // app.  It's also necessary for webbrowser on Linux.
-  char *orig_path = getenv("PATH");
-  if (orig_path != NULL) {
+  string orig_path;
+  if (get_env(orig_path, "PATH")) {
     sys_path += sep;
     sys_path += orig_path;
   }
-  char *orig_ld_path = getenv("LD_LIBRARY_PATH");
-  if (orig_ld_path != NULL) {
+  string orig_ld_path;
+  if (get_env(orig_ld_path, "LD_LIBRARY_PATH")) {
     ld_path += sep;
     ld_path += orig_ld_path;
   }
-  char *orig_dyld_path = getenv("DYLD_LIBRARY_PATH");
-  if (orig_dyld_path != NULL) {
+  string orig_dyld_path;
+  if (get_env(orig_dyld_path, "DYLD_LIBRARY_PATH")) {
     dyld_path += sep;
     dyld_path += orig_dyld_path;
   }
@@ -1481,8 +1475,10 @@ win_create_process() {
   HANDLE error_handle = GetStdHandle(STD_ERROR_HANDLE);
   bool got_error_handle = false;
   if (!_log_pathname.empty()) {
-    HANDLE handle = CreateFile
-      (_log_pathname.c_str(), GENERIC_WRITE, 
+    wstring log_pathname_w;
+    string_to_wstring(log_pathname_w, _log_pathname);
+    HANDLE handle = CreateFileW
+      (log_pathname_w.c_str(), GENERIC_WRITE, 
        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
        NULL, CREATE_ALWAYS, 0, NULL);
     if (handle != INVALID_HANDLE_VALUE) {
@@ -1494,8 +1490,8 @@ win_create_process() {
     }
   }
 
-  STARTUPINFO startup_info;
-  ZeroMemory(&startup_info, sizeof(STARTUPINFO));
+  STARTUPINFOW startup_info;
+  ZeroMemory(&startup_info, sizeof(startup_info));
   startup_info.cb = sizeof(startup_info); 
 
   // Set up the I/O handles.  We send stderr and stdout to our
@@ -1512,13 +1508,15 @@ win_create_process() {
   // If _keep_user_env is true, meaning not to change the current
   // directory, then pass NULL in to CreateProcess().  Otherwise pass
   // in _start_dir.
-  const char *start_dir_cstr;
+  const wchar_t *start_dir_cstr;
+  wstring start_dir_w;
   if (_keep_user_env) {
     start_dir_cstr = NULL;
     nout << "Not changing working directory.\n";
   } else {
-    start_dir_cstr = _start_dir.c_str();
-    nout << "Setting working directory: " << start_dir_cstr << "\n";
+    string_to_wstring(start_dir_w, _start_dir);
+    start_dir_cstr = start_dir_w.c_str();
+    nout << "Setting working directory: " << _start_dir << "\n";
   }
 
   // Construct the command-line string, containing the quoted
@@ -1531,15 +1529,23 @@ win_create_process() {
   // I'm not sure why CreateProcess wants a non-const char pointer for
   // its command-line string, but I'm not taking chances.  It gets a
   // non-const char array that it can modify.
-  string command_line_str = stream.str();
-  char *command_line = new char[command_line_str.size() + 1];
-  strcpy(command_line, command_line_str.c_str());
+  wstring command_line_str;
+  string_to_wstring(command_line_str, stream.str());
+  wchar_t *command_line = new wchar_t[command_line_str.size() + 1];
+  memcpy(command_line, command_line_str.c_str(), sizeof(wchar_t) * command_line_str.size() + 1);
+
+  nout << "Command line: " << command_line_str << "\n";
+
+  wstring p3dpython_exe_w;
+  string_to_wstring(p3dpython_exe_w, _p3dpython_exe);
+  wstring env_w;
+  string_to_wstring(env_w, _env);
 
   PROCESS_INFORMATION process_info; 
-  BOOL result = CreateProcess
-    (_p3dpython_exe.c_str(), command_line, NULL, NULL, TRUE, 0,
-     (void *)_env.c_str(), start_dir_cstr,
-     &startup_info, &process_info);
+  BOOL result = CreateProcessW
+    (p3dpython_exe_w.c_str(), command_line, NULL, NULL, TRUE, 
+     CREATE_UNICODE_ENVIRONMENT, (void *)env_w.c_str(), 
+     start_dir_cstr, &startup_info, &process_info);
   bool started_program = (result != 0);
 
   if (!started_program) {
@@ -1799,6 +1805,35 @@ p3dpython_thread_run() {
                      _interactive_console)) {
     nout << "Failure on startup.\n";
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: P3DSession::get_env
+//       Access: Private, Static
+//  Description: Implements getenv(), respecting Windows' Unicode
+//               environment.  Returns true if the variable is
+//               defined, false if it is not.  If it is defined, fills
+//               value with its definition.
+////////////////////////////////////////////////////////////////////
+bool P3DSession::
+get_env(string &value, const string &varname) {
+#ifdef _WIN32
+  wstring varname_w;
+  string_to_wstring(varname_w, varname);
+  const wchar_t *vc = _wgetenv(varname_w.c_str());
+  if (vc == NULL) {
+    return false;
+  }
+  wstring_to_string(value, vc);
+  return true;
+#else  // _WIN32
+  const char *vc = getenv(varname.c_str());
+  if (vc == NULL) {
+    return false;
+  }
+  value = vc;
+  return true;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////

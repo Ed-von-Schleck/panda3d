@@ -43,21 +43,21 @@ PStatCollector GraphicsOutput::_cull_pcollector("Cull");
 PStatCollector GraphicsOutput::_draw_pcollector("Draw");
 
 struct CubeFaceDef {
-  CubeFaceDef(const char *name, const LPoint3f &look_at, const LVector3f &up) :
+  CubeFaceDef(const char *name, const LPoint3 &look_at, const LVector3 &up) :
     _name(name), _look_at(look_at), _up(up) { }
 
   const char *_name;
-  LPoint3f _look_at;
-  LVector3f _up;
+  LPoint3 _look_at;
+  LVector3 _up;
 };
 
 static CubeFaceDef cube_faces[6] = {
-  CubeFaceDef("positive_x", LPoint3f(1, 0, 0), LVector3f(0, -1, 0)),
-  CubeFaceDef("negative_x", LPoint3f(-1, 0, 0), LVector3f(0, -1, 0)),
-  CubeFaceDef("positive_y", LPoint3f(0, 1, 0), LVector3f(0, 0, 1)),
-  CubeFaceDef("negative_y", LPoint3f(0, -1, 0), LVector3f(0, 0, -1)),
-  CubeFaceDef("positive_z", LPoint3f(0, 0, 1), LVector3f(0, -1, 0)),
-  CubeFaceDef("negative_z", LPoint3f(0, 0, -1), LVector3f(0, -1, 0))
+  CubeFaceDef("positive_x", LPoint3(1, 0, 0), LVector3(0, -1, 0)),
+  CubeFaceDef("negative_x", LPoint3(-1, 0, 0), LVector3(0, -1, 0)),
+  CubeFaceDef("positive_y", LPoint3(0, 1, 0), LVector3(0, 0, 1)),
+  CubeFaceDef("negative_y", LPoint3(0, -1, 0), LVector3(0, 0, -1)),
+  CubeFaceDef("positive_z", LPoint3(0, 0, 1), LVector3(0, -1, 0)),
+  CubeFaceDef("negative_z", LPoint3(0, 0, -1), LVector3(0, -1, 0))
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -92,10 +92,18 @@ GraphicsOutput(GraphicsEngine *engine, GraphicsPipe *pipe,
   _creation_flags = flags;
   _x_size = _y_size = 0;
   _has_size = win_prop.has_size();
+  _is_nonzero_size = false;
   if (_has_size) {
     _x_size = win_prop.get_x_size();
     _y_size = win_prop.get_y_size();
+    _is_nonzero_size = (_x_size > 0 && _y_size > 0);
   }
+  if (_creation_flags & GraphicsPipe::BF_size_track_host) {
+    // If we're tracking the host size, we assume we'll be nonzero
+    // eventually.
+    _is_nonzero_size = true;
+  }
+
   _is_valid = false;
   _flip_ready = false;
   _cube_map_index = -1;
@@ -104,9 +112,8 @@ GraphicsOutput(GraphicsEngine *engine, GraphicsPipe *pipe,
   _child_sort = 0;
   _got_child_sort = false;
   _internal_sort_index = 0;
-  _active = true;
-  _one_shot = false;
   _inverted = window_inverted;
+  _swap_eyes = swap_eyes;
   _red_blue_stereo = false;
   _left_eye_color_mask = 0x0f;
   _right_eye_color_mask = 0x0f;
@@ -146,7 +153,11 @@ GraphicsOutput(GraphicsEngine *engine, GraphicsPipe *pipe,
   _overlay_display_region = make_mono_display_region(0.0f, 1.0f, 0.0f, 1.0f);
   _overlay_display_region->set_active(false);
 
-  _display_regions_stale = false;
+  // Make sure the "active" flag is set true for pipeline stage 0.
+  {
+    CDWriter cdata(_cycler, true);
+    cdata->_active = true;
+  }
 
   // By default, each new GraphicsOutput is set up to clear color and
   // depth.
@@ -156,19 +167,19 @@ GraphicsOutput(GraphicsEngine *engine, GraphicsPipe *pipe,
 
   switch (background_color.get_num_words()) {
   case 1:
-    set_clear_color(Colorf(background_color[0], background_color[0], background_color[0], 0.0f));
+    set_clear_color(LColor(background_color[0], background_color[0], background_color[0], 0.0f));
     break;
 
   case 2:
-    set_clear_color(Colorf(background_color[0], background_color[0], background_color[0], background_color[1]));
+    set_clear_color(LColor(background_color[0], background_color[0], background_color[0], background_color[1]));
     break;
 
   case 3:
-    set_clear_color(Colorf(background_color[0], background_color[1], background_color[2], 0.0f));
+    set_clear_color(LColor(background_color[0], background_color[1], background_color[2], 0.0f));
     break;
 
   case 4:
-    set_clear_color(Colorf(background_color[0], background_color[1], background_color[2], background_color[3]));
+    set_clear_color(LColor(background_color[0], background_color[1], background_color[2], background_color[3]));
     break;
 
   default:
@@ -226,7 +237,6 @@ GraphicsOutput::
   }
 
   _total_display_regions.clear();
-  _active_display_regions.clear();
   _overlay_display_region = NULL;
 }
 
@@ -239,9 +249,10 @@ GraphicsOutput::
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
 clear_render_textures() {
-  LightMutexHolder holder(_lock);
+  CDWriter cdata(_cycler, true);
+  cdata->_textures.clear();
+  ++(cdata->_textures_seq);
   throw_event("render-texture-targets-changed");
-  _textures.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -293,8 +304,6 @@ add_render_texture(Texture *tex, RenderTextureMode mode,
     return;
   }
   LightMutexHolder holder(_lock);
-
-  throw_event("render-texture-targets-changed");
 
   // Create texture if necessary.
   if (tex == (Texture *)NULL) {
@@ -348,12 +357,7 @@ add_render_texture(Texture *tex, RenderTextureMode mode,
               (plane == RTP_aux_float_1)||
               (plane == RTP_aux_float_2)||
               (plane == RTP_aux_float_3)) {
-	//defaults to rgba16 unless rgba32 is set. Since many older hardware doesn't
-	//support 32 or filtering on 32
-	tex->set_component_type(Texture::T_float);
-	if( tex->get_format() != Texture::F_rgba32 ){
-	  tex->set_format(Texture::F_rgba16);
-	}
+    tex->set_format(Texture::F_rgba32);
     tex->set_match_framebuffer_format(true);
   } else {
     display_cat.error() <<
@@ -367,15 +371,10 @@ add_render_texture(Texture *tex, RenderTextureMode mode,
   tex->set_size_padded(get_x_size(), get_y_size());
 
   if (mode == RTM_bind_or_copy) {
-    // Binding is not supported or it is disabled, so just fall back
-    // to copy instead.
-    if (!support_render_texture) {
+    if (!support_render_texture || !get_supports_render_texture()) {
+      // Binding is not supported or it is disabled, so just fall back
+      // to copy instead.
       mode = RTM_copy_texture;
-    } else {
-      nassertv(_gsg != NULL);
-      if (!_gsg->get_supports_render_texture()) {
-        mode = RTM_copy_texture;
-      }
     }
   }
 
@@ -385,11 +384,15 @@ add_render_texture(Texture *tex, RenderTextureMode mode,
     tex->set_render_to_texture(true);
   }
 
+  CDWriter cdata(_cycler, true);
   RenderTexture result;
   result._texture = tex;
   result._plane = plane;
   result._rtm_mode = mode;
-  _textures.push_back(result);
+  cdata->_textures.push_back(result);
+  ++(cdata->_textures_seq);
+
+  throw_event("render-texture-targets-changed");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -424,7 +427,11 @@ setup_render_texture(Texture *tex, bool allow_bind, bool to_ram) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
 set_active(bool active) {
-  _active = active;
+  CDLockedReader cdata(_cycler);
+  if (cdata->_active != active) {
+    CDWriter cdataw(((GraphicsOutput *)this)->_cycler, cdata, true);
+    cdataw->_active = active;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -435,7 +442,64 @@ set_active(bool active) {
 ////////////////////////////////////////////////////////////////////
 bool GraphicsOutput::
 is_active() const {
-  return _active && is_valid();
+  if (!is_valid()) {
+    return false;
+  }
+
+  CDReader cdata(_cycler);
+  if (cdata->_one_shot_frame != -1) {
+    // If one_shot is in effect, then we are active only for the one
+    // indicated frame.
+    if (cdata->_one_shot_frame != ClockObject::get_global_clock()->get_frame_count()) {
+      return false;
+    }
+  }
+  return cdata->_active;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::set_one_shot
+//       Access: Published
+//  Description: Changes the current setting of the one-shot flag.
+//               When this is true, the GraphicsOutput will render the
+//               current frame and then automatically set itself
+//               inactive.  This is particularly useful for buffers
+//               that are created for the purposes of
+//               render-to-texture, for static textures that don't
+//               need to be continually re-rendered once they have
+//               been rendered the first time.
+//
+//               Setting the buffer inactive is not the same thing as
+//               destroying it.  You are still responsible for passing
+//               this buffer to GraphicsEngine::remove_window() when
+//               you no longer need the texture, in order to clean up
+//               fully.  (However, you should not call remove_window()
+//               on this buffer while the texture is still needed,
+//               because depending on the render-to-texture mechanism
+//               in use, this may invalidate the texture contents.)
+////////////////////////////////////////////////////////////////////
+void GraphicsOutput::
+set_one_shot(bool one_shot) {
+  CDWriter cdata(_cycler, true);
+  if (one_shot) {
+    cdata->_one_shot_frame = ClockObject::get_global_clock()->get_frame_count();
+  } else {
+    cdata->_one_shot_frame = -1;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::get_one_shot
+//       Access: Published
+//  Description: Returns the current setting of the one-shot flag.
+//               When this is true, the GraphicsOutput will
+//               automatically set itself inactive after the next
+//               frame.
+////////////////////////////////////////////////////////////////////
+bool GraphicsOutput::
+get_one_shot() const {
+  CDReader cdata(_cycler);
+  return (cdata->_one_shot_frame == ClockObject::get_global_clock()->get_frame_count());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -491,7 +555,7 @@ set_inverted(bool inverted) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
 set_side_by_side_stereo(bool side_by_side_stereo) {
-  LVecBase4f left, right;
+  LVecBase4 left, right;
   left.set(sbs_left_dimensions[0], sbs_left_dimensions[1], 
            sbs_left_dimensions[2], sbs_left_dimensions[3]);
   right.set(sbs_right_dimensions[0], sbs_right_dimensions[1], 
@@ -518,8 +582,8 @@ set_side_by_side_stereo(bool side_by_side_stereo) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
 set_side_by_side_stereo(bool side_by_side_stereo,
-                        const LVecBase4f &sbs_left_dimensions,
-                        const LVecBase4f &sbs_right_dimensions) {
+                        const LVecBase4 &sbs_left_dimensions,
+                        const LVecBase4 &sbs_right_dimensions) {
   _side_by_side_stereo = side_by_side_stereo;
   if (_side_by_side_stereo) {
     _sbs_left_dimensions = sbs_left_dimensions;
@@ -528,6 +592,27 @@ set_side_by_side_stereo(bool side_by_side_stereo,
     _sbs_left_dimensions.set(0.0f, 1.0f, 0.0f, 1.0f);
     _sbs_right_dimensions.set(0.0f, 1.0f, 0.0f, 1.0f);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::get_delete_flag
+//       Access: Published
+//  Description: Returns the current setting of the delete flag.  When
+//               this is true, the GraphicsOutput will automatically
+//               be removed before the beginning of the next frame by
+//               the GraphicsEngine.
+////////////////////////////////////////////////////////////////////
+bool GraphicsOutput::
+get_delete_flag() const {
+  // We only delete the window or buffer automatically when it is
+  // no longer associated with a texture.
+  for (int i = 0; i < (int)_hold_textures.size(); i++) {
+    if (_hold_textures[i].is_valid_pointer()) {
+      return false;
+    }
+  }
+
+  return _delete_flag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -561,7 +646,7 @@ set_sort(int sort) {
 //               one or the other.
 ////////////////////////////////////////////////////////////////////
 DisplayRegion *GraphicsOutput::
-make_display_region(const LVecBase4f &dimensions) {
+make_display_region(const LVecBase4 &dimensions) {
   if (is_stereo() && default_stereo_camera) {
     return make_stereo_display_region(dimensions);
   } else {
@@ -584,7 +669,7 @@ make_display_region(const LVecBase4f &dimensions) {
 //               necessary to draw even mono DisplayRegions twice).
 ////////////////////////////////////////////////////////////////////
 DisplayRegion *GraphicsOutput::
-make_mono_display_region(const LVecBase4f &dimensions) {
+make_mono_display_region(const LVecBase4 &dimensions) {
   if (_side_by_side_stereo) {
     StereoDisplayRegion *dr = make_stereo_display_region(dimensions);
     dr->get_left_eye()->set_stereo_channel(Lens::SC_mono);
@@ -592,7 +677,7 @@ make_mono_display_region(const LVecBase4f &dimensions) {
     return dr;
   }
 
-  return add_display_region(new DisplayRegion(this, dimensions));
+  return new DisplayRegion(this, dimensions);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -606,44 +691,57 @@ make_mono_display_region(const LVecBase4f &dimensions) {
 //               is_stereo() is false.
 ////////////////////////////////////////////////////////////////////
 StereoDisplayRegion *GraphicsOutput::
-make_stereo_display_region(const LVecBase4f &dimensions) {
+make_stereo_display_region(const LVecBase4 &dimensions) {
   PT(DisplayRegion) left, right;
 
   if (_side_by_side_stereo) {
     // On a side-by-side stereo window, each eye gets the
     // corresponding dimensions of its own sub-region.
-    float left_l = _sbs_left_dimensions[0];
-    float left_b = _sbs_left_dimensions[2];
-    float left_w = _sbs_left_dimensions[1] - _sbs_left_dimensions[0];
-    float left_h = _sbs_left_dimensions[3] - _sbs_left_dimensions[2];
-    LVecBase4f left_dimensions(dimensions[0] * left_w + left_l,
-                               dimensions[1] * left_w + left_l,
-                               dimensions[2] * left_h + left_b,
-                               dimensions[3] * left_h + left_b);
+    PN_stdfloat left_l = _sbs_left_dimensions[0];
+    PN_stdfloat left_b = _sbs_left_dimensions[2];
+    PN_stdfloat left_w = _sbs_left_dimensions[1] - _sbs_left_dimensions[0];
+    PN_stdfloat left_h = _sbs_left_dimensions[3] - _sbs_left_dimensions[2];
+    LVecBase4 left_dimensions(dimensions[0] * left_w + left_l,
+                              dimensions[1] * left_w + left_l,
+                              dimensions[2] * left_h + left_b,
+                              dimensions[3] * left_h + left_b);
     left = new DisplayRegion(this, left_dimensions);
 
-    float right_l = _sbs_right_dimensions[0];
-    float right_b = _sbs_right_dimensions[2];
-    float right_w = _sbs_right_dimensions[1] - _sbs_right_dimensions[0];
-    float right_h = _sbs_right_dimensions[3] - _sbs_right_dimensions[2];
-    LVecBase4f right_dimensions(dimensions[0] * right_w + right_l,
-                                dimensions[1] * right_w + right_l,
-                                dimensions[2] * right_h + right_b,
-                                dimensions[3] * right_h + right_b);
+    PN_stdfloat right_l = _sbs_right_dimensions[0];
+    PN_stdfloat right_b = _sbs_right_dimensions[2];
+    PN_stdfloat right_w = _sbs_right_dimensions[1] - _sbs_right_dimensions[0];
+    PN_stdfloat right_h = _sbs_right_dimensions[3] - _sbs_right_dimensions[2];
+    LVecBase4 right_dimensions(dimensions[0] * right_w + right_l,
+                               dimensions[1] * right_w + right_l,
+                               dimensions[2] * right_h + right_b,
+                               dimensions[3] * right_h + right_b);
     right = new DisplayRegion(this, right_dimensions);
+
+    if (_swap_eyes) {
+      DisplayRegion *t = left;
+      left = right;
+      right = t;
+    }
 
   } else {
     // Not a side-by-side stereo window; thus, both the left and right
     // eyes are the same region: the region specified.
     left = new DisplayRegion(this, dimensions);
     right = new DisplayRegion(this, dimensions);
+
+    // In this case, we assume that the two eyes will share the same
+    // depth buffer, which means the right eye should clear the depth
+    // buffer by default.
+    if (get_clear_depth_active()) {
+      right->set_clear_depth_active(true);
+    }
+    if (get_clear_stencil_active()) {
+      right->set_clear_stencil_active(true);
+    }
   }
 
   PT(StereoDisplayRegion) stereo = new StereoDisplayRegion(this, dimensions,
                                                            left, right);
-  add_display_region(stereo);
-  add_display_region(left);
-  add_display_region(right);
 
   return stereo;
 }
@@ -683,6 +781,9 @@ void GraphicsOutput::
 remove_all_display_regions() {
   LightMutexHolder holder(_lock);
 
+  CDWriter cdata(_cycler, true);
+  cdata->_active_display_regions_stale = true;
+
   TotalDisplayRegions::iterator dri;
   for (dri = _total_display_regions.begin();
        dri != _total_display_regions.end();
@@ -696,7 +797,6 @@ remove_all_display_regions() {
   }
   _total_display_regions.clear();
   _total_display_regions.push_back(_overlay_display_region);
-  _display_regions_stale = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -774,12 +874,8 @@ get_display_region(int n) const {
 int GraphicsOutput::
 get_num_active_display_regions() const {
   determine_display_regions();
-  int result;
-  {
-    LightMutexHolder holder(_lock);
-    result = _active_display_regions.size();
-  }
-  return result;
+  CDReader cdata(_cycler);
+  return cdata->_active_display_regions.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -794,16 +890,12 @@ get_num_active_display_regions() const {
 PT(DisplayRegion) GraphicsOutput::
 get_active_display_region(int n) const {
   determine_display_regions();
-  PT(DisplayRegion) result;
-  {
-    LightMutexHolder holder(_lock);
-    if (n >= 0 && n < (int)_active_display_regions.size()) {
-      result = _active_display_regions[n];
-    } else {
-      result = NULL;
-    }
+
+  CDReader cdata(_cycler);
+  if (n >= 0 && n < (int)cdata->_active_display_regions.size()) {
+    return cdata->_active_display_regions[n];
   }
-  return result;
+  return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -837,9 +929,7 @@ get_active_display_region(int n) const {
 //               created for some reason.
 //
 //               When you are done using the buffer, you should remove
-//               it with a call to GraphicsEngine::remove_window() (or
-//               set the one_shot flag so it removes itself after one
-//               frame).
+//               it with a call to GraphicsEngine::remove_window().
 ////////////////////////////////////////////////////////////////////
 GraphicsOutput *GraphicsOutput::
 make_texture_buffer(const string &name, int x_size, int y_size,
@@ -869,6 +959,14 @@ make_texture_buffer(const string &name, int x_size, int y_size,
                 flags, get_gsg(), get_host());
 
   if (buffer != (GraphicsOutput *)NULL) {
+    if (buffer->get_gsg() == (GraphicsStateGuardian *)NULL || 
+        buffer->get_gsg()->get_prepared_objects() != get_gsg()->get_prepared_objects()) {
+      // If the newly-created buffer doesn't share texture objects
+      // with the current GSG, then we will have to force the texture
+      // copy to go through RAM.
+      to_ram = true;
+    }
+
     buffer->add_render_texture(tex, to_ram ? RTM_copy_ram : RTM_bind_or_copy);
     return buffer;
   }
@@ -997,8 +1095,10 @@ get_texture_card() {
   // render-to-texture output texture.  Depth and stencil
   // textures are ignored.  The user can freely alter the
   // card's texture attrib.
-  for (int i=0; i<count_textures(); i++) {
-    Texture *texture = get_texture(i);
+  CDReader cdata(_cycler);
+  RenderTextures::const_iterator ri;
+  for (ri = cdata->_textures.begin(); ri != cdata->_textures.end(); ++ri) {
+    Texture *texture = (*ri)._texture;
     if ((texture->get_format() != Texture::F_depth_stencil)) {
       path.set_texture(texture, 0);
       break;
@@ -1027,6 +1127,30 @@ share_depth_buffer(GraphicsOutput *graphics_output) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
 unshare_depth_buffer() {
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::get_supports_render_texture
+//       Access: Published, Virtual
+//  Description: Returns true if this particular GraphicsOutput can
+//               render directly into a texture, or false if it must
+//               always copy-to-texture at the end of each frame to
+//               achieve this effect.
+////////////////////////////////////////////////////////////////////
+bool GraphicsOutput::
+get_supports_render_texture() const {
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::flip_ready
+//       Access: Public, Virtual
+//  Description: Returns true if a frame has been rendered and needs
+//               to be flipped, false otherwise.
+////////////////////////////////////////////////////////////////////
+bool GraphicsOutput::
+flip_ready() const {
+  return _flip_ready;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1118,6 +1242,8 @@ set_size_and_recalc(int x, int y) {
   _y_size = y;
   _has_size = true;
 
+  _is_nonzero_size = (_x_size > 0 && _y_size > 0);
+
   int fb_x_size = get_fb_x_size();
   int fb_y_size = get_fb_y_size();
 
@@ -1155,7 +1281,7 @@ clear(Thread *current_thread) {
     nassertv(_gsg != (GraphicsStateGuardian *)NULL);
 
     DisplayRegionPipelineReader dr_reader(_overlay_display_region, current_thread);
-    _gsg->prepare_display_region(&dr_reader, Lens::SC_mono);
+    _gsg->prepare_display_region(&dr_reader);
     _gsg->clear(this);
   }
 }
@@ -1204,9 +1330,11 @@ change_scenes(DisplayRegionPipelineReader *new_dr) {
     _cube_map_index = new_cube_map_index;
     _cube_map_dr = new_dr->get_object();
 
-    for (int i=0; i<count_textures(); i++) {
-      Texture *texture = get_texture(i);
-      RenderTextureMode rtm_mode = get_rtm_mode(i);
+    CDReader cdata(_cycler);
+    RenderTextures::const_iterator ri;
+    for (ri = cdata->_textures.begin(); ri != cdata->_textures.end(); ++ri) {
+      RenderTextureMode rtm_mode = (*ri)._rtm_mode;
+      Texture *texture = (*ri)._texture;
       if (rtm_mode != RTM_none) {
         if (rtm_mode == RTM_bind_or_copy) {
           // In render-to-texture mode, switch the rendering backend to
@@ -1334,7 +1462,19 @@ pixel_factor_changed() {
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
 prepare_for_deletion() {
-  _active = false;
+  CDWriter cdata(_cycler, true);
+  cdata->_active = false;
+
+  // If we were rendering directly to texture, we can't delete the
+  // buffer until all the textures are gone too.
+  RenderTextures::iterator ri;
+  for (ri = cdata->_textures.begin(); ri != cdata->_textures.end(); ++ri) {
+    if ((*ri)._rtm_mode == RTM_bind_or_copy) {
+      _hold_textures.push_back((*ri)._texture);
+    }
+  }
+  cdata->_textures.clear();
+
   _delete_flag = true;
 
   // We have to be sure to remove all of the display regions
@@ -1342,18 +1482,35 @@ prepare_for_deletion() {
   // up (each display region keeps a pointer to a CullResult,
   // which can hold all sorts of pointers).
   remove_all_display_regions();
+}
 
-  // If we were rendering directly to texture, we can't delete the
-  // buffer until the texture is gone too.
-  for (int i=0; i<count_textures(); i++) {
-    if (get_rtm_mode(i) == RTM_bind_or_copy) {
-      _hold_textures.push_back(get_texture(i));
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::promote_to_copy_texture
+//       Access: Protected
+//  Description: If any textures are marked RTM_bind_or_copy, change
+//               them to RTM_copy_texture.
+////////////////////////////////////////////////////////////////////
+void GraphicsOutput::
+promote_to_copy_texture() {
+  CDLockedReader cdata(_cycler);
+  RenderTextures::const_iterator ri;
+
+  bool any_bind = false;
+  for (ri = cdata->_textures.begin(); ri != cdata->_textures.end(); ++ri) {
+    if ((*ri)._rtm_mode == RTM_bind_or_copy) {
+      any_bind = true;
+      break;
     }
   }
-
-  // We have to be sure to clear the _textures pointers, though, or
-  // we'll end up holding a reference to the textures forever.
-  clear_render_textures();
+  if (any_bind) {
+    CDWriter cdataw(((GraphicsOutput *)this)->_cycler, cdata, true);
+    RenderTextures::iterator ri;
+    for (ri = cdataw->_textures.begin(); ri != cdataw->_textures.end(); ++ri) {
+      if ((*ri)._rtm_mode == RTM_bind_or_copy) {
+        (*ri)._rtm_mode = RTM_copy_texture;
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1369,15 +1526,17 @@ prepare_for_deletion() {
 bool GraphicsOutput::
 copy_to_textures() {
   bool okflag = true;
-  for (int i = 0; i < count_textures(); ++i) {
-    RenderTextureMode rtm_mode = get_rtm_mode(i);
+
+  CDReader cdata(_cycler);
+  RenderTextures::const_iterator ri;
+  for (ri = cdata->_textures.begin(); ri != cdata->_textures.end(); ++ri) {
+    RenderTextureMode rtm_mode = (*ri)._rtm_mode;
     if ((rtm_mode == RTM_none) || (rtm_mode == RTM_bind_or_copy)) {
       continue;
     }
 
-    Texture *texture = get_texture(i);
+    Texture *texture = (*ri)._texture;
     PStatTimer timer(_copy_texture_pcollector);
-    nassertr(has_texture(), false);
 
     if ((rtm_mode == RTM_copy_texture)||
         (rtm_mode == RTM_copy_ram)||
@@ -1389,7 +1548,7 @@ copy_to_textures() {
         display_cat.debug()
           << "cube_map_index = " << _cube_map_index << "\n";
       }
-      int plane = get_texture_plane(i);
+      RenderTexturePlane plane = (*ri)._plane;
       RenderBuffer buffer(_gsg, DrawableRegion::get_renderbuffer_type(plane));
       if (plane == RTP_color) {
         buffer = _gsg->get_render_buffer(get_draw_buffer_type(),
@@ -1435,8 +1594,8 @@ copy_to_textures() {
 ////////////////////////////////////////////////////////////////////
 PT(GeomVertexData) GraphicsOutput::
 create_texture_card_vdata(int x, int y) {
-  float xhi = 1.0;
-  float yhi = 1.0;
+  PN_stdfloat xhi = 1.0;
+  PN_stdfloat yhi = 1.0;
 
   if (Texture::get_textures_power_2() != ATS_none) {
     int xru = Texture::up_to_power_2(x);
@@ -1454,20 +1613,20 @@ create_texture_card_vdata(int x, int y) {
   GeomVertexWriter texcoord(vdata, InternalName::get_texcoord());
   GeomVertexWriter normal(vdata, InternalName::get_normal());
 
-  vertex.add_data3f(Vertexf::rfu(-1.0f, 0.0f,  1.0f));
-  vertex.add_data3f(Vertexf::rfu(-1.0f, 0.0f, -1.0f));
-  vertex.add_data3f(Vertexf::rfu( 1.0f, 0.0f,  1.0f));
-  vertex.add_data3f(Vertexf::rfu( 1.0f, 0.0f, -1.0f));
+  vertex.add_data3(LVertex::rfu(-1.0f, 0.0f,  1.0f));
+  vertex.add_data3(LVertex::rfu(-1.0f, 0.0f, -1.0f));
+  vertex.add_data3(LVertex::rfu( 1.0f, 0.0f,  1.0f));
+  vertex.add_data3(LVertex::rfu( 1.0f, 0.0f, -1.0f));
 
-  texcoord.add_data2f( 0.0f,  yhi);
-  texcoord.add_data2f( 0.0f, 0.0f);
-  texcoord.add_data2f(  xhi,  yhi);
-  texcoord.add_data2f(  xhi, 0.0f);
+  texcoord.add_data2( 0.0f,  yhi);
+  texcoord.add_data2( 0.0f, 0.0f);
+  texcoord.add_data2(  xhi,  yhi);
+  texcoord.add_data2(  xhi, 0.0f);
 
-  normal.add_data3f(LVector3f::back());
-  normal.add_data3f(LVector3f::back());
-  normal.add_data3f(LVector3f::back());
-  normal.add_data3f(LVector3f::back());
+  normal.add_data3(LVector3::back());
+  normal.add_data3(LVector3::back());
+  normal.add_data3(LVector3::back());
+  normal.add_data3(LVector3::back());
 
   return vdata;
 }
@@ -1475,14 +1634,16 @@ create_texture_card_vdata(int x, int y) {
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsOutput::add_display_region
 //       Access: Private
-//  Description: Called by one of the make_display_region() methods to
+//  Description: Called by the DisplayRegion constructor to
 //               add the new DisplayRegion to the list.
 ////////////////////////////////////////////////////////////////////
 DisplayRegion *GraphicsOutput::
 add_display_region(DisplayRegion *display_region) {
   LightMutexHolder holder(_lock);
+  CDWriter cdata(_cycler, true);
+  cdata->_active_display_regions_stale = true;
+  
   _total_display_regions.push_back(display_region);
-  _display_regions_stale = true;
 
   return display_region;
 }
@@ -1502,12 +1663,12 @@ do_remove_display_region(DisplayRegion *display_region) {
     find(_total_display_regions.begin(), _total_display_regions.end(), drp);
   if (dri != _total_display_regions.end()) {
     // Let's aggressively clean up the display region too.
+    CDWriter cdata(_cycler, true);
     display_region->cleanup();
     display_region->_window = NULL;
     _total_display_regions.erase(dri);
-    if (display_region->is_active()) {
-      _display_regions_stale = true;
-    }
+
+    cdata->_active_display_regions_stale = true;
 
     return true;
   }
@@ -1522,12 +1683,11 @@ do_remove_display_region(DisplayRegion *display_region) {
 //               the window.
 ////////////////////////////////////////////////////////////////////
 void GraphicsOutput::
-do_determine_display_regions() {
-  LightMutexHolder holder(_lock);
-  _display_regions_stale = false;
+do_determine_display_regions(GraphicsOutput::CData *cdata) {
+  cdata->_active_display_regions_stale = false;
 
-  _active_display_regions.clear();
-  _active_display_regions.reserve(_total_display_regions.size());
+  cdata->_active_display_regions.clear();
+  cdata->_active_display_regions.reserve(_total_display_regions.size());
 
   int index = 0;
   TotalDisplayRegions::const_iterator dri;
@@ -1536,7 +1696,7 @@ do_determine_display_regions() {
        ++dri) {
     DisplayRegion *display_region = (*dri);
     if (display_region->is_active()) {
-      _active_display_regions.push_back(display_region);
+      cdata->_active_display_regions.push_back(display_region);
       display_region->set_active_index(index);
       ++index;
     } else {
@@ -1544,7 +1704,7 @@ do_determine_display_regions() {
     }
   }
 
-  stable_sort(_active_display_regions.begin(), _active_display_regions.end(), IndirectLess<DisplayRegion>());
+  stable_sort(cdata->_active_display_regions.begin(), cdata->_active_display_regions.end(), IndirectLess<DisplayRegion>());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1595,6 +1755,46 @@ parse_color_mask(const string &word) {
   }
 
   return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::CData::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+GraphicsOutput::CData::
+CData() {
+  // The default is *not* active, so the entire pipeline stage is
+  // initially populated with inactive outputs.  Pipeline stage 0 is
+  // set to active in the constructor.
+  _active = false;
+  _one_shot_frame = -1;
+  _active_display_regions_stale = false;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::CData::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+GraphicsOutput::CData::
+CData(const GraphicsOutput::CData &copy) :
+  _textures(copy._textures),
+  _active(copy._active),
+  _one_shot_frame(copy._one_shot_frame),
+  _active_display_regions(copy._active_display_regions),
+  _active_display_regions_stale(copy._active_display_regions_stale)
+{
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::CData::make_copy
+//       Access: Public, Virtual
+//  Description:
+////////////////////////////////////////////////////////////////////
+CycleData *GraphicsOutput::CData::
+make_copy() const {
+  return new CData(*this);
 }
 
 ////////////////////////////////////////////////////////////////////

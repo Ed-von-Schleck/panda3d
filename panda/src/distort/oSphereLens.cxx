@@ -19,7 +19,7 @@ TypeHandle OSphereLens::_type_handle;
 
 // This is the focal-length constant for fisheye lenses.  See
 // fisheyeLens.cxx.
-static const float ospherical_k = 60.0f;
+static const PN_stdfloat ospherical_k = 60.0f;
 // focal_length = film_size * ospherical_k / fov;
 
 
@@ -34,7 +34,7 @@ make_copy() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: OSphereLens::extrude_impl
+//     Function: OSphereLens::do_extrude
 //       Access: Protected, Virtual
 //  Description: Given a 2-d point in the range (-1,1) in both
 //               dimensions, where (0,0) is the center of the
@@ -51,36 +51,38 @@ make_copy() const {
 //               otherwise.
 ////////////////////////////////////////////////////////////////////
 bool OSphereLens::
-extrude_impl(const LPoint3f &point2d, LPoint3f &near_point, LPoint3f &far_point) const {
+do_extrude(const Lens::CData *lens_cdata, 
+           const LPoint3 &point2d, LPoint3 &near_point, LPoint3 &far_point) const {
   // Undo the shifting from film offsets, etc.  This puts the point
   // into the range [-film_size/2, film_size/2] in x and y.
-  LPoint3f f = point2d * get_film_mat_inv();
+  LPoint3 f = point2d * do_get_film_mat_inv(lens_cdata);
 
-  float focal_length = get_focal_length();
-  float angle = f[0] * cylindrical_k / focal_length;
-  float sinAngle, cosAngle;
+  PN_stdfloat focal_length = do_get_focal_length(lens_cdata);
+  PN_stdfloat angle = f[0] * cylindrical_k / focal_length;
+  PN_stdfloat sinAngle, cosAngle;
   csincos(deg_2_rad(angle), &sinAngle, &cosAngle);
 
   // Define a unit vector that represents the vector corresponding to
   // this point.
-  LPoint3f v(sinAngle, cosAngle, 0.0f);
+  LPoint3 v(sinAngle, cosAngle, 0.0f);
 
-  near_point = (v * get_near());
-  far_point = (v * get_far());
-  near_point[2] = f[1] / focal_length;
-  far_point[2] = f[1] / focal_length;
+  near_point = (v * do_get_near(lens_cdata));
+  far_point = (v * do_get_far(lens_cdata));
+  near_point[2] = f[1];
+  far_point[2] = f[1];
 
   // And we'll need to account for the lens's rotations, etc. at the
   // end of the day.
-  const LMatrix4f &lens_mat = get_lens_mat();
+  const LMatrix4 &lens_mat = do_get_lens_mat(lens_cdata);
+  const LMatrix4 &proj_inv_mat = do_get_projection_mat_inv(lens_cdata);
 
-  near_point = near_point * lens_mat;
-  far_point = far_point * lens_mat;
+  near_point = near_point * proj_inv_mat * lens_mat;
+  far_point = far_point * proj_inv_mat * lens_mat;
   return true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: OSphereLens::project_impl
+//     Function: OSphereLens::do_project
 //       Access: Protected, Virtual
 //  Description: Given a 3-d point in space, determine the 2-d point
 //               this maps to, in the range (-1,1) in both dimensions,
@@ -97,38 +99,37 @@ extrude_impl(const LPoint3f &point2d, LPoint3f &near_point, LPoint3f &far_point)
 //               is filled in), or false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool OSphereLens::
-project_impl(const LPoint3f &point3d, LPoint3f &point2d) const {
+do_project(const Lens::CData *lens_cdata, const LPoint3 &point3d, LPoint3 &point2d) const {
   // First, account for any rotations, etc. on the lens.
-  LPoint3f p = point3d * get_lens_mat_inv();
-  float dist = p.length();
+  LPoint3 p = point3d * do_get_lens_mat_inv(lens_cdata) * do_get_projection_mat(lens_cdata);
+  PN_stdfloat dist = p.length();
   if (dist == 0.0f) {
     point2d.set(0.0f, 0.0f, 0.0f);
     return false;
   }
 
-  LPoint3f v3 = p / dist;
+  LPoint3 v3 = p / dist;
 
-  float focal_length = get_focal_length();
+  PN_stdfloat focal_length = do_get_focal_length(lens_cdata);
 
   // To compute the x position on the frame, we only need to consider
   // the angle of the vector about the Z axis.  Project the vector
   // into the XY plane to do this.
-  LVector2f xy(v3[0], v3[1]);
+  LVector2 xy(v3[0], v3[1]);
 
   point2d.set
     (
      // The x position is the angle about the Z axis.
      rad_2_deg(catan2(xy[0], xy[1])) * focal_length / ospherical_k,
      // The y position is the Z height.
-     // distance.
-     p[2] * focal_length,
+     p[2],
      // Z is the distance scaled into the range (1, -1).
-     (get_near() - dist) / (get_far() - get_near())
+     (do_get_near(lens_cdata) - dist) / (do_get_far(lens_cdata) - do_get_near(lens_cdata))
      );
 
   // Now we have to transform the point according to the film
   // adjustments.
-  point2d = point2d * get_film_mat();
+  point2d = point2d * do_get_film_mat(lens_cdata);
 
   return
     point2d[0] >= -1.0f && point2d[0] <= 1.0f && 
@@ -144,8 +145,8 @@ project_impl(const LPoint3f &point3d, LPoint3f &point2d) const {
 //               direction; otherwise, it is in the vertical direction
 //               (some lenses behave differently in each direction).
 ////////////////////////////////////////////////////////////////////
-float OSphereLens::
-fov_to_film(float fov, float focal_length, bool) const {
+PN_stdfloat OSphereLens::
+fov_to_film(PN_stdfloat fov, PN_stdfloat focal_length, bool) const {
   return focal_length * fov / ospherical_k;
 }
 
@@ -158,8 +159,8 @@ fov_to_film(float fov, float focal_length, bool) const {
 //               direction; otherwise, it is in the vertical direction
 //               (some lenses behave differently in each direction).
 ////////////////////////////////////////////////////////////////////
-float OSphereLens::
-fov_to_focal_length(float fov, float film_size, bool) const {
+PN_stdfloat OSphereLens::
+fov_to_focal_length(PN_stdfloat fov, PN_stdfloat film_size, bool) const {
   return film_size * ospherical_k / fov;
 }
 
@@ -172,7 +173,7 @@ fov_to_focal_length(float fov, float film_size, bool) const {
 //               otherwise, it is in the vertical direction (some
 //               lenses behave differently in each direction).
 ////////////////////////////////////////////////////////////////////
-float OSphereLens::
-film_to_fov(float film_size, float focal_length, bool) const {
+PN_stdfloat OSphereLens::
+film_to_fov(PN_stdfloat film_size, PN_stdfloat focal_length, bool) const {
   return film_size * ospherical_k / focal_length;
 }

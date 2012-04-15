@@ -1,15 +1,16 @@
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
-                   dtoolutil:c dtoolbase:c dtool:m prc:c
+#define OTHER_LIBS p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+                   p3dtoolutil:c p3dtoolbase:c p3dtool:m p3prc:c
 
 #begin lib_target
-  #define TARGET collide
+  #define TARGET p3collide
   #define LOCAL_LIBS \
-    tform gobj pgraph putil \
-    pstatclient
-    
-  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx    
+    p3tform p3gobj p3pgraph p3putil \
+    p3pstatclient
+
+  #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx
 
   #define SOURCES \
+    collisionBox.I collisionBox.h \
     collisionEntry.I collisionEntry.h \
     collisionGeom.I collisionGeom.h \
     collisionHandler.I collisionHandler.h  \
@@ -21,7 +22,6 @@
     collisionHandlerPusher.I collisionHandlerPusher.h  \
     collisionHandlerFluidPusher.I collisionHandlerFluidPusher.h  \
     collisionHandlerQueue.h \
-    collisionDSSolid.I collisionDSSolid.h \
     collisionInvSphere.I collisionInvSphere.h \
     collisionLine.I collisionLine.h \
     collisionLevelStateBase.I collisionLevelStateBase.h \
@@ -36,13 +36,13 @@
     collisionSegment.I collisionSegment.h  \
     collisionSolid.I collisionSolid.h \
     collisionSphere.I collisionSphere.h \
-    collisionBox.I collisionBox.h \
     collisionTraverser.I collisionTraverser.h  \
     collisionTube.I collisionTube.h \
     collisionVisualizer.I collisionVisualizer.h \
     config_collide.h
-    
+
  #define INCLUDED_SOURCES \
+    collisionBox.cxx \
     collisionEntry.cxx \
     collisionGeom.cxx \
     collisionHandler.cxx \
@@ -56,7 +56,6 @@
     collisionHandlerQueue.cxx  \
     collisionLevelStateBase.cxx \
     collisionLevelState.cxx \
-    collisionDSSolid.cxx \
     collisionInvSphere.cxx  \
     collisionLine.cxx \
     collisionNode.cxx \
@@ -69,13 +68,13 @@
     collisionSegment.cxx  \
     collisionSolid.cxx \
     collisionSphere.cxx  \
-    collisionBox.cxx  \
     collisionTraverser.cxx \
-    collisionTube.cxx  \
+    collisionTube.cxx \
     collisionVisualizer.cxx \
-    config_collide.cxx 
+    config_collide.cxx
 
   #define INSTALL_HEADERS \
+    collisionBox.I collisionBox.h \
     collisionEntry.I collisionEntry.h \
     collisionGeom.I collisionGeom.h \
     collisionHandler.I collisionHandler.h \
@@ -87,7 +86,6 @@
     collisionHandlerPusher.I collisionHandlerPusher.h \
     collisionHandlerFluidPusher.I collisionHandlerFluidPusher.h \
     collisionHandlerQueue.h \
-    collisionDSSolid.I collisionDSSolid.h \
     collisionInvSphere.I collisionInvSphere.h \
     collisionLevelStateBase.I collisionLevelStateBase.h \
     collisionLevelState.I collisionLevelState.h \
@@ -102,7 +100,6 @@
     collisionSegment.I collisionSegment.h \
     collisionSolid.I collisionSolid.h \
     collisionSphere.I collisionSphere.h \
-    collisionBox.I collisionBox.h \
     collisionTraverser.I collisionTraverser.h \
     collisionTube.I collisionTube.h \
     collisionVisualizer.I collisionVisualizer.h \
@@ -116,11 +113,10 @@
 #begin test_bin_target
   #define TARGET test_collide
   #define LOCAL_LIBS \
-    collide
-  #define OTHER_LIBS $[OTHER_LIBS] pystub
+    p3collide
+  #define OTHER_LIBS $[OTHER_LIBS] p3pystub
 
   #define SOURCES \
     test_collide.cxx
 
 #end test_bin_target
-

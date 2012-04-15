@@ -55,9 +55,9 @@ VertexTransform::
 //               previous.
 ////////////////////////////////////////////////////////////////////
 void VertexTransform::
-mult_matrix(LMatrix4f &result, const LMatrix4f &previous) const {
+mult_matrix(LMatrix4 &result, const LMatrix4 &previous) const {
   nassertv(&result != &previous);
-  LMatrix4f me;
+  LMatrix4 me;
   get_matrix(me);
   result.multiply(me, previous);
 }
@@ -71,29 +71,10 @@ mult_matrix(LMatrix4f &result, const LMatrix4f &previous) const {
 //               result of several blended transforms.
 ////////////////////////////////////////////////////////////////////
 void VertexTransform::
-accumulate_matrix(LMatrix4f &accum, float weight) const {
-  LMatrix4f me;
+accumulate_matrix(LMatrix4 &accum, PN_stdfloat weight) const {
+  LMatrix4 me;
   get_matrix(me);
-  
-  accum._m.m._00 += me._m.m._00 * weight;
-  accum._m.m._01 += me._m.m._01 * weight;
-  accum._m.m._02 += me._m.m._02 * weight;
-  accum._m.m._03 += me._m.m._03 * weight;
-  
-  accum._m.m._10 += me._m.m._10 * weight;
-  accum._m.m._11 += me._m.m._11 * weight;
-  accum._m.m._12 += me._m.m._12 * weight;
-  accum._m.m._13 += me._m.m._13 * weight;
-  
-  accum._m.m._20 += me._m.m._20 * weight;
-  accum._m.m._21 += me._m.m._21 * weight;
-  accum._m.m._22 += me._m.m._22 * weight;
-  accum._m.m._23 += me._m.m._23 * weight;
-  
-  accum._m.m._30 += me._m.m._30 * weight;
-  accum._m.m._31 += me._m.m._31 * weight;
-  accum._m.m._32 += me._m.m._32 * weight;
-  accum._m.m._33 += me._m.m._33 * weight;
+  accum.accumulate(me, weight);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -115,7 +96,7 @@ void VertexTransform::
 write(ostream &out, int indent_level) const {
   indent(out, indent_level) 
     << *this << ":\n";
-  LMatrix4f mat;
+  LMatrix4 mat;
   get_matrix(mat);
   mat.write(out, indent_level + 2);
 }

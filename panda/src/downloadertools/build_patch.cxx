@@ -13,11 +13,8 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "pandabase.h"
-#ifndef HAVE_GETOPT
-  #include "gnu_getopt.h"
-#else
-  #include <getopt.h>
-#endif
+#include "panda_getopt.h"
+#include "preprocess_argv.h"
 #include "patchfile.h"
 #include "filename.h"
 
@@ -55,7 +52,7 @@ help() {
 }
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
   Filename patch_file;
   bool complete_file = false;
   int footprint_length = 0;
@@ -63,6 +60,7 @@ main(int argc, char *argv[]) {
   //  extern char *optarg;
   extern int optind;
   static const char *optflags = "o:cf:h";
+  preprocess_argv(argc, argv);
   int flag = getopt(argc, argv, optflags);
   Filename rel_path;
   while (flag != EOF) {

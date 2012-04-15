@@ -143,8 +143,11 @@ private:
                           bool &any_hidden);
   PT(GeomVertexData) make_vertex_data
   (const EggRenderState *render_state, EggVertexPool *vertex_pool, 
-   EggNode *primitive_home, const LMatrix4d &transform, bool is_dynamic, 
-   CharacterMaker *character_maker, bool ignore_color);
+   EggNode *primitive_home, const LMatrix4d &transform, TransformBlendTable *blend_table,
+   bool is_dynamic, CharacterMaker *character_maker, bool ignore_color);
+  PT(TransformBlendTable) make_blend_table
+  (EggVertexPool *vertex_bool, EggNode *primitive_home,
+   CharacterMaker *character_maker);
   void record_morph
   (GeomVertexArrayFormat *array_format,
    CharacterMaker *character_maker, const string &morph_name, 
@@ -154,14 +157,14 @@ private:
                       EggPrimitive *egg_prim, 
                       UniquePrimitives &unique_primitives,
                       Primitives &primitives,
-                      bool has_overall_color, const Colorf &overall_color);
+                      bool has_overall_color, const LColor &overall_color);
 
   void set_portal_polygon(EggGroup *egg_group, PortalNode *pnode);
   void set_occluder_polygon(EggGroup *egg_group, OccluderNode *pnode);
   PT(EggPolygon) find_first_polygon(EggGroup *egg_group);
 
   bool make_sphere(EggGroup *start_group, EggGroup::CollideFlags flags,
-                   LPoint3f &center, float &radius, Colorf &color);
+                   LPoint3 &center, PN_stdfloat &radius, LColor &color);
 
   void make_collision_solids(EggGroup *start_group, EggGroup *egg_group,
                              CollisionNode *cnode);
@@ -243,7 +246,7 @@ private:
   typedef pmap<VertexPoolTransform, PT(GeomVertexData) > VertexPoolData;
   VertexPoolData _vertex_pool_data;
 
-  typedef pmap<LMatrix4f, CPT(TransformState) > TransformStates;
+  typedef pmap<LMatrix4, CPT(TransformState) > TransformStates;
   TransformStates _transform_states;
 
   DeferredNodes _deferred_nodes;

@@ -23,7 +23,7 @@ TypeHandle MouseAndKeyboard::_type_handle;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MouseAndKeyboard::Constructor
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 MouseAndKeyboard::
@@ -38,15 +38,15 @@ MouseAndKeyboard(GraphicsWindow *window, int device, const string &name) :
   _button_events_output = define_output("button_events", ButtonEventList::get_class_type());
   _pointer_events_output = define_output("pointer_events", PointerEventList::get_class_type());
 
-  _pixel_xy = new EventStoreVec2(LPoint2f(0.0f, 0.0f));
-  _pixel_size = new EventStoreVec2(LPoint2f(0.0f, 0.0f));
-  _xy = new EventStoreVec2(LPoint2f(0.0f, 0.0f));
+  _pixel_xy = new EventStoreVec2(LPoint2(0.0f, 0.0f));
+  _pixel_size = new EventStoreVec2(LPoint2(0.0f, 0.0f));
+  _xy = new EventStoreVec2(LPoint2(0.0f, 0.0f));
   _button_events = new ButtonEventList;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MouseAndKeyboard::set_source
-//       Access: Public
+//       Access: Published
 //  Description: Redirects the class to get the data from the mouse
 //               and keyboard associated with a different window
 //               and/or device number.
@@ -59,7 +59,7 @@ set_source(GraphicsWindow *window, int device) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MouseAndKeyboard::get_source_window
-//       Access: Public
+//       Access: Published
 //  Description: Returns the associated source window.
 ////////////////////////////////////////////////////////////////////
 PT(GraphicsWindow) MouseAndKeyboard::
@@ -69,7 +69,7 @@ get_source_window() const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: MouseAndKeyboard::get_source_device
-//       Access: Public
+//       Access: Published
 //  Description: Returns the associated source device.
 ////////////////////////////////////////////////////////////////////
 int MouseAndKeyboard::
@@ -113,7 +113,7 @@ do_transmit_data(DataGraphTraverser *, const DataNodeTransmit &,
     int w = properties.get_x_size();
     int h = properties.get_y_size();
 
-    _pixel_size->set_value(LPoint2f(w, h));
+    _pixel_size->set_value(LPoint2(w, h));
     output.set_data(_pixel_size_output, EventParameter(_pixel_size));
 
     if (_window->has_pointer(_device)) {
@@ -121,14 +121,14 @@ do_transmit_data(DataGraphTraverser *, const DataNodeTransmit &,
 
       if (mdata._in_window) {
         // Get mouse motion in pixels.
-        _pixel_xy->set_value(LPoint2f(mdata._xpos, mdata._ypos));
+        _pixel_xy->set_value(LPoint2(mdata._xpos, mdata._ypos));
         output.set_data(_pixel_xy_output, EventParameter(_pixel_xy));
         
         // Normalize pixel motion to range [-1,1].
-        float xf = (float)(2 * mdata._xpos) / (float)w - 1.0f;
-        float yf = 1.0f - (float)(2 * mdata._ypos) / (float)h;
+        PN_stdfloat xf = (PN_stdfloat)(2 * mdata._xpos) / (PN_stdfloat)w - 1.0f;
+        PN_stdfloat yf = 1.0f - (PN_stdfloat)(2 * mdata._ypos) / (PN_stdfloat)h;
         
-        _xy->set_value(LPoint2f(xf, yf));
+        _xy->set_value(LPoint2(xf, yf));
         output.set_data(_xy_output, EventParameter(_xy));
       }
     }

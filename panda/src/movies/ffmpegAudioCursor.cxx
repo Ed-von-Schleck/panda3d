@@ -12,15 +12,21 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+#include "ffmpegAudioCursor.h"
+
 #ifdef HAVE_FFMPEG
 
-#include "ffmpegAudioCursor.h"
+#include "ffmpegAudio.h"
 extern "C" {
   #include "libavcodec/avcodec.h"
   #include "libavformat/avformat.h"
 }
 
 TypeHandle FfmpegAudioCursor::_type_handle;
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+  #define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
+#endif
 
 ////////////////////////////////////////////////////////////////////
 //     Function: FfmpegAudioCursor::Constructor
@@ -38,12 +44,13 @@ FfmpegAudioCursor(FfmpegAudio *src) :
   _buffer(0),
   _buffer_alloc(0)
 {
-  string url = "pandavfs:";
-  url += _filename;
-  if (av_open_input_file(&_format_ctx, url.c_str(), NULL, 0, NULL)!=0) {
+  if (!_ffvfile.open_vfs(_filename)) {
     cleanup();
     return;
   }
+
+  _format_ctx = _ffvfile.get_format_context();
+  nassertv(_format_ctx != NULL);
 
   if (av_find_stream_info(_format_ctx)<0) {
     cleanup();
@@ -51,8 +58,8 @@ FfmpegAudioCursor(FfmpegAudio *src) :
   }
 
   // Find the audio stream
-  for(int i=0; i<_format_ctx->nb_streams; i++) {
-    if(_format_ctx->streams[i]->codec->codec_type==CODEC_TYPE_AUDIO) {
+  for(int i = 0; i < (int)_format_ctx->nb_streams; i++) {
+    if(_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
       _audio_index = i;
       _audio_ctx = _format_ctx->streams[i]->codec;
       _audio_timebase = av_q2d(_format_ctx->streams[i]->time_base);
@@ -126,22 +133,25 @@ cleanup() {
       av_free_packet(_packet);
     }
     delete _packet;
-    _packet = 0;
+    _packet = NULL;
   }
+
   if (_buffer_alloc) {
     delete[] _buffer_alloc;
     _buffer_alloc = 0;
-    _buffer = 0;
+    _buffer = NULL;
   }
+
   if ((_audio_ctx)&&(_audio_ctx->codec)) {
     avcodec_close(_audio_ctx);
   }
-  _audio_ctx = 0;
+  _audio_ctx = NULL;
+
   if (_format_ctx) {
-    av_close_input_file(_format_ctx);
-    _format_ctx = 0;
+    _ffvfile.close();
+    _format_ctx = NULL;
   }
-  _audio_ctx = 0;
+
   _audio_index = -1;
 }
 

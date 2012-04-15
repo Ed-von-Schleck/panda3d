@@ -18,7 +18,13 @@
 //  Description: Constructs an empty datagram.
 ////////////////////////////////////////////////////////////////////
 INLINE Datagram::
-Datagram() {
+Datagram() :
+#ifdef STDFLOAT_DOUBLE
+  _stdfloat_double(true)
+#else
+  _stdfloat_double(false)
+#endif
+{
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -27,7 +33,13 @@ Datagram() {
 //  Description: Constructs a datagram from an existing block of data.
 ////////////////////////////////////////////////////////////////////
 INLINE Datagram::
-Datagram(const void *data, size_t size) {
+Datagram(const void *data, size_t size) :
+#ifdef STDFLOAT_DOUBLE
+  _stdfloat_double(true)
+#else
+  _stdfloat_double(false)
+#endif
+{
   append_data(data, size);
 }
 
@@ -37,7 +49,13 @@ Datagram(const void *data, size_t size) {
 //  Description: Constructs a datagram from an existing block of data.
 ////////////////////////////////////////////////////////////////////
 INLINE Datagram::
-Datagram(const string &data) {
+Datagram(const string &data) :
+#ifdef STDFLOAT_DOUBLE
+  _stdfloat_double(true)
+#else
+  _stdfloat_double(false)
+#endif
+{
   append_data(data);
 }
 
@@ -48,7 +66,8 @@ Datagram(const string &data) {
 ////////////////////////////////////////////////////////////////////
 INLINE Datagram::
 Datagram(const Datagram &copy) :
-  _data(copy._data)
+  _data(copy._data),
+  _stdfloat_double(copy._stdfloat_double)
 {
 }
 
@@ -60,6 +79,7 @@ Datagram(const Datagram &copy) :
 INLINE void Datagram::
 operator = (const Datagram &copy) {
   _data = copy._data;
+  _stdfloat_double = copy._stdfloat_double;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -167,11 +187,7 @@ add_uint64(PN_uint64 value) {
 //               special care is required.
 ////////////////////////////////////////////////////////////////////
 INLINE void Datagram::
-add_float32(float value) {
-  // For now, we assume the float format is portable across all
-  // architectures we are concerned with.  If we come across one that
-  // is different, we will have to convert.
-  nassertv(sizeof(value) == 4);
+add_float32(PN_float32 value) {
   LittleEndian s(&value, sizeof(value));
   append_data(s.get_data(), sizeof(value));
 }
@@ -185,6 +201,21 @@ INLINE void Datagram::
 add_float64(PN_float64 value) {
   LittleEndian s(&value, sizeof(value));
   append_data(s.get_data(), sizeof(value));
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Datagram::add_stdfloat
+//       Access: Public
+//  Description: Adds either a 32-bit or a 64-bit floating-point
+//               number, according to set_stdfloat_double().
+////////////////////////////////////////////////////////////////////
+INLINE void Datagram::
+add_stdfloat(PN_stdfloat value) {
+  if (_stdfloat_double) {
+    add_float64(value);
+  } else {
+    add_float32(value);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -263,16 +294,10 @@ add_be_uint64(PN_uint64 value) {
 //     Function: Datagram::add_be_float32
 //       Access: Public
 //  Description: Adds a 32-bit single-precision big-endian
-//               floating-point number to the datagram.  Since this
-//               kind of float is not necessarily portable across
-//               different architectures, special care is required.
+//               floating-point number to the datagram.
 ////////////////////////////////////////////////////////////////////
 INLINE void Datagram::
-add_be_float32(float value) {
-  // For now, we assume the float format is portable across all
-  // architectures we are concerned with.  If we come across one that
-  // is different, we will have to convert.
-  nassertv(sizeof(value) == 4);
+add_be_float32(PN_float32 value) {
   BigEndian s(&value, sizeof(value));
   append_data(s.get_data(), sizeof(value));
 }
@@ -454,6 +479,33 @@ get_array() const {
 INLINE PTA_uchar Datagram::
 modify_array() {
   return _data;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Datagram::set_stdfloat_double
+//       Access: Public
+//  Description: Changes the stdfloat_double flag, which defines the
+//               operation performed by add_stdfloat() and
+//               DatagramIterator::get_stdfloat().  When this is true,
+//               add_stdfloat() adds a 64-bit floating-point number;
+//               when it is false, it adds a 32-bit floating-point
+//               number.  The default is based on the STDFLOAT_DOUBLE
+//               compilation flag.
+////////////////////////////////////////////////////////////////////
+INLINE void Datagram::
+set_stdfloat_double(bool stdfloat_double) {
+  _stdfloat_double = stdfloat_double;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Datagram::get_stdfloat_double
+//       Access: Public
+//  Description: Returns the stdfloat_double flag.  See
+//               set_stdfloat_double().
+////////////////////////////////////////////////////////////////////
+INLINE bool Datagram::
+get_stdfloat_double() const {
+  return _stdfloat_double;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -94,7 +94,7 @@
 #endif
 #define _WIN32_WINNT 0x0502
 
-#if defined(PHAVE_STDINT_H) && defined(__cplusplus)
+#ifdef __cplusplus
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
 #endif
@@ -107,6 +107,11 @@
 #undef _POSIX_C_SOURCE
 #undef _XOPEN_SOURCE
 #include "pyconfig.h"
+#endif
+
+#ifndef HAVE_EIGEN
+// If we don't have the Eigen library, don't define LINMATH_ALIGN.
+#undef LINMATH_ALIGN
 #endif
 
 #include "dtoolsymbols.h"
@@ -312,6 +317,74 @@
 #define NATIVE_WORDSIZE 32
 #endif
 
+/* Some byte-alignment macros. */
+#ifdef CPPPARSER
+#define ALIGN_4BYTE
+#define ALIGN_8BYTE
+#define ALIGN_16BYTE
+#elif defined(WIN32_VC)
+#define ALIGN_4BYTE __declspec(align(4))
+#define ALIGN_8BYTE __declspec(align(8))
+#define ALIGN_16BYTE __declspec(align(16))
+#elif defined(__GNUC__)
+#define ALIGN_4BYTE __attribute__ ((aligned (4)))
+#define ALIGN_8BYTE __attribute__ ((aligned (8)))
+#define ALIGN_16BYTE __attribute__ ((aligned (16)))
+#else
+#define ALIGN_4BYTE
+#define ALIGN_8BYTE
+#define ALIGN_16BYTE
+#endif
+
+// Do we need to implement memory-alignment enforcement within the
+// MemoryHook class, or will the underlying malloc implementation
+// provide it automatically?
+#if !defined(LINMATH_ALIGN)
+// We don't actually require any special memory-alignment beyond what
+// the underlying implementation is likely to provide anyway.
+#undef MEMORY_HOOK_DO_ALIGN
+
+#elif defined(USE_MEMORY_DLMALLOC)
+// This specialized malloc implementation can perform the required
+// alignment.
+#undef MEMORY_HOOK_DO_ALIGN
+
+#elif defined(USE_MEMORY_PTMALLOC2)
+// But not this one.  For some reason it crashes when we try to build
+// it with alignment 16.  So if we're using ptmalloc2, we need to
+// enforce alignment externally.
+#define MEMORY_HOOK_DO_ALIGN 1
+
+#elif defined(IS_OSX) || defined(_WIN64)
+// The OS-provided malloc implementation will do the required
+// alignment.
+#undef MEMORY_HOOK_DO_ALIGN
+
+#elif defined(MEMORY_HOOK_DO_ALIGN)
+// We need memory alignment, and we're willing to provide it ourselves.
+
+#else
+// We need memory alignment, and we haven't specified whether it
+// should be provided on top of the existing malloc library, or
+// otherwise.  Let's rely on dlmalloc to provide it, it seems to be
+// the most memory-efficient option.
+#define USE_MEMORY_DLMALLOC 1
+
+#endif
+
+/* Determine our memory-allocation requirements. */
+#if defined(USE_MEMORY_PTMALLOC2) || defined(USE_MEMORY_DLMALLOC) || defined(DO_MEMORY_USAGE) || defined(MEMORY_HOOK_DO_ALIGN)
+/* In this case we have some custom memory management requirements. */
+#else 
+/* Otherwise, if we have no custom memory management needs at all, we
+   might as well turn it all off and go straight to the OS-level
+   calls. */
+#define USE_MEMORY_NOWRAPPERS 1
+#endif
+
+/* We must always use the STL allocator nowadays, because we have
+   redefined the constructors for pvector, pmap, etc. */
+#define USE_STL_ALLOCATOR 1
 
 /*
  We define the macros BEGIN_PUBLISH and END_PUBLISH to bracket

@@ -34,7 +34,7 @@ class MObject;
 ////////////////////////////////////////////////////////////////////
 class MayaShader : public Namable {
 public:
-  MayaShader(MObject engine, bool texture_copy, Filename tout_dir, bool legacy_shader);
+  MayaShader(MObject engine, bool legacy_shader);
   ~MayaShader();
 
   void output(ostream &out) const;
@@ -52,7 +52,7 @@ public:
 
 public: // relevant only to modern mode.
 
-  Colord _flat_color;
+  LColord _flat_color;
   
   MayaShaderColorList _color_maps;
   MayaShaderColorList _trans_maps;
@@ -69,13 +69,11 @@ private:
                 MayaShaderColorDef *map2,
                 bool perfect);
   string get_file_prefix(const string &fn);
-  bool _texture_copy;
-  Filename _texture_out_dir;
   bool _legacy_shader;
 public: // relevant only to legacy mode.
   MayaShaderColorList _color;
   MayaShaderColorDef  _transparency;
-  Colorf get_rgba(size_t idx=0) const;
+  LColor get_rgba(size_t idx=0) const;
   MayaShaderColorDef *get_color_def(size_t idx=0) const;
 };
 

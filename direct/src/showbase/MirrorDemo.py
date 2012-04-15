@@ -26,10 +26,12 @@ reflections, you will need to use a sphere map or a cube map."""
 from pandac.PandaModules import *
 from direct.task import Task
 
-def setupMirror(name, width, height):
+def setupMirror(name, width, height, rootCamera = None):
     # The return value is a NodePath that contains a rectangle that
     # reflects render.  You can reparent, reposition, and rotate it
     # anywhere you like.
+    if rootCamera is None:
+        rootCamera = base.camera
 
     root = render.attachNewNode(name)
 
@@ -67,9 +69,10 @@ def setupMirror(name, width, height):
     # camera to reverse the direction of its face culling.  We also
     # tell it not to draw (that is, to clip) anything behind the
     # mirror plane.
-    camera.setInitialState(RenderState.make(
-        CullFaceAttrib.makeReverse(),
-        ClipPlaneAttrib.make(ClipPlaneAttrib.OAdd, planeNode)))
+    dummy = NodePath('dummy')
+    dummy.setAttrib(CullFaceAttrib.makeReverse())
+    dummy.setClipPlane(planeNP)
+    camera.setInitialState(dummy.getState())
 
     # Create a visible representation of the camera so we can see it.
     #cameraVis = loader.loadModel('camera.egg')
@@ -80,9 +83,9 @@ def setupMirror(name, width, height):
     # mirror.
     def moveCamera(task, cameraNP = cameraNP, plane = plane,
                    planeNP = planeNP, card = card, lens = lens,
-                   width = width, height = height):
+                   width = width, height = height, rootCamera = rootCamera):
         # Set the camera to the mirror-image position of the main camera.
-        cameraNP.setMat(base.camera.getMat(planeNP) * plane.getReflectionMat())
+        cameraNP.setMat(rootCamera.getMat(planeNP) * plane.getReflectionMat())
 
         # And reset the frustum to exactly frame the mirror's corners.
         # This is a minor detail, but it helps to provide a realistic

@@ -12,16 +12,15 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-
-#include "collisionDSSolid.h"
 #include "collisionBox.h"
 #include "collisionLine.h"
 #include "collisionRay.h"
+#include "collisionSphere.h"
 #include "collisionSegment.h"
 #include "collisionHandler.h"
 #include "collisionEntry.h"
 #include "config_collide.h"
-#include "boundingBox.h"
+#include "boundingSphere.h"
 #include "datagram.h"
 #include "datagramIterator.h"
 #include "bamReader.h"
@@ -30,17 +29,15 @@
 #include "cmath.h"
 #include "mathNumbers.h"
 #include "geom.h"
-#include "geomTristrips.h"
+#include "geomTrifans.h"
 #include "geomVertexWriter.h"
 #include "config_mathutil.h"
 #include "dcast.h"
 
 #include <math.h>
 
-PStatCollector CollisionBox::_volume_pcollector(
-  "Collision Volumes:CollisionBox");
-PStatCollector CollisionBox::_test_pcollector(
-  "Collision Tests:CollisionBox");
+PStatCollector CollisionBox::_volume_pcollector("Collision Volumes:CollisionBox");
+PStatCollector CollisionBox::_test_pcollector("Collision Tests:CollisionBox");
 TypeHandle CollisionBox::_type_handle;
 
 const int CollisionBox::plane_def[6][4] = {
@@ -70,13 +67,13 @@ make_copy() {
 void CollisionBox::
 setup_box(){
   for(int plane = 0; plane < 6; plane++) {
-    LPoint3f array[4];
+    LPoint3 array[4];
     array[0] = get_point(plane_def[plane][0]);
     array[1] = get_point(plane_def[plane][1]);
     array[2] = get_point(plane_def[plane][2]);
     array[3] = get_point(plane_def[plane][3]);
     setup_points(array, array+4, plane);
-	}
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -86,7 +83,7 @@ setup_box(){
 //               make up this side          
 ////////////////////////////////////////////////////////////////////
 void CollisionBox::
-setup_points(const LPoint3f *begin, const LPoint3f *end, int plane) {
+setup_points(const LPoint3 *begin, const LPoint3 *end, int plane) {
   int num_points = end - begin;
   nassertv(num_points >= 3);
 
@@ -94,7 +91,7 @@ setup_points(const LPoint3f *begin, const LPoint3f *end, int plane) {
 
   // Construct a matrix that rotates the points from the (X,0,Z) plane
   // into the 3-d plane.
-  LMatrix4f to_3d_mat;
+  LMatrix4 to_3d_mat;
   calc_to_3d_mat(to_3d_mat, plane);
 
   // And the inverse matrix rotates points from 3-d space into the 2-d
@@ -103,9 +100,9 @@ setup_points(const LPoint3f *begin, const LPoint3f *end, int plane) {
 
   // Now project all of the points onto the 2-d plane.
 
-  const LPoint3f *pi;
+  const LPoint3 *pi;
   for (pi = begin; pi != end; ++pi) {
-    LPoint3f point = (*pi) * _to_2d_mat[plane];
+    LPoint3 point = (*pi) * _to_2d_mat[plane];
     _points[plane].push_back(PointDef(point[0], point[2]));
   }
 
@@ -115,14 +112,14 @@ setup_points(const LPoint3f *begin, const LPoint3f *end, int plane) {
   /*
   // Now make sure the points define a convex polygon.
   if (is_concave()) {
-    collide_cat.error() << "Invalid concave CollisionPolygon defined:\n";
-    const LPoint3f *pi;
-    for (pi = begin; pi != end; ++pi) {
-      collide_cat.error(false) << "  " << (*pi) << "\n";
-    }
-    collide_cat.error(false)
-      << "  normal " << normal << " with length " << normal.length() << "\n";
-    _points.clear();
+  collide_cat.error() << "Invalid concave CollisionPolygon defined:\n";
+  const LPoint3 *pi;
+  for (pi = begin; pi != end; ++pi) {
+  collide_cat.error(false) << "  " << (*pi) << "\n";
+  }
+  collide_cat.error(false)
+  << "  normal " << normal << " with length " << normal.length() << "\n";
+  _points.clear();
   }
   */
 #endif
@@ -146,12 +143,12 @@ test_intersection(const CollisionEntry &entry) const {
 //  Description: Transforms the solid by the indicated matrix.
 ////////////////////////////////////////////////////////////////////
 void CollisionBox::
-xform(const LMatrix4f &mat) {
+xform(const LMatrix4 &mat) {
   _center = _center * mat;
   for(int v = 0; v < 8; v++)
-	   _vertex[v] = _vertex[v] * mat;
+    _vertex[v] = _vertex[v] * mat;
   for(int p = 0; p < 6 ; p++)
-	   _planes[p] = set_plane(p);
+    _planes[p] = set_plane(p);
   _x = _vertex[0].get_x()-_center.get_x(); 
   _y = _vertex[0].get_y()-_center.get_y();
   _z = _vertex[0].get_z()-_center.get_z();
@@ -169,9 +166,9 @@ xform(const LMatrix4f &mat) {
 //               intersection point to this origin point is considered
 //               to be the most significant.
 ////////////////////////////////////////////////////////////////////
-LPoint3f CollisionBox::
+LPoint3 CollisionBox::
 get_collision_origin() const {
-	return _center;
+  return _center;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -179,7 +176,7 @@ get_collision_origin() const {
 //       Access: Public, Virtual
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-LPoint3f CollisionBox::
+LPoint3 CollisionBox::
 get_min() const {
   return _min;
 }
@@ -189,7 +186,7 @@ get_min() const {
 //       Access: Public, Virtual
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-LPoint3f CollisionBox::
+LPoint3 CollisionBox::
 get_max() const {
   return _max;
 }
@@ -199,7 +196,7 @@ get_max() const {
 //       Access: Public, Virtual
 //  Description: 
 ////////////////////////////////////////////////////////////////////
-LPoint3f CollisionBox::
+LPoint3 CollisionBox::
 get_approx_center() const {
   return (_min + _max) * 0.5f;
 }
@@ -262,25 +259,26 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
   CPT(TransformState) wrt_space = entry.get_wrt_space();
   CPT(TransformState) wrt_prev_space = entry.get_wrt_prev_space();
 
-  const LMatrix4f &wrt_mat = wrt_space->get_mat();
+  const LMatrix4 &wrt_mat = wrt_space->get_mat();
 
-  LPoint3f orig_center = sphere->get_center() * wrt_mat;
-  LPoint3f from_center = orig_center;
+  LPoint3 orig_center = sphere->get_center() * wrt_mat;
+  LPoint3 from_center = orig_center;
   bool moved_from_center = false;
-  float t = 1.0f;
-  LPoint3f contact_point(from_center);
-  float actual_t = 1.0f;
+  PN_stdfloat t = 1.0f;
+  LPoint3 contact_point(from_center);
+  PN_stdfloat actual_t = 1.0f;
 
-  LVector3f from_radius_v =
-    LVector3f(sphere->get_radius(), 0.0f, 0.0f) * wrt_mat;
-  float from_radius_2 = from_radius_v.length_squared();
-  float from_radius = csqrt(from_radius_2);
+  LVector3 from_radius_v =
+    LVector3(sphere->get_radius(), 0.0f, 0.0f) * wrt_mat;
+  PN_stdfloat from_radius_2 = from_radius_v.length_squared();
+  PN_stdfloat from_radius = csqrt(from_radius_2);
 
   int ip;
-  float max_dist,dist;
+  PN_stdfloat max_dist = 0.0;
+  PN_stdfloat dist = 0.0;
   bool intersect;
-  Planef plane;
-  LVector3f normal;
+  LPlane plane;
+  LVector3 normal;
   
   for(ip = 0, intersect = false; ip < 6 && !intersect; ip++) {
     plane = get_plane( ip );
@@ -288,83 +286,83 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
       continue;
     }
     if (wrt_prev_space != wrt_space) {
-		    // If we have a delta between the previous position and the
-		    // current position, we use that to determine some more properties
-		    // of the collision.
-		    LPoint3f b = from_center;
-		    LPoint3f a = sphere->get_center() * wrt_prev_space->get_mat();
-		    LVector3f delta = b - a;
+      // If we have a delta between the previous position and the
+      // current position, we use that to determine some more properties
+      // of the collision.
+      LPoint3 b = from_center;
+      LPoint3 a = sphere->get_center() * wrt_prev_space->get_mat();
+      LVector3 delta = b - a;
 
-		    // First, there is no collision if the "from" object is definitely
-		    // moving in the same direction as the plane's normal.
-		    float dot = delta.dot(plane.get_normal());
-		    if (dot > 0.1f) {
-		      continue; // no intersection
-		    }
+      // First, there is no collision if the "from" object is definitely
+      // moving in the same direction as the plane's normal.
+      PN_stdfloat dot = delta.dot(plane.get_normal());
+      if (dot > 0.1f) {
+        continue; // no intersection
+      }
 
-		    if (IS_NEARLY_ZERO(dot)) {
-		      // If we're moving parallel to the plane, the sphere is tested
-		      // at its final point.  Leave it as it is.
+      if (IS_NEARLY_ZERO(dot)) {
+        // If we're moving parallel to the plane, the sphere is tested
+        // at its final point.  Leave it as it is.
 
-		    } else {
-		      // Otherwise, we're moving into the plane; the sphere is tested
-		      // at the point along its path that is closest to intersecting
-		      // the plane.  This may be the actual intersection point, or it
-		      // may be the starting point or the final point.
-		      // dot is equal to the (negative) magnitude of 'delta' along the
-		      // direction of the plane normal
-		      // t = ratio of (distance from start pos to plane) to (distance
-		      // from start pos to end pos), along axis of plane normal
-		      float dist_to_p = plane.dist_to_plane(a);
-		      t = (dist_to_p / -dot);
-    	      
-		      // also compute the actual contact point and time of contact
-		      // for handlers that need it
-		      actual_t = ((dist_to_p - from_radius) / -dot);
-		      actual_t = min(1.0f, max(0.0f, actual_t));
-		      contact_point = a + (actual_t * delta);
+      } else {
+        // Otherwise, we're moving into the plane; the sphere is tested
+        // at the point along its path that is closest to intersecting
+        // the plane.  This may be the actual intersection point, or it
+        // may be the starting point or the final point.
+        // dot is equal to the (negative) magnitude of 'delta' along the
+        // direction of the plane normal
+        // t = ratio of (distance from start pos to plane) to (distance
+        // from start pos to end pos), along axis of plane normal
+        PN_stdfloat dist_to_p = plane.dist_to_plane(a);
+        t = (dist_to_p / -dot);
+            
+        // also compute the actual contact point and time of contact
+        // for handlers that need it
+        actual_t = ((dist_to_p - from_radius) / -dot);
+        actual_t = min((PN_stdfloat)1.0, max((PN_stdfloat)0.0, actual_t));
+        contact_point = a + (actual_t * delta);
 
-		      if (t >= 1.0f) {
-			    // Leave it where it is.
+        if (t >= 1.0f) {
+          // Leave it where it is.
 
-		      } else if (t < 0.0f) {
-             from_center = a;
-             moved_from_center = true;
-		      } else {
-			          from_center = a + t * delta;
-			          moved_from_center = true;
-		      }
-		    }
-	   }
+        } else if (t < 0.0f) {
+          from_center = a;
+          moved_from_center = true;
+        } else {
+          from_center = a + t * delta;
+          moved_from_center = true;
+        }
+      }
+    }
 
     normal = (has_effective_normal() && sphere->get_respect_effective_normal()) ? get_effective_normal() : plane.get_normal();
-	   
-    #ifndef NDEBUG
+     
+#ifndef NDEBUG
     /*if (!IS_THRESHOLD_EQUAL(normal.length_squared(), 1.0f, 0.001), NULL) {
       std::cout
       << "polygon within " << entry.get_into_node_path()
       << " has normal " << normal << " of length " << normal.length()
       << "\n";
       normal.normalize();
-    }*/
-    #endif
+      }*/
+#endif
 
-	  // The nearest point within the plane to our center is the
-	  // intersection of the line (center, center - normal) with the plane.
-	  
+    // The nearest point within the plane to our center is the
+    // intersection of the line (center, center - normal) with the plane.
+    
     if (!plane.intersects_line(dist, from_center, -(plane.get_normal()))) {
-		    // No intersection with plane?  This means the plane's effective
-		    // normal was within the plane itself.  A useless polygon.
-		    continue;
-	   }
+      // No intersection with plane?  This means the plane's effective
+      // normal was within the plane itself.  A useless polygon.
+      continue;
+    }
 
     if (dist > from_radius || dist < -from_radius) {
       // No intersection with the plane.
       continue;
     }
 
-    LPoint2f p = to_2d(from_center - dist * plane.get_normal(), ip);
-    float edge_dist = 0.0f;
+    LPoint2 p = to_2d(from_center - dist * plane.get_normal(), ip);
+    PN_stdfloat edge_dist = 0.0f;
 
     const ClipPlaneAttrib *cpa = entry.get_into_clip_planes();
     if (cpa != (ClipPlaneAttrib *)NULL) {
@@ -386,6 +384,8 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
       edge_dist = dist_to_polygon(p, _points[ip]);
     }
 
+    max_dist = from_radius;
+
     // Now we have edge_dist, which is the distance from the sphere
     // center to the nearest edge of the polygon, within the polygon's
     // plane. edge_dist<0 means the point is within the polygon.
@@ -395,7 +395,7 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
     }
 
     if((edge_dist > 0) && 
-      ((edge_dist * edge_dist + dist * dist) > from_radius_2)) {
+       ((edge_dist * edge_dist + dist * dist) > from_radius_2)) {
       // No intersection; the circle is outside the polygon.
       continue;
     }
@@ -406,9 +406,8 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
     // remain from the plane, based on its distance from the nearest
     // edge.
 
-    max_dist = from_radius;
     if (edge_dist >= 0.0f) {
-      float max_dist_2 = max(from_radius_2 - edge_dist * edge_dist, 0.0f);
+      PN_stdfloat max_dist_2 = max(from_radius_2 - edge_dist * edge_dist, (PN_stdfloat)0.0);
       max_dist = csqrt(max_dist_2);
     }
 
@@ -419,7 +418,7 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
     intersect = true;
   }
   if( !intersect )
-	  return NULL;
+    return NULL;
 
   if (collide_cat.is_debug()) {
     collide_cat.debug()
@@ -429,12 +428,12 @@ test_intersection_from_sphere(const CollisionEntry &entry) const {
   
   PT(CollisionEntry) new_entry = new CollisionEntry(entry);
 
-  float into_depth = max_dist - dist;
+  PN_stdfloat into_depth = max_dist - dist;
   if (moved_from_center) {
     // We have to base the depth of intersection on the sphere's final
     // resting point, not the point from which we tested the
     // intersection.
-    float orig_dist;
+    PN_stdfloat orig_dist;
     plane.intersects_line(orig_dist, orig_center, -normal);
     into_depth = max_dist - orig_dist;
   }
@@ -459,20 +458,21 @@ PT(CollisionEntry) CollisionBox::
 test_intersection_from_ray(const CollisionEntry &entry) const {
   const CollisionRay *ray;
   DCAST_INTO_R(ray, entry.get_from(), 0);
-  const LMatrix4f &wrt_mat = entry.get_wrt_mat();
+  const LMatrix4 &wrt_mat = entry.get_wrt_mat();
 
-  LPoint3f from_origin = ray->get_origin() * wrt_mat;
-  LVector3f from_direction = ray->get_direction() * wrt_mat;
+  LPoint3 from_origin = ray->get_origin() * wrt_mat;
+  LVector3 from_direction = ray->get_direction() * wrt_mat;
 
   int i, j;
-  float t, near_t;
+  PN_stdfloat t;
+  PN_stdfloat near_t = 0.0;
   bool intersect;
-  Planef plane;
-  Planef near_plane; 
+  LPlane plane;
+  LPlane near_plane; 
 
   //Returns the details about the first plane of the box that the ray
   //intersects.
-  for(i = 0, intersect = false, t = 0, j = 0; i < 6 && j < 2; i++) {
+  for (i = 0, intersect = false, t = 0, j = 0; i < 6 && j < 2; i++) {
     plane = get_plane(i);
 
     if (!plane.intersects_line(t, from_origin, from_direction)) {
@@ -485,14 +485,14 @@ test_intersection_from_ray(const CollisionEntry &entry) const {
       // the ray is entirely in front of the plane.
       continue;
     }
-    LPoint3f plane_point = from_origin + t * from_direction;
-    LPoint2f p = to_2d(plane_point, i);
+    LPoint3 plane_point = from_origin + t * from_direction;
+    LPoint2 p = to_2d(plane_point, i);
 
     if (!point_is_inside(p, _points[i])){
       continue;
     }
     intersect = true;
-    if(j) {
+    if (j) {
       if(t < near_t) {
         near_plane = plane;
         near_t = t;
@@ -504,11 +504,11 @@ test_intersection_from_ray(const CollisionEntry &entry) const {
     }
     ++j;
   }
-	 
+   
 
   if(!intersect) {
-	   //No intersection with ANY of the box's planes has been detected
-	   return NULL;
+    //No intersection with ANY of the box's planes has been detected
+    return NULL;
   }
 
   if (collide_cat.is_debug()) {
@@ -519,9 +519,9 @@ test_intersection_from_ray(const CollisionEntry &entry) const {
 
   PT(CollisionEntry) new_entry = new CollisionEntry(entry);
 
-  LPoint3f into_intersection_point = from_origin + near_t * from_direction;
+  LPoint3 into_intersection_point = from_origin + near_t * from_direction;
 
-  LVector3f normal =
+  LVector3 normal =
     (has_effective_normal() && ray->get_respect_effective_normal()) 
     ? get_effective_normal() : near_plane.get_normal();
 
@@ -541,17 +541,18 @@ PT(CollisionEntry) CollisionBox::
 test_intersection_from_segment(const CollisionEntry &entry) const {
   const CollisionSegment *seg;
   DCAST_INTO_R(seg, entry.get_from(), 0);
-  const LMatrix4f &wrt_mat = entry.get_wrt_mat();
+  const LMatrix4 &wrt_mat = entry.get_wrt_mat();
 
-  LPoint3f from_origin = seg->get_point_a() * wrt_mat;
-  LPoint3f from_extent = seg->get_point_b() * wrt_mat;
-  LVector3f from_direction = from_extent - from_origin;
+  LPoint3 from_origin = seg->get_point_a() * wrt_mat;
+  LPoint3 from_extent = seg->get_point_b() * wrt_mat;
+  LVector3 from_direction = from_extent - from_origin;
 
   int i, j;
-  float t, near_t;
+  PN_stdfloat t;
+  PN_stdfloat near_t = 0.0;
   bool intersect;
-  Planef plane;
-  Planef near_plane; 
+  LPlane plane;
+  LPlane near_plane; 
 
   //Returns the details about the first plane of the box that the
   //segment intersects.
@@ -569,8 +570,8 @@ test_intersection_from_segment(const CollisionEntry &entry) const {
       // entirely in front of or behind the plane.
       continue;
     }
-    LPoint3f plane_point = from_origin + t * from_direction;
-    LPoint2f p = to_2d(plane_point, i);
+    LPoint3 plane_point = from_origin + t * from_direction;
+    LPoint2 p = to_2d(plane_point, i);
 
     if (!point_is_inside(p, _points[i])){
       continue;
@@ -588,11 +589,11 @@ test_intersection_from_segment(const CollisionEntry &entry) const {
     }
     ++j;
   }
-	 
+   
 
   if(!intersect) {
-	   //No intersection with ANY of the box's planes has been detected
-	   return NULL;
+    //No intersection with ANY of the box's planes has been detected
+    return NULL;
   }
 
   if (collide_cat.is_debug()) {
@@ -603,9 +604,9 @@ test_intersection_from_segment(const CollisionEntry &entry) const {
 
   PT(CollisionEntry) new_entry = new CollisionEntry(entry);
 
-  LPoint3f into_intersection_point = from_origin + near_t * from_direction;
+  LPoint3 into_intersection_point = from_origin + near_t * from_direction;
 
-  LVector3f normal =
+  LVector3 normal =
     (has_effective_normal() && seg->get_respect_effective_normal()) 
     ? get_effective_normal() : near_plane.get_normal();
 
@@ -648,7 +649,7 @@ fill_viz_geom() {
   
   for(int i = 0; i < 6; i++) {
     for(int j = 0; j < 4; j++)
-      vertex.add_data3f(get_point(plane_def[i][j]));
+      vertex.add_data3(get_point(plane_def[i][j]));
 
     PT(GeomTrifans) body = new GeomTrifans(Geom::UH_static);
     body->add_consecutive_vertices(i*4, 4);
@@ -689,7 +690,7 @@ apply_clip_plane(CollisionBox::Points &new_points,
       CPT(TransformState) new_transform = 
         net_transform->invert_compose(plane_path.get_net_transform());
       
-      Planef plane = plane_node->get_plane() * new_transform->get_mat();
+      LPlane plane = plane_node->get_plane() * new_transform->get_mat();
       if (first_plane) {
         first_plane = false;
         if (!clip_polygon(new_points, _points[plane_no], plane, plane_no)) {
@@ -726,14 +727,14 @@ apply_clip_plane(CollisionBox::Points &new_points,
 bool CollisionBox::
 clip_polygon(CollisionBox::Points &new_points, 
              const CollisionBox::Points &source_points,
-             const Planef &plane, int plane_no) const {
+             const LPlane &plane, int plane_no) const {
   new_points.clear();
   if (source_points.empty()) {
     return true;
   }
 
-  LPoint3f from3d;
-  LVector3f delta3d;
+  LPoint3 from3d;
+  LVector3 delta3d;
   if (!plane.intersects_plane(from3d, delta3d, get_plane(plane_no))) {
     // The clipping plane is parallel to the polygon.  The polygon is
     // either all in or all out.
@@ -748,12 +749,12 @@ clip_polygon(CollisionBox::Points &new_points,
 
   // Project the line of intersection into the 2-d plane.  Now we have
   // a 2-d clipping line.
-  LPoint2f from2d = to_2d(from3d,plane_no);
-  LVector2f delta2d = to_2d(delta3d,plane_no);
+  LPoint2 from2d = to_2d(from3d,plane_no);
+  LVector2 delta2d = to_2d(delta3d,plane_no);
 
-  float a = -delta2d[1];
-  float b = delta2d[0];
-  float c = from2d[0] * delta2d[1] - from2d[1] * delta2d[0];
+  PN_stdfloat a = -delta2d[1];
+  PN_stdfloat b = delta2d[0];
+  PN_stdfloat c = from2d[0] * delta2d[1] - from2d[1] * delta2d[0];
 
   // Now walk through the points.  Any point on the left of our line
   // gets removed, and the line segment clipped at the point of
@@ -764,12 +765,12 @@ clip_polygon(CollisionBox::Points &new_points,
   // number of vertices, or keep them the same number.)
   new_points.reserve(source_points.size() + 1);
 
-  LPoint2f last_point = source_points.back()._p;
+  LPoint2 last_point = source_points.back()._p;
   bool last_is_in = !is_right(last_point - from2d, delta2d);
   bool all_in = last_is_in;
   Points::const_iterator pi;
   for (pi = source_points.begin(); pi != source_points.end(); ++pi) {
-    const LPoint2f &this_point = (*pi)._p;
+    const LPoint2 &this_point = (*pi)._p;
     bool this_is_in = !is_right(this_point - from2d, delta2d);
 
     // There appears to be a compiler bug in gcc 4.0: we need to
@@ -778,11 +779,11 @@ clip_polygon(CollisionBox::Points &new_points,
     if (crossed_over) {
       // We have just crossed over the clipping line.  Find the point
       // of intersection.
-      LVector2f d = this_point - last_point;
-      float denom = (a * d[0] + b * d[1]);
+      LVector2 d = this_point - last_point;
+      PN_stdfloat denom = (a * d[0] + b * d[1]);
       if (denom != 0.0) {
-        float t = -(a * last_point[0] + b * last_point[1] + c) / denom;
-        LPoint2f p = last_point + t * d;
+        PN_stdfloat t = -(a * last_point[0] + b * last_point[1] + c) / denom;
+        LPoint2 p = last_point + t * d;
 
         new_points.push_back(PointDef(p[0], p[1]));
         last_is_in = this_is_in;
@@ -811,8 +812,8 @@ clip_polygon(CollisionBox::Points &new_points,
 //               vector.  The result is negative if the point is
 //               within the polygon.
 ////////////////////////////////////////////////////////////////////
-float CollisionBox::
-dist_to_polygon(const LPoint2f &p, const CollisionBox::Points &points) const {
+PN_stdfloat CollisionBox::
+dist_to_polygon(const LPoint2 &p, const CollisionBox::Points &points) const {
 
   // We know that that the polygon is convex and is defined with the
   // points in counterclockwise order.  Therefore, we simply compare
@@ -823,11 +824,11 @@ dist_to_polygon(const LPoint2f &p, const CollisionBox::Points &points) const {
   // therefore return an arbitrary negative result.
   
   bool got_dist = false;
-  float best_dist = -1.0f;
+  PN_stdfloat best_dist = -1.0f;
 
   size_t num_points = points.size();
   for (size_t i = 0; i < num_points - 1; ++i) {
-    float d = dist_to_line_segment(p, points[i]._p, points[i + 1]._p,
+    PN_stdfloat d = dist_to_line_segment(p, points[i]._p, points[i + 1]._p,
                                    points[i]._v);
     if (d >= 0.0f) {
       if (!got_dist || d < best_dist) {
@@ -837,7 +838,7 @@ dist_to_polygon(const LPoint2f &p, const CollisionBox::Points &points) const {
     }
   }
 
-  float d = dist_to_line_segment(p, points[num_points - 1]._p, points[0]._p,
+  PN_stdfloat d = dist_to_line_segment(p, points[num_points - 1]._p, points[0]._p,
                                  points[num_points - 1]._v);
   if (d >= 0.0f) {
     if (!got_dist || d < best_dist) {
@@ -861,18 +862,18 @@ dist_to_polygon(const LPoint2f &p, const CollisionBox::Points &points) const {
 //               would be for a straight distance-to-line test).  If
 //               the result is negative, we don't bother.
 ////////////////////////////////////////////////////////////////////
-float CollisionBox::
-dist_to_line_segment(const LPoint2f &p,
-                     const LPoint2f &f, const LPoint2f &t,
-                     const LVector2f &v) {
-  LVector2f v1 = (p - f);
-  float d = (v1[0] * v[1] - v1[1] * v[0]);
+PN_stdfloat CollisionBox::
+dist_to_line_segment(const LPoint2 &p,
+                     const LPoint2 &f, const LPoint2 &t,
+                     const LVector2 &v) {
+  LVector2 v1 = (p - f);
+  PN_stdfloat d = (v1[0] * v[1] - v1[1] * v[0]);
   if (d < 0.0f) {
     return d;
   }
 
   // Compute the nearest point on the line.
-  LPoint2f q = p + LVector2f(-v[1], v[0]) * d;
+  LPoint2 q = p + LVector2(-v[1], v[0]) * d;
 
   // Now constrain that point to the line segment.
   if (v[0] > 0.0f) {
@@ -975,7 +976,7 @@ dist_to_line_segment(const LPoint2f &p,
 //               polygon's 2-d space, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool CollisionBox::
-point_is_inside(const LPoint2f &p, const CollisionBox::Points &points) const {
+point_is_inside(const LPoint2 &p, const CollisionBox::Points &points) const {
   // We insist that the polygon be convex.  This makes things a bit simpler.
   // In the case of a convex polygon, defined with points in counterclockwise
   // order, a point is interior to the polygon iff the point is not right of
@@ -986,31 +987,11 @@ point_is_inside(const LPoint2f &p, const CollisionBox::Points &points) const {
     }
   }
   if (is_right(p - points[points.size() - 1]._p, 
-	  points[0]._p - points[points.size() - 1]._p)) {
+               points[0]._p - points[points.size() - 1]._p)) {
     return false;
   }
 
   return true;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: CollisionBox::compute_point
-//       Access: Protected
-//  Description: Returns a point on the surface of the sphere.
-//               latitude and longitude range from 0.0 to 1.0.  This
-//               is used by fill_viz_geom() to create a visible
-//               representation of the sphere.
-////////////////////////////////////////////////////////////////////
-Vertexf CollisionBox::
-compute_point(float latitude, float longitude) const {
-  float s1, c1;
-  csincos(latitude * MathNumbers::pi_f, &s1, &c1);
-
-  float s2, c2;
-  csincos(longitude * 2.0f * MathNumbers::pi_f, &s2, &c2);
-
-  Vertexf p(s1 * c2, s1 * s2, c1);
-  return p * get_radius() + get_center();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1054,10 +1035,10 @@ write_datagram(BamWriter *manager, Datagram &me) {
   for(int i=0; i < 8; i++) {
     _vertex[i].write_datagram(me);
   }
-  me.add_float32(_radius);
-  me.add_float32(_x);
-  me.add_float32(_y);
-  me.add_float32(_z);
+  me.add_stdfloat(_radius);
+  me.add_stdfloat(_x);
+  me.add_stdfloat(_y);
+  me.add_stdfloat(_z);
   for(int i=0; i < 6; i++) {
     _planes[i].write_datagram(me);
   }
@@ -1106,10 +1087,10 @@ fillin(DatagramIterator& scan, BamReader* manager) {
   for(int i=0; i < 8; i++) {
     _vertex[i].read_datagram(scan);
   }
-  _radius = scan.get_float32();
-  _x = scan.get_float32();
-  _y = scan.get_float32();
-  _z = scan.get_float32();
+  _radius = scan.get_stdfloat();
+  _x = scan.get_stdfloat();
+  _y = scan.get_stdfloat();
+  _z = scan.get_stdfloat();
   for(int i=0; i < 6; i++) {
     _planes[i].read_datagram(scan);
   }
@@ -1119,8 +1100,8 @@ fillin(DatagramIterator& scan, BamReader* manager) {
   for(int i=0; i < 6; i++) {
     size_t size = scan.get_uint16();
     for (size_t j = 0; j < size; j++) {
-      LPoint2f p;
-      LVector2f v;
+      LPoint2 p;
+      LVector2 v;
       p.read_datagram(scan);
       v.read_datagram(scan);
       _points[i].push_back(PointDef(p, v));

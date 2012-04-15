@@ -240,7 +240,7 @@ process_v(vector_string &words) {
         << "Invalid number at line " << _line_number << "\n";
       return false;
     }
-    vertex->set_color(Colorf(r, g, b, 1.0));
+    vertex->set_color(LColor(r, g, b, 1.0));
   }
 
   ++_vi;
@@ -262,7 +262,7 @@ process_vt(vector_string &words) {
   }
   
   bool okflag = true;
-  TexCoord3d uvw;
+  LTexCoord3d uvw;
   okflag &= string_to_double(words[1], uvw[0]);
   okflag &= string_to_double(words[2], uvw[1]);
   if (words.size() == 4) {
@@ -279,7 +279,7 @@ process_vt(vector_string &words) {
   if (words.size() == 4) {
     vertex->set_uvw("", uvw);
   } else {
-    vertex->set_uv("", TexCoordd(uvw[0], uvw[1]));
+    vertex->set_uv("", LTexCoordd(uvw[0], uvw[1]));
   }
   ++_vti;
 
@@ -354,7 +354,7 @@ process_g(vector_string &words) {
 
   // Thus, iterate from the back to the front.
   size_t i = words.size();
-  while (i != 0) {
+  while (i > 1) {
     --i;
     EggNode *child = group->find_child(words[i]);
     if (child == NULL || !child->is_of_type(EggGroup::get_class_type())) {

@@ -33,7 +33,7 @@ else:
     from direct.showbase import VFSImporter
 
 from direct.showbase.DirectObject import DirectObject
-from pandac.PandaModules import VirtualFileSystem, Filename, Multifile, loadPrcFileData, unloadPrcFile, getModelPath, Thread, WindowProperties, ExecutionEnvironment, PandaSystem, Notify, StreamWriter, ConfigVariableString, initAppForGui
+from pandac.PandaModules import VirtualFileSystem, Filename, Multifile, loadPrcFileData, unloadPrcFile, getModelPath, Thread, WindowProperties, ExecutionEnvironment, PandaSystem, Notify, StreamWriter, ConfigVariableString, ConfigPageManager, initAppForGui
 from pandac import PandaModules
 from direct.stdpy import file, glob
 from direct.task.TaskManagerGlobal import taskMgr
@@ -111,6 +111,8 @@ class AppRunner(DirectObject):
         self.packedAppEnvironmentInitialized = False
         self.gotWindow = False
         self.gotP3DFilename = False
+        self.p3dFilename = None
+        self.p3dUrl = None
         self.started = False
         self.windowOpened = False
         self.windowPrc = None
@@ -701,6 +703,7 @@ class AppRunner(DirectObject):
             __builtin__.open = file.open
             os.listdir = file.listdir
             os.walk = file.walk
+            os.path.join = file.join
             os.path.isfile = file.isfile
             os.path.isdir = file.isdir
             os.path.exists = file.exists
@@ -872,7 +875,7 @@ class AppRunner(DirectObject):
             initAppForGui()
 
     def setP3DFilename(self, p3dFilename, tokens, argv, instanceId,
-                       interactiveConsole, p3dOffset = 0):
+                       interactiveConsole, p3dOffset = 0, p3dUrl = None):
         """ Called by the browser to specify the p3d file that
         contains the application itself, along with the web tokens
         and/or command-line arguments.  Once this method has been
@@ -913,6 +916,7 @@ class AppRunner(DirectObject):
             raise ArgumentError, "No such file: %s" % (p3dFilename)
 
         fname.makeAbsolute()
+        fname.setBinary()
         mf = Multifile()
         if p3dOffset == 0:
             if not mf.openRead(fname):
@@ -972,10 +976,18 @@ class AppRunner(DirectObject):
 
         # Mount the Multifile under self.multifileRoot.
         vfs.mount(mf, self.multifileRoot, vfs.MFReadOnly)
+        self.p3dMultifile = mf
         VFSImporter.reloadSharedPackages()
 
         self.loadMultifilePrcFiles(mf, self.multifileRoot)
         self.gotP3DFilename = True
+        self.p3dFilename = fname
+        if p3dUrl:
+            # The url from which the p3d file was downloaded is
+            # provided if available.  It is only for documentation
+            # purposes; the actual p3d file has already been
+            # downloaded to p3dFilename.
+            self.p3dUrl = PandaModules.URLSpec(p3dUrl)
 
         # Send this call to the main thread; don't call it directly.
         messenger.send('AppRunner_startIfReady', taskChain = 'default')
@@ -1011,12 +1023,24 @@ class AppRunner(DirectObject):
         # the Multifile interface to find the prc files, rather than
         # vfs.scanDirectory(), so we only pick up the files in this
         # particular multifile.
+        cpMgr = ConfigPageManager.getGlobalPtr()
         for f in mf.getSubfileNames():
             fn = Filename(f)
             if fn.getDirname() == '' and fn.getExtension() == 'prc':
                 pathname = '%s/%s' % (root, f)
-                data = file.open(Filename(pathname), 'r').read()
-                loadPrcFileData(pathname, data)
+
+                alreadyLoaded = False
+                for cpi in range(cpMgr.getNumImplicitPages()):
+                    if cpMgr.getImplicitPage(cpi).getName() == pathname:
+                        # No need to load this file twice.
+                        alreadyLoaded = True
+                        break
+
+                if not alreadyLoaded:
+                    data = file.open(Filename(pathname), 'r').read()
+                    cp = loadPrcFileData(pathname, data)
+                    # Set it to sort value 20, behind the implicit pages.
+                    cp.setSort(20)
         
     
     def __clearWindowProperties(self):

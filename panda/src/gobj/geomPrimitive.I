@@ -237,6 +237,7 @@ get_max_vertex() const {
 INLINE int GeomPrimitive::
 get_data_size_bytes() const {
   CDReader cdata(_cycler);
+  nassertr(!cdata->_vertices.is_null(), 0);
   return cdata->_vertices.get_read_pointer()->get_data_size_bytes();
 }
 
@@ -412,19 +413,6 @@ add_vertices(int v1, int v2, int v3, int v4) {
   add_vertex(v2);
   add_vertex(v3);
   add_vertex(v4);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GeomPrimitive::get_index_format
-//       Access: Public
-//  Description: Returns a registered format appropriate for using to
-//               store the index table.
-////////////////////////////////////////////////////////////////////
-INLINE CPT(GeomVertexArrayFormat) GeomPrimitive::
-get_index_format() const {
-  return GeomVertexArrayFormat::register_format
-    (new GeomVertexArrayFormat(InternalName::get_index(), 1, 
-                               get_index_type(), C_index));
 }
 
 ////////////////////////////////////////////////////////////////////

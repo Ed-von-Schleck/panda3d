@@ -13,6 +13,8 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "p3dCert.h"
+#include "wstring_encode.h"
+#include "mkdir_complete.h"
 
 #include <Fl/Fl_Box.H>
 #include <Fl/Fl_Button.H>
@@ -22,6 +24,8 @@
 #include <cassert>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <limits.h>
 
 #define BUTTON_WIDTH 120
 #define BUTTON_SPACE 10
@@ -196,21 +200,26 @@ approve_cert() {
   assert(_cert != NULL);
 
   // Make sure the directory exists.
-#ifdef _WIN32
-  mkdir(_cert_dir.c_str());
-#else
-  mkdir(_cert_dir.c_str(), 0755);
-#endif
+  mkdir_complete(_cert_dir, cerr);
 
   // Look for an unused filename.
   int i = 1;
-  char buf [PATH_MAX];
+  size_t buf_length = _cert_dir.length() + 100;
+  char *buf = new char[buf_length];
+#ifdef _WIN32
+  wstring buf_w;
+#endif // _WIN32
+
   while (true) {
     sprintf(buf, "%s/p%d.crt", _cert_dir.c_str(), i);
+    assert(strlen(buf) < buf_length);
 
     // Check if it already exists.  If not, take it.
 #ifdef _WIN32
-    DWORD results = GetFileAttributes(buf);
+    DWORD results = 0;
+    if (string_to_wstring(buf_w, buf)) {
+      results = GetFileAttributesW(buf_w.c_str());
+    }
     if (results == -1) {
       break;
     }
@@ -225,11 +234,17 @@ approve_cert() {
 
   // Sure, there's a slight race condition right now: another process
   // might attempt to create the same filename.  So what.
-  FILE *fp = fopen(buf, "w");
+  FILE *fp = NULL;
+#ifdef _WIN32
+  fp = _wfopen(buf_w.c_str(), L"w");
+#else // _WIN32
+  fp = fopen(buf, "w");
+#endif  // _WIN32
   if (fp != NULL) {
     PEM_write_X509(fp, _cert);
     fclose(fp);
   }
+
   hide();
 }
 
@@ -241,7 +256,16 @@ approve_cert() {
 ////////////////////////////////////////////////////////////////////
 void AuthDialog::
 read_cert_file(const string &cert_filename) {
-  FILE *fp = fopen(cert_filename.c_str(), "r");
+  FILE *fp = NULL;
+#ifdef _WIN32
+  wstring cert_filename_w;
+  if (string_to_wstring(cert_filename_w, cert_filename)) {
+    fp = _wfopen(cert_filename_w.c_str(), L"r");
+  }
+#else // _WIN32
+  fp = fopen(cert_filename.c_str(), "r");
+#endif  // _WIN32
+
   if (fp == NULL) {
     cerr << "Couldn't read " << cert_filename.c_str() << "\n";
     return;
@@ -403,15 +427,30 @@ void AuthDialog::
 layout() {
   get_text(_header, sizeof _header, _text, sizeof _text);
 
+  // Now replicate out any @ signs in the text to avoid FlTk's escape
+  // sequences.
+  int j = 0;
+  for (int i = 0; _text[i] != '\0'; ++i) {
+    _text_clean[j++] = _text[i];
+    if (_text[i] == '@') {
+      _text_clean[j++] = _text[i];
+    }
+  }
+  _text_clean[j] = '\0';
+  assert(strlen(_text_clean) < sizeof(_text_clean));
+
+  int next_y = 35;
   if (strlen(_header) > 0) {
-    Fl_Box *text0 = new Fl_Box(w() / 2, 35, 0, 25, _header);
+    Fl_Box *text0 = new Fl_Box(w() / 2, next_y, 0, 25, _header);
     text0->align(FL_ALIGN_TOP | FL_ALIGN_CENTER);
     text0->labelfont(FL_BOLD);
     text0->labelsize(text0->labelsize() * 1.5);
+    next_y += 25;
   }
 
-  Fl_Box *text1 = new Fl_Box(17, 55, 400, 120, _text);
+  Fl_Box *text1 = new Fl_Box(17, next_y, 400, 180, _text_clean);
   text1->align(FL_ALIGN_TOP | FL_ALIGN_INSIDE | FL_ALIGN_WRAP);
+  next_y += 180;
 
   short nbuttons = 1;
   if (_cert != NULL) {
@@ -423,20 +462,23 @@ layout() {
   short bx = (w() - nbuttons * BUTTON_WIDTH - (nbuttons - 1) * BUTTON_SPACE) / 2;
 
   if (_verify_result == 0 && _cert != NULL) {
-    Fl_Return_Button *run_button = new Fl_Return_Button(bx, 200, BUTTON_WIDTH, 25, "Run");
+    Fl_Return_Button *run_button = new Fl_Return_Button(bx, next_y, BUTTON_WIDTH, 25, "Run");
     run_button->callback(this->run_clicked, this);
     bx += BUTTON_WIDTH + BUTTON_SPACE;
   }
 
   if (_cert != NULL) {
-    Fl_Button *view_button = new Fl_Button(bx, 200, BUTTON_WIDTH, 25, "View Certificate");
+    Fl_Button *view_button = new Fl_Button(bx, next_y, BUTTON_WIDTH, 25, "View Certificate");
     view_button->callback(this->view_cert_clicked, this);
     bx += BUTTON_WIDTH + BUTTON_SPACE;
   }
 
   Fl_Button *cancel_button;
-  cancel_button = new Fl_Button(bx, 200, BUTTON_WIDTH, 25, "Cancel");
+  cancel_button = new Fl_Button(bx, next_y, BUTTON_WIDTH, 25, "Cancel");
   cancel_button->callback(this->cancel_clicked, this);
+
+  next_y += 42;
+  size(435, next_y);
 
   end();
   set_modal();

@@ -31,7 +31,7 @@ TypeHandle ClockObject::_type_handle;
 //  Description:
 ////////////////////////////////////////////////////////////////////
 ClockObject::
-ClockObject() {
+ClockObject() : _ticks(get_class_type()) {
   _true_clock = TrueClock::get_global_ptr();
 
   // Each clock except for the application global clock is created in
@@ -72,6 +72,28 @@ ClockObject() {
   _average_frame_rate_interval = average_frame_rate_interval;
 
   _error_count = _true_clock->get_error_count();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ClockObject::Copy Constructor
+//       Access: Published
+//  Description: 
+////////////////////////////////////////////////////////////////////
+ClockObject::
+ClockObject(const ClockObject &copy) :
+  _true_clock(copy._true_clock),
+  _mode(copy._mode),
+  _start_short_time(copy._start_short_time),
+  _start_long_time(copy._start_long_time),
+  _actual_frame_time(copy._actual_frame_time),
+  _max_dt(copy._max_dt),
+  _user_frame_rate(copy._user_frame_rate),
+  _degrade_factor(copy._degrade_factor),
+  _error_count(copy._error_count),
+  _average_frame_rate_interval(copy._average_frame_rate_interval),
+  _ticks(copy._ticks),
+  _cycler(copy._cycler) 
+{
 }
 
 ////////////////////////////////////////////////////////////////////

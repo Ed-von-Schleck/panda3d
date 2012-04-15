@@ -181,7 +181,9 @@ PUBLISHED:
     NT_uint32,       // An integer 0..4294967296
     NT_packed_dcba,  // DirectX style, four byte values packed in a uint32
     NT_packed_dabc,  // DirectX packed color order (ARGB)
-    NT_float32,      // A floating-point number
+    NT_float32,      // A single-precision float
+    NT_float64,      // A double-precision float
+    NT_stdfloat      // Either single- or double-precision, according to vertices-float64.
   };
 
   // The contents determine the semantic meaning of a numeric value

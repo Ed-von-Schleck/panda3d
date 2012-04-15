@@ -19,11 +19,7 @@
 
 #include "glgsg.h"
 #include "glxGraphicsPipe.h"
-
-// Don't pick up the system glxext.h; use our own, which is better.
-#define __glxext_h_
-
-#include <GL/glx.h>
+#include "posixGraphicsStateGuardian.h"
 
 #if defined(GLX_VERSION_1_4)
 // If the system header files give us version 1.4, we can assume it's
@@ -64,13 +60,13 @@ extern "C" void (*glXGetProcAddressARB(const GLubyte *procName))( void );
 typedef __GLXextFuncPtr (* PFNGLXGETPROCADDRESSPROC) (const GLubyte *procName);
 typedef int (* PFNGLXSWAPINTERVALSGIPROC) (int interval);
 
-typedef GLXFBConfig * (* PFNGLXCHOOSEFBCONFIGPROC) (Display *dpy, int screen, const int *attrib_list, int *nelements);
-typedef GLXContext (* PFNGLXCREATENEWCONTEXTPROC) (Display *dpy, GLXFBConfig config, int render_type, GLXContext share_list, Bool direct);
-typedef XVisualInfo * (* PFNGLXGETVISUALFROMFBCONFIGPROC) (Display *dpy, GLXFBConfig config);
-typedef int (* PFNGLXGETFBCONFIGATTRIBPROC) (Display *dpy, GLXFBConfig config, int attribute, int *value);
-typedef GLXPixmap (* PFNGLXCREATEPIXMAPPROC) (Display *dpy, GLXFBConfig config, Pixmap pixmap, const int *attrib_list);
-typedef GLXPbuffer (* PFNGLXCREATEPBUFFERPROC) (Display *dpy, GLXFBConfig config, const int *attrib_list);
-typedef void (* PFNGLXDESTROYPBUFFERPROC) (Display *dpy, GLXPbuffer pbuf);
+typedef GLXFBConfig * (* PFNGLXCHOOSEFBCONFIGPROC) (X11_Display *dpy, int screen, const int *attrib_list, int *nelements);
+typedef GLXContext (* PFNGLXCREATENEWCONTEXTPROC) (X11_Display *dpy, GLXFBConfig config, int render_type, GLXContext share_list, Bool direct);
+typedef XVisualInfo * (* PFNGLXGETVISUALFROMFBCONFIGPROC) (X11_Display *dpy, GLXFBConfig config);
+typedef int (* PFNGLXGETFBCONFIGATTRIBPROC) (X11_Display *dpy, GLXFBConfig config, int attribute, int *value);
+typedef GLXPixmap (* PFNGLXCREATEPIXMAPPROC) (X11_Display *dpy, GLXFBConfig config, Pixmap pixmap, const int *attrib_list);
+typedef GLXPbuffer (* PFNGLXCREATEPBUFFERPROC) (X11_Display *dpy, GLXFBConfig config, const int *attrib_list);
+typedef void (* PFNGLXDESTROYPBUFFERPROC) (X11_Display *dpy, GLXPbuffer pbuf);
 
 #endif  // __EDG__
 
@@ -79,7 +75,7 @@ typedef void (* PFNGLXDESTROYPBUFFERPROC) (Display *dpy, GLXPbuffer pbuf);
 // Description : A tiny specialization on GLGraphicsStateGuardian to
 //               add some glx-specific information.
 ////////////////////////////////////////////////////////////////////
-class glxGraphicsStateGuardian : public GLGraphicsStateGuardian {
+class glxGraphicsStateGuardian : public PosixGraphicsStateGuardian {
 public:
   INLINE const FrameBufferProperties &get_fb_properties() const;
   void get_properties(FrameBufferProperties &properties, XVisualInfo *visual);
@@ -87,7 +83,7 @@ public:
                                bool &context_has_pbuffer, bool &pixmap_supported,
                                bool &slow, GLXFBConfig config);
   void choose_pixel_format(const FrameBufferProperties &properties, 
-                           Display *_display,
+                           X11_Display *_display,
                            int _screen,
                            bool need_pbuffer, bool need_pixmap);
   
@@ -102,7 +98,7 @@ public:
 
   GLXContext _share_context;
   GLXContext _context;
-  Display *_display;
+  X11_Display *_display;
   int _screen;
   XVisualInfo *_visual;
   XVisualInfo *_visuals;
@@ -139,7 +135,6 @@ protected:
   virtual void *do_get_extension_func(const char *prefix, const char *name);
 
 private:
-  void *get_system_func(const char *name);
   void show_glx_client_string(const string &name, int id);
   void show_glx_server_string(const string &name, int id);
   void choose_temp_visual(const FrameBufferProperties &properties);
@@ -148,12 +143,11 @@ private:
 
   int _glx_version_major, _glx_version_minor;
 
-  void *_libgl_handle;
   bool _checked_get_proc_address;
   PFNGLXGETPROCADDRESSPROC _glXGetProcAddress;
 
   GLXContext _temp_context;
-  Window _temp_xwindow;
+  X11_Window _temp_xwindow;
   Colormap _temp_colormap;
 
 public:
@@ -161,9 +155,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    GLGraphicsStateGuardian::init_type();
+    PosixGraphicsStateGuardian::init_type();
     register_type(_type_handle, "glxGraphicsStateGuardian",
-                  GLGraphicsStateGuardian::get_class_type());
+                  PosixGraphicsStateGuardian::get_class_type());
   }
   virtual TypeHandle get_type() const {
     return get_class_type();

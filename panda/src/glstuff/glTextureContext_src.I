@@ -19,8 +19,8 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE CLP(TextureContext)::
-CLP(TextureContext)(PreparedGraphicsObjects *pgo, Texture *tex) :
-  TextureContext(pgo, tex)
+CLP(TextureContext)(PreparedGraphicsObjects *pgo, Texture *tex, int view) :
+  TextureContext(pgo, tex, view)
 {
   _index = 0;
   _already_applied = false;
@@ -29,4 +29,5 @@ CLP(TextureContext)(PreparedGraphicsObjects *pgo, Texture *tex) :
   _width = 0;
   _height = 0;
   _depth = 0;
+  _target = GL_NONE;
 }

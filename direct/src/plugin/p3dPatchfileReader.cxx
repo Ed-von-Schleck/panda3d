@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "p3dPatchfileReader.h"
+#include "wstring_encode.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: P3DPatchfileReader::Constructor
@@ -62,15 +63,36 @@ open_read() {
 
   string patch_pathname = _patchfile.get_pathname(_package_dir);
   _patch_in.clear();
+#ifdef _WIN32
+  wstring patch_pathname_w;
+  if (string_to_wstring(patch_pathname_w, patch_pathname)) {
+    _patch_in.open(patch_pathname_w.c_str(), ios::in | ios::binary);
+  }
+#else // _WIN32
   _patch_in.open(patch_pathname.c_str(), ios::in | ios::binary);
+#endif  // _WIN32
 
   string source_pathname = _source.get_pathname(_package_dir);
   _source_in.clear();
+#ifdef _WIN32
+  wstring source_pathname_w;
+  if (string_to_wstring(source_pathname_w, source_pathname)) {
+    _source_in.open(source_pathname_w.c_str(), ios::in | ios::binary);
+  }
+#else // _WIN32
   _source_in.open(source_pathname.c_str(), ios::in | ios::binary);
+#endif  // _WIN32
 
   mkfile_complete(_output_pathname, nout);
   _target_out.clear();
-  _target_out.open(_output_pathname.c_str(), ios::out | ios::binary);
+#ifdef _WIN32
+  wstring output_pathname_w;
+  if (string_to_wstring(output_pathname_w, _output_pathname)) {
+    _target_out.open(output_pathname_w.c_str(), ios::in | ios::binary);
+  }
+#else // _WIN32
+  _target_out.open(_output_pathname.c_str(), ios::in | ios::binary);
+#endif  // _WIN32
 
   _is_open = true;
 
@@ -249,12 +271,12 @@ copy_bytes(istream &in, size_t copy_byte_count) {
   static const size_t buffer_size = 8192;
   char buffer[buffer_size];
 
-  size_t read_size = min(copy_byte_count, buffer_size);
+  streamsize read_size = min(copy_byte_count, buffer_size);
   in.read(buffer, read_size);
-  size_t count = in.gcount();
+  streamsize count = in.gcount();
   while (count != 0) {
     _target_out.write(buffer, count);
-    _bytes_written += count;
+    _bytes_written += (size_t)count;
     if (_bytes_written > _target_length) {
       nout << "Runaway patchfile.\n";
       return false;
@@ -262,7 +284,7 @@ copy_bytes(istream &in, size_t copy_byte_count) {
     if (count != read_size) {
       return false;
     }
-    copy_byte_count -= count;
+    copy_byte_count -= (size_t)count;
     count = 0;
     if (copy_byte_count != 0) {
       read_size = min(copy_byte_count, buffer_size);

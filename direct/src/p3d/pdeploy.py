@@ -119,6 +119,18 @@ Options:
      is username@hostname.
      Only relevant when generating a graphical installer.
 
+  -i "path/icon32.png" -i "path/icon48.png" -i "path/icon128.png"
+     This option should be repeated several times with different square
+     image sizes.  These images will then be combined to form an icon
+     file that will be used to represent the installed application.
+     To support all platforms, it is recommended to supply images of
+     the sizes 16x16, 32x32, 48x48, 128x128, 256x256, and 512x512.
+     The larger icon sizes can safely be omitted if you cannot
+     provide images in that resolution.
+     It is recommended to use .png images for correct transparency.
+     If no images are provided, no icon will be generated.
+     Only relevant when generating a graphical installer.
+
   -h
      Display this help
 
@@ -129,11 +141,12 @@ DEPLOY_MODES = ["standalone", "installer", "html"]
 import sys
 import os
 import getopt
-from direct.p3d.DeploymentTools import Standalone, Installer
+from direct.p3d.DeploymentTools import Standalone, Installer, Icon
 from pandac.PandaModules import Filename, PandaSystem
 
 def usage(code, msg = ''):
-    print >> sys.stderr, usageText % {'prog' : os.path.split(sys.argv[0])[1]}
+    if not msg:
+        print >> sys.stderr, usageText % {'prog' : os.path.split(sys.argv[0])[1]}
     print >> sys.stderr, msg
     sys.exit(code)
 
@@ -149,12 +162,13 @@ licensefile = Filename()
 authorid = ""
 authorname = ""
 authoremail = ""
+iconFiles = []
 includeRequires = False
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'n:N:v:o:t:P:csl:L:a:A:e:h')
+    opts, args = getopt.getopt(sys.argv[1:], 'n:N:v:o:t:P:csl:L:a:A:e:i:h')
 except getopt.error, msg:
-    usage(1, msg)
+    usage(1, msg or 'Invalid option')
 
 for opt, arg in opts:
     if opt == '-n':
@@ -184,15 +198,20 @@ for opt, arg in opts:
         authorname = arg.strip()
     elif opt == '-e':
         authoremail = arg.strip()
+    elif opt == '-i':
+        iconFiles.append(Filename.fromOsSpecific(arg))
 
     elif opt == '-h':
         usage(0)
     else:
-        print 'illegal option: ' + flag
-        sys.exit(1)
+        msg = 'illegal option: ' + flag
+        print msg
+        sys.exit(1, msg)
 
 if not args or len(args) != 2:
-    usage(1)
+    msg = 'Wrong number of arguments, received %s, expected 2' % (
+        len(args or []))
+    usage(1, msg)
 
 appFilename = Filename.fromOsSpecific(args[0])
 if appFilename.getExtension().lower() != 'p3d':
@@ -260,6 +279,18 @@ elif deploy_mode == 'installer':
         print "Using author \"%s\" <%s> with ID %s" % \
             (i.authorname, i.authoremail, i.authorid)
 
+    # Add the supplied icon images
+    if len(iconFiles) > 0:
+        failed = False
+        i.icon = Icon()
+        for iconFile in iconFiles:
+            if not i.icon.addImage(iconFile):
+                print '\nFailed to add icon image "%s"!\n' % iconFile
+                failed = True
+        if failed:
+            sys.exit(1)
+
+    # Now build for the requested platforms.
     if currentPlatform:
         platform = PandaSystem.getPlatform()
         if platform.startswith("win"):
@@ -273,6 +304,8 @@ elif deploy_mode == 'installer':
             output = Filename(outputDir, platform + "/")
             output.makeDir()
             i.build(output, platform)
+
+    del i
 
 elif deploy_mode == 'html':
     w, h = tokens.get("width", 640), tokens.get("height", 480)

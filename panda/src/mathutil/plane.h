@@ -32,4 +32,21 @@ class DatagramIterator;
 #include "dblnames.h"
 #include "plane_src.h"
 
+#ifndef STDFLOAT_DOUBLE
+typedef LPlanef LPlane;
+#else
+typedef LPlaned LPlane;
+#endif
+
+// Bogus typedefs for interrogate and legacy Python code.
+#ifdef CPPPARSER
+typedef LPlanef PlaneF;
+typedef LPlaned PlaneD;
+#ifndef STDFLOAT_DOUBLE
+typedef LPlanef Plane;
+#else
+typedef LPlaned Plane;
+#endif
+#endif  // CPPPARSER
+
 #endif

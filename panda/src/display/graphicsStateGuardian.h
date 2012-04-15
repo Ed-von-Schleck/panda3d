@@ -1,5 +1,5 @@
 // Filename: graphicsStateGuardian.h
-// Created by:  drose (02Feb99)
+// Created by:  drose (02eb99)
 // Updated by: fperazzi, PandaSE (05May10) (added fetch_ptr_parameter,
 //  _max_2d_texture_array_layers on z axis, get_supports_cg_profile)
 //
@@ -139,7 +139,6 @@ PUBLISHED:
   INLINE bool get_copy_texture_inverted() const;
   virtual bool get_supports_multisample() const;
   INLINE bool get_supports_generate_mipmap() const;
-  INLINE bool get_supports_render_texture() const;
   INLINE bool get_supports_depth_texture() const;
   INLINE bool get_supports_depth_stencil() const;
   INLINE bool get_supports_shadow_filter() const;
@@ -171,8 +170,8 @@ PUBLISHED:
 
   virtual PreparedGraphicsObjects *get_prepared_objects();
 
-  virtual bool set_gamma(float gamma);
-  float get_gamma(float gamma);
+  virtual bool set_gamma(PN_stdfloat gamma);
+  PN_stdfloat get_gamma(PN_stdfloat gamma);
   virtual void restore_gamma();
 
   INLINE void set_texture_quality_override(Texture::QualityLevel quality_level);
@@ -191,6 +190,15 @@ PUBLISHED:
 #endif
 
 PUBLISHED:
+
+  virtual string get_driver_vendor();
+  virtual string get_driver_renderer();
+  virtual string get_driver_version();
+  virtual int get_driver_version_major();
+  virtual int get_driver_version_minor();
+  virtual int get_driver_shader_version_major();
+  virtual int get_driver_shader_version_minor();
+  
   bool set_scene(SceneSetup *scene_setup);
   virtual SceneSetup *get_scene() const;
 
@@ -224,17 +232,15 @@ public:
   virtual void set_state_and_transform(const RenderState *state,
                                        const TransformState *transform);
 
-  virtual float compute_distance_to(const LPoint3f &point) const;
+  virtual PN_stdfloat compute_distance_to(const LPoint3 &point) const;
 
   virtual void clear(DrawableRegion *clearable);
   
-  const LMatrix4f *fetch_specified_value(Shader::ShaderMatSpec &spec, int altered);
-  const LMatrix4f *fetch_specified_part(Shader::ShaderMatInput input, InternalName *name, LMatrix4f &t);
+  const LMatrix4 *fetch_specified_value(Shader::ShaderMatSpec &spec, int altered);
+  const LMatrix4 *fetch_specified_part(Shader::ShaderMatInput input, InternalName *name, LMatrix4 &t);
   const Shader::ShaderPtrData *fetch_ptr_parameter(const Shader::ShaderPtrSpec& spec);
 
-  virtual void prepare_display_region(DisplayRegionPipelineReader *dr,
-                                      Lens::StereoChannel stereo_channel);
-
+  virtual void prepare_display_region(DisplayRegionPipelineReader *dr);
   virtual void clear_before_callback();
   virtual void clear_state_and_transform();
 
@@ -287,8 +293,10 @@ public:
 
   INLINE const DisplayRegion *get_current_display_region() const;
   INLINE Lens::StereoChannel get_current_stereo_channel() const;
+  INLINE int get_current_tex_view_offset() const;
   INLINE const Lens *get_current_lens() const;
 
+  virtual const TransformState *get_cs_transform_for(CoordinateSystem cs) const;
   virtual const TransformState *get_cs_transform() const;
   INLINE const TransformState *get_inv_cs_transform() const;
 
@@ -309,7 +317,7 @@ public:
   virtual void bind_light(Spotlight *light_obj, const NodePath &light,
                           int light_id);
 
-  static void create_gamma_table (float gamma, unsigned short *red_table, unsigned short *green_table, unsigned short *blue_table);
+  static void create_gamma_table (PN_stdfloat gamma, unsigned short *red_table, unsigned short *green_table, unsigned short *blue_table);
 
   virtual PT(Texture) make_shadow_buffer(const NodePath &light_np, GraphicsOutputBase *host);
 
@@ -321,7 +329,7 @@ protected:
   virtual void reissue_transforms();
 
   virtual void enable_lighting(bool enable);
-  virtual void set_ambient_light(const Colorf &color);
+  virtual void set_ambient_light(const LColor &color);
   virtual void enable_light(int light_id, bool enable);
   virtual void begin_bind_lights();
   virtual void end_bind_lights();
@@ -361,7 +369,11 @@ protected:
   // This bitmask contains a 1 bit everywhere that _state_rs has a
   // known value.  If a bit is 0, the corresponding state must be
   // re-sent.
+  // 
+  // Derived GSGs should initialize _inv_state_mask in reset() as a mask of
+  // 1's where they don't care, and 0's where they do care, about the state.
   RenderState::SlotMask _state_mask;
+  RenderState::SlotMask _inv_state_mask;
 
   // The current transform, as of the last call to
   // set_state_and_transform().
@@ -390,6 +402,7 @@ protected:
 
   CPT(DisplayRegion) _current_display_region;
   Lens::StereoChannel _current_stereo_channel;
+  int _current_tex_view_offset;
   CPT(Lens) _current_lens;
   CPT(TransformState) _projection_mat;
   CPT(TransformState) _projection_mat_inv;
@@ -400,7 +413,7 @@ protected:
   CPT(TransformState) _cs_transform;
   CPT(TransformState) _inv_cs_transform;
 
-  Colorf _scene_graph_color;
+  LColor _scene_graph_color;
   bool _has_scene_graph_color;
   bool _transform_stale;
   bool _color_blend_involves_color_scale;
@@ -409,11 +422,11 @@ protected:
   bool _lighting_enabled;
   bool _clip_planes_enabled;
   bool _color_scale_enabled;
-  LVecBase4f _current_color_scale;
+  LVecBase4 _current_color_scale;
 
   bool _has_material_force_color;
-  Colorf _material_force_color;
-  LVecBase4f _light_color_scale;
+  LColor _material_force_color;
+  LVecBase4 _light_color_scale;
   bool _has_texture_alpha_scale;
 
   bool _tex_gen_modifies_mat;
@@ -465,7 +478,6 @@ protected:
   bool _copy_texture_inverted;
   bool _supports_multisample;
   bool _supports_generate_mipmap;
-  bool _supports_render_texture;
   bool _supports_depth_texture;
   bool _supports_depth_stencil;
   bool _supports_shadow_filter;
@@ -497,7 +509,7 @@ protected:
 
   Shader::ShaderCaps _shader_caps;
 
-  float _gamma;
+  PN_stdfloat _gamma;
   Texture::QualityLevel _texture_quality_override;
   
   ShaderGenerator* _shader_generator;

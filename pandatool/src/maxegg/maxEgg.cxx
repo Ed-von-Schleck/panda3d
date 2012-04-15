@@ -657,7 +657,7 @@ void MaxEggPlugin::GetMat(TimeValue t, INode* inode, ViewExp* vpt, Matrix3& tm)
 {
     tm = inode->GetObjectTM(t);
     tm.NoScale();
-    float scaleFactor = vpt->NonScalingObjectSize()*vpt->GetVPWorldWidth(tm.GetTrans())/(float)360.0;
+    PN_stdfloat scaleFactor = vpt->NonScalingObjectSize()*vpt->GetVPWorldWidth(tm.GetTrans())/(PN_stdfloat)360.0;
     tm.Scale(Point3(scaleFactor,scaleFactor,scaleFactor));
 }
 
@@ -671,7 +671,7 @@ void MaxEggPlugin::GetLocalBoundBox(TimeValue t, INode* inode, ViewExp* vpt, Box
     Matrix3 m = inode->GetObjectTM(t);
     Point3 pt;
     Point3 q[4];
-    float scaleFactor = vpt->GetVPWorldWidth(m.GetTrans())/360.0f;
+    PN_stdfloat scaleFactor = vpt->GetVPWorldWidth(m.GetTrans())/360.0f;
     box = mesh.getBoundingBox();
     box.Scale(scaleFactor);
 }
@@ -806,7 +806,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,ULONG fdwReason,LPVOID lpvReserved)
 
         if (!controlsInit) {
                 controlsInit = TRUE;
+
+#if MAX_VERSION_MAJOR < 14
+                // It appears that InitCustomControls is deprecated in 2012.
+                // I'm not sure if we can just remove it like this, but
+                // I've heard that it seems to work, so let's do it like this.
                 InitCustomControls(hInstance);  // Initialize MAX's custom controls
+#endif
                 InitCommonControls();                   // Initialize Win95 controls
         }
 

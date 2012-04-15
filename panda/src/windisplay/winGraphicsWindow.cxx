@@ -27,9 +27,6 @@
 #include <tchar.h>
 
 
-#define WANT_NEW_FOCUS_MANAGMENT
-
-
 
 TypeHandle WinGraphicsWindow::_type_handle;
 TypeHandle WinGraphicsWindow::WinWindowHandle::_type_handle;
@@ -99,7 +96,6 @@ WinGraphicsWindow(GraphicsEngine *engine, GraphicsPipe *pipe,
   _tracking_mouse_leaving = false;
   _maximized = false;
   _cursor = 0;
-  memset(_keyboard_state, 0, sizeof(BYTE) * num_virtual_keys);
   _lost_keypresses = false;
   _lshift_down = false;
   _rshift_down = false;
@@ -108,7 +104,7 @@ WinGraphicsWindow(GraphicsEngine *engine, GraphicsPipe *pipe,
   _lalt_down = false;
   _ralt_down = false;
   _hparent = NULL;
-#ifdef PANDA_WIN7
+#ifdef HAVE_WIN_TOUCHINPUT
   _numTouches = 0;
 #endif
 }
@@ -283,7 +279,9 @@ set_properties_now(WindowProperties &properties) {
   if (properties.has_title()) {
     string title = properties.get_title();
     _properties.set_title(title);
-    SetWindowText(_hWnd, title.c_str());
+    TextEncoder encoder;
+    wstring title_w = encoder.decode_text(title);
+    SetWindowTextW(_hWnd, title_w.c_str());
     properties.clear_title();
   }
 
@@ -366,6 +364,30 @@ set_properties_now(WindowProperties &properties) {
   }
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: WinGraphicsWindow::trigger_flip
+//       Access: Protected
+//  Description: To be called at the end of the frame, after the
+//               window has successfully been drawn and is ready to be
+//               flipped (if appropriate).
+////////////////////////////////////////////////////////////////////
+void WinGraphicsWindow::
+trigger_flip() {
+  GraphicsWindow::trigger_flip();
+
+  if (!get_unexposed_draw()) {
+    // Now that we've drawn or whatever, invalidate the rectangle so
+    // we won't redraw again until we get the WM_PAINT message.
+
+    InvalidateRect(_hWnd, NULL, FALSE);
+    _got_expose_event = false;
+
+    if (windisplay_cat.is_spam()) {
+      windisplay_cat.spam()
+        << "InvalidateRect: " << this << "\n";
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: WinGraphicsWindow::close_window
@@ -493,7 +515,7 @@ open_window() {
   set_focus();
 
   // Register for Win7 touch events.
-#ifdef PANDA_WIN7
+#ifdef HAVE_WIN_TOUCHINPUT
   RegisterTouchWindow(_hWnd, 0);
 #endif
   
@@ -691,9 +713,40 @@ do_reshape_request(int x_origin, int y_origin, bool has_origin,
 void WinGraphicsWindow::
 handle_reshape() {
   RECT view_rect;
-  GetClientRect(_hWnd, &view_rect);
-  ClientToScreen(_hWnd, (POINT*)&view_rect.left);   // translates top,left pnt
-  ClientToScreen(_hWnd, (POINT*)&view_rect.right);  // translates right,bottom pnt
+  if (!GetClientRect(_hWnd, &view_rect)) {
+    // Sometimes we get a "reshape" before the window is fully
+    // created, in which case GetClientRect() ought to fail.  Ignore
+    // this.
+    if (windisplay_cat.is_debug()) {
+      windisplay_cat.debug()
+        << "GetClientRect() failed in handle_reshape.  Ignoring.\n";
+    }
+    return;
+  }
+
+  // But in practice, GetClientRect() doesn't really fail, but just
+  // returns all zeroes.  Ignore this too.
+  if (view_rect.left == 0 && view_rect.right == 0 && 
+      view_rect.bottom == 0 && view_rect.top == 0) {
+    if (windisplay_cat.is_debug()) {
+      windisplay_cat.debug()
+        << "GetClientRect() returned all zeroes in handle_reshape.  Ignoring.\n";
+    }
+    return;
+  }
+
+  bool result = ClientToScreen(_hWnd, (POINT*)&view_rect.left);   // translates top,left pnt
+  if (result) {
+    result = ClientToScreen(_hWnd, (POINT*)&view_rect.right);  // translates right,bottom pnt
+  }
+
+  if (!result) {
+    if (windisplay_cat.is_debug()) {
+      windisplay_cat.debug()
+        << "ClientToScreen() failed in handle_reshape.  Ignoring.\n";
+    }
+    return;
+  }
   
   WindowProperties properties;
   properties.set_size((view_rect.right - view_rect.left), 
@@ -953,9 +1006,10 @@ bool WinGraphicsWindow::
 open_graphic_window(bool fullscreen) {
   DWORD window_style = make_style(fullscreen);
   
-  string title;
+  wstring title;
   if (_properties.has_title()) {
-    title = _properties.get_title();
+    TextEncoder encoder;
+    title = encoder.decode_text(_properties.get_title());
   }
 
   if (!_properties.has_size()) {
@@ -999,11 +1053,11 @@ open_graphic_window(bool fullscreen) {
   }
 
   if (!_hparent) { // This can be a regular window or a fullscreen window
-    _hWnd = CreateWindow(wclass._name.c_str(), title.c_str(), window_style, 
-                         metrics.x, metrics.y,
-                         metrics.width,
-                         metrics.height,
-                         NULL, NULL, hinstance, 0);
+    _hWnd = CreateWindowW(wclass._name.c_str(), title.c_str(), window_style, 
+                          metrics.x, metrics.y,
+                          metrics.width,
+                          metrics.height,
+                          NULL, NULL, hinstance, 0);
   } else { // This is a regular window with a parent
     int x_origin = 0;
     int y_origin = 0;
@@ -1013,11 +1067,11 @@ open_graphic_window(bool fullscreen) {
       y_origin = _properties.get_y_origin();
     }
 
-    _hWnd = CreateWindow(wclass._name.c_str(), title.c_str(), 
-                         WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS ,
-                         x_origin, y_origin,
-                         _properties.get_x_size(), _properties.get_y_size(),
-                         _hparent, NULL, hinstance, 0);
+    _hWnd = CreateWindowW(wclass._name.c_str(), title.c_str(), 
+                          WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS ,
+                          x_origin, y_origin,
+                          _properties.get_x_size(), _properties.get_y_size(),
+                          _hparent, NULL, hinstance, 0);
     
     if (_hWnd) {
       // join our keyboard state with the parents
@@ -1451,13 +1505,26 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       handle_reshape();
     }
     break;
-    
+
   case WM_EXITSIZEMOVE:
     handle_reshape();
     break;
 
   case WM_WINDOWPOSCHANGED:
     adjust_z_order();
+    break;
+
+  case WM_PAINT:
+    // In response to WM_PAINT, we check to see if there are any
+    // update regions at all; if there are, we declare the window
+    // exposed.  This is used to implement !_unexposed_draw.
+    if (GetUpdateRect(_hWnd, NULL, false)) {
+      if (windisplay_cat.is_spam()) {
+        windisplay_cat.spam()
+          << "Got update regions: " << this << "\n";
+      }
+      _got_expose_event = true;
+    }
     break;
     
   case WM_LBUTTONDOWN:
@@ -1723,6 +1790,12 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     // supposed to come in through WM_CHAR, too, but there seems to
     // be a bug in Win2000 in that it only sends question mark
     // characters through here.)
+
+    // Actually, probably that "bug" was due to the fact that we were
+    // previously using the ANSI versions of RegisterClass etc., in
+    // which case the actual value passed to WM_CHAR seems to be
+    // poorly defined.  Now we are using RegisterClassW etc., which
+    // means WM_CHAR is absolutely supposed to be utf-16.
     if (!_ime_open) {
       _input_devices[0].keystroke(wparam);
     }
@@ -1734,7 +1807,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     }
     if (windisplay_cat.is_debug()) {
       windisplay_cat.debug()
-        << "keydown: " << wparam << " (" << lookup_key(wparam) << ")\n";
+        << "syskeydown: " << wparam << " (" << lookup_key(wparam) << ")\n";
     }
     {
       // Alt and F10 are sent as WM_SYSKEYDOWN instead of WM_KEYDOWN
@@ -1968,80 +2041,12 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     break;
     
   case WM_KILLFOCUS: 
-    if (windisplay_cat.is_debug()) 
-      {
-        windisplay_cat.debug()
-          << "killfocus\n";
-      }
-
-#ifndef WANT_NEW_FOCUS_MANAGMENT
-    if (!_lost_keypresses) 
-      {
-        // Record the current state of the keyboard when the focus is
-        // lost, so we can check it for changes when we regain focus.
-        GetKeyboardState(_keyboard_state);
-        if (windisplay_cat.is_debug()) {
-          // Report the set of keys that are held down at the time of
-          // the killfocus event.
-          for (int i = 0; i < num_virtual_keys; i++) 
-            {
-              if (i != VK_SHIFT && i != VK_CONTROL && i != VK_MENU) 
-                {
-                  if ((_keyboard_state[i] & 0x80) != 0) 
-                    {
-                      windisplay_cat.debug()
-                        << "on killfocus, key is down: " << i
-                        << " (" << lookup_key(i) << ")\n";
-                    }
-                }
-            }
-        }
-
-        if (!hold_keys_across_windows) 
-          {
-            // If we don't want to remember the keystate while the
-            // window focus is lost, then generate a keyup event
-            // right now for each key currently held.
-            double message_time = get_message_time();
-            for (int i = 0; i < num_virtual_keys; i++) 
-              {
-                if (i != VK_SHIFT && i != VK_CONTROL && i != VK_MENU) 
-                  {
-                    if ((_keyboard_state[i] & 0x80) != 0) 
-                      {
-                        handle_keyrelease(lookup_key(i), message_time);
-                        _keyboard_state[i] &= ~0x80;
-                      }
-                  }
-              }
-          }
-          
-        // Now set the flag indicating that some keypresses from now
-        // on may be lost.
-        _lost_keypresses = true;
-      }
-#else // WANT_NEW_FOCUS_MANAGMENT
-    {
-      double message_time = get_message_time();
-      int i;
-      for (i = 0; i < num_virtual_keys; i++) {
-        ButtonHandle bh = lookup_key(i);
-        if(bh != ButtonHandle::none()) {
-          handle_keyrelease(bh,message_time);
-        }
-      }
-      memset(_keyboard_state, 0, sizeof(BYTE) * num_virtual_keys);
-
-      // Also up the mouse buttons.
-      for (i = 0; i < MouseButton::num_mouse_buttons; ++i) {
-        handle_keyrelease(MouseButton::button(i), message_time);
-      }
-      handle_keyrelease(MouseButton::wheel_up(), message_time);
-      handle_keyrelease(MouseButton::wheel_down(), message_time);
-
-      _lost_keypresses = true;
+    if (windisplay_cat.is_debug()) {
+      windisplay_cat.debug()
+        << "killfocus\n";
     }
-#endif // WANT_NEW_FOCUS_MANAGMENT
+
+    _input_devices[0].focus_lost(get_message_time());
     properties.set_foreground(false);
     system_changed_properties(properties);
     break;
@@ -2098,14 +2103,14 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     system_changed_properties(properties);
     break;
 
-#ifdef PANDA_WIN7
+#ifdef HAVE_WIN_TOUCHINPUT
   case WM_TOUCH:
-		_numTouches = LOWORD(wparam);
-		if(_numTouches > MAX_TOUCHES)
-			_numTouches = MAX_TOUCHES;
-		GetTouchInputInfo((HTOUCHINPUT)lparam, _numTouches, _touches, sizeof(TOUCHINPUT));
-		CloseTouchInputHandle((HTOUCHINPUT)lparam);
-	break;
+        _numTouches = LOWORD(wparam);
+        if(_numTouches > MAX_TOUCHES)
+            _numTouches = MAX_TOUCHES;
+        GetTouchInputInfo((HTOUCHINPUT)lparam, _numTouches, _touches, sizeof(TOUCHINPUT));
+        CloseTouchInputHandle((HTOUCHINPUT)lparam);
+    break;
 #endif
   }
 
@@ -2114,7 +2119,7 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       (*it)->wnd_proc(this, hwnd, msg, wparam, lparam);
   }
 
-  return DefWindowProc(hwnd, msg, wparam, lparam);
+  return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
 
@@ -2142,7 +2147,7 @@ static_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
   // Oops, we weren't creating a window!  Don't know how to handle the
   // message, so just pass it on to Windows to deal with it.
-  return DefWindowProc(hwnd, msg, wparam, lparam);
+  return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2177,81 +2182,11 @@ process_1_event() {
 ////////////////////////////////////////////////////////////////////
 void WinGraphicsWindow::
 resend_lost_keypresses() {
-  _lost_keypresses = false;
-  return;
   nassertv(_lost_keypresses);
-  if (windisplay_cat.is_debug()) {
-    windisplay_cat.debug()
-      << "resending lost keypresses\n";
-  }
+  // This is now a no-op.  Not sure we really want to generate new
+  // "down" or "resume" events for keys that were held while the
+  // window focus is restored.
 
-  BYTE new_keyboard_state[num_virtual_keys];
-  GetKeyboardState(new_keyboard_state);
-  double message_time = get_message_time();
-
-#ifndef WANT_NEW_FOCUS_MANAGMENT
-  for (int i = 0; i < num_virtual_keys; i++) {
-    // Filter out these particular three.  We don't want to test
-    // these, because these are virtual duplicates for
-    // VK_LSHIFT/VK_RSHIFT, etc.; and the left/right equivalent is
-    // also in the table.  If we respect both VK_LSHIFT as well as
-    // VK_SHIFT, we'll generate two keyboard messages when
-    // VK_LSHIFT changes state.
-    if (i != VK_SHIFT && i != VK_CONTROL && i != VK_MENU) {
-      if (((new_keyboard_state[i] ^ _keyboard_state[i]) & 0x80) != 0) {
-        // This key has changed state.
-        if ((new_keyboard_state[i] & 0x80) != 0) {
-          // The key is now held down.
-          if (windisplay_cat.is_debug()) {
-            windisplay_cat.debug()
-              << "key has gone down: " << i << " (" << lookup_key(i) << ")\n";
-          }
-          
-          // Roger
-          //handle_keyresume(lookup_key(i), message_time);
-          // resume does not seem to work and sending the pointer position seems to 
-          // weird ot some cursor controls
-           ButtonHandle key = lookup_key(i);
-           if (key != ButtonHandle::none())
-                _input_devices[0].button_down(key, message_time);
-
-
-        } else {
-          // The key is now released.
-          if (windisplay_cat.is_debug()) {
-            windisplay_cat.debug()
-              << "key has gone up: " << i << " (" << lookup_key(i) << ")\n";
-          }
-          handle_keyrelease(lookup_key(i), message_time);
-        }
-      } else {
-        // This key is in the same state.
-        if (windisplay_cat.is_debug()) {
-          if ((new_keyboard_state[i] & 0x80) != 0) {
-            windisplay_cat.debug()
-              << "key is still down: " << i << " (" << lookup_key(i) << ")\n";
-          }
-        }
-      }
-    }
-  }
-#else // WANT_NEW_FOCUS_MANAGMENT
-  for (int i = 0; i < num_virtual_keys; i++) 
-  {
-      if ((new_keyboard_state[i] & 0x80) != 0) 
-      {
-          ButtonHandle key = lookup_key(i);
-          if (key != ButtonHandle::none())
-            if (windisplay_cat.is_debug()) {
-              windisplay_cat.debug()
-                << "resending key: " << " (" << key << ")\n";
-            }
-          _input_devices[0].button_down(key, message_time);
-      }
-  }
-#endif  // WANT_NEW_FOCUS_MANAGMENT
-
-  // Keypresses are no longer lost.
   _lost_keypresses = false;
 }
 
@@ -2391,6 +2326,45 @@ show_error_message(DWORD message_id) {
   MessageBox(GetDesktopWindow(), message_buffer, _T(errorbox_title), MB_OK);
   windisplay_cat.fatal() << "System error msg: " << message_buffer << endl;
   LocalFree(message_buffer);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: WinGraphicsWindow::handle_keypress
+//       Access: Private
+//  Description:
+////////////////////////////////////////////////////////////////////
+void WinGraphicsWindow::
+handle_keypress(ButtonHandle key, int x, int y, double time) {
+  _input_devices[0].set_pointer_in_window(x, y);
+  if (key != ButtonHandle::none()) {
+    _input_devices[0].button_down(key, time);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: WinGraphicsWindow::handle_keyresume
+//       Access: Private
+//  Description: Indicates we detected a key was already down when the
+//               focus is restored to the window.  Mainly useful for
+//               tracking the state of modifier keys.
+////////////////////////////////////////////////////////////////////
+void WinGraphicsWindow::
+handle_keyresume(ButtonHandle key, double time) {
+  if (key != ButtonHandle::none()) {
+    _input_devices[0].button_resume_down(key, time);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: WinGraphicsWindow::handle_keyrelease
+//       Access: Private
+//  Description:
+////////////////////////////////////////////////////////////////////
+void WinGraphicsWindow::
+handle_keyrelease(ButtonHandle key, double time) {
+  if (key != ButtonHandle::none()) {
+    _input_devices[0].button_up(key, time);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2690,8 +2664,8 @@ static HCURSOR get_cursor(const Filename &filename);
 const WinGraphicsWindow::WindowClass &WinGraphicsWindow::
 register_window_class(const WindowProperties &props) {
   WindowClass wcreg(props);
-  ostringstream wclass_name;
-  wclass_name << "WinGraphicsWindow" << _window_class_index;
+  wostringstream wclass_name;
+  wclass_name << L"WinGraphicsWindow" << _window_class_index;
   wcreg._name = wclass_name.str();
 
   pair<WindowClasses::iterator, bool> found = _window_classes.insert(wcreg);
@@ -2705,12 +2679,12 @@ register_window_class(const WindowProperties &props) {
   // We have not yet created this window class.
   _window_class_index++;
 
-  WNDCLASS wc;
+  WNDCLASSW wc;
 
   HINSTANCE instance = GetModuleHandle(NULL);
 
   // Clear before filling in window structure!
-  ZeroMemory(&wc, sizeof(WNDCLASS));
+  ZeroMemory(&wc, sizeof(wc));
   wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
   wc.lpfnWndProc = (WNDPROC)static_window_proc;
   wc.hInstance = instance;
@@ -2721,7 +2695,7 @@ register_window_class(const WindowProperties &props) {
   wc.lpszMenuName = NULL;
   wc.lpszClassName = wclass._name.c_str();
   
-  if (!RegisterClass(&wc)) {
+  if (!RegisterClassW(&wc)) {
     windisplay_cat.error()
       << "could not register window class " << wclass._name << "!" << endl;
     return wclass;
@@ -2887,7 +2861,7 @@ bool WinGraphicsWindow::supports_window_procs() const{
 ////////////////////////////////////////////////////////////////////
 bool WinGraphicsWindow::
 is_touch_event(GraphicsWindowProcCallbackData* callbackData){
-#ifdef PANDA_WIN7
+#ifdef HAVE_WIN_TOUCHINPUT
   return callbackData->get_msg() == WM_TOUCH;
 #else
   return false;
@@ -2902,7 +2876,7 @@ is_touch_event(GraphicsWindowProcCallbackData* callbackData){
 ////////////////////////////////////////////////////////////////////
 int WinGraphicsWindow::
 get_num_touches(){
-#ifdef PANDA_WIN7
+#ifdef HAVE_WIN_TOUCHINPUT
   return _numTouches;
 #else
   return 0;
@@ -2917,7 +2891,7 @@ get_num_touches(){
 ////////////////////////////////////////////////////////////////////
 TouchInfo WinGraphicsWindow::
 get_touch_info(int index){
-#ifdef PANDA_WIN7
+#ifdef HAVE_WIN_TOUCHINPUT
   TOUCHINPUT ti = _touches[index];
   POINT point;
   point.x = TOUCH_COORD_TO_PIXEL(ti.x);

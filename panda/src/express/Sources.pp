@@ -1,9 +1,9 @@
-#define LOCAL_LIBS pandabase
-#define OTHER_LIBS interrogatedb:c dconfig:c dtoolconfig:m \
-                   dtoolutil:c dtoolbase:c dtool:m prc:c
+#define LOCAL_LIBS p3pandabase
+#define OTHER_LIBS p3interrogatedb:c p3dconfig:c p3dtoolconfig:m \
+                   p3dtoolutil:c p3dtoolbase:c p3dtool:m p3prc:c
 
 #begin lib_target
-  #define TARGET express
+  #define TARGET p3express
   #define USE_PACKAGES zlib openssl tar
   
   #define COMBINED_SOURCES $[TARGET]_composite1.cxx $[TARGET]_composite2.cxx
@@ -13,8 +13,8 @@
     ca_bundle_data_src.c \
     checksumHashGenerator.I checksumHashGenerator.h circBuffer.I \
     circBuffer.h \
-    config_express.h \
     compress_string.h \
+    config_express.h \
     copy_stream.h \
     datagram.I datagram.h datagramGenerator.I \
     datagramGenerator.h \
@@ -23,6 +23,7 @@
     encrypt_string.h \
     error_utils.h \
     export_dtool.h \
+    fileReference.h fileReference.I \
     hashGeneratorBase.I hashGeneratorBase.h \
     hashVal.I hashVal.h \
     indirectLess.I indirectLess.h \
@@ -33,11 +34,12 @@
     multifile.I multifile.h \
     namable.I \
     namable.h \
-    nodePointerToBase.h nodePointerToBase.I \
     nodePointerTo.h nodePointerTo.I \
+    nodePointerToBase.h nodePointerToBase.I \
     nodeReferenceCount.h nodeReferenceCount.I \
     openSSLWrapper.h openSSLWrapper.I \
     ordered_vector.h ordered_vector.I ordered_vector.T \
+    pStatCollectorForwardBase.h \
     password_hash.h \
     patchfile.I patchfile.h \
     pointerTo.I pointerTo.h \
@@ -46,25 +48,27 @@
     pointerToBase.I pointerToBase.h \
     pointerToVoid.I pointerToVoid.h \
     profileTimer.I profileTimer.h \
-    pStatCollectorForwardBase.h \
-    pta_uchar.h pta_float.h \
     pta_int.h \
+    pta_uchar.h pta_double.h pta_float.h \
+    pta_stdfloat.h \
     ramfile.I ramfile.h \
     referenceCount.I referenceCount.h \
-    stringDecoder.h stringDecoder.I \
     subStream.I subStream.h subStreamBuf.h \
-    textEncoder.h textEncoder.I \
+    subfileInfo.h subfileInfo.I \
+    temporaryFile.h temporaryFile.I \
     threadSafePointerTo.I threadSafePointerTo.h \
     threadSafePointerToBase.I threadSafePointerToBase.h \
     trueClock.I trueClock.h \
     typedReferenceCount.I typedReferenceCount.h typedef.h \
-    unicodeLatinMap.h \
-    vector_uchar.h vector_float.h \
-    virtualFileComposite.h virtualFileComposite.I virtualFile.h \
+    vector_uchar.h vector_double.h vector_float.h \
+    vector_stdfloat.h \
     virtualFile.I virtualFileList.I virtualFileList.h virtualFileMount.h \
+    virtualFileComposite.h virtualFileComposite.I virtualFile.h \
     virtualFileMount.I virtualFileMountMultifile.h \
-    virtualFileMountMultifile.I virtualFileMountSystem.h \
-    virtualFileMountSystem.I virtualFileSimple.h virtualFileSimple.I \
+    virtualFileMountMultifile.I \
+    virtualFileMountRamdisk.h virtualFileMountRamdisk.I \
+    virtualFileMountSystem.h virtualFileMountSystem.I \
+    virtualFileSimple.h virtualFileSimple.I \
     virtualFileSystem.h virtualFileSystem.I \
     weakPointerCallback.I weakPointerCallback.h \
     weakPointerTo.I weakPointerTo.h \
@@ -76,23 +80,25 @@
 
   #define INCLUDED_SOURCES  \
     buffer.cxx checksumHashGenerator.cxx \
-    config_express.cxx \
     compress_string.cxx \
+    config_express.cxx \
     copy_stream.cxx \
     datagram.cxx datagramGenerator.cxx \
     datagramIterator.cxx \
     datagramSink.cxx dcast.cxx \
     encrypt_string.cxx \
     error_utils.cxx \
+    fileReference.cxx \
     hashGeneratorBase.cxx hashVal.cxx \
     memoryInfo.cxx memoryUsage.cxx memoryUsagePointerCounts.cxx \
     memoryUsagePointers.cxx multifile.cxx \
     namable.cxx \
-    nodePointerToBase.cxx \
     nodePointerTo.cxx \
+    nodePointerToBase.cxx \
     nodeReferenceCount.cxx \
     openSSLWrapper.cxx \
     ordered_vector.cxx \
+    pStatCollectorForwardBase.cxx \
     password_hash.cxx \
     patchfile.cxx \
     pointerTo.cxx \
@@ -100,23 +106,23 @@
     pointerToBase.cxx \
     pointerToVoid.cxx \
     profileTimer.cxx \
-    pStatCollectorForwardBase.cxx \
-    pta_uchar.cxx pta_float.cxx \
     pta_int.cxx \
+    pta_uchar.cxx pta_double.cxx pta_float.cxx \
     ramfile.cxx \
     referenceCount.cxx \
-    stringDecoder.cxx \
     subStream.cxx subStreamBuf.cxx \
-    textEncoder.cxx \
+    subfileInfo.cxx \
+    temporaryFile.cxx \
     threadSafePointerTo.cxx \
     threadSafePointerToBase.cxx \
     trueClock.cxx \
     typedReferenceCount.cxx \
-    unicodeLatinMap.cxx \
-    vector_uchar.cxx vector_float.cxx \
+    vector_uchar.cxx vector_double.cxx vector_float.cxx \
     virtualFileComposite.cxx virtualFile.cxx virtualFileList.cxx \
     virtualFileMount.cxx \
-    virtualFileMountMultifile.cxx virtualFileMountSystem.cxx \
+    virtualFileMountMultifile.cxx \
+    virtualFileMountRamdisk.cxx \
+    virtualFileMountSystem.cxx \
     virtualFileSimple.cxx virtualFileSystem.cxx \
     weakPointerCallback.cxx \
     weakPointerTo.cxx \
@@ -131,8 +137,8 @@
     ca_bundle_data_src.c \
     checksumHashGenerator.I checksumHashGenerator.h circBuffer.I \
     circBuffer.h \
-    config_express.h \
     compress_string.h \
+    config_express.h \
     copy_stream.h \
     datagram.I datagram.h datagramGenerator.I \
     datagramGenerator.h \
@@ -140,6 +146,7 @@
     dcast.T dcast.h \
     encrypt_string.h \
     error_utils.h \
+    fileReference.h fileReference.I \
     hashGeneratorBase.I hashGeneratorBase.h \
     hashVal.I hashVal.h \
     indirectLess.I indirectLess.h \
@@ -150,11 +157,12 @@
     multifile.I multifile.h \
     namable.I \
     namable.h \
-    nodePointerToBase.h nodePointerToBase.I \
     nodePointerTo.h nodePointerTo.I \
+    nodePointerToBase.h nodePointerToBase.I \
     nodeReferenceCount.h nodeReferenceCount.I \
     openSSLWrapper.h openSSLWrapper.I \
     ordered_vector.h ordered_vector.I ordered_vector.T \
+    pStatCollectorForwardBase.h \
     password_hash.h \
     patchfile.I patchfile.h \
     pointerTo.I pointerTo.h \
@@ -163,25 +171,27 @@
     pointerToBase.I pointerToBase.h \
     pointerToVoid.I pointerToVoid.h \
     profileTimer.I profileTimer.h \
-    pStatCollectorForwardBase.h \
-    pta_uchar.h pta_float.h \
     pta_int.h \
+    pta_uchar.h pta_double.h pta_float.h \
+    pta_stdfloat.h \
     ramfile.I ramfile.h \
     referenceCount.I referenceCount.h \
-    stringDecoder.h stringDecoder.I \
     subStream.I subStream.h subStreamBuf.h \
-    textEncoder.h textEncoder.I \
+    subfileInfo.h subfileInfo.I \
+    temporaryFile.h temporaryFile.I \
     threadSafePointerTo.I threadSafePointerTo.h \
     threadSafePointerToBase.I threadSafePointerToBase.h \
     trueClock.I trueClock.h \
     typedReferenceCount.I typedReferenceCount.h typedef.h \
-    unicodeLatinMap.h \
-    vector_uchar.h vector_float.h \
-    virtualFileComposite.h virtualFileComposite.I virtualFile.h \
+    vector_uchar.h vector_double.h vector_float.h \
+    vector_stdfloat.h \
     virtualFile.I virtualFileList.I virtualFileList.h virtualFileMount.h \
+    virtualFileComposite.h virtualFileComposite.I virtualFile.h \
     virtualFileMount.I virtualFileMountMultifile.h \
-    virtualFileMountMultifile.I virtualFileMountSystem.h \
-    virtualFileMountSystem.I virtualFileSimple.h virtualFileSimple.I \
+    virtualFileMountMultifile.I \
+    virtualFileMountRamdisk.h virtualFileMountRamdisk.I \
+    virtualFileMountSystem.h virtualFileMountSystem.I \
+    virtualFileSimple.h virtualFileSimple.I \
     virtualFileSystem.h virtualFileSystem.I \
     weakPointerCallback.I weakPointerCallback.h \
     weakPointerTo.I weakPointerTo.h \
@@ -200,7 +210,7 @@
   #if $[ne $[PLATFORM], FreeBSD]
     #define UNIX_SYS_LIBS dl
   #endif
-  #define WIN_SYS_LIBS shell32.lib
+  #define WIN_SYS_LIBS shell32.lib $[WIN_SYS_LIBS]
   #define OSX_SYS_FRAMEWORKS Foundation $[if $[not $[BUILD_IPHONE]],AppKit]
 
 #end lib_target
@@ -210,8 +220,8 @@
   // ca_bundle_data_src.c.
 
   #define TARGET make_ca_bundle
-  #define LOCAL_LIBS $[LOCAL_LIBS] express
-  #define OTHER_LIBS pystub
+  #define LOCAL_LIBS $[LOCAL_LIBS] p3express
+  #define OTHER_LIBS p3dtoolutil:c p3dtool:m p3pystub
 
   #define SOURCES \
     make_ca_bundle.cxx
@@ -221,8 +231,8 @@
 
 #begin test_bin_target
   #define TARGET test_types
-  #define LOCAL_LIBS $[LOCAL_LIBS] express
-  #define OTHER_LIBS pystub
+  #define LOCAL_LIBS $[LOCAL_LIBS] p3express
+  #define OTHER_LIBS p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m p3pystub
 
   #define SOURCES \
     test_types.cxx
@@ -236,8 +246,8 @@
   #define SOURCES \
     test_ordered_vector.cxx
 
-  #define LOCAL_LIBS $[LOCAL_LIBS] putil
-  #define OTHER_LIBS $[OTHER_LIBS] pystub
+  #define LOCAL_LIBS $[LOCAL_LIBS] p3putil
+  #define OTHER_LIBS p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m p3pystub
 
 #end test_bin_target
 
@@ -246,8 +256,8 @@
 #begin test_bin_target
   #define TARGET test_zstream
   #define USE_PACKAGES zlib
-  #define LOCAL_LIBS $[LOCAL_LIBS] express
-  #define OTHER_LIBS dtoolutil:c dtool:m pystub
+  #define LOCAL_LIBS $[LOCAL_LIBS] p3express
+  #define OTHER_LIBS p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m p3pystub
 
   #define SOURCES \
     test_zstream.cxx

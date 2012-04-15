@@ -37,7 +37,7 @@ make_vertex() {
   if (_vertex != 0) {
     return _vertex;
   }
-  ColorAttrib *attrib = new ColorAttrib(T_vertex, Colorf::zero());
+  ColorAttrib *attrib = new ColorAttrib(T_vertex, LColor::zero());
   _vertex = return_new(attrib);
   return _vertex;
 }
@@ -49,7 +49,7 @@ make_vertex() {
 //               geometry should be rendered in the indicated color.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) ColorAttrib::
-make_flat(const Colorf &color) {
+make_flat(const LColor &color) {
   ColorAttrib *attrib = new ColorAttrib(T_flat, color);
   return return_new(attrib);
 }
@@ -65,7 +65,7 @@ make_off() {
   if (_off != 0) {
     return _off;
   }
-  ColorAttrib *attrib = new ColorAttrib(T_off, Colorf(1.0f, 1.0f, 1.0f, 1.0f));
+  ColorAttrib *attrib = new ColorAttrib(T_off, LColor(1.0f, 1.0f, 1.0f, 1.0f));
   _off = return_new(attrib);
   return _off;
 }
@@ -134,6 +134,41 @@ compare_to_impl(const RenderAttrib *other) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: ColorAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t ColorAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  hash = int_hash::add_hash(hash, (int)_type);
+  if (_type == T_flat) {
+    hash = _color.add_hash(hash);
+  }
+  return hash;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColorAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) ColorAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  // For a ColorAttrib, the only relevant information is the type: is
+  // it flat-shaded or vertex-shaded?  The actual color value is read
+  // by the shader from the graphics state.
+
+  ColorAttrib *attrib = new ColorAttrib(_type, LColor(1.0f, 1.0f, 1.0f, 1.0f));
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: ColorAttrib::quantize_color
 //       Access: Private
 //  Description: Quantizes the color color to the nearest multiple of
@@ -195,7 +230,7 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 ////////////////////////////////////////////////////////////////////
 TypedWritable *ColorAttrib::
 make_from_bam(const FactoryParams &params) {
-  ColorAttrib *attrib = new ColorAttrib(T_off, Colorf::zero());
+  ColorAttrib *attrib = new ColorAttrib(T_off, LColor::zero());
   DatagramIterator scan;
   BamReader *manager;
 

@@ -18,17 +18,9 @@
 #include "interrogateDatabase.h"
 #include "cppGlobals.h"
 #include "pnotify.h"
+#include "panda_getopt_long.h"
+#include "preprocess_argv.h"
 #include <time.h>
-
-// If our system getopt() doesn't come with getopt_long_only(), then use
-// the GNU flavor that we've got in tool for this purpose.
-#ifndef HAVE_GETOPT_LONG_ONLY
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
 
 CPPParser parser;
 
@@ -84,6 +76,7 @@ enum CommandOptions {
   CO_longlong,
   CO_promiscuous,
   CO_spam,
+  CO_noangles,
   CO_help,
 };
 
@@ -110,6 +103,7 @@ static struct option long_options[] = {
   { "longlong", required_argument, NULL, CO_longlong },
   { "promiscuous", no_argument, NULL, CO_promiscuous },
   { "spam", no_argument, NULL, CO_spam },
+  { "noangles", no_argument, NULL, CO_noangles },
   { "help", no_argument, NULL, CO_help },
   { NULL }
 };
@@ -284,7 +278,11 @@ void show_help() {
 
     << "  -spam\n"
     << "        Generate wrapper functions that report each invocation to Notify.\n"
-    << "        This can sometimes be useful for tracking down bugs.\n\n";
+    << "        This can sometimes be useful for tracking down bugs.\n\n"
+
+    << "  -noangles\n"
+    << "        Treat #include <file> the same as #include \"file\".  This means -I\n"
+    << "        and -S are equivalent.\n\n";
 }
 
 // handle commandline -D options
@@ -305,7 +303,8 @@ predefine_macro(CPPParser& parser, const string& inoption) {
 }
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
+  preprocess_argv(argc, argv);
   string command_line;
   int i;
   for (i = 0; i < argc; i++) {
@@ -438,6 +437,10 @@ main(int argc, char *argv[]) {
       generate_spam = true;
       break;
 
+    case CO_noangles:
+      parser._noangles = true;
+      break;
+
     case 'h':
     case CO_help:
       show_help();
@@ -503,8 +506,11 @@ main(int argc, char *argv[]) {
   // Now that we've parsed all the source code, change the way things
   // are output from now on so we can compile our generated code using
   // VC++.  Sheesh.
-  cppparser_output_class_keyword = false;
 
+  // Actually, don't do this any more, since it bitches some of the
+  // logic (particularly with locating alt names), and it shouldn't be
+  // necessary with modern VC++.
+  //  cppparser_output_class_keyword = false;
 
   // Now look for the .N files.
   for (i = 1; i < argc; ++i) {

@@ -55,10 +55,12 @@ class ShowBase(DirectObject.DirectObject):
     notify = directNotify.newCategory("ShowBase")
 
     def __init__(self, fStartDirect = True, windowType = None):
-        __builtin__.__dev__ = config.GetBool('want-dev', 0)
-        logStackDump = (config.GetBool('log-stack-dump', 0) or
-                        config.GetBool('client-log-stack-dump', 0))
-        uploadStackDump = config.GetBool('upload-stack-dump', 0)
+        self.__dev__ = config.GetBool('want-dev', __debug__)
+        __builtin__.__dev__ = self.__dev__
+        
+        logStackDump = (config.GetBool('log-stack-dump', False) or
+                        config.GetBool('client-log-stack-dump', False))
+        uploadStackDump = config.GetBool('upload-stack-dump', False)
         if logStackDump or uploadStackDump:
             ExceptionVarDump.install(logStackDump, uploadStackDump)
 
@@ -102,6 +104,8 @@ class ShowBase(DirectObject.DirectObject):
         self.sfxManagerIsValidList = []
 
         self.wantStats = self.config.GetBool('want-pstats', 0)
+        self.wantTk = False
+        self.wantWx = False
 
         # Fill this in with a function to invoke when the user "exits"
         # the program by closing the main window.
@@ -123,14 +127,8 @@ class ShowBase(DirectObject.DirectObject):
         # has to run before libpanda is even loaded).
         taskMgr.resumeFunc = PStatClient.resumeAfterPause
 
-        if(self.config.GetBool("want-dev",0)):
-            import profile, pstats        
-            profile.Profile.bias = float(self.config.GetString("profile-bias","0"))
-            
-               
-            def f8(x):
-                return ("%"+"8.%df"%base.config.GetInt("profile-decimals",3)) % x
-            pstats.f8=f8
+        if self.__dev__:
+            self.__setupProfile()
 
         # If the aspect ratio is 0 or None, it means to infer the
         # aspect ratio from the window size.
@@ -149,6 +147,7 @@ class ShowBase(DirectObject.DirectObject):
         # *all* windows.  Similarly with base.camList.
         self.win = None
         self.frameRateMeter = None
+        self.sceneGraphAnalyzerMeter = None
         self.winList = []
         self.winControls = []
         self.mainWinMinimized = 0
@@ -175,6 +174,9 @@ class ShowBase(DirectObject.DirectObject):
         self.camNode = None
         self.camLens = None
         self.camFrustumVis = None
+        self.direct = None
+        self.wxApp = None
+        self.tkRoot = None
 
         # This is used for syncing multiple PCs in a distributed cluster
         try:
@@ -199,7 +201,6 @@ class ShowBase(DirectObject.DirectObject):
         # stores a CollisionTraverser pointer here, we'll traverse it
         # in the collisionLoop task.
         self.shadowTrav = 0
-        # in the collisionLoop task.
         self.cTrav = 0
         self.cTravStack = Stack()
         # Ditto for an AppTraverser.
@@ -241,6 +242,13 @@ class ShowBase(DirectObject.DirectObject):
             if (self.config.GetBool('read-raw-mice', 0)):
                 props.setRawMice(1)
             self.openDefaultWindow(startDirect = False, props=props)
+
+        # The default is trackball mode, which is more convenient for
+        # ad-hoc development in Python using ShowBase.  Applications
+        # can explicitly call base.useDrive() if they prefer a drive
+        # interface.
+        self.mouseInterface = self.trackball
+        self.useTrackball()
 
         self.loader = Loader.Loader(self)
         self.graphicsEngine.setDefaultLoader(self.loader.loader)
@@ -303,6 +311,10 @@ class ShowBase(DirectObject.DirectObject):
                 # Windows XP supports a 32-bit affinity mask
                 TrueClock.getGlobalPtr().setCpuAffinity(1 << (affinity % 32))
 
+        # Make sure we're not making more than one ShowBase.
+        if hasattr(__builtin__, 'base'):
+            raise StandardError, "Attempt to spawn multiple ShowBase instances!"
+        
         __builtin__.base = self
         __builtin__.render2d = self.render2d
         __builtin__.aspect2d = self.aspect2d
@@ -337,7 +349,10 @@ class ShowBase(DirectObject.DirectObject):
             __builtin__.aspect2dp = self.aspect2dp
             __builtin__.pixel2dp = self.pixel2dp
 
-        ShowBase.notify.info('__dev__ == %s' % __dev__)
+        if __dev__:
+            ShowBase.notify.debug('__dev__ == %s' % __dev__)
+        else:
+            ShowBase.notify.info('__dev__ == %s' % __dev__)
 
         # set up recording of Functor creation stacks in __dev__
         PythonUtil.recordFunctorCreationStacks()
@@ -346,6 +361,12 @@ class ShowBase(DirectObject.DirectObject):
             if self.config.GetBool('track-gui-items', True):
                 # dict of guiId to gui item, for tracking down leaks
                 self.guiItems = {}
+
+        # optionally restore the default gui sounds from 1.7.2 and earlier
+        if ConfigVariableBool('orig-gui-sounds', False).getValue():
+            from direct.gui import DirectGuiGlobals as DGG
+            DGG.setDefaultClickSound(self.loader.loadSfx("audio/sfx/GUI_click.wav"))
+            DGG.setDefaultRolloverSound(self.loader.loadSfx("audio/sfx/GUI_rollover.wav"))
 
         # Now hang a hook on the window-event from Panda.  This allows
         # us to detect when the user resizes, minimizes, or closes the
@@ -356,8 +377,9 @@ class ShowBase(DirectObject.DirectObject):
         import Transitions
         self.transitions = Transitions.Transitions(self.loader)
 
-        # Setup the window controls - handy for multiwindow applications
-        self.setupWindowControls()
+        if self.win:
+            # Setup the window controls - handy for multiwindow applications
+            self.setupWindowControls()
 
         # Client sleep
         sleepTime = self.config.GetFloat('client-sleep', 0.0)
@@ -400,6 +422,21 @@ class ShowBase(DirectObject.DirectObject):
         self.cTrav = cTrav
     def popCTrav(self):
         self.cTrav = self.cTravStack.pop()
+
+    def __setupProfile(self):
+        """ Sets up the Python profiler, if avaialable, according to
+        some Panda config settings. """
+        
+        try:
+            import profile, pstats
+        except ImportError:
+            return
+
+        profile.Profile.bias = float(self.config.GetString("profile-bias","0"))
+
+        def f8(x):
+            return ("%"+"8.%df"%base.config.GetInt("profile-decimals",3)) % x
+        pstats.f8=f8
 
     # temp; see ToonBase.py
     def getExitErrorCode(self):
@@ -546,14 +583,107 @@ class ShowBase(DirectObject.DirectObject):
                     self.notify.info("Could not make graphics pipe %s." % (
                         pipeType.getName()))
 
-    def openWindow(self, props = None, pipe = None, gsg = None,
+    def openWindow(self, props = None, fbprops = None, pipe = None, gsg = None,
                    type = None, name = None, size = None, aspectRatio = None,
-                   makeCamera = 1, keepCamera = 0,
-                   scene = None, stereo = None, rawmice = 0):
+                   makeCamera = True, keepCamera = False,
+                   scene = None, stereo = None, unexposedDraw = None,
+                   callbackWindowDict = None, requireWindow = None):
         """
         Creates a window and adds it to the list of windows that are
         to be updated every frame.
+
+        props is the WindowProperties that describes the window.
+
+        type is either 'onscreen', 'offscreen', or 'none'.
+
+        If keepCamera is true, the existing base.cam is set up to
+        render into the new window.
+
+        If keepCamera is false but makeCamera is true, a new camera is
+        set up to render into the new window.
+
+        If unexposedDraw is not None, it specifies the initial value
+        of GraphicsWindow.setUnexposedDraw().
+
+        If callbackWindowDict is not None, a CallbackGraphicWindow is
+        created instead, which allows the caller to create the actual
+        window with its own OpenGL context, and direct Panda's
+        rendering into that window.
+
+        If requireWindow is true, it means that the function should
+        raise an exception if the window fails to open correctly.
+        
         """
+
+        # Save this lambda here for convenience; we'll use it to call
+        # down to the underlying _doOpenWindow() with all of the above
+        # parameters.
+        func = lambda : self._doOpenWindow(
+            props = props, fbprops = fbprops, pipe = pipe, gsg = gsg,
+            type = type, name = name, size = size, aspectRatio = aspectRatio,
+            makeCamera = makeCamera, keepCamera = keepCamera,
+            scene = scene, stereo = stereo, unexposedDraw = unexposedDraw,
+            callbackWindowDict = callbackWindowDict)
+        
+        if self.win:
+            # If we've already opened a window before, this is just a
+            # pass-through to _doOpenWindow().
+            win = func()
+            self.graphicsEngine.openWindows()
+            return win
+        
+        if type is None:
+            type = self.windowType
+        if requireWindow is None:
+            requireWindow = self.requireWindow
+            
+        win = func()
+
+        # Give the window a chance to truly open.
+        self.graphicsEngine.openWindows()
+        if win != None and not win.isValid():
+            self.notify.info("Window did not open, removing.")
+            self.closeWindow(win)
+            win = None
+
+        if win == None and pipe == None:
+            # Try a little harder if the window wouldn't open.
+            self.makeAllPipes()
+            try:
+                self.pipeList.remove(self.pipe)
+            except ValueError:
+                pass
+            while self.win == None and self.pipeList:
+                self.pipe = self.pipeList[0]
+                self.notify.info("Trying pipe type %s (%s)" % (
+                    self.pipe.getType(), self.pipe.getInterfaceName()))
+                win = func()
+
+                self.graphicsEngine.openWindows()
+                if win != None and not win.isValid():
+                    self.notify.info("Window did not open, removing.")
+                    self.closeWindow(win)
+                    win = None
+                if win == None:
+                    self.pipeList.remove(self.pipe)
+
+        if win == None:
+            self.notify.warning("Unable to open '%s' window." % (type))
+            if requireWindow:
+                # Unless require-window is set to false, it is an
+                # error not to open a window.
+                raise StandardError, 'Could not open window.'
+        else:
+            self.notify.info("Successfully opened window of type %s (%s)" % (
+                win.getType(), win.getPipe().getInterfaceName()))
+
+        return win
+
+    def _doOpenWindow(self, props = None, fbprops = None, pipe = None, gsg = None,
+                      type = None, name = None, size = None, aspectRatio = None,
+                      makeCamera = True, keepCamera = False,
+                      scene = None, stereo = None, unexposedDraw = None,
+                      callbackWindowDict = None):
         if pipe == None:
             pipe = self.pipe
 
@@ -584,6 +714,9 @@ class ShowBase(DirectObject.DirectObject):
         if props == None:
             props = WindowProperties.getDefault()
 
+        if fbprops == None:
+            fbprops = FrameBufferProperties.getDefault()
+
         if size != None:
             # If we were given an explicit size, use it; otherwise,
             # the size from the properties is used.
@@ -596,13 +729,14 @@ class ShowBase(DirectObject.DirectObject):
 
         win = None
 
-        fbprops = FrameBufferProperties.getDefault()
-
         flags = GraphicsPipe.BFFbPropsOptional
         if type == 'onscreen':
             flags = flags | GraphicsPipe.BFRequireWindow
         elif type == 'offscreen':
             flags = flags | GraphicsPipe.BFRefuseWindow
+
+        if callbackWindowDict:
+            flags = flags | GraphicsPipe.BFRequireCallbackWindow
 
         if gsg:
             win = self.graphicsEngine.makeOutput(pipe, name, 0, fbprops,
@@ -614,6 +748,26 @@ class ShowBase(DirectObject.DirectObject):
         if win == None:
             # Couldn't create a window!
             return None
+
+        if unexposedDraw is not None and hasattr(win, 'setUnexposedDraw'):
+            win.setUnexposedDraw(unexposedDraw)
+
+        if callbackWindowDict:
+            # If we asked for (and received) a CallbackGraphicsWindow,
+            # we now have to assign the callbacks, before we start
+            # trying to do anything with the window.
+            for callbackName in ['Events', 'Properties', 'Render']:
+                func = callbackWindowDict.get(callbackName, None)
+                if not func:
+                    continue
+                
+                setCallbackName = 'set%sCallback' % (callbackName)
+                setCallback = getattr(win, setCallbackName)
+                setCallback(PythonCallbackObject(func))
+
+            # We also need to set up the mouse/keyboard objects.
+            for inputName in callbackWindowDict.get('inputDevices', ['mouse']):
+                win.createInputDevice(inputName)
 
         if hasattr(win, "requestProperties"):
             win.requestProperties(props)
@@ -639,12 +793,14 @@ class ShowBase(DirectObject.DirectObject):
 
         return win
 
-    def closeWindow(self, win, keepCamera = 0):
+    def closeWindow(self, win, keepCamera = False, removeWindow = True):
         """
         Closes the indicated window and removes it from the list of
         windows.  If it is the main window, clears the main window
         pointer to None.
         """
+        win.setActive(False)
+        
         # First, remove all of the cameras associated with display
         # regions on the window.
         numRegions = win.getNumDisplayRegions()        
@@ -685,7 +841,8 @@ class ShowBase(DirectObject.DirectObject):
                 self.winControls.remove(winCtrl)
                 break
         # Now we can actually close the window.
-        self.graphicsEngine.removeWindow(win)
+        if removeWindow:
+            self.graphicsEngine.removeWindow(win)
         self.winList.remove(win)
 
         mainWindow = False
@@ -695,6 +852,9 @@ class ShowBase(DirectObject.DirectObject):
             if self.frameRateMeter:
                 self.frameRateMeter.clearWindow()
                 self.frameRateMeter = None
+            if self.sceneGraphAnalyzerMeter:
+                self.sceneGraphAnalyzerMeter.clearWindow()
+                self.sceneGraphAnalyzerMeter = None
 
         messenger.send('close_window', [win, mainWindow])
         if mainWindow:
@@ -721,68 +881,12 @@ class ShowBase(DirectObject.DirectObject):
         if 'startDirect' in kw:
             del kw['startDirect']
 
-        if self.win:
-            # If we've already opened a window before, this does
-            # little more work than openMainWindow() alone.
-            self.openMainWindow(*args, **kw)
-            self.graphicsEngine.openWindows()
-            return
-            
         self.openMainWindow(*args, **kw)
-
-        # Give the window a chance to truly open.
-        self.graphicsEngine.openWindows()
-        if self.win != None and not self.isMainWindowOpen():
-            self.notify.info("Window did not open, removing.")
-            self.closeWindow(self.win)
-
-        if self.win == None:
-            # Try a little harder if the window wouldn't open.
-            self.makeAllPipes()
-            try:
-                self.pipeList.remove(self.pipe)
-            except ValueError:
-                pass
-            while self.win == None and self.pipeList:
-                self.pipe = self.pipeList[0]
-                self.notify.info("Trying pipe type %s (%s)" % (
-                    self.pipe.getType(), self.pipe.getInterfaceName()))
-                self.openMainWindow(*args, **kw)
-
-                self.graphicsEngine.openWindows()
-                if self.win != None and not self.isMainWindowOpen():
-                    self.notify.info("Window did not open, removing.")
-                    self.closeWindow(self.win)
-                if self.win == None:
-                    self.pipeList.remove(self.pipe)
-
-        if self.win == None:
-            self.notify.warning("Unable to open '%s' window." % (
-                self.windowType))
-            if self.requireWindow:
-                # Unless require-window is set to false, it is an
-                # error not to open a window.
-                raise StandardError, 'Could not open window.'
-        else:
-            self.notify.info("Successfully opened window of type %s (%s)" % (
-                self.win.getType(), self.win.getPipe().getInterfaceName()))
-
-        # The default is trackball mode, which is more convenient for
-        # ad-hoc development in Python using ShowBase.  Applications
-        # can explicitly call base.useDrive() if they prefer a drive
-        # interface.
-        self.mouseInterface = self.trackball
-        self.useTrackball()
 
         if startDirect:
             self.__doStartDirect()
 
         return self.win != None
-
-    def isMainWindowOpen(self):
-        if self.win != None:
-            return self.win.isValid()
-        return 0
 
     def openMainWindow(self, *args, **kw):
         """
@@ -796,7 +900,7 @@ class ShowBase(DirectObject.DirectObject):
         which case base.win may be either None, or the previous,
         closed window).
         """
-        keepCamera = kw.get('keepCamera', 0)
+        keepCamera = kw.get('keepCamera', False)
         
         success = 1
         oldWin = self.win
@@ -847,6 +951,8 @@ class ShowBase(DirectObject.DirectObject):
                 # set.
                 flag = True
             self.setFrameRateMeter(flag)
+            flag = self.config.GetBool('show-scene-graph-analyzer-meter', False)
+            self.setSceneGraphAnalyzerMeter(flag)
         return success
 
     def setSleep(self, amount):
@@ -862,7 +968,7 @@ class ShowBase(DirectObject.DirectObject):
         else:
             # Spawn it after igloop (at the end of each frame)
             self.taskMgr.remove('clientSleep')
-            self.taskMgr.add(self.sleepCycleTask, 'clientSleep', priority = 55)
+            self.taskMgr.add(self.sleepCycleTask, 'clientSleep', sort = 55)
 
     def sleepCycleTask(self, task):
         Thread.sleep(self.clientSleep)
@@ -882,6 +988,20 @@ class ShowBase(DirectObject.DirectObject):
             if self.frameRateMeter:
                 self.frameRateMeter.clearWindow()
                 self.frameRateMeter = None
+
+    def setSceneGraphAnalyzerMeter(self, flag):
+        """
+        Turns on or off (according to flag) a standard frame rate
+        meter in the upper-right corner of the main window.
+        """
+        if flag:
+            if not self.sceneGraphAnalyzerMeter:
+                self.sceneGraphAnalyzerMeter = SceneGraphAnalyzerMeter('sceneGraphAnalyzerMeter', self.render.node())
+                self.sceneGraphAnalyzerMeter.setupWindow(self.win)
+        else:
+            if self.sceneGraphAnalyzerMeter:
+                self.sceneGraphAnalyzerMeter.clearWindow()
+                self.sceneGraphAnalyzerMeter = None
 
     # [gjeon] now you can add more winControls after creating a showbase instance
     def setupWindowControls(self, winCtrl=None):
@@ -1069,6 +1189,12 @@ class ShowBase(DirectObject.DirectObject):
         if xsize > 0 and ysize > 0:
             self.pixel2dp.setScale(2.0 / xsize, 1.0, 2.0 / ysize)
 
+    def setAspectRatio(self, aspectRatio):
+        """ Sets the global aspect ratio of the main window.  Set it
+        to None to restore automatic scaling. """
+        self.__configAspectRatio = aspectRatio
+        self.adjustWindowAspectRatio(self.getAspectRatio())
+
     def getAspectRatio(self, win = None):
         # Returns the actual aspect ratio of the indicated (or main
         # window), or the default aspect ratio if there is not yet a
@@ -1084,11 +1210,7 @@ class ShowBase(DirectObject.DirectObject):
             win = self.win
 
         if win != None and win.hasSize():
-            # Temporary hasattr for old Pandas
-            if not hasattr(win, 'getSbsLeftXSize'):
-                aspectRatio = float(win.getXSize()) / float(win.getYSize())
-            else:
-                aspectRatio = float(win.getSbsLeftXSize()) / float(win.getSbsLeftYSize())
+            aspectRatio = float(win.getSbsLeftXSize()) / float(win.getSbsLeftYSize())
 
         else:
             if win == None or not hasattr(win, "getRequestedProperties"):
@@ -1152,6 +1274,8 @@ class ShowBase(DirectObject.DirectObject):
             self.camera.node().setPreserveTransform(ModelNode.PTLocal)
             __builtin__.camera = self.camera
 
+            self.mouse2cam.node().setNode(self.camera.node())
+
         if useCamera:
             # Use the existing camera node.
             cam = useCamera
@@ -1206,10 +1330,6 @@ class ShowBase(DirectObject.DirectObject):
         # we will if clearDepth is specified.
         if clearDepth:
             dr.setClearDepthActive(1)
-        elif dr.isStereo():
-            # If it's a stereo DisplayRegion, we clear the right
-            # channel by default.
-            dr.getRightEye().setClearDepthActive(1)
             
         if clearColor:
             dr.setClearColorActive(1)
@@ -1317,7 +1437,13 @@ class ShowBase(DirectObject.DirectObject):
         self.dataRoot = NodePath('dataRoot')
         # Cache the node so we do not ask for it every frame
         self.dataRootNode = self.dataRoot.node()
-        self.dataUnused = NodePath('dataUnused')
+
+        # Now we have the main trackball & drive interfaces.
+        # useTrackball() and useDrive() switch these in and out; only
+        # one is in use at a given time.
+        self.trackball = NodePath(Trackball('trackball'))
+        self.drive = NodePath(DriveInterface('drive'))
+        self.mouse2cam = NodePath(Transform2SG('mouse2cam'))
 
     # [gjeon] now you can create multiple mouse watchers to support multiple windows
     def setupMouse(self, win, fMultiWin=False):
@@ -1325,6 +1451,15 @@ class ShowBase(DirectObject.DirectObject):
         Creates the structures necessary to monitor the mouse input,
         using the indicated window.  If the mouse has already been set
         up for a different window, those structures are deleted first.
+
+        The return value is the ButtonThrower NodePath created for
+        this window.
+
+        If fMultiWin is true, then the previous mouse structures are
+        not deleted; instead, multiple windows are allowed to monitor
+        the mouse input.  However, in this case, the trackball
+        controls are not set up, and must be set up by hand if
+        desired.
         """
         if not fMultiWin and self.buttonThrowers != None:
             for bt in self.buttonThrowers:
@@ -1345,6 +1480,9 @@ class ShowBase(DirectObject.DirectObject):
         self.mouseWatcher = self.buttonThrowers[0].getParent()
         self.mouseWatcherNode = self.mouseWatcher.node()  
 
+        if self.mouseInterface:
+            self.mouseInterface.reparentTo(self.mouseWatcher)
+
         if self.recorder:
             # If we have a recorder, the mouseWatcher belongs under a
             # special MouseRecorder node, which may intercept the
@@ -1355,14 +1493,6 @@ class ShowBase(DirectObject.DirectObject):
                 'mouse', mouseRecorder.upcastToRecorderBase())
             np = mw.getParent().attachNewNode(mouseRecorder)
             mw.reparentTo(np)
-
-        # Now we have the main trackball & drive interfaces.
-        # useTrackball() and useDrive() switch these in and out; only
-        # one is in use at a given time.
-        self.trackball = self.dataUnused.attachNewNode(Trackball('trackball'))
-        self.drive = self.dataUnused.attachNewNode(DriveInterface('drive'))
-        self.mouse2cam = self.dataUnused.attachNewNode(Transform2SG('mouse2cam'))
-        self.mouse2cam.node().setNode(self.camera.node())
 
         # A special ButtonThrower to generate keyboard events and
         # include the time from the OS.  This is separate only to
@@ -1380,6 +1510,8 @@ class ShowBase(DirectObject.DirectObject):
         self.pixel2d.node().setMouseWatcher(mw.node())
         self.pixel2dp.node().setMouseWatcher(mw.node())
         mw.node().addRegion(PGMouseWatcherBackground())
+
+        return self.buttonThrowers[0]
 
     # [gjeon] this function is seperated from setupMouse to allow multiple mouse watchers
     def setupMouseCB(self, win):
@@ -1407,8 +1539,7 @@ class ShowBase(DirectObject.DirectObject):
             mk = self.dataRoot.attachNewNode(MouseAndKeyboard(win, i, name))
             mw = mk.attachNewNode(MouseWatcher("watcher%s" % (i)))
 
-            # Temporary hasattr for old Pandas
-            if hasattr(win, 'getSideBySideStereo') and win.getSideBySideStereo():
+            if win.getSideBySideStereo():
                 # If the window has side-by-side stereo enabled, then
                 # we should constrain the MouseWatcher to the window's
                 # DisplayRegion.  This will enable the MouseWatcher to
@@ -1696,6 +1827,17 @@ class ShowBase(DirectObject.DirectObject):
             x.update()
         return Task.cont
 
+    def __garbageCollectStates(self, state):
+        """ This task is started only when we have
+        garbage-collect-states set in the Config.prc file, in which
+        case we're responsible for taking out Panda's garbage from
+        time to time.  This is not to be confused with Python's
+        garbage collection.  """
+        
+        TransformState.garbageCollect()
+        RenderState.garbageCollect()
+        return Task.cont
+        
     def __igLoop(self, state):
         # We render the watch variables for the onScreenDebug as soon
         # as we reasonably can before the renderFrame().
@@ -1784,29 +1926,31 @@ class ShowBase(DirectObject.DirectObject):
         self.shutdown()
         # __resetPrevTransform goes at the very beginning of the frame.
         self.taskMgr.add(
-            self.__resetPrevTransform, 'resetPrevTransform', priority = -51)
-        # give the dataLoop task a reasonably "early" priority,
+            self.__resetPrevTransform, 'resetPrevTransform', sort = -51)
+        # give the dataLoop task a reasonably "early" sort,
         # so that it will get run before most tasks
-        self.taskMgr.add(self.__dataLoop, 'dataLoop', priority = -50)
+        self.taskMgr.add(self.__dataLoop, 'dataLoop', sort = -50)
         self.__deadInputs = 0
-        # spawn the ivalLoop with a later priority, so that it will
+        # spawn the ivalLoop with a later sort, so that it will
         # run after most tasks, but before igLoop.
-        self.taskMgr.add(self.__ivalLoop, 'ivalLoop', priority = 20)
+        self.taskMgr.add(self.__ivalLoop, 'ivalLoop', sort = 20)
         # make the collisionLoop task run before igLoop,
         # but leave enough room for the app to insert tasks
         # between collisionLoop and igLoop
-        self.taskMgr.add(self.__collisionLoop, 'collisionLoop', priority = 30)
-        
-        # give the igLoop task a reasonably "late" priority,
+        self.taskMgr.add(self.__collisionLoop, 'collisionLoop', sort = 30)
+
+        if ConfigVariableBool('garbage-collect-states').getValue():
+            self.taskMgr.add(self.__garbageCollectStates, 'garbageCollectStates', sort = 46)
+        # give the igLoop task a reasonably "late" sort,
         # so that it will get run after most tasks
         self.cluster = cluster
         if (not clusterSync or (cluster == None)):
-            self.taskMgr.add(self.__igLoop, 'igLoop', priority = 50)
+            self.taskMgr.add(self.__igLoop, 'igLoop', sort = 50)
         else:
-            self.taskMgr.add(self.__igLoopSync, 'igLoop', priority = 50)
+            self.taskMgr.add(self.__igLoopSync, 'igLoop', sort = 50)
         # the audioLoop updates the positions of 3D sounds.
         # as such, it needs to run after the cull traversal in the igLoop.
-        self.taskMgr.add(self.__audioLoop, 'audioLoop', priority = 60)
+        self.taskMgr.add(self.__audioLoop, 'audioLoop', sort = 60)
         self.eventMgr.restart()
 
     def shutdown(self):
@@ -1817,6 +1961,7 @@ class ShowBase(DirectObject.DirectObject):
         self.taskMgr.remove('dataLoop')
         self.taskMgr.remove('resetPrevTransform')
         self.taskMgr.remove('ivalLoop')
+        self.taskMgr.remove('garbage_collect')
         self.eventMgr.shutdown()
 
     def getBackgroundColor(self, win = None):
@@ -1913,7 +2058,7 @@ class ShowBase(DirectObject.DirectObject):
         # object out of there, so we won't be updating the camera any
         # more.
         if self.mouse2cam:
-            self.mouse2cam.reparentTo(self.dataUnused)
+            self.mouse2cam.detachNode()
 
     def enableMouse(self):
         """
@@ -1939,7 +2084,7 @@ class ShowBase(DirectObject.DirectObject):
             self.eventMgr.doEvents()
             self.dgTrav.traverse(base.dataRootNode)
             self.eventMgr.eventQueue.clear()
-            self.taskMgr.add(self.__dataLoop, 'dataLoop', priority = -50)
+            self.taskMgr.add(self.__dataLoop, 'dataLoop', sort = -50)
             self.__deadInputs = 0
 
     def setMouseOnNode(self, newNode):
@@ -1951,12 +2096,13 @@ class ShowBase(DirectObject.DirectObject):
         Switch mouse action
         """
         # Get rid of the prior interface:
-        self.mouseInterface.reparentTo(self.dataUnused)
+        self.mouseInterface.detachNode()
         # Update the mouseInterface to point to the drive
         self.mouseInterface = changeTo
         self.mouseInterfaceNode = self.mouseInterface.node()
         # Hookup the drive to the camera.
-        self.mouseInterface.reparentTo(self.mouseWatcher)
+        if self.mouseWatcher:
+            self.mouseInterface.reparentTo(self.mouseWatcher)
         if self.mouse2cam:
             self.mouse2cam.reparentTo(self.mouseInterface)
 
@@ -2044,7 +2190,7 @@ class ShowBase(DirectObject.DirectObject):
         dr.setCamera(self.showVertices)
         
 
-    def oobe(self):
+    def oobe(self, cam = None):
         """
         Enable a special "out-of-body experience" mouse-interface
         mode.  This can be used when a "god" camera is needed; it
@@ -2065,11 +2211,12 @@ class ShowBase(DirectObject.DirectObject):
         This is a toggle; the second time this function is called, it
         disables the mode.
         """
+        if cam is None:
+            cam = self.cam
+            
         # If oobeMode was never set, set it to false and create the
         # structures we need to implement OOBE.
-        try:
-            self.oobeMode
-        except:
+        if not hasattr(self, 'oobeMode'):
             self.oobeMode = 0
 
             self.oobeCamera = self.hidden.attachNewNode('oobeCamera')
@@ -2079,17 +2226,20 @@ class ShowBase(DirectObject.DirectObject):
             self.oobeLens.setNearFar(0.1, 10000.0)
             self.oobeLens.setMinFov(40)
 
-            self.oobeTrackball = self.dataUnused.attachNewNode(Trackball('oobeTrackball'), 1)
+            self.oobeTrackball = NodePath(Trackball('oobeTrackball'))
             self.oobe2cam = self.oobeTrackball.attachNewNode(Transform2SG('oobe2cam'))
             self.oobe2cam.node().setNode(self.oobeCameraTrackball.node())
 
             self.oobeVis = loader.loadModel('models/misc/camera', okMissing = True)
             if not self.oobeVis:
+                # Sometimes we have default-model-extension set to
+                # egg, but the file might be a bam file.
+                self.oobeVis = loader.loadModel('models/misc/camera.bam', okMissing = True)
+            if not self.oobeVis:
                 self.oobeVis = NodePath('oobeVis')
             self.oobeVis.node().setFinal(1)
             self.oobeVis.setLightOff(1)
             self.oobeCullFrustum = None
-            self.oobeCullFrustumVis = None
 
             self.accept('oobe-down', self.__oobeButton, extraArgs = [''])
             self.accept('oobe-repeat', self.__oobeButton, extraArgs = ['-repeat'])
@@ -2099,14 +2249,14 @@ class ShowBase(DirectObject.DirectObject):
             # Disable OOBE mode.
             if self.oobeCullFrustum != None:
                 # First, disable OOBE cull mode.
-                self.oobeCull()
+                self.oobeCull(cam = cam)
 
             if self.oobeVis:
                 self.oobeVis.reparentTo(self.hidden)
 
             # Restore the mouse interface node, and remove the oobe
             # trackball from the data path.
-            self.mouseInterfaceNode.clearButton(KeyboardButton.control())
+            self.mouseInterfaceNode.clearButton(KeyboardButton.shift())
             self.oobeTrackball.detachNode()
 
             bt = self.buttonThrowers[0].node()
@@ -2115,8 +2265,9 @@ class ShowBase(DirectObject.DirectObject):
             bt.setButtonRepeatEvent('')
             bt.setButtonUpEvent('')
 
-            self.cam.reparentTo(self.camera)
-            self.camNode.setLens(self.camLens)
+            cam.reparentTo(self.camera)
+            #if cam == self.cam:
+            #    self.camNode.setLens(self.camLens)
             self.oobeCamera.reparentTo(self.hidden)
             self.oobeMode = 0
             bboard.post('oobeEnabled', False)
@@ -2143,7 +2294,7 @@ class ShowBase(DirectObject.DirectObject):
             mat.invertInPlace()
             self.oobeTrackball.node().setMat(mat)
 
-            self.cam.reparentTo(self.oobeCameraTrackball)
+            cam.reparentTo(self.oobeCameraTrackball)
 
             # Temporarily disable button events by routing them
             # through the oobe filters.
@@ -2154,7 +2305,8 @@ class ShowBase(DirectObject.DirectObject):
             bt.setButtonUpEvent('oobe-up')
 
             # Don't change the camera lens--keep it with the original lens.
-            #self.camNode.setLens(self.oobeLens)
+            #if cam == self.cam:
+            #    self.camNode.setLens(self.oobeLens)
 
             if self.oobeVis:
                 self.oobeVis.reparentTo(self.camera)
@@ -2168,47 +2320,45 @@ class ShowBase(DirectObject.DirectObject):
         # Transmit other buttons.
         messenger.send(button + suffix)
 
-    def oobeCull(self):
+    def oobeCull(self, cam = None):
         """
         While in OOBE mode (see above), cull the viewing frustum as if
         it were still attached to our original camera.  This allows us
         to visualize the effectiveness of our bounding volumes.
         """
+        if cam is None:
+            cam = self.cam
+
         # First, make sure OOBE mode is enabled.
-        try:
-            if not self.oobeMode:
-                self.oobe()
-        except:
-            self.oobe()
+        if not getattr(self, 'oobeMode', False):
+            self.oobe(cam = cam)
 
         if self.oobeCullFrustum == None:
             # Enable OOBE culling.
             pnode = LensNode('oobeCull')
             pnode.setLens(self.camLens)
+            pnode.showFrustum()
             self.oobeCullFrustum = self.camera.attachNewNode(pnode)
-
-            # Create a visible representation of the frustum.
-            geom = self.camLens.makeGeometry()
-            if geom != None:
-                gn = GeomNode('frustum')
-                gn.addGeom(geom)
-                self.oobeCullFrustumVis = self.oobeVis.attachNewNode(gn)
 
             # Tell the camera to cull from here instead of its own
             # origin.
-            for cam in base.camList:
+            for c in base.camList:
+                c.node().setCullCenter(self.oobeCullFrustum)
+            if cam.node().isOfType(Camera):
                 cam.node().setCullCenter(self.oobeCullFrustum)
+            for c in cam.findAllMatches('**/+Camera'):
+                c.node().setCullCenter(self.oobeCullFrustum)
         else:
             # Disable OOBE culling.
 
-            for cam in base.camList:
-                cam.node().setCullCenter(NodePath())
+            for c in base.camList:
+                c.node().setCullCenter(NodePath())
+            if cam.node().isOfType(Camera):
+                cam.node().setCullCenter(self.oobeCullFrustum)
+            for c in cam.findAllMatches('**/+Camera'):
+                c.node().setCullCenter(NodePath())
             self.oobeCullFrustum.removeNode()
             self.oobeCullFrustum = None
-
-            if self.oobeCullFrustumVis != None:
-                self.oobeCullFrustumVis.removeNode()
-                self.oobeCullFrustumVis = None
 
     def showCameraFrustum(self):
         # Create a visible representation of the frustum.
@@ -2486,73 +2636,7 @@ class ShowBase(DirectObject.DirectObject):
 
             # If we have not forced the aspect ratio, let's see if it has
             # changed and update the camera lenses and aspect2d parameters
-            if not self.__configAspectRatio:
-                aspectRatio = self.getAspectRatio()
-                if aspectRatio != self.__oldAspectRatio:
-                    self.__oldAspectRatio = aspectRatio
-                    # Fix up some anything that depends on the aspectRatio
-                    self.camLens.setAspectRatio(aspectRatio)
-                    if aspectRatio < 1:
-                        # If the window is TALL, lets expand the top and bottom
-                        self.aspect2d.setScale(1.0, 1.0, aspectRatio)
-                        self.a2dTop = 1.0 / aspectRatio
-                        self.a2dBottom = - 1.0 / aspectRatio
-                        self.a2dLeft = -1
-                        self.a2dRight = 1.0
-                        # Don't forget 2dp
-                        self.aspect2dp.setScale(1.0, 1.0, aspectRatio)
-                        self.a2dpTop = 1.0 / aspectRatio
-                        self.a2dpBottom = - 1.0 / aspectRatio
-                        self.a2dpLeft = -1
-                        self.a2dpRight = 1.0
-
-                    else:
-                        # If the window is WIDE, lets expand the left and right
-                        self.aspect2d.setScale(1.0 / aspectRatio, 1.0, 1.0)
-                        self.a2dTop = 1.0
-                        self.a2dBottom = -1.0
-                        self.a2dLeft = -aspectRatio
-                        self.a2dRight = aspectRatio
-                        # Don't forget 2dp
-                        self.aspect2dp.setScale(1.0 / aspectRatio, 1.0, 1.0)
-                        self.a2dpTop = 1.0
-                        self.a2dpBottom = -1.0
-                        self.a2dpLeft = -aspectRatio
-                        self.a2dpRight = aspectRatio                        
-
-
-                    # Reposition the aspect2d marker nodes
-                    self.a2dTopCenter.setPos(0, 0, self.a2dTop)
-                    self.a2dBottomCenter.setPos(0, 0, self.a2dBottom)
-                    self.a2dLeftCenter.setPos(self.a2dLeft, 0, 0)
-                    self.a2dRightCenter.setPos(self.a2dRight, 0, 0)                    
-                    self.a2dTopLeft.setPos(self.a2dLeft, 0, self.a2dTop)
-                    self.a2dTopRight.setPos(self.a2dRight, 0, self.a2dTop)
-                    self.a2dBottomLeft.setPos(self.a2dLeft, 0, self.a2dBottom)
-                    self.a2dBottomRight.setPos(self.a2dRight, 0, self.a2dBottom)
-
-                    # Reposition the aspect2d marker nodes
-                    self.a2dTopCenterNs.setPos(0, 0, self.a2dTop)
-                    self.a2dBottomCenterNs.setPos(0, 0, self.a2dBottom)
-                    self.a2dLeftCenterNs.setPos(self.a2dLeft, 0, 0)
-                    self.a2dRightCenterNs.setPos(self.a2dRight, 0, 0)                    
-                    self.a2dTopLeftNs.setPos(self.a2dLeft, 0, self.a2dTop)
-                    self.a2dTopRightNs.setPos(self.a2dRight, 0, self.a2dTop)
-                    self.a2dBottomLeftNs.setPos(self.a2dLeft, 0, self.a2dBottom)
-                    self.a2dBottomRightNs.setPos(self.a2dRight, 0, self.a2dBottom)                    
-
-                    # Reposition the aspect2dp marker nodes
-                    self.a2dpTopCenter.setPos(0, 0, self.a2dpTop)
-                    self.a2dpBottomCenter.setPos(0, 0, self.a2dpBottom)
-                    self.a2dpLeftCenter.setPos(self.a2dpLeft, 0, 0)
-                    self.a2dpRightCenter.setPos(self.a2dpRight, 0, 0)                  
-                    self.a2dpTopLeft.setPos(self.a2dpLeft, 0, self.a2dpTop)
-                    self.a2dpTopRight.setPos(self.a2dpRight, 0, self.a2dpTop)
-                    self.a2dpBottomLeft.setPos(self.a2dpLeft, 0, self.a2dpBottom)
-                    self.a2dpBottomRight.setPos(self.a2dpRight, 0, self.a2dpBottom)
-                    
-                    # If anybody needs to update their GUI, put a callback on this event
-                    messenger.send("aspectRatioChanged")
+            self.adjustWindowAspectRatio(self.getAspectRatio())
             
             # Temporary hasattr for old Pandas
             if not hasattr(win, 'getSbsLeftXSize'):
@@ -2562,6 +2646,80 @@ class ShowBase(DirectObject.DirectObject):
                 self.pixel2d.setScale(2.0 / win.getSbsLeftXSize(), 1.0, 2.0 / win.getSbsLeftYSize())
                 self.pixel2dp.setScale(2.0 / win.getSbsLeftXSize(), 1.0, 2.0 / win.getSbsLeftYSize())
 
+    def adjustWindowAspectRatio(self, aspectRatio):
+        """ This function is normally called internally by
+        windowEvent(), but it may also be called to explicitly adjust
+        the aspect ratio of the render/render2d DisplayRegion, by a
+        class that has redefined these. """
+        
+        if self.__configAspectRatio:
+            aspectRatio = self.__configAspectRatio
+
+        if aspectRatio != self.__oldAspectRatio:
+            self.__oldAspectRatio = aspectRatio
+            # Fix up some anything that depends on the aspectRatio
+            self.camLens.setAspectRatio(aspectRatio)
+            if aspectRatio < 1:
+                # If the window is TALL, lets expand the top and bottom
+                self.aspect2d.setScale(1.0, aspectRatio, aspectRatio)
+                self.a2dTop = 1.0 / aspectRatio
+                self.a2dBottom = - 1.0 / aspectRatio
+                self.a2dLeft = -1
+                self.a2dRight = 1.0
+                # Don't forget 2dp
+                self.aspect2dp.setScale(1.0, aspectRatio, aspectRatio)
+                self.a2dpTop = 1.0 / aspectRatio
+                self.a2dpBottom = - 1.0 / aspectRatio
+                self.a2dpLeft = -1
+                self.a2dpRight = 1.0
+
+            else:
+                # If the window is WIDE, lets expand the left and right
+                self.aspect2d.setScale(1.0 / aspectRatio, 1.0, 1.0)
+                self.a2dTop = 1.0
+                self.a2dBottom = -1.0
+                self.a2dLeft = -aspectRatio
+                self.a2dRight = aspectRatio
+                # Don't forget 2dp
+                self.aspect2dp.setScale(1.0 / aspectRatio, 1.0, 1.0)
+                self.a2dpTop = 1.0
+                self.a2dpBottom = -1.0
+                self.a2dpLeft = -aspectRatio
+                self.a2dpRight = aspectRatio                        
+
+            # Reposition the aspect2d marker nodes
+            self.a2dTopCenter.setPos(0, self.a2dTop, self.a2dTop)
+            self.a2dBottomCenter.setPos(0, self.a2dBottom, self.a2dBottom)
+            self.a2dLeftCenter.setPos(self.a2dLeft, 0, 0)
+            self.a2dRightCenter.setPos(self.a2dRight, 0, 0)                    
+            self.a2dTopLeft.setPos(self.a2dLeft, self.a2dTop, self.a2dTop)
+            self.a2dTopRight.setPos(self.a2dRight, self.a2dTop, self.a2dTop)
+            self.a2dBottomLeft.setPos(self.a2dLeft, self.a2dBottom, self.a2dBottom)
+            self.a2dBottomRight.setPos(self.a2dRight, self.a2dBottom, self.a2dBottom)
+
+            # Reposition the aspect2d marker nodes
+            self.a2dTopCenterNs.setPos(0, self.a2dTop, self.a2dTop)
+            self.a2dBottomCenterNs.setPos(0, self.a2dBottom, self.a2dBottom)
+            self.a2dLeftCenterNs.setPos(self.a2dLeft, 0, 0)
+            self.a2dRightCenterNs.setPos(self.a2dRight, 0, 0)                    
+            self.a2dTopLeftNs.setPos(self.a2dLeft, self.a2dTop, self.a2dTop)
+            self.a2dTopRightNs.setPos(self.a2dRight, self.a2dTop, self.a2dTop)
+            self.a2dBottomLeftNs.setPos(self.a2dLeft, self.a2dBottom, self.a2dBottom)
+            self.a2dBottomRightNs.setPos(self.a2dRight, self.a2dBottom, self.a2dBottom)                    
+
+            # Reposition the aspect2dp marker nodes
+            self.a2dpTopCenter.setPos(0, self.a2dpTop, self.a2dpTop)
+            self.a2dpBottomCenter.setPos(0, self.a2dpBottom, self.a2dpBottom)
+            self.a2dpLeftCenter.setPos(self.a2dpLeft, 0, 0)
+            self.a2dpRightCenter.setPos(self.a2dpRight, 0, 0)                  
+            self.a2dpTopLeft.setPos(self.a2dpLeft, self.a2dpTop, self.a2dpTop)
+            self.a2dpTopRight.setPos(self.a2dpRight, self.a2dpTop, self.a2dpTop)
+            self.a2dpBottomLeft.setPos(self.a2dpLeft, self.a2dpBottom, self.a2dpBottom)
+            self.a2dpBottomRight.setPos(self.a2dpRight, self.a2dpBottom, self.a2dpBottom)
+
+            # If anybody needs to update their GUI, put a callback on this event
+            messenger.send("aspectRatioChanged")
+        
     def userExit(self):
         # The user has requested we exit the program.  Deal with this.
         if self.exitFunc:
@@ -2572,22 +2730,159 @@ class ShowBase(DirectObject.DirectObject):
     def finalizeExit(self):
         sys.exit()
 
-    # [gjeon] start wxPyhton
-    def startWx(self, fWantWx = 1):
-        self.wantWx = fWantWx
-        if self.wantWx:
-            initAppForGui()
-            from direct.showbase import WxGlobal
-            taskMgr.remove('wxLoop')
-            WxGlobal.spawnWxLoop()
+    # [gjeon] start wxPython
+    def startWx(self, fWantWx = True):
+        fWantWx = bool(fWantWx)
+        if self.wantWx != fWantWx:
+            self.wantWx = fWantWx
+            if self.wantWx:
+                self.spawnWxLoop()
 
-    def startTk(self, fWantTk = 1):
-        self.wantTk = fWantTk
-        if self.wantTk:
-            initAppForGui()
-            from direct.showbase import TkGlobal
-            taskMgr.remove('tkLoop')
-            TkGlobal.spawnTkLoop()
+    def spawnWxLoop(self):
+        """ Call this method to hand the main loop over to wxPython.
+        This sets up a wxTimer callback so that Panda still gets
+        updated, but wxPython owns the main loop (which seems to make
+        it happier than the other way around). """
+        
+        if self.wxApp:
+            # Don't do this twice.
+            return
+
+        initAppForGui()
+
+        import wx
+        # Create a new base.wxApp.
+        self.wxApp = wx.PySimpleApp(redirect = False)
+
+        if ConfigVariableBool('wx-main-loop', True):
+            # Put wxPython in charge of the main loop.  It really
+            # seems to like this better; some features of wx don't
+            # work properly unless this is true.
+            
+            # Set a timer to run the Panda frame 60 times per second.
+            wxFrameRate = ConfigVariableDouble('wx-frame-rate', 60.0)
+            self.wxTimer = wx.Timer(self.wxApp)
+            self.wxTimer.Start(1000.0 / wxFrameRate.getValue())
+            self.wxApp.Bind(wx.EVT_TIMER, self.__wxTimerCallback)
+
+            # wx is now the main loop, not us any more.
+            self.run = self.wxRun
+            self.taskMgr.run = self.wxRun
+            __builtin__.run = self.wxRun
+            if self.appRunner:
+                self.appRunner.run = self.wxRun
+
+        else:
+            # Leave Panda in charge of the main loop.  This is
+            # friendlier for IDE's and interactive editing in general.
+            def wxLoop(task):
+                # First we need to ensure that the OS message queue is
+                # processed.
+                base.wxApp.Yield()
+
+                # Now do all the wxPython events waiting on this frame.
+                while base.wxApp.Pending():
+                    base.wxApp.Dispatch()
+
+                return task.again
+
+            self.taskMgr.add(wxLoop, 'wxLoop')
+
+    def __wxTimerCallback(self, event):
+        if Thread.getCurrentThread().getCurrentTask():
+            # This happens when the wxTimer expires while igLoop is
+            # rendering.  Ignore it.
+            return
+        
+        self.taskMgr.step()
+
+    def wxRun(self):
+        """ This method replaces base.run() after we have called
+        spawnWxLoop().  Since at this point wxPython now owns the main
+        loop, this method is a call to wxApp.MainLoop(). """
+        
+        if Thread.getCurrentThread().getCurrentTask():
+            # This happens in the p3d environment during startup.
+            # Ignore it.
+            return
+        
+        self.wxApp.MainLoop()
+
+    def startTk(self, fWantTk = True):
+        fWantTk = bool(fWantTk)
+        if self.wantTk != fWantTk:
+            self.wantTk = fWantTk
+            if self.wantTk:
+                self.spawnTkLoop()
+
+    def spawnTkLoop(self):
+        """ Call this method to hand the main loop over to Tkinter.
+        This sets up a timer callback so that Panda still gets
+        updated, but Tkinter owns the main loop (which seems to make
+        it happier than the other way around). """
+        
+        if self.tkRoot:
+            # Don't do this twice.
+            return
+
+        from Tkinter import tkinter
+        import Pmw
+
+        # Create a new Tk root.
+        self.tkRoot = Pmw.initialise()
+        __builtin__.tkroot = self.tkRoot
+
+        initAppForGui()
+
+        if ConfigVariableBool('tk-main-loop', True):
+            # Put Tkinter in charge of the main loop.  It really
+            # seems to like this better; the GUI otherwise becomes
+            # largely unresponsive on Mac OS X unless this is true.
+            
+            # Set a timer to run the Panda frame 60 times per second.
+            tkFrameRate = ConfigVariableDouble('tk-frame-rate', 60.0)
+            self.tkDelay = int(1000.0 / tkFrameRate.getValue())
+            self.tkRoot.after(self.tkDelay, self.__tkTimerCallback)
+
+            # wx is now the main loop, not us any more.
+            self.run = self.tkRun
+            self.taskMgr.run = self.tkRun
+            __builtin__.run = self.tkRun
+            if self.appRunner:
+                self.appRunner.run = self.tkRun
+
+        else:
+            # Leave Panda in charge of the main loop.  This is
+            # friendlier for IDE's and interactive editing in general.
+            def tkLoop(task):
+                # Do all the tkinter events waiting on this frame
+                # dooneevent will return 0 if there are no more events
+                # waiting or 1 if there are still more.
+                # DONT_WAIT tells tkinter not to block waiting for events
+                while tkinter.dooneevent(tkinter.ALL_EVENTS | tkinter.DONT_WAIT):
+                    pass
+
+                return task.again
+
+            self.taskMgr.add(tkLoop, 'tkLoop')
+
+    def __tkTimerCallback(self):
+        if not Thread.getCurrentThread().getCurrentTask():
+            self.taskMgr.step()
+
+        self.tkRoot.after(self.tkDelay, self.__tkTimerCallback)
+
+    def tkRun(self):
+        """ This method replaces base.run() after we have called
+        spawnTkLoop().  Since at this point Tkinter now owns the main
+        loop, this method is a call to tkRoot.mainloop(). """
+        
+        if Thread.getCurrentThread().getCurrentTask():
+            # This happens in the p3d environment during startup.
+            # Ignore it.
+            return
+        
+        self.tkRoot.mainloop()
 
     def startDirect(self, fWantDirect = 1, fWantTk = 1, fWantWx = 0):
         self.startTk(fWantTk)

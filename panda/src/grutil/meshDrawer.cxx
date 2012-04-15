@@ -33,8 +33,8 @@
 
 TypeHandle MeshDrawer::_type_handle;
 
-float randFloat() {
-  return ((float) rand() / (float) 0x7fffffff);
+PN_stdfloat randFloat() {
+  return ((PN_stdfloat) rand() / (PN_stdfloat) 0x7fffffff);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -55,13 +55,13 @@ void MeshDrawer::generator(int budget) {
   // not be optimized out by panda3d system
   for(int i = 0; i < budget; i++) {
     for( int vert = 0; vert < 3; vert++) {
-      LVector3f vec3 = LVector3f(randFloat()+1000,randFloat(),randFloat())*.001;
-      LVector4f vec4 = LVector4f(1,1,1,randFloat());
-      LVector2f vec2 = LVector2f(0,randFloat());
-      tvertex->add_data3f(vec3);
-      tcolor->add_data4f(vec4);
-      tuv->add_data2f(vec2);
-      tnormal->add_data3f(vec3);
+      LVector3 vec3 = LVector3(randFloat()+1000,randFloat(),randFloat())*.001;
+      LVector4 vec4 = LVector4(1,1,1,randFloat());
+      LVector2 vec2 = LVector2(0,randFloat());
+      tvertex->add_data3(vec3);
+      tcolor->add_data4(vec4);
+      tuv->add_data2(vec2);
+      tnormal->add_data3(vec3);
     }
     _prim->add_vertices(i * 3, i * 3 + 1, i * 3 + 2);
   }
@@ -98,8 +98,8 @@ void MeshDrawer::begin(NodePath camera, NodePath render) {
 
   // compute some help vectors
   _eyePos = camera.get_pos();
-  _up = _render.get_relative_vector(camera, LVector3f(0, 0, 1));
-  _right = _render.get_relative_vector(camera, LVector3f(1, 0, 0));
+  _up = _render.get_relative_vector(camera, LVector3(0, 0, 1));
+  _right = _render.get_relative_vector(camera, LVector3(1, 0, 0));
   _b1 = - _right - _up;
   _b2 =   _right - _up;
   _b3 =   _right + _up;
@@ -133,9 +133,9 @@ void MeshDrawer::end() {
 
   // clear the unused triangles at the end of the buffer
   for(int i = _clear_index ; i < _last_clear_index; i ++ ) {
-    _vertex->add_data3f(0,0,0);
-    _vertex->add_data3f(0,0,0);
-    _vertex->add_data3f(0,0,0);
+    _vertex->add_data3(0,0,0);
+    _vertex->add_data3(0,0,0);
+    _vertex->add_data3(0,0,0);
   }
   // don't clear more then you have too
   _last_clear_index = _clear_index;
@@ -155,29 +155,29 @@ void MeshDrawer::end() {
 //               but has an extra rotation component.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::particle(LVector3f pos, LVector4f frame, float size, 
-  LVector4f color, float rotation) {
+void MeshDrawer::particle(const LVector3 &pos, const LVector4 &frame, PN_stdfloat size, 
+  const LVector4 &color, PN_stdfloat rotation) {
 
   rotation = rotation / 57.29578;
 
-  LVector3f v1 = pos + _b1*size*sin(rotation) + _b2*size*cos(rotation);
-  LVector3f v2 = pos + _b2*size*sin(rotation) + _b3*size*cos(rotation);
-  LVector3f v3 = pos + _b3*size*sin(rotation) + _b4*size*cos(rotation);
-  LVector3f v4 = pos + _b4*size*sin(rotation) + _b1*size*cos(rotation);
+  LVector3 v1 = pos + _b1*size*sin(rotation) + _b2*size*cos(rotation);
+  LVector3 v2 = pos + _b2*size*sin(rotation) + _b3*size*cos(rotation);
+  LVector3 v3 = pos + _b3*size*sin(rotation) + _b4*size*cos(rotation);
+  LVector3 v4 = pos + _b4*size*sin(rotation) + _b1*size*cos(rotation);
 
-  float u = frame.get_x();
-  float v = frame.get_y();
-  float us = frame.get_z();
-  float vs = frame.get_w();
+  PN_stdfloat u = frame.get_x();
+  PN_stdfloat v = frame.get_y();
+  PN_stdfloat us = frame.get_z();
+  PN_stdfloat vs = frame.get_w();
 
   tri(
-    v1, color, LVector2f(u,v),
-    v2, color, LVector2f(u+us,v),
-    v3, color, LVector2f(u+us,v+vs));
+    v1, color, LVector2(u,v),
+    v2, color, LVector2(u+us,v),
+    v3, color, LVector2(u+us,v+vs));
   tri(
-    v3, color, LVector2f(u+us,v+vs),
-    v4, color, LVector2f(u,v+vs),
-    v1, color, LVector2f(u,v));
+    v3, color, LVector2(u+us,v+vs),
+    v4, color, LVector2(u,v+vs),
+    v1, color, LVector2(u,v));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -187,14 +187,15 @@ void MeshDrawer::particle(LVector3f pos, LVector4f frame, float size,
 //               a blend (from 0 to 1) component between them
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::blended_particle(LVector3f pos, LVector4f frame1, 
-  LVector4f frame2, float blend, float size, LVector4f color, float rotation) {
+void MeshDrawer::blended_particle(const LVector3 &pos, const LVector4 &frame1, 
+  const LVector4 &frame2, PN_stdfloat blend, PN_stdfloat size, const LVector4 &color, PN_stdfloat rotation) {
 
-  float original_w = color.get_w();
-  color.set_w((1.f-blend)*original_w);
-  particle(pos,frame1,size,color,rotation);
-  color.set_w(blend*original_w);
-  particle(pos,frame2,size,color,rotation);
+  LVector4 c2 = color;
+  PN_stdfloat original_w = c2.get_w();
+  c2.set_w((1.f-blend)*original_w);
+  particle(pos,frame1,size,c2,rotation);
+  c2.set_w(blend*original_w);
+  particle(pos,frame2,size,c2,rotation);
 
 }
 
@@ -205,27 +206,27 @@ void MeshDrawer::blended_particle(LVector3f pos, LVector4f frame1,
 //               Billboards always face the camera.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::billboard(LVector3f pos, LVector4f frame, float size, 
-  LVector4f _color) {
+void MeshDrawer::billboard(const LVector3 &pos, const LVector4 &frame, PN_stdfloat size, 
+  const LVector4 &_color) {
 
-  LVector3f v1 = pos + _b1*size;
-  LVector3f v2 = pos + _b2*size;
-  LVector3f v3 = pos + _b3*size;
-  LVector3f v4 = pos + _b4*size;
+  LVector3 v1 = pos + _b1*size;
+  LVector3 v2 = pos + _b2*size;
+  LVector3 v3 = pos + _b3*size;
+  LVector3 v4 = pos + _b4*size;
 
-  float u = frame.get_x();
-  float v = frame.get_y();
-  float us = frame.get_z();
-  float vs = frame.get_w();
+  PN_stdfloat u = frame.get_x();
+  PN_stdfloat v = frame.get_y();
+  PN_stdfloat us = frame.get_z();
+  PN_stdfloat vs = frame.get_w();
   
   tri(
-    v1, _color, LVector2f(u,v),
-    v2, _color, LVector2f(u+us,v),
-    v3, _color, LVector2f(u+us,v+vs));
+    v1, _color, LVector2(u,v),
+    v2, _color, LVector2(u+us,v),
+    v3, _color, LVector2(u+us,v+vs));
   tri(
-    v3, _color, LVector2f(u+us,v+vs),
-    v4, _color, LVector2f(u,v+vs),
-    v1, _color, LVector2f(u,v));
+    v3, _color, LVector2(u+us,v+vs),
+    v4, _color, LVector2(u,v+vs),
+    v1, _color, LVector2(u,v));
 }
 
 
@@ -236,8 +237,8 @@ void MeshDrawer::billboard(LVector3f pos, LVector4f frame, float size,
 //               billboarding effect.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::segment(LVector3f start, LVector3f stop, LVector4f frame,
-                         float thickness, LVector4f color) {
+void MeshDrawer::segment(const LVector3 &start, const LVector3 &stop, const LVector4 &frame,
+                         PN_stdfloat thickness, const LVector4 &color) {
   link_segment(start, frame, thickness, color);
   link_segment(stop, frame, thickness, color);
   link_segment_end(frame, color);
@@ -251,37 +252,37 @@ void MeshDrawer::segment(LVector3f start, LVector3f stop, LVector4f frame,
 //               Stars at start and ends at stop.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::cross_segment(LVector3f start, LVector3f stop, LVector4f frame,
-                               float thickness, LVector4f color) {
+void MeshDrawer::cross_segment(const LVector3 &start, const LVector3 &stop, const LVector4 &frame,
+                               PN_stdfloat thickness, const LVector4 &color) {
   
-  float u = frame.get_x();
-  float v = frame.get_y();
-  float us = frame.get_z();
-  float vs = frame.get_w();
+  PN_stdfloat u = frame.get_x();
+  PN_stdfloat v = frame.get_y();
+  PN_stdfloat us = frame.get_z();
+  PN_stdfloat vs = frame.get_w();
 
-  LVector3f v1 = start - _up*thickness;
-  LVector3f v2 = stop - _up*thickness;
-  LVector3f v3 = stop + _up*thickness;
-  LVector3f v4 = start + _up*thickness;
+  LVector3 v1 = start - _up*thickness;
+  LVector3 v2 = stop - _up*thickness;
+  LVector3 v3 = stop + _up*thickness;
+  LVector3 v4 = start + _up*thickness;
 
-  tri(v1, color, LVector2f(u,v),
-      v2, color, LVector2f(u+us,v),
-      v3, color, LVector2f(u+us,v+vs));
-  tri(v3, color, LVector2f(u+us,v+vs),
-      v4, color, LVector2f(u,v+vs),
-      v1, color, LVector2f(u,v));
+  tri(v1, color, LVector2(u,v),
+      v2, color, LVector2(u+us,v),
+      v3, color, LVector2(u+us,v+vs));
+  tri(v3, color, LVector2(u+us,v+vs),
+      v4, color, LVector2(u,v+vs),
+      v1, color, LVector2(u,v));
 
   v1 = start - _right*thickness;
   v2 = stop - _right*thickness;
   v3 = stop + _right*thickness;
   v4 = start + _right*thickness;
 
-  tri(v1, color, LVector2f(u,v),
-      v2, color, LVector2f(u+us,v),
-      v3, color, LVector2f(u+us,v+vs));
-  tri(v3, color, LVector2f(u+us,v+vs),
-      v4, color, LVector2f(u,v+vs),
-      v1, color, LVector2f(u,v));
+  tri(v1, color, LVector2(u,v),
+      v2, color, LVector2(u+us,v),
+      v3, color, LVector2(u+us,v+vs));
+  tri(v3, color, LVector2(u+us,v+vs),
+      v4, color, LVector2(u,v+vs),
+      v1, color, LVector2(u,v));
 
 }
 
@@ -296,38 +297,38 @@ void MeshDrawer::cross_segment(LVector3f start, LVector3f stop, LVector4f frame,
 //               Stars at start and ends at stop.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::uneven_segment(LVector3f start, LVector3f stop,
-  LVector4f frame, float thickness_start, LVector4f color_start,
-  float thickness_stop, LVector4f color_stop) {
+void MeshDrawer::uneven_segment(const LVector3 &start, const LVector3 &stop,
+  const LVector4 &frame, PN_stdfloat thickness_start, const LVector4 &color_start,
+  PN_stdfloat thickness_stop, const LVector4 &color_stop) {
 
-  float u = frame.get_x();
-  float v = frame.get_y();
-  float us = frame.get_z();
-  float vs = frame.get_w();
+  PN_stdfloat u = frame.get_x();
+  PN_stdfloat v = frame.get_y();
+  PN_stdfloat us = frame.get_z();
+  PN_stdfloat vs = frame.get_w();
   
-  LVector3f v1 = start - _up*thickness_start;
-  LVector3f v2 = stop - _up*thickness_stop;
-  LVector3f v3 = stop + _up*thickness_stop;
-  LVector3f v4 = start + _up*thickness_start;
+  LVector3 v1 = start - _up*thickness_start;
+  LVector3 v2 = stop - _up*thickness_stop;
+  LVector3 v3 = stop + _up*thickness_stop;
+  LVector3 v4 = start + _up*thickness_start;
   
-  tri(v1, color_start, LVector2f(u,v),
-      v2, color_stop, LVector2f(u+us,v),
-      v3, color_stop, LVector2f(u+us,v+vs));
-  tri(v3, color_stop, LVector2f(u+us,v+vs),
-      v4, color_start, LVector2f(u,v+vs),
-      v1, color_start, LVector2f(u,v));
+  tri(v1, color_start, LVector2(u,v),
+      v2, color_stop, LVector2(u+us,v),
+      v3, color_stop, LVector2(u+us,v+vs));
+  tri(v3, color_stop, LVector2(u+us,v+vs),
+      v4, color_start, LVector2(u,v+vs),
+      v1, color_start, LVector2(u,v));
   
   v1 = start - _right*thickness_start;
   v2 = stop - _right*thickness_stop;
   v3 = stop + _right*thickness_stop;
   v4 = start + _right*thickness_start;
   
-  tri(v1, color_start, LVector2f(u,v),
-      v2, color_stop, LVector2f(u+us,v),
-      v3, color_stop, LVector2f(u+us,v+vs));
-  tri(v3, color_stop, LVector2f(u+us,v+vs),
-      v4, color_start, LVector2f(u,v+vs),
-      v1, color_start, LVector2f(u,v));
+  tri(v1, color_start, LVector2(u,v),
+      v2, color_stop, LVector2(u+us,v),
+      v3, color_stop, LVector2(u+us,v+vs));
+  tri(v3, color_stop, LVector2(u+us,v+vs),
+      v4, color_start, LVector2(u,v+vs),
+      v1, color_start, LVector2(u,v));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -337,12 +338,12 @@ void MeshDrawer::uneven_segment(LVector3f start, LVector3f stop,
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
 void MeshDrawer::explosion(
-  LVector3f pos, LVector4f frame, float size, LVector4f _color,
-  int seed, int number, float distance) {
+  const LVector3 &pos, const LVector4 &frame, PN_stdfloat size, const LVector4 &_color,
+  int seed, int number, PN_stdfloat distance) {
   srand(seed);
-  LVector3f relative_pos;
+  LVector3 relative_pos;
   for(int i = 0; i < number; i++) {
-    relative_pos = LVector3f(randFloat()-.5f,randFloat()-.5f,randFloat()-.5f);
+    relative_pos = LVector3(randFloat()-.5f,randFloat()-.5f,randFloat()-.5f);
     relative_pos.normalize();
     relative_pos *= randFloat()*distance;
     particle(relative_pos+pos,frame,size,_color,randFloat()*360.0f);
@@ -356,15 +357,15 @@ void MeshDrawer::explosion(
 //               shift dictated by the offset.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::stream(LVector3f start, LVector3f stop, LVector4f frame, float size, LVector4f _color,
-        int number, float offset) {
+void MeshDrawer::stream(const LVector3 &start, const LVector3 &stop, const LVector4 &frame, PN_stdfloat size, const LVector4 &_color,
+        int number, PN_stdfloat offset) {
 
   offset = offset-floor(offset);
-  LVector3f relative_pos = stop;
-  LVector3f vec = stop - start;
-  float distance = vec.length();
+  LVector3 relative_pos = stop;
+  LVector3 vec = stop - start;
+  PN_stdfloat distance = vec.length();
   for(int i = 0; i < number; i++) {
-    relative_pos = stop + vec * ((i-offset)*(distance/float(number)));
+    relative_pos = stop + vec * ((i-offset)*(distance/PN_stdfloat(number)));
     billboard(relative_pos,frame,size,_color);
   }
 }
@@ -384,9 +385,9 @@ void MeshDrawer::stream(LVector3f start, LVector3f stop, LVector4f frame, float 
 void MeshDrawer::geometry(NodePath draw_node) {
   assert(_render.get_error_type() == NodePath::ET_ok);
 
-  LVector4f color = LVector4f(1,1,1,1);
-  LVector3f vec[3];
-  LVector2f uv[3];
+  LVector4 color = LVector4(1,1,1,1);
+  LVector3 vec[3];
+  LVector2 uv[3];
 
   // process node
   NodePathCollection geom_collection = draw_node.find_all_matches("**/+GeomNode");
@@ -413,19 +414,19 @@ void MeshDrawer::geometry(NodePath draw_node) {
           // process polygon
           for(int idx=s; idx<e; idx++) {
             int vidx = _prim->get_vertex(idx);
-            prim_vertex_reader->set_row(vidx);
-            prim_uv_reader->set_row(vidx);
+            prim_vertex_reader->set_row_unsafe(vidx);
+            prim_uv_reader->set_row_unsafe(vidx);
             vec[indx_over] = _render.get_relative_point(
-              current_node_path,prim_vertex_reader->get_data3f());
-            uv[indx_over] = prim_uv_reader->get_data2f();
+                            current_node_path,prim_vertex_reader->get_data3());
+            uv[indx_over] = prim_uv_reader->get_data2();
             indx_over++;
             if (indx_over > 2) break;
           }
 
           // draw polygon
           tri(vec[0],color,uv[0],
-            vec[1],color,uv[1],
-            vec[2],color,uv[2]);
+          vec[1],color,uv[1],
+          vec[2],color,uv[2]);
         }
         // if we are over budget just quit
         if( _clear_index > _end_clear_index) return;
@@ -447,88 +448,88 @@ void MeshDrawer::geometry(NodePath draw_node) {
 //               parameters.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::link_segment(LVector3f pos, LVector4f frame,
-        float thickness, LVector4f color) {
+void MeshDrawer::
+link_segment(const LVector3 &pos, const LVector4 &frame,
+         PN_stdfloat thickness, const LVector4 &color) {
   assert(_render.get_error_type() == NodePath::ET_ok);
   assert(_camera.get_error_type() == NodePath::ET_ok);
-    /*
-     * X
-     * ---X
-     * ===0---X
-     * ===0===0---X
-     * ===0===0===O---X
-     * ===0===0===0===End
-     *
-     * first call marks position X
-     * second call moves position and promises to draw segment
-     * it can't draw it yet because next segment might bend it
-     * third call finally draws segment
-     * and the chain continues till
-     * link_segment_end to flush the linking segments is called.
-     */
+  /*
+   * X
+   * ---X
+   * ===0---X
+   * ===0===0---X
+   * ===0===0===O---X
+   * ===0===0===0===End
+   *
+   * first call marks position X
+   * second call moves position and promises to draw segment
+   * it can't draw it yet because next segment might bend it
+   * third call finally draws segment
+   * and the chain continues till
+   * link_segment_end to flush the linking segments is called.
+   */
 
-    // mark 1st position
-    if(_at_start==0) {
-        _last_pos = pos;
-        _last_thickness = thickness;
-        _last_color = color;
-        _at_start=1;
-        return;
-    }
+  // mark 1st position
+  if(_at_start==0) {
+    _last_pos = pos;
+    _last_thickness = thickness;
+    _last_color = color;
+    _at_start=1;
+    return;
+  }
 
-    LVector3f start = _last_pos;
-    LVector3f stop = pos;
+  LVector3 start = _last_pos;
+  LVector3 stop = pos;
 
-  LVector3f cam_start3d = _camera.get_relative_point(_render, start);
-  LPoint2f cam_start2d = LVector2f();
-  LVector3f cam_stop3d = _camera.get_relative_point(_render, stop);
-  LPoint2f cam_stop2d = LVector2f();
+  LVector3 cam_start3d = _camera.get_relative_point(_render, start);
+  LPoint2 cam_start2d = LVector2();
+  LVector3 cam_stop3d = _camera.get_relative_point(_render, stop);
+  LPoint2 cam_stop2d = LVector2();
 
   PT(Camera) camera = DCAST(Camera, _camera.node());
   PT(Lens) lens = camera->get_lens();
 
-  bool start_good = lens->project(cam_start3d, cam_start2d);
-  bool stop_good = lens->project(cam_stop3d, cam_stop2d);
-  //if start_good and stop_good:
+  lens->project(cam_start3d, cam_start2d);
+  lens->project(cam_stop3d, cam_stop2d);
 
-  LVector2f dif =  cam_stop2d - cam_start2d;
-  float rotation = atan2(dif.get_x(),dif.get_y());
+  LVector2 dif =  cam_stop2d - cam_start2d;
+  PN_stdfloat rotation = atan2(dif.get_x(),dif.get_y());
 
-  LVector3f now_v1 = start + _b1*(float)(thickness*sin(rotation)) + _b2*(float)(thickness*cos(rotation));
-  LVector3f now_v4 = start + _b4*(float)(thickness*sin(rotation)) + _b1*(float)(thickness*cos(rotation));
-  LVector3f now_v2 = stop + _b2*(float)(thickness*sin(rotation)) + _b3*(float)(thickness*cos(rotation));
-  LVector3f now_v3 = stop + _b3*(float)(thickness*sin(rotation)) + _b4*(float)(thickness*cos(rotation));
+  LVector3 now_v1 = start + _b1*(PN_stdfloat)(thickness*sin(rotation)) + _b2*(PN_stdfloat)(thickness*cos(rotation));
+  LVector3 now_v4 = start + _b4*(PN_stdfloat)(thickness*sin(rotation)) + _b1*(PN_stdfloat)(thickness*cos(rotation));
+  LVector3 now_v2 = stop + _b2*(PN_stdfloat)(thickness*sin(rotation)) + _b3*(PN_stdfloat)(thickness*cos(rotation));
+  LVector3 now_v3 = stop + _b3*(PN_stdfloat)(thickness*sin(rotation)) + _b4*(PN_stdfloat)(thickness*cos(rotation));
 
   // mark the segment we going to draw
   // we need to draw it when we know what the next segment looks like
   // because it can bend it a little
   if(_at_start==1) {
-        _last_v1 = now_v1;
-        _last_v2 = now_v2;
-        _last_v3 = now_v3;
-        _last_v4 = now_v4;
-        _at_start = 2;
-        return;
+    _last_v1 = now_v1;
+    _last_v2 = now_v2;
+    _last_v3 = now_v3;
+    _last_v4 = now_v4;
+    _at_start = 2;
+    return;
   }
 
   // draw the last segment a little bent
-  LVector3f v1 = _last_v1;
-  LVector3f v2 = (_last_v2+now_v1)/2.0f;
-  LVector3f v3 = (_last_v3+now_v4)/2.0f;
-  LVector3f v4 = _last_v4;
+  LVector3 v1 = _last_v1;
+  LVector3 v2 = (_last_v2+now_v1)/2.0f;
+  LVector3 v3 = (_last_v3+now_v4)/2.0f;
+  LVector3 v4 = _last_v4;
 
   // compute this frame
-  float u = frame.get_x();
-  float v = frame.get_y();
-  float us = frame.get_z();
-  float vs = frame.get_w();
+  PN_stdfloat u = frame.get_x();
+  PN_stdfloat v = frame.get_y();
+  PN_stdfloat us = frame.get_z();
+  PN_stdfloat vs = frame.get_w();
 
-  tri(v1, _last_color, LVector2f(u,v),
-    v2, color, LVector2f(u+us,v),
-    v3, color, LVector2f(u+us,v+vs));
-  tri(v3, color, LVector2f(u+us,v+vs),
-    v4, _last_color, LVector2f(u,v+vs),
-    v1, _last_color, LVector2f(u,v));
+  tri(v1, _last_color, LVector2(u,v),
+      v2, color, LVector2(u+us,v),
+      v3, color, LVector2(u+us,v+vs));
+  tri(v3, color, LVector2(u+us,v+vs),
+      v4, _last_color, LVector2(u,v+vs),
+      v1, _last_color, LVector2(u,v));
 
   // save this segment
   _last_v1 = v2;
@@ -550,19 +551,19 @@ void MeshDrawer::link_segment(LVector3f pos, LVector4f frame,
 //               the linked segment.
 //               Frame contains u,v,u-size,v-size quadruple.
 ////////////////////////////////////////////////////////////////////
-void MeshDrawer::link_segment_end(LVector4f frame, LVector4f color)
+void MeshDrawer::link_segment_end(const LVector4 &frame, const LVector4 &color)
 {
-  float u = frame.get_x();
-  float v = frame.get_y();
-  float us = frame.get_z();
-  float vs = frame.get_w();
+  PN_stdfloat u = frame.get_x();
+  PN_stdfloat v = frame.get_y();
+  PN_stdfloat us = frame.get_z();
+  PN_stdfloat vs = frame.get_w();
 
-  tri(_last_v1, _last_color, LVector2f(u,v),
-      _last_v2, color, LVector2f(u+us,v),
-      _last_v3, color, LVector2f(u+us,v+vs));
-  tri(_last_v3, color, LVector2f(u+us,v+vs),
-      _last_v4, _last_color, LVector2f(u,v+vs),
-      _last_v1, _last_color, LVector2f(u,v));
+  tri(_last_v1, _last_color, LVector2(u,v),
+      _last_v2, color, LVector2(u+us,v),
+      _last_v3, color, LVector2(u+us,v+vs));
+  tri(_last_v3, color, LVector2(u+us,v+vs),
+      _last_v4, _last_color, LVector2(u,v+vs),
+      _last_v1, _last_color, LVector2(u,v));
 
   _at_start = 0;
 }

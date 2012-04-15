@@ -400,7 +400,7 @@ unify_attributes(EggPrimitive::Shading shading) {
     }
     if (!has_color()) {
       // If we still don't have a color, the implicit color is white.
-      set_color(Colorf(1.0f, 1.0f, 1.0f, 1.0f));
+      set_color(LColor(1.0f, 1.0f, 1.0f, 1.0f));
     }
   }
 
@@ -465,7 +465,7 @@ unify_attributes(EggPrimitive::Shading shading) {
   }
 
   if (!has_color() && shading == S_overall) {
-    set_color(Colorf(1.0f, 1.0f, 1.0f, 1.0f));
+    set_color(LColor(1.0f, 1.0f, 1.0f, 1.0f));
   }
 }
 
@@ -1104,11 +1104,11 @@ r_apply_texmats(EggTextureCollection &textures) {
         if (uv_obj != (EggVertexUV *)NULL) {
           EggVertex new_vertex(*vertex);
           PT(EggVertexUV) new_uv_obj = new EggVertexUV(*uv_obj);
-          TexCoord3d uvw = uv_obj->get_uvw() * mat;
+          LTexCoord3d uvw = uv_obj->get_uvw() * mat;
           if (uv_obj->has_w() || texture->has_transform3d()) {
             new_uv_obj->set_uvw(uvw);
           } else {
-            new_uv_obj->set_uv(TexCoordd(uvw[0], uvw[1]));
+            new_uv_obj->set_uv(LTexCoordd(uvw[0], uvw[1]));
           }
           new_vertex.set_uv_obj(new_uv_obj);
           
@@ -1223,7 +1223,7 @@ void EggPrimitive::
 r_set_connected_shading(int stack_depth, EggPrimitive::Shading shading, 
                         const EggAttributes *neighbor, 
                         ConnectedShadingNodes &next_nodes) {
-  if (stack_depth > 10000) {
+  if (stack_depth > egg_recursion_limit) {
     // Too deep.  Limit recursion.
     ConnectedShadingNode next;
     next._shading = shading;
@@ -1257,10 +1257,10 @@ r_set_connected_shading(int stack_depth, EggPrimitive::Shading shading,
       // Make a special case for not having an overall color: that's
       // implicitly white.
       if (!neighbor->has_color() && has_color() && _drgbas.empty() &&
-          get_color() == Colorf(1.0f, 1.0f, 1.0f, 1.0f)) {
+          get_color() == LColor(1.0f, 1.0f, 1.0f, 1.0f)) {
         matches_color = true;
       } else if (!has_color() && neighbor->has_color() && neighbor->_drgbas.empty() &&
-          neighbor->get_color() == Colorf(1.0f, 1.0f, 1.0f, 1.0f)) {
+          neighbor->get_color() == LColor(1.0f, 1.0f, 1.0f, 1.0f)) {
         matches_color = true;
       }
     }

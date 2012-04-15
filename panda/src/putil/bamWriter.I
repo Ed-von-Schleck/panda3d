@@ -14,6 +14,17 @@
 
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamWriter::get_target
+//       Access: Published
+//  Description: Returns the current target of the BamWriter as set by
+//               set_target() or the constructor.
+////////////////////////////////////////////////////////////////////
+INLINE DatagramSink *BamWriter::
+get_target() {
+  return _target;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: BamWriter::get_filename
 //       Access: Published
 //  Description: If a BAM is a file, then the BamWriter should
@@ -23,7 +34,11 @@
 ////////////////////////////////////////////////////////////////////
 INLINE const Filename &BamWriter::
 get_filename() const {
-  return _filename;
+  if (_target != (DatagramSink *)NULL) {
+    return _target->get_filename();
+  }
+  static const Filename empty_filename;
+  return empty_filename;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -38,6 +53,20 @@ get_filename() const {
 INLINE BamWriter::BamEndian BamWriter::
 get_file_endian() const {
   return _file_endian;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamWriter::get_file_stdfloat_double
+//       Access: Published
+//  Description: Returns true if the file will store all "standard"
+//               floats as 64-bit doubles, or false if they are 32-bit
+//               floats.  This isn't runtime settable; it's based on
+//               the compilation flags of the version of Panda that
+//               generated this file.
+////////////////////////////////////////////////////////////////////
+INLINE bool BamWriter::
+get_file_stdfloat_double() const {
+  return _file_stdfloat_double;
 }
 
 ////////////////////////////////////////////////////////////////////

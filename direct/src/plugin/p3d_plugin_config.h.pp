@@ -14,6 +14,9 @@
    pandaVersion.h. */
 #$[]define P3D_COREAPI_VERSION_STR "$[join .,$[P3D_COREAPI_VERSION]]"
 
+/* As does the plugin version number. */
+#$[]define P3D_PLUGIN_VERSION_STR "$[join .,$[P3D_PLUGIN_VERSION]]"
+
 /* The filename(s) to generate output to when the plugin is running.
    For debugging purposes only. */
 #$[]define P3D_PLUGIN_LOG_DIRECTORY "$[subst \,\\,$[osfilename $[P3D_PLUGIN_LOG_DIRECTORY]]]"
@@ -28,5 +31,8 @@
 /* For development only: the location at which p3d_plugin.dll/.so can
    be found.  Empty string for the default. */
 #$[]define P3D_PLUGIN_P3D_PLUGIN "$[subst \,\\,$[osfilename $[P3D_PLUGIN_P3D_PLUGIN]]]"
+
+/* We need to know whether GTK is enabled for XEmbed. */
+$[cdefine HAVE_GTK]
 
 #end p3d_plugin_config.h

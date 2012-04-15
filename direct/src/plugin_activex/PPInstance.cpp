@@ -39,6 +39,8 @@
 #include "load_plugin.h"
 #include "find_root_dir.h"
 #include "mkdir_complete.h"
+#include "parse_color.h"
+#include "wstring_encode.h"
 
 // We can include this header file to get the DTOOL_PLATFORM
 // definition, even though we don't link with dtool.
@@ -74,10 +76,11 @@ void P3D_NotificationSync(P3D_instance *instance)
 }
 
 PPInstance::PPInstance( CP3DActiveXCtrl& parentCtrl ) : 
-    m_parentCtrl( parentCtrl ), m_p3dInstance( NULL ), m_p3dObject( NULL ), m_handleRequestOnUIThread( true ), m_isInit( false )
+    m_parentCtrl( parentCtrl ), m_p3dInstance( NULL ), m_p3dObject( NULL ), m_isInit( false )
 {
   // We need the root dir first.
   m_rootDir = find_root_dir( );
+  string_to_wstring(m_rootDir_w, m_rootDir);
 
   // Then open the logfile.
   m_logger.Open( m_rootDir );
@@ -86,15 +89,70 @@ PPInstance::PPInstance( CP3DActiveXCtrl& parentCtrl ) :
   _contents_expiration = 0;
   _failed = false;
 
+  _tokens = NULL;
+  _num_tokens = 0;
+
   // Ensure this event is initially in the "set" state, in case we
   // never get a download request before we get a close request.
   m_eventDownloadStopped.SetEvent( );
+  m_eventStop.ResetEvent();
 
   nout << "Plugin is built with " << PANDA_PACKAGE_HOST_URL << "\n";
 }
 
-PPInstance::~PPInstance(  )
-{
+PPInstance::~PPInstance() {
+  assert(_tokens == NULL);
+}
+
+// This is called at setup time to read the set of web tokens from the
+// ActiveX control.
+void PPInstance::
+read_tokens() {
+    assert(_tokens == NULL);
+    _num_tokens = (int)m_parentCtrl.m_parameters.size();
+    _tokens = new P3D_token[ _num_tokens ];
+    for (int i = 0; i < _num_tokens; i++ ) {
+      std::pair< CString, CString > keyAndValue = m_parentCtrl.m_parameters[ i ];
+      // Make the token lowercase, since HTML is case-insensitive but
+      // we're not.
+      string keyword;
+      for (const char *p = m_parentCtrl.m_parameters[ i ].first; *p; ++p) {
+        keyword += tolower(*p);
+      }
+      
+      _tokens[i]._keyword = strdup( keyword.c_str() ); 
+      _tokens[i]._value = strdup( m_parentCtrl.m_parameters[ i ].second );
+    }
+    
+    // fgcolor and bgcolor are useful to know here (in case we have to
+    // draw a twirling icon).
+    
+    // The default bgcolor is white.
+    _bgcolor_r = _bgcolor_g = _bgcolor_b = 0xff;
+    if (has_token("bgcolor")) {
+      int r, g, b;
+      if (parse_color(r, g, b, lookup_token("bgcolor"))) {
+        _bgcolor_r = r;
+        _bgcolor_g = g;
+        _bgcolor_b = b;
+      }
+    }
+    
+    // The default fgcolor is either black or white, according to the
+    // brightness of the bgcolor.
+    if (_bgcolor_r + _bgcolor_g + _bgcolor_b > 0x80 + 0x80 + 0x80) {
+      _fgcolor_r = _fgcolor_g = _fgcolor_b = 0x00;
+    } else {
+      _fgcolor_r = _fgcolor_g = _fgcolor_b = 0xff;
+    }
+    if (has_token("fgcolor")) {
+      int r, g, b;
+      if (parse_color(r, g, b, lookup_token("fgcolor"))) {
+        _fgcolor_r = r;
+        _fgcolor_g = g;
+        _fgcolor_b = b;
+      }
+    }
 }
 
 int PPInstance::DownloadFile( const std::string& from, const std::string& to )
@@ -396,13 +454,14 @@ int PPInstance::DownloadP3DComponents( std::string& p3dDllFilename )
     if (!already_got) {
       // OK, we need to download a new contents.xml file.  Start off
       // by downloading it into a local temporary file.
-      TCHAR tempFileName[ MAX_PATH ];
-      if (!::GetTempFileName( m_rootDir.c_str(), "p3d", 0, tempFileName )) {
+      WCHAR local_filename_w[ MAX_PATH ];
+      if (!::GetTempFileNameW( m_rootDir_w.c_str(), L"p3d", 0, local_filename_w )) {
         nout << "GetTempFileName failed (folder is " << m_rootDir << ")\n";
         return 1;
       }
       
-      std::string localContentsFileName( tempFileName );
+      std::string local_filename;
+      wstring_to_string(local_filename, local_filename_w);
 
       std::string hostUrl( PANDA_PACKAGE_HOST_URL );
       if (!hostUrl.empty() && hostUrl[hostUrl.size() - 1] != '/') {
@@ -415,9 +474,9 @@ int PPInstance::DownloadP3DComponents( std::string& p3dDllFilename )
       strm << hostUrl << P3D_CONTENTS_FILENAME << "?" << time(NULL);
       std::string remoteContentsUrl( strm.str() );
       
-      error = DownloadFile( remoteContentsUrl, localContentsFileName );
+      error = DownloadFile( remoteContentsUrl, local_filename );
       if ( !error ) {
-        if ( !read_contents_file( localContentsFileName, true ) )
+        if ( !read_contents_file( local_filename, true ) )
           error = 1;
       }
 
@@ -429,7 +488,7 @@ int PPInstance::DownloadP3DComponents( std::string& p3dDllFilename )
       }
 
       // We don't need the temporary file any more.
-      ::DeleteFile( localContentsFileName.c_str() );
+      ::DeleteFileW( local_filename_w );
     }
       
     if (!error) {
@@ -499,6 +558,8 @@ int PPInstance::DownloadP3DComponents( std::string& p3dDllFilename )
 
 int PPInstance::LoadPlugin( const std::string& dllFilename ) 
 {
+    CSingleLock lock(&_load_mutex);
+    lock.Lock();
     if ( !m_pluginLoaded )
     { 
         ref_plugin();
@@ -558,6 +619,9 @@ int PPInstance::LoadPlugin( const std::string& dllFilename )
 
 int PPInstance::UnloadPlugin()
 {
+    CSingleLock lock(&_load_mutex);
+    lock.Lock();
+
     int error( 0 );
 
     if ( m_pluginLoaded )
@@ -586,7 +650,7 @@ unref_plugin() {
   
   if ( s_instanceCount == 0 && is_plugin_loaded() ) {
     nout << "Unloading core API\n";
-    unload_plugin();
+    unload_plugin(nout);
     
     // This pointer is no longer valid and must be reset for next
     // time.
@@ -596,7 +660,13 @@ unref_plugin() {
 
 int PPInstance::Start( const std::string& p3dFilename  )
 {
-    m_eventStop.ResetEvent();
+    {
+      CSingleLock lock(&_load_mutex);
+      lock.Lock();
+      
+      assert(!m_isInit);
+      m_isInit = true;
+    }
 
     P3D_window_handle parent_window;
     memset(&parent_window, 0, sizeof(parent_window));
@@ -606,29 +676,8 @@ int PPInstance::Start( const std::string& p3dFilename  )
     RECT rect;
     GetClientRect( m_parentCtrl.m_hWnd, &rect );
 
-    P3D_token* p3dTokens = new P3D_token[ m_parentCtrl.m_parameters.size() ];
-    for ( UINT i = 0; i < m_parentCtrl.m_parameters.size(); i++ )
-    {
-        std::pair< CString, CString > keyAndValue = m_parentCtrl.m_parameters[ i ];
-        // Make the token lowercase, since HTML is case-insensitive but
-        // we're not.
-        string keyword;
-        for (const char *p = m_parentCtrl.m_parameters[ i ].first; *p; ++p) {
-          keyword += tolower(*p);
-        }
-
-        p3dTokens[i]._keyword = strdup( keyword.c_str() ); 
-        p3dTokens[i]._value = strdup( m_parentCtrl.m_parameters[ i ].second );
-    }
-    nout << "Creating new P3D instance object \n";
-    m_p3dInstance = P3D_new_instance_ptr( &P3D_NotificationSync, p3dTokens, m_parentCtrl.m_parameters.size(), 0, NULL, (void*)&m_parentCtrl );
-
-    for ( UINT j = 0; j < m_parentCtrl.m_parameters.size(); j++ )
-    {
-        delete [] p3dTokens[j]._keyword;
-        delete [] p3dTokens[j]._value;
-    }
-    delete [] p3dTokens;
+    nout << "Creating new P3D instance object for " << p3dFilename << "\n";
+    m_p3dInstance = P3D_new_instance_ptr( &P3D_NotificationSync, _tokens, _num_tokens, 0, NULL, (void*)&m_parentCtrl );
 
     if ( !m_p3dInstance )
     {
@@ -646,14 +695,11 @@ int PPInstance::Start( const std::string& p3dFilename  )
     P3D_instance_setup_window_ptr( m_p3dInstance, P3D_WT_embedded, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, &parent_window );
 
     nout << "Starting new P3D instance " << p3dFilename << "\n";
-
     if ( !P3D_instance_start_ptr( m_p3dInstance, false, p3dFilename.c_str(), 0 ) )
     {
         nout << "Error starting P3D instance: " << GetLastError() << "\n";
         return 1;
     }
-
-    m_isInit = true;
 
     return 0;
 }
@@ -676,6 +722,17 @@ int PPInstance::Stop( )
     {
         UnloadPlugin();
     }
+
+    if (_tokens != NULL) {
+      for ( int j = 0; j < _num_tokens; ++j) {
+        delete [] _tokens[j]._keyword;
+        delete [] _tokens[j]._value;
+      }
+      delete [] _tokens;
+      _tokens = NULL;
+      _num_tokens = 0;
+    }
+
 	return 0;
 }
 
@@ -726,13 +783,18 @@ void PPInstance::HandleRequestLoop() {
 void PPInstance::HandleRequestGetUrl( void* data )
 {
 	HRESULT hr( S_OK );
-    P3D_request *request = static_cast<P3D_request*>( data );
+    ThreadedRequestData *trdata = static_cast<ThreadedRequestData*>( data );
+    PPInstance *self = trdata->_self;
+    P3D_request *request = trdata->_request;
+    std::string host_url = trdata->_host_url;
+    delete trdata;
+
     if ( !request )
     {
         return;
     }
     int unique_id = request->_request._get_url._unique_id;
-    const std::string &url = request->_request._get_url._url;
+    std::string url = request->_request._get_url._url;
     CP3DActiveXCtrl* parent = static_cast<CP3DActiveXCtrl*> ( request->_instance->_user_data );
 
     if ( !parent )
@@ -741,6 +803,31 @@ void PPInstance::HandleRequestGetUrl( void* data )
     }
 
     nout << "Handling P3D_RT_get_url request from " << url << "\n";
+
+    // Convert a relative URL into a full URL.
+    size_t colon = url.find(':');
+    size_t slash = url.find('/');
+    if (colon == std::string::npos || colon > slash) {
+      // Not a full URL, so it's a relative URL.  Prepend the current
+      // URL.
+      if (url.empty() || url[0] == '/') {
+        // It starts with a slash, so go back to the root of this
+        // particular host.
+        colon = host_url.find(':');
+        if (colon != std::string::npos && 
+            colon + 2 < host_url.size() && 
+            host_url[colon + 1] == '/' && host_url[colon + 2] == '/') {
+          slash = host_url.find('/', colon + 3);
+          url = host_url.substr(0, slash) + url;
+        }
+      } else {
+        // It doesn't start with a slash, so it's relative to this
+        // page.
+        url = host_url + url;
+      }
+      nout << "Made fullpath: " << url << "\n";
+    }
+
 	{
 		PPDownloadRequest p3dObjectDownloadRequest( parent->m_instance, request ); 
 		PPDownloadCallback bsc( p3dObjectDownloadRequest );
@@ -782,24 +869,15 @@ HandleRequest( P3D_request *request ) {
     }
   case P3D_RT_get_url:
     {
-      if ( !m_handleRequestOnUIThread ) {
-        _beginthread( HandleRequestGetUrl, 0, request );
-      } else {
-        HandleRequestGetUrl( request );
-      }
+      // We always handle url requests on a thread.
+      ThreadedRequestData *trdata = new ThreadedRequestData;
+      trdata->_self = this;
+      trdata->_request = request;
+      trdata->_host_url = GetHostUrl();
+
+      _beginthread( HandleRequestGetUrl, 0, trdata );
       handled = true;
       return true;
-    }
-  case P3D_RT_notify:
-    {
-      CString notification = request->_request._notify._message;
-      if ( notification == "ondownloadbegin" ) {
-        m_handleRequestOnUIThread = false;
-      } else if ( notification == "ondownloadcomplete" ) {
-        m_handleRequestOnUIThread = true;
-      }
-      handled = true;
-      break;
     }
   case P3D_RT_callback:
     {
@@ -816,33 +894,6 @@ HandleRequest( P3D_request *request ) {
 
   P3D_request_finish_ptr( request, handled );
   return continue_loop;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PPInstance::lookup_token
-//       Access: Private
-//  Description: Returns the value associated with the first
-//               appearance of the named token, or empty string if the
-//               token does not appear.
-////////////////////////////////////////////////////////////////////
-string PPInstance::
-lookup_token(const string &keyword) const {
-  for (UINT i = 0; i < m_parentCtrl.m_parameters.size(); i++) {
-    std::pair<CString, CString> keyAndValue = m_parentCtrl.m_parameters[i];
-    // Make the token lowercase, since HTML is case-insensitive but
-    // we're not.
-    const CString &orig_keyword = m_parentCtrl.m_parameters[i].first;
-    string lower_keyword;
-    for (const char *p = orig_keyword; *p; ++p) {
-      lower_keyword += tolower(*p);
-    }
-    
-    if (lower_keyword == keyword) {
-      return (const char *)m_parentCtrl.m_parameters[i].second;
-    }
-  }
-
-  return string();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -942,4 +993,38 @@ set_failed() {
 }
 
 
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::lookup_token
+//       Access: Private
+//  Description: Returns the value associated with the first
+//               appearance of the named token, or empty string if the
+//               token does not appear.
+////////////////////////////////////////////////////////////////////
+std::string PPInstance::
+lookup_token(const std::string &keyword) const {
+  for (int i = 0; i < _num_tokens; ++i) {
+    if (strcmp(_tokens[i]._keyword, keyword.c_str()) == 0) {
+      return _tokens[i]._value;
+    }
+  }
+
+  return string();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::has_token
+//       Access: Private
+//  Description: Returns true if the named token appears in the list,
+//               false otherwise.
+////////////////////////////////////////////////////////////////////
+bool PPInstance::
+has_token(const std::string &keyword) const {
+  for (int i = 0; i < _num_tokens; ++i) {
+    if (strcmp(_tokens[i]._keyword, keyword.c_str()) == 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
 

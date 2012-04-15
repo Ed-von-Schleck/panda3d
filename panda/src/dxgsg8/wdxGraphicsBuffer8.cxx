@@ -150,9 +150,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
     restore_bitplanes();
   }
@@ -259,8 +256,6 @@ rebuild_bitplanes() {
           (get_texture(i)->get_format() != Texture::F_depth_component)&&
           (color_tex_index < 0)) {
         color_tex_index = i;
-      } else {
-        _textures[i]._rtm_mode = RTM_copy_texture;
       }
     }
   }
@@ -293,7 +288,7 @@ rebuild_bitplanes() {
     color_tex->set_format(Texture::F_rgba);
     color_ctx =
       DCAST(DXTextureContext8,
-            color_tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+            color_tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
     if (color_ctx) {
       if (!color_ctx->create_texture(*_dxgsg->_screen)) {
         dxgsg8_cat.error()
@@ -348,7 +343,7 @@ rebuild_bitplanes() {
     depth_tex->set_format(Texture::F_depth_stencil);
     depth_ctx =
       DCAST(DXTextureContext8,
-            depth_tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+            depth_tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
     if (depth_ctx) {
       if (!depth_ctx->create_texture(*_dxgsg->_screen)) {
         dxgsg8_cat.error()
@@ -424,8 +419,6 @@ select_cube_map(int cube_map_index) {
           (get_texture(i)->get_format() != Texture::F_depth_component)&&
           (color_tex_index < 0)) {
         color_tex_index = i;
-      } else {
-        _textures[i]._rtm_mode = RTM_copy_texture;
       }
     }
   }
@@ -434,7 +427,7 @@ select_cube_map(int cube_map_index) {
   if (color_tex) {
     color_ctx =
       DCAST(DXTextureContext8,
-            color_tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+            color_tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
     if (!color_ctx->create_texture(*_dxgsg->_screen)) {
       dxgsg8_cat.error()
         << "Unable to re-create texture " << *color_ctx->get_texture() << endl;
@@ -506,7 +499,6 @@ close_buffer() {
     _depth_backing_store = NULL;
   }
 
-  _active = false;
   _cube_map_index = -1;
   _is_valid = false;
 }

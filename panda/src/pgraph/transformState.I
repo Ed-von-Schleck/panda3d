@@ -19,14 +19,22 @@
 //  Description: Provides an arbitrary ordering among all unique
 //               TransformStates, so we can store the essentially
 //               different ones in a big set and throw away the rest.
-//
-//               This is the same as sorts_less(), except the
-//               uniquify_matrix value is implicit from the Config.prc
-//               file.
 ////////////////////////////////////////////////////////////////////
 INLINE bool TransformState::
 operator < (const TransformState &other) const {
-  return sorts_less(other, uniquify_matrix);
+  return compare_to(other) < 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TransformState::compare_to
+//       Access: Published
+//  Description: Provides an arbitrary ordering among all unique
+//               TransformStates, so we can store the essentially
+//               different ones in a big set and throw away the rest.
+////////////////////////////////////////////////////////////////////
+INLINE int TransformState::
+compare_to(const TransformState &other) const {
+  return compare_to(other, uniquify_matrix);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -47,10 +55,10 @@ get_hash() const {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos(const LVecBase3f &pos) {
+make_pos(const LVecBase3 &pos) {
   return make_pos_hpr_scale(pos, 
-                            LVecBase3f(0.0f, 0.0f, 0.0f),
-                            LVecBase3f(1.0f, 1.0f, 1.0f));
+                            LVecBase3(0.0f, 0.0f, 0.0f),
+                            LVecBase3(1.0f, 1.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -60,10 +68,10 @@ make_pos(const LVecBase3f &pos) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_hpr(const LVecBase3f &hpr) {
-  return make_pos_hpr_scale(LVecBase3f(0.0f, 0.0f, 0.0f),
+make_hpr(const LVecBase3 &hpr) {
+  return make_pos_hpr_scale(LVecBase3(0.0f, 0.0f, 0.0f),
                             hpr, 
-                            LVecBase3f(1.0f, 1.0f, 1.0f));
+                            LVecBase3(1.0f, 1.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -73,10 +81,10 @@ make_hpr(const LVecBase3f &hpr) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_quat(const LQuaternionf &quat) {
-  return make_pos_quat_scale(LVecBase3f(0.0f, 0.0f, 0.0f),
+make_quat(const LQuaternion &quat) {
+  return make_pos_quat_scale(LVecBase3(0.0f, 0.0f, 0.0f),
                              quat, 
-                             LVecBase3f(1.0f, 1.0f, 1.0f));
+                             LVecBase3(1.0f, 1.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -86,9 +94,9 @@ make_quat(const LQuaternionf &quat) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos_hpr(const LVecBase3f &pos, const LVecBase3f &hpr) {
+make_pos_hpr(const LVecBase3 &pos, const LVecBase3 &hpr) {
   return make_pos_hpr_scale(pos, hpr,
-                            LVecBase3f(1.0, 1.0f, 1.0f));
+                            LVecBase3(1.0, 1.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -98,7 +106,7 @@ make_pos_hpr(const LVecBase3f &pos, const LVecBase3f &hpr) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_scale(float scale) {
+make_scale(PN_stdfloat scale) {
   // We actually map this 3-d uniform make_scale() to the 2-d
   // version--might as well call it a 2-d scale.
   return make_scale2d(scale);
@@ -111,9 +119,9 @@ make_scale(float scale) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_scale(const LVecBase3f &scale) {
-  return make_pos_hpr_scale(LVecBase3f(0.0f, 0.0f, 0.0f),
-                            LVecBase3f(0.0f, 0.0f, 0.0f),
+make_scale(const LVecBase3 &scale) {
+  return make_pos_hpr_scale(LVecBase3(0.0f, 0.0f, 0.0f),
+                            LVecBase3(0.0f, 0.0f, 0.0f),
                             scale);
 }
 
@@ -124,10 +132,10 @@ make_scale(const LVecBase3f &scale) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_shear(const LVecBase3f &shear) {
-  return make_pos_hpr_scale_shear(LVecBase3f(0.0f, 0.0f, 0.0f),
-                                  LVecBase3f(0.0f, 0.0f, 0.0f),
-                                  LVecBase3f(1.0f, 1.0f, 1.0f),
+make_shear(const LVecBase3 &shear) {
+  return make_pos_hpr_scale_shear(LVecBase3(0.0f, 0.0f, 0.0f),
+                                  LVecBase3(0.0f, 0.0f, 0.0f),
+                                  LVecBase3(1.0f, 1.0f, 1.0f),
                                   shear);
 }
 
@@ -138,9 +146,9 @@ make_shear(const LVecBase3f &shear) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos_hpr_scale(const LVecBase3f &pos, const LVecBase3f &hpr, 
-                   const LVecBase3f &scale) {
-  return make_pos_hpr_scale_shear(pos, hpr, scale, LVecBase3f::zero());
+make_pos_hpr_scale(const LVecBase3 &pos, const LVecBase3 &hpr, 
+                   const LVecBase3 &scale) {
+  return make_pos_hpr_scale_shear(pos, hpr, scale, LVecBase3::zero());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -150,9 +158,9 @@ make_pos_hpr_scale(const LVecBase3f &pos, const LVecBase3f &hpr,
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos_quat_scale(const LVecBase3f &pos, const LQuaternionf &quat, 
-                    const LVecBase3f &scale) {
-  return make_pos_quat_scale_shear(pos, quat, scale, LVecBase3f::zero());
+make_pos_quat_scale(const LVecBase3 &pos, const LQuaternion &quat, 
+                    const LVecBase3 &scale) {
+  return make_pos_quat_scale_shear(pos, quat, scale, LVecBase3::zero());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -162,8 +170,8 @@ make_pos_quat_scale(const LVecBase3f &pos, const LQuaternionf &quat,
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos2d(const LVecBase2f &pos) {
-  return make_pos_rotate_scale2d(pos, 0.0f, LVecBase2f(1.0f, 1.0f));
+make_pos2d(const LVecBase2 &pos) {
+  return make_pos_rotate_scale2d(pos, 0.0f, LVecBase2(1.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -173,9 +181,9 @@ make_pos2d(const LVecBase2f &pos) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_rotate2d(float rotate) {
-  return make_pos_rotate_scale2d(LVecBase2f(0.0f, 0.0f), rotate, 
-                                 LVecBase2f(1.0f, 1.0f));
+make_rotate2d(PN_stdfloat rotate) {
+  return make_pos_rotate_scale2d(LVecBase2(0.0f, 0.0f), rotate, 
+                                 LVecBase2(1.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -185,9 +193,9 @@ make_rotate2d(float rotate) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos_rotate2d(const LVecBase2f &pos, float rotate) {
+make_pos_rotate2d(const LVecBase2 &pos, PN_stdfloat rotate) {
   return make_pos_rotate_scale2d(pos, rotate,
-                                 LVecBase2f(1.0, 1.0f));
+                                 LVecBase2(1.0, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -197,9 +205,9 @@ make_pos_rotate2d(const LVecBase2f &pos, float rotate) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_scale2d(float scale) {
-  return make_pos_rotate_scale2d(LVecBase2f(0.0f, 0.0f), 0.0f,
-                                 LVecBase2f(scale, scale));
+make_scale2d(PN_stdfloat scale) {
+  return make_pos_rotate_scale2d(LVecBase2(0.0f, 0.0f), 0.0f,
+                                 LVecBase2(scale, scale));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -209,8 +217,8 @@ make_scale2d(float scale) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_scale2d(const LVecBase2f &scale) {
-  return make_pos_rotate_scale2d(LVecBase2f(0.0f, 0.0f), 0.0f, scale);
+make_scale2d(const LVecBase2 &scale) {
+  return make_pos_rotate_scale2d(LVecBase2(0.0f, 0.0f), 0.0f, scale);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -220,9 +228,9 @@ make_scale2d(const LVecBase2f &scale) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_shear2d(float shear) {
-  return make_pos_rotate_scale_shear2d(LVecBase2f(0.0f, 0.0f), 0.0f, 
-                                       LVecBase2f(1.0f, 1.0f), shear);
+make_shear2d(PN_stdfloat shear) {
+  return make_pos_rotate_scale_shear2d(LVecBase2(0.0f, 0.0f), 0.0f, 
+                                       LVecBase2(1.0f, 1.0f), shear);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -232,8 +240,8 @@ make_shear2d(float shear) {
 //               components.
 ////////////////////////////////////////////////////////////////////
 INLINE CPT(TransformState) TransformState::
-make_pos_rotate_scale2d(const LVecBase2f &pos, float rotate, 
-                        const LVecBase2f &scale) {
+make_pos_rotate_scale2d(const LVecBase2 &pos, PN_stdfloat rotate, 
+                        const LVecBase2 &scale) {
   return make_pos_rotate_scale_shear2d(pos, rotate, scale, 0.0f);
 }
 
@@ -475,7 +483,7 @@ has_mat() const {
 //  Description: Returns the pos component of the transform.  It is an
 //               error to call this if has_pos() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE const LPoint3f &TransformState::
+INLINE const LPoint3 &TransformState::
 get_pos() const {
   check_components();
   nassertr(has_pos(), _pos);
@@ -489,7 +497,7 @@ get_pos() const {
 //               trio of Euler angles.  It is an error to call this if
 //               has_components() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE const LVecBase3f &TransformState::
+INLINE const LVecBase3 &TransformState::
 get_hpr() const {
   check_hpr();
   nassertr(!is_invalid(), _hpr);
@@ -510,7 +518,7 @@ get_hpr() const {
 //               It is an error to call this if has_components()
 //               returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE const LQuaternionf &TransformState::
+INLINE const LQuaternion &TransformState::
 get_quat() const {
   check_quat();
   nassertr(!is_invalid(), _quat);
@@ -526,7 +534,7 @@ get_quat() const {
 //               normalized.  It is an error to call this if
 //               has_components() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE const LQuaternionf &TransformState::
+INLINE const LQuaternion &TransformState::
 get_norm_quat() const {
   check_norm_quat();
   nassertr(!is_invalid(), _norm_quat);
@@ -540,7 +548,7 @@ get_norm_quat() const {
 //               error to call this if has_components() returned
 //               false.
 ////////////////////////////////////////////////////////////////////
-INLINE const LVecBase3f &TransformState::
+INLINE const LVecBase3 &TransformState::
 get_scale() const {
   check_components();
   nassertr(!is_invalid(), _scale);
@@ -554,7 +562,7 @@ get_scale() const {
 //               single number.  It is an error to call this if
 //               has_uniform_scale() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE float TransformState::
+INLINE PN_stdfloat TransformState::
 get_uniform_scale() const {
   check_components();
   nassertr(has_uniform_scale(), _scale[0]);
@@ -568,7 +576,7 @@ get_uniform_scale() const {
 //               an error to call this if has_components() returned
 //               false.
 ////////////////////////////////////////////////////////////////////
-INLINE const LVecBase3f &TransformState::
+INLINE const LVecBase3 &TransformState::
 get_shear() const {
   check_components();
   nassertr(!is_invalid(), _shear);
@@ -580,9 +588,9 @@ get_shear() const {
 //       Access: Published
 //  Description: Returns the matrix that describes the transform.
 ////////////////////////////////////////////////////////////////////
-INLINE const LMatrix4f &TransformState::
+INLINE const LMatrix4 &TransformState::
 get_mat() const {
-  nassertr(has_mat(), LMatrix4f::ident_mat());
+  nassertr(has_mat(), LMatrix4::ident_mat());
   check_mat();
   return _mat;
 }
@@ -594,11 +602,11 @@ get_mat() const {
 //               is an error to call this if has_pos() or is_2d()
 //               returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE LVecBase2f TransformState::
+INLINE LVecBase2 TransformState::
 get_pos2d() const {
   check_components();
-  nassertr(has_pos() && is_2d(), LVecBase2f::zero());
-  return LVecBase2f(_pos[0], _pos[1]);
+  nassertr(has_pos() && is_2d(), LVecBase2::zero());
+  return LVecBase2(_pos[0], _pos[1]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -609,7 +617,7 @@ get_pos2d() const {
 //               It is an error to call this if has_components() or
 //               is_2d() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE float TransformState::
+INLINE PN_stdfloat TransformState::
 get_rotate2d() const {
   check_hpr();
   nassertr(!is_invalid() && is_2d(), 0);
@@ -633,11 +641,11 @@ get_rotate2d() const {
 //               is an error to call this if has_components() or
 //               is_2d() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE LVecBase2f TransformState::
+INLINE LVecBase2 TransformState::
 get_scale2d() const {
   check_components();
-  nassertr(!is_invalid() && is_2d(), LVecBase2f::zero());
-  return LVecBase2f(_scale[0], _scale[1]);
+  nassertr(!is_invalid() && is_2d(), LVecBase2::zero());
+  return LVecBase2(_scale[0], _scale[1]);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -647,7 +655,7 @@ get_scale2d() const {
 //               is an error to call this if has_components() or
 //               is_2d() returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE float TransformState::
+INLINE PN_stdfloat TransformState::
 get_shear2d() const {
   check_components();
   nassertr(!is_invalid() && is_2d(), 0.0f);
@@ -661,11 +669,11 @@ get_shear2d() const {
 //               transform.  It is an error to call this if is_2d()
 //               returned false.
 ////////////////////////////////////////////////////////////////////
-INLINE LMatrix3f TransformState::
+INLINE LMatrix3 TransformState::
 get_mat3() const {
-  nassertr(has_mat() && is_2d(), LMatrix3f::ident_mat());
+  nassertr(has_mat() && is_2d(), LMatrix3::ident_mat());
   check_mat();
-  return LMatrix3f(_mat(0, 0), _mat(0, 1), _mat(0, 3),
+  return LMatrix3(_mat(0, 0), _mat(0, 1), _mat(0, 3),
                    _mat(1, 0), _mat(1, 1), _mat(1, 3),
                    _mat(3, 0), _mat(3, 1), _mat(3, 3));
 }
@@ -1142,7 +1150,7 @@ check_uniform_scale() {
     }
   }
 
-  if (!_shear.almost_equal(LVecBase3f::zero())) {
+  if (!_shear.almost_equal(LVecBase3::zero())) {
     _flags |= F_has_nonzero_shear;
   }
 }
@@ -1168,7 +1176,7 @@ check_uniform_scale2d() {
     }
   }
 
-  if (!_shear.almost_equal(LVecBase3f::zero())) {
+  if (!_shear.almost_equal(LVecBase3::zero())) {
     _flags |= F_has_nonzero_shear;
   }
 }

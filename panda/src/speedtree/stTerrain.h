@@ -53,25 +53,25 @@ PUBLISHED:
 
   INLINE int get_num_splat_layers() const;
   INLINE const Filename &get_splat_layer(int n) const;
-  INLINE float get_splat_layer_tiling(int n) const;
-  INLINE const LVecBase4f &get_splat_layer_color(int n) const;
+  INLINE PN_stdfloat get_splat_layer_tiling(int n) const;
+  INLINE LColor get_splat_layer_color(int n) const;
 
   INLINE const GeomVertexFormat *get_vertex_format();
 
-  INLINE float get_min_height() const;
-  INLINE float get_max_height() const;
+  INLINE PN_stdfloat get_min_height() const;
+  INLINE PN_stdfloat get_max_height() const;
 
-  virtual float get_height(float x, float y) const=0;
-  virtual float get_smooth_height(float x, float y, float radius) const;
-  virtual float get_slope(float x, float y) const;
+  virtual PN_stdfloat get_height(PN_stdfloat x, PN_stdfloat y) const=0;
+  virtual PN_stdfloat get_smooth_height(PN_stdfloat x, PN_stdfloat y, PN_stdfloat radius) const;
+  virtual PN_stdfloat get_slope(PN_stdfloat x, PN_stdfloat y) const;
 
-  bool placement_is_acceptable(float x, float y,
-			       float height_min, float height_max, 
-			       float slope_min, float slope_max);
+  bool placement_is_acceptable(PN_stdfloat x, PN_stdfloat y,
+                               PN_stdfloat height_min, PN_stdfloat height_max, 
+                               PN_stdfloat slope_min, PN_stdfloat slope_max);
 
   virtual void fill_vertices(GeomVertexData *data,
-			     float start_x, float start_y,
-			     float size_xy, int num_xy) const;
+                             PN_stdfloat start_x, PN_stdfloat start_y,
+                             PN_stdfloat size_xy, int num_xy) const;
 
   virtual void output(ostream &out) const;
   virtual void write(ostream &out, int indent_level = 0) const;
@@ -84,16 +84,16 @@ protected:
 
   typedef pvector<SpeedTree::SVertexAttribDesc> VertexAttribs;
   static bool convert_vertex_format(VertexAttribs &st_vertex_attribs,
-				    const GeomVertexFormat *format);
+                                    const GeomVertexFormat *format);
   static bool convert_vertex_column(SpeedTree::SVertexAttribDesc &st_attrib,
-				    const GeomVertexColumn *column);
+                                    const GeomVertexColumn *column);
 
 protected:
   class SplatLayer {
   public:
     Filename _filename;
-    float _tiling;
-    LVecBase4f _color;
+    PN_stdfloat _tiling;
+    UnalignedLVecBase4 _color;
   };
   typedef pvector<SplatLayer> SplatLayers;
 
@@ -107,8 +107,8 @@ protected:
   CPT(GeomVertexFormat) _vertex_format;
   VertexAttribs _st_vertex_attribs;
 
-  float _min_height;
-  float _max_height;
+  PN_stdfloat _min_height;
+  PN_stdfloat _max_height;
 
 public:
   static TypeHandle get_class_type() {

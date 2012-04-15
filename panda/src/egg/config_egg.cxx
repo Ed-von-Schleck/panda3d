@@ -52,6 +52,7 @@
 #include "eggVertex.h"
 #include "eggVertexPool.h"
 #include "eggVertexUV.h"
+#include "eggVertexAux.h"
 #include "eggXfmAnimData.h"
 #include "eggXfmSAnim.h"
 
@@ -150,6 +151,14 @@ ConfigVariableInt egg_test_vref_integrity
           "its vertices will no longer be checked for internal integrity.  "
           "This is meaningful in non-production builds only."));
 
+ConfigVariableInt egg_recursion_limit
+("egg-recursion-limit", 1000,
+ PRC_DESC("The maximum number of levels that recursive algorithms within "
+          "the egg library are allowed to traverse.  This is a simple hack "
+          "to prevent deeply-recursive algorithms from triggering a stack "
+          "overflow.  Set it larger to run more efficiently if your stack "
+          "allows it; set it lower if you experience stack overflows."));
+
 ////////////////////////////////////////////////////////////////////
 //     Function: init_libegg
 //  Description: Initializes the library.  This must be called at
@@ -207,6 +216,7 @@ init_libegg() {
   EggVertex::init_type();
   EggVertexPool::init_type();
   EggVertexUV::init_type();
+  EggVertexAux::init_type();
   EggXfmAnimData::init_type();
   EggXfmSAnim::init_type();
 }

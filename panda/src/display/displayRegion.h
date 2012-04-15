@@ -59,7 +59,7 @@ class CullTraverser;
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_DISPLAY DisplayRegion : public DisplayRegionBase, public DrawableRegion {
 protected:
-  DisplayRegion(GraphicsOutput *window, const LVecBase4f &dimensions);
+  DisplayRegion(GraphicsOutput *window, const LVecBase4 &dimensions);
 
 private:
   DisplayRegion(const DisplayRegion &copy);
@@ -72,14 +72,14 @@ public:
   INLINE bool operator < (const DisplayRegion &other) const;
 
 PUBLISHED:
-  INLINE void get_dimensions(float &l, float &r, float &b, float &t) const;
-  INLINE LVecBase4f get_dimensions() const;
-  INLINE float get_left() const;
-  INLINE float get_right() const;
-  INLINE float get_bottom() const;
-  INLINE float get_top() const;
-  INLINE void set_dimensions(float l, float r, float b, float t);
-  virtual void set_dimensions(const LVecBase4f &dimensions);
+  INLINE void get_dimensions(PN_stdfloat &l, PN_stdfloat &r, PN_stdfloat &b, PN_stdfloat &t) const;
+  INLINE LVecBase4 get_dimensions() const;
+  INLINE PN_stdfloat get_left() const;
+  INLINE PN_stdfloat get_right() const;
+  INLINE PN_stdfloat get_bottom() const;
+  INLINE PN_stdfloat get_top() const;
+  INLINE void set_dimensions(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t);
+  virtual void set_dimensions(const LVecBase4 &dimensions);
 
   INLINE GraphicsOutput *get_window() const;
   GraphicsPipe *get_pipe() const;
@@ -95,7 +95,9 @@ PUBLISHED:
   INLINE int get_sort() const;
 
   virtual void set_stereo_channel(Lens::StereoChannel stereo_channel);
-  INLINE Lens::StereoChannel get_stereo_channel();
+  INLINE Lens::StereoChannel get_stereo_channel() const;
+  virtual void set_tex_view_offset(int tex_view_offset);
+  INLINE int get_tex_view_offset() const;
 
   virtual void set_incomplete_render(bool incomplete_render);
   INLINE bool get_incomplete_render() const;
@@ -162,6 +164,10 @@ private:
   void set_active_index(int index);
 
 protected:
+  virtual void do_cull(CullHandler *cull_handler, SceneSetup *scene_setup,
+                       GraphicsStateGuardian *gsg, Thread *current_thread);
+
+protected:
   // The associated window is a permanent property of the
   // DisplayRegion.  It doesn't need to be cycled.
   GraphicsOutput *_window;
@@ -187,7 +193,7 @@ private:
       return DisplayRegion::get_class_type();
     }
 
-    LVecBase4f _dimensions;  // left, right, bottom, top
+    LVecBase4 _dimensions;  // left, right, bottom, top
     
     int _pl;
     int _pr;
@@ -203,6 +209,7 @@ private:
     bool _active;
     int _sort;
     Lens::StereoChannel _stereo_channel;
+    int _tex_view_offset;
     int _cube_map_index;
 
     PT(CallbackObject) _cull_callback;
@@ -258,7 +265,9 @@ public:
 private:
   static TypeHandle _type_handle;
 
+  friend class GraphicsEngine;
   friend class GraphicsOutput;
+  friend class DisplayRegionCullCallbackData;
   friend class DisplayRegionPipelineReader;
 };
 
@@ -283,12 +292,12 @@ public:
 
   INLINE bool is_any_clear_active() const;
 
-  INLINE void get_dimensions(float &l, float &r, float &b, float &t) const;
-  INLINE const LVecBase4f &get_dimensions() const;
-  INLINE float get_left() const;
-  INLINE float get_right() const;
-  INLINE float get_bottom() const;
-  INLINE float get_top() const;
+  INLINE void get_dimensions(PN_stdfloat &l, PN_stdfloat &r, PN_stdfloat &b, PN_stdfloat &t) const;
+  INLINE const LVecBase4 &get_dimensions() const;
+  INLINE PN_stdfloat get_left() const;
+  INLINE PN_stdfloat get_right() const;
+  INLINE PN_stdfloat get_bottom() const;
+  INLINE PN_stdfloat get_top() const;
 
   INLINE GraphicsOutput *get_window() const;
   GraphicsPipe *get_pipe() const;
@@ -296,7 +305,8 @@ public:
   INLINE NodePath get_camera() const;
   INLINE bool is_active() const;
   INLINE int get_sort() const;
-  INLINE Lens::StereoChannel get_stereo_channel();
+  INLINE Lens::StereoChannel get_stereo_channel() const;
+  INLINE int get_tex_view_offset();
   INLINE bool get_clear_depth_between_eyes() const;
   INLINE int get_cube_map_index() const;
   INLINE CallbackObject *get_draw_callback() const;

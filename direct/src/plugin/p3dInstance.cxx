@@ -26,6 +26,7 @@
 #include "p3dUndefinedObject.h"
 #include "p3dMultifileReader.h"
 #include "p3dTemporaryFile.h"
+#include "parse_color.h"
 
 #include <sstream>
 #include <algorithm>
@@ -227,6 +228,8 @@ P3DInstance(P3D_request_ready_func *func,
   _main_object->set_string_property("coreapiTimestampString", timestamp_string);
   _main_object->set_string_property("coreapiVersionString", inst_mgr->get_coreapi_set_ver());
 
+  _main_object->set_bool_property("trustedEnvironment", (int)inst_mgr->get_trusted_environment());
+  _main_object->set_bool_property("consoleEnvironment", (int)inst_mgr->get_console_environment());
 
   // We'll start off with the "download" image displayed in the splash
   // window (when it opens), until we get stuff downloaded.
@@ -408,6 +411,7 @@ set_p3d_url(const string &p3d_url) {
     set_failed();
     return;
   }
+  _fparams.set_p3d_url(p3d_url);
 
   // Save the last part of the URL as the p3d_basename, for reporting
   // purposes or whatever.
@@ -451,6 +455,8 @@ set_p3d_url(const string &p3d_url) {
 ////////////////////////////////////////////////////////////////////
 int P3DInstance::
 make_p3d_stream(const string &p3d_url) {
+  _fparams.set_p3d_url(p3d_url);
+
   // Save the last part of the URL as the p3d_basename, for reporting
   // purposes or whatever.
   determine_p3d_basename(p3d_url);
@@ -2136,6 +2142,9 @@ scan_app_desc_file(TiXmlDocument *doc) {
 void P3DInstance::
 add_packages() {
   assert(!_packages_specified);
+  if (_xpackage == NULL) {
+    return;
+  }
 
   P3DInstanceManager *inst_mgr = P3DInstanceManager::get_global_ptr();
 
@@ -3861,73 +3870,12 @@ add_cocoa_modifier_flags(unsigned int &swb_flags, int modifiers) {
 ////////////////////////////////////////////////////////////////////
 void P3DInstance::
 send_notify(const string &message) {
+  nout << "send_notify(" << message << ")\n";
   P3D_request *request = new P3D_request;
   request->_instance = NULL;
   request->_request_type = P3D_RT_notify;
   request->_request._notify._message = strdup(message.c_str());
   add_baked_request(request);
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: P3DInstance::parse_color
-//       Access: Private, Static
-//  Description: Parses a HTML color spec of the form #rgb or #rrggbb.
-//               Returns true on success, false on failure.  On
-//               success, fills r, g, b with the color values in the
-//               range 0..255.  On failure, r, g, b are undefined.
-////////////////////////////////////////////////////////////////////
-bool P3DInstance::
-parse_color(int &r, int &g, int &b, const string &color) {
-  if (color.empty() || color[0] != '#') {
-    return false;
-  }
-  if (color.length() == 4) {
-    if (!parse_hexdigit(r, color[1]) || 
-        !parse_hexdigit(g, color[2]) || 
-        !parse_hexdigit(b, color[3])) {
-      return false;
-    }
-    r *= 0x11;
-    g *= 0x11;
-    b *= 0x11;
-    return true;
-  }
-  if (color.length() == 7) {
-    int rh, rl, gh, gl, bh, bl;
-    if (!parse_hexdigit(rh, color[1]) ||
-        !parse_hexdigit(rl, color[2]) ||
-        !parse_hexdigit(gh, color[3]) ||
-        !parse_hexdigit(gl, color[4]) ||
-        !parse_hexdigit(bh, color[5]) ||
-        !parse_hexdigit(bl, color[6])) {
-      return false;
-    }
-    r = (rh << 4) | rl;
-    g = (gh << 4) | gl;
-    b = (bh << 4) | bl;
-    return true;
-  }
-
-  return false;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: P3DInstance::parse_hexdigit
-//       Access: Private, Static
-//  Description: Parses a single hex digit.  Returns true on success,
-//               false on failure.  On success, fills result with the
-//               parsed value, an integer in the range 0..15.
-////////////////////////////////////////////////////////////////////
-bool P3DInstance::
-parse_hexdigit(int &result, char digit) {
-  if (isdigit(digit)) {
-    result = digit - '0';
-    return true;
-  } else if (isxdigit(digit)) {
-    result = tolower(digit) - 'a' + 10;
-    return true;
-  }
-  return false;
 }
 
 #ifdef __APPLE__

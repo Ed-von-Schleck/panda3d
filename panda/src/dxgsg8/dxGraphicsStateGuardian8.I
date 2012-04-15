@@ -14,15 +14,15 @@
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DXGraphicsStateGuardian8::Colorf_to_D3DCOLOR
+//     Function: DXGraphicsStateGuardian8::LColor_to_D3DCOLOR
 //       Access: Public, Static
-//  Description: Converts Panda's floating-point Colorf structure to
+//  Description: Converts Panda's floating-point LColor structure to
 //               DirectX's D3DCOLOR packed structure.
 ////////////////////////////////////////////////////////////////////
 INLINE DWORD DXGraphicsStateGuardian8::
-Colorf_to_D3DCOLOR(const Colorf &cColorf) {
+LColor_to_D3DCOLOR(const LColor &cLColor) {
 // MS VC defines _M_IX86 for x86.  gcc should define _X86_
-#if defined(_M_IX86) || defined(_X86_)
+#if (defined(_M_IX86) || defined(_X86_)) && !defined(STDFLOAT_DOUBLE)
   DWORD d3dcolor, tempcolorval=255;
 
   // note the default FPU rounding mode will give 255*0.5f=0x80, not 0x7F as VC would force it to by resetting rounding mode
@@ -31,7 +31,7 @@ Colorf_to_D3DCOLOR(const Colorf &cColorf) {
   __asm {
         push ebx   ; want to save this in case this fn is inlined
         push ecx
-        mov ecx, cColorf
+        mov ecx, cLColor
         fild tempcolorval
         fld DWORD PTR [ecx]
         fmul ST(0), ST(1)
@@ -68,7 +68,7 @@ Colorf_to_D3DCOLOR(const Colorf &cColorf) {
   //   dxgsg8_cat.debug() << (void*)d3dcolor << endl;
   return d3dcolor;
 #else //!_X86_
-  return MY_D3DRGBA(cColorf[0], cColorf[1], cColorf[2], cColorf[3]);
+  return MY_D3DRGBA(cLColor[0], cLColor[1], cLColor[2], cLColor[3]);
 #endif //!_X86_
 }
 
@@ -143,4 +143,17 @@ get_safe_buffer_start() {
   }
 
   return _safe_buffer_start;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DXGraphicsStateGuardian8::get_supports_render_texture
+//       Access: Published
+//  Description: Returns true if this particular GSG can render
+//               from a wdxGraphicsBuffer8 directly into a texture, or
+//               false if it must always copy-to-texture at the end of
+//               each frame to achieve this effect.
+////////////////////////////////////////////////////////////////////
+INLINE bool DXGraphicsStateGuardian8::
+get_supports_render_texture() const {
+  return _supports_render_texture;
 }

@@ -263,7 +263,7 @@ void MaxEggJoint::CreateMaxBone(void)
   
   Point3 fwd = endpos - pos;
   double len = fwd.Length();
-  Point3 txv = fwd * ((float)(1.0/len));
+  Point3 txv = fwd * ((PN_stdfloat)(1.0/len));
   Point3 tyv = tzv ^ txv;
   Point3 row1 = Point3(txv % xv, txv % yv, txv % zv);
   Point3 row2 = Point3(tyv % xv, tyv % yv, tyv % zv);
@@ -276,9 +276,9 @@ void MaxEggJoint::CreateMaxBone(void)
   IParamBlock2 *blk = _bone->pblock2;
   for (int i=0; i<blk->NumParams(); i++) {
     TSTR n = blk->GetLocalName(i);
-    if      (strcmp(n, "Length")==0) blk->SetValue(i,0,(float)len); 
-    else if (strcmp(n, "Width")==0)  blk->SetValue(i,0,(float)_thickness);
-    else if (strcmp(n, "Height")==0) blk->SetValue(i,0,(float)_thickness);
+    if      (strcmp(n, "Length")==0) blk->SetValue(i,0,(PN_stdfloat)len); 
+    else if (strcmp(n, "Width")==0)  blk->SetValue(i,0,(PN_stdfloat)_thickness);
+    else if (strcmp(n, "Height")==0) blk->SetValue(i,0,(PN_stdfloat)_thickness);
   }
   Point3 boneColor = GetUIColor(COLOR_BONES);
   _node->SetWireColor(RGB(int(boneColor.x*255.0f), int(boneColor.y*255.0f), int(boneColor.z*255.0f) ));
@@ -302,8 +302,8 @@ typedef pair<double, EggGroup *> MaxEggWeight;
 
 struct MaxEggVertex
 {
-  Vertexd              _pos;
-  Normald              _normal;
+  LVertexd              _pos;
+  LNormald              _normal;
   vector<MaxEggWeight> _weights;
   int                  _index;
 };
@@ -339,8 +339,8 @@ struct MEV_Compare: public stl_hash_compare<MaxEggVertex>
 };
 
 typedef phash_set<MaxEggVertex, MEV_Compare> VertTable;
-typedef phash_map<TexCoordd, int>            TVertTable;
-typedef phash_map<Colorf, int>               CVertTable;
+typedef phash_map<LTexCoordd, int>            TVertTable;
+typedef phash_map<LColor, int>               CVertTable;
 
 class MaxEggMesh
 {
@@ -364,8 +364,8 @@ public:
   CVertTable _cvert_tab;
   
   int GetVert(EggVertex *vert, EggGroup *context);
-  int GetTVert(TexCoordd uv);
-  int GetCVert(Colorf col);
+  int GetTVert(const LTexCoordd &uv);
+  int GetCVert(const LColor &col);
   int AddFace(int v0, int v1, int v2, int tv0, int tv1, int tv2, int cv0, int cv1, int cv2, int tex);
   EggGroup *GetControlJoint(void);
 };
@@ -404,7 +404,7 @@ int MaxEggMesh::GetVert(EggVertex *vert, EggGroup *context)
   return vtx._index;
 }
 
-int MaxEggMesh::GetTVert(TexCoordd uv)
+int MaxEggMesh::GetTVert(const LTexCoordd &uv)
 {
   if (_tvert_tab.count(uv))
     return _tvert_tab[uv];
@@ -418,7 +418,7 @@ int MaxEggMesh::GetTVert(TexCoordd uv)
   return idx;
 }
 
-int MaxEggMesh::GetCVert(Colorf col)
+int MaxEggMesh::GetCVert(const LColor &col)
 {
   if (_cvert_tab.count(col))
     return _cvert_tab[col];
@@ -539,11 +539,11 @@ void MaxEggLoader::CreateSkinModifier(MaxEggMesh *M)
 
   for (vert=M->_vert_tab.begin(); vert != M->_vert_tab.end(); ++vert) {
     Tab<INode*> maxJoints;
-    Tab<float> maxWeights;
+    Tab<PN_stdfloat> maxWeights;
     maxJoints.ZeroCount();
     maxWeights.ZeroCount();
     for (int i=0; i<vert->_weights.size(); i++) {
-      float strength = (float)(vert->_weights[i].first);
+      PN_stdfloat strength = (PN_stdfloat)(vert->_weights[i].first);
       MaxEggJoint *joint = FindJoint(vert->_weights[i].second);
       maxWeights.Append(1,&strength);
       maxJoints.Append(1,&(joint->_node));
@@ -589,7 +589,7 @@ void MaxEggLoader::TraverseEggNode(EggNode *node, EggGroup *context)
     for (ci = poly->begin(); ci != poly->end(); ++ci) {
       EggVertex *vtx = (*ci);
       EggVertexPool *pool = poly->get_pool();
-      TexCoordd uv = vtx->get_uv();
+      LTexCoordd uv = vtx->get_uv();
       vertIndices.push_back(mesh->GetVert(vtx, context));
       tvertIndices.push_back(mesh->GetTVert(uv * uvtrans));
       cvertIndices.push_back(mesh->GetCVert(vtx->get_color()));

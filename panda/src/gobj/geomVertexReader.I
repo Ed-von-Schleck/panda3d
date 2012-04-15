@@ -207,6 +207,31 @@ get_array_data() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_array_handle
+//       Access: Published
+//  Description: Returns the read handle to the array object that the
+//               read is currently processing.  This low-level call
+//               should be used with caution.
+////////////////////////////////////////////////////////////////////
+INLINE const GeomVertexArrayDataHandle *GeomVertexReader::
+get_array_handle() const {
+  return _handle;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_stride
+//       Access: Published
+//  Description: Returns the per-row stride (bytes between consecutive
+//               rows) of the underlying vertex array.  This low-level
+//               information is normally not needed to use the
+//               GeomVertexReader directly.
+////////////////////////////////////////////////////////////////////
+INLINE size_t GeomVertexReader::
+get_stride() const {
+  return _stride;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexReader::get_current_thread
 //       Access: Published
 //  Description: Returns the Thread pointer of the currently-executing
@@ -375,6 +400,25 @@ get_column() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::set_row_unsafe
+//       Access: Published
+//  Description: Sets the start row to the indicated value, without
+//               internal checks.  This is the same as set_row(), but
+//               it does not check for the possibility that the array
+//               has been reallocated internally for some reason; use
+//               only when you are confident that the array is
+//               unchanged and you really need every bit of available
+//               performance.
+////////////////////////////////////////////////////////////////////
+INLINE void GeomVertexReader::
+set_row_unsafe(int row) {
+  _start_row = row;
+  if (has_column()) {
+    quick_set_pointer(_start_row);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexReader::set_row
 //       Access: Published
 //  Description: Sets the start row to the indicated value.  The
@@ -387,7 +431,8 @@ INLINE void GeomVertexReader::
 set_row(int row) {
   _start_row = row;
   if (has_column()) {
-    quick_set_pointer(_start_row);
+    bool result = set_pointer(_start_row);
+    nassertv(result);
   }
 }
 
@@ -480,6 +525,122 @@ get_data4f() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data1d
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 1-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE double GeomVertexReader::
+get_data1d() {
+  nassertr(has_column(), 0.0f);
+  return _packer->get_data1d(inc_pointer());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data2d
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 2-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE const LVecBase2d &GeomVertexReader::
+get_data2d() {
+  nassertr(has_column(), LVecBase2d::zero());
+  return _packer->get_data2d(inc_pointer());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data3d
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 3-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE const LVecBase3d &GeomVertexReader::
+get_data3d() {
+  nassertr(has_column(), LVecBase3d::zero());
+  return _packer->get_data3d(inc_pointer());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data4d
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 4-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE const LVecBase4d &GeomVertexReader::
+get_data4d() {
+  nassertr(has_column(), LVecBase4d::zero());
+  return _packer->get_data4d(inc_pointer());
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data1
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 1-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE PN_stdfloat GeomVertexReader::
+get_data1() {
+#ifndef STDFLOAT_DOUBLE
+  return get_data1f();
+#else
+  return get_data1d();
+#endif
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data2
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 2-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE const LVecBase2 &GeomVertexReader::
+get_data2() {
+#ifndef STDFLOAT_DOUBLE
+  return get_data2f();
+#else
+  return get_data2d();
+#endif
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data3
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 3-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE const LVecBase3 &GeomVertexReader::
+get_data3() {
+#ifndef STDFLOAT_DOUBLE
+  return get_data3f();
+#else
+  return get_data3d();
+#endif
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexReader::get_data4
+//       Access: Published
+//  Description: Returns the data associated with the read row,
+//               expressed as a 4-component value, and advances the
+//               read row.
+////////////////////////////////////////////////////////////////////
+INLINE const LVecBase4 &GeomVertexReader::
+get_data4() {
+#ifndef STDFLOAT_DOUBLE
+  return get_data4f();
+#else
+  return get_data4d();
+#endif
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexReader::get_data1i
 //       Access: Published
 //  Description: Returns the data associated with the read row,
@@ -556,12 +717,13 @@ get_packer() const {
 INLINE bool GeomVertexReader::
 set_pointer(int row) {
   _pointer_begin = _handle->get_read_pointer(_force);
-  if (_pointer_begin == NULL) {
+  if (_pointer_begin == NULL && _handle->get_data_size_bytes() != 0) {
     // Vertex data is not resident.
     set_column(0, NULL);
     return false;
   }
 
+  // Vertex data is resident, or just empty.
   _pointer_end = _pointer_begin + _handle->get_data_size_bytes();
   quick_set_pointer(row);
   return true;
@@ -576,7 +738,7 @@ set_pointer(int row) {
 ////////////////////////////////////////////////////////////////////
 INLINE void GeomVertexReader::
 quick_set_pointer(int row) {
-  nassertv(has_column() && _pointer_begin != NULL);
+  nassertv(has_column() && (_pointer_begin != NULL || row == 0));
 
 #if defined(_DEBUG)
   // Make sure we still have the same pointer as stored in the array.
@@ -586,7 +748,10 @@ quick_set_pointer(int row) {
   _pointer = _pointer_begin + _packer->_column->get_start() + _stride * row;
 
 #if defined(_DEBUG)
-  nassertv(_pointer_begin == _pointer_end || _pointer < _pointer_end);
+  // We have to allow the pointer to exceed the end by up to one row's
+  // width.  This wouldn't be legal on a plain GeomVertexReader, but
+  // it *is* legal for a GeomVertexRewriter.
+  nassertv(_pointer_begin == _pointer_end || (_pointer - _packer->_column->get_start())  <= _pointer_end);
 #endif
 }
 

@@ -72,7 +72,7 @@ D3DMATRIX DXGraphicsStateGuardian8::_d3d_ident_mat;
 unsigned char *DXGraphicsStateGuardian8::_temp_buffer = NULL;
 unsigned char *DXGraphicsStateGuardian8::_safe_buffer_start = NULL;
 
-#define __D3DLIGHT_RANGE_MAX ((float)sqrt(FLT_MAX))  //for some reason this is missing in dx8 hdrs
+#define __D3DLIGHT_RANGE_MAX ((PN_stdfloat)sqrt(FLT_MAX))  //for some reason this is missing in dx8 hdrs
 
 #define MY_D3DRGBA(r, g, b, a) ((D3DCOLOR) D3DCOLOR_COLORVALUE(r, g, b, a))
 
@@ -96,6 +96,7 @@ DXGraphicsStateGuardian8(GraphicsEngine *engine, GraphicsPipe *pipe) :
   _vertex_blending_enabled = false;
   _overlay_windows_supported = false;
   _tex_stats_retrieval_impossible = false;
+  _supports_render_texture = false;
 
   _active_vbuffer = NULL;
   _active_ibuffer = NULL;
@@ -155,8 +156,8 @@ DXGraphicsStateGuardian8::
 //               prepare a texture.  Instead, call Texture::prepare().
 ////////////////////////////////////////////////////////////////////
 TextureContext *DXGraphicsStateGuardian8::
-prepare_texture(Texture *tex) {
-  DXTextureContext8 *dtc = new DXTextureContext8(_prepared_objects, tex);
+prepare_texture(Texture *tex, int view) {
+  DXTextureContext8 *dtc = new DXTextureContext8(_prepared_objects, tex, view);
 
   if (!get_supports_compressed_texture_format(tex->get_ram_image_compression())) {
     dxgsg8_cat.error()
@@ -202,7 +203,7 @@ apply_texture(int i, TextureContext *tc) {
   _d3d_device->SetTextureStageState(i, D3DTSS_ADDRESSW, get_texture_wrap_mode(wrap_w));
 
   _d3d_device->SetTextureStageState(i, D3DTSS_BORDERCOLOR,
-                                    Colorf_to_D3DCOLOR(tex->get_border_color()));
+                                    LColor_to_D3DCOLOR(tex->get_border_color()));
 
   uint aniso_degree = tex->get_effective_anisotropic_degree();
   Texture::FilterType ft = tex->get_effective_magfilter();
@@ -350,7 +351,7 @@ release_texture(TextureContext *tc) {
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
 extract_texture_data(Texture *tex) {
-  TextureContext *tc = tex->prepare_now(get_prepared_objects(), this);
+  TextureContext *tc = tex->prepare_now(0, get_prepared_objects(), this);
   nassertr(tc != (TextureContext *)NULL, false);
   DXTextureContext8 *dtc = DCAST(DXTextureContext8, tc);
 
@@ -575,8 +576,8 @@ clear(DrawableRegion *clearable) {
   DWORD main_flags = 0;
   DWORD aux_flags = 0;
 
-  D3DCOLOR color_clear_value = Colorf_to_D3DCOLOR(clearable->get_clear_color());
-  float depth_clear_value = clearable->get_clear_depth();
+  D3DCOLOR color_clear_value = LColor_to_D3DCOLOR(clearable->get_clear_color());
+  PN_stdfloat depth_clear_value = clearable->get_clear_depth();
   DWORD stencil_clear_value = (DWORD)(clearable->get_clear_stencil());
 
   //set appropriate flags
@@ -648,10 +649,9 @@ clear(DrawableRegion *clearable) {
 //       scissor region and viewport)
 ////////////////////////////////////////////////////////////////////
 void DXGraphicsStateGuardian8::
-prepare_display_region(DisplayRegionPipelineReader *dr,
-                       Lens::StereoChannel stereo_channel) {
+prepare_display_region(DisplayRegionPipelineReader *dr) {
   nassertv(dr != (DisplayRegionPipelineReader *)NULL);
-  GraphicsStateGuardian::prepare_display_region(dr, stereo_channel);
+  GraphicsStateGuardian::prepare_display_region(dr);
 
   int l, u, w, h;
   dr->get_region_pixels_i(l, u, w, h);
@@ -690,21 +690,21 @@ calc_projection_mat(const Lens *lens) {
   // DirectX also uses a Z range of 0 to 1, whereas the Panda
   // convention is for the projection matrix to produce a Z range of
   // -1 to 1.  We have to rescale to compensate.
-  static const LMatrix4f rescale_mat
+  static const LMatrix4 rescale_mat
     (1, 0, 0, 0,
      0, 1, 0, 0,
      0, 0, 0.5, 0,
      0, 0, 0.5, 1);
 
-  LMatrix4f result =
-    LMatrix4f::convert_mat(CS_yup_left, _current_lens->get_coordinate_system()) *
+  LMatrix4 result =
+    LMatrix4::convert_mat(CS_yup_left, _current_lens->get_coordinate_system()) *
     lens->get_projection_mat(_current_stereo_channel) *
     rescale_mat;
 
   if (_scene_setup->get_inverted()) {
     // If the scene is supposed to be inverted, then invert the
     // projection matrix.
-    result *= LMatrix4f::scale_mat(1.0f, -1.0f, 1.0f);
+    result *= LMatrix4::scale_mat(1.0f, -1.0f, 1.0f);
   }
 
   return TransformState::make_mat(result);
@@ -725,9 +725,10 @@ calc_projection_mat(const Lens *lens) {
 bool DXGraphicsStateGuardian8::
 prepare_lens() {
   CPT(TransformState) scissor_proj_mat = _scissor_mat->compose(_projection_mat);
+  LMatrix4f mat = LCAST(float, scissor_proj_mat->get_mat());
   HRESULT hr =
     _d3d_device->SetTransform(D3DTS_PROJECTION,
-                              (D3DMATRIX*)scissor_proj_mat->get_mat().get_data());
+                              (D3DMATRIX*)mat.get_data());
   return SUCCEEDED(hr);
 }
 
@@ -930,9 +931,10 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     const TransformTable *table = data_reader->get_transform_table();
     if (table != (TransformTable *)NULL) {
       for (int i = 0; i < table->get_num_transforms(); i++) {
-        LMatrix4f mat;
+        LMatrix4 mat;
         table->get_transform(i)->mult_matrix(mat, _internal_transform->get_mat());
-        const D3DMATRIX *d3d_mat = (const D3DMATRIX *)mat.get_data();
+        LMatrix4f matf = LCAST(float, mat);
+        const D3DMATRIX *d3d_mat = (const D3DMATRIX *)matf.get_data();
         _d3d_device->SetTransform(D3DTS_WORLDMATRIX(i), d3d_mat);
       }
 
@@ -951,7 +953,8 @@ begin_draw_primitives(const GeomPipelineReader *geom_reader,
     }
 
     if (_transform_stale && !_data_reader->is_vertex_transformed()) {
-      const D3DMATRIX *d3d_mat = (const D3DMATRIX *)_internal_transform->get_mat().get_data();
+      LMatrix4f mat = LCAST(float, _internal_transform->get_mat());
+      const D3DMATRIX *d3d_mat = (const D3DMATRIX *)mat.get_data();
       _d3d_device->SetTransform(D3DTS_WORLD, d3d_mat);
       _transform_stale = false;
     }
@@ -1472,8 +1475,9 @@ end_draw_primitives() {
 
   if (_data_reader->is_vertex_transformed()) {
     // Restore the projection matrix that we wiped out above.
+    LMatrix4f mat = LCAST(float, _projection_mat->get_mat());
     _d3d_device->SetTransform(D3DTS_PROJECTION,
-                              (D3DMATRIX*)_projection_mat->get_mat().get_data());
+                              (D3DMATRIX*)mat.get_data());
   }
 
   GraphicsStateGuardian::end_draw_primitives();
@@ -1501,7 +1505,7 @@ framebuffer_copy_to_texture(Texture *tex, int z, const DisplayRegion *dr,
   dr->get_region_pixels_i(xo, yo, w, h);
   tex->set_size_padded(w, h);
   
-  TextureContext *tc = tex->prepare_now(get_prepared_objects(), this);
+  TextureContext *tc = tex->prepare_now(0, get_prepared_objects(), this);
   if (tc == (TextureContext *)NULL) {
     return false;
   }
@@ -2091,7 +2095,7 @@ apply_fog(Fog *fog) {
 
   _d3d_device->SetRenderState((D3DRENDERSTATETYPE)_do_fog_type, d3dfogmode);
 
-  const Colorf &fog_colr = fog->get_color();
+  const LColor &fog_colr = fog->get_color();
   _d3d_device->SetRenderState(D3DRS_FOGCOLOR,
                               MY_D3DRGBA(fog_colr[0], fog_colr[1], fog_colr[2], 0.0f));  // Alpha bits are not used
 
@@ -2101,7 +2105,7 @@ apply_fog(Fog *fog) {
   switch (panda_fogmode) {
   case Fog::M_linear:
     {
-      float onset, opaque;
+      PN_stdfloat onset, opaque;
       fog->get_linear_range(onset, opaque);
 
       _d3d_device->SetRenderState(D3DRS_FOGSTART,
@@ -2114,7 +2118,7 @@ apply_fog(Fog *fog) {
   case Fog::M_exponential_squared:
     {
       // Exponential fog is always camera-relative.
-      float fog_density = fog->get_exp_density();
+      PN_stdfloat fog_density = fog->get_exp_density();
       _d3d_device->SetRenderState(D3DRS_FOGDENSITY,
                                   *((LPDWORD) (&fog_density)));
     }
@@ -2136,7 +2140,8 @@ do_issue_transform() {
   const TransformState *transform = _internal_transform;
   DO_PSTATS_STUFF(_transform_state_pcollector.add_level(1));
 
-  const D3DMATRIX *d3d_mat = (const D3DMATRIX *)transform->get_mat().get_data();
+  LMatrix4f mat = LCAST(float, transform->get_mat());
+  const D3DMATRIX *d3d_mat = (const D3DMATRIX *)mat.get_data();
   _d3d_device->SetTransform(D3DTS_WORLD, d3d_mat);
   _transform_stale = false;
 
@@ -2196,18 +2201,18 @@ do_issue_render_mode() {
   }
 
   // This might also specify the point size.
-  float point_size = target_render_mode->get_thickness();
+  PN_stdfloat point_size = target_render_mode->get_thickness();
   _d3d_device->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&point_size));
 
   if (target_render_mode->get_perspective()) {
     _d3d_device->SetRenderState(D3DRS_POINTSCALEENABLE, TRUE);
 
-    LVector3f height(0.0f, point_size, 1.0f);
+    LVector3 height(0.0f, point_size, 1.0f);
     height = height * _projection_mat->get_mat();
-    float s = height[1] / point_size;
+    PN_stdfloat s = height[1] / point_size;
 
-    float zero = 0.0f;
-    float one_over_s2 = 1.0f / (s * s);
+    PN_stdfloat zero = 0.0f;
+    PN_stdfloat one_over_s2 = 1.0f / (s * s);
     _d3d_device->SetRenderState(D3DRS_POINTSCALE_A, *((DWORD*)&zero));
     _d3d_device->SetRenderState(D3DRS_POINTSCALE_B, *((DWORD*)&zero));
     _d3d_device->SetRenderState(D3DRS_POINTSCALE_C, *((DWORD*)&one_over_s2));
@@ -2587,9 +2592,9 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
   // coordinates).  This means the light in the coordinate space of
   // the camera, converted to DX's coordinate system.
   CPT(TransformState) transform = light.get_transform(_scene_setup->get_camera_path());
-  const LMatrix4f &light_mat = transform->get_mat();
-  LMatrix4f rel_mat = light_mat * LMatrix4f::convert_mat(CS_yup_left, CS_default);
-  LPoint3f pos = light_obj->get_point() * rel_mat;
+  const LMatrix4 &light_mat = transform->get_mat();
+  LMatrix4 rel_mat = light_mat * LMatrix4::convert_mat(CS_yup_left, CS_default);
+  LPoint3f pos = LCAST(float, light_obj->get_point() * rel_mat);
 
   D3DCOLORVALUE black;
   black.r = black.g = black.b = black.a = 0.0f;
@@ -2597,7 +2602,8 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
   alight.Type =  D3DLIGHT_POINT;
   alight.Diffuse  = get_light_color(light_obj);
   alight.Ambient  =  black ;
-  alight.Specular = *(D3DCOLORVALUE *)(light_obj->get_specular_color().get_data());
+  LColorf color = LCAST(float, light_obj->get_specular_color());
+  alight.Specular = *(D3DCOLORVALUE *)(color.get_data());
 
   // Position needs to specify x, y, z, and w
   // w == 1 implies non-infinite position
@@ -2606,7 +2612,7 @@ bind_light(PointLight *light_obj, const NodePath &light, int light_id) {
   alight.Range =  __D3DLIGHT_RANGE_MAX;
   alight.Falloff =  1.0f;
 
-  const LVecBase3f &att = light_obj->get_attenuation();
+  const LVecBase3 &att = light_obj->get_attenuation();
   alight.Attenuation0 = att[0];
   alight.Attenuation1 = att[1];
   alight.Attenuation2 = att[2];
@@ -2639,9 +2645,9 @@ bind_light(DirectionalLight *light_obj, const NodePath &light, int light_id) {
     // coordinates).  This means the light in the coordinate space of
     // the camera, converted to DX's coordinate system.
     CPT(TransformState) transform = light.get_transform(_scene_setup->get_camera_path());
-    const LMatrix4f &light_mat = transform->get_mat();
-    LMatrix4f rel_mat = light_mat * LMatrix4f::convert_mat(CS_yup_left, CS_default);
-    LVector3f dir = light_obj->get_direction() * rel_mat;
+    const LMatrix4 &light_mat = transform->get_mat();
+    LMatrix4 rel_mat = light_mat * LMatrix4::convert_mat(CS_yup_left, CS_default);
+    LVector3f dir = LCAST(float, light_obj->get_direction() * rel_mat);
     
     D3DCOLORVALUE black;
     black.r = black.g = black.b = black.a = 0.0f;
@@ -2650,7 +2656,8 @@ bind_light(DirectionalLight *light_obj, const NodePath &light, int light_id) {
     
     fdata.Type =  D3DLIGHT_DIRECTIONAL;
     fdata.Ambient  =  black ;
-    fdata.Specular = *(D3DCOLORVALUE *)(light_obj->get_specular_color().get_data());
+    LColorf color = LCAST(float, light_obj->get_specular_color());
+    fdata.Specular = *(D3DCOLORVALUE *)(color.get_data());
     
     fdata.Direction = *(D3DVECTOR *)dir.get_data();
     
@@ -2692,10 +2699,10 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
   // coordinates).  This means the light in the coordinate space of
   // the camera, converted to DX's coordinate system.
   CPT(TransformState) transform = light.get_transform(_scene_setup->get_camera_path());
-  const LMatrix4f &light_mat = transform->get_mat();
-  LMatrix4f rel_mat = light_mat * LMatrix4f::convert_mat(CS_yup_left, CS_default);
-  LPoint3f pos = lens->get_nodal_point() * rel_mat;
-  LVector3f dir = lens->get_view_vector() * rel_mat;
+  const LMatrix4 &light_mat = transform->get_mat();
+  LMatrix4 rel_mat = light_mat * LMatrix4::convert_mat(CS_yup_left, CS_default);
+  LPoint3f pos = LCAST(float, lens->get_nodal_point() * rel_mat);
+  LVector3f dir = LCAST(float, lens->get_view_vector() * rel_mat);
 
   D3DCOLORVALUE black;
   black.r = black.g = black.b = black.a = 0.0f;
@@ -2706,7 +2713,8 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
   alight.Type =  D3DLIGHT_SPOT;
   alight.Ambient  =  black ;
   alight.Diffuse  = get_light_color(light_obj);
-  alight.Specular = *(D3DCOLORVALUE *)(light_obj->get_specular_color().get_data());
+  LColorf color = LCAST(float, light_obj->get_specular_color());
+  alight.Specular = *(D3DCOLORVALUE *)(color.get_data());
 
   alight.Position = *(D3DVECTOR *)pos.get_data();
 
@@ -2717,13 +2725,13 @@ bind_light(Spotlight *light_obj, const NodePath &light, int light_id) {
   // I determined this formular empirically.  It seems to mostly
   // approximate the OpenGL spotlight equation, for a reasonable range
   // of values for FOV.
-  float fov = lens->get_hfov();
+  PN_stdfloat fov = lens->get_hfov();
   alight.Falloff =  light_obj->get_exponent() * (fov * fov * fov) / 1620000.0f;
 
   alight.Theta =  0.0f;
   alight.Phi = deg_2_rad(fov);
 
-  const LVecBase3f &att = light_obj->get_attenuation();
+  const LVecBase3 &att = light_obj->get_attenuation();
   alight.Attenuation0 = att[0];
   alight.Attenuation1 = att[1];
   alight.Attenuation2 = att[2];
@@ -2774,10 +2782,14 @@ do_issue_material() {
   }
 
   D3DMATERIAL8 cur_material;
-  cur_material.Diffuse = *(D3DCOLORVALUE *)(material->get_diffuse().get_data());
-  cur_material.Ambient = *(D3DCOLORVALUE *)(material->get_ambient().get_data());
-  cur_material.Specular = *(D3DCOLORVALUE *)(material->get_specular().get_data());
-  cur_material.Emissive = *(D3DCOLORVALUE *)(material->get_emission().get_data());
+  LColorf color = LCAST(float, material->get_diffuse());
+  cur_material.Diffuse = *(D3DCOLORVALUE *)(color.get_data());
+  color = LCAST(float, material->get_ambient());
+  cur_material.Ambient = *(D3DCOLORVALUE *)(color.get_data());
+  color = LCAST(float, material->get_specular());
+  cur_material.Specular = *(D3DCOLORVALUE *)(color.get_data());
+  color = LCAST(float, material->get_emission());
+  cur_material.Emissive = *(D3DCOLORVALUE *)(color.get_data());
   cur_material.Power = material->get_shininess();
 
   if (material->has_diffuse()) {
@@ -2786,7 +2798,8 @@ do_issue_material() {
   } else {
     // Otherwise, the diffuse color comes from the object color.
     if (_has_material_force_color) {
-      cur_material.Diffuse = *(D3DCOLORVALUE *)_material_force_color.get_data();
+      color = LCAST(float, _material_force_color);
+      cur_material.Diffuse = *(D3DCOLORVALUE *)color.get_data();
       _d3d_device->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
     } else {
       _d3d_device->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
@@ -2798,7 +2811,8 @@ do_issue_material() {
   } else {
     // Otherwise, the ambient color comes from the object color.
     if (_has_material_force_color) {
-      cur_material.Ambient = *(D3DCOLORVALUE *)_material_force_color.get_data();
+      color = LCAST(float, _material_force_color);
+      cur_material.Ambient = *(D3DCOLORVALUE *)color.get_data();
       _d3d_device->SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
     } else {
       _d3d_device->SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
@@ -2849,7 +2863,7 @@ do_issue_texture() {
 
     // We always reissue every stage in DX, just in case the texcoord
     // index or texgen mode or some other property has changed.
-    TextureContext *tc = texture->prepare_now(_prepared_objects, this);
+    TextureContext *tc = texture->prepare_now(0, _prepared_objects, this);
     apply_texture(si, tc);
     set_texture_blend_mode(si, stage);
 
@@ -2879,8 +2893,8 @@ do_issue_texture() {
         // computed by D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR,
         // approximates the effect produced by OpenGL's GL_SPHERE_MAP.
         static CPT(TransformState) sphere_map =
-          TransformState::make_mat(LMatrix4f(0.33f, 0.0f, 0.0f, 0.0f,
-                                             0.0f, 0.33f, 0.0f, 0.0f,
+          TransformState::make_mat(LMatrix4(0.33, 0.0f, 0.0f, 0.0f,
+                                             0.0f, 0.33, 0.0f, 0.0f,
                                              0.0f, 0.0f, 1.0f, 0.0f,
                                              0.5f, 0.5f, 0.0f, 1.0f));
         tex_mat = tex_mat->compose(sphere_map);
@@ -2898,7 +2912,7 @@ do_issue_texture() {
                                           texcoord_index | D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR);
         texcoord_dimensions = 3;
         CPT(TransformState) camera_transform = _scene_setup->get_camera_transform()->compose(_inv_cs_transform);
-        tex_mat = tex_mat->compose(camera_transform->set_pos(LVecBase3f::zero()));
+        tex_mat = tex_mat->compose(camera_transform->set_pos(LVecBase3::zero()));
       }
       break;
 
@@ -2919,7 +2933,7 @@ do_issue_texture() {
                                           texcoord_index | D3DTSS_TCI_CAMERASPACENORMAL);
         texcoord_dimensions = 3;
         CPT(TransformState) camera_transform = _scene_setup->get_camera_transform()->compose(_inv_cs_transform);
-        tex_mat = tex_mat->compose(camera_transform->set_pos(LVecBase3f::zero()));
+        tex_mat = tex_mat->compose(camera_transform->set_pos(LVecBase3::zero()));
       }
       break;
 
@@ -2971,10 +2985,10 @@ do_issue_texture() {
                                           texcoord_index | D3DTSS_TCI_CAMERASPACEPOSITION);
         texcoord_dimensions = 3;
 
-        const TexCoord3f &v = _target_tex_gen->get_constant_value(stage);
+        const LTexCoord3 &v = _target_tex_gen->get_constant_value(stage);
         CPT(TransformState) squash = 
-          TransformState::make_pos_hpr_scale(v, LVecBase3f::zero(),
-                                             LVecBase3f::zero());
+          TransformState::make_pos_hpr_scale(v, LVecBase3::zero(),
+                                             LVecBase3::zero());
         tex_mat = tex_mat->compose(squash);
       }
       break;
@@ -2985,19 +2999,20 @@ do_issue_texture() {
     if (!tex_mat->is_identity()) {
       if (/*tex_mat->is_2d() &&*/ texcoord_dimensions <= 2) {
         // For 2-d texture coordinates, we have to reorder the matrix.
-        LMatrix4f m = tex_mat->get_mat();
-        m.set(m(0, 0), m(0, 1), m(0, 3), 0.0f,
-              m(1, 0), m(1, 1), m(1, 3), 0.0f,
-              m(3, 0), m(3, 1), m(3, 3), 0.0f,
-              0.0f, 0.0f, 0.0f, 1.0f);
-        _d3d_device->SetTransform(get_tex_mat_sym(si), (D3DMATRIX *)m.get_data());
+        LMatrix4 m = tex_mat->get_mat();
+        LMatrix4f mf;
+        mf.set(m(0, 0), m(0, 1), m(0, 3), 0.0f,
+               m(1, 0), m(1, 1), m(1, 3), 0.0f,
+               m(3, 0), m(3, 1), m(3, 3), 0.0f,
+               0.0f, 0.0f, 0.0f, 1.0f);
+        _d3d_device->SetTransform(get_tex_mat_sym(si), (D3DMATRIX *)mf.get_data());
         _d3d_device->SetTextureStageState(si, D3DTSS_TEXTURETRANSFORMFLAGS,
                                           D3DTTFF_COUNT2);
       } else {
-        LMatrix4f m = tex_mat->get_mat();
+        LMatrix4f m = LCAST(float, tex_mat->get_mat());
         _d3d_device->SetTransform(get_tex_mat_sym(si), (D3DMATRIX *)m.get_data());
         DWORD transform_flags = texcoord_dimensions;
-        if (m.get_col(3) != LVecBase4f(0.0f, 0.0f, 0.0f, 1.0f)) {
+        if (m.get_col(3) != LVecBase4(0.0f, 0.0f, 0.0f, 1.0f)) {
           // If we have a projected texture matrix, we also need to
           // set D3DTTFF_COUNT4.
           transform_flags = D3DTTFF_COUNT4 | D3DTTFF_PROJECTED;
@@ -3061,14 +3076,14 @@ enable_lighting(bool enable) {
 //               all other lights have been enabled or disabled.
 ////////////////////////////////////////////////////////////////////
 void DXGraphicsStateGuardian8::
-set_ambient_light(const Colorf &color) {
-  Colorf c = color;
+set_ambient_light(const LColor &color) {
+  LColor c = color;
   c.set(c[0] * _light_color_scale[0],
         c[1] * _light_color_scale[1],
         c[2] * _light_color_scale[2],
         c[3] * _light_color_scale[3]);
 
-  _d3d_device->SetRenderState(D3DRS_AMBIENT, Colorf_to_D3DCOLOR(c));
+  _d3d_device->SetRenderState(D3DRS_AMBIENT, LColor_to_D3DCOLOR(c));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -3121,11 +3136,11 @@ bind_clip_plane(const NodePath &plane, int plane_id) {
   // coordinates).  This means the plane in the coordinate space of
   // the camera, converted to DX's coordinate system.
   CPT(TransformState) transform = plane.get_transform(_scene_setup->get_camera_path());
-  const LMatrix4f &plane_mat = transform->get_mat();
-  LMatrix4f rel_mat = plane_mat * LMatrix4f::convert_mat(CS_yup_left, CS_default);
+  const LMatrix4 &plane_mat = transform->get_mat();
+  LMatrix4 rel_mat = plane_mat * LMatrix4::convert_mat(CS_yup_left, CS_default);
   const PlaneNode *plane_node;
   DCAST_INTO_V(plane_node, plane.node());
-  Planef world_plane = plane_node->get_plane() * rel_mat;
+  LPlanef world_plane = LCAST(float, plane_node->get_plane() * rel_mat);
 
   HRESULT hr = _d3d_device->SetClipPlane(plane_id, world_plane.get_data());
   if (FAILED(hr)) {
@@ -3359,13 +3374,13 @@ do_auto_rescale_normal() {
 ////////////////////////////////////////////////////////////////////
 const D3DCOLORVALUE &DXGraphicsStateGuardian8::
 get_light_color(Light *light) const {
-  static Colorf c;
-  c = light->get_color();
-  c.set(c[0] * _light_color_scale[0],
-        c[1] * _light_color_scale[1],
-        c[2] * _light_color_scale[2],
-        c[3] * _light_color_scale[3]);
-  return *(D3DCOLORVALUE *)c.get_data();
+  LColor c = light->get_color();
+  static LColorf cf;
+  cf.set(c[0] * _light_color_scale[0],
+         c[1] * _light_color_scale[1],
+         c[2] * _light_color_scale[2],
+         c[3] * _light_color_scale[3]);
+  return *(D3DCOLORVALUE *)cf.get_data();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -3705,15 +3720,15 @@ set_texture_blend_mode(int i, const TextureStage *stage) {
 
     D3DCOLOR texture_factor;
     if (stage->involves_color_scale() && _color_scale_enabled) {
-      Colorf color = stage->get_color();
+      LColor color = stage->get_color();
       color.set(color[0] * _current_color_scale[0],
                 color[1] * _current_color_scale[1],
                 color[2] * _current_color_scale[2],
                 color[3] * _current_color_scale[3]);
       _texture_involves_color_scale = true;
-      texture_factor = Colorf_to_D3DCOLOR(color);
+      texture_factor = LColor_to_D3DCOLOR(color);
     } else {
-      texture_factor = Colorf_to_D3DCOLOR(stage->get_color());
+      texture_factor = LColor_to_D3DCOLOR(stage->get_color());
     }
     _d3d_device->SetRenderState(D3DRS_TEXTUREFACTOR, texture_factor);
   }
@@ -4462,7 +4477,7 @@ get_d3d_device() {
 void DXGraphicsStateGuardian8::
 do_issue_scissor() {
   const ScissorAttrib *target_scissor = DCAST(ScissorAttrib, _target_rs->get_attrib_def(ScissorAttrib::get_class_slot()));
-  const LVecBase4f &frame = target_scissor->get_frame();
+  const LVecBase4 &frame = target_scissor->get_frame();
   set_scissor(frame[0], frame[1], frame[2], frame[3]);
 }
 
@@ -4473,7 +4488,7 @@ do_issue_scissor() {
 //               relative to the current viewport.
 ////////////////////////////////////////////////////////////////////
 void DXGraphicsStateGuardian8::
-set_scissor(float left, float right, float bottom, float top) {
+set_scissor(PN_stdfloat left, PN_stdfloat right, PN_stdfloat bottom, PN_stdfloat top) {
   // DirectX8 doesn't have an explicit scissor control, independent of
   // the viewport, so we have to do it by hand, by moving the viewport
   // smaller but adjusting the projection matrix to compensate.
@@ -4511,16 +4526,16 @@ set_scissor(float left, float right, float bottom, float top) {
 
   // Now, compute _scissor_mat, which we use to compensate the
   // projection matrix.
-  float xsize = right - left;
-  float ysize = top - bottom;
-  float xcenter = (left + right) - 1.0f;
-  float ycenter = (bottom + top) - 1.0f;
+  PN_stdfloat xsize = right - left;
+  PN_stdfloat ysize = top - bottom;
+  PN_stdfloat xcenter = (left + right) - 1.0f;
+  PN_stdfloat ycenter = (bottom + top) - 1.0f;
   if (xsize == 0.0f || ysize == 0.0f) {
     // If the scissor region is zero, nothing will be drawn anyway, so
     // don't worry about it.
     _scissor_mat = TransformState::make_identity();
   } else {
-    _scissor_mat = TransformState::make_scale(LVecBase3f(1.0f / xsize, 1.0f / ysize, 1.0f))->compose(TransformState::make_pos(LPoint3f(-xcenter, -ycenter, 0.0f)));
+    _scissor_mat = TransformState::make_scale(LVecBase3(1.0f / xsize, 1.0f / ysize, 1.0f))->compose(TransformState::make_pos(LPoint3(-xcenter, -ycenter, 0.0f)));
   }
   prepare_lens();
 }
@@ -4582,7 +4597,7 @@ calc_fb_properties(DWORD cformat, DWORD dformat, DWORD multisampletype) {
 static bool _gamma_table_initialized = false;
 static unsigned short _orignial_gamma_table [256 * 3];
 
-void _create_gamma_table (float gamma, unsigned short *original_red_table, unsigned short *original_green_table, unsigned short *original_blue_table, unsigned short *red_table, unsigned short *green_table, unsigned short *blue_table) {
+void _create_gamma_table (PN_stdfloat gamma, unsigned short *original_red_table, unsigned short *original_green_table, unsigned short *original_blue_table, unsigned short *red_table, unsigned short *green_table, unsigned short *blue_table) {
   int i;
   double gamma_correction;
 
@@ -4665,7 +4680,7 @@ get_gamma_table(void) {
 //               for atexit.
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
-static_set_gamma(bool restore, float gamma) {
+static_set_gamma(bool restore, PN_stdfloat gamma) {
   bool set;  
   HDC hdc = GetDC(NULL);
 
@@ -4697,7 +4712,7 @@ static_set_gamma(bool restore, float gamma) {
 //               on success.
 ////////////////////////////////////////////////////////////////////
 bool DXGraphicsStateGuardian8::
-set_gamma(float gamma) {
+set_gamma(PN_stdfloat gamma) {
   bool set;
 
   set = static_set_gamma(false, gamma);

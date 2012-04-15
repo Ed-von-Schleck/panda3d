@@ -46,7 +46,7 @@ int RenderModeAttrib::_attrib_slot;
 //               regardless of distance from the camera.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) RenderModeAttrib::
-make(RenderModeAttrib::Mode mode, float thickness, bool perspective) {
+make(RenderModeAttrib::Mode mode, PN_stdfloat thickness, bool perspective) {
   RenderModeAttrib *attrib = new RenderModeAttrib(mode, thickness, perspective);
   return return_new(attrib);
 }
@@ -134,6 +134,25 @@ compare_to_impl(const RenderAttrib *other) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: RenderModeAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t RenderModeAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  hash = int_hash::add_hash(hash, (int)_mode);
+  hash = float_hash().add_hash(hash, _thickness);
+  hash = int_hash::add_hash(hash, (int)_perspective);
+  return hash;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: RenderModeAttrib::compose_impl
 //       Access: Protected, Virtual
 //  Description: Intended to be overridden by derived RenderAttrib
@@ -186,7 +205,7 @@ write_datagram(BamWriter *manager, Datagram &dg) {
   RenderAttrib::write_datagram(manager, dg);
 
   dg.add_int8(_mode);
-  dg.add_float32(_thickness);
+  dg.add_stdfloat(_thickness);
   dg.add_bool(_perspective);
 }
 
@@ -222,6 +241,6 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   RenderAttrib::fillin(scan, manager);
 
   _mode = (Mode)scan.get_int8();
-  _thickness = scan.get_float32();
+  _thickness = scan.get_stdfloat();
   _perspective = scan.get_bool();
 }

@@ -27,6 +27,7 @@
 #include "pStatClient.h"
 #include "pStatCollector.h"
 #include "mutexHolder.h"
+#include "reMutexHolder.h"
 #include "lightReMutexHolder.h"
 #include "cullFaceAttrib.h"
 #include "string_utils.h"
@@ -103,6 +104,8 @@ PStatCollector GraphicsEngine::_volume_plane_pcollector("Collision Volumes:Colli
 PStatCollector GraphicsEngine::_test_plane_pcollector("Collision Tests:CollisionPlane");
 PStatCollector GraphicsEngine::_volume_sphere_pcollector("Collision Volumes:CollisionSphere");
 PStatCollector GraphicsEngine::_test_sphere_pcollector("Collision Tests:CollisionSphere");
+PStatCollector GraphicsEngine::_volume_box_pcollector("Collision Volumes:CollisionBox");
+PStatCollector GraphicsEngine::_test_box_pcollector("Collision Tests:CollisionBox");
 PStatCollector GraphicsEngine::_volume_tube_pcollector("Collision Volumes:CollisionTube");
 PStatCollector GraphicsEngine::_test_tube_pcollector("Collision Tests:CollisionTube");
 PStatCollector GraphicsEngine::_volume_inv_sphere_pcollector("Collision Volumes:CollisionInvSphere");
@@ -126,7 +129,8 @@ GraphicsEngine::
 GraphicsEngine(Pipeline *pipeline) :
   _pipeline(pipeline),
   _app("app"),
-  _lock("GraphicsEngine::_lock")
+  _lock("GraphicsEngine::_lock"),
+  _loaded_textures_lock("GraphicsEngine::_loaded_textures_lock")
 {
   if (_pipeline == (Pipeline *)NULL) {
     _pipeline = Pipeline::get_render_pipeline();
@@ -198,7 +202,7 @@ set_threading_model(const GraphicsThreadingModel &threading_model) {
       << "Danger!  Creating requested render threads anyway!\n";
   }
 #endif  // THREADED_PIPELINE
-  LightReMutexHolder holder(_lock);
+  ReMutexHolder holder(_lock);
   _threading_model = threading_model;
 }
 
@@ -212,7 +216,7 @@ GraphicsThreadingModel GraphicsEngine::
 get_threading_model() const {
   GraphicsThreadingModel result;
   {
-    LightReMutexHolder holder(_lock);
+    ReMutexHolder holder(_lock);
     result = _threading_model;
   }
   return result;
@@ -332,12 +336,35 @@ make_output(GraphicsPipe *pipe,
     nassertr(threading_model.get_draw_name() ==
              gsg->get_threading_model().get_draw_name(), NULL);
   }
+
+  // Are we really asking for a callback window?
+  if ((flags & GraphicsPipe::BF_require_callback_window)!=0) {
+    PT(GraphicsStateGuardian) this_gsg = gsg;
+    if (this_gsg == (GraphicsStateGuardian *)NULL) {
+      // If we don't already have a GSG, we have to ask the pipe to
+      // make a new one, unencumbered by window dressing.
+      this_gsg = pipe->make_callback_gsg(this);
+    }
+    if (this_gsg != (GraphicsStateGuardian *)NULL) {
+      CallbackGraphicsWindow *window = new CallbackGraphicsWindow(this, pipe, name, fb_prop, win_prop, flags, this_gsg);
+      window->_sort = sort;
+      do_add_window(window, threading_model);
+      do_add_gsg(window->get_gsg(), pipe, threading_model);
+      display_cat.info() << "Created output of type CallbackGraphicsWindow\n";
+      return window;
+    }
+
+    // Couldn't make a callback window, because the pipe wouldn't make
+    // an unencumbered GSG.
+    return NULL;
+  }
   
   // Determine if a parasite buffer meets the user's specs.
 
   bool can_use_parasite = false;
   if ((host != 0)&&
       ((flags&GraphicsPipe::BF_require_window)==0)&&
+      ((flags&GraphicsPipe::BF_require_callback_window)==0)&&
       ((flags&GraphicsPipe::BF_refuse_parasite)==0)&&
       ((flags&GraphicsPipe::BF_can_bind_color)==0)&&
       ((flags&GraphicsPipe::BF_can_bind_every)==0)&&
@@ -362,6 +389,7 @@ make_output(GraphicsPipe *pipe,
     buffer->_sort = sort;
     do_add_window(buffer, threading_model);
     do_add_gsg(host->get_gsg(), pipe, threading_model);
+    display_cat.info() << "Created output of type ParasiteBuffer\n";
     return buffer;
   }
 
@@ -373,6 +401,7 @@ make_output(GraphicsPipe *pipe,
     buffer->_sort = sort;
     do_add_window(buffer, threading_model);
     do_add_gsg(host->get_gsg(), pipe, threading_model);
+    display_cat.info() << "Created output of type ParasiteBuffer\n";
     return buffer;
   }
 
@@ -387,12 +416,17 @@ make_output(GraphicsPipe *pipe,
       if ((precertify) && (gsg != 0) && (window->get_gsg()==gsg)) {
         do_add_window(window, threading_model);
         do_add_gsg(window->get_gsg(), pipe, threading_model);
+        display_cat.info()
+          << "Created output of type " << window->get_type() << "\n";
         return window;
       }
       do_add_window(window, threading_model);
       open_windows();
       if (window->is_valid()) {
         do_add_gsg(window->get_gsg(), pipe, threading_model);
+        display_cat.info()
+          << "Created output of type " << window->get_type() << "\n";
+
         if (window->get_fb_properties().subsumes(fb_prop)) {
           return window;
         } else {
@@ -410,6 +444,8 @@ make_output(GraphicsPipe *pipe,
       } else {
         display_cat.info()
           << window->get_type() << " wouldn't open; abandoning.\n";
+        display_cat.debug(false)
+          << "  requested: " << fb_prop << "\n";
       }
 
       // No good; delete the window and keep trying.
@@ -427,6 +463,7 @@ make_output(GraphicsPipe *pipe,
     buffer->_sort = sort;
     do_add_window(buffer, threading_model);
     do_add_gsg(host->get_gsg(), pipe, threading_model);
+    display_cat.info() << "Created output of type ParasiteBuffer\n";
     return buffer;
   }
 
@@ -468,7 +505,7 @@ remove_window(GraphicsOutput *window) {
   PT(GraphicsOutput) ptwin = window;
   size_t count;
   {
-    LightReMutexHolder holder(_lock, current_thread);
+    ReMutexHolder holder(_lock, current_thread);
     if (!_windows_sorted) {
       do_resort_windows();
     }
@@ -489,7 +526,7 @@ remove_window(GraphicsOutput *window) {
       // context.
       bool any_common = false;
       {
-        LightReMutexHolder holder(_lock, current_thread);
+        ReMutexHolder holder(_lock, current_thread);
         Windows::iterator wi;
         for (wi = _windows.begin(); wi != _windows.end() && !any_common; ++wi) {
           GraphicsStateGuardian *gsg2 = (*wi)->get_gsg();
@@ -635,6 +672,7 @@ get_window(int n) const {
 void GraphicsEngine::
 render_frame() {
   Thread *current_thread = Thread::get_current_thread();
+  ReMutexHolder public_holder(_public_lock);
 
   // Since this gets called every frame, we should take advantage of
   // the opportunity to flush the cache if necessary.
@@ -667,7 +705,7 @@ render_frame() {
   }
 
   {
-    LightReMutexHolder holder(_lock, current_thread);
+    ReMutexHolder holder(_lock, current_thread);
 
     if (!_windows_sorted) {
       do_resort_windows();
@@ -719,14 +757,17 @@ render_frame() {
 
     // Go ahead and release any textures' ram images for textures that
     // were drawn in the previous frame.
-    LoadedTextures::iterator lti;
-    for (lti = _loaded_textures.begin(); lti != _loaded_textures.end(); ++lti) {
-      LoadedTexture &lt = (*lti);
-      if (lt._tex->get_image_modified() == lt._image_modified) {
-        lt._tex->texture_uploaded();
+    {
+      MutexHolder holder2(_loaded_textures_lock);
+      LoadedTextures::iterator lti;
+      for (lti = _loaded_textures.begin(); lti != _loaded_textures.end(); ++lti) {
+        LoadedTexture &lt = (*lti);
+        if (lt._tex->get_image_modified() == lt._image_modified) {
+          lt._tex->texture_uploaded();
+        }
       }
+      _loaded_textures.clear();
     }
-    _loaded_textures.clear();
     
     // Now it's time to do any drawing from the main frame--after all of
     // the App code has executed, but before we begin the next frame.
@@ -814,6 +855,8 @@ render_frame() {
     _test_plane_pcollector.clear_level();
     _volume_sphere_pcollector.clear_level();
     _test_sphere_pcollector.clear_level();
+    _volume_box_pcollector.clear_level();
+    _test_box_pcollector.clear_level();
     _volume_tube_pcollector.clear_level();
     _test_tube_pcollector.clear_level();
     _volume_inv_sphere_pcollector.clear_level();
@@ -899,7 +942,7 @@ void GraphicsEngine::
 open_windows() {
   Thread *current_thread = Thread::get_current_thread();
 
-  LightReMutexHolder holder(_lock, current_thread);
+  ReMutexHolder holder(_lock, current_thread);
 
   if (!_windows_sorted) {
     do_resort_windows();
@@ -942,7 +985,7 @@ open_windows() {
 void GraphicsEngine::
 sync_frame() {
   Thread *current_thread = Thread::get_current_thread();
-  LightReMutexHolder holder(_lock, current_thread);
+  ReMutexHolder holder(_lock, current_thread);
 
   if (_flip_state == FS_draw) {
     do_sync_frame(current_thread);
@@ -967,7 +1010,7 @@ sync_frame() {
 void GraphicsEngine::
 ready_flip() {
   Thread *current_thread = Thread::get_current_thread();
-  LightReMutexHolder holder(_lock, current_thread);
+  ReMutexHolder holder(_lock, current_thread);
 
   if (_flip_state == FS_draw) {
     do_ready_flip(current_thread);
@@ -986,7 +1029,7 @@ ready_flip() {
 void GraphicsEngine::
 flip_frame() {
   Thread *current_thread = Thread::get_current_thread();
-  LightReMutexHolder holder(_lock, current_thread);
+  ReMutexHolder holder(_lock, current_thread);
 
   if (_flip_state != FS_flip) {
     do_flip_frame(current_thread);
@@ -1024,7 +1067,7 @@ flip_frame() {
 ////////////////////////////////////////////////////////////////////
 bool GraphicsEngine::
 extract_texture_data(Texture *tex, GraphicsStateGuardian *gsg) {
-  LightReMutexHolder holder(_lock);
+  ReMutexHolder holder(_lock);
 
   string draw_name = gsg->get_threading_model().get_draw_name();
   if (draw_name.empty()) {
@@ -1079,7 +1122,7 @@ get_global_ptr() {
 ////////////////////////////////////////////////////////////////////
 void GraphicsEngine::
 texture_uploaded(Texture *tex) {
-  LightReMutexHolder holder(_lock);
+  MutexHolder holder(_loaded_textures_lock);
   // We defer this until the end of the frame; multiple GSG's might be
   // rendering the texture within the same frame, and we don't want to
   // dump the texture image until they've all had a chance at it.
@@ -1087,6 +1130,7 @@ texture_uploaded(Texture *tex) {
   LoadedTexture &lt = _loaded_textures.back();
   lt._tex = tex;
   lt._image_modified = tex->get_image_modified();
+//               Usually only called by DisplayRegion::do_cull.
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1111,7 +1155,7 @@ do_cull(CullHandler *cull_handler, SceneSetup *scene_setup,
 
     // First, we have to get the current viewing frustum, which comes
     // from the lens.
-    PT(BoundingVolume) bv = scene_setup->get_lens()->make_bounds();
+    PT(BoundingVolume) bv = scene_setup->get_cull_bounds();
 
     if (bv != (BoundingVolume *)NULL &&
         bv->is_of_type(GeometricBoundingVolume::get_class_type())) {
@@ -1205,7 +1249,7 @@ is_scene_root(const PandaNode *node) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsEngine::
 set_window_sort(GraphicsOutput *window, int sort) {
-  LightReMutexHolder holder(_lock);
+  ReMutexHolder holder(_lock);
   window->_sort = sort;
   _windows_sorted = false;
 }
@@ -1284,7 +1328,7 @@ cull_and_draw_together(GraphicsOutput *win, DisplayRegion *dr,
     new DisplayRegionPipelineReader(dr, current_thread);
 
   win->change_scenes(dr_reader);
-  gsg->prepare_display_region(dr_reader, dr_reader->get_stereo_channel());
+  gsg->prepare_display_region(dr_reader);
 
   if (dr_reader->is_any_clear_active()) {
     gsg->clear(dr);
@@ -1318,7 +1362,7 @@ cull_and_draw_together(GraphicsOutput *win, DisplayRegion *dr,
         
       } else {
         // Perform the cull normally.
-        do_cull(&cull_handler, scene_setup, gsg, current_thread);
+        dr->do_cull(&cull_handler, scene_setup, gsg, current_thread);
       }
 
       gsg->end_scene();
@@ -1362,7 +1406,7 @@ cull_to_bins(const GraphicsEngine::Windows &wlist, Thread *current_thread) {
           DisplayRegionPipelineReader *dr_reader = 
             new DisplayRegionPipelineReader(dr, current_thread);
           NodePath camera = dr_reader->get_camera();
-          AlreadyCulled::iterator aci = already_culled.insert(AlreadyCulled::value_type(camera, NULL)).first;
+          AlreadyCulled::iterator aci = already_culled.insert(AlreadyCulled::value_type(camera, (DisplayRegion *)NULL)).first;
           if ((*aci).second == NULL) {
             // We have not used this camera already in this thread.
             // Perform the cull operation.
@@ -1403,7 +1447,9 @@ cull_to_bins(const GraphicsEngine::Windows &wlist, Thread *current_thread) {
 void GraphicsEngine::
 cull_to_bins(GraphicsOutput *win, DisplayRegion *dr, Thread *current_thread) {
   GraphicsStateGuardian *gsg = win->get_gsg();
-  nassertv(gsg != (GraphicsStateGuardian *)NULL);
+  if (gsg == (GraphicsStateGuardian *)NULL) {
+    return;
+  }
 
   PT(CullResult) cull_result;
   PT(SceneSetup) scene_setup;
@@ -1434,7 +1480,7 @@ cull_to_bins(GraphicsOutput *win, DisplayRegion *dr, Thread *current_thread) {
 
     } else {
       // Perform the cull normally.
-      do_cull(&cull_handler, scene_setup, gsg, current_thread);
+      dr->do_cull(&cull_handler, scene_setup, gsg, current_thread);
     }
 
     PStatTimer timer(_cull_sort_pcollector, current_thread);
@@ -1461,7 +1507,7 @@ draw_bins(const GraphicsEngine::Windows &wlist, Thread *current_thread) {
   size_t wlist_size = wlist.size();
   for (size_t wi = 0; wi < wlist_size; ++wi) {
     GraphicsOutput *win = wlist[wi];
-    if (win->is_active() && win->get_gsg()->is_active()) {
+    if (win->is_active()) {
       if (win->flip_ready()) {
         {
           PStatTimer timer(GraphicsEngine::_flip_begin_pcollector, current_thread);
@@ -1527,7 +1573,9 @@ draw_bins(const GraphicsEngine::Windows &wlist, Thread *current_thread) {
 void GraphicsEngine::
 draw_bins(GraphicsOutput *win, DisplayRegion *dr, Thread *current_thread) {
   GraphicsStateGuardian *gsg = win->get_gsg();
-  nassertv(gsg != (GraphicsStateGuardian *)NULL);
+  if (gsg == (GraphicsStateGuardian *)NULL) {
+    return;
+  }
 
   PT(CullResult) cull_result = dr->get_cull_result(current_thread);
   PT(SceneSetup) scene_setup = dr->get_scene_setup(current_thread);
@@ -1578,20 +1626,28 @@ process_events(const GraphicsEngine::Windows &wlist, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsEngine::
 flip_windows(const GraphicsEngine::Windows &wlist, Thread *current_thread) {
-  Windows::const_iterator wi;
-  for (wi = wlist.begin(); wi != wlist.end(); ++wi) {
-    GraphicsOutput *win = (*wi);
+  size_t num_windows = wlist.size();
+  size_t warray_size = num_windows * sizeof(GraphicsOutput *);
+  size_t warray_count = 0;
+  GraphicsOutput **warray = (GraphicsOutput **)alloca(warray_size);
+
+  size_t i;
+  for (i = 0; i < num_windows; ++i) {
+    GraphicsOutput *win = wlist[i];
     if (win->flip_ready()) {
+      nassertv(warray_count < num_windows);
+      warray[warray_count] = win;
+      ++warray_count;
+
       PStatTimer timer(GraphicsEngine::_flip_begin_pcollector, current_thread);
       win->begin_flip();
     }
   }
-  for (wi = wlist.begin(); wi != wlist.end(); ++wi) {
-    GraphicsOutput *win = (*wi);
-    if (win->flip_ready()) {
-      PStatTimer timer(GraphicsEngine::_flip_end_pcollector, current_thread);
-      win->end_flip();
-    }
+
+  for (i = 0; i < warray_count; ++i) {
+    GraphicsOutput *win = warray[i];
+    PStatTimer timer(GraphicsEngine::_flip_end_pcollector, current_thread);
+    win->end_flip();
   }
 }
 
@@ -1828,6 +1884,9 @@ setup_scene(GraphicsStateGuardian *gsg, DisplayRegionPipelineReader *dr) {
   scene_setup->set_camera_transform(camera_transform);
   scene_setup->set_world_transform(world_transform);
 
+  CPT(TransformState) cs_transform = gsg->get_cs_transform_for(lens->get_coordinate_system());
+  scene_setup->set_cs_transform(cs_transform);
+
   return scene_setup;
 }
 
@@ -1848,7 +1907,7 @@ do_draw(CullResult *cull_result, SceneSetup *scene_setup,
   {
     DisplayRegionPipelineReader dr_reader(dr, current_thread);
     win->change_scenes(&dr_reader);
-    gsg->prepare_display_region(&dr_reader, dr_reader.get_stereo_channel());
+    gsg->prepare_display_region(&dr_reader);
     if (dr_reader.is_any_clear_active()) {
       gsg->clear(dr_reader.get_object());
     }
@@ -1910,7 +1969,7 @@ void GraphicsEngine::
 do_add_window(GraphicsOutput *window,
               const GraphicsThreadingModel &threading_model) {
   nassertv(window != NULL);
-  LightReMutexHolder holder(_lock);
+  ReMutexHolder holder(_lock);
   nassertv(window->get_engine() == this);
 
   // We have a special counter that is unique per window that allows
@@ -1976,8 +2035,7 @@ do_add_window(GraphicsOutput *window,
 void GraphicsEngine::
 do_add_gsg(GraphicsStateGuardian *gsg, GraphicsPipe *pipe,
            const GraphicsThreadingModel &threading_model) {
-  LightReMutexHolder holder(_lock);
-
+  ReMutexHolder holder(_lock);
   nassertv(gsg->get_pipe() == pipe && gsg->get_engine() == this);
   gsg->_threading_model = threading_model;
   if (!_default_loader.is_null()) {
@@ -2118,7 +2176,7 @@ auto_adjust_capabilities(GraphicsStateGuardian *gsg) {
     textures_power_2 = ATS_down; // Not a fix.  Just suppresses further error messages.
   }
   
-  if (textures_auto_power_2 && !Texture::have_textures_power_2()) {
+  if (textures_auto_power_2 && !Texture::has_textures_power_2()) {
     if (gsg->get_supports_tex_non_pow2()) {
       Texture::set_textures_power_2(ATS_none);
     } else {
@@ -2207,7 +2265,7 @@ auto_adjust_capabilities(GraphicsStateGuardian *gsg) {
 ////////////////////////////////////////////////////////////////////
 void GraphicsEngine::
 terminate_threads(Thread *current_thread) {
-  LightReMutexHolder holder(_lock, current_thread);
+  ReMutexHolder holder(_lock, current_thread);
 
   // We spend almost our entire time in this method just waiting for
   // threads.  Time it appropriately.

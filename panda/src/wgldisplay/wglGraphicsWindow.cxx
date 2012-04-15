@@ -66,6 +66,19 @@ begin_frame(FrameMode mode, Thread *current_thread) {
   if (_gsg == (GraphicsStateGuardian *)NULL) {
     return false;
   }
+
+  if (!get_unexposed_draw() && !_got_expose_event) {
+    if (wgldisplay_cat.is_spam()) {
+      wgldisplay_cat.spam()
+        << "Not drawing " << this << ": unexposed.\n";
+    }
+    return false;
+  }
+
+  if (wgldisplay_cat.is_spam()) {
+    wgldisplay_cat.spam()
+      << "Drawing " << this << ": exposed.\n";
+  }
   
   wglGraphicsStateGuardian *wglgsg;
   DCAST_INTO_R(wglgsg, _gsg, false);
@@ -93,7 +106,6 @@ begin_frame(FrameMode mode, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void wglGraphicsWindow::
 end_frame(FrameMode mode, Thread *current_thread) {
-
   end_frame_spam(mode);
 
   nassertv(_gsg != (GraphicsStateGuardian *)NULL);
@@ -106,9 +118,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
@@ -129,19 +138,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 ////////////////////////////////////////////////////////////////////
 void wglGraphicsWindow::
 begin_flip() {
-  if (_hdc) {
-    // The documentation on SwapBuffers() is not at all clear on
-    // whether the GL context needs to be current before it can be
-    // called.  Empirically, it appears that it is not necessary in
-    // many cases, but it definitely is necessary at least in the case
-    // of Mesa on Windows.
-    wglGraphicsStateGuardian *wglgsg;
-    DCAST_INTO_V(wglgsg, _gsg);
-    HGLRC context = wglgsg->get_context(_hdc);
-    nassertv(context);
-    wglGraphicsPipe::wgl_make_current(_hdc, context, &_make_current_pcollector);
-    SwapBuffers(_hdc);
-  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -176,6 +172,34 @@ ready_flip() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: wglGraphicsWindow::end_flip
+//       Access: Public, Virtual
+//  Description: This function will be called within the draw thread
+//               after begin_flip() has been called on all windows, to
+//               finish the exchange of the front and back buffers.
+//
+//               This should cause the window to wait for the flip, if
+//               necessary.
+////////////////////////////////////////////////////////////////////
+void wglGraphicsWindow::
+end_flip() {
+  if (_hdc != NULL && _flip_ready) {
+    // The documentation on SwapBuffers() is not at all clear on
+    // whether the GL context needs to be current before it can be
+    // called.  Empirically, it appears that it is not necessary in
+    // many cases, but it definitely is necessary at least in the case
+    // of Mesa on Windows.
+    wglGraphicsStateGuardian *wglgsg;
+    DCAST_INTO_V(wglgsg, _gsg);
+    HGLRC context = wglgsg->get_context(_hdc);
+    nassertv(context);
+    wglGraphicsPipe::wgl_make_current(_hdc, context, &_make_current_pcollector);
+    SwapBuffers(_hdc);
+  }
+  WinGraphicsWindow::end_flip();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: wglGraphicsWindow::close_window
 //       Access: Protected, Virtual
 //  Description: Closes the window right now.  Called from the window
@@ -186,7 +210,6 @@ close_window() {
   if (_gsg != (GraphicsStateGuardian *)NULL) {
     wglGraphicsPipe::wgl_make_current(_hdc, NULL, &_make_current_pcollector);
     _gsg.clear();
-    _active = false;
   }
   ReleaseDC(_hWnd, _hdc);
   _hdc = (HDC)0;

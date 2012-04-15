@@ -59,10 +59,10 @@ make() {
 //               interface is deprecated.
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) TexMatrixAttrib::
-make(const LMatrix4f &mat) {
+make(const LMatrix4 &mat) {
   pgraph_cat.warning()
     << "Using deprecated TexMatrixAttrib interface.\n";
-  if (mat == LMatrix4f::ident_mat()) {
+  if (mat == LMatrix4::ident_mat()) {
     return make();
   }
   CPT(TransformState) transform = TransformState::make_mat(mat);
@@ -129,7 +129,7 @@ remove_stage(TextureStage *stage) const {
 //  Description: Returns the transformation matrix associated with
 //               the default texture stage.
 ////////////////////////////////////////////////////////////////////
-const LMatrix4f &TexMatrixAttrib::
+const LMatrix4 &TexMatrixAttrib::
 get_mat() const {
   return get_mat(TextureStage::get_default());
 }
@@ -190,7 +190,7 @@ get_stage(int n) const {
 //               the indicated texture stage, or identity matrix if
 //               nothing is associated with the indicated stage.
 ////////////////////////////////////////////////////////////////////
-const LMatrix4f &TexMatrixAttrib::
+const LMatrix4 &TexMatrixAttrib::
 get_mat(TextureStage *stage) const {
   return get_transform(stage)->get_mat();
 }
@@ -280,6 +280,31 @@ compare_to_impl(const RenderAttrib *other) const {
   }
 
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t TexMatrixAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  Stages::const_iterator si;
+  for (si = _stages.begin(); si != _stages.end(); ++si) {
+    const StageNode &sn = (*si);
+
+    hash = pointer_hash::add_hash(hash, sn._stage);
+    hash = pointer_hash::add_hash(hash, sn._transform);
+    hash = int_hash::add_hash(hash, sn._override);
+  }
+
+  return hash;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -442,6 +467,30 @@ invert_compose_impl(const RenderAttrib *other) const {
     // This stage is in b but not in a.
     attrib->_stages.insert(attrib->_stages.end(), *bi);
     ++bi;
+  }
+
+  return return_new(attrib);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TexMatrixAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TexMatrixAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  // For a TexMatrixAttrib, the particular matrix per TextureStage
+  // isn't important, just whether there is a matrix at all.  So we
+  // create a new state with an identity matrix everywhere there is a
+  // matrix at all in the original.
+
+  TexMatrixAttrib *attrib = new TexMatrixAttrib;
+
+  Stages::const_iterator ai;
+  for (ai = _stages.begin(); ai != _stages.end(); ++ai) {
+    StageNode sn((*ai)._stage);
+    sn._transform = TransformState::make_identity();
+    attrib->_stages.insert(attrib->_stages.end(), sn);
   }
 
   return return_new(attrib);

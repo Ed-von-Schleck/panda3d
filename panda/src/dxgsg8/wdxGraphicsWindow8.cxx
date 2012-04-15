@@ -123,9 +123,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
@@ -253,7 +250,6 @@ close_window() {
 
   if (_gsg != (GraphicsStateGuardian*)NULL) {
     _gsg.clear();
-    _active = false;
   }
 
   _dxgsg->release_swap_chain(&_wcontext);

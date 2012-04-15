@@ -13,6 +13,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "p3dCert_wx.h"
+#include "wstring_encode.h"
+#include "mkdir_complete.h"
+
 #include "wx/cmdline.h"
 #include "wx/filename.h"
 
@@ -121,8 +124,9 @@ OnInitCmdLine(wxCmdLineParser &parser) {
 ////////////////////////////////////////////////////////////////////
 bool P3DCertApp::
 OnCmdLineParsed(wxCmdLineParser &parser) {
-  _cert_filename = parser.GetParam(0);
-  _cert_dir = parser.GetParam(1);
+  _cert_filename = (const char *)parser.GetParam(0).mb_str();
+  _cert_dir = (const char *)parser.GetParam(1).mb_str();
+
   return true;
 }
 
@@ -141,7 +145,7 @@ END_EVENT_TABLE()
 //  Description:
 ////////////////////////////////////////////////////////////////////
 AuthDialog::
-AuthDialog(const wxString &cert_filename, const wxString &cert_dir) :
+AuthDialog(const string &cert_filename, const string &cert_dir) :
   // I hate stay-on-top dialogs, but if we don't set this flag, it
   // doesn't come to the foreground on OSX, and might be lost behind
   // the browser window.
@@ -229,26 +233,51 @@ approve_cert() {
   assert(_cert != NULL);
 
   // Make sure the directory exists.
-  wxFileName::Mkdir(_cert_dir, 0777, wxPATH_MKDIR_FULL);
+  mkdir_complete(_cert_dir, cerr);
 
   // Look for an unused filename.
-  wxString pathname;
   int i = 1;
+  size_t buf_length = _cert_dir.length() + 100;
+  char *buf = new char[buf_length];
+#ifdef _WIN32
+  wstring buf_w;
+#endif // _WIN32
+
   while (true) {
-    pathname.Printf(wxT("%s/p%d.crt"), _cert_dir.c_str(), i);
-    if (!wxFileName::FileExists(pathname)) {
+    sprintf(buf, "%s/p%d.crt", _cert_dir.c_str(), i);
+    assert(strlen(buf) < buf_length);
+
+    // Check if it already exists.  If not, take it.
+#ifdef _WIN32
+    DWORD results = 0;
+    if (string_to_wstring(buf_w, buf)) {
+      results = GetFileAttributesW(buf_w.c_str());
+    }
+    if (results == -1) {
       break;
     }
+#else
+    struct stat statbuf;
+    if (stat(buf, &statbuf) != 0) {
+      break;
+    }
+#endif
     ++i;
   }
 
   // Sure, there's a slight race condition right now: another process
   // might attempt to create the same filename.  So what.
-  FILE *fp = fopen(pathname.mb_str(), "w");
+  FILE *fp = NULL;
+#ifdef _WIN32
+  fp = _wfopen(buf_w.c_str(), L"w");
+#else // _WIN32
+  fp = fopen(buf, "w");
+#endif  // _WIN32
   if (fp != NULL) {
     PEM_write_X509(fp, _cert);
     fclose(fp);
   }
+
   Destroy();
 }
 
@@ -259,15 +288,24 @@ approve_cert() {
 //               passed on the command line into _cert and _stack.
 ////////////////////////////////////////////////////////////////////
 void AuthDialog::
-read_cert_file(const wxString &cert_filename) {
-  FILE *fp = fopen(cert_filename.mb_str(), "r");
+read_cert_file(const string &cert_filename) {
+  FILE *fp = NULL;
+#ifdef _WIN32
+  wstring cert_filename_w;
+  if (string_to_wstring(cert_filename_w, cert_filename)) {
+    fp = _wfopen(cert_filename_w.c_str(), L"r");
+  }
+#else // _WIN32
+  fp = fopen(cert_filename.c_str(), "r");
+#endif  // _WIN32
+
   if (fp == NULL) {
-    cerr << "Couldn't read " << cert_filename.mb_str() << "\n";
+    cerr << "Couldn't read " << cert_filename << "\n";
     return;
   }
   _cert = PEM_read_X509(fp, NULL, NULL, (void *)"");
   if (_cert == NULL) {
-    cerr << "Could not read certificate in " << cert_filename.mb_str() << ".\n";
+    cerr << "Could not read certificate in " << cert_filename << ".\n";
     fclose(fp);
     return;
   }

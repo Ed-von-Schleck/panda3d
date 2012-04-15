@@ -42,11 +42,11 @@ private:
   void get_coord_values();
   void get_polys();
   void get_vrml_colors(const VrmlNode *color_node, double transparency,
-                       pvector<Colorf> &color_list);
+                       pvector<UnalignedLVecBase4> &color_list);
   void get_vrml_normals(const VrmlNode *normal_node, 
-                        pvector<Normald> &normal_list);
+                        pvector<LNormald> &normal_list);
   void get_vrml_uvs(const VrmlNode *texCoord_node, 
-                    pvector<TexCoordd> &uv_list);
+                    pvector<LTexCoordd> &uv_list);
 
   bool get_colors();
   bool get_normals();
@@ -60,18 +60,18 @@ private:
   class VrmlVertex {
   public:
     int _index;
-    Vertexd _pos;
+    LVertexd _pos;
     EggVertex _attrib;
   };
   class VrmlPolygon {
   public:
     EggPolygon _attrib;
-    pvector<VrmlVertex> _verts;
+    epvector<VrmlVertex> _verts;
   };
-  pvector<Vertexd> _coord_values;
-  pvector<VrmlPolygon> _polys;
-  pvector<TexCoordd> _per_vertex_uvs;
-  pvector<Normald> _per_vertex_normals;
+  pvector<LVertexd> _coord_values;
+  epvector<VrmlPolygon> _polys;
+  pvector<LTexCoordd> _per_vertex_uvs;
+  pvector<LNormald> _per_vertex_normals;
 
   bool _has_normals;
 

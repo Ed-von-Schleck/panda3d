@@ -1,9 +1,12 @@
 #define BUILD_DIRECTORY $[HAVE_MAYA]
 
+#define WIN_SYS_LIBS shell32.lib advapi32.lib ws2_32.lib
+
 #begin bin_target
   #define TARGET maya2egg
   #define OTHER_LIBS \
-    dtoolbase:c dtoolutil:c dtool:m
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m 
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -11,7 +14,8 @@
 #begin bin_target
   #define TARGET maya2egg_server
   #define OTHER_LIBS \
-    dtoolbase:c dtoolutil:c dtool:m
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m 
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -20,13 +24,13 @@
   #define USE_PACKAGES maya
   #define TARGET maya2egg_bin
   #define LOCAL_LIBS \
-    mayabase mayaegg eggbase progbase
+    mayabase p3mayaegg p3eggbase p3progbase
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    pipeline:c pnmimage:c
+    p3egg:c pandaegg:m \
+    p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
   #define UNIX_SYS_LIBS \
@@ -41,13 +45,13 @@
   #define USE_PACKAGES maya
   #define TARGET maya2egg_server_bin
   #define LOCAL_LIBS \
-    mayabase mayaegg eggbase progbase
+    mayabase p3mayaegg p3eggbase p3progbase
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    pipeline:c pnmimage:c
+    p3egg:c pandaegg:m \
+    p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
   #define UNIX_SYS_LIBS \
@@ -62,13 +66,13 @@
   #define USE_PACKAGES maya
   #define TARGET maya2egg_client
   #define LOCAL_LIBS \
-    mayabase mayaegg eggbase progbase
+    mayabase p3mayaegg p3eggbase p3progbase
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    pipeline:c pnmimage:c
+    p3egg:c pandaegg:m \
+    p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
   #define UNIX_SYS_LIBS \
@@ -82,7 +86,8 @@
 #begin bin_target
   #define TARGET egg2maya
   #define OTHER_LIBS \
-    dtoolbase:c dtoolutil:c dtool:m
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m 
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -91,13 +96,13 @@
   #define USE_PACKAGES maya
   #define TARGET egg2maya_bin
   #define LOCAL_LIBS \
-    mayabase mayaegg eggbase progbase
+    mayabase p3mayaegg p3eggbase p3progbase
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    pipeline:c pnmimage:c
+    p3egg:c pandaegg:m \
+    p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
   #define UNIX_SYS_LIBS \
@@ -112,7 +117,8 @@
 #begin bin_target
   #define TARGET mayacopy
   #define OTHER_LIBS \
-    dtoolbase:c dtoolutil:c dtool:m
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
+    p3express:c pandaexpress:m 
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -120,14 +126,14 @@
 #begin bin_target
   #define USE_PACKAGES maya
   #define TARGET mayacopy_bin
-  #define LOCAL_LIBS cvscopy mayabase progbase
+  #define LOCAL_LIBS p3cvscopy mayabase p3progbase
 
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    linmath:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    putil:c pipeline:c pnmimage:c
+    p3egg:c pandaegg:m \
+    p3linmath:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3putil:c p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
   #define UNIX_SYS_LIBS \
@@ -143,14 +149,14 @@
   #define BUILD_TARGET $[not $[LINK_ALL_STATIC]]
   #define USE_PACKAGES maya
   #define TARGET mayapview
-  #define LOCAL_LIBS mayabase mayaegg
+  #define LOCAL_LIBS mayabase p3mayaegg
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    framework:m \
-    linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    pipeline:c
+    p3egg:c pandaegg:m \
+    p3framework:m \
+    p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
 
@@ -183,14 +189,14 @@
   #define BUILD_TARGET $[not $[LINK_ALL_STATIC]]
   #define USE_PACKAGES maya
   #define TARGET mayaEggImport
-  #define LOCAL_LIBS mayabase mayaegg
+  #define LOCAL_LIBS mayabase p3mayaegg
   #define OTHER_LIBS \
-    egg:c pandaegg:m \
-    framework:m \
-    linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    interrogatedb:c dtoolutil:c dtoolbase:c prc:c dconfig:c dtoolconfig:m dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
-    pipeline:c
+    p3egg:c pandaegg:m \
+    p3framework:m \
+    p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
 
@@ -208,17 +214,17 @@
   #define TARGET mayaloader
   #define BUILDING_DLL BUILDING_MISC
   #define LOCAL_LIBS \
-    mayabase mayaegg ptloader converter pandatoolbase
+    mayabase p3mayaegg p3ptloader p3converter p3pandatoolbase
   #define OTHER_LIBS \
-    egg2pg:c egg:c pandaegg:m \
-    mathutil:c linmath:c putil:c panda:m \
-    express:c pandaexpress:m \
-    dtoolconfig dtool \
-    event:c gobj:c chan:c pgraph:c parametrics:c char:c prc:c dtoolutil:c \
-    interrogatedb:c dtoolbase:c collide:c pnmimage:c dgraph:c tform:c \
-    pipeline:c pstatclient:c grutil:c gsgbase:c net:c lerp:c display:c \
-    cull:c text:c nativenet:c movies:c audio:c \
-    $[if $[HAVE_FREETYPE],pnmtext:c]
+    p3egg2pg:c p3egg:c pandaegg:m \
+    p3mathutil:c p3linmath:c p3putil:c panda:m \
+    p3express:c pandaexpress:m \
+    p3dtoolconfig p3dtool \
+    p3event:c p3gobj:c p3chan:c p3pgraph:c p3parametrics:c p3char:c p3prc:c p3dtoolutil:c \
+    p3interrogatedb:c p3dtoolbase:c p3collide:c p3pnmimage:c p3dgraph:c p3tform:c \
+    p3pipeline:c p3pstatclient:c p3grutil:c p3gsgbase:c p3net:c p3display:c \
+    p3cull:c p3text:c p3nativenet:c p3movies:c p3audio:c \
+    $[if $[HAVE_FREETYPE],p3pnmtext:c]
 
   #define SOURCES \
     config_mayaloader.cxx

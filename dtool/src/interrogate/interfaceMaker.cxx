@@ -118,8 +118,6 @@ InterfaceMaker::Object::
 ////////////////////////////////////////////////////////////////////
 void InterfaceMaker::Object::
 check_protocols() {
-  InterrogateDatabase *idb = InterrogateDatabase::get_ptr();
-
   int flags = 0;
 
   Functions::const_iterator fi;
@@ -384,6 +382,9 @@ remap_parameter(CPPType *struct_type, CPPType *param_type) {
   if (convert_strings) {
     if (TypeManager::is_char_pointer(param_type)) {
       return new ParameterRemapCharStarToString(param_type);
+    }
+    if (TypeManager::is_wchar_pointer(param_type)) {
+      return new ParameterRemapWCharStarToWString(param_type);
     }
 
     // If we're exporting a method of basic_string<char> itself, don't

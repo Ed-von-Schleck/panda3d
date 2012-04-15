@@ -140,6 +140,21 @@ PUBLISHED:
   INLINE_LINMATH FLOATNAME(LVecBase3)
   xform_vec_general(const FLOATNAME(LVecBase3) &v) const;
 
+  INLINE_LINMATH void
+  xform_in_place(FLOATNAME(LVecBase3) &v) const;
+
+  INLINE_LINMATH void
+  xform_point_in_place(FLOATNAME(LVecBase2) &v) const;
+
+  INLINE_LINMATH void
+  xform_vec_in_place(FLOATNAME(LVecBase2) &v) const;
+
+  INLINE_LINMATH void
+  xform_vec_in_place(FLOATNAME(LVecBase3) &v) const;
+
+  INLINE_LINMATH void
+  xform_vec_general_in_place(FLOATNAME(LVecBase3) &v) const;
+
   // this = other1 * other2
   INLINE_LINMATH void multiply(
     const FLOATNAME(LMatrix3) &other1, const FLOATNAME(LMatrix3) &other2);
@@ -205,7 +220,7 @@ PUBLISHED:
   // scale/rotate transforms in 3-d coordinate space.
   void
     set_rotate_mat(FLOATTYPE angle,
-                   FLOATNAME(LVecBase3) axis,
+                   const FLOATNAME(LVecBase3) &axis,
                    CoordinateSystem cs = CS_default);
   void
     set_rotate_mat_normaxis(FLOATTYPE angle,
@@ -214,7 +229,7 @@ PUBLISHED:
 
   static INLINE_LINMATH FLOATNAME(LMatrix3)
     rotate_mat(FLOATTYPE angle,
-               FLOATNAME(LVecBase3) axis,
+               const FLOATNAME(LVecBase3) &axis,
                CoordinateSystem cs = CS_default);
   static INLINE_LINMATH FLOATNAME(LMatrix3)
     rotate_mat_normaxis(FLOATTYPE angle,
@@ -270,28 +285,26 @@ PUBLISHED:
   void write(ostream &out, int indent_level = 0) const;
   EXTENSION(void python_repr(ostream &out, const string &class_name) const);
 
-public:
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen) const;
   void generate_hash(
     ChecksumHashGenerator &hashgen, FLOATTYPE threshold) const;
 
+  void write_datagram_fixed(Datagram &destination) const;
+  void read_datagram_fixed(DatagramIterator &scan);
+  void write_datagram(Datagram &destination) const;
+  void read_datagram(DatagramIterator &source);
+
 public:
-  union {
-    struct {
-      FLOATTYPE  _00, _01, _02;
-      FLOATTYPE  _10, _11, _12;
-      FLOATTYPE  _20, _21, _22;
-    } m;
-    
-    FLOATTYPE data[3 * 3];
-  } _m;
+  // The underlying implementation is via the Eigen library, if available.
+
+  // We don't bother to align LMatrix3, since it won't benefit from
+  // SSE2 optimizations anyway (it's an add number of floats).
+  typedef UNALIGNED_LINMATH_MATRIX(FLOATTYPE, 3, 3) EMatrix3;
+  EMatrix3 _m;
+
+  INLINE_LINMATH FLOATNAME(LMatrix3)(const EMatrix3 &m) : _m(m) { }
 
 private:
-  INLINE_LINMATH FLOATTYPE mult_cel(
-    const FLOATNAME(LMatrix3) &other, int x, int y) const;
-  INLINE_LINMATH FLOATTYPE det2(
-    FLOATTYPE e00, FLOATTYPE e01, FLOATTYPE e10, FLOATTYPE e11) const;
-
   static const FLOATNAME(LMatrix3) _ident_mat;
   static const FLOATNAME(LMatrix3) _y_to_z_up_mat;
   static const FLOATNAME(LMatrix3) _z_to_y_up_mat;
@@ -299,11 +312,6 @@ private:
   static const FLOATNAME(LMatrix3) _flip_z_mat;
   static const FLOATNAME(LMatrix3) _lz_to_ry_mat;
   static const FLOATNAME(LMatrix3) _ly_to_rz_mat;
-
-  //Functionality for reading and writing from/to a binary source
-public:
-  void write_datagram(Datagram& destination) const;
-  void read_datagram(DatagramIterator& scan);
 
 public:
   static TypeHandle get_class_type() {
@@ -315,9 +323,7 @@ private:
   static TypeHandle _type_handle;
 };
 
-
-INLINE_LINMATH ostream &operator << (
-    ostream &out, const FLOATNAME(LMatrix3) &mat) {
+INLINE ostream &operator << (ostream &out, const FLOATNAME(LMatrix3) &mat) {
   mat.output(out);
   return out;
 }

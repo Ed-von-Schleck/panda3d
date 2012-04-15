@@ -34,8 +34,6 @@ WebcamVideoCursorOpenCV(WebcamVideoOpenCV *src) : MovieVideoCursor(src) {
   _can_seek = false;
   _can_seek_fast = false;
   _aborted = false;
-  _last_start = -1.0;
-  _next_start = 0.0;
   _streaming = true;
   _ready = false;
 
@@ -61,28 +59,30 @@ WebcamVideoCursorOpenCV::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: WebcamVideoCursorOpenCV::fetch_into_buffer
+//     Function: WebcamVideoCursorOpenCV::fetch_buffer
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-void WebcamVideoCursorOpenCV::
-fetch_into_buffer(double time, unsigned char *block, bool bgra) {
+PT(MovieVideoCursor::Buffer) WebcamVideoCursorOpenCV::
+fetch_buffer() {
   if (!_ready) {
-    return;
+    return NULL;
   }
 
-  unsigned char *dest = block;
-  int num_components = bgra ? 4 : 3;
-  ssize_t dest_x_pitch = num_components;  // Assume component_width == 1
-  ssize_t dest_y_pitch = _size_x * dest_x_pitch;
+  PT(Buffer) buffer = get_standard_buffer();
+  unsigned char *dest = buffer->_block;
+  int num_components = get_num_components();
+  nassertr(num_components == 3, NULL);
+  int dest_x_pitch = num_components;  // Assume component_width == 1
+  int dest_y_pitch = _size_x * dest_x_pitch;
 
   const unsigned char *r, *g, *b;
-  ssize_t x_pitch, y_pitch;
+  int x_pitch, y_pitch;
   if (get_frame_data(r, g, b, x_pitch, y_pitch)) {
     if (num_components == 3 && x_pitch == 3) {
       // The easy case--copy the whole thing in, row by row.
-      ssize_t copy_bytes = _size_x * dest_x_pitch;
-      nassertv(copy_bytes <= dest_y_pitch && copy_bytes <= abs(y_pitch));
+      int copy_bytes = _size_x * dest_x_pitch;
+      nassertr(copy_bytes <= dest_y_pitch && copy_bytes <= abs(y_pitch), NULL);
       
       for (int y = 0; y < _size_y; ++y) {
         memcpy(dest, r, copy_bytes);
@@ -95,8 +95,8 @@ fetch_into_buffer(double time, unsigned char *block, bool bgra) {
       // pixel.
       
       for (int y = 0; y < _size_y; ++y) {
-        ssize_t dx = 0;
-        ssize_t sx = 0;
+        int dx = 0;
+        int sx = 0;
         for (int x = 0; x < _size_x; ++x) {
           dest[dx] = r[sx];
           dest[dx + 1] = g[sx];
@@ -111,6 +111,8 @@ fetch_into_buffer(double time, unsigned char *block, bool bgra) {
       }
     }
   }
+
+  return buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -138,7 +140,7 @@ bool WebcamVideoCursorOpenCV::
 get_frame_data(const unsigned char *&r,
                const unsigned char *&g,
                const unsigned char *&b,
-               ssize_t &x_pitch, ssize_t &y_pitch) {
+               int &x_pitch, int &y_pitch) {
   nassertr(ready(), false);
 
   IplImage *image = cvQueryFrame(_capture);

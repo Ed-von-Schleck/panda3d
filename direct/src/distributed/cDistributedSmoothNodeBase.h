@@ -36,12 +36,12 @@ PUBLISHED:
   CDistributedSmoothNodeBase();
   ~CDistributedSmoothNodeBase();
   
-  INLINE static void
+  INLINE void
   set_repository(CConnectionRepository *repository,
                  bool is_ai, CHANNEL_TYPE ai_id);
 
 #ifdef HAVE_PYTHON
-  INLINE static void
+  INLINE void
   set_clock_delta(PyObject *clock_delta);
 #endif
 
@@ -61,16 +61,16 @@ private:
   INLINE static bool only_changed(int flags, int compare);
 
   INLINE void d_setSmStop();
-  INLINE void d_setSmH(float h);
-  INLINE void d_setSmZ(float z);
-  INLINE void d_setSmXY(float x, float y);
-  INLINE void d_setSmXZ(float x, float z);
-  INLINE void d_setSmPos(float x, float y, float z);
-  INLINE void d_setSmHpr(float h, float p, float r);
-  INLINE void d_setSmXYH(float x, float y, float h);
-  INLINE void d_setSmXYZH(float x, float y, float z, float h);
-  INLINE void d_setSmPosHpr(float x, float y, float z, float h, float p, float r);
-  INLINE void d_setSmPosHprL(float x, float y, float z, float h, float p, float r, PN_uint64 l);
+  INLINE void d_setSmH(PN_stdfloat h);
+  INLINE void d_setSmZ(PN_stdfloat z);
+  INLINE void d_setSmXY(PN_stdfloat x, PN_stdfloat y);
+  INLINE void d_setSmXZ(PN_stdfloat x, PN_stdfloat z);
+  INLINE void d_setSmPos(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z);
+  INLINE void d_setSmHpr(PN_stdfloat h, PN_stdfloat p, PN_stdfloat r);
+  INLINE void d_setSmXYH(PN_stdfloat x, PN_stdfloat y, PN_stdfloat h);
+  INLINE void d_setSmXYZH(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z, PN_stdfloat h);
+  INLINE void d_setSmPosHpr(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z, PN_stdfloat h, PN_stdfloat p, PN_stdfloat r);
+  INLINE void d_setSmPosHprL(PN_stdfloat x, PN_stdfloat y, PN_stdfloat z, PN_stdfloat h, PN_stdfloat p, PN_stdfloat r, PN_uint64 l);
 
   void begin_send_update(DCPacker &packer, const string &field_name);
   void finish_send_update(DCPacker &packer);
@@ -88,15 +88,15 @@ private:
   DCClass *_dclass;
   CHANNEL_TYPE _do_id;
 
-  static CConnectionRepository *_repository;
-  static bool _is_ai;
-  static CHANNEL_TYPE _ai_id;
+  CConnectionRepository *_repository;
+  bool _is_ai;
+  CHANNEL_TYPE _ai_id;
 #ifdef HAVE_PYTHON
-  static PyObject *_clock_delta;
+  PyObject *_clock_delta;
 #endif
 
-  LPoint3f _store_xyz;
-  LVecBase3f _store_hpr;
+  LPoint3 _store_xyz;
+  LVecBase3 _store_hpr;
   bool _store_stop;
   // contains most recently sent location info as
   // index 0, index 1 contains most recently set location info

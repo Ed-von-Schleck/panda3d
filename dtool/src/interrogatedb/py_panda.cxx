@@ -18,7 +18,7 @@
 #ifdef HAVE_PYTHON
 
 PyMemberDef standard_type_members[] = {
-  {(char *)"this", T_INT, offsetof(Dtool_PyInstDef,_ptr_to_object),READONLY, (char *)"C++ This if any"},
+  {(char *)"this", T_ULONG, offsetof(Dtool_PyInstDef,_ptr_to_object),READONLY, (char *)"C++ 'this' pointer, if any"},
 //  {(char *)"this_ownership", T_INT, offsetof(Dtool_PyInstDef, _memory_rules), READONLY, (char *)"C++ 'this' ownership rules"},
 //  {(char *)"this_const", T_INT, offsetof(Dtool_PyInstDef, _is_const), READONLY, (char *)"C++ 'this' const flag"},
 //  {(char *)"this_signature", T_INT, offsetof(Dtool_PyInstDef, _signature), READONLY, (char *)"A type check signature"},
@@ -718,7 +718,7 @@ PyObject *copy_from_make_copy(PyObject *self) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: copy_from_make_copy
+//     Function: copy_from_copy_constructor
 //  Description: This is a support function for a synthesized
 //               __copy__() method from a C++ copy constructor.
 ////////////////////////////////////////////////////////////////////
@@ -734,7 +734,7 @@ PyObject *copy_from_copy_constructor(PyObject *self) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: copy_from_make_copy
+//     Function: map_deepcopy_to_copy
 //  Description: This is a support function for a synthesized
 //               __deepcopy__() method for any class that has a
 //               __copy__() method.  The sythethic method simply

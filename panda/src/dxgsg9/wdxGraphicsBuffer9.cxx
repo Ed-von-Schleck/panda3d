@@ -172,9 +172,6 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
     restore_bitplanes();
   }
@@ -306,14 +303,19 @@ rebuild_bitplanes() {
 
   int color_tex_index = -1;
   int depth_tex_index = -1;
-  for (int i=0; i<count_textures(); i++) {
-    if (get_rtm_mode(i) == RTM_bind_or_copy) {
-      RenderTexturePlane plane = get_texture_plane(i);
+  {
+    CDLockedReader cdata(_cycler);
+    for (size_t i = 0; i != cdata->_textures.size(); ++i) {
+      const RenderTexture &rt = cdata->_textures[i];
+      RenderTextureMode rtm_mode = rt._rtm_mode;
+      if (rtm_mode == RTM_bind_or_copy) {
+        RenderTexturePlane plane = rt._plane;
 
-      switch (plane) {
+        switch (plane) {
         case RTP_color:
           color_tex_index = i;
           break;
+
         case RTP_aux_rgba_0:
         case RTP_aux_rgba_1:
         case RTP_aux_rgba_2:
@@ -326,11 +328,20 @@ rebuild_bitplanes() {
         case RTP_aux_float_1:
         case RTP_aux_float_2:
         case RTP_aux_float_3:
-          _textures[i]._rtm_mode = RTM_none;
+          {
+            CDWriter cdataw(_cycler, cdata, false);
+            nassertr(cdata->_textures.size() == cdataw->_textures.size(), false);
+            cdataw->_textures[i]._rtm_mode = RTM_none;
+          }
           break;
         default:
-          _textures[i]._rtm_mode = RTM_copy_texture;
+          {
+            CDWriter cdataw(_cycler, cdata, false);
+            nassertr(cdata->_textures.size() == cdataw->_textures.size(), false);
+            cdataw->_textures[i]._rtm_mode = RTM_copy_texture;
+          }
           break;
+        }
       }                
     }
   }
@@ -362,7 +373,7 @@ rebuild_bitplanes() {
 //    color_tex->set_format(Texture::F_rgba);
     color_ctx =
       DCAST(DXTextureContext9,
-            color_tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+            color_tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
 
     if (color_ctx) {
       if (!color_ctx->create_texture(*_dxgsg->_screen)) {
@@ -441,7 +452,7 @@ rebuild_bitplanes() {
     depth_tex->set_format(Texture::F_depth_stencil);
     depth_ctx =
       DCAST(DXTextureContext9,
-            depth_tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+            depth_tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
     if (depth_ctx) {
       if (!depth_ctx->create_texture(*_dxgsg->_screen)) {
         dxgsg9_cat.error()
@@ -516,7 +527,7 @@ rebuild_bitplanes() {
           IDirect3DSurface9 *color_surf = 0;
           IDirect3DCubeTexture9 *color_cube = 0;
 
-          color_ctx = DCAST(DXTextureContext9, tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+          color_ctx = DCAST(DXTextureContext9, tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
           if (color_ctx) {
             if (!color_ctx->create_texture(*_dxgsg->_screen)) {
               dxgsg9_cat.error()
@@ -591,14 +602,22 @@ select_cube_map(int cube_map_index) {
   IDirect3DSurface9 *color_surf = 0;
   int color_tex_index = -1;
 
-  for (int i=0; i<count_textures(); i++) {
-    if (get_rtm_mode(i) == RTM_bind_or_copy) {
-      if ((get_texture(i)->get_format() != Texture::F_depth_stencil)&&
-          (get_texture(i)->get_format() != Texture::F_depth_component)&&
-          (color_tex_index < 0)) {
-        color_tex_index = i;
-      } else {
-        _textures[i]._rtm_mode = RTM_copy_texture;
+  {
+    CDLockedReader cdata(_cycler);
+    for (size_t i = 0; i != cdata->_textures.size(); ++i) {
+      const RenderTexture &rt = cdata->_textures[i];
+      RenderTextureMode rtm_mode = rt._rtm_mode;
+      if (rtm_mode == RTM_bind_or_copy) {
+        Texture *tex = rt._texture;
+        if ((tex->get_format() != Texture::F_depth_stencil)&&
+            (tex->get_format() != Texture::F_depth_component)&&
+            (color_tex_index < 0)) {
+          color_tex_index = i;
+        } else {
+          CDWriter cdataw(_cycler, cdata, false);
+          nassertv(cdata->_textures.size() == cdataw->_textures.size());
+          cdataw->_textures[i]._rtm_mode = RTM_copy_texture;
+        }
       }
     }
   }
@@ -607,7 +626,7 @@ select_cube_map(int cube_map_index) {
   if (color_tex) {
     color_ctx =
       DCAST(DXTextureContext9,
-            color_tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+            color_tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
     color_cube = color_ctx->_d3d_cube_texture;
     if (color_cube && _cube_map_index >= 0 && _cube_map_index < 6) {
       hr = color_cube -> GetCubeMapSurface ((D3DCUBEMAP_FACES) _cube_map_index, 0, &color_surf);
@@ -651,7 +670,7 @@ select_cube_map(int cube_map_index) {
           IDirect3DSurface9 *color_surf = 0;
           IDirect3DCubeTexture9 *color_cube = 0;
 
-          color_ctx = DCAST(DXTextureContext9, tex->prepare_now(_gsg->get_prepared_objects(), _gsg));
+          color_ctx = DCAST(DXTextureContext9, tex->prepare_now(0, _gsg->get_prepared_objects(), _gsg));
           if (color_ctx) {
             if (tex->get_texture_type() == Texture::TT_cube_map) {
 
@@ -728,7 +747,6 @@ close_buffer() {
     _depth_backing_store = NULL;
   }
 
-  _active = false;
   _cube_map_index = -1;
   _is_valid = false;
 }

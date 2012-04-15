@@ -30,16 +30,9 @@ class FrameBufferProperties;
 // Don't pick up the system glxext.h; use our own, which is better.
 #define __glxext_h_
 
+#include "pre_x11_include.h"
 #include <GL/glx.h>
-
-/*
-#if defined(GLX_VERSION_1_3)
-  // If the system glx version is at least 1.3, then we know we have
-  // GLXFBConfig and GLXPbuffer.
-  #define HAVE_GLXFBCONFIG
-  #define HAVE_OFFICIAL_GLXFBCONFIG
-#endif
-*/
+#include "post_x11_include.h"
 
 // This must be included after we have included glgsg.h (which
 // includes gl.h), and after we have checked GLX_VERSION_1_3.  But we
@@ -102,6 +95,7 @@ protected:
                                          GraphicsOutput *host,
                                          int retry,
                                          bool &precertify);
+  virtual PT(GraphicsStateGuardian) make_callback_gsg(GraphicsEngine *engine);
 
 public:
   static TypeHandle get_class_type() {
@@ -120,5 +114,7 @@ public:
 private:
   static TypeHandle _type_handle;
 };
+
+#include "glxGraphicsPipe.I"
 
 #endif

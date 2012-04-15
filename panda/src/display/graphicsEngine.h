@@ -24,6 +24,7 @@
 #include "pointerTo.h"
 #include "thread.h"
 #include "pmutex.h"
+#include "reMutex.h"
 #include "lightReMutex.h"
 #include "conditionVar.h"
 #include "pStatCollector.h"
@@ -61,6 +62,8 @@ PUBLISHED:
 
   void set_threading_model(const GraphicsThreadingModel &threading_model);
   GraphicsThreadingModel get_threading_model() const;
+
+  INLINE const ReMutex &get_render_lock() const;
 
   INLINE void set_auto_flip(bool auto_flip);
   INLINE bool get_auto_flip() const;
@@ -323,6 +326,9 @@ private:
   bool _singular_warning_last_frame;
   bool _singular_warning_this_frame;
 
+  ReMutex _lock;
+  ReMutex _public_lock;
+
   class LoadedTexture {
   public:
     PT(Texture) _tex;
@@ -330,8 +336,7 @@ private:
   };
   typedef pvector<LoadedTexture> LoadedTextures;
   LoadedTextures _loaded_textures;
-
-  LightReMutex _lock;
+  Mutex _loaded_textures_lock;
 
   static PT(GraphicsEngine) _global_ptr;
 
@@ -378,6 +383,8 @@ private:
   static PStatCollector _test_plane_pcollector;
   static PStatCollector _volume_sphere_pcollector;
   static PStatCollector _test_sphere_pcollector;
+  static PStatCollector _volume_box_pcollector;
+  static PStatCollector _test_box_pcollector;
   static PStatCollector _volume_tube_pcollector;
   static PStatCollector _test_tube_pcollector;
   static PStatCollector _volume_inv_sphere_pcollector;

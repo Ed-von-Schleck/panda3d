@@ -77,8 +77,15 @@ read(Filename filename, string display_name) {
   }
 
   VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-    
-  istream *file = vfs->open_read_file(filename, true);
+
+  PT(VirtualFile) vfile = vfs->get_file(filename);
+  if (vfile == NULL) {
+    egg_cat.error() << "Could not find " << display_name << "\n";
+    return false;
+  }
+  set_egg_timestamp(vfile->get_timestamp());
+
+  istream *file = vfile->open_read_file(true);
   if (file == (istream *)NULL) {
     egg_cat.error() << "Unable to open " << display_name << "\n";
     return false;
@@ -88,7 +95,7 @@ read(Filename filename, string display_name) {
     << "Reading " << display_name << "\n";
   
   bool read_ok = read(*file);
-  vfs->close_read_file(file);
+  vfile->close_read_file(file);
   return read_ok;
 }
 
@@ -234,33 +241,18 @@ collapse_equivalent_materials() {
 ////////////////////////////////////////////////////////////////////
 bool EggData::
 write_egg(Filename filename) {
-  filename.unlink();
+  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
   filename.set_text();
-
-#ifdef HAVE_ZLIB
-  bool pz_file = false;
-  if (filename.get_extension() == "pz") {
-    // The filename ends in .pz, which means to automatically compress
-    // the egg file that we write.
-    pz_file = true;
-    filename.set_binary();
-  }
-#endif  // HAVE_ZLIB
-
-  pofstream file;
-  if (!filename.open_write(file)) {
+  vfs->delete_file(filename);
+  ostream *file = vfs->open_write_file(filename, true, true);
+  if (file == (ostream *)NULL) {
     egg_cat.error() << "Unable to open " << filename << " for writing.\n";
     return false;
   }
 
-#ifdef HAVE_ZLIB
-  if (pz_file) {
-    OCompressStream compressor(&file, false);
-    return write_egg(compressor);
-  }
-#endif  // HAVE_ZLIB
-
-  return write_egg(file);
+  bool wrote_ok = write_egg(*file);
+  vfs->close_write_file(file);
+  return wrote_ok;
 }
 
 ////////////////////////////////////////////////////////////////////

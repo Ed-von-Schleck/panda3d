@@ -67,7 +67,7 @@ public:
 private:
   CullBin *make_new_bin(int bin_index);
   void check_flash_bin(CPT(RenderState) &state, CullBin *bin);
-  void check_flash_transparency(CPT(RenderState) &state, const Colorf &color);
+  void check_flash_transparency(CPT(RenderState) &state, const LColor &color);
 
   static CPT(RenderState) get_alpha_state();
   static CPT(RenderState) get_binary_state();
@@ -80,6 +80,19 @@ private:
   
   typedef pvector< PT(CullBin) > Bins;
   Bins _bins;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type() {
+    ReferenceCount::init_type();
+    register_type(_type_handle, "CullResult",
+                  ReferenceCount::get_class_type());
+  }
+  
+private:
+  static TypeHandle _type_handle;
 };
 
 #include "cullResult.I"

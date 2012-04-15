@@ -72,6 +72,14 @@ begin_frame(FrameMode mode, Thread *current_thread) {
     return false;
   }
 
+  if (!get_unexposed_draw() && !_got_expose_event) {
+    if (tinydisplay_cat.is_spam()) {
+      tinydisplay_cat.spam()
+        << "Not drawing " << this << ": unexposed.\n";
+    }
+    return false;
+  }
+
   TinyGraphicsStateGuardian *tinygsg;
   DCAST_INTO_R(tinygsg, _gsg, false);
 
@@ -103,29 +111,27 @@ end_frame(FrameMode mode, Thread *current_thread) {
 
   if (mode == FM_render) {
     trigger_flip();
-    if (_one_shot) {
-      prepare_for_deletion();
-    }
     clear_cube_map_selection();
   }
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: TinyWinGraphicsWindow::begin_flip
+//     Function: TinyWinGraphicsWindow::end_flip
 //       Access: Public, Virtual
 //  Description: This function will be called within the draw thread
-//               after end_frame() has been called on all windows, to
-//               initiate the exchange of the front and back buffers.
+//               after begin_flip() has been called on all windows, to
+//               finish the exchange of the front and back buffers.
 //
-//               This should instruct the window to prepare for the
-//               flip at the next video sync, but it should not wait.
-//
-//               We have the two separate functions, begin_flip() and
-//               end_flip(), to make it easier to flip all of the
-//               windows at the same time.
+//               This should cause the window to wait for the flip, if
+//               necessary.
 ////////////////////////////////////////////////////////////////////
 void TinyWinGraphicsWindow::
-begin_flip() {
+end_flip() {
+  if (!_flip_ready) {
+    GraphicsWindow::end_flip();
+    return;
+  }
+
   HBITMAP bm = CreateCompatibleBitmap(_hdc, _frame_buffer->xsize, _frame_buffer->ysize);
   HDC bmdc = CreateCompatibleDC(_hdc);
   SelectObject(bmdc, bm);
@@ -150,6 +156,7 @@ begin_flip() {
   DeleteDC(bmdc);
   DeleteObject(bm);
   GdiFlush();
+  GraphicsWindow::end_flip();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -184,7 +191,6 @@ close_window() {
     DCAST_INTO_V(tinygsg, _gsg);
     tinygsg->_current_frame_buffer = NULL;
     _gsg.clear();
-    _active = false;
   }
 
   ReleaseDC(_hWnd, _hdc);

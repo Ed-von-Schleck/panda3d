@@ -49,6 +49,8 @@ class btKinematicCharacterController;
 class btManifoldPoint;
 class btMatrix3x3;
 class btMotionState;
+class btMultiSphereShape;
+class btOverlapFilterCallback;
 class btPairCachingGhostObject;
 class btParalleSequentialImpulseSolver;
 class btPersistentManifold;
@@ -73,7 +75,13 @@ class btTypedConstraint;
 class btTypedObject;
 class btVector3;
 class btVehicleRaycaster;
-class btWheelInfo;
+
+template <typename T> class btAlignedObjectArray;
+
+class btWheelInfo {
+public:
+  class RaycastInfo;
+};
 
 class btCollisionWorld {
 public:

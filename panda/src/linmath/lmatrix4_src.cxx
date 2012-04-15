@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 TypeHandle FLOATNAME(LMatrix4)::_type_handle;
+TypeHandle FLOATNAME(UnalignedLMatrix4)::_type_handle;
 
 const FLOATNAME(LMatrix4) FLOATNAME(LMatrix4)::_ident_mat =
   FLOATNAME(LMatrix4)(1.0f, 0.0f, 0.0f, 0.0f,
@@ -141,9 +142,11 @@ compare_to(const FLOATNAME(LMatrix4) &other, FLOATTYPE threshold) const {
   TAU_PROFILE("int LMatrix4::compare_to(const LMatrix4 &, FLOATTYPE)", " ", TAU_USER);
   // We compare values in reverse order, since the last row of the
   // matrix is most likely to be different between different matrices.
-  for (int i = 15; i >= 0; i--) {
-    if (!IS_THRESHOLD_COMPEQ(_m.data[i], other._m.data[i], threshold)) {
-      return (_m.data[i] < other._m.data[i]) ? -1 : 1;
+  for (int r = 3; r >= 0; --r) {
+    for (int c = 0; c < 4; ++c) {
+      if (!IS_THRESHOLD_COMPEQ(_m(r, c), other._m(r, c), threshold)) {
+        return (_m(r, c) < other._m(r, c)) ? -1 : 1;
+      }
     }
   }
   return 0;
@@ -171,9 +174,9 @@ set_rotate_mat(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
     angle = -angle;
   }
 
-  FLOATTYPE axis_0 = axis._v.v._0;
-  FLOATTYPE axis_1 = axis._v.v._1;
-  FLOATTYPE axis_2 = axis._v.v._2;
+  FLOATTYPE axis_0 = axis._v(0);
+  FLOATTYPE axis_1 = axis._v(1);
+  FLOATTYPE axis_2 = axis._v(2);
 
   // Normalize the axis.
   FLOATTYPE length_sq = axis_0 * axis_0 + axis_1 * axis_1 + axis_2 * axis_2;
@@ -198,26 +201,26 @@ set_rotate_mat(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
   s1 = s * axis_1;
   s2 = s * axis_2;
 
-  _m.m._00 = t0 * axis_0 + c;
-  _m.m._01 = t0 * axis_1 + s2;
-  _m.m._02 = t0 * axis_2 - s1;
+  _m(0, 0) = t0 * axis_0 + c;
+  _m(0, 1) = t0 * axis_1 + s2;
+  _m(0, 2) = t0 * axis_2 - s1;
 
-  _m.m._10 = t1 * axis_0 - s2;
-  _m.m._11 = t1 * axis_1 + c;
-  _m.m._12 = t1 * axis_2 + s0;
+  _m(1, 0) = t1 * axis_0 - s2;
+  _m(1, 1) = t1 * axis_1 + c;
+  _m(1, 2) = t1 * axis_2 + s0;
 
-  _m.m._20 = t2 * axis_0 + s1;
-  _m.m._21 = t2 * axis_1 - s0;
-  _m.m._22 = t2 * axis_2 + c;
+  _m(2, 0) = t2 * axis_0 + s1;
+  _m(2, 1) = t2 * axis_1 - s0;
+  _m(2, 2) = t2 * axis_2 + c;
 
-  _m.m._03 = 0.0f;
-  _m.m._13 = 0.0f;
-  _m.m._23 = 0.0f;
+  _m(0, 3) = 0.0f;
+  _m(1, 3) = 0.0f;
+  _m(2, 3) = 0.0f;
 
-  _m.m._30 = 0.0f;
-  _m.m._31 = 0.0f;
-  _m.m._32 = 0.0f;
-  _m.m._33 = 1.0f;
+  _m(3, 0) = 0.0f;
+  _m(3, 1) = 0.0f;
+  _m(3, 2) = 0.0f;
+  _m(3, 3) = 1.0f;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -241,9 +244,9 @@ set_rotate_mat_normaxis(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
     angle = -angle;
   }
 
-  FLOATTYPE axis_0 = axis._v.v._0;
-  FLOATTYPE axis_1 = axis._v.v._1;
-  FLOATTYPE axis_2 = axis._v.v._2;
+  FLOATTYPE axis_0 = axis._v(0);
+  FLOATTYPE axis_1 = axis._v(1);
+  FLOATTYPE axis_2 = axis._v(2);
 
   FLOATTYPE angle_rad=deg_2_rad(angle);
   FLOATTYPE s,c;
@@ -259,26 +262,26 @@ set_rotate_mat_normaxis(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
   s1 = s * axis_1;
   s2 = s * axis_2;
 
-  _m.m._00 = t0 * axis_0 + c;
-  _m.m._01 = t0 * axis_1 + s2;
-  _m.m._02 = t0 * axis_2 - s1;
+  _m(0, 0) = t0 * axis_0 + c;
+  _m(0, 1) = t0 * axis_1 + s2;
+  _m(0, 2) = t0 * axis_2 - s1;
 
-  _m.m._10 = t1 * axis_0 - s2;
-  _m.m._11 = t1 * axis_1 + c;
-  _m.m._12 = t1 * axis_2 + s0;
+  _m(1, 0) = t1 * axis_0 - s2;
+  _m(1, 1) = t1 * axis_1 + c;
+  _m(1, 2) = t1 * axis_2 + s0;
 
-  _m.m._20 = t2 * axis_0 + s1;
-  _m.m._21 = t2 * axis_1 - s0;
-  _m.m._22 = t2 * axis_2 + c;
+  _m(2, 0) = t2 * axis_0 + s1;
+  _m(2, 1) = t2 * axis_1 - s0;
+  _m(2, 2) = t2 * axis_2 + c;
 
-  _m.m._03 = 0.0f;
-  _m.m._13 = 0.0f;
-  _m.m._23 = 0.0f;
+  _m(0, 3) = 0.0f;
+  _m(1, 3) = 0.0f;
+  _m(2, 3) = 0.0f;
 
-  _m.m._30 = 0.0f;
-  _m.m._31 = 0.0f;
-  _m.m._32 = 0.0f;
-  _m.m._33 = 1.0f;
+  _m(3, 0) = 0.0f;
+  _m(3, 1) = 0.0f;
+  _m(3, 2) = 0.0f;
+  _m(3, 3) = 1.0f;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -317,25 +320,25 @@ almost_equal(const FLOATNAME(LMatrix4) &other, FLOATTYPE threshold) const {
 void FLOATNAME(LMatrix4)::
 output(ostream &out) const {
   out << "[ "
-      << MAYBE_ZERO(_m.m._00) << " "
-      << MAYBE_ZERO(_m.m._01) << " "
-      << MAYBE_ZERO(_m.m._02) << " "
-      << MAYBE_ZERO(_m.m._03)
+      << MAYBE_ZERO(_m(0, 0)) << " "
+      << MAYBE_ZERO(_m(0, 1)) << " "
+      << MAYBE_ZERO(_m(0, 2)) << " "
+      << MAYBE_ZERO(_m(0, 3))
       << " ] [ "
-      << MAYBE_ZERO(_m.m._10) << " "
-      << MAYBE_ZERO(_m.m._11) << " "
-      << MAYBE_ZERO(_m.m._12) << " "
-      << MAYBE_ZERO(_m.m._13)
+      << MAYBE_ZERO(_m(1, 0)) << " "
+      << MAYBE_ZERO(_m(1, 1)) << " "
+      << MAYBE_ZERO(_m(1, 2)) << " "
+      << MAYBE_ZERO(_m(1, 3))
       << " ] [ "
-      << MAYBE_ZERO(_m.m._20) << " "
-      << MAYBE_ZERO(_m.m._21) << " "
-      << MAYBE_ZERO(_m.m._22) << " "
-      << MAYBE_ZERO(_m.m._23)
+      << MAYBE_ZERO(_m(2, 0)) << " "
+      << MAYBE_ZERO(_m(2, 1)) << " "
+      << MAYBE_ZERO(_m(2, 2)) << " "
+      << MAYBE_ZERO(_m(2, 3))
       << " ] [ "
-      << MAYBE_ZERO(_m.m._30) << " "
-      << MAYBE_ZERO(_m.m._31) << " "
-      << MAYBE_ZERO(_m.m._32) << " "
-      << MAYBE_ZERO(_m.m._33)
+      << MAYBE_ZERO(_m(3, 0)) << " "
+      << MAYBE_ZERO(_m(3, 1)) << " "
+      << MAYBE_ZERO(_m(3, 2)) << " "
+      << MAYBE_ZERO(_m(3, 3))
       << " ]";
 }
 
@@ -347,28 +350,28 @@ output(ostream &out) const {
 void FLOATNAME(LMatrix4)::
 write(ostream &out, int indent_level) const {
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._00) << " "
-    << MAYBE_ZERO(_m.m._01) << " "
-    << MAYBE_ZERO(_m.m._02) << " "
-    << MAYBE_ZERO(_m.m._03)
+    << MAYBE_ZERO(_m(0, 0)) << " "
+    << MAYBE_ZERO(_m(0, 1)) << " "
+    << MAYBE_ZERO(_m(0, 2)) << " "
+    << MAYBE_ZERO(_m(0, 3))
     << "\n";
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._10) << " "
-    << MAYBE_ZERO(_m.m._11) << " "
-    << MAYBE_ZERO(_m.m._12) << " "
-    << MAYBE_ZERO(_m.m._13)
+    << MAYBE_ZERO(_m(1, 0)) << " "
+    << MAYBE_ZERO(_m(1, 1)) << " "
+    << MAYBE_ZERO(_m(1, 2)) << " "
+    << MAYBE_ZERO(_m(1, 3))
     << "\n";
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._20) << " "
-    << MAYBE_ZERO(_m.m._21) << " "
-    << MAYBE_ZERO(_m.m._22) << " "
-    << MAYBE_ZERO(_m.m._23)
+    << MAYBE_ZERO(_m(2, 0)) << " "
+    << MAYBE_ZERO(_m(2, 1)) << " "
+    << MAYBE_ZERO(_m(2, 2)) << " "
+    << MAYBE_ZERO(_m(2, 3))
     << "\n";
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._30) << " "
-    << MAYBE_ZERO(_m.m._31) << " "
-    << MAYBE_ZERO(_m.m._32) << " "
-    << MAYBE_ZERO(_m.m._33)
+    << MAYBE_ZERO(_m(3, 0)) << " "
+    << MAYBE_ZERO(_m(3, 1)) << " "
+    << MAYBE_ZERO(_m(3, 2)) << " "
+    << MAYBE_ZERO(_m(3, 3))
     << "\n";
 }
 
@@ -503,28 +506,75 @@ back_sub_mat(int index[4], FLOATNAME(LMatrix4) &inv, int row) const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: LMatrix4::write_datagram
-//  Description: Writes the matrix to the datagram
+//     Function: LMatrix4::write_datagram_fixed
+//       Access: Published
+//  Description: Writes the matrix to the Datagram using add_float32()
+//               or add_float64(), depending on the type of floats in
+//               the matrix, regardless of the setting of
+//               Datagram::set_stdfloat_double().  This is appropriate
+//               when you want to write a fixed-width value to the
+//               datagram, especially when you are not writing a bam
+//               file.
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix4)::
-write_datagram(Datagram &destination) const {
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+write_datagram_fixed(Datagram &destination) const {
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+#if FLOATTOKEN == 'f' 
       destination.add_float32(get_cell(i,j));
+#else
+      destination.add_float64(get_cell(i,j));
+#endif
     }
   }
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix4::read_datagram_fixed
+//       Access: Published
+//  Description: Reads the matrix from the Datagram using get_float32()
+//               or get_float64().  See write_datagram_fixed().
+////////////////////////////////////////////////////////////////////
+void FLOATNAME(LMatrix4)::
+read_datagram_fixed(DatagramIterator &scan) {
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+#if FLOATTOKEN == 'f'
+      set_cell(i, j, scan.get_float32());
+#else
+      set_cell(i, j, scan.get_float64());
+#endif
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix4::write_datagram
+//       Access: Published
+//  Description: Writes the matrix to the Datagram using
+//               add_stdfloat().  This is appropriate when you want to
+//               write the matrix using the standard width setting,
+//               especially when you are writing a bam file.
+////////////////////////////////////////////////////////////////////
+void FLOATNAME(LMatrix4)::
+write_datagram(Datagram &destination) const {
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      destination.add_stdfloat(get_cell(i,j));
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix4::read_datagram
-//  Description: Reads itself out of the datagram
+//       Access: Published
+//  Description: Reads the matrix from the Datagram using get_stdfloat().
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix4)::
 read_datagram(DatagramIterator &scan) {
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-      set_cell(i, j, scan.get_float32());
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      set_cell(i, j, scan.get_stdfloat());
     }
   }
 }
@@ -539,6 +589,21 @@ init_type() {
   if (_type_handle == TypeHandle::none()) {
     // Format a string to describe the type.
     string name = "LMatrix4";
+    name += FLOATTOKEN;
+    register_type(_type_handle, name);
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: UnalignedLMatrix4::init_type
+//       Access: Published, Static
+//  Description:
+////////////////////////////////////////////////////////////////////
+void FLOATNAME(UnalignedLMatrix4)::
+init_type() {
+  if (_type_handle == TypeHandle::none()) {
+    // Format a string to describe the type.
+    string name = "UnalignedLMatrix4";
     name += FLOATTOKEN;
     register_type(_type_handle, name);
   }

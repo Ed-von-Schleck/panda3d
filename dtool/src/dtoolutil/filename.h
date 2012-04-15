@@ -20,6 +20,7 @@
 #include "typeHandle.h"
 #include "register_type.h"
 #include "vector_string.h"
+#include "textEncoder.h"
 
 #include <assert.h>
 
@@ -61,6 +62,7 @@ public:
 
 PUBLISHED:
   INLINE Filename(const string &filename = "");
+  INLINE Filename(const wstring &filename);
   INLINE Filename(const char *filename);
   INLINE Filename(const Filename &copy);
   Filename(const Filename &dirname, const Filename &basename);
@@ -73,7 +75,9 @@ PUBLISHED:
   // Static constructors to explicitly create a filename that refers
   // to a text or binary file.  This is in lieu of calling set_text()
   // or set_binary() or set_type().
+  INLINE static Filename text_filename(const Filename &filename);
   INLINE static Filename text_filename(const string &filename);
+  INLINE static Filename binary_filename(const Filename &filename);
   INLINE static Filename binary_filename(const string &filename);
   INLINE static Filename dso_filename(const string &filename);
   INLINE static Filename executable_filename(const string &filename);
@@ -82,6 +86,8 @@ PUBLISHED:
 
   static Filename from_os_specific(const string &os_specific,
                                    Type type = T_general);
+  static Filename from_os_specific_w(const wstring &os_specific,
+                                     Type type = T_general);
   static Filename expand_from(const string &user_string, 
                               Type type = T_general);
   static Filename temporary(const string &dirname, const string &prefix,
@@ -95,6 +101,7 @@ PUBLISHED:
 
   // Assignment is via the = operator.
   INLINE Filename &operator = (const string &filename);
+  INLINE Filename &operator = (const wstring &filename);
   INLINE Filename &operator = (const char *filename);
   INLINE Filename &operator = (const Filename &copy);
 
@@ -111,6 +118,7 @@ PUBLISHED:
 
   // Or, you can use any of these.
   INLINE string get_fullpath() const;
+  INLINE wstring get_fullpath_w() const;
   INLINE string get_dirname() const;
   INLINE string get_basename() const;
   INLINE string get_fullpath_wo_extension() const;
@@ -133,6 +141,7 @@ PUBLISHED:
   INLINE void set_text();
   INLINE bool is_binary() const;
   INLINE bool is_text() const;
+  INLINE bool is_binary_or_text() const;
 
   INLINE void set_type(Type type);
   INLINE Type get_type() const;
@@ -160,12 +169,14 @@ PUBLISHED:
   bool make_true_case();
 
   string to_os_specific() const;
+  wstring to_os_specific_w() const;
   string to_os_generic() const;
   string to_os_short_name() const;
   string to_os_long_name() const;
 
   bool exists() const;
   bool is_regular_file() const;
+  bool is_writable() const;
   bool is_directory() const;
   bool is_executable() const;
   int compare_timestamps(const Filename &other,
@@ -219,6 +230,9 @@ PUBLISHED:
 
   INLINE void output(ostream &out) const;
 
+  INLINE static void set_filesystem_encoding(TextEncoder::Encoding encoding);
+  INLINE static TextEncoder::Encoding get_filesystem_encoding();
+
 public:
   bool atomic_compare_and_exchange_contents(string &orig_contents, const string &old_contents, const string &new_contents) const;
   bool atomic_read_contents(string &contents) const;
@@ -243,10 +257,11 @@ protected:
 
   int _flags;
 
-  static Filename *_home_directory;
-  static Filename *_temp_directory;
-  static Filename *_user_appdata_directory;
-  static Filename *_common_appdata_directory;
+  static TextEncoder::Encoding _filesystem_encoding;
+  static TVOLATILE AtomicAdjust::Pointer _home_directory;
+  static TVOLATILE AtomicAdjust::Pointer _temp_directory;
+  static TVOLATILE AtomicAdjust::Pointer _user_appdata_directory;
+  static TVOLATILE AtomicAdjust::Pointer _common_appdata_directory;
 
 public:
   static TypeHandle get_class_type() {

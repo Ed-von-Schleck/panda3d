@@ -69,7 +69,7 @@ make_identity() {
 //               @endcode
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) LightRampAttrib::
-make_single_threshold(float thresh0, float val0) {
+make_single_threshold(PN_stdfloat thresh0, PN_stdfloat val0) {
   LightRampAttrib *attrib = new LightRampAttrib();
   attrib->_mode = LRT_single_threshold;
   attrib->_threshold[0] = thresh0;
@@ -94,7 +94,7 @@ make_single_threshold(float thresh0, float val0) {
 //               @endcode
 ////////////////////////////////////////////////////////////////////
 CPT(RenderAttrib) LightRampAttrib::
-make_double_threshold(float thresh0, float val0, float thresh1, float val1) {
+make_double_threshold(PN_stdfloat thresh0, PN_stdfloat val0, PN_stdfloat thresh1, PN_stdfloat val1) {
   LightRampAttrib *attrib = new LightRampAttrib();
   attrib->_mode = LRT_single_threshold;
   attrib->_threshold[0] = thresh0;
@@ -200,6 +200,9 @@ void LightRampAttrib::
 output(ostream &out) const {
   out << get_type() << ":";
   switch (_mode) {
+  case LRT_default:
+    out << "default()";
+    break;
   case LRT_identity:
     out << "identity()";
     break;
@@ -208,6 +211,15 @@ output(ostream &out) const {
     break;
   case LRT_double_threshold:
     out << "double_threshold(" << _level[0] << "," << _level[1] << "," << _threshold[0] << "," << _threshold[1] << ")";
+    break;
+  case LRT_hdr0:
+    out << "hdr0()";
+    break;
+  case LRT_hdr1:
+    out << "hdr1()";
+    break;
+  case LRT_hdr2:
+    out << "hdr2()";
     break;
   }
 }
@@ -232,20 +244,52 @@ compare_to_impl(const RenderAttrib *other) const {
   const LightRampAttrib *ta;
   DCAST_INTO_R(ta, other, 0);
   int compare_result = ((int)_mode - (int)ta->_mode) ;
-  if (compare_result!=0) {
+  if (compare_result != 0) {
     return compare_result;
   }
-  for (int i=0; i<2; i++) {
+  for (int i = 0; i < 2; i++) {
     if (_level[i] != ta->_level[i]) {
       return (_level[i] < ta->_level[i]) ? -1 : 1;
     }
   }
-  for (int i=0; i<2; i++) {
+  for (int i = 0; i < 2; i++) {
     if (_threshold[i] != ta->_threshold[i]) {
       return (_threshold[i] < ta->_threshold[i]) ? -1 : 1;
     }
   }
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LightRampAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t LightRampAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  hash = int_hash::add_hash(hash, (int)_mode);
+  float_hash fh;
+  for (int i = 0; i < 2; i++) {
+    hash = fh.add_hash(hash, _level[i]);
+    hash = fh.add_hash(hash, _threshold[i]);
+  }
+  return hash;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LightRampAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) LightRampAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -271,10 +315,10 @@ write_datagram(BamWriter *manager, Datagram &dg) {
 
   dg.add_int8(_mode);
   for (int i=0; i<2; i++) {
-    dg.add_float32(_level[i]);
+    dg.add_stdfloat(_level[i]);
   }
   for (int i=0; i<2; i++) {
-    dg.add_float32(_threshold[i]);
+    dg.add_stdfloat(_threshold[i]);
   }
 }
 
@@ -311,9 +355,9 @@ fillin(DatagramIterator &scan, BamReader *manager) {
 
   _mode = (LightRampMode)scan.get_int8();
   for (int i=0; i<2; i++) {
-    _level[i] = scan.get_float32();
+    _level[i] = scan.get_stdfloat();
   }
   for (int i=0; i<2; i++) {
-    _threshold[i] = scan.get_float32();
+    _threshold[i] = scan.get_stdfloat();
   }
 }

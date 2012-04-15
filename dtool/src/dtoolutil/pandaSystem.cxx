@@ -37,6 +37,27 @@ PandaSystem() :
   // (!NDEBUG) mode, and only if they are not already defined.
   _package_version_string = PANDA_PACKAGE_VERSION_STR;
   _package_host_url = PANDA_PACKAGE_HOST_URL;
+
+#ifdef STDFLOAT_DOUBLE
+  add_system("stdfloat-double");
+#endif
+
+#ifdef HAVE_EIGEN
+  add_system("eigen");
+#ifdef LINMATH_ALIGN
+  set_system_tag("eigen", "vectorize", "1");
+#else
+  set_system_tag("eigen", "vectorize", "0");
+#endif
+#endif  // HAVE_EIGEN
+
+#ifdef USE_MEMORY_DLMALLOC
+  set_system_tag("system", "malloc", "dlmalloc");
+#elif defined(USE_MEMORY_PTMALLOC2)
+  set_system_tag("system", "malloc", "ptmalloc2");
+#else
+  set_system_tag("system", "malloc", "malloc");
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////

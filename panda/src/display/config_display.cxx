@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "config_display.h"
+#include "callbackGraphicsWindow.h"
 #include "displayRegion.h"
 #include "displayRegionCullCallbackData.h"
 #include "displayRegionDrawCallbackData.h"
@@ -86,7 +87,7 @@ ConfigVariableBool auto_flip
           "is achieved in parallel with the graphics card."));
 
 ConfigVariableBool sync_flip
-("sync-flip", true,
+("sync-flip", false,
  PRC_DESC("Set this true to attempt to flip all windows at the same time, "
           "or false to flip each window as late as possible.  Setting this "
           "false can improve parallelization.  This is a temporary "
@@ -245,6 +246,11 @@ ConfigVariableDouble sbs_right_dimensions
           "four numbers, in the form left right top bottom, similar to a "
           "normal DisplayRegion layout."));
 
+ConfigVariableBool swap_eyes
+("swap-eyes", false,
+ PRC_DESC("Set this true to reverse the left and right channel output of "
+          "stereo DisplayRegions."));
+
 ConfigVariableBool default_stereo_camera
 ("default-stereo-camera", true,
  PRC_DESC("When this is true, the default DisplayRegion created for "
@@ -334,6 +340,11 @@ ConfigVariableInt parent_window_handle
           "to, for the purposes of creating an embedded window.  This is "
           "an HWND on Windows, or the NSWindow pointer or XWindow pointer "
           "converted to an integer, on OSX and X11."));
+
+ConfigVariableBool win_unexposed_draw
+("win-unexposed-draw", true,
+ PRC_DESC("Specifies the default setting of GraphicsWindow::set_unexposed_draw().  "
+          "See that method for more information."));
 
 ConfigVariableFilename subprocess_window
 ("subprocess-window", "",
@@ -449,6 +460,7 @@ init_libdisplay() {
   }
   initialized = true;
 
+  CallbackGraphicsWindow::init_type();
   DisplayRegion::init_type();
   DisplayRegionCullCallbackData::init_type();
   DisplayRegionDrawCallbackData::init_type();

@@ -16,6 +16,7 @@
 #define PSTATCOLLECTORDEF_H
 
 #include "pandabase.h"
+#include "numeric_types.h"
 
 class Datagram;
 class DatagramIterator;

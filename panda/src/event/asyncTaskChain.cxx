@@ -1013,7 +1013,7 @@ finish_sort_group() {
     filter_timeslice_priority();
   }
 
-  nassertr(_num_tasks == _active.size() + _this_active.size() + _next_active.size() + _sleeping.size(), true);
+  nassertr((size_t)_num_tasks == _active.size() + _this_active.size() + _next_active.size() + _sleeping.size(), true);
   make_heap(_active.begin(), _active.end(), AsyncTaskSortPriority());
 
   _current_sort = -INT_MAX;
@@ -1268,12 +1268,12 @@ do_poll() {
     return;
   }
 
-#ifndef NDEBUG
   if (_num_busy_threads != 0) {
-    nassert_raise("You may not recursively invoke the TaskManager from within a task");
+    // We are recursively nested within another task.  Return, with a warning.
+    task_cat.warning()
+      << "Ignoring recursive poll() within another task.\n";
     return;
   }
-#endif
 
   nassertv(!_pickup_mode);
 
@@ -1419,12 +1419,11 @@ do_write(ostream &out, int indent_level) const {
 
   if (!tasks.empty()) {
     sort(tasks.begin(), tasks.end(), AsyncTaskSortPriority());
-    TaskHeap::reverse_iterator ti;
-    int current_sort = tasks.back()->get_sort() - 1;
 
     // Since AsyncTaskSortPriority() sorts backwards (because of STL's
     // push_heap semantics), we go through the task list in reverse
     // order to print them forwards.
+    TaskHeap::reverse_iterator ti;
     for (ti = tasks.rbegin(); ti != tasks.rend(); ++ti) {
       AsyncTask *task = (*ti);
       write_task_line(out, indent_level, task, now);

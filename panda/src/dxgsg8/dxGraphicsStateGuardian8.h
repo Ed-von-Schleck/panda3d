@@ -49,7 +49,7 @@ public:
   FrameBufferProperties
     calc_fb_properties(DWORD cformat, DWORD dformat, DWORD multisampletype);
 
-  virtual TextureContext *prepare_texture(Texture *tex);
+  virtual TextureContext *prepare_texture(Texture *tex, int view);
   void apply_texture(int i, TextureContext *tc);
   virtual bool update_texture(TextureContext *tc, bool force);
   bool upload_texture(DXTextureContext8 *dtc, bool force);
@@ -71,8 +71,7 @@ public:
 
   virtual void clear(DrawableRegion *region);
 
-  virtual void prepare_display_region(DisplayRegionPipelineReader *dr,
-                                      Lens::StereoChannel stereo_channel);
+  virtual void prepare_display_region(DisplayRegionPipelineReader *dr);
   virtual CPT(TransformState) calc_projection_mat(const Lens *lens);
   virtual bool prepare_lens();
 
@@ -118,15 +117,16 @@ public:
                           int light_id);
 
   static D3DFORMAT get_index_type(Geom::NumericType numeric_type);
-  INLINE static DWORD Colorf_to_D3DCOLOR(const Colorf &cColorf);
+  INLINE static DWORD LColor_to_D3DCOLOR(const LColor &cLColor);
 
   virtual void set_state_and_transform(const RenderState *state,
                                        const TransformState *transform);
   LPDIRECT3DDEVICE8 get_d3d_device();
+  INLINE bool get_supports_render_texture() const;
 
   static bool get_gamma_table(void);
-  static bool static_set_gamma(bool restore, float gamma);
-  bool set_gamma(float gamma);
+  static bool static_set_gamma(bool restore, PN_stdfloat gamma);
+  bool set_gamma(PN_stdfloat gamma);
   void restore_gamma();
   static void atexit_function(void);
 
@@ -149,12 +149,12 @@ protected:
   void do_issue_stencil();
   void do_issue_scissor();
 
-  void set_scissor(float left, float right, float bottom, float top);
+  void set_scissor(PN_stdfloat left, PN_stdfloat right, PN_stdfloat bottom, PN_stdfloat top);
 
   virtual void reissue_transforms();
 
   virtual void enable_lighting(bool enable);
-  virtual void set_ambient_light(const Colorf &color);
+  virtual void set_ambient_light(const LColor &color);
   virtual void enable_light(int light_id, bool enable);
 
   virtual void enable_clip_plane(int plane_id, bool enable);
@@ -226,15 +226,16 @@ protected:
   HRESULT _last_testcooplevel_result;
 
   bool _vertex_blending_enabled;
+  bool _supports_render_texture;
 
   RenderBuffer::Type _cur_read_pixel_buffer;  // source for copy_pixel_buffer operation
   bool _auto_rescale_normal;
 
-  float _material_ambient;
-  float _material_diffuse;
-  float _material_specular;
-  float _material_shininess;
-  float _material_emission;
+  PN_stdfloat _material_ambient;
+  PN_stdfloat _material_diffuse;
+  PN_stdfloat _material_specular;
+  PN_stdfloat _material_shininess;
+  PN_stdfloat _material_emission;
 
   enum DxgsgFogType {
     None,

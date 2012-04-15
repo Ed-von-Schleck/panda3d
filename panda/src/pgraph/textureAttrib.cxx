@@ -312,6 +312,10 @@ filter_to_max(int max_texture_stages) const {
 
   // Finally, record this newly-created attrib in the map for next
   // time.
+
+  // TODO: if new_attrib == this, have we just created a circular
+  // reference count?  Whoops!  Fix this!
+
   CPT(TextureAttrib) tex_attrib = (const TextureAttrib *)new_attrib.p();
   ((TextureAttrib *)this)->_filtered[max_texture_stages] = tex_attrib;
   return tex_attrib;
@@ -561,6 +565,45 @@ compare_to_impl(const RenderAttrib *other) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t TextureAttrib::
+get_hash_impl() const {
+  check_sorted();
+
+  size_t hash = 0;
+  Stages::const_iterator si;
+  for (si = _on_stages.begin(); si != _on_stages.end(); ++si) {
+    const StageNode &sn = (*si);
+
+    hash = pointer_hash::add_hash(hash, sn._stage);
+    hash = pointer_hash::add_hash(hash, sn._texture);
+    hash = int_hash::add_hash(hash, (int)sn._implicit_sort);
+    hash = int_hash::add_hash(hash, sn._override);
+  }
+
+  // This bool value goes here, between the two lists, to
+  // differentiate between the two.
+  hash = int_hash::add_hash(hash, (int)_off_all_stages);
+
+  for (si = _off_stages.begin(); si != _off_stages.end(); ++si) {
+    const StageNode &sn = (*si);
+
+    hash = pointer_hash::add_hash(hash, sn._stage);
+    hash = int_hash::add_hash(hash, sn._override);
+  }
+
+  return hash;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: TextureAttrib::compose_impl
 //       Access: Protected, Virtual
 //  Description: Intended to be overridden by derived RenderAttrib
@@ -724,6 +767,16 @@ invert_compose_impl(const RenderAttrib *other) const {
   // needs a bit more thought.  It's hard to imagine that it's even
   // important to compute this properly.
   return other;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: TextureAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) TextureAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////

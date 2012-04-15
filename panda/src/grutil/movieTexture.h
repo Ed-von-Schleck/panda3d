@@ -34,7 +34,7 @@
 class EXPCL_PANDA_GRUTIL MovieTexture : public Texture {
 PUBLISHED:
   MovieTexture(const string &name);
-  MovieTexture(PT(MovieVideo) video);
+  MovieTexture(MovieVideo *video);
 private:
   MovieTexture(const MovieTexture &copy);
 PUBLISHED:
@@ -43,7 +43,9 @@ PUBLISHED:
   INLINE double get_video_length() const;
   INLINE int get_video_width() const;
   INLINE int get_video_height() const;
-  INLINE LVecBase2f get_tex_scale() const;
+
+  INLINE MovieVideoCursor *get_color_cursor(int page);
+  INLINE MovieVideoCursor *get_alpha_cursor(int page);
   
   void   restart();
   void   stop();
@@ -66,25 +68,43 @@ public:
   virtual bool cull_callback(CullTraverser *trav, const CullTraverserData &data) const;
  
 protected:
-  virtual PT(Texture) do_make_copy();
-  void do_assign(const MovieTexture &copy);
+  class CData;
 
-  virtual void do_reload_ram_image();
+  virtual PT(Texture) make_copy_impl();
+  void do_assign(CData *cdata, Texture::CData *cdata_tex, const MovieTexture *copy, 
+                 const CData *cdata_copy, const Texture::CData *cdata_copy_tex);
+
+  virtual void do_reload_ram_image(Texture::CData *cdata, bool allow_compression);
   virtual bool get_keep_ram_image() const;
-  virtual bool do_read_one(const Filename &fullpath, const Filename &alpha_fullpath,
+  virtual bool do_has_bam_rawdata(const Texture::CData *cdata) const;
+  virtual void do_get_bam_rawdata(Texture::CData *cdata);
+  virtual bool do_can_reload(const Texture::CData *cdata) const;
+
+  virtual bool do_adjust_this_size(const Texture::CData *cdata, 
+                                   int &x_size, int &y_size, const string &name, 
+                                   bool for_padding) const;
+
+  virtual bool do_read_one(Texture::CData *cdata,
+                           const Filename &fullpath, const Filename &alpha_fullpath,
                            int z, int n, int primary_file_num_channels, int alpha_file_channel,
                            const LoaderOptions &options,
                            bool header_only, BamCacheRecord *record);
-  virtual bool do_load_one(const PNMImage &pnmimage, const string &name,
+  virtual bool do_load_one(Texture::CData *cdata,
+                           const PNMImage &pnmimage, const string &name,
                            int z, int n, const LoaderOptions &options);
-  bool do_load_one(PT(MovieVideoCursor) color, PT(MovieVideoCursor) alpha, 
+  bool do_load_one(Texture::CData *cdata,
+                   PT(MovieVideoCursor) color, PT(MovieVideoCursor) alpha, 
                    int z, const LoaderOptions &options);
+  virtual void do_allocate_pages(Texture::CData *cdata);
 
   class VideoPage {
   public:
-    VideoPage();
     PT(MovieVideoCursor) _color;
     PT(MovieVideoCursor) _alpha;
+
+    // The current (but not yet applied) frame for each video.
+    PT(MovieVideoCursor::Buffer) _cbuffer;
+    PT(MovieVideoCursor::Buffer) _abuffer;
   };
   
   typedef pvector<VideoPage> Pages;
@@ -103,22 +123,38 @@ protected:
     int _video_height;
     double _video_length;
 
-    double         _clock;
-    bool           _playing;
-    int            _loop_count;
-    int            _loops_total;
-    double         _play_rate;
+    double _clock;
+    bool _playing;
+    int _loop_count;
+    double _play_rate;
     PT(AudioSound) _synchronize;
+
+    // The remaining values represent a local cache only; it is not
+    // preserved through the pipeline.
+    bool _has_offset;
+    double _offset;
+    int _true_loop_count;
   };
 
   PipelineCycler<CData> _cycler;
   typedef CycleDataReader<CData> CDReader;
   typedef CycleDataWriter<CData> CDWriter;
   
-  void do_recalculate_image_properties(CDWriter &cdata, const LoaderOptions &options);
+  void do_recalculate_image_properties(CData *cdata, Texture::CData *cdata_tex, 
+                                       const LoaderOptions &options);
+
+private:
+  bool do_update_frames(const CData *cdata) const;
 
 public:
   static void register_with_read_factory();
+
+  static TypedWritable *make_from_bam(const FactoryParams &params);
+  virtual int complete_pointers(TypedWritable **plist, BamReader *manager);
+  virtual void do_write_datagram_rawdata(Texture::CData *cdata, BamWriter *manager, Datagram &me);
+  virtual void do_fillin_rawdata(Texture::CData *cdata, DatagramIterator &scan, BamReader *manager);
+
+  virtual void finalize(BamReader *manager);
 
 public:
   static TypeHandle get_class_type() {

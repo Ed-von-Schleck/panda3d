@@ -27,6 +27,7 @@
 #include "thread.h"
 #include "referenceCount.h"
 #include "pointerTo.h"
+#include "vector_double.h"  // needed to see exported allocators for pdeque
 
 class EXPCL_PANDA_PUTIL TimeVal {
 PUBLISHED:
@@ -76,6 +77,7 @@ PUBLISHED:
   };
 
   ClockObject();
+  ClockObject(const ClockObject &copy);
   INLINE ~ClockObject();
 
   void set_mode(Mode mode);
@@ -171,7 +173,9 @@ public:
     return _type_handle;
   }
   static void init_type() {
-    register_type(_type_handle, "ClockObject");
+    ReferenceCount::init_type();
+    register_type(_type_handle, "ClockObject",
+                  ReferenceCount::get_class_type());
   }
 
 private:

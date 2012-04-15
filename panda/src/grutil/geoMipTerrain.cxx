@@ -1,5 +1,5 @@
 // Filename: geoMipTerrain.cxx
-// Created by:  pro-rsoft (29jun07)
+// Created by:  rdb (29Jun07)
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -45,25 +45,25 @@ PT(GeomNode) GeoMipTerrain::
 generate_block(unsigned short mx,
                unsigned short my,
                unsigned short level) {
-  
+
   nassertr(mx < (_xsize - 1) / _block_size, NULL);
   nassertr(my < (_ysize - 1) / _block_size, NULL);
 
   unsigned short center = _block_size / 2;
   unsigned int vcounter = 0;
-  
+
   // Create the format
   PT(GeomVertexArrayFormat) array = new GeomVertexArrayFormat();
   if (_has_color_map) {
     array->add_column(InternalName::make("color"), 4,
-                                            Geom::NT_float32, Geom::C_color);
+                                            Geom::NT_stdfloat, Geom::C_color);
   }
   array->add_column(InternalName::make("vertex"), 3,
-                                            Geom::NT_float32, Geom::C_point);
+                                            Geom::NT_stdfloat, Geom::C_point);
   array->add_column(InternalName::make("texcoord"), 2,
-                                            Geom::NT_float32, Geom::C_texcoord);
+                                            Geom::NT_stdfloat, Geom::C_texcoord);
   array->add_column(InternalName::make("normal"), 3,
-                                            Geom::NT_float32, Geom::C_vector);
+                                            Geom::NT_stdfloat, Geom::C_vector);
   PT(GeomVertexFormat) format = new GeomVertexFormat();
   format->add_array(array);
 
@@ -73,7 +73,7 @@ generate_block(unsigned short mx,
   vdata->unclean_set_num_rows((_block_size + 1) * (_block_size + 1));
   GeomVertexWriter cwriter;
   if (_has_color_map) {
-    cwriter=GeomVertexWriter(vdata, "color"  );
+    cwriter = GeomVertexWriter(vdata, "color");
   }
   GeomVertexWriter vwriter (vdata, "vertex"  );
   GeomVertexWriter twriter (vdata, "texcoord");
@@ -90,7 +90,7 @@ generate_block(unsigned short mx,
   level = min(max(_min_level, level), _max_level);
   unsigned short reallevel = level;
   level = int(pow(2.0, int(level)));
-  
+
   // Neighbor levels and junctions
   unsigned short lnlevel = get_neighbor_level(mx, my, -1,  0);
   unsigned short rnlevel = get_neighbor_level(mx, my,  1,  0);
@@ -100,7 +100,7 @@ generate_block(unsigned short mx,
   bool rjunction = (rnlevel != reallevel);
   bool bjunction = (bnlevel != reallevel);
   bool tjunction = (tnlevel != reallevel);
-  
+
   // Confusing note:
   // the variable level contains not the actual level as described
   // in the GeoMipMapping paper. That is stored in reallevel,
@@ -108,7 +108,7 @@ generate_block(unsigned short mx,
 
   // This is the number of vertices at the certain level.
   unsigned short lowblocksize = _block_size / level + 1;
-  
+
   for (int x = 0; x <= _block_size; x++) {
     for (int y = 0; y <= _block_size; y++) {
       if ((x % level) == 0 && (y % level) == 0) {
@@ -117,12 +117,12 @@ generate_block(unsigned short mx,
                                   / double(_xsize) * _color_map.get_x_size()),
                                                       int((my * _block_size + y)
                                   / double(_ysize) * _color_map.get_y_size()));
-          cwriter.add_data4f(LCAST(float, color));
+          cwriter.add_data4(LCAST(PN_stdfloat, color));
         }
-        vwriter.add_data3f(x - 0.5 * _block_size, y - 0.5 * _block_size, get_pixel_value(mx, my, x, y));
-        twriter.add_data2f((mx * _block_size + x) / double(_xsize - 1),
+        vwriter.add_data3(x - 0.5 * _block_size, y - 0.5 * _block_size, get_pixel_value(mx, my, x, y));
+        twriter.add_data2((mx * _block_size + x) / double(_xsize - 1),
                            (my * _block_size + y) / double(_ysize - 1));
-        nwriter.add_data3f(get_normal(mx, my, x, y));
+        nwriter.add_data3(get_normal(mx, my, x, y));
         if (x > 0 && y > 0) {
           // Left border
           if (x == level && ljunction) {
@@ -132,7 +132,7 @@ generate_block(unsigned short mx,
               prim->add_vertex(vcounter);
               prim->close_primitive();
             }
-            if (f_part((y / level) / float(pow(2.0, int(lnlevel - reallevel)))) == 0.5) {
+            if (f_part((y / level) / PN_stdfloat(pow(2.0, int(lnlevel - reallevel)))) == 0.5) {
               prim->add_vertex(min(max(sfav(y / level + 1, lnlevel, reallevel), 0), lowblocksize - 1));
               prim->add_vertex(min(max(sfav(y / level - 1, lnlevel, reallevel), 0), lowblocksize - 1));
               prim->add_vertex(vcounter);
@@ -173,7 +173,7 @@ generate_block(unsigned short mx,
               prim->add_vertex(vcounter - 1);
               prim->close_primitive();
             }
-            if (f_part((y / level) / float(pow(2.0, int(rnlevel - reallevel)))) == 0.5) {
+            if (f_part((y / level) / PN_stdfloat(pow(2.0, int(rnlevel - reallevel)))) == 0.5) {
               prim->add_vertex(lowblocksize * (lowblocksize - 1) + min(max(sfav(y / level - 1, rnlevel, reallevel), 0), lowblocksize - 1));
               prim->add_vertex(lowblocksize * (lowblocksize - 1) + min(max(sfav(y / level + 1, rnlevel, reallevel), 0), lowblocksize - 1));
               prim->add_vertex(vcounter);
@@ -188,7 +188,7 @@ generate_block(unsigned short mx,
               prim->add_vertex(min(max(sfav(x / level, bnlevel, reallevel), 0), lowblocksize - 1) * lowblocksize);
               prim->close_primitive();
             }
-            if (f_part((x / level) / float(pow(2.0, int(bnlevel - reallevel)))) == 0.5) {
+            if (f_part((x / level) / PN_stdfloat(pow(2.0, int(bnlevel - reallevel)))) == 0.5) {
               prim->add_vertex(min(max(sfav(x / level - 1, bnlevel, reallevel), 0), lowblocksize - 1) * lowblocksize);
               prim->add_vertex(min(max(sfav(x / level + 1, bnlevel, reallevel), 0), lowblocksize - 1) * lowblocksize);
               prim->add_vertex(vcounter);
@@ -229,7 +229,7 @@ generate_block(unsigned short mx,
               prim->add_vertex(vcounter);
               prim->close_primitive();
             }
-            if (f_part((x / level) / float(pow(2.0, int(tnlevel - reallevel)))) == 0.5) {
+            if (f_part((x / level) / PN_stdfloat(pow(2.0, int(tnlevel - reallevel)))) == 0.5) {
               prim->add_vertex(min(max(sfav(x / level + 1, tnlevel, reallevel), 0), lowblocksize - 1) * lowblocksize + lowblocksize - 1);
               prim->add_vertex(min(max(sfav(x / level - 1, tnlevel, reallevel), 0), lowblocksize - 1) * lowblocksize + lowblocksize - 1);
               prim->add_vertex(vcounter);
@@ -245,14 +245,14 @@ generate_block(unsigned short mx,
   PT(Geom) geom = new Geom(vdata);
   geom->add_primitive(prim);
   geom->set_bounds_type(BoundingVolume::BT_box);
-  
+
   ostringstream sname;
   sname << "gmm" << mx << "x" << my;
   PT(GeomNode) node = new GeomNode(sname.str());
   node->add_geom(geom);
   node->set_bounds_type(BoundingVolume::BT_box);
   _old_levels.at(mx).at(my) = reallevel;
-  
+
   return node;
 }
 
@@ -262,7 +262,7 @@ generate_block(unsigned short mx,
 //  Description: Fetches the elevation at (x, y), where the input
 //               coordinate is specified in pixels. This ignores
 //               the current LOD level and instead provides an
-//               accurate number. Linear blending is used for 
+//               accurate number. Linear blending is used for
 //               non-integral coordinates.
 //               Terrain scale is NOT taken into account! To get
 //               accurate normals, please multiply this with the
@@ -305,13 +305,13 @@ get_elevation(double x, double y) {
 //               accurate normals, please divide it by the
 //               terrain scale and normalize it again, like this:
 //
-//               LVector3f normal (terr.get_normal(x, y));
+//               LVector3 normal (terr.get_normal(x, y));
 //               normal.set(normal.get_x() / root.get_sx(),
 //                          normal.get_y() / root.get_sy(),
 //                          normal.get_z() / root.get_sz());
 //               normal.normalize();
 ////////////////////////////////////////////////////////////////////
-LVector3f GeoMipTerrain::
+LVector3 GeoMipTerrain::
 get_normal(int x, int y) {
   int nx = x - 1;
   int px = x + 1;
@@ -323,7 +323,7 @@ get_normal(int x, int y) {
   if (py >= int(_ysize)) py--;
   double drx = get_pixel_value(px, y) - get_pixel_value(nx, y);
   double dry = get_pixel_value(x, py) - get_pixel_value(x, ny);
-  LVector3f normal(drx * 0.5, dry * 0.5, 1);
+  LVector3 normal(drx * 0.5, dry * 0.5, 1);
   normal.normalize();
 
   return normal;
@@ -350,15 +350,49 @@ make_slope_image() {
   result.make_grayscale();
   for (unsigned int x = 0; x < _xsize; ++x) {
     for (unsigned int y = 0; y < _ysize; ++y) {
-      LVector3f normal (get_normal(x, y));
+      LVector3 normal (get_normal(x, y));
       normal.set(normal.get_x() / _root.get_sx(),
                  normal.get_y() / _root.get_sy(),
                  normal.get_z() / _root.get_sz());
       normal.normalize();
-      result.set_gray(x, y, normal.angle_deg(LVector3f::up()) / 90.0);
+      result.set_xel(x, y, normal.angle_deg(LVector3::up()) / 90.0);
     }
   }
   return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeoMipTerrain::calc_ambient_occlusion
+//       Access: Published
+//  Description: Calculates an approximate for the ambient occlusion
+//               and stores it in the color map, so that it will be
+//               written to the vertex colors. Any existing color
+//               map will be discarded.
+//               You need to call this before generating the geometry.
+////////////////////////////////////////////////////////////////////
+void GeoMipTerrain::
+calc_ambient_occlusion(PN_stdfloat radius, PN_stdfloat contrast, PN_stdfloat brightness) {
+  _color_map = PNMImage(_xsize, _ysize);
+  _color_map.make_grayscale();
+  _color_map.set_maxval(_heightfield.get_maxval());
+
+  for (unsigned int x = 0; x < _xsize; ++x) {
+    for (unsigned int y = 0; y < _ysize; ++y) {
+      _color_map.set_xel(x, _ysize - y - 1, get_pixel_value(x, y));
+    }
+  }
+
+  // We use the cheap old method of subtracting a blurred version
+  // of the heightmap from the heightmap, and using that as lightmap.
+  _color_map.gaussian_filter(radius);
+
+  for (unsigned int x = 0; x < _xsize; ++x) {
+    for (unsigned int y = 0; y < _ysize; ++y) {
+      _color_map.set_xel(x, y, (get_pixel_value(x, _ysize - y - 1) - _color_map.get_gray(x, y)) * contrast + brightness);
+    }
+  }
+
+  _has_color_map = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -480,7 +514,7 @@ update() {
 //               However, if we call flatten_strong on the root,
 //               then the root will contain unpredictable stuff.
 //               This function returns true if the root has been
-//               flattened, and therefore, does not contain the 
+//               flattened, and therefore, does not contain the
 //               terrain blocks.
 ////////////////////////////////////////////////////////////////////
 bool GeoMipTerrain::
@@ -488,12 +522,12 @@ root_flattened() {
   if (_root_flattened) {
     return true;
   }
-  
+
   // The following code is error-checking code.  It actually verifies
   // that the terrain blocks are underneath the root, and that nothing
   // else is underneath the root.  It is not very efficient, and should
   // eventually be removed once we're sure everything works.
-  
+
   int total = 0;
   unsigned int xsize = _blocks.size();
   for (unsigned int tx = 0; tx < xsize; tx++) {
@@ -510,7 +544,7 @@ root_flattened() {
     grutil_cat.error() << "GeoMipTerrain: root node unexpectedly mangled: " << total << " vs " << (_root.node()->get_num_children()) << "\n";
     return true;
   }
-  
+
   // The default.
   return false;
 }
@@ -525,21 +559,21 @@ auto_flatten() {
   if (_auto_flatten == AFM_off) {
     return;
   }
-  
+
   // Creating a backup node causes the SceneGraphReducer
   // to operate in a nondestructive manner.  This protects
   // the terrain blocks themselves from the flattener.
 
   NodePath np("Backup Node");
   np.node()->copy_children(_root.node());
-  
+
   // Check if the root's children have changed unexpectedly.
   switch(_auto_flatten) {
   case AFM_light:  _root.flatten_light();  break;
   case AFM_medium: _root.flatten_medium(); break;
   case AFM_strong: _root.flatten_strong(); break;
   }
-  
+
   _root_flattened = true;
 }
 
@@ -619,29 +653,30 @@ set_heightfield(const Filename &filename, PNMFileType *ftype) {
   if (imgheader.read_header(filename, ftype)) {
     // Copy over the header to the heightfield image.
     _heightfield.copy_header_from(imgheader);
-    
+
     if(!is_power_of_two(imgheader.get_x_size() - 1) || !is_power_of_two(imgheader.get_y_size() - 1)) {
       // Calculate the nearest power-of-two-plus-one size.
       unsigned int reqx, reqy;
       reqx = max(3, (int) pow(2.0, ceil(log((double) max(2, imgheader.get_x_size() - 1)) / log(2.0))) + 1);
       reqy = max(3, (int) pow(2.0, ceil(log((double) max(2, imgheader.get_y_size() - 1)) / log(2.0))) + 1);
-      
+
       // If it's not a valid size, tell PNMImage to resize it.
-      if (reqx != imgheader.get_x_size() || reqy != imgheader.get_y_size()) {
-        grutil_cat.warning() << "Rescaling heightfield image " << filename
-                             << " from " << imgheader.get_x_size() << "x" << imgheader.get_y_size()
-                             << " to " << reqx << "x" << reqy << " pixels.\n";
+      if (reqx != (unsigned int)imgheader.get_x_size() || reqy != (unsigned int)imgheader.get_y_size()) {
+        grutil_cat.warning()
+      << "Rescaling heightfield image " << filename
+      << " from " << imgheader.get_x_size() << "x" << imgheader.get_y_size()
+      << " to " << reqx << "x" << reqy << " pixels.\n";
         _heightfield.set_read_size(reqx, reqy);
       }
     }
-    
+
     // Read the real image now
     if (!_heightfield.read(filename, ftype)) {
       _heightfield.clear_read_size();
       grutil_cat.error() << "Failed to read heightfield image " << filename << "!\n";
       return false;
     }
-    
+
     _is_dirty = true;
     _xsize = _heightfield.get_x_size();
     _ysize = _heightfield.get_y_size();
@@ -661,8 +696,8 @@ unsigned short GeoMipTerrain::
 get_neighbor_level(unsigned short mx, unsigned short my, short dmx, short dmy) {
   // If we're across the terrain border, check if we want stitching.
   // If not, return the same level as this one - it won't have to make junctions.
-  if (mx + dmx < 0 || mx + dmx >= (_xsize - 1) / _block_size ||
-      my + dmy < 0 || my + dmy >= (_ysize - 1) / _block_size) {
+  if ((int)mx + (int)dmx < 0 || (int)mx + (int)dmx >= ((int)_xsize - 1) / (int)_block_size ||
+      (int)my + (int)dmy < 0 || (int)my + (int)dmy >= ((int)_ysize - 1) / (int)_block_size) {
     return (_stitching) ? _max_level : min(max(_min_level, _levels[mx][my]), _max_level);
   }
   // If we're rendering bruteforce, the level must be the same as this one.

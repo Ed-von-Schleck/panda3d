@@ -29,6 +29,7 @@
 #include "pStatCollector.h"
 #include "deletedChain.h"
 #include "graphicsStateGuardianBase.h"
+#include "sceneSetup.h"
 #include "lightMutex.h"
 #include "callbackObject.h"
 
@@ -41,13 +42,17 @@ class CullTraverser;
 //               a number of Geoms to be drawn together, with a number
 //               of Geoms decalled onto them.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_PGRAPH CullableObject {
+class EXPCL_PANDA_PGRAPH CullableObject 
+#ifdef DO_MEMORY_USAGE
+  : public ReferenceCount   // We inherit from ReferenceCount just to get the memory type tracking that MemoryUsage provides.
+#endif  // DO_MEMORY_USAGE
+{
 public:
   INLINE CullableObject();
   INLINE CullableObject(const Geom *geom, const RenderState *state,
                         const TransformState *net_transform,
                         const TransformState *modelview_transform,
-                        const GraphicsStateGuardianBase *gsg);
+                        SceneSetup *scene_setup);
   INLINE CullableObject(const Geom *geom, const RenderState *state,
                         const TransformState *net_transform,
                         const TransformState *modelview_transform,
@@ -114,8 +119,8 @@ private:
   // This class is used internally by munge_points_to_quads().
   class PointData {
   public:
-    LPoint3f _eye;
-    float _dist;
+    LPoint3 _eye;
+    PN_stdfloat _dist;
   };
   class SortPoints {
   public:
@@ -151,7 +156,13 @@ public:
     return _type_handle;
   }
   static void init_type() {
+#ifdef DO_MEMORY_USAGE
+    ReferenceCount::init_type();
+    register_type(_type_handle, "CullableObject",
+                  ReferenceCount::get_class_type());
+#else
     register_type(_type_handle, "CullableObject");
+#endif  // DO_MEMORY_USAGE
   }
 
 private:

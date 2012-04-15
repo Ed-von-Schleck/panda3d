@@ -14,6 +14,9 @@
 
 #ifndef FFMPEGAUDIO_H
 #define FFMPEGAUDIO_H
+
+#include "pandabase.h"
+
 #ifdef HAVE_FFMPEG
 
 #include "movieAudio.h"

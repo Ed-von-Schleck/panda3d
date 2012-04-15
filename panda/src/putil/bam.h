@@ -33,7 +33,7 @@ static const unsigned short _bam_major_ver = 6;
 // Bumped to major version 6 on 2/11/06 to factor out PandaNode::CData.
 
 static const unsigned short _bam_first_minor_ver = 14;
-static const unsigned short _bam_minor_ver = 24;
+static const unsigned short _bam_minor_ver = 31;
 // Bumped to minor version 14 on 12/19/07 to change default ColorAttrib.
 // Bumped to minor version 15 on 4/9/08 to add TextureAttrib::_implicit_sort.
 // Bumped to minor version 16 on 5/13/08 to add Texture::_quality_level.
@@ -45,6 +45,13 @@ static const unsigned short _bam_minor_ver = 24;
 // Bumped to minor version 22 on 7/31/09 to add UvScrollNode R speed.
 // Bumped to minor version 23 on 5/4/10 to add internal TextureAttrib overrides.
 // Bumped to minor version 24 on 5/4/10 to add internal TexMatrixAttrib overrides.
+// Bumped to minor version 25 on 6/22/11 to add support for caching movie files.
+// Bumped to minor version 26 on 8/5/11 to add multiview (stereo) Textures.
+// Bumped to minor version 27 on 10/9/11 to add stdfloat_double.
+// Bumped to minor version 28 on 11/28/11 to add Texture::_auto_texture_scale.
+// Bumped to minor version 29 on 12/17/11 to add GeomVertexColumn::_column_alignment.
+// Bumped to minor version 30 on 1/22/12 to add Texture::_pad_*_size.
+// Bumped to minor version 31 on 2/16/12 to add DepthOffsetAttrib::_min_value, _max_value
 
 
 #endif

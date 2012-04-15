@@ -47,6 +47,9 @@ PUBLISHED:
   INLINE bool is_special() const;
   INLINE bool is_implicit() const;
 
+  void set_sort(int sort);
+  INLINE int get_sort() const;
+
   INLINE int get_page_seq() const;
   INLINE int get_trust_level() const;
   INLINE void set_trust_level(int trust_level);
@@ -62,6 +65,7 @@ PUBLISHED:
 
   int get_num_declarations() const;
   const ConfigDeclaration *get_declaration(int n) const;
+  ConfigDeclaration *modify_declaration(int n);
   string get_variable_name(int n) const;
   string get_string_value(int n) const;
   bool is_variable_used(int n) const;
@@ -78,6 +82,7 @@ private:
   string _name;
   bool _implicit_load;
   int _page_seq;
+  int _sort;
   int _next_decl_seq;
   int _trust_level;
 

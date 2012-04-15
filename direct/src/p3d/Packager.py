@@ -3,6 +3,9 @@ within a Panda3D Multifile, which can be easily be downloaded and/or
 patched onto a client machine, for the purpose of running a large
 application. """
 
+# Important to import panda3d first, to avoid naming conflicts with
+# Python's "string" and "Loader" names that are imported later.
+from panda3d.core import *
 import sys
 import os
 import glob
@@ -19,7 +22,6 @@ from direct.showbase import Loader
 from direct.showbase import AppRunnerGlobal
 from direct.showutil import FreezeTool
 from direct.directnotify.DirectNotifyGlobal import *
-from pandac.PandaModules import *
 
 vfs = VirtualFileSystem.getGlobalPtr()
 
@@ -100,6 +102,11 @@ class Packager:
                     basename = Filename(self.filename.getBasename())
                     if basename.resolveFilename(packager.executablePath):
                         self.filename = basename
+
+            if ext in packager.textExtensions and not self.executable:
+                self.filename.setText()
+            else:
+                self.filename.setBinary()
 
             # Convert the filename to an unambiguous filename for
             # searching.
@@ -1028,7 +1035,7 @@ class Packager:
             if Filename.fromOsSpecific(library).exists():
                 return Filename.fromOsSpecific(library)
 
-            # DSearchPath appears not to work well for directories.
+            # DSearchPath appears not to work for directories.
             fpath = []
             fpath.append(Filename("/Library/Frameworks"))
             fpath.append(Filename("/System/Library/Frameworks"))
@@ -1068,16 +1075,22 @@ class Packager:
                 # have changed since last time we ran.
                 assert file.filename.exists(), "File doesn't exist: %s" % file.filename
                 tmpfile = Filename.temporary('', "p3d_" + file.filename.getBasename())
+                tmpfile.setBinary()
                 file.filename.copyTo(tmpfile)
                 file.filename = tmpfile
                 file.deleteTemp = True
 
             # Alter the dependencies to have a relative path rather than absolute
             for filename in framework_deps:
-                if self.__locateFrameworkLibrary(filename) == file.filename:
-                    os.system('install_name_tool -id "%s" "%s"' % (os.path.basename(filename), tmpfile.toOsSpecific()))
+                loc = self.__locateFrameworkLibrary(filename)
+
+                if loc == file.filename:
+                    os.system('install_name_tool -id "%s" "%s"' % (os.path.basename(filename), file.filename.toOsSpecific()))
+                elif "/System/" in loc.toOsSpecific():
+                    # Let's keep references to system frameworks absolute
+                    os.system('install_name_tool -change "%s" "%s" "%s"' % (filename, loc.toOsSpecific(), file.filename.toOsSpecific()))
                 else:
-                    os.system('install_name_tool -change "%s" "%s" "%s"' % (filename, os.path.basename(filename), tmpfile.toOsSpecific()))
+                    os.system('install_name_tool -change "%s" "%s" "%s"' % (filename, os.path.basename(filename), file.filename.toOsSpecific()))
 
         def __addImplicitDependenciesOSX(self):
             """ Walks through the list of files, looking for dylib's
@@ -1138,9 +1151,12 @@ class Packager:
                         # that those often contain absolute paths, they
                         # aren't commonly on the library path either.
                         filename = self.__locateFrameworkLibrary(filename)
+                        filename.setBinary()
                     else:
                         # It's just a normal library - find it on the path.
                         filename = Filename.fromOsSpecific(filename)
+                        filename.setBinary()
+
                         if filename.isLocal():
                             filename.resolveFilename(path)
                         else:
@@ -1151,13 +1167,17 @@ class Packager:
                                 if f2.exists():
                                     filename = f2
 
+                    # Skip libraries and frameworks in system directory
+                    if "/System/" in filename.toOsSpecific():
+                        continue
+
                     newName = Filename(file.dependencyDir, filename.getBasename())
                     self.addFile(filename, newName = newName.cStr(),
                                  explicit = False, executable = True)
 
         def __parseDependenciesOSX(self, tempFile):
             """ Reads the indicated temporary file, the output from
-            otool -L, to determine the list of dylib's this
+            otool -L, to determine the list of dylibs this
             executable file depends on. """
 
             lines = open(tempFile.toOsSpecific(), 'rU').readlines()
@@ -1167,8 +1187,6 @@ class Packager:
                 if line[0] not in string.whitespace:
                     continue
                 line = line.strip()
-                if line.startswith('/System/'):
-                    continue
                 s = line.find(' (compatibility')
                 if s != -1:
                     line = line[:s]
@@ -1197,12 +1215,12 @@ class Packager:
                 return None
 
             if not ident.startswith("\177ELF"):
-                # Not an elf.  Beware of orcs.
+                # No elf magic!  Beware of orcs.
                 return None
 
             # Make sure we read in the correct endianness and integer size
             byteOrder = "<>"[ord(ident[5]) - 1]
-            elfClass = ord(ident[4]) - 1 # 32-bits, 64-bits
+            elfClass = ord(ident[4]) - 1 # 0 = 32-bits, 1 = 64-bits
             headerStruct = byteOrder + ("HHIIIIIHHHHHH", "HHIQQQIHHHHHH")[elfClass]
             sectionStruct = byteOrder + ("4xI8xIII8xI", "4xI16xQQI12xQ")[elfClass]
             dynamicStruct = byteOrder + ("iI", "qQ")[elfClass]
@@ -1283,6 +1301,7 @@ class Packager:
                 # chance that we break it).
 
                 tmpfile = Filename.temporary('', "p3d_" + file.filename.getBasename())
+                tmpfile.setBinary()
                 file.filename.copyTo(tmpfile)
                 file.filename = tmpfile
                 file.deleteTemp = True
@@ -1348,6 +1367,7 @@ class Packager:
 
                     filename = Filename.fromOsSpecific(filename)
                     filename.resolveFilename(path)
+                    filename.setBinary()
 
                     newName = Filename(file.dependencyDir, filename.getBasename())
                     self.addFile(filename, newName = newName.cStr(),
@@ -1434,6 +1454,14 @@ class Packager:
             # Write the xml file to a temporary file on disk, so we
             # can add it to the multifile.
             filename = Filename.temporary('', 'p3d_', '.xml')
+
+            # This should really be setText() for an xml file, but it
+            # doesn't really matter that much since tinyxml can read
+            # it either way; and if we use setBinary() it will remain
+            # compatible with older versions of the core API that
+            # didn't understand the SF_text flag.
+            filename.setBinary()
+            
             doc.SaveFile(filename.toOsSpecific())
 
             # It's important not to compress this file: the core API
@@ -1875,6 +1903,7 @@ class Packager:
             symbols are meaningful at runtime. """
 
             # First, read in the dc file
+            from panda3d.direct import DCFile
             dcFile = DCFile()
             if not dcFile.read(file.filename):
                 self.notify.error("Unable to parse %s." % (file.filename))
@@ -1891,6 +1920,7 @@ class Packager:
             """ Adds the Python modules named by the indicated dc
             file. """
 
+            from panda3d.direct import DCFile
             dcFile = DCFile()
             if not dcFile.read(file.filename):
                 self.notify.error("Unable to parse %s." % (file.filename))
@@ -1940,6 +1970,7 @@ class Packager:
 
             # Then write it out again, without the comments.
             tempFilename = Filename.temporary('', 'p3d_', '.prc')
+            tempFilename.setBinary()  # Binary is more reliable for signing.
             temp = open(tempFilename.toOsSpecific(), 'w')
             for line in textLines:
                 line = line.strip()
@@ -1964,6 +1995,7 @@ class Packager:
                     file.newName = file.newName[:-1] + 'e'
 
                 preFilename = Filename.temporary('', 'p3d_', '.pre')
+                preFilename.setBinary()
                 tempFilename.setText()
                 encryptFile(tempFilename, preFilename, self.packager.prcEncryptionKey)
                 tempFilename.unlink()
@@ -2029,6 +2061,7 @@ class Packager:
             # First, we need to verify that it is in fact a
             # universal binary.
             tfile = Filename.temporary('', 'p3d_')
+            tfile.setBinary()
             command = '/usr/bin/lipo -info "%s" >"%s"' % (
                 file.filename.toOsSpecific(),
                 tfile.toOsSpecific())
@@ -2036,6 +2069,7 @@ class Packager:
             if exitStatus != 0:
                 self.notify.warning("Not an executable file: %s" % (file.filename))
                 # Just add it anyway.
+                file.filename.setBinary()
                 self.multifile.addSubfile(file.newName, file.filename, compressionLevel)
                 return True
 
@@ -2052,6 +2086,7 @@ class Packager:
             if arches == [self.arch]:
                 # The file only contains the one architecture that
                 # we want anyway.
+                file.filename.setBinary()
                 self.multifile.addSubfile(file.newName, file.filename, compressionLevel)
                 return True
 
@@ -2233,12 +2268,12 @@ class Packager:
         self.modelExtensions = [ 'egg', 'bam' ]
 
         # Text files that are copied (and compressed) to the package
-        # without processing.
+        # with end-of-line conversion.
         self.textExtensions = [ 'prc', 'ptf', 'txt', 'cg', 'sha', 'dc', 'xml' ]
 
         # Binary files that are copied (and compressed) without
         # processing.
-        self.binaryExtensions = [ 'ttf', 'TTF', 'mid' ]
+        self.binaryExtensions = [ 'ttf', 'TTF', 'mid', 'ico' ]
 
         # Files that can have an existence in multiple different
         # packages simultaneously without conflict.
@@ -2278,23 +2313,25 @@ class Packager:
                 }
 
         # Files that should be extracted to disk.
-        self.extractExtensions = self.executableExtensions[:] + self.manifestExtensions[:]
+        self.extractExtensions = self.executableExtensions[:] + self.manifestExtensions[:] + [ 'ico' ]
 
         # Files that indicate a platform dependency.
         self.platformSpecificExtensions = self.executableExtensions[:]
 
         # Binary files that are considered uncompressible, and are
         # copied without compression.
-        self.uncompressibleExtensions = [ 'mp3', 'ogg', 'wav' ]
+        self.uncompressibleExtensions = [ 'mp3', 'ogg', 'wav', 'rml', 'rcss', 'otf' ]
         # wav files are compressible, but p3openal_audio won't load
         # them compressed.
+        # rml, rcss and otf files must be added here because
+        # libRocket wants to be able to seek in these files.
 
         # Files which are not to be processed further, but which
         # should be added exactly byte-for-byte as they are.
         self.unprocessedExtensions = []
 
         # System files that should never be packaged.  For
-        # case-insensitive filesystems (like Windows), put the
+        # case-insensitive filesystems (like Windows and OSX), put the
         # lowercase filename here.  Case-sensitive filesystems should
         # use the correct case.
         self.excludeSystemFiles = [
@@ -2330,6 +2367,7 @@ class Packager:
             GlobPattern('libnvidia*.so*'),
             GlobPattern('libpthread.so*'),
             GlobPattern('libthr.so*'),
+            GlobPattern('ld-linux.so*'),
             ]
 
         # A Loader for loading models.
@@ -2528,6 +2566,7 @@ class Packager:
         globals = {}
         globals['__name__'] = packageDef.getBasenameWoExtension()
         globals['__dir__'] = Filename(packageDef.getDirname()).toOsSpecific()
+        globals['__file__'] = packageDef.toOsSpecific()
         globals['packageDef'] = packageDef
 
         globals['platform'] = self.platform
@@ -3495,6 +3534,10 @@ class Packager:
                 ext = newFilename.getExtension()
 
             if ext in self.knownExtensions:
+                if ext in self.textExtensions:
+                    filename.setText()
+                else:
+                    filename.setBinary()
                 self.currentPackage.addFile(filename, newName = newName,
                                             explicit = False, unprocessed = unprocessed)
 

@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "deletedBufferChain.h"
+#include "memoryHook.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: DeletedBufferChain::Constructor
@@ -28,8 +29,8 @@ DeletedBufferChain(size_t buffer_size) {
 
 #ifdef USE_DELETEDCHAINFLAG
   // In development mode, we also need to reserve space for _flag.
-  _alloc_size += sizeof(AtomicAdjust::Integer);
-#endif  // NDEBUG
+  _alloc_size += get_flag_reserved_bytes();
+#endif  // USE_DELETEDCHAINFLAG
 
   // We must allocate at least this much space for bookkeeping
   // reasons.
@@ -47,7 +48,7 @@ DeletedBufferChain(size_t buffer_size) {
 void *DeletedBufferChain::
 allocate(size_t size, TypeHandle type_handle) {
 #ifdef USE_DELETED_CHAIN
-  TAU_PROFILE("void *DeletedBufferChain::allocate(size_t, TypeHandle)", " ", TAU_USER);
+  //TAU_PROFILE("void *DeletedBufferChain::allocate(size_t, TypeHandle)", " ", TAU_USER);
   assert(size <= _buffer_size);
 
   ObjectNode *obj;
@@ -61,7 +62,7 @@ allocate(size_t size, TypeHandle type_handle) {
 #ifdef USE_DELETEDCHAINFLAG
     assert(obj->_flag == (AtomicAdjust::Integer)DCF_deleted);
     obj->_flag = DCF_alive;
-#endif  // NDEBUG
+#endif  // USE_DELETEDCHAINFLAG
 
     void *ptr = node_to_buffer(obj);
 
@@ -105,7 +106,7 @@ allocate(size_t size, TypeHandle type_handle) {
 void DeletedBufferChain::
 deallocate(void *ptr, TypeHandle type_handle) {
 #ifdef USE_DELETED_CHAIN
-  TAU_PROFILE("void DeletedBufferChain::deallocate(void *, TypeHandle)", " ", TAU_USER);
+  //TAU_PROFILE("void DeletedBufferChain::deallocate(void *, TypeHandle)", " ", TAU_USER);
   assert(ptr != (void *)NULL);
 
 #ifdef DO_MEMORY_USAGE
@@ -125,7 +126,7 @@ deallocate(void *ptr, TypeHandle type_handle) {
   // If this assertion is triggered, you tried to delete an object
   // that was never allocated, or you have heap corruption.
   assert(orig_flag == (AtomicAdjust::Integer)DCF_alive);
-#endif  // NDEBUG
+#endif  // USE_DELETEDCHAINFLAG
 
   _lock.acquire();
 

@@ -109,7 +109,7 @@ CollisionTraverser::
 void CollisionTraverser::
 add_collider(const NodePath &collider, CollisionHandler *handler) {
   nassertv(_ordered_colliders.size() == _colliders.size());
-  nassertv(!collider.is_empty() && collider.node()->is_of_type(CollisionNode::get_class_type()));
+  nassertv(!collider.is_empty() && collider.node()->is_collision_node());
   nassertv(handler != (CollisionHandler *)NULL);
 
   Colliders::iterator ci = _colliders.find(collider);
@@ -500,8 +500,7 @@ write(ostream &out, int indent_level) const {
       out << " ignored\n";
     }
 
-    if (!cnode_path.is_empty() && cnode_path.node()->is_of_type(
-        CollisionNode::get_class_type())) {
+    if (!cnode_path.is_empty() && cnode_path.node()->is_collision_node()) {
       CollisionNode *cnode = DCAST(CollisionNode, cnode_path.node());
       
       int num_solids = cnode->get_num_solids();
@@ -608,7 +607,7 @@ r_traverse_single(CollisionLevelStateSingle &level_state, size_t pass) {
   }
 
   PandaNode *node = level_state.node();
-  if (node->is_exact_type(CollisionNode::get_class_type())) {
+  if (node->is_collision_node()) {
     CollisionNode *cnode;
     DCAST_INTO_V(cnode, node);
     CPT(BoundingVolume) node_bv = cnode->get_bounds();
@@ -827,7 +826,7 @@ r_traverse_double(CollisionLevelStateDouble &level_state, size_t pass) {
   }
 
   PandaNode *node = level_state.node();
-  if (node->is_exact_type(CollisionNode::get_class_type())) {
+  if (node->is_collision_node()) {
     CollisionNode *cnode;
     DCAST_INTO_V(cnode, node);
     CPT(BoundingVolume) node_bv = cnode->get_bounds();
@@ -1046,7 +1045,7 @@ r_traverse_quad(CollisionLevelStateQuad &level_state, size_t pass) {
   }
 
   PandaNode *node = level_state.node();
-  if (node->is_exact_type(CollisionNode::get_class_type())) {
+  if (node->is_collision_node()) {
     CollisionNode *cnode;
     DCAST_INTO_V(cnode, node);
     CPT(BoundingVolume) node_bv = cnode->get_bounds();
@@ -1328,14 +1327,14 @@ compare_collider_to_geom(CollisionEntry &entry, const Geom *geom,
           // Indexed case.
           GeomVertexReader index(tris->get_vertices(), 0);
           while (!index.is_at_end()) {
-            Vertexf v[3];
+            LPoint3 v[3];
             
-            vertex.set_row(index.get_data1i());
-            v[0] = vertex.get_data3f();
-            vertex.set_row(index.get_data1i());
-            v[1] = vertex.get_data3f();
-            vertex.set_row(index.get_data1i());
-            v[2] = vertex.get_data3f();
+            vertex.set_row_unsafe(index.get_data1i());
+            v[0] = vertex.get_data3();
+            vertex.set_row_unsafe(index.get_data1i());
+            v[1] = vertex.get_data3();
+            vertex.set_row_unsafe(index.get_data1i());
+            v[2] = vertex.get_data3();
             
             // Generate a temporary CollisionGeom on the fly for each
             // triangle in the Geom.
@@ -1350,7 +1349,7 @@ compare_collider_to_geom(CollisionEntry &entry, const Geom *geom,
 #endif  // DO_PSTATS
               }
               if (within_solid_bounds) {
-                PT(CollisionGeom) cgeom = new CollisionGeom(v[0], v[1], v[2]);
+                PT(CollisionGeom) cgeom = new CollisionGeom(LVecBase3(v[0]), LVecBase3(v[1]), LVecBase3(v[2]));
                 entry._into = cgeom;
                 entry.test_intersection((*ci).second, this);
               }
@@ -1358,14 +1357,14 @@ compare_collider_to_geom(CollisionEntry &entry, const Geom *geom,
           }
         } else {
           // Non-indexed case.
-          vertex.set_row(primitive->get_first_vertex());
+          vertex.set_row_unsafe(primitive->get_first_vertex());
           int num_vertices = primitive->get_num_vertices();
           for (int i = 0; i < num_vertices; i += 3) {
-            Vertexf v[3];
+            LPoint3 v[3];
             
-            v[0] = vertex.get_data3f();
-            v[1] = vertex.get_data3f();
-            v[2] = vertex.get_data3f();
+            v[0] = vertex.get_data3();
+            v[1] = vertex.get_data3();
+            v[2] = vertex.get_data3();
             
             // Generate a temporary CollisionGeom on the fly for each
             // triangle in the Geom.
@@ -1380,7 +1379,7 @@ compare_collider_to_geom(CollisionEntry &entry, const Geom *geom,
 #endif  // DO_PSTATS
               }
               if (within_solid_bounds) {
-                PT(CollisionGeom) cgeom = new CollisionGeom(v[0], v[1], v[2]);
+                PT(CollisionGeom) cgeom = new CollisionGeom(LVecBase3(v[0]), LVecBase3(v[1]), LVecBase3(v[2]));
                 entry._into = cgeom;
                 entry.test_intersection((*ci).second, this);
               }

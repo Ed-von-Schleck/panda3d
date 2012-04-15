@@ -47,7 +47,7 @@ const FLOATNAME(LMatrix3) FLOATNAME(LMatrix3)::_ly_to_rz_mat =
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_scale_shear_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that applies the indicated
 //               scale and shear.
 ////////////////////////////////////////////////////////////////////
@@ -68,49 +68,49 @@ set_scale_shear_mat(const FLOATNAME(LVecBase3) &scale,
   switch (cs) {
   case CS_zup_right:
     if (temp_hpr_fix) {
-      set(scale._v.v._0, shear._v.v._0 * scale._v.v._0, 0.0f,
-          0.0f, scale._v.v._1, 0.0f,
-          shear._v.v._1 * scale._v.v._2, shear._v.v._2 * scale._v.v._2, scale._v.v._2);
+      set(scale._v(0), shear._v(0) * scale._v(0), 0.0f,
+          0.0f, scale._v(1), 0.0f,
+          shear._v(1) * scale._v(2), shear._v(2) * scale._v(2), scale._v(2));
     } else {
-      set(scale._v.v._0, 0.0f, 0.0f,
-          shear._v.v._0 * scale._v.v._1, scale._v.v._1, 0.0f,
-          shear._v.v._1 * scale._v.v._2, shear._v.v._2 * scale._v.v._2, scale._v.v._2);
+      set(scale._v(0), 0.0f, 0.0f,
+          shear._v(0) * scale._v(1), scale._v(1), 0.0f,
+          shear._v(1) * scale._v(2), shear._v(2) * scale._v(2), scale._v(2));
     }
     break;
     
   case CS_zup_left:
     if (temp_hpr_fix) {
-      set(scale._v.v._0, shear._v.v._0 * scale._v.v._0, 0.0f,
-          0.0f, scale._v.v._1, 0.0f,
-          -shear._v.v._1 * scale._v.v._2, -shear._v.v._2 * scale._v.v._2, scale._v.v._2);
+      set(scale._v(0), shear._v(0) * scale._v(0), 0.0f,
+          0.0f, scale._v(1), 0.0f,
+          -shear._v(1) * scale._v(2), -shear._v(2) * scale._v(2), scale._v(2));
     } else {
-      set(scale._v.v._0, 0.0f, 0.0f,
-          shear._v.v._0 * scale._v.v._1, scale._v.v._1, 0.0f,
-          -shear._v.v._1 * scale._v.v._2, -shear._v.v._2 * scale._v.v._2, scale._v.v._2);
+      set(scale._v(0), 0.0f, 0.0f,
+          shear._v(0) * scale._v(1), scale._v(1), 0.0f,
+          -shear._v(1) * scale._v(2), -shear._v(2) * scale._v(2), scale._v(2));
     }
     break;
     
   case CS_yup_right:
     if (temp_hpr_fix) {
-      set(scale._v.v._0, 0.0f, shear._v.v._1 * scale._v.v._0,
-          shear._v.v._0 * scale._v.v._1, scale._v.v._1, shear._v.v._2 * scale._v.v._1,
-          0.0f, 0.0f, scale._v.v._2);
+      set(scale._v(0), 0.0f, shear._v(1) * scale._v(0),
+          shear._v(0) * scale._v(1), scale._v(1), shear._v(2) * scale._v(1),
+          0.0f, 0.0f, scale._v(2));
     } else {
-      set(scale._v.v._0, 0.0f, 0.0f,
-          shear._v.v._0 * scale._v.v._1, scale._v.v._1, shear._v.v._2 * scale._v.v._1,
-          shear._v.v._1 * scale._v.v._2, 0.0f, scale._v.v._2);
+      set(scale._v(0), 0.0f, 0.0f,
+          shear._v(0) * scale._v(1), scale._v(1), shear._v(2) * scale._v(1),
+          shear._v(1) * scale._v(2), 0.0f, scale._v(2));
     }
     break;
     
   case CS_yup_left:
     if (temp_hpr_fix) {
-      set(scale._v.v._0, 0.0f, -shear._v.v._1 * scale._v.v._0,
-          shear._v.v._0 * scale._v.v._1, scale._v.v._1, -shear._v.v._2 * scale._v.v._1,
-          0.0f, 0.0f, scale._v.v._2);
+      set(scale._v(0), 0.0f, -shear._v(1) * scale._v(0),
+          shear._v(0) * scale._v(1), scale._v(1), -shear._v(2) * scale._v(1),
+          0.0f, 0.0f, scale._v(2));
     } else {
-      set(scale._v.v._0, 0.0f, 0.0f,
-          shear._v.v._0 * scale._v.v._1, scale._v.v._1, -shear._v.v._2 * scale._v.v._1,
-          -shear._v.v._1 * scale._v.v._2, 0.0f, scale._v.v._2);
+      set(scale._v(0), 0.0f, 0.0f,
+          shear._v(0) * scale._v(1), scale._v(1), -shear._v(2) * scale._v(1),
+          -shear._v(1) * scale._v(2), 0.0f, scale._v(2));
     }
     break;
     
@@ -126,7 +126,7 @@ set_scale_shear_mat(const FLOATNAME(LVecBase3) &scale,
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::convert_mat
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description: Returns a matrix that transforms from the indicated
 //               coordinate system to the indicated coordinate system.
 ////////////////////////////////////////////////////////////////////
@@ -191,7 +191,7 @@ convert_mat(CoordinateSystem from, CoordinateSystem to) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::fill
-//       Access: Public
+//       Access: Published
 //  Description: Sets each element of the matrix to the indicated
 //               fill_value.  This is of questionable value, but is
 //               sometimes useful when initializing to zero.
@@ -199,14 +199,18 @@ convert_mat(CoordinateSystem from, CoordinateSystem to) {
 void FLOATNAME(LMatrix3)::
 fill(FLOATTYPE fill_value) {
   TAU_PROFILE("void LMatrix3::fill(FLOATTYPE)", " ", TAU_USER);
+#ifdef HAVE_EIGEN
+  _m = EMatrix3::Constant(fill_value);
+#else
   set(fill_value, fill_value, fill_value,
       fill_value, fill_value, fill_value,
       fill_value, fill_value, fill_value);
+#endif  // HAVE_EIGEN
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::compare_to
-//       Access: Public
+//       Access: Published
 //  Description: Sorts matrices lexicographically, componentwise.
 //               Returns a number less than 0 if this matrix sorts
 //               before the other one, greater than zero if it sorts
@@ -216,9 +220,11 @@ fill(FLOATTYPE fill_value) {
 int FLOATNAME(LMatrix3)::
 compare_to(const FLOATNAME(LMatrix3) &other, FLOATTYPE threshold) const {
   TAU_PROFILE("int LMatrix3::compare_to(const LMatrix3 &, FLOATTYPE)", " ", TAU_USER);
-  for (int i = 0; i < 9; i++) {
-    if (!IS_THRESHOLD_COMPEQ(_m.data[i], other._m.data[i], threshold)) {
-      return (_m.data[i] < other._m.data[i]) ? -1 : 1;
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      if (!IS_THRESHOLD_COMPEQ(_m(r, c), other._m(r, c), threshold)) {
+        return (_m(r, c) < other._m(r, c)) ? -1 : 1;
+      }
     }
   }
   return 0;
@@ -226,13 +232,13 @@ compare_to(const FLOATNAME(LMatrix3) &other, FLOATTYPE threshold) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_rotate_mat
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that rotates by the given
 //               angle in degrees counterclockwise about the indicated
 //               vector.
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::
-set_rotate_mat(FLOATTYPE angle, FLOATNAME(LVecBase3) axis,
+set_rotate_mat(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
                CoordinateSystem cs) {
   TAU_PROFILE("void LMatrix3::set_rotate_mat(FLOATTYPE, LVecBase3, CoordinateSystem)", " ", TAU_USER);
   if (cs == CS_default) {
@@ -245,9 +251,9 @@ set_rotate_mat(FLOATTYPE angle, FLOATNAME(LVecBase3) axis,
     angle = -angle;
   }
 
-  FLOATTYPE axis_0 = axis._v.v._0;
-  FLOATTYPE axis_1 = axis._v.v._1;
-  FLOATTYPE axis_2 = axis._v.v._2;
+  FLOATTYPE axis_0 = axis._v(0);
+  FLOATTYPE axis_1 = axis._v(1);
+  FLOATTYPE axis_2 = axis._v(2);
 
   // Normalize the axis.
   FLOATTYPE length_sq = axis_0 * axis_0 + axis_1 * axis_1 + axis_2 * axis_2;
@@ -272,22 +278,22 @@ set_rotate_mat(FLOATTYPE angle, FLOATNAME(LVecBase3) axis,
   s1 = s * axis_1;
   s2 = s * axis_2;
 
-  _m.m._00 = t0 * axis_0 + c;
-  _m.m._01 = t0 * axis_1 + s2;
-  _m.m._02 = t0 * axis_2 - s1;
+  _m(0, 0) = t0 * axis_0 + c;
+  _m(0, 1) = t0 * axis_1 + s2;
+  _m(0, 2) = t0 * axis_2 - s1;
 
-  _m.m._10 = t1 * axis_0 - s2;
-  _m.m._11 = t1 * axis_1 + c;
-  _m.m._12 = t1 * axis_2 + s0;
+  _m(1, 0) = t1 * axis_0 - s2;
+  _m(1, 1) = t1 * axis_1 + c;
+  _m(1, 2) = t1 * axis_2 + s0;
 
-  _m.m._20 = t2 * axis_0 + s1;
-  _m.m._21 = t2 * axis_1 - s0;
-  _m.m._22 = t2 * axis_2 + c;
+  _m(2, 0) = t2 * axis_0 + s1;
+  _m(2, 1) = t2 * axis_1 - s0;
+  _m(2, 2) = t2 * axis_2 + c;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix::set_rotate_mat_normaxis
-//       Access: Public
+//       Access: Published
 //  Description: Fills mat with a matrix that rotates by the given
 //               angle in degrees counterclockwise about the indicated
 //               vector.  Assumes axis has been normalized.
@@ -306,9 +312,9 @@ set_rotate_mat_normaxis(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
     angle = -angle;
   }
 
-  FLOATTYPE axis_0 = axis._v.v._0;
-  FLOATTYPE axis_1 = axis._v.v._1;
-  FLOATTYPE axis_2 = axis._v.v._2;
+  FLOATTYPE axis_0 = axis._v(0);
+  FLOATTYPE axis_1 = axis._v(1);
+  FLOATTYPE axis_2 = axis._v(2);
 
   FLOATTYPE angle_rad = deg_2_rad(angle);
   FLOATTYPE s, c;
@@ -324,22 +330,22 @@ set_rotate_mat_normaxis(FLOATTYPE angle, const FLOATNAME(LVecBase3) &axis,
   s1 = s * axis_1;
   s2 = s * axis_2;
 
-  _m.m._00 = t0 * axis_0 + c;
-  _m.m._01 = t0 * axis_1 + s2;
-  _m.m._02 = t0 * axis_2 - s1;
+  _m(0, 0) = t0 * axis_0 + c;
+  _m(0, 1) = t0 * axis_1 + s2;
+  _m(0, 2) = t0 * axis_2 - s1;
 
-  _m.m._10 = t1 * axis_0 - s2;
-  _m.m._11 = t1 * axis_1 + c;
-  _m.m._12 = t1 * axis_2 + s0;
+  _m(1, 0) = t1 * axis_0 - s2;
+  _m(1, 1) = t1 * axis_1 + c;
+  _m(1, 2) = t1 * axis_2 + s0;
 
-  _m.m._20 = t2 * axis_0 + s1;
-  _m.m._21 = t2 * axis_1 - s0;
-  _m.m._22 = t2 * axis_2 + c;
+  _m(2, 0) = t2 * axis_0 + s1;
+  _m(2, 1) = t2 * axis_1 - s0;
+  _m(2, 2) = t2 * axis_2 + c;
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::almost_equal
-//       Access: Public
+//       Access: Published
 //  Description: Returns true if two matrices are memberwise equal
 //               within a specified tolerance.
 ////////////////////////////////////////////////////////////////////
@@ -360,53 +366,53 @@ almost_equal(const FLOATNAME(LMatrix3) &other, FLOATTYPE threshold) const {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::output
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::
 output(ostream &out) const {
   out << "[ "
-      << MAYBE_ZERO(_m.m._00) << " "
-      << MAYBE_ZERO(_m.m._01) << " "
-      << MAYBE_ZERO(_m.m._02)
+      << MAYBE_ZERO(_m(0, 0)) << " "
+      << MAYBE_ZERO(_m(0, 1)) << " "
+      << MAYBE_ZERO(_m(0, 2))
       << " ] [ "
-      << MAYBE_ZERO(_m.m._10) << " "
-      << MAYBE_ZERO(_m.m._11) << " "
-      << MAYBE_ZERO(_m.m._12)
+      << MAYBE_ZERO(_m(1, 0)) << " "
+      << MAYBE_ZERO(_m(1, 1)) << " "
+      << MAYBE_ZERO(_m(1, 2))
       << " ] [ "
-      << MAYBE_ZERO(_m.m._20) << " "
-      << MAYBE_ZERO(_m.m._21) << " "
-      << MAYBE_ZERO(_m.m._22)
+      << MAYBE_ZERO(_m(2, 0)) << " "
+      << MAYBE_ZERO(_m(2, 1)) << " "
+      << MAYBE_ZERO(_m(2, 2))
       << " ]";
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::write
-//       Access: Public
+//       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::
 write(ostream &out, int indent_level) const {
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._00) << " "
-    << MAYBE_ZERO(_m.m._01) << " "
-    << MAYBE_ZERO(_m.m._02)
+    << MAYBE_ZERO(_m(0, 0)) << " "
+    << MAYBE_ZERO(_m(0, 1)) << " "
+    << MAYBE_ZERO(_m(0, 2))
     << "\n";
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._10) << " "
-    << MAYBE_ZERO(_m.m._11) << " "
-    << MAYBE_ZERO(_m.m._12)
+    << MAYBE_ZERO(_m(1, 0)) << " "
+    << MAYBE_ZERO(_m(1, 1)) << " "
+    << MAYBE_ZERO(_m(1, 2))
     << "\n";
   indent(out, indent_level)
-    << MAYBE_ZERO(_m.m._20) << " "
-    << MAYBE_ZERO(_m.m._21) << " "
-    << MAYBE_ZERO(_m.m._22)
+    << MAYBE_ZERO(_m(2, 0)) << " "
+    << MAYBE_ZERO(_m(2, 1)) << " "
+    << MAYBE_ZERO(_m(2, 2))
     << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::generate_hash
-//       Access: Public
+//       Access: Published
 //  Description: Adds the vector to the indicated hash generator.
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::
@@ -420,27 +426,75 @@ generate_hash(ChecksumHashGenerator &hashgen, FLOATTYPE threshold) const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::write_datagram_fixed
+//       Access: Published
+//  Description: Writes the matrix to the Datagram using add_float32()
+//               or add_float64(), depending on the type of floats in
+//               the matrix, regardless of the setting of
+//               Datagram::set_stdfloat_double().  This is appropriate
+//               when you want to write a fixed-width value to the
+//               datagram, especially when you are not writing a bam
+//               file.
+////////////////////////////////////////////////////////////////////
+void FLOATNAME(LMatrix3)::
+write_datagram_fixed(Datagram &destination) const {
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+#if FLOATTOKEN == 'f' 
+      destination.add_float32(get_cell(i,j));
+#else
+      destination.add_float64(get_cell(i,j));
+#endif
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: LMatrix3::read_datagram_fixed
+//       Access: Published
+//  Description: Reads the matrix from the Datagram using get_float32()
+//               or get_float64().  See write_datagram_fixed().
+////////////////////////////////////////////////////////////////////
+void FLOATNAME(LMatrix3)::
+read_datagram_fixed(DatagramIterator &scan) {
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+#if FLOATTOKEN == 'f'
+      set_cell(i, j, scan.get_float32());
+#else
+      set_cell(i, j, scan.get_float64());
+#endif
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::write_datagram
-//  Description: Writes the matrix to the datagram
+//       Access: Published
+//  Description: Writes the matrix to the Datagram using
+//               add_stdfloat().  This is appropriate when you want to
+//               write the matrix using the standard width setting,
+//               especially when you are writing a bam file.
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::
 write_datagram(Datagram &destination) const {
-  for(int i = 0; i < 3; i++) {
-    for(int j = 0; j < 3; j++) {
-      destination.add_float32(get_cell(i,j));
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      destination.add_stdfloat(get_cell(i,j));
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::read_datagram
-//  Description: Reads itself out of the datagram
+//       Access: Published
+//  Description: Reads the matrix from the Datagram using get_stdfloat().
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::
 read_datagram(DatagramIterator &scan) {
-  for(int i = 0; i < 3; i++) {
-    for(int j = 0; j < 3; j++) {
-      set_cell(i, j, scan.get_float32());
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      set_cell(i, j, scan.get_stdfloat());
     }
   }
 }
@@ -448,7 +502,7 @@ read_datagram(DatagramIterator &scan) {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: LMatrix3::init_type
-//       Access: Public, Static
+//       Access: Published, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void FLOATNAME(LMatrix3)::

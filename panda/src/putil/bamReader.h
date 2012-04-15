@@ -25,11 +25,13 @@
 #include "datagramIterator.h"
 #include "bamReaderParam.h"
 #include "bamEnums.h"
+#include "subfileInfo.h"
 #include "loaderOptions.h"
 #include "factory.h"
 #include "vector_int.h"
 #include "pset.h"
 #include "pmap.h"
+#include "pdeque.h"
 #include "dcast.h"
 #include "pipelineCyclerBase.h"
 #include "referenceCount.h"
@@ -125,10 +127,11 @@ public:
 
 PUBLISHED:
   // The primary interface for a caller.
-  BamReader(DatagramGenerator *source = NULL, const Filename &name = "");
+  BamReader(DatagramGenerator *source = NULL);
   ~BamReader();
 
   void set_source(DatagramGenerator *source);
+  INLINE DatagramGenerator *get_source();
 
   bool init();
 
@@ -152,6 +155,7 @@ PUBLISHED:
   INLINE int get_file_major_ver() const;
   INLINE int get_file_minor_ver() const;
   INLINE BamEndian get_file_endian() const;
+  INLINE bool get_file_stdfloat_double() const;
 
   INLINE int get_current_major_ver() const;
   INLINE int get_current_minor_ver() const;
@@ -162,6 +166,8 @@ public:
   void read_pointer(DatagramIterator &scan);
   void read_pointers(DatagramIterator &scan, int count);
   void skip_pointer(DatagramIterator &scan);
+
+  void read_file_data(SubfileInfo &info);
 
   void read_cdata(DatagramIterator &scan, PipelineCyclerBase &cycler);
   void read_cdata(DatagramIterator &scan, PipelineCyclerBase &cycler,
@@ -187,7 +193,8 @@ public:
 
   TypeHandle read_handle(DatagramIterator &scan);
 
-  INLINE VirtualFile *get_file();
+  INLINE const FileReference *get_file();
+  INLINE VirtualFile *get_vfile();
   INLINE streampos get_file_pos();
 
 public:
@@ -232,9 +239,6 @@ private:
   // to actual TypeHandles.
   typedef phash_map<int, TypeHandle, int_hash> IndexMap;
   IndexMap _index_map;
-
-  // This is the filename of the BAM, or empty string if not in a file.
-  Filename _filename;
 
   LoaderOptions _loader_options;
 
@@ -307,6 +311,12 @@ private:
   PTAMap _pta_map;
   int _pta_id;
 
+  // This is a queue of the currently-pending file data blocks that we
+  // have recently encountered in the stream and still expect a
+  // subsequent object to request.
+  typedef pdeque<SubfileInfo> FileDataRecords;
+  FileDataRecords _file_data_records;
+
   // This is used internally to record all of the new types created
   // on-the-fly to satisfy bam requirements.  We keep track of this
   // just so we can suppress warning messages from attempts to create
@@ -321,6 +331,7 @@ private:
 
   int _file_major, _file_minor;
   BamEndian _file_endian;
+  bool _file_stdfloat_double;
   static const int _cur_major;
   static const int _cur_minor;
 };

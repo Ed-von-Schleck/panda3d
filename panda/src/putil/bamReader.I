@@ -23,6 +23,17 @@ BamReaderAuxData() {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamReader::get_source
+//       Access: Published
+//  Description: Returns the current source of the BamReader as set by
+//               set_source() or the constructor.
+////////////////////////////////////////////////////////////////////
+INLINE DatagramGenerator *BamReader::
+get_source() {
+  return _source;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: BamReader::get_filename
 //       Access: Published
 //  Description: If a BAM is a file, then the BamReader should
@@ -32,7 +43,11 @@ BamReaderAuxData() {
 ////////////////////////////////////////////////////////////////////
 INLINE const Filename &BamReader::
 get_filename() const {
-  return _filename;
+  if (_source != (DatagramGenerator *)NULL) {
+    return _source->get_filename();
+  }
+  static const Filename empty_filename;
+  return empty_filename;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -106,6 +121,19 @@ get_file_endian() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: BamReader::get_file_stdfloat_double
+//       Access: Published
+//  Description: Returns true if the file stores all "standard"
+//               floats as 64-bit doubles, or false if they are 32-bit
+//               floats.  This is determined by the compilation flags
+//               of the version of Panda that generated this file.
+////////////////////////////////////////////////////////////////////
+INLINE bool BamReader::
+get_file_stdfloat_double() const {
+  return _file_stdfloat_double;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: BamReader::get_current_major_ver
 //       Access: Published
 //  Description: Returns the major version number of Bam files
@@ -134,14 +162,27 @@ get_current_minor_ver() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: BamReader::get_file
 //       Access: Public
+//  Description: Returns the FileReference that provides the source for
+//               these datagrams, if any, or NULL if the datagrams do
+//               not originate from a file on disk.
+////////////////////////////////////////////////////////////////////
+INLINE const FileReference *BamReader::
+get_file() {
+  nassertr(_source != NULL, NULL);
+  return _source->get_file();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: BamReader::get_vfile
+//       Access: Public
 //  Description: Returns the VirtualFile that provides the source for
 //               these datagrams, if any, or NULL if the datagrams do
 //               not originate from a VirtualFile.
 ////////////////////////////////////////////////////////////////////
 INLINE VirtualFile *BamReader::
-get_file() {
+get_vfile() {
   nassertr(_source != NULL, NULL);
-  return _source->get_file();
+  return _source->get_vfile();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -200,7 +241,12 @@ get_datagram(Datagram &datagram) {
     return false;
   }
 
-  return _source->get_datagram(datagram);
+  if (!_source->get_datagram(datagram)) {
+    return false;
+  }
+
+  datagram.set_stdfloat_double(_file_stdfloat_double);
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////

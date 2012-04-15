@@ -666,11 +666,11 @@ subprocess_run() {
       FD_ZERO(&fds);
       FD_SET(read_fd, &fds);
       
+      // Sleep a bit to yield the timeslice if there's nothing new.
       struct timeval tv;
       tv.tv_sec = 0;
-      tv.tv_usec = 1;  // Sleep a bit to yield the timeslice if there's
-      // nothing new.
-      
+      tv.tv_usec = 1000;   // 1 usec is not enough.
+
       int result = select(read_fd + 1, &fds, NULL, NULL, &tv);
       if (result > 0) {
         // There is some noise on the pipe, so read it.
@@ -684,6 +684,11 @@ subprocess_run() {
     if (input_ready) {
       receive_command();
     }
+
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 50000000;  // 50 ms
+    nanosleep(&req, NULL);
   }
 
   close_window();
@@ -834,14 +839,14 @@ make_window() {
     _win_height = _wparams.get_win_height();
   }
 
-  Window parent = 0;
+  X11_Window parent = 0;
   
   // Hum, if we use the display provided by the browser,
   // it causes a crash in some browsers when you make an Xlib
   // call with the plugin window minimized.
   // So I kept XOpenDisplay until we have a better workaround.
   
-  //_display = (Display*) _wparams.get_parent_window()._xdisplay;
+  //_display = (X11_Display*) _wparams.get_parent_window()._xdisplay;
   //_own_display = false;
   //if (_display == 0) {
     _display = XOpenDisplay(NULL);

@@ -422,7 +422,7 @@ class Actor(DirectObject, NodePath):
         if isIncluded:
             value = ''
             if hasattr(part, 'outputValue'):
-                lineStream = LineStream.LineStream()
+                lineStream = LineStream()
                 part.outputValue(lineStream)
                 value = lineStream.getLine()
 
@@ -1242,6 +1242,25 @@ class Actor(DirectObject, NodePath):
             return None
         return joint.getDefaultValue()
 
+    def getJointTransformState(self, partName, jointName, lodName='lodRoot'):
+        partBundleDict=self.__partBundleDict.get(lodName)
+        if not partBundleDict:
+            Actor.notify.warning("no lod named: %s" % (lodName))
+            return None
+
+        subpartDef = self.__subpartDict.get(partName, Actor.SubpartDef(partName))
+        partDef = partBundleDict.get(subpartDef.truePartName)
+        if partDef:
+            bundle = partDef.getBundle()
+        else:
+            Actor.notify.warning("no part named %s!" % (partName))
+            return None
+
+        joint = bundle.findChild(jointName)
+        if joint == None:
+            Actor.notify.warning("no joint named %s!" % (jointName))
+            return None
+        return joint.getTransformState()
 
     def controlJoint(self, node, partName, jointName, lodName="lodRoot"):
         """The converse of exposeJoint: this associates the joint with
@@ -2216,10 +2235,10 @@ class Actor(DirectObject, NodePath):
         """unloadAnims(self, string:string{}, string='modelRoot',
         string='lodRoot')
         Actor anim unloader. Takes an optional partName (defaults to
-        'modelRoot' for non-multipart actors) and lodName (defaults
-        to 'lodRoot' for non-LOD actors) and dict of corresponding
-        anims in the form animName:animPath{}. Deletes the anim control
-        for the given animation and parts/lods.
+        'modelRoot' for non-multipart actors) and lodName (defaults to
+        'lodRoot' for non-LOD actors) and list of animation
+        names. Deletes the anim control for the given animation and
+        parts/lods.
 
         If any parameter is None or omitted, it means all of them.
         """

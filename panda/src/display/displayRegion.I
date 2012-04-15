@@ -46,22 +46,22 @@ get_lens_index() const {
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
 INLINE void DisplayRegion::
-get_dimensions(float &l, float &r, float &b, float &t) const {
+get_dimensions(PN_stdfloat &l, PN_stdfloat &r, PN_stdfloat &b, PN_stdfloat &t) const {
   CDReader cdata(_cycler);
   l = cdata->_dimensions[0];
   r = cdata->_dimensions[1];
   b = cdata->_dimensions[2];
   t = cdata->_dimensions[3];
 }
-///////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////
 //     Function: DisplayRegion::get_dimensions
 //       Access: Published
 //  Description: Retrieves the coordinates of the DisplayRegion's
 //               rectangle within its GraphicsOutput.  These numbers
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE LVecBase4f DisplayRegion::
+INLINE LVecBase4 DisplayRegion::
 get_dimensions() const {
   CDReader cdata(_cycler);
   return cdata->_dimensions;
@@ -74,7 +74,7 @@ get_dimensions() const {
 //               rectangle within its GraphicsOutput.  This number
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegion::
+INLINE PN_stdfloat DisplayRegion::
 get_left() const {
   CDReader cdata(_cycler);
   return cdata->_dimensions[0];
@@ -87,7 +87,7 @@ get_left() const {
 //               rectangle within its GraphicsOutput.  This number
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegion::
+INLINE PN_stdfloat DisplayRegion::
 get_right() const {
   CDReader cdata(_cycler);
   return cdata->_dimensions[1];
@@ -100,7 +100,7 @@ get_right() const {
 //               the rectangle within its GraphicsOutput.  This 
 //               number will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegion::
+INLINE PN_stdfloat DisplayRegion::
 get_bottom() const {
   CDReader cdata(_cycler);
   return cdata->_dimensions[2];
@@ -113,7 +113,7 @@ get_bottom() const {
 //               rectangle within its GraphicsOutput.  This number
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegion::
+INLINE PN_stdfloat DisplayRegion::
 get_top() const {
   CDReader cdata(_cycler);
   return cdata->_dimensions[3];
@@ -129,8 +129,8 @@ get_top() const {
 //               whole screen.
 ////////////////////////////////////////////////////////////////////
 INLINE void DisplayRegion::
-set_dimensions(float l, float r, float b, float t) {
-  set_dimensions(LVecBase4f(l, r, b, t));
+set_dimensions(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t) {
+  set_dimensions(LVecBase4(l, r, b, t));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -191,9 +191,28 @@ get_sort() const {
 //               set_stereo_channel().
 ////////////////////////////////////////////////////////////////////
 INLINE Lens::StereoChannel DisplayRegion::
-get_stereo_channel() {
+get_stereo_channel() const {
   CDReader cdata(_cycler);
   return cdata->_stereo_channel;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegion::get_tex_view_offset
+//       Access: Public
+//  Description: Returns the current texture view offset for this
+//               DisplayRegion.  This is normally set to zero.  If
+//               nonzero, it is used to select a particular view of
+//               any multiview textures that are rendered within this
+//               DisplayRegion.
+//
+//               For a StereoDisplayRegion, this is normally 0 for the
+//               left eye, and 1 for the right eye, to support stereo
+//               textures.
+////////////////////////////////////////////////////////////////////
+INLINE int DisplayRegion::
+get_tex_view_offset() const {
+  CDReader cdata(_cycler);
+  return cdata->_tex_view_offset;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -612,7 +631,7 @@ is_any_clear_active() const {
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
 INLINE void DisplayRegionPipelineReader::
-get_dimensions(float &l, float &r, float &b, float &t) const {
+get_dimensions(PN_stdfloat &l, PN_stdfloat &r, PN_stdfloat &b, PN_stdfloat &t) const {
   l = _cdata->_dimensions[0];
   r = _cdata->_dimensions[1];
   b = _cdata->_dimensions[2];
@@ -626,7 +645,7 @@ get_dimensions(float &l, float &r, float &b, float &t) const {
 //               rectangle within its GraphicsOutput.  These numbers
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE const LVecBase4f &DisplayRegionPipelineReader::
+INLINE const LVecBase4 &DisplayRegionPipelineReader::
 get_dimensions() const {
   return _cdata->_dimensions;
 }
@@ -638,7 +657,7 @@ get_dimensions() const {
 //               rectangle within its GraphicsOutput.  This number
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegionPipelineReader::
+INLINE PN_stdfloat DisplayRegionPipelineReader::
 get_left() const {
   return _cdata->_dimensions[0];
 }
@@ -650,7 +669,7 @@ get_left() const {
 //               rectangle within its GraphicsOutput.  This number
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegionPipelineReader::
+INLINE PN_stdfloat DisplayRegionPipelineReader::
 get_right() const {
   return _cdata->_dimensions[1];
 }
@@ -662,7 +681,7 @@ get_right() const {
 //               the rectangle within its GraphicsOutput.  This 
 //               number will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegionPipelineReader::
+INLINE PN_stdfloat DisplayRegionPipelineReader::
 get_bottom() const {
   return _cdata->_dimensions[2];
 }
@@ -674,7 +693,7 @@ get_bottom() const {
 //               rectangle within its GraphicsOutput.  This number
 //               will be in the range [0..1].
 ////////////////////////////////////////////////////////////////////
-INLINE float DisplayRegionPipelineReader::
+INLINE PN_stdfloat DisplayRegionPipelineReader::
 get_top() const {
   return _cdata->_dimensions[3];
 }
@@ -734,8 +753,26 @@ get_sort() const {
 //               set_stereo_channel().
 ////////////////////////////////////////////////////////////////////
 INLINE Lens::StereoChannel DisplayRegionPipelineReader::
-get_stereo_channel() {
+get_stereo_channel() const {
   return _cdata->_stereo_channel;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DisplayRegionPipelineReader::get_tex_view_offset
+//       Access: Public
+//  Description: Returns the current texture view offset for this
+//               DisplayRegion.  This is normally set to zero.  If
+//               nonzero, it is used to select a particular view of
+//               any multiview textures that are rendered within this
+//               DisplayRegion.
+//
+//               For a StereoDisplayRegion, this is normally 0 for the
+//               left eye, and 1 for the right eye, to support stereo
+//               textures.
+////////////////////////////////////////////////////////////////////
+INLINE int DisplayRegionPipelineReader::
+get_tex_view_offset() {
+  return _cdata->_tex_view_offset;
 }
 
 ////////////////////////////////////////////////////////////////////

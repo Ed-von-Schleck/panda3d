@@ -186,6 +186,7 @@ get() {
 ////////////////////////////////////////////////////////////////////
 CPPPreprocessor::
 CPPPreprocessor() {
+  _noangles = false;
   _state = S_eof;
   _paren_nesting = 0;
   _angle_bracket_found = false;
@@ -1375,7 +1376,12 @@ handle_include_directive(const string &args, int first_line,
       }
     } else if (expr[0] == '<' && expr[expr.size() - 1] == '>') {
       filename = expr.substr(1, expr.size() - 2);
-      angle_quotes = true;
+      if (!_noangles) {
+        // If _noangles is true, we don't make a distinction between
+        // angle brackets and quote marks--all #include statements are
+        // treated the same, as if they used quote marks.
+        angle_quotes = true;
+      }
       okflag = true;
 
       if (_files.size() == 1) {
@@ -1396,7 +1402,6 @@ handle_include_directive(const string &args, int first_line,
   CPPFile::Source source = CPPFile::S_none;
 
   if (okflag) {
-
     found_file = false;
 
     // Search the current directory.
@@ -1562,12 +1567,27 @@ get_identifier(int c) {
   CPPFile first_file = get_file();
   int first_line = get_line_number();
   int first_col = get_col_number();
+
   string name(1, (char)c);
 
   c = get();
   while (c != EOF && (isalnum(c) || c == '_')) {
     name += c;
     c = get();
+  }
+  if (c == '\'' || c == '"') {
+    // This is actually a wide-character or wide-string literal or
+    // some such: a string with an alphanumeric prefix.  We don't
+    // necessarily try to parse it correctly; for most purposes, we
+    // don't care.
+    CPPToken token(0);
+    if (c == '\'') {
+      token = get_quoted_char(c);
+    } else {
+      token = get_quoted_string(c);
+    }
+    token._lloc.first_column = first_col;
+    return token;
   }
 
   _last_c = c;

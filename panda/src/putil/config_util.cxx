@@ -60,6 +60,19 @@ ConfigVariableEnum<BamEnums::BamEndian> bam_endian
           "may set it to \"littleendian\" or \"bigendian\" to target a "
           "particular platform."));
 
+ConfigVariableBool bam_stdfloat_double
+("bam-stdfloat-double", 
+#ifdef STDFLOAT_DOUBLE
+ true,
+#else
+ false,
+#endif
+ PRC_DESC("The default width of floating-point numbers to write to a bam "
+          "file.  Set this true to force doubles (64-bit floats), or false "
+          "to force sinles (32-bit floats).  The default is whichever width "
+          "Panda has been compiled to use natively.  Normally, this setting "
+          "should not be changed from the default."));
+
 ConfigVariableEnum<BamEnums::BamTextureMode> bam_texture_mode
 ("bam-texture-mode", BamEnums::BTM_relative,
  PRC_DESC("Set this to specify how textures should be written into Bam files."
@@ -132,6 +145,20 @@ ConfigVariableBool preload_simple_textures
           "of gsg::set_incomplete_render() to load textures on-the-fly "
           "in a sub-thread.  It's not generally necessary if you are "
           "loading bam files that were generated via egg2bam."));
+
+ConfigVariableBool cache_check_timestamps
+("cache-check-timestamps", true,
+ PRC_DESC("Set this true to check the timestamps on disk (when possible) "
+          "before reloading a file from the in-memory cache, e.g. via ModelPool, "
+          "TexturePool, etc.  When this is false, a model or texture "
+          "that was previously loaded and is still found in the ModelPool is "
+          "immediately returned without consulting the disk, even if the "
+          "file on disk has recently changed.  When this is true, the file "
+          "on disk is always checked to ensure its timestamp has not "
+          "recently changed; and if it has, the in-memory cache is automatically "
+          "invalidated and the file is reloaded from disk.  This is not related "
+          "to on-disk caching via model-cache-dir, which always checks the "
+          "timestamps."));
 
 ////////////////////////////////////////////////////////////////////
 //     Function: init_libputil

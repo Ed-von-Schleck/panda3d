@@ -137,8 +137,6 @@ WebcamVideoCursorV4L(WebcamVideoV4L *src) : MovieVideoCursor(src) {
   _can_seek = false;
   _can_seek_fast = false;
   _aborted = false;
-  _last_start = -1.0;
-  _next_start = 0.0;
   _streaming = true;
   _ready = false;
   _format = (struct v4l2_format *) malloc(sizeof(struct v4l2_format));
@@ -308,33 +306,34 @@ WebcamVideoCursorV4L::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: WebcamVideoCursorV4L::fetch_into_buffer
+//     Function: WebcamVideoCursorV4L::fetch_buffer
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-void WebcamVideoCursorV4L::
-fetch_into_buffer(double time, unsigned char *block, bool bgra) {
+PT(MovieVideoCursor::Buffer) WebcamVideoCursorV4L::
+fetch_buffer() {
   if (!_ready) {
-    return;
+    return NULL;
   }
 
+  PT(Buffer) buffer = get_standard_buffer();
+  unsigned char *block = buffer->_block;
   struct v4l2_buffer vbuf;
   memset(&vbuf, 0, sizeof vbuf);
   vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   vbuf.memory = V4L2_MEMORY_MMAP;
   if (-1 == ioctl(_fd, VIDIOC_DQBUF, &vbuf) && errno != EIO) {
     vision_cat.error() << "Failed to dequeue buffer!\n";
-    return;
+    return NULL;
   }
-  nassertv(vbuf.index < _bufcount);
+  nassertr(vbuf.index < _bufcount, NULL);
   size_t bufsize = _buflens[vbuf.index];
   size_t old_bpl = _format->fmt.pix.bytesperline;
-  size_t new_bpl = bgra ? _size_x * 4 : _size_x * 3;
+  size_t new_bpl = _size_x * 3;
   unsigned char *buf = (unsigned char *) _buffers[vbuf.index];
 
   if (_format->fmt.pix.pixelformat == V4L2_PIX_FMT_MJPEG) {
 #ifdef HAVE_JPEG
-    nassertv(!bgra);
     struct my_error_mgr jerr;
     _cinfo->err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = my_error_exit;
@@ -385,38 +384,20 @@ fetch_into_buffer(double time, unsigned char *block, bool bgra) {
 
     // Swap red / blue
     unsigned char ex;
-    if (bgra) {
-      for (size_t i = 0; i < new_bpl * _size_y; i += 4) {
-        ex = block[i];
-        block[i] = block[i + 2];
-        block[i + 2] = ex;
-      }
-    } else {
-      for (size_t i = 0; i < new_bpl * _size_y; i += 3) {
-        ex = block[i];
-        block[i] = block[i + 2];
-        block[i + 2] = ex;
-      }
+    for (size_t i = 0; i < new_bpl * _size_y; i += 3) {
+      ex = block[i];
+      block[i] = block[i + 2];
+      block[i + 2] = ex;
     }
 #else
-    nassertv(false); // Not compiled with JPEG support
+    nassertr(false, NULL); // Not compiled with JPEG support
 #endif
   } else {
-    if (bgra) {
-      for (size_t row = 0; row < _size_y; ++row) {
-        size_t c = 0;
-        for (size_t i = 0; i < old_bpl; i += 4) {
-          yuyv_to_rgbargba(block + (_size_y - row - 1) * new_bpl + c, buf + row * old_bpl + i);
-          c += 8;
-        }
-      }
-    } else {
-      for (size_t row = 0; row < _size_y; ++row) {
-        size_t c = 0;
-        for (size_t i = 0; i < old_bpl; i += 4) {
-          yuyv_to_rgbrgb(block + (_size_y - row - 1) * new_bpl + c, buf + row * old_bpl + i);
-          c += 6;
-        }
+    for (size_t row = 0; row < _size_y; ++row) {
+      size_t c = 0;
+      for (size_t i = 0; i < old_bpl; i += 4) {
+        yuyv_to_rgbrgb(block + (_size_y - row - 1) * new_bpl + c, buf + row * old_bpl + i);
+        c += 6;
       }
     }
   }
@@ -424,6 +405,8 @@ fetch_into_buffer(double time, unsigned char *block, bool bgra) {
   if (-1 == ioctl(_fd, VIDIOC_QBUF, &vbuf)) {
     vision_cat.error() << "Failed to exchange buffer with driver!\n";
   }
+
+  return buffer;
 }
 
 #endif

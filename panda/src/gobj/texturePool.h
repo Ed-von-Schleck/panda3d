@@ -41,25 +41,25 @@ class EXPCL_PANDA_GOBJ TexturePool {
 PUBLISHED:
   INLINE static bool has_texture(const Filename &filename);
   INLINE static bool verify_texture(const Filename &filename);
-  INLINE static Texture *load_texture(const Filename &filename, 
-                                      int primary_file_num_channels = 0,
-                                      bool read_mipmaps = false,
-                                      const LoaderOptions &options = LoaderOptions());
-  INLINE static Texture *load_texture(const Filename &filename,
-                                      const Filename &alpha_filename, 
-                                      int primary_file_num_channels = 0,
-                                      int alpha_file_channel = 0,
-                                      bool read_mipmaps = false,
-                                      const LoaderOptions &options = LoaderOptions());
-  INLINE static Texture *load_3d_texture(const Filename &filename_pattern,
-                                         bool read_mipmaps = false,
-                                         const LoaderOptions &options = LoaderOptions());
-  INLINE static Texture *load_2d_texture_array(const Filename &filename_pattern,
+  BLOCKING INLINE static Texture *load_texture(const Filename &filename, 
+                                               int primary_file_num_channels = 0,
                                                bool read_mipmaps = false,
                                                const LoaderOptions &options = LoaderOptions());
-  INLINE static Texture *load_cube_map(const Filename &filename_pattern,
-                                       bool read_mipmaps = false,
-                                       const LoaderOptions &options = LoaderOptions());
+  BLOCKING INLINE static Texture *load_texture(const Filename &filename,
+                                               const Filename &alpha_filename, 
+                                               int primary_file_num_channels = 0,
+                                               int alpha_file_channel = 0,
+                                               bool read_mipmaps = false,
+                                               const LoaderOptions &options = LoaderOptions());
+  BLOCKING INLINE static Texture *load_3d_texture(const Filename &filename_pattern,
+                                                  bool read_mipmaps = false,
+                                                  const LoaderOptions &options = LoaderOptions());
+  BLOCKING INLINE static Texture *load_2d_texture_array(const Filename &filename_pattern,
+                                                        bool read_mipmaps = false,
+                                                        const LoaderOptions &options = LoaderOptions());
+  BLOCKING INLINE static Texture *load_cube_map(const Filename &filename_pattern,
+                                                bool read_mipmaps = false,
+                                                const LoaderOptions &options = LoaderOptions());
 
   INLINE static Texture *get_normalization_cube_map(int size);
   INLINE static Texture *get_alpha_scale_map();
@@ -81,16 +81,16 @@ PUBLISHED:
   INLINE static void clear_fake_texture_image();
   INLINE static bool has_fake_texture_image();
   INLINE static const Filename &get_fake_texture_image();
+  INLINE static PT(Texture) make_texture(const string &extension);
 
   static void write(ostream &out);
 
 public:
-  typedef PT(Texture) MakeTextureFunc();
+  typedef Texture::MakeTextureFunc MakeTextureFunc;
   void register_texture_type(MakeTextureFunc *func, const string &extensions);
   void register_filter(TexturePoolFilter *filter);
   
   MakeTextureFunc *get_texture_type(const string &extension) const;
-  PT(Texture) make_texture(const string &extension) const;
   void write_texture_types(ostream &out, int indent_level) const;
 
   static TexturePool *get_global_ptr();
@@ -128,8 +128,10 @@ private:
   void ns_list_contents(ostream &out) const;
   Texture *ns_find_texture(const string &name) const;
   TextureCollection ns_find_all_textures(const string &name) const;
+  PT(Texture) ns_make_texture(const string &extension) const;
 
-  void resolve_filename(Filename &new_filename, const Filename &orig_filename);
+  void resolve_filename(Filename &new_filename, const Filename &orig_filename,
+                        bool read_mipmaps, const LoaderOptions &options);
 
   void try_load_cache(PT(Texture) &tex, BamCache *cache, 
                       const Filename &filename, PT(BamCacheRecord) &record, 

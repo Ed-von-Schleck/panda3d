@@ -16,6 +16,8 @@
 #include "p3d_plugin_config.h"
 #include "p3d_lock.h"
 #include "ppBrowserObject.h"
+#include "wstring_encode.h"
+#include "find_root_dir.h"
 
 #ifdef _WIN32
 #include <shlobj.h>
@@ -90,7 +92,13 @@ open_logfile() {
 
       logfile.close();
       logfile.clear();
+#ifdef _WIN32
+      wstring log_pathname_w;
+      string_to_wstring(log_pathname_w, log_pathname);
+      logfile.open(log_pathname_w.c_str(), ios::out | ios::trunc);
+#else
       logfile.open(log_pathname.c_str(), ios::out | ios::trunc);
+#endif  // _WIN32
       logfile.setf(ios::unitbuf);
     }
 
@@ -108,9 +116,9 @@ open_logfile() {
 //               get the mimetypes and extensions this plugin is
 //               supposed to handle.
 ////////////////////////////////////////////////////////////////////
-char*
+const char*
 NP_GetMIMEDescription(void) {
-  return (char*) "application/x-panda3d:p3d:Panda3D applet;";
+  return (const char*) "application/x-panda3d:p3d:Panda3D applet;";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -163,7 +171,7 @@ NP_Initialize(NPNetscapeFuncs *browserFuncs,
 
   // open_logfile() also assigns global_root_dir.
   open_logfile();
-  nout << "initializing\n";
+  nout << "Initializing Panda3D plugin version " << P3D_PLUGIN_VERSION_STR << "\n";
 
   nout << "browserFuncs = " << browserFuncs << "\n";
 
@@ -177,12 +185,12 @@ NP_Initialize(NPNetscapeFuncs *browserFuncs,
 
   int browser_major = (browser->version >> 8) && 0xff;
   int browser_minor = browser->version & 0xff;
-  nout << "Browser version " << browser_major << "." << browser_minor << "\n";
+  nout << "Browser NPAPI version " << browser_major << "." << browser_minor << "\n";
 
   int expected_major = NP_VERSION_MAJOR;
   int expected_minor = NP_VERSION_MINOR;
 
-  nout << "Plugin compiled with version "
+  nout << "Plugin compiled with NPAPI version "
        << expected_major << "." << expected_minor << "\n";
 
   has_plugin_thread_async_call = false;
@@ -269,7 +277,7 @@ NP_GetEntryPoints(NPPluginFuncs *pluginFuncs) {
 NPError OSCALL
 NP_Shutdown(void) {
   nout << "shutdown\n";
-  unload_plugin();
+  unload_plugin(nout);
   PPBrowserObject::clear_class_definition();
 
   // Not clear whether there's a return value or not.  Some versions
@@ -562,19 +570,34 @@ NPP_GetValue(NPP instance, NPPVariable variable, void *value) {
       *(NPObject **)value = obj;
       return NPERR_NO_ERROR;
     }
+
   } else if (variable == NPPVpluginNeedsXEmbed) {
-    // We'll say yes if the browser supports it.
-    // This is necessary to support Chromium.
-    //NPBool supports_xembed = false;
-    //NPError err = browser->getvalue(instance, NPNVSupportsXEmbedBool, &supports_xembed);
-    //if (err != NPERR_NO_ERROR) {
-    //  supports_xembed = false;
-    //}
-    // At the moment, setting it to true doesn't work
-    // at all on Linux.  We'll have to fix that before
-    // we support Chromium, I suppose.
-    *((NPBool *)value) = false;
+    // If we have Gtk2 available, we can use it to support the XEmbed
+    // protocol, which Chromium (at least) requires.
+
+    // In this case, we'll say we can do it, if the browser supports
+    // it.  (Though probably the browser wouldn't be asking if it
+    // couldn't.)
+
+    NPBool supports_xembed = false;
+    NPError err = browser->getvalue(instance, NPNVSupportsXEmbedBool, &supports_xembed);
+    if (err != NPERR_NO_ERROR) {
+      supports_xembed = false;
+    }
+    nout << "browser supports_xembed: " << (supports_xembed != 0) << "\n";
+#ifdef HAVE_GTK
+    bool plugin_supports = true;
+#else
+    bool plugin_supports = false;
+    supports_xembed = false;
+#endif  // HAVE_GTK
+    nout << "plugin supports_xembed: " << plugin_supports << "\n";
+
+    inst->set_xembed(supports_xembed != 0);
+    *(NPBool *)value = supports_xembed;
+
     return NPERR_NO_ERROR;
+
   } else {
     return NP_GetValue(NULL, variable, value);
   }

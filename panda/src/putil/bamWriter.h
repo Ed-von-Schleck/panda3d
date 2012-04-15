@@ -72,10 +72,11 @@
 ////////////////////////////////////////////////////////////////////
 class EXPCL_PANDA_PUTIL BamWriter : public BamEnums {
 PUBLISHED:
-  BamWriter(DatagramSink *target = NULL, const Filename &name = "");
+  BamWriter(DatagramSink *target = NULL);
   ~BamWriter();
 
   void set_target(DatagramSink *target);
+  INLINE DatagramSink *get_target();
 
   bool init();
   INLINE const Filename &get_filename() const;
@@ -84,6 +85,7 @@ PUBLISHED:
   void flush();
 
   INLINE BamEndian get_file_endian() const;
+  INLINE bool get_file_stdfloat_double() const;
 
   INLINE BamTextureMode get_file_texture_mode() const;
   INLINE void set_file_texture_mode(BamTextureMode file_texture_mode);
@@ -94,6 +96,10 @@ public:
   void consider_update(const TypedWritable *obj);
 
   void write_pointer(Datagram &packet, const TypedWritable *dest);
+
+  void write_file_data(SubfileInfo &result, const Filename &filename);
+  void write_file_data(SubfileInfo &result, const SubfileInfo &source);
+
   void write_cdata(Datagram &packet, const PipelineCyclerBase &cycler);
   void write_cdata(Datagram &packet, const PipelineCyclerBase &cycler,
                    void *extra_data);
@@ -108,10 +114,8 @@ private:
   int enqueue_object(const TypedWritable *object);
   bool flush_queue();
 
-  // This is the filename of the BAM, or null string if not in a file.
-  Filename _filename;
-
   BamEndian _file_endian;
+  bool _file_stdfloat_double;
   BamTextureMode _file_texture_mode;
 
   // This is the set of all TypeHandles already written.

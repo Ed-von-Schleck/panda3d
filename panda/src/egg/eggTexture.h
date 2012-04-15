@@ -106,6 +106,7 @@ PUBLISHED:
     ET_gloss,
     ET_height,
     ET_selector,
+    ET_normal_gloss,
   };
   enum CombineMode {
     CM_unspecified,
@@ -231,15 +232,15 @@ PUBLISHED:
   INLINE bool has_priority() const;
   INLINE int get_priority() const;
 
-  INLINE void set_color(const Colorf &color);
+  INLINE void set_color(const LColor &color);
   INLINE void clear_color();
   INLINE bool has_color() const;
-  INLINE const Colorf &get_color() const;
+  INLINE const LColor &get_color() const;
 
-  INLINE void set_border_color(const Colorf &border_color);
+  INLINE void set_border_color(const LColor &border_color);
   INLINE void clear_border_color();
   INLINE bool has_border_color() const;
-  INLINE const Colorf &get_border_color() const;
+  INLINE const LColor &get_border_color() const;
 
   INLINE void set_uv_name(const string &uv_name);
   INLINE void clear_uv_name();
@@ -268,6 +269,14 @@ PUBLISHED:
   INLINE void clear_alpha_file_channel();
   INLINE bool has_alpha_file_channel() const;
   INLINE int get_alpha_file_channel() const;
+
+  INLINE void set_multiview(bool multiview);
+  INLINE bool get_multiview() const;
+
+  INLINE void set_num_views(int num_views);
+  INLINE void clear_num_views();
+  INLINE bool has_num_views() const;
+  INLINE int get_num_views() const;
 
   INLINE void set_read_mipmaps(bool read_mipmaps);
   INLINE bool get_read_mipmaps() const;
@@ -310,6 +319,7 @@ private:
     F_has_rgb_scale          = 0x0100,
     F_has_alpha_scale        = 0x0200,
     F_has_border_color       = 0x0400,
+    F_has_num_views          = 0x0800,
   };
 
   TextureType _texture_type;
@@ -320,12 +330,14 @@ private:
   int _anisotropic_degree;
   EnvType _env_type;
   bool _saved_result;
+  bool _multiview;
+  int _num_views;
   TexGen _tex_gen;
   QualityLevel _quality_level;
   string _stage_name;
   int _priority;
-  Colorf _color;
-  Colorf _border_color;
+  LColor _color;
+  LColor _border_color;
   string _uv_name;
   int _rgb_scale;
   int _alpha_scale;

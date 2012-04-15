@@ -19,18 +19,10 @@
 #include "load_dso.h"
 #include "filename.h"
 #include "pystub.h"
+#include "panda_getopt.h"
+#include "preprocess_argv.h"
 
 #include <stdlib.h>
-
-#ifndef HAVE_GETOPT
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
-
-
 
 static ostream &
 indent(ostream &out, int indent_level) {
@@ -525,7 +517,7 @@ usage() {
 }
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
   extern char *optarg;
   extern int optind;
   const char *optstr = "p:ftqh";
@@ -533,6 +525,7 @@ main(int argc, char *argv[]) {
   bool all_functions = false;
   bool all_types = false;
   bool quick_load = false;
+  preprocess_argv(argc, argv);
   int flag = getopt(argc, argv, optstr);
 
   while (flag != EOF) {

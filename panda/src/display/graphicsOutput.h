@@ -35,6 +35,12 @@
 #include "pvector.h"
 #include "weakPointerTo.h"
 #include "nodePath.h"
+#include "cycleData.h"
+#include "cycleDataLockedReader.h"
+#include "cycleDataReader.h"
+#include "cycleDataWriter.h"
+#include "pipelineCycler.h"
+#include "updateSeq.h"
 
 class PNMImage;
 class GraphicsEngine;
@@ -118,15 +124,19 @@ PUBLISHED:
   INLINE int get_sbs_right_y_size() const;
   INLINE bool has_size() const;
   INLINE bool is_valid() const;
+  INLINE bool is_nonzero_size() const;
 
   void set_active(bool active);
   virtual bool is_active() const;
 
-  INLINE void set_one_shot(bool one_shot);
-  INLINE bool get_one_shot() const;
+  void set_one_shot(bool one_shot);
+  bool get_one_shot() const;
 
   void set_inverted(bool inverted);
   INLINE bool get_inverted() const;
+
+  INLINE void set_swap_eyes(bool swap_eyes);
+  INLINE bool get_swap_eyes() const;
 
   INLINE void set_red_blue_stereo(bool red_blue_stereo,
                                   unsigned int left_eye_color_mask,
@@ -137,17 +147,17 @@ PUBLISHED:
 
   void set_side_by_side_stereo(bool side_by_side_stereo);
   void set_side_by_side_stereo(bool side_by_side_stereo,
-                               const LVecBase4f &sbs_left_dimensions,
-                               const LVecBase4f &sbs_right_dimensions);
+                               const LVecBase4 &sbs_left_dimensions,
+                               const LVecBase4 &sbs_right_dimensions);
   INLINE bool get_side_by_side_stereo() const;
-  INLINE const LVecBase4f &get_sbs_left_dimensions() const;
-  INLINE const LVecBase4f &get_sbs_right_dimensions() const;
+  INLINE const LVecBase4 &get_sbs_left_dimensions() const;
+  INLINE const LVecBase4 &get_sbs_right_dimensions() const;
 
   INLINE const FrameBufferProperties &get_fb_properties() const;
   INLINE bool is_stereo() const;
 
   INLINE void clear_delete_flag();
-  INLINE bool get_delete_flag() const;
+  bool get_delete_flag() const;
 
   virtual void set_sort(int sort);
   INLINE int get_sort() const;
@@ -159,14 +169,14 @@ PUBLISHED:
   INLINE void trigger_copy();
   
   INLINE DisplayRegion *make_display_region();
-  INLINE DisplayRegion *make_display_region(float l, float r, float b, float t);
-  DisplayRegion *make_display_region(const LVecBase4f &dimensions);
+  INLINE DisplayRegion *make_display_region(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t);
+  DisplayRegion *make_display_region(const LVecBase4 &dimensions);
   INLINE DisplayRegion *make_mono_display_region();
-  INLINE DisplayRegion *make_mono_display_region(float l, float r, float b, float t);
-  DisplayRegion *make_mono_display_region(const LVecBase4f &dimensions);
+  INLINE DisplayRegion *make_mono_display_region(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t);
+  DisplayRegion *make_mono_display_region(const LVecBase4 &dimensions);
   INLINE StereoDisplayRegion *make_stereo_display_region();
-  INLINE StereoDisplayRegion *make_stereo_display_region(float l, float r, float b, float t);
-  StereoDisplayRegion *make_stereo_display_region(const LVecBase4f &dimensions);
+  INLINE StereoDisplayRegion *make_stereo_display_region(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t);
+  StereoDisplayRegion *make_stereo_display_region(const LVecBase4 &dimensions);
   bool remove_display_region(DisplayRegion *display_region);
   void remove_all_display_regions();
 
@@ -203,9 +213,11 @@ PUBLISHED:
   virtual bool share_depth_buffer(GraphicsOutput *graphics_output);
   virtual void unshare_depth_buffer();
 
+  virtual bool get_supports_render_texture() const;
+
 public:
   // These are not intended to be called directly by the user.
-  INLINE bool flip_ready() const;
+  virtual bool flip_ready() const;
 
   INLINE bool operator < (const GraphicsOutput &other) const;
 
@@ -246,12 +258,15 @@ public:
 protected:
   virtual void pixel_factor_changed();
   void prepare_for_deletion();
+  void promote_to_copy_texture();
   bool copy_to_textures();
   
   INLINE void begin_frame_spam(FrameMode mode);
   INLINE void end_frame_spam(FrameMode mode);
   INLINE void clear_cube_map_selection();
   INLINE void trigger_flip();
+
+  class CData;
 
 private:
   PT(GeomVertexData) create_texture_card_vdata(int x, int y);
@@ -262,17 +277,11 @@ private:
   INLINE void win_display_regions_changed();
 
   INLINE void determine_display_regions() const;
-  void do_determine_display_regions();
+  void do_determine_display_regions(CData *cdata);
 
   static unsigned int parse_color_mask(const string &word);
 
 protected:
-  class RenderTexture {
-  public:
-    PT(Texture) _texture;
-    RenderTexturePlane _plane;
-    RenderTextureMode _rtm_mode;
-  };
   PT(GraphicsStateGuardian) _gsg;
   GraphicsEngine *_engine;
   PT(GraphicsPipe) _pipe;
@@ -280,12 +289,19 @@ protected:
   FrameBufferProperties _fb_properties;
   bool _stereo;
   string _name;
-  pvector<RenderTexture> _textures;
   bool _flip_ready;
   int _cube_map_index;
   DisplayRegion *_cube_map_dr;
   PT(Geom) _texture_card;
   bool _trigger_copy;
+
+  class RenderTexture {
+  public:
+    PT(Texture) _texture;
+    RenderTexturePlane _plane;
+    RenderTextureMode _rtm_mode;
+  };
+  typedef pvector<RenderTexture> RenderTextures;
   
 private:
   int _sort;
@@ -294,21 +310,20 @@ private:
   unsigned int _internal_sort_index;
 
 protected:
-  bool _active;
-  bool _one_shot;
   bool _inverted;
+  bool _swap_eyes;
   bool _red_blue_stereo;
   unsigned int _left_eye_color_mask;
   unsigned int _right_eye_color_mask;
   bool _side_by_side_stereo;
-  LVecBase4f _sbs_left_dimensions;
-  LVecBase4f _sbs_right_dimensions;
+  LVecBase4 _sbs_left_dimensions;
+  LVecBase4 _sbs_right_dimensions;
   bool _delete_flag;
 
   // These weak pointers are used to keep track of whether the
-  // buffer's bound Texture has been deleted or not.  Until they have,
-  // we don't auto-close the buffer (since that would deallocate the
-  // memory associated with the texture).
+  // buffer's bound Textures have been deleted or not.  Until they
+  // have, we don't auto-close the buffer (since that would deallocate
+  // the memory associated with the texture).
   pvector<WPT(Texture)> _hold_textures;
   
 protected:
@@ -318,8 +333,31 @@ protected:
   typedef pvector< PT(DisplayRegion) > TotalDisplayRegions;
   TotalDisplayRegions _total_display_regions;
   typedef pvector<DisplayRegion *> ActiveDisplayRegions;
-  ActiveDisplayRegions _active_display_regions;
-  bool _display_regions_stale;
+
+  // This is the data that is associated with the GraphicsOutput that
+  // needs to be cycled every frame.  Mostly we don't cycle this data,
+  // but we do cycle the textures list, and the active flag.
+  class EXPCL_PANDA_DISPLAY CData : public CycleData {
+  public:
+    CData();
+    CData(const CData &copy);
+
+    virtual CycleData *make_copy() const;
+    virtual TypeHandle get_parent_type() const {
+      return GraphicsOutput::get_class_type();
+    }
+
+    RenderTextures _textures;
+    UpdateSeq _textures_seq;
+    bool _active;
+    int _one_shot_frame;
+    ActiveDisplayRegions _active_display_regions;
+    bool _active_display_regions_stale;
+  };
+  PipelineCycler<CData> _cycler;
+  typedef CycleDataLockedReader<CData> CDLockedReader;
+  typedef CycleDataReader<CData> CDReader;
+  typedef CycleDataWriter<CData> CDWriter;
 
 protected:
   int _creation_flags;
@@ -327,6 +365,7 @@ protected:
   int _y_size;
   bool _has_size;
   bool _is_valid;
+  bool _is_nonzero_size;
 
   static PStatCollector _make_current_pcollector;
   static PStatCollector _copy_texture_pcollector;

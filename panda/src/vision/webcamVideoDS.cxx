@@ -63,7 +63,7 @@
 
 // NOTE:  there is a problem with dxtrans.h missing from newer Microsoft DirectX SDKs (including March 2009)
 // See "dxtrans.h missing in Microsoft DirectX SDK" at
-// http://social.msdn.microsoft.com/forums/en-US/windowssdk/thread/ed097d2c-3d68-4f48-8448-277eaaf68252/ for example.
+// http://social.msdn.microsoft.com/forums/en-US/windowssdk/thread/ed097d2c-3d68-448-8448-277eaaf68252/ for example.
 // This header file is referenced only by qedit.h and not needed.
 // Solution:  add this pragma and these defines before the qedit.h inclusion:
 #pragma include_alias( "dxtrans.h", "qedit.h" )
@@ -136,7 +136,7 @@ class WebcamVideoCursorDS : public MovieVideoCursor
 public:
   WebcamVideoCursorDS(WebcamVideoDS *src);
   virtual ~WebcamVideoCursorDS();
-  virtual void fetch_into_buffer(double time, unsigned char *block, bool rgba);
+  virtual PT(Buffer) fetch_buffer();
 
 public:
   void cleanup();
@@ -589,8 +589,6 @@ WebcamVideoCursorDS(WebcamVideoDS *src) :
   _can_seek = false;
   _can_seek_fast = false;
   _aborted = false;
-  _last_start = -1.0;
-  _next_start = 0.0;
   _streaming = true;
   _buffer = new unsigned char[_size_x * _size_y * 3];
   _ready = false;
@@ -654,17 +652,18 @@ WebcamVideoCursorDS::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: WebcamVideoCursorDS::fetch_into_buffer
+//     Function: WebcamVideoCursorDS::fetch_buffer
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-void WebcamVideoCursorDS::
-fetch_into_buffer(double time, unsigned char *block, bool bgra) {
-
+PT(MovieVideoCursor::Buffer) WebcamVideoCursorDS::
+fetch_buffer() {
   if (!_ready) {
-    return;
+    return NULL;
   }
 
+  Buffer *buffer = get_standard_buffer();
+  unsigned char *block = buffer->_block;
 #ifdef LOCKING_MODE
   unsigned char *ptr;
   int pixels = _size_x * _size_y;
@@ -672,34 +671,17 @@ fetch_into_buffer(double time, unsigned char *block, bool bgra) {
   if (res == S_OK) {
     int size = _saved->GetActualDataLength();
     if (size == pixels * 3) {
-      if (bgra) {
-        for (int i=0; i<pixels; i++) {
-          block[i*4+0] = ptr[i*3+0];
-          block[i*4+1] = ptr[i*3+1];
-          block[i*4+2] = ptr[i*3+2];
-          block[i*4+3] = 255;
-        }
-      } else {
-        memcpy(block, ptr, pixels * 3);
-      }
+      memcpy(block, ptr, pixels * 3);
     }
   }
   _saved->Release();
 #else
   int pixels = _size_x * _size_y;
-  if (bgra) {
-    for (int i=0; i<pixels; i++) {
-      block[i*4+0] = _buffer[i*3+0];
-      block[i*4+1] = _buffer[i*3+1];
-      block[i*4+2] = _buffer[i*3+2];
-      block[i*4+3] = 255;
-    }
-  } else {
-    memcpy(block, _buffer, pixels * 3);
-  }
+  memcpy(block, _buffer, pixels * 3);
 #endif
 
   _ready = false;
+  return buffer;
 }
 
 

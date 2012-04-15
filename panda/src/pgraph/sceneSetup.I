@@ -27,6 +27,7 @@ SceneSetup() {
   _initial_state = RenderState::make_empty();
   _camera_transform = TransformState::make_identity();
   _world_transform = TransformState::make_identity();
+  _cs_transform = TransformState::make_identity();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -207,6 +208,25 @@ get_cull_center() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: SceneSetup::get_cull_bounds
+//       Access: Published
+//  Description: Returns the bounding volume that should be used to
+//               perform view-frustum culling (in the space of
+//               get_cull_center()).  This is normally the current
+//               lens' bounding volume, but it may be overridden with
+//               Camera::set_cull_bounds().
+////////////////////////////////////////////////////////////////////
+INLINE PT(BoundingVolume) SceneSetup::
+get_cull_bounds() const {
+  PT(BoundingVolume) bounds = _camera_node->get_cull_bounds();
+  if (bounds != (BoundingVolume *)NULL) {
+    return bounds;
+  }
+
+  return _lens->make_bounds();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: SceneSetup::set_initial_state
 //       Access: Published
 //  Description: Sets the initial state which is applied to all nodes
@@ -273,4 +293,26 @@ set_world_transform(const TransformState *world_transform) {
 INLINE const TransformState *SceneSetup::
 get_world_transform() const {
   return _world_transform;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: SceneSetup::set_cs_transform
+//       Access: Published
+//  Description: Specifies the transform from the camera's coordinate
+//               system to the GSG's internal coordinate system.
+////////////////////////////////////////////////////////////////////
+INLINE void SceneSetup::
+set_cs_transform(const TransformState *cs_transform) {
+  _cs_transform = cs_transform;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: SceneSetup::get_cs_transform
+//       Access: Published
+//  Description: Returns the transform from the camera's coordinate
+//               system to the GSG's internal coordinate system.
+////////////////////////////////////////////////////////////////////
+INLINE const TransformState *SceneSetup::
+get_cs_transform() const {
+  return _cs_transform;
 }

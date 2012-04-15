@@ -19,16 +19,8 @@
 #include "dcmsgtypes.h"
 #include "config_distributed.h"
 
-static const float smooth_node_epsilon = 0.01;
+static const PN_stdfloat smooth_node_epsilon = 0.01;
 static const double network_time_precision = 100.0;  // Matches ClockDelta.py
-
-CConnectionRepository *CDistributedSmoothNodeBase::_repository = NULL;
-bool CDistributedSmoothNodeBase::_is_ai;
-CHANNEL_TYPE CDistributedSmoothNodeBase::_ai_id;
-
-#ifdef HAVE_PYTHON
-PyObject *CDistributedSmoothNodeBase::_clock_delta = NULL;
-#endif
 
 ////////////////////////////////////////////////////////////////////
 //     Function: CDistributedSmoothNodeBase::Constructor
@@ -37,6 +29,14 @@ PyObject *CDistributedSmoothNodeBase::_clock_delta = NULL;
 ////////////////////////////////////////////////////////////////////
 CDistributedSmoothNodeBase::
 CDistributedSmoothNodeBase() {
+  _repository = NULL;
+  _is_ai = false;
+  _ai_id = 0;
+
+#ifdef HAVE_PYTHON
+  _clock_delta = NULL;
+#endif
+
   _currL[0] = 0;
   _currL[1] = 0;
 }
@@ -93,8 +93,8 @@ send_everything() {
 ////////////////////////////////////////////////////////////////////
 void CDistributedSmoothNodeBase::
 broadcast_pos_hpr_full() {
-  LPoint3f xyz = _node_path.get_pos();
-  LVecBase3f hpr = _node_path.get_hpr();
+  LPoint3 xyz = _node_path.get_pos();
+  LVecBase3 hpr = _node_path.get_hpr();
 
   int flags = 0;
 
@@ -200,8 +200,8 @@ broadcast_pos_hpr_full() {
 ////////////////////////////////////////////////////////////////////
 void CDistributedSmoothNodeBase::
 broadcast_pos_hpr_xyh() {
-  LPoint3f xyz = _node_path.get_pos();
-  LVecBase3f hpr = _node_path.get_hpr();
+  LPoint3 xyz = _node_path.get_pos();
+  LVecBase3 hpr = _node_path.get_hpr();
 
   int flags = 0;
 
@@ -252,7 +252,7 @@ broadcast_pos_hpr_xyh() {
 ////////////////////////////////////////////////////////////////////
 void CDistributedSmoothNodeBase::
 broadcast_pos_hpr_xy() {
-  LPoint3f xyz = _node_path.get_pos();
+  LPoint3 xyz = _node_path.get_pos();
 
   int flags = 0;
 
@@ -320,6 +320,7 @@ begin_send_update(DCPacker &packer, const string &field_name) {
 void CDistributedSmoothNodeBase::
 finish_send_update(DCPacker &packer) {
 #ifdef HAVE_PYTHON
+  nassertv(_clock_delta != NULL);
   PyObject *clock_delta = PyObject_GetAttrString(_clock_delta, "delta");
   nassertv(clock_delta != NULL);
   double delta = PyFloat_AsDouble(clock_delta);
@@ -340,6 +341,7 @@ finish_send_update(DCPacker &packer) {
   bool pack_ok = packer.end_pack();
   if (pack_ok) {
     Datagram dg(packer.get_data(), packer.get_length());
+    nassertv(_repository != NULL);
     _repository->send_datagram(dg);
 
   } else {

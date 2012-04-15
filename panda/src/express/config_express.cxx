@@ -23,8 +23,11 @@
 #include "virtualFileComposite.h"
 #include "virtualFileMount.h"
 #include "virtualFileMountMultifile.h"
+#include "virtualFileMountRamdisk.h"
 #include "virtualFileMountSystem.h"
 #include "virtualFileSimple.h"
+#include "fileReference.h"
+#include "temporaryFile.h"
 #include "pandaSystem.h"
 #include "numeric_types.h"
 #include "namable.h"
@@ -59,6 +62,15 @@ ConfigVariableBool keep_temporary_files
           "default) to delete these.  Mainly useful for debugging "
           "when the process goes wrong."));
 
+ConfigVariableBool multifile_always_binary
+("multifile-always-binary", false,
+ PRC_DESC("This is a temporary transition variable.  Set this true "
+          "to enable the old behavior for multifiles: all subfiles are "
+          "always added to and extracted from the multifile in binary mode.  "
+          "Set it false to enable the new behavior: subfiles may be added "
+          "or extracted in either binary or text mode, according to the "
+          "set_binary() or set_text() flag on the Filename."));
+
 ConfigVariableBool collect_tcp
 ("collect-tcp", false,
  PRC_DESC("Set this true to enable accumulation of several small consecutive "
@@ -89,15 +101,17 @@ init_libexpress() {
   Namable::init_type();
   NodeReferenceCount::init_type();
   ReferenceCount::init_type();
-  TextEncoder::init_type();
   TypedObject::init_type();
   TypedReferenceCount::init_type();
   VirtualFile::init_type();
   VirtualFileComposite::init_type();
   VirtualFileMount::init_type();
   VirtualFileMountMultifile::init_type();
+  VirtualFileMountRamdisk::init_type();
   VirtualFileMountSystem::init_type();
   VirtualFileSimple::init_type();
+  FileReference::init_type();
+  TemporaryFile::init_type();
 
   init_system_type_handles();
 

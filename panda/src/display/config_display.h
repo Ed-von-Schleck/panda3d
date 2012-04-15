@@ -62,6 +62,7 @@ extern EXPCL_PANDA_DISPLAY ConfigVariableString red_blue_stereo_colors;
 extern EXPCL_PANDA_DISPLAY ConfigVariableBool side_by_side_stereo;
 extern EXPCL_PANDA_DISPLAY ConfigVariableDouble sbs_left_dimensions;
 extern EXPCL_PANDA_DISPLAY ConfigVariableDouble sbs_right_dimensions;
+extern EXPCL_PANDA_DISPLAY ConfigVariableBool swap_eyes;
 extern EXPCL_PANDA_DISPLAY ConfigVariableBool default_stereo_camera;
 extern EXPCL_PANDA_DISPLAY ConfigVariableBool color_scale_via_lighting;
 extern EXPCL_PANDA_DISPLAY ConfigVariableBool alpha_scale_via_texture;
@@ -78,6 +79,7 @@ extern EXPCL_PANDA_DISPLAY ConfigVariableFilename cursor_filename;
 extern EXPCL_PANDA_DISPLAY ConfigVariableEnum<WindowProperties::ZOrder> z_order;
 extern EXPCL_PANDA_DISPLAY ConfigVariableString window_title;
 extern EXPCL_PANDA_DISPLAY ConfigVariableInt parent_window_handle;
+extern EXPCL_PANDA_DISPLAY ConfigVariableBool win_unexposed_draw;
 extern EXPCL_PANDA_DISPLAY ConfigVariableFilename subprocess_window;
 
 extern EXPCL_PANDA_DISPLAY ConfigVariableString framebuffer_mode;

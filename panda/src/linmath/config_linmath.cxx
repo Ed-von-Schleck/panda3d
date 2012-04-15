@@ -38,6 +38,12 @@ ConfigVariableBool temp_hpr_fix
           "to the other two.  Set this false if you need compatibility with "
           "Panda's old hpr calculations."));
 
+ConfigVariableBool no_singular_invert
+("no-singular-invert", false,
+ PRC_DESC("Set this true to make singular-invert warning messages generate an "
+          "assertion failure instead of just a warning (which can then be "
+          "trapped with assert-abort)."));
+
 ////////////////////////////////////////////////////////////////////
 //     Function: init_liblinmath
 //  Description: Initializes the library.  This must be called at
@@ -65,6 +71,8 @@ init_liblinmath() {
   LPoint4f::init_type();
   LMatrix3f::init_type();
   LMatrix4f::init_type();
+  UnalignedLVecBase4f::init_type();
+  UnalignedLMatrix4f::init_type();
 
   LVecBase2d::init_type();
   LVecBase3d::init_type();
@@ -77,6 +85,8 @@ init_liblinmath() {
   LPoint4d::init_type();
   LMatrix3d::init_type();
   LMatrix4d::init_type();
+  UnalignedLVecBase4d::init_type();
+  UnalignedLMatrix4d::init_type();
 
   LQuaternionf::init_type();
   LRotationf::init_type();

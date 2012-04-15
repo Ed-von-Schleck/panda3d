@@ -62,6 +62,8 @@ GraphicsWindow(GraphicsEngine *engine, GraphicsPipe *pipe,
   request_properties(win_prop);
 
   _window_event = "window-event";
+  _got_expose_event = false;
+  _unexposed_draw = win_unexposed_draw;
   set_pixel_zoom(pixel_zoom);
 }
 
@@ -184,7 +186,7 @@ request_properties(const WindowProperties &requested_properties) {
 bool GraphicsWindow::
 is_active() const {
   // Make this smarter?
-  return _active && _properties.get_open() && !_properties.get_minimized();
+  return GraphicsOutput::is_active() && _properties.get_open() && !_properties.get_minimized();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -851,6 +853,21 @@ system_changed_size(int x_size, int y_size) {
                                   y_size != _properties.get_y_size())) {
     set_size_and_recalc(x_size, y_size);
   }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsWindow::add_input_device
+//       Access: Protected
+//  Description: Adds a GraphicsWindowInputDevice to the vector.
+//               Returns the index of the new device.
+////////////////////////////////////////////////////////////////////
+int GraphicsWindow::
+add_input_device(const GraphicsWindowInputDevice &device) {
+  LightMutexHolder holder(_input_lock);
+  int index = (int)_input_devices.size();
+  _input_devices.push_back(device);
+  _input_devices.back().set_device_index(index);
+  return index;
 }
 
 ////////////////////////////////////////////////////////////////////

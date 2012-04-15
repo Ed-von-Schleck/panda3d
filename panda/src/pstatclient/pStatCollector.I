@@ -472,6 +472,7 @@ is_started(const PStatThread &thread) {
 ////////////////////////////////////////////////////////////////////
 INLINE void PStatCollector::
 start(const PStatThread &thread) {
+  nassertv(_client != NULL);
   _client->start(_index, thread._index);
 }
 
@@ -485,7 +486,7 @@ start(const PStatThread &thread) {
 //               a monotonically increasing series of time values.
 ////////////////////////////////////////////////////////////////////
 INLINE void PStatCollector::
-start(const PStatThread &thread, float as_of) {
+start(const PStatThread &thread, double as_of) {
   _client->start(_index, thread._index, as_of);
 }
 
@@ -509,7 +510,7 @@ stop(const PStatThread &thread) {
 //               a monotonically increasing series of time values.
 ////////////////////////////////////////////////////////////////////
 INLINE void PStatCollector::
-stop(const PStatThread &thread, float as_of) {
+stop(const PStatThread &thread, double as_of) {
   _client->stop(_index, thread._index, as_of);
 }
 

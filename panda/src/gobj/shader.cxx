@@ -29,7 +29,7 @@ Shader::ShaderTable Shader::_load_table;
 Shader::ShaderTable Shader::_make_table;
 Shader::ShaderCaps Shader::_default_caps;
 int Shader::_shaders_generated;
-ShaderUtilization Shader::_shader_utilization = SUT_UNSPECIFIED;
+ShaderUtilization Shader::_shader_utilization = SUT_unspecified;
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Shader::cp_report_error
@@ -405,6 +405,9 @@ cp_dependency(ShaderMatInput inp) {
   }
   if (inp == SMO_attr_colorscale) {
     dep |= SSD_colorscale;
+  }
+  if (inp == SMO_attr_fog || inp == SMO_attr_fogcolor) {
+    dep |= SSD_fog;
   }
   if ((inp == SMO_model_to_view)||
       (inp == SMO_view_to_model)) {
@@ -798,6 +801,28 @@ compile_parameter(const ShaderArgId        &arg_id,
       bind._piece = SMP_row3;
       bind._func = SMF_first;
       bind._part[0] = SMO_attr_colorscale;
+      bind._arg[0] = NULL;
+      bind._part[1] = SMO_identity;
+      bind._arg[1] = NULL;
+    } else if (pieces[1] == "fog") {
+      if (!cp_errchk_parameter_float(p,3,4)) {
+        return false;
+      }
+      bind._id = arg_id;
+      bind._piece = SMP_row3;
+      bind._func = SMF_first;
+      bind._part[0] = SMO_attr_fog;
+      bind._arg[0] = NULL;
+      bind._part[1] = SMO_identity;
+      bind._arg[1] = NULL;
+    } else if (pieces[1] == "fogcolor") {
+      if (!cp_errchk_parameter_float(p,3,4)) {
+        return false;
+      }
+      bind._id = arg_id;
+      bind._piece = SMP_row3;
+      bind._func = SMF_first;
+      bind._part[0] = SMO_attr_fogcolor;
       bind._arg[0] = NULL;
       bind._part[1] = SMO_identity;
       bind._arg[1] = NULL;
@@ -1360,6 +1385,7 @@ cg_compile_entry_point(const char *entry, const ShaderCaps &caps, ShaderType typ
     break;
 
   case ST_none:
+  default:
     active   = CG_PROFILE_UNKNOWN;
     ultimate = CG_PROFILE_UNKNOWN;
   };
@@ -1459,7 +1485,7 @@ cg_compile_shader(const ShaderCaps &caps) {
     }
   }
 
-  if ((_text->_separate && !_text->_geometry.empty()) || (!_text->_separate && _text->_shared.find("gshader") != -1)) {
+  if ((_text->_separate && !_text->_geometry.empty()) || (!_text->_separate && _text->_shared.find("gshader") != string::npos)) {
     _cg_gprogram = cg_compile_entry_point("gshader", caps, ST_geometry);
     if (_cg_gprogram == 0) {
       cg_release_resources();
@@ -1503,7 +1529,6 @@ cg_compile_shader(const ShaderCaps &caps) {
 ////////////////////////////////////////////////////////////////////
 bool Shader::
 cg_analyze_entry_point(CGprogram prog, ShaderType type) {
-  CGparameter parameter;
   bool success = true;
 
   cg_recurse_parameters(cgGetFirstParameter(prog, CG_PROGRAM),type,success);
@@ -1830,9 +1855,9 @@ cg_compile_for(const ShaderCaps &caps,
 ////////////////////////////////////////////////////////////////////
 Shader::
 Shader(CPT(ShaderFile) filename, CPT(ShaderFile) text, const ShaderLanguage &lang) :
-  _filename(filename),
-  _text(text),
   _error_flag(true),
+  _text(text),
+  _filename(filename),
   _parse(0),
   _loaded(false),
   _language(lang)

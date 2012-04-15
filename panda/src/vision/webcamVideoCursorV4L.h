@@ -37,7 +37,7 @@ class WebcamVideoCursorV4L : public MovieVideoCursor {
 public:
   WebcamVideoCursorV4L(WebcamVideoV4L *src);
   virtual ~WebcamVideoCursorV4L();
-  virtual void fetch_into_buffer(double time, unsigned char *block, bool rgba);
+  virtual PT(Buffer) fetch_buffer();
 
 private:
   int _fd;

@@ -47,7 +47,8 @@ dec(TVOLATILE AtomicAdjustPosixImpl::Integer &var) {
 //               delta to be negative.
 ////////////////////////////////////////////////////////////////////
 INLINE void AtomicAdjustPosixImpl::
-add(TVOLATILE AtomicAdjustPosixImpl::Integer &var, AtomicAdjustPosixImpl::Integer delta) {
+add(TVOLATILE AtomicAdjustPosixImpl::Integer &var, 
+    AtomicAdjustPosixImpl::Integer delta) {
   pthread_mutex_lock(&_mutex);
   var += delta;
   pthread_mutex_unlock(&_mutex);
@@ -60,7 +61,8 @@ add(TVOLATILE AtomicAdjustPosixImpl::Integer &var, AtomicAdjustPosixImpl::Intege
 //               returns the original value.
 ////////////////////////////////////////////////////////////////////
 INLINE AtomicAdjustPosixImpl::Integer AtomicAdjustPosixImpl::
-set(TVOLATILE AtomicAdjustPosixImpl::Integer &var, AtomicAdjustPosixImpl::Integer new_value) {
+set(TVOLATILE AtomicAdjustPosixImpl::Integer &var, 
+    AtomicAdjustPosixImpl::Integer new_value) {
   pthread_mutex_lock(&_mutex);
   Integer orig_value = var;
   var = new_value;
@@ -91,10 +93,11 @@ get(const TVOLATILE AtomicAdjustPosixImpl::Integer &var) {
 //  Description: Atomically changes the indicated variable and
 //               returns the original value.
 ////////////////////////////////////////////////////////////////////
-INLINE void *AtomicAdjustPosixImpl::
-set_ptr(void * TVOLATILE &var, void *new_value) {
+INLINE AtomicAdjustPosixImpl::Pointer AtomicAdjustPosixImpl::
+set_ptr(TVOLATILE AtomicAdjustPosixImpl::Pointer &var, 
+        AtomicAdjustPosixImpl::Pointer new_value) {
   pthread_mutex_lock(&_mutex);
-  void *orig_value = var;
+  Pointer orig_value = var;
   var = new_value;
   pthread_mutex_unlock(&_mutex);
   return orig_value;
@@ -109,10 +112,10 @@ set_ptr(void * TVOLATILE &var, void *new_value) {
 //               asynchronously setting, incrementing, or decrementing
 //               (via other AtomicAjust methods).
 ////////////////////////////////////////////////////////////////////
-INLINE void *AtomicAdjustPosixImpl::
-get_ptr(void * const TVOLATILE &var) {
+INLINE AtomicAdjustPosixImpl::Pointer AtomicAdjustPosixImpl::
+get_ptr(const TVOLATILE AtomicAdjustPosixImpl::Pointer &var) {
   pthread_mutex_lock(&_mutex);
-  void *orig_value = var;
+  Pointer orig_value = var;
   pthread_mutex_unlock(&_mutex);
   return orig_value;
 }
@@ -137,7 +140,8 @@ get_ptr(void * const TVOLATILE &var) {
 //
 ////////////////////////////////////////////////////////////////////
 INLINE AtomicAdjustPosixImpl::Integer AtomicAdjustPosixImpl::
-compare_and_exchange(TVOLATILE AtomicAdjustPosixImpl::Integer &mem, AtomicAdjustPosixImpl::Integer old_value,
+compare_and_exchange(TVOLATILE AtomicAdjustPosixImpl::Integer &mem, 
+                     AtomicAdjustPosixImpl::Integer old_value,
                      AtomicAdjustPosixImpl::Integer new_value) {
   pthread_mutex_lock(&_mutex);
   Integer orig_value = mem;
@@ -155,11 +159,12 @@ compare_and_exchange(TVOLATILE AtomicAdjustPosixImpl::Integer &mem, AtomicAdjust
 //
 //               As above, but works on pointers instead of integers.
 ////////////////////////////////////////////////////////////////////
-INLINE void *AtomicAdjustPosixImpl::
-compare_and_exchange_ptr(void * TVOLATILE &mem, void *old_value,
-                         void *new_value) {
+INLINE AtomicAdjustPosixImpl::Pointer AtomicAdjustPosixImpl::
+compare_and_exchange_ptr(TVOLATILE AtomicAdjustPosixImpl::Pointer &mem, 
+                         AtomicAdjustPosixImpl::Pointer old_value,
+                         AtomicAdjustPosixImpl::Pointer new_value) {
   pthread_mutex_lock(&_mutex);
-  void *orig_value = mem;
+  Pointer orig_value = mem;
   if (mem == old_value) {
     mem = new_value;
   }

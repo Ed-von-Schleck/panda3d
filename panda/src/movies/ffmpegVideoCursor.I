@@ -12,3 +12,17 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////////////////////////////////////////////
+//     Function: FfmpegVideoCursor::FfmpegBuffer::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE FfmpegVideoCursor::FfmpegBuffer::
+FfmpegBuffer(size_t block_size, double video_timebase) : 
+  Buffer(block_size),
+  _begin_frame(-1),
+  _end_frame(0),
+  _video_timebase(video_timebase)
+{
+}

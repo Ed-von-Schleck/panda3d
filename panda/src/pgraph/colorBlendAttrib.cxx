@@ -46,7 +46,7 @@ make_off() {
 CPT(RenderAttrib) ColorBlendAttrib::
 make(ColorBlendAttrib::Mode mode) {
   ColorBlendAttrib *attrib = new ColorBlendAttrib(mode, O_one, O_one,
-                                                  Colorf::zero());
+                                                  LColor::zero());
   return return_new(attrib);
 }
 
@@ -60,7 +60,7 @@ make(ColorBlendAttrib::Mode mode) {
 CPT(RenderAttrib) ColorBlendAttrib::
 make(ColorBlendAttrib::Mode mode, 
      ColorBlendAttrib::Operand a, ColorBlendAttrib::Operand b,
-     const Colorf &color) {
+     const LColor &color) {
   ColorBlendAttrib *attrib = new ColorBlendAttrib(mode, a, b, color);
   return return_new(attrib);
 }
@@ -129,6 +129,37 @@ compare_to_impl(const RenderAttrib *other) const {
   }
 
   return _color.compare_to(ta->_color);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColorBlendAttrib::get_hash_impl
+//       Access: Protected, Virtual
+//  Description: Intended to be overridden by derived RenderAttrib
+//               types to return a unique hash for these particular
+//               properties.  RenderAttribs that compare the same with
+//               compare_to_impl(), above, should return the same
+//               hash; RenderAttribs that compare differently should
+//               return a different hash.
+////////////////////////////////////////////////////////////////////
+size_t ColorBlendAttrib::
+get_hash_impl() const {
+  size_t hash = 0;
+  hash = int_hash::add_hash(hash, (int)_mode);
+  hash = int_hash::add_hash(hash, (int)_a);
+  hash = int_hash::add_hash(hash, (int)_b);
+  hash = _color.add_hash(hash);
+
+  return hash;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: ColorBlendAttrib::get_auto_shader_attrib_impl
+//       Access: Protected, Virtual
+//  Description: 
+////////////////////////////////////////////////////////////////////
+CPT(RenderAttrib) ColorBlendAttrib::
+get_auto_shader_attrib_impl(const RenderState *state) const {
+  return this;
 }
 
 ////////////////////////////////////////////////////////////////////

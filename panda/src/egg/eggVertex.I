@@ -156,11 +156,11 @@ get_pos2() const {
 //  Description: Valid if get_num_dimensions() returns 3 or 4.
 //               Returns the position as a three-dimensional value.
 ////////////////////////////////////////////////////////////////////
-INLINE Vertexd EggVertex::
+INLINE LVertexd EggVertex::
 get_pos3() const {
   nassertr(_num_dimensions == 3 || _num_dimensions == 4,
            LPoint3d(0.0, 0.0, 0.0));
-  return Vertexd(_pos[0] / _pos[3], _pos[1] / _pos[3], _pos[2] / _pos[3]);
+  return LVertexd(_pos[0] / _pos[3], _pos[1] / _pos[3], _pos[2] / _pos[3]);
 }
 
 
@@ -196,6 +196,17 @@ has_uv() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::has_aux
+//       Access: Published
+//  Description: Returns true if the vertex has any auxiliary
+//               data, false otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool EggVertex::
+has_aux() const {
+  return (_aux_map.size() != 0);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggVertex::get_uv
 //       Access: Published
 //  Description: Returns the unnamed UV coordinate pair on the
@@ -207,9 +218,9 @@ has_uv() const {
 //               multitexturing; see get_uv(name) for the interface
 //               that supports multitexturing.
 ////////////////////////////////////////////////////////////////////
-INLINE TexCoordd EggVertex::
+INLINE LTexCoordd EggVertex::
 get_uv() const {
-  nassertr(has_uv(), TexCoordd::zero());
+  nassertr(has_uv(), LTexCoordd::zero());
   return get_uv("");
 }
 
@@ -225,7 +236,7 @@ get_uv() const {
 //               interface that supports multitexturing.
 ////////////////////////////////////////////////////////////////////
 INLINE void EggVertex::
-set_uv(const TexCoordd &uv) {
+set_uv(const LTexCoordd &uv) {
   set_uv("", uv);
 }
 
@@ -237,6 +248,16 @@ set_uv(const TexCoordd &uv) {
 INLINE void EggVertex::
 clear_uv() {
   _uv_map.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::clear_aux
+//       Access: Published
+//  Description: Removes all auxiliary data from the vertex.
+////////////////////////////////////////////////////////////////////
+INLINE void EggVertex::
+clear_aux() {
+  _aux_map.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -254,6 +275,20 @@ uv_begin() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::aux_begin
+//       Access: Public
+//  Description: Returns an iterator that allows walking through the
+//               complete set of auxiliary data on the vertex.
+//
+//               This interface is not safe to use outside of
+//               PANDAEGG.DLL.
+////////////////////////////////////////////////////////////////////
+INLINE EggVertex::const_aux_iterator EggVertex::
+aux_begin() const {
+  return _aux_map.begin();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggVertex::uv_end
 //       Access: Public
 //  Description: Returns an iterator that allows walking through the
@@ -268,6 +303,20 @@ uv_end() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::aux_end
+//       Access: Public
+//  Description: Returns an iterator that allows walking through the
+//               complete set of auxiliary data on the vertex.
+//
+//               This interface is not safe to use outside of
+//               PANDAEGG.DLL.
+////////////////////////////////////////////////////////////////////
+INLINE EggVertex::const_aux_iterator EggVertex::
+aux_end() const {
+  return _aux_map.end();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: EggVertex::uv_size
 //       Access: Public
 //  Description: Returns the number of named UV's on the vertex.
@@ -275,6 +324,16 @@ uv_end() const {
 INLINE EggVertex::uv_size_type EggVertex::
 uv_size() const {
   return _uv_map.size();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: EggVertex::aux_size
+//       Access: Public
+//  Description: Returns the number of auxiliary datas on the vertex.
+////////////////////////////////////////////////////////////////////
+INLINE EggVertex::aux_size_type EggVertex::
+aux_size() const {
+  return _aux_map.size();
 }
 
 ////////////////////////////////////////////////////////////////////

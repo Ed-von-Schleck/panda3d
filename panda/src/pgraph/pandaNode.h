@@ -97,10 +97,10 @@ public:
   virtual void apply_attribs_to_vertices(const AccumulatedAttribs &attribs,
                                          int attrib_types,
                                          GeomTransformer &transformer);
-  virtual void xform(const LMatrix4f &mat);
+  virtual void xform(const LMatrix4 &mat);
 
   virtual CPT(TransformState)
-    calc_tight_bounds(LPoint3f &min_point, LPoint3f &max_point,
+    calc_tight_bounds(LPoint3 &min_point, LPoint3 &max_point,
                       bool &found_any,
                       const TransformState *transform,
                       Thread *current_thread = Thread::get_current_thread()) const;
@@ -250,7 +250,7 @@ PUBLISHED:
   CollideMask get_net_collide_mask(Thread *current_thread = Thread::get_current_thread()) const;
   CPT(RenderAttrib) get_off_clip_planes(Thread *current_thread = Thread::get_current_thread()) const;
 
-  void prepare_scene(GraphicsStateGuardianBase *gsg, const RenderState *net_state);
+  void prepare_scene(GraphicsStateGuardianBase *gsg, const RenderState *node_state);
 
   bool is_scene_root() const;
   bool is_under_scene_root() const;
@@ -292,6 +292,7 @@ PUBLISHED:
 
   virtual bool is_geom_node() const;
   virtual bool is_lod_node() const;
+  virtual bool is_collision_node() const;
   virtual Light *as_light();
   virtual bool is_ambient_light() const;
 
@@ -343,8 +344,9 @@ protected:
   void set_cull_callback();
   void disable_cull_callback();
 public:
-  virtual void r_prepare_scene(const RenderState *state,
-                               PreparedGraphicsObjects *prepared_objects,
+  virtual void r_prepare_scene(GraphicsStateGuardianBase *gsg,
+                               const RenderState *node_state,
+                               GeomTransformer &transformer,
                                Thread *current_thread);
 
 protected:
@@ -415,8 +417,8 @@ private:
   void fix_path_lengths(int pipeline_stage, Thread *current_thread);
   void r_list_descendants(ostream &out, int indent_level) const;
   
-  INLINE void set_dirty_prev_transform();
-  INLINE void clear_dirty_prev_transform();
+  INLINE void do_set_dirty_prev_transform();
+  INLINE void do_clear_dirty_prev_transform();
 
 public:
   // This must be declared public so that VC6 will allow the nested
@@ -751,9 +753,11 @@ public:
   static void init_type() {
     TypedWritable::init_type();
     ReferenceCount::init_type();
+    Namable::init_type();
     register_type(_type_handle, "PandaNode",
                   TypedWritable::get_class_type(),
-                  ReferenceCount::get_class_type());
+                  ReferenceCount::get_class_type(),
+                  Namable::get_class_type());
     CData::init_type();
     Down::init_type();
     Up::init_type();

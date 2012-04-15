@@ -126,7 +126,7 @@ make_output(const string &name,
   support_rtt = false;
   if (wglgsg) {
      support_rtt = 
-      wglgsg -> get_supports_render_texture() && 
+      wglgsg -> get_supports_wgl_render_texture() && 
       support_render_texture;
   }
 
@@ -176,6 +176,13 @@ make_output(const string &name,
         return NULL;
       }
     }
+    if ((wglgsg != 0) &&
+        (wglgsg->is_valid()) &&
+        (!wglgsg->needs_reset()) &&
+	!wglgsg->_supports_framebuffer_object) {
+      return NULL;
+    }
+
     // Early success - if we are sure that this buffer WILL
     // meet specs, we can precertify it.
     if ((wglgsg != 0) &&
@@ -197,6 +204,12 @@ make_output(const string &name,
         ((flags&BF_require_window)!=0)) {
       return NULL;
     }
+    if ((wglgsg != 0) &&
+        (wglgsg->is_valid()) &&
+        (!wglgsg->needs_reset()) &&
+	!wglgsg->_supports_pbuffer) {
+      return NULL;
+    }
 
     if (!support_rtt) {
       if (((flags&BF_rtt_cumulative)!=0)||
@@ -213,7 +226,6 @@ make_output(const string &name,
       if ((fb_prop.get_aux_rgba() > 0)||
           (fb_prop.get_aux_rgba() > 0)||
           (fb_prop.get_aux_float() > 0)) {
-        cerr << "b\n";
         return NULL;
       }
     }
@@ -225,16 +237,28 @@ make_output(const string &name,
         (wglgsg->pfnum_supports_pbuffer()) &&
         (wglgsg->get_fb_properties().subsumes(fb_prop))&&
         (wglgsg->get_fb_properties().is_single_buffered())) {
-      cerr << "c\n";
       precertify = true;
     }
-    cerr << "d\n";
     return new wglGraphicsBuffer(engine, this, name, fb_prop, win_prop,
                                  flags, gsg, host);
   }
   
   // Nothing else left to try.
   return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: wglGraphicsPipe::make_callback_gsg
+//       Access: Protected, Virtual
+//  Description: This is called when make_output() is used to create a
+//               CallbackGraphicsWindow.  If the GraphicsPipe can
+//               construct a GSG that's not associated with any
+//               particular window object, do so now, assuming the
+//               correct graphics context has been set up externally.
+////////////////////////////////////////////////////////////////////
+PT(GraphicsStateGuardian) wglGraphicsPipe::
+make_callback_gsg(GraphicsEngine *engine) {
+  return new wglGraphicsStateGuardian(engine, this, NULL);
 }
 
 

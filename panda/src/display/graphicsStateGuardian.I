@@ -585,19 +585,6 @@ get_supports_generate_mipmap() const {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: GraphicsStateGuardian::get_supports_render_texture
-//       Access: Published
-//  Description: Returns true if this particular GSG can render
-//               directly into a texture, or false if it must always
-//               copy-to-texture at the end of each frame to achieve
-//               this effect.
-////////////////////////////////////////////////////////////////////
-INLINE bool GraphicsStateGuardian::
-get_supports_render_texture() const {
-  return _supports_render_texture;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: GraphicsStateGuardian::get_supports_depth_texture
 //       Access: Published
 //  Description: Returns true if this particular GSG supports
@@ -920,6 +907,18 @@ get_current_display_region() const {
 INLINE Lens::StereoChannel GraphicsStateGuardian::
 get_current_stereo_channel() const {
   return _current_stereo_channel;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsStateGuardian::get_current_tex_view_offset
+//       Access: Public
+//  Description: Returns the current tex view offset, as set by the
+//               last call to prepare_display_region().  This is read
+//               from the current DisplayRegion.
+////////////////////////////////////////////////////////////////////
+INLINE int GraphicsStateGuardian::
+get_current_tex_view_offset() const {
+  return _current_tex_view_offset;
 }
 
 ////////////////////////////////////////////////////////////////////

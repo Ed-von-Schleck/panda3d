@@ -22,20 +22,15 @@
 #include "partGroup.h"
 #include "cardMaker.h"
 #include "bamCache.h"
+#include "virtualFileSystem.h"
+#include "panda_getopt.h"
+#include "preprocess_argv.h"
 
 // By including checkPandaVersion.h, we guarantee that runtime
 // attempts to run pview will fail if it inadvertently links with the
 // wrong version of libdtool.so/.dll.
 
 #include "checkPandaVersion.h"
-
-#ifndef HAVE_GETOPT
-  #include "gnu_getopt.h"
-#else
-  #ifdef PHAVE_GETOPT_H
-    #include <getopt.h>
-  #endif
-#endif
 
 PandaFramework framework;
 
@@ -158,7 +153,7 @@ event_0(const Event *event, void *) {
 
   // Make the clear color on the buffer be yellow, so it's obviously
   // different from the main scene's background color.
-  buffer->set_clear_color(Colorf(1, 1, 0, 0));
+  buffer->set_clear_color(LColor(1, 1, 0, 0));
 
   // Apply the offscreen buffer's texture to a card in the main
   // window.
@@ -229,7 +224,8 @@ report_version() {
 }
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char **argv) {
+  preprocess_argv(argc, argv);
   framework.open_framework(argc, argv);
   framework.set_window_title("Panda Viewer");
 
@@ -310,7 +306,7 @@ main(int argc, char *argv[]) {
       loading_np.set_scale(0.125f);
       loading->set_text_color(1.0f, 1.0f, 1.0f, 1.0f);
       loading->set_shadow_color(0.0f, 0.0f, 0.0f, 1.0f);
-      loading->set_shadow(0.04f, 0.04f);
+      loading->set_shadow(0.04, 0.04);
       loading->set_align(TextNode::A_center);
       loading->set_text("Loading...");
 
@@ -331,11 +327,12 @@ main(int argc, char *argv[]) {
       window->load_models(framework.get_models(), argc, argv);
 
       if (delete_models) {
+        VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
         for (int i = 1; i < argc && argv[i] != (char *)NULL; i++) {
           Filename model = Filename::from_os_specific(argv[i]);
-          if (model.exists()) {
+          if (vfs->exists(model)) {
             nout << "Deleting " << model << "\n";
-            model.unlink();
+            vfs->delete_file(model);
           }
         }
       }

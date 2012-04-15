@@ -37,8 +37,8 @@ extern EXPCL_PANDAEGG ConfigVariableBool egg_ignore_filters;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_ignore_clamp;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_ignore_decals;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_flatten;
-extern EXPCL_PANDAEGG ConfigVariableBool egg_unify;
 extern EXPCL_PANDAEGG ConfigVariableDouble egg_flatten_radius;
+extern EXPCL_PANDAEGG ConfigVariableBool egg_unify;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_combine_geoms;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_rigid_geometry;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_flat_shading;
@@ -52,6 +52,9 @@ extern EXPCL_PANDAEGG ConfigVariableInt egg_max_vertices;
 extern EXPCL_PANDAEGG ConfigVariableInt egg_max_indices;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_emulate_bface;
 extern EXPCL_PANDAEGG ConfigVariableBool egg_preload_simple_textures;
+extern EXPCL_PANDAEGG ConfigVariableDouble egg_vertex_membership_quantize;
+extern EXPCL_PANDAEGG ConfigVariableInt egg_vertex_max_num_joints;
+extern EXPCL_PANDAEGG ConfigVariableBool egg_implicit_alpha_binary;
 
 extern EXPCL_PANDAEGG void init_libegg2pg();
 

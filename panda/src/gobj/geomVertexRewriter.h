@@ -53,6 +53,9 @@ PUBLISHED:
 
   INLINE GeomVertexData *get_vertex_data() const;
   INLINE GeomVertexArrayData *get_array_data() const;
+  INLINE GeomVertexArrayDataHandle *get_array_handle() const;
+  INLINE size_t get_stride() const;
+  INLINE Thread *get_current_thread() const;
 
   INLINE bool set_column(int column);
   INLINE bool set_column(const string &name);
@@ -64,6 +67,7 @@ PUBLISHED:
   INLINE int get_array() const;
   INLINE const GeomVertexColumn *get_column() const;
 
+  INLINE void set_row_unsafe(int row);
   INLINE void set_row(int row);
 
   INLINE int get_start_row() const;

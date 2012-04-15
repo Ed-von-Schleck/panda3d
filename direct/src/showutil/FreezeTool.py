@@ -10,11 +10,11 @@ import platform
 import types
 from distutils.sysconfig import PREFIX, get_python_inc, get_python_version
 
-# Temporary (?) try..except to protect against unbuilt extend_frozen.
+# Temporary (?) try..except to protect against unbuilt p3extend_frozen.
 try:
-    import extend_frozen
+    import p3extend_frozen
 except ImportError:
-    extend_frozen = None
+    p3extend_frozen = None
 
 import direct
 from pandac.PandaModules import *
@@ -599,10 +599,15 @@ class Freezer:
             try:
                 module = __import__(sourceTree)
             except:
-                module = None
+                pass
+
+        # Actually, make sure we know how to find all of the
+        # already-imported modules.  (Some of them might do their own
+        # special path mangling.)
+        for moduleName, module in sys.modules.items():
             if module and hasattr(module, '__path__'):
                 path = getattr(module, '__path__')
-                modulefinder.AddPackagePath(sourceTree, path[0])
+                modulefinder.AddPackagePath(moduleName, path[0])
 
     def excludeFrom(self, freezer):
         """ Excludes all modules that have already been processed by
@@ -660,7 +665,8 @@ class Freezer:
         if module != None:
             for symbol in moduleName.split('.')[1:]:
                 module = getattr(module, symbol)
-            return module.__path__
+            if hasattr(module, '__path__'):
+                return module.__path__
 
         # If it didn't work--maybe the module is unimportable because
         # it makes certain assumptions about the builtins, or
@@ -674,7 +680,10 @@ class Freezer:
             if path == None:
                 return None
 
-        file, pathname, description = imp.find_module(baseName, path)
+        try:
+            file, pathname, description = imp.find_module(baseName, path)
+        except ImportError:
+            return None
 
         if not os.path.isdir(pathname):
             return None
@@ -886,7 +895,7 @@ class Freezer:
                 continue
             if origName in self.modules:
                 continue
-
+                
             # This module is missing.  Let it be missing in the
             # runtime also.
             self.modules[origName] = self.ModuleDef(origName, exclude = True,
@@ -1367,7 +1376,7 @@ class PandaModuleFinder(modulefinder.ModuleFinder):
                 # though.
                 raise
 
-            if extend_frozen and extend_frozen.is_frozen_module(name):
+            if p3extend_frozen and p3extend_frozen.is_frozen_module(name):
                 # It's a frozen module.
                 return (None, name, ('', '', imp.PY_FROZEN))
 
@@ -1386,7 +1395,7 @@ class PandaModuleFinder(modulefinder.ModuleFinder):
     def load_module(self, fqname, fp, pathname, (suffix, mode, type)):
         if type == imp.PY_FROZEN:
             # It's a frozen module.
-            co, isPackage = extend_frozen.get_frozen_module_code(pathname)
+            co, isPackage = p3extend_frozen.get_frozen_module_code(pathname)
             m = self.add_module(fqname)
             m.__file__ = '<frozen>'
             if isPackage:

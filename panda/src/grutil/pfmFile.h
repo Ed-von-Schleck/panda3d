@@ -19,8 +19,10 @@
 #include "luse.h"
 #include "nodePath.h"
 #include "boundingHexahedron.h"
+#include "internalName.h"
 
 class GeomNode;
+class Lens;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PfmFile
@@ -36,54 +38,70 @@ PUBLISHED:
   void clear();
   void clear(int x_size, int y_size, int num_channels);
 
-  bool read(const Filename &fullpath);
-  bool read(istream &in);
-  bool write(const Filename &fullpath);
-  bool write(ostream &out);
+  BLOCKING bool read(const Filename &fullpath);
+  BLOCKING bool read(istream &in);
+  BLOCKING bool write(const Filename &fullpath);
+  BLOCKING bool write(ostream &out);
 
   INLINE bool is_valid() const;
 
   INLINE int get_x_size() const;
   INLINE int get_y_size() const;
-  INLINE float get_scale() const;
+  INLINE PN_stdfloat get_scale() const;
   INLINE int get_num_channels() const;
 
   INLINE bool has_point(int x, int y) const;
-  INLINE const LPoint3f &get_point(int x, int y) const;
-  INLINE void set_point(int x, int y, const LVecBase3f &point);
-  INLINE LPoint3f &modify_point(int x, int y);
+  INLINE const LPoint3 &get_point(int x, int y) const;
+  INLINE void set_point(int x, int y, const LVecBase3 &point);
+  INLINE LPoint3 &modify_point(int x, int y);
 
-  bool calc_average_point(LPoint3f &result, double x, double y, double radius) const;
-  bool calc_min_max(LVecBase3f &min_points, LVecBase3f &max_points) const;
+  BLOCKING bool calc_average_point(LPoint3 &result, PN_stdfloat x, PN_stdfloat y, PN_stdfloat radius) const;
+  BLOCKING bool calc_min_max(LVecBase3 &min_points, LVecBase3 &max_points) const;
 
   INLINE void set_zero_special(bool zero_special);
-  INLINE bool get_zero_special() const;
+  INLINE void set_no_data_value(const LPoint3 &no_data_value);
+  INLINE void clear_no_data_value();
+  INLINE bool has_no_data_value() const;
+  INLINE const LPoint3 &get_no_data_value() const;
 
-  void resize(int new_x_size, int new_y_size);
-  void reverse_rows();
-  void xform(const LMatrix4f &transform);
+  BLOCKING void resize(int new_x_size, int new_y_size);
+  BLOCKING void reverse_rows();
+  BLOCKING void flip(bool flip_x, bool flip_y, bool transpose);
+  BLOCKING void xform(const LMatrix4 &transform);
+  BLOCKING void project(const Lens *lens);
+  BLOCKING void merge(const PfmFile &other);
 
-  PT(BoundingHexahedron) compute_planar_bounds(double point_dist, double sample_radius) const;
+  BLOCKING PT(BoundingHexahedron) compute_planar_bounds(PN_stdfloat point_dist, PN_stdfloat sample_radius) const;
+  BLOCKING PT(BoundingHexahedron) compute_planar_bounds(const LPoint2 &center, PN_stdfloat point_dist, PN_stdfloat sample_radius, bool points_only) const;
+  void compute_sample_point(LPoint3 &result,
+                            PN_stdfloat x, PN_stdfloat y, PN_stdfloat sample_radius) const;
 
   INLINE void set_vis_inverse(bool vis_inverse);
   INLINE bool get_vis_inverse() const;
+  INLINE void set_flat_texcoord_name(InternalName *flat_texcoord_name);
+  INLINE void clear_flat_texcoord_name();
+  INLINE InternalName *get_flat_texcoord_name() const;
   INLINE void set_vis_2d(bool vis_2d);
   INLINE bool get_vis_2d() const;
 
-  NodePath generate_vis_points() const;
-  NodePath generate_vis_mesh(bool double_sided) const;
+  BLOCKING NodePath generate_vis_points() const;
+
+  enum MeshFace {
+    MF_front = 0x01,
+    MF_back  = 0x02,
+    MF_both  = 0x03,
+  };
+  BLOCKING NodePath generate_vis_mesh(MeshFace face = MF_front) const;
 
 private:
   void make_vis_mesh_geom(GeomNode *gnode, bool inverted) const;
 
-  void compute_sample_point(LPoint3f &result,
-                            double x, double y, double sample_radius) const;
-  void box_filter_region(LPoint3f &result,
-                         double x0, double y0, double x1, double y1) const;
-  void box_filter_line(LPoint3f &result, double &coverage,
-                       double x0, int y, double x1, double y_contrib) const;
-  void box_filter_point(LPoint3f &result, double &coverage,
-                        int x, int y, double x_contrib, double y_contrib) const;
+  void box_filter_region(LPoint3 &result,
+                         PN_stdfloat x0, PN_stdfloat y0, PN_stdfloat x1, PN_stdfloat y1) const;
+  void box_filter_line(LPoint3 &result, PN_stdfloat &coverage,
+                       PN_stdfloat x0, int y, PN_stdfloat x1, PN_stdfloat y_contrib) const;
+  void box_filter_point(LPoint3 &result, PN_stdfloat &coverage,
+                        int x, int y, PN_stdfloat x_contrib, PN_stdfloat y_contrib) const;
 
   class MiniGridCell {
   public:
@@ -96,16 +114,18 @@ private:
                       int xi, int yi, int dist, int ti) const;
 
 private:
-  typedef pvector<LPoint3f> Table;
+  typedef pvector<LPoint3> Table;
   Table _table;
 
   int _x_size;
   int _y_size;
-  float _scale;
+  PN_stdfloat _scale;
   int _num_channels;
 
-  bool _zero_special;
+  bool _has_no_data_value;
+  LPoint3 _no_data_value;
   bool _vis_inverse;
+  PT(InternalName) _flat_texcoord_name;
   bool _vis_2d;
 };
 

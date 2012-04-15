@@ -41,12 +41,13 @@ public:
   virtual ~CollisionNode();
   virtual PandaNode *make_copy() const;
   virtual bool preserve_name() const;
-  virtual void xform(const LMatrix4f &mat);
+  virtual void xform(const LMatrix4 &mat);
   virtual PandaNode *combine_with(PandaNode *other); 
   virtual CollideMask get_legal_collide_mask() const;
 
   virtual bool cull_callback(CullTraverser *trav, CullTraverserData &data);
   virtual bool is_renderable() const;
+  virtual bool is_collision_node() const;
 
   virtual void output(ostream &out) const;
 

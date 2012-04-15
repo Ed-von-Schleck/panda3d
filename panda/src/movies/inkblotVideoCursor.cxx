@@ -57,6 +57,7 @@ InkblotVideoCursor(InkblotVideo *src) :
 {
   _size_x = src->_specified_x;
   _size_y = src->_specified_y;
+  _num_components = 3;
   _fps = src->_specified_fps;
   int padx = _size_x + 2;
   int pady = _size_y + 2;
@@ -66,7 +67,8 @@ InkblotVideoCursor(InkblotVideo *src) :
   memset(_cells2, 255, padx * pady);
   _can_seek = true;
   _can_seek_fast = false;
-  _frames_read = 0;
+  _current_frame = 0;
+  _last_frame = -1;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -81,31 +83,42 @@ InkblotVideoCursor::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: InkblotVideoCursor::fetch_into_buffer
+//     Function: InkblotVideoCursor::set_time
 //       Access: Published, Virtual
-//  Description: See MovieVideoCursor::fetch_into_buffer.
+//  Description: See MovieVideoCursor::set_time().
 ////////////////////////////////////////////////////////////////////
-void InkblotVideoCursor::
-fetch_into_buffer(double time, unsigned char *data, bool bgra) {
+bool InkblotVideoCursor::
+set_time(double time, int loop_count) {
+  int frame = (int)(time / _fps);
+  if (frame == _current_frame) {
+    return false;
+  }
+
+  _current_frame = frame;
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: InkblotVideoCursor::fetch_buffer
+//       Access: Published, Virtual
+//  Description: See MovieVideoCursor::fetch_buffer.
+////////////////////////////////////////////////////////////////////
+PT(MovieVideoCursor::Buffer) InkblotVideoCursor::
+fetch_buffer() {
+  PT(Buffer) buffer = get_standard_buffer();
 
   int padx = size_x() + 2;
   int pady = size_y() + 2;
   
-  if (time < _next_start) {
+  if (_current_frame < _last_frame) {
     // Rewind to beginning.
     memset(_cells, 255, padx * pady);
     memset(_cells2, 255, padx * pady);
-    _last_start = -1.0;
-    _next_start = 0.0;
-    _frames_read = 0;
+    _last_frame = 0;
   }
   
-  nassertv(time >= _next_start);
-  
-  while (_next_start <= time) {
-    _last_start = (_frames_read * 1.0) / _fps;
-    _frames_read += 1;
-    _next_start = (_frames_read * 1.0) / _fps;
+  while (_last_frame <= _current_frame) {
+    ++_last_frame;
     for (int y=1; y<pady-1; y++) {
       for (int x=1; x<padx-1; x++) {
         int tot =
@@ -126,6 +139,7 @@ fetch_into_buffer(double time, unsigned char *data, bool bgra) {
     _cells2 = t;
   }
 
+  unsigned char *data = buffer->_block;
   for (int y=1; y<pady - 1; y++) {
     for (int x=1; x<padx - 1; x++) {
       int val = _cells[x + y*padx];
@@ -135,13 +149,10 @@ fetch_into_buffer(double time, unsigned char *data, bool bgra) {
       data[0] = (c1.b * (16-lerp) + c2.b * lerp) / 16;
       data[1] = (c1.g * (16-lerp) + c2.g * lerp) / 16;
       data[2] = (c1.r * (16-lerp) + c2.r * lerp) / 16;
-      if (bgra) {
-        data[3] = 255;
-        data += 4;
-      } else {
-        data += 3;
-      }
+      data += 3;
     }
   }
+
+  return buffer;
 }
 

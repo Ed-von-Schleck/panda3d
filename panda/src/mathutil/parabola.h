@@ -26,4 +26,10 @@
 #include "dblnames.h"
 #include "parabola_src.h"
 
+#ifndef STDFLOAT_DOUBLE
+typedef LParabolaf LParabola;
+#else
+typedef LParabolad LParabola;
+#endif
+
 #endif

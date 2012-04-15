@@ -13,6 +13,9 @@
 
 # Also see panda3d.pdef.
 
+from pandac.PandaModules import Filename
+import sys
+
 class wx(package):
     config(display_name = "wxPython GUI Toolkit")
     #config(gui_app = True)
@@ -38,6 +41,26 @@ class tk(package):
            'direct.tkpanels',
            'direct.tkwidgets')
 
+    try:
+        from Tkinter import Tcl
+        dir = Filename.fromOsSpecific(Tcl().eval("info library"))
+        file(Filename(dir, "*.tcl"), extract = True)
+    except ImportError:
+        pass
+
+    try:
+        import Pmw
+    except ImportError:
+        Pmw = None
+
+    if Pmw is not None:
+        Pmw = sys.modules['_Pmw']
+        sys.modules['Pmw'] = Pmw
+        sys.modules['Pmw'].__name__ = 'Pmw'
+        module('Pmw', 'Pmw.Pmw_1_3.lib.*')
+        path = Filename.fromOsSpecific(Pmw.__path__[0])
+        file(Filename(path, 'Pmw_1_3/lib/Pmw.def'), newDir = 'Pmw/Pmw_1_3/lib')
+
 class sqlite(package):
     config(display_name = "SQLite Interface")
     require('panda3d')
@@ -55,6 +78,7 @@ class pygame(package):
     require('panda3d', 'numpy')
 
     module('pygame', required = True)
+    module('pygame.*')
 
 class twisted(package):
     config(display_name = "Twisted")
@@ -76,8 +100,8 @@ class pil(package):
     config(display_name = "Python Imaging Library")
     require('panda3d')
 
-    module('PIL', required = True)
-    module('ArgImagePlugin', 'BdfFontFile',
+    module('Image', required = True)
+    module('PIL', 'ArgImagePlugin', 'BdfFontFile',
            'BmpImagePlugin', 'BufrStubImagePlugin', 'ContainerIO',
            'CurImagePlugin', 'DcxImagePlugin', 'EpsImagePlugin',
            'ExifTags', 'FitsStubImagePlugin', 'FliImagePlugin',
@@ -85,7 +109,7 @@ class pil(package):
            'GifImagePlugin', 'GimpGradientFile', 'GimpPaletteFile',
            'GribStubImagePlugin', 'Hdf5StubImagePlugin',
            'IcnsImagePlugin', 'IcoImagePlugin', 'ImImagePlugin',
-           'Image', 'ImageChops', 'ImageCms', 'ImageColor', 'ImageDraw',
+           'ImageChops', 'ImageCms', 'ImageColor', 'ImageDraw',
            'ImageDraw2', 'ImageEnhance', 'ImageFile', 'ImageFileIO',
            'ImageFilter', 'ImageFont', 'ImageGL', 'ImageGrab',
            'ImageMath', 'ImageMode', 'ImageOps', 'ImagePalette',
@@ -121,4 +145,3 @@ class box2d(package):
     require('panda3d')
 
     module('Box2D', required = True)
-

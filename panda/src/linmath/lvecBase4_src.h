@@ -14,20 +14,23 @@
 
 class FLOATNAME(LVecBase2);
 class FLOATNAME(LVecBase3);
+class FLOATNAME(UnalignedLVecBase4);
 
 ////////////////////////////////////////////////////////////////////
 //       Class : LVecBase4
 // Description : This is the base class for all three-component
 //               vectors and points.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_LINMATH FLOATNAME(LVecBase4) {
+class EXPCL_PANDA_LINMATH ALIGN_LINMATH FLOATNAME(LVecBase4) {
 PUBLISHED:
   typedef const FLOATTYPE *iterator;
   typedef const FLOATTYPE *const_iterator;
 
   INLINE_LINMATH FLOATNAME(LVecBase4)();
   INLINE_LINMATH FLOATNAME(LVecBase4)(const FLOATNAME(LVecBase4) &copy);
+  INLINE_LINMATH FLOATNAME(LVecBase4)(const FLOATNAME(UnalignedLVecBase4) &copy);
   INLINE_LINMATH FLOATNAME(LVecBase4) &operator = (const FLOATNAME(LVecBase4) &copy);
+  INLINE_LINMATH FLOATNAME(LVecBase4) &operator = (const FLOATNAME(UnalignedLVecBase4) &copy);
   INLINE_LINMATH FLOATNAME(LVecBase4) &operator = (FLOATTYPE fill_value);
   INLINE_LINMATH FLOATNAME(LVecBase4)(FLOATTYPE fill_value);
   INLINE_LINMATH FLOATNAME(LVecBase4)(FLOATTYPE x, FLOATTYPE y, FLOATTYPE z, FLOATTYPE w);
@@ -133,16 +136,26 @@ PUBLISHED:
   INLINE_LINMATH void output(ostream &out) const;
   EXTENSION(INLINE_LINMATH void python_repr(ostream &out, const string &class_name) const);
 
-public:
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen) const;
   INLINE_LINMATH void generate_hash(ChecksumHashGenerator &hashgen,
                                     FLOATTYPE threshold) const;
 
+  INLINE_LINMATH void write_datagram_fixed(Datagram &destination) const;
+  INLINE_LINMATH void read_datagram_fixed(DatagramIterator &source);
+  INLINE_LINMATH void write_datagram(Datagram &destination) const;
+  INLINE_LINMATH void read_datagram(DatagramIterator &source);
+
 public:
-  union {
-        FLOATTYPE data[4];
-        struct {FLOATTYPE _0, _1, _2, _3;} v;
-  } _v;
+  // The underlying implementation is via the Eigen library, if available.
+
+  // Unlike LVecBase2 and LVecBase3, we fully align LVecBase4 to
+  // 16-byte boundaries, to take advantage of SSE2 optimizations when
+  // available.  Sometimes this alignment requirement is inconvenient,
+  // so we also provide UnalignedLVecBase4, below.
+  typedef LINMATH_MATRIX(FLOATTYPE, 1, 4) EVector4;
+  EVector4 _v;
+
+  INLINE_LINMATH FLOATNAME(LVecBase4)(const EVector4 &v) : _v(v) { }
 
 private:
   static const FLOATNAME(LVecBase4) _zero;
@@ -150,10 +163,6 @@ private:
   static const FLOATNAME(LVecBase4) _unit_y;
   static const FLOATNAME(LVecBase4) _unit_z;
   static const FLOATNAME(LVecBase4) _unit_w;
-
-public:
-  INLINE_LINMATH void write_datagram(Datagram &destination) const;
-  INLINE_LINMATH void read_datagram(DatagramIterator &source);
 
 public:
   static TypeHandle get_class_type() {
@@ -165,7 +174,53 @@ private:
   static TypeHandle _type_handle;
 };
 
-INLINE_LINMATH ostream &operator << (ostream &out, const FLOATNAME(LVecBase4) &vec) {
+////////////////////////////////////////////////////////////////////
+//       Class : UnalignedLVecBase4
+// Description : This is an "unaligned" LVecBase4.  It has no
+//               functionality other than to store numbers, and it
+//               will pack them in as tightly as possible, avoiding
+//               any SSE2 alignment requirements shared by the primary
+//               LVecBase4 class.
+//
+//               Use it only when you need to pack numbers tightly
+//               without respect to alignment, and then copy it to a
+//               proper LVecBase4 to get actual use from it.
+////////////////////////////////////////////////////////////////////
+class EXPCL_PANDA_LINMATH FLOATNAME(UnalignedLVecBase4) {
+PUBLISHED:
+  INLINE_LINMATH FLOATNAME(UnalignedLVecBase4)();
+  INLINE_LINMATH FLOATNAME(UnalignedLVecBase4)(const FLOATNAME(LVecBase4) &copy);
+  INLINE_LINMATH FLOATNAME(UnalignedLVecBase4)(const FLOATNAME(UnalignedLVecBase4) &copy);
+  INLINE_LINMATH FLOATNAME(UnalignedLVecBase4) &operator = (const FLOATNAME(LVecBase4) &copy);
+  INLINE_LINMATH FLOATNAME(UnalignedLVecBase4) &operator = (const FLOATNAME(UnalignedLVecBase4) &copy);
+  INLINE_LINMATH FLOATNAME(UnalignedLVecBase4)(FLOATTYPE x, FLOATTYPE y, FLOATTYPE z, FLOATTYPE w);
+
+  INLINE_LINMATH void set(FLOATTYPE x, FLOATTYPE y, FLOATTYPE z, FLOATTYPE w);
+
+  INLINE_LINMATH FLOATTYPE operator [](int i) const;
+  INLINE_LINMATH FLOATTYPE &operator [](int i);
+
+  EXTENSION(INLINE_LINMATH void __setitem__(int i, FLOATTYPE v));
+  INLINE_LINMATH static int size();
+
+  INLINE_LINMATH const FLOATTYPE *get_data() const;
+  INLINE_LINMATH int get_num_components() const;
+
+public:
+  typedef UNALIGNED_LINMATH_MATRIX(FLOATTYPE, 1, 4) UVector4;
+  UVector4 _v;
+
+public:
+  static TypeHandle get_class_type() {
+    return _type_handle;
+  }
+  static void init_type();
+
+private:
+  static TypeHandle _type_handle;
+};
+
+INLINE ostream &operator << (ostream &out, const FLOATNAME(LVecBase4) &vec) {
   vec.output(out);
   return out;
 }

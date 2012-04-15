@@ -18,7 +18,6 @@
 #include "meshDrawer.h"
 #include "meshDrawer2D.h"
 #include "geoMipTerrain.h"
-#include "ffmpegTexture.h"
 #include "movieTexture.h"
 #include "pandaSystem.h"
 #include "texturePool.h"
@@ -85,6 +84,17 @@ ConfigVariableInt pfm_vis_max_indices
           "a single generated mesh.  If the mesh would require more than that, "
           "the mesh is subdivided into smaller pieces."));
 
+ConfigVariableBool movies_sync_pages
+("movies-sync-pages", true,
+ PRC_DESC("Set this true to force multi-page MovieTextures to hold pages "
+          "back if necessary until all pages are ready to render at once, "
+          "so that the multiple pages of a single movie are always in sync "
+          "with each other.  Set this false to allow individual pages to be "
+          "visible as soon as they come available, which means pages might "
+          "sometimes be out of sync.  This only affects multi-page MovieTextures "
+          "such as cube maps, 3-d textures, or stereo textures, or textures "
+          "with separate color and alpha channel movie sources."));
+
 ////////////////////////////////////////////////////////////////////
 //     Function: init_libgrutil
 //  Description: Initializes the library.  This must be called at
@@ -95,14 +105,6 @@ ConfigVariableInt pfm_vis_max_indices
 ////////////////////////////////////////////////////////////////////
 void
 init_libgrutil() {
-  ConfigVariableBool use_movietexture
-    ("use-movietexture", false,
-     PRC_DESC("Panda contains a new animated texture class, MovieTexture. "
-              "Because it is not yet fully tested, the texture loader "
-              "will not use it unless this variable is set.  Eventually, "
-              "this config variable will go away and the new code will "
-              "be enabled all the time."));
-
   static bool initialized = false;
   if (initialized) {
     return;
@@ -124,18 +126,11 @@ init_libgrutil() {
 #endif  // HAVE_AUDIO
 
 #ifdef HAVE_FFMPEG
-  av_register_all();
-  FFMpegTexture::init_type();
-  FFMpegTexture::register_with_read_factory();
-#endif
+  MovieTexture::init_type();
+  MovieTexture::register_with_read_factory();
 
-#if defined(HAVE_FFMPEG)
   TexturePool *ts = TexturePool::get_global_ptr();
-  if (use_movietexture) {
-    ts->register_texture_type(MovieTexture::make_texture, "avi mov mpg mpeg mp4 wmv asf flv nut ogm mkv");
-  } else {
-    ts->register_texture_type(FFMpegTexture::make_texture, "avi mov mpg mpeg mp4 wmv asf flv nut ogm mkv");
-  }
-#endif
+  ts->register_texture_type(MovieTexture::make_texture, "avi mov mpg mpeg mp4 wmv asf flv nut ogm mkv");
+#endif  // HAVE_FFMPEG
 }
 

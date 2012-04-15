@@ -268,15 +268,17 @@ copy_maya_file(const Filename &source, const Filename &dest,
     _curr_idx++;
   }
 
-  // Get all the shaders so we can determine the set of textures.
-  _shaders.clear();
-  collect_shaders();
-  int num_shaders = _shaders.get_num_shaders();
-  for (int i = 0; i < num_shaders; i++) {
-    MayaShader *shader = _shaders.get_shader(i);
-    for (size_t j = 0; j < shader->_all_maps.size(); j++) {
-      if (!extract_texture(*shader->_all_maps[j], dir)) {
-        return false;
+  if (!_omit_tex) {
+    // Get all the shaders so we can determine the set of textures.
+    _shaders.clear();
+    collect_shaders();
+    int num_shaders = _shaders.get_num_shaders();
+    for (int i = 0; i < num_shaders; i++) {
+      MayaShader *shader = _shaders.get_shader(i);
+      for (size_t j = 0; j < shader->_all_maps.size(); j++) {
+        if (!extract_texture(*shader->_all_maps[j], dir)) {
+          return false;
+        }
       }
     }
   }
@@ -329,7 +331,7 @@ copy_maya_file(const Filename &source, const Filename &dest,
 ////////////////////////////////////////////////////////////////////
 bool MayaCopy::
 extract_texture(MayaShaderColorDef &color_def, CVSSourceDirectory *dir) {
-  Filename texture_filename = 
+  Filename texture_filename =
     _path_replace->convert_path(color_def._texture_filename);
   if (!texture_filename.exists()) {
     nout << "*** Error: texture " << texture_filename
@@ -434,8 +436,7 @@ collect_shader_for_node(const MDagPath &dag_path) {
   if (dag_path.hasFn(MFn::kNurbsSurface)) {
     MFnNurbsSurface surface(dag_path, &status);
     if (status) {
-      Filename dummy;
-      _shaders.find_shader_for_node(surface.object(),false,dummy,false);
+      _shaders.find_shader_for_node(surface.object(), false);
     }
 
   } else if (dag_path.hasFn(MFn::kMesh)) {
@@ -453,8 +454,7 @@ collect_shader_for_node(const MDagPath &dag_path) {
              shader_index < num_shaders; 
              shader_index++) {
           MObject engine = shaders[shader_index];
-          Filename dummy;
-          _shaders.find_shader_for_shading_engine(engine,false,dummy,false);
+          _shaders.find_shader_for_shading_engine(engine, false);
         }
       }
     }

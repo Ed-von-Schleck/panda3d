@@ -39,7 +39,7 @@ EggGroup(const string &name) : EggGroupNode(name) {
   _blend_mode = BM_unspecified;
   _blend_operand_a = BO_unspecified;
   _blend_operand_b = BO_unspecified;
-  _blend_color = Colorf::zero();
+  _blend_color = LColor::zero();
   _u_speed = 0;
   _v_speed = 0;
   _r_speed = 0;
@@ -289,7 +289,7 @@ write(ostream &out, int indent_level) const {
   }
 
   if (has_blend_color()) {
-    const Colorf &c = get_blend_color();
+    const LColor &c = get_blend_color();
     indent(out, indent_level + 2)
       << "<Scalar> blendr { " << c[0] << " }\n";
     indent(out, indent_level + 2)
@@ -1004,7 +1004,8 @@ string_cs_type(const string &strval) {
     return CST_inv_sphere;
   } else if (cmp_nocase_uh(strval, "tube") == 0) {
     return CST_tube;
-  } else if (cmp_nocase_uh(strval, "floor-mesh") == 0) {    
+  } else if (cmp_nocase_uh(strval, "floor-mesh") == 0 ||
+             cmp_nocase_uh(strval, "floormesh") == 0) {
     return CST_floor_mesh;
   } else {
     return CST_none;
@@ -1491,6 +1492,8 @@ ostream &operator << (ostream &out, EggGroup::CollisionSolidType t) {
     return out << "InvSphere";
   case EggGroup::CST_tube:
     return out << "Tube";
+  case EggGroup::CST_floor_mesh:
+    return out << "FloorMesh";
   }
 
   nassertr(false, out);

@@ -18,8 +18,8 @@
 #include "ppBrowserObject.h"
 #include "startup.h"
 #include "p3d_plugin_config.h"
-#include "find_root_dir.h"
 #include "mkdir_complete.h"
+#include "parse_color.h"
 #include "nppanda3d_common.h"
 
 // We can include this header file to get the DTOOL_PLATFORM
@@ -34,7 +34,14 @@
 
 #ifndef _WIN32
 #include <sys/select.h>
-#endif
+#include <sys/time.h>
+#endif  // _WIN32
+
+#ifdef HAVE_X11
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif  // HAVE_X11
+
 
 PPInstance::FileDatas PPInstance::_file_datas;
 
@@ -89,14 +96,62 @@ PPInstance(NPMIMEType pluginType, NPP instance, uint16_t mode,
   _root_dir = global_root_dir;
 
   _got_instance_url = false;
-  _opened_p3d_temp_file = false;
-  _finished_p3d_temp_file = false;
-  _p3d_temp_file_current_size = 0;
-  _p3d_temp_file_total_size = 0;
   _p3d_instance_id = 0;
 
+  // fgcolor and bgcolor are useful to know here (in case we have to
+  // draw a twirling icon).
+
+  // The default bgcolor is white.
+  _bgcolor_r = _bgcolor_g = _bgcolor_b = 0xff;
+  if (has_token("bgcolor")) {
+    int r, g, b;
+    if (parse_color(r, g, b, lookup_token("bgcolor"))) {
+      _bgcolor_r = r;
+      _bgcolor_g = g;
+      _bgcolor_b = b;
+    }
+  }
+
+  // The default fgcolor is either black or white, according to the
+  // brightness of the bgcolor.
+  if (_bgcolor_r + _bgcolor_g + _bgcolor_b > 0x80 + 0x80 + 0x80) {
+    _fgcolor_r = _fgcolor_g = _fgcolor_b = 0x00;
+  } else {
+    _fgcolor_r = _fgcolor_g = _fgcolor_b = 0xff;
+  }
+  if (has_token("fgcolor")) {
+    int r, g, b;
+    if (parse_color(r, g, b, lookup_token("fgcolor"))) {
+      _fgcolor_r = r;
+      _fgcolor_g = g;
+      _fgcolor_b = b;
+    }
+  }
+
+  _use_xembed = false;
   _got_window = false;
   _python_window_open = false;
+#ifdef HAVE_X11
+  _twirl_subprocess_pid = -1;
+#ifdef HAVE_GTK
+  _plug = NULL;
+#endif  // HAVE_GTK
+#endif  // HAVE_X11
+
+#ifdef _WIN32
+  _hwnd = NULL;
+  _bg_brush = NULL;
+#endif // _WIN32
+
+#ifndef _WIN32
+  // Save the startup time to improve precision of gettimeofday().  We
+  // also use this to measure elapsed time from the window parameters
+  // having been received.
+  struct timeval tv;
+  gettimeofday(&tv, (struct timezone *)NULL);
+  _init_sec = tv.tv_sec;
+  _init_usec = tv.tv_usec;
+#endif  // !_WIN32
 
 #ifdef __APPLE__
   // Get the run loop in the browser thread.  (CFRunLoopGetMain() is
@@ -106,7 +161,20 @@ PPInstance(NPMIMEType pluginType, NPP instance, uint16_t mode,
   CFRetain(_run_loop_main);
   _request_timer = NULL;
   INIT_LOCK(_timer_lock);
+
+  // Also set up a timer to twirl the icon until the instance loads.
+  _twirl_timer = NULL;
+  CFRunLoopTimerContext timer_context;
+  memset(&timer_context, 0, sizeof(timer_context));
+  timer_context.info = this;
+  _twirl_timer = CFRunLoopTimerCreate
+    (NULL, 0, 0.1, 0, 0, st_twirl_timer_callback, &timer_context);
+  CFRunLoopAddTimer(_run_loop_main, _twirl_timer, kCFRunLoopCommonModes);
 #endif  // __APPLE__
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+  _got_twirl_images = false;
+#endif  // MACOSX_HAS_EVENT_MODELS
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -119,6 +187,11 @@ PPInstance::
   cleanup_window();
 
 #ifdef __APPLE__
+  if (_twirl_timer != NULL) {
+    CFRunLoopTimerInvalidate(_twirl_timer);
+    CFRelease(_twirl_timer);
+    _twirl_timer = NULL;
+  }
   if (_request_timer != NULL) {
     CFRunLoopTimerInvalidate(_request_timer);
     CFRelease(_request_timer);
@@ -128,6 +201,10 @@ PPInstance::
   CFRelease(_run_loop_main);
   DESTROY_LOCK(_timer_lock);
 #endif  // __APPLE__
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+  osx_release_twirl_images();
+#endif  // MACOSX_HAS_EVENT_MODELS
 
   if (_p3d_inst != NULL) {
     P3D_instance_finish_ptr(_p3d_inst);
@@ -139,12 +216,6 @@ PPInstance::
 
   if (_script_object != NULL) {
     browser->releaseobject(_script_object);
-  }
-
-  if (!_p3d_temp_filename.empty()) {
-    _p3d_temp_file.close();
-    unlink(_p3d_temp_filename.c_str());
-    _p3d_temp_filename.clear();
   }
 
   // Free the tokens we allocated.
@@ -175,8 +246,13 @@ begin() {
   if (!has_plugin_thread_async_call) {
     nout << "Browser version insufficient: we require at least NPAPI version 0.19.\n";
     set_failed();
-    return;
   }
+#else
+  // While Safari 5 on Mac claims to provide this function, it doesn't
+  // appear to work. (!)  So we pretend we never have it on Mac.
+  // Fortunately, this hack does us no harm because the _request_timer
+  // hack works fine on OSX.
+  has_plugin_thread_async_call = false;
 #endif  // __APPLE__
 
   string url = PANDA_PACKAGE_HOST_URL;
@@ -229,10 +305,6 @@ begin() {
 ////////////////////////////////////////////////////////////////////
 void PPInstance::
 set_window(NPWindow *window) {
-  if (_failed) {
-    return;
-  }
-
   if (_got_window && 
       window->x == _window.x &&
       window->y == _window.y &&
@@ -248,30 +320,73 @@ set_window(NPWindow *window) {
     assert(_window.window == window->window);
   }
 
-#ifdef _WIN32
   if (!_got_window) {
+#ifdef _WIN32
     _orig_window_proc = NULL;
     if (window->type == NPWindowTypeWindow) {
-      // Subclass the window to make it call our own window_proc instead
-      // of whatever window_proc it has already.  This is just a dopey
-      // trick to allow us to poll events in the main thread.
-      HWND hwnd = (HWND)window->window;
-      _orig_window_proc = SetWindowLongPtr(hwnd, GWL_WNDPROC, (LONG_PTR)window_proc);
+      // Save the window handle.
+      _hwnd = (HWND)window->window;
 
-      // Also set a timer to go off every once in a while, just in
-      // case something slips through.
-      SetTimer(hwnd, 1, 1000, NULL);
+      // Now that we've got a window handle, we can go get the
+      // twirling icon images.
+      win_get_twirl_bitmaps();
+
+      _bg_brush = CreateSolidBrush(RGB(_bgcolor_r, _bgcolor_g, _bgcolor_b));
+
+      // Subclass the window to make it call our own window_proc
+      // instead of whatever window_proc it has already.  This is
+      // mainly just a dopey trick to allow us to poll events in the
+      // main thread, but we also rely on this to paint the twirling
+      // icon into the browser window.
+      SetWindowLongPtr(_hwnd, GWLP_USERDATA, (LONG_PTR)this);
+      _orig_window_proc = SetWindowLongPtr(_hwnd, GWL_WNDPROC, (LONG_PTR)st_window_proc);
+
+      // Also set a timer to go off every once in a while, to update
+      // the twirling icon, and also to catch events in case something
+      // slips through.
+      _init_time = GetTickCount();
+      SetTimer(_hwnd, 1, 100, NULL);
+    }
+#endif  // _WIN32
+#ifdef MACOSX_HAS_EVENT_MODELS
+    osx_get_twirl_images();
+#endif  // MACOSX_HAS_EVENT_MODELS
+  }
+
+#if defined(HAVE_GTK) && defined(HAVE_X11)
+  if (_use_xembed) {
+    if (!_got_window || _window.window != window->window) {
+      // The window has changed.  Destroy the old GtkPlug.
+      if (_plug != NULL) {
+        gtk_widget_destroy(_plug);
+        _plug = NULL;
+      }
+
+      // Create a new GtkPlug to bind to the XEmbed socket.
+      _plug = gtk_plug_new((GdkNativeWindow) reinterpret_cast<XID>(window->window));
+      gtk_widget_show(_plug);
+      
+      nout << "original XID is " << window->window << ", created X11 window "
+           << GDK_DRAWABLE_XID(_plug->window) << "\n";
     }
   }
-#endif  // _WIN32
+#endif  // HAVE_GTK && HAVE_X11
 
   _window = *window;
   _got_window = true;
-  
-  if (_p3d_inst == NULL) {
-    create_instance();
-  } else {
-    send_window();
+
+#ifdef HAVE_X11
+  if (!_failed && !_started) {
+    x11_start_twirl_subprocess();
+  }
+#endif  // HAVE_X11
+
+  if (!_failed) {
+    if (_p3d_inst == NULL) {
+      create_instance();
+    } else {
+      send_window();
+    }
   }
 }
 
@@ -318,16 +433,17 @@ new_stream(NPMIMEType type, NPStream *stream, bool seekable, uint16_t *stype) {
   PPDownloadRequest *req = (PPDownloadRequest *)(stream->notifyData);
   switch (req->_rtype) {
   case PPDownloadRequest::RT_contents_file:
-    // This is the initial contents.xml file.  We'll just download
-    // this directly to a file, since it is small and this is easy.
-    *stype = NP_ASFILEONLY;
+    // This is the initial contents.xml file.  We used to download
+    // this via NP_ASFILEONLY, but that option doesn't work on Windows
+    // within a Unicode user directory.  So we use NP_NORMAL instead.
+    *stype = NP_NORMAL;
     _streams.push_back(stream);
     return NPERR_NO_ERROR;
 
   case PPDownloadRequest::RT_core_dll:
-    // This is the core API DLL (or dylib or whatever).  We want to
-    // download this to file for convenience.
-    *stype = NP_ASFILEONLY;
+    // This is the core API DLL (or dylib or whatever).  Again, we
+    // have to use NP_NORMAL.
+    *stype = NP_NORMAL;
     _streams.push_back(stream);
     return NPERR_NO_ERROR;
 
@@ -416,8 +532,8 @@ write_stream(NPStream *stream, int offset, int len, void *buffer) {
   switch (req->_rtype) {
   case PPDownloadRequest::RT_user:
     P3D_instance_feed_url_stream_ptr(_p3d_inst, req->_user_id,
-                                 P3D_RC_in_progress, 0,
-                                 stream->end, buffer, len);
+                                     P3D_RC_in_progress, 0,
+                                     stream->end, buffer, len);
     return len;
 
   case PPDownloadRequest::RT_instance_data:
@@ -439,26 +555,35 @@ write_stream(NPStream *stream, int offset, int len, void *buffer) {
     // temporary file until the instance is ready for it.
     if (_p3d_inst == NULL) {
       // The instance isn't ready, so stuff it in a temporary file.
-      if (!_opened_p3d_temp_file) {
-        open_p3d_temp_file();
+      if (!_p3d_temp_file.feed(stream->end, buffer, len)) {
+        set_failed();
       }
-      _p3d_temp_file.write((const char *)buffer, len);
-      _p3d_temp_file_current_size += len;
-      _p3d_temp_file_total_size = stream->end;
       return len;
 
     } else {
       // The instance has been created.  Redirect the stream into the
       // instance.
-      assert(!_opened_p3d_temp_file);
+      assert(!_p3d_temp_file._opened);
       req->_rtype = PPDownloadRequest::RT_user;
       req->_user_id = _p3d_instance_id;
       P3D_instance_feed_url_stream_ptr(_p3d_inst, req->_user_id,
-                                   P3D_RC_in_progress, 0,
-                                   stream->end, buffer, len);
+                                       P3D_RC_in_progress, 0,
+                                       stream->end, buffer, len);
       return len;
     }
     break;
+
+  case PPDownloadRequest::RT_contents_file:
+    if (!_contents_temp_file.feed(stream->end, buffer, len)) {
+      set_failed();
+    }
+    return len;
+
+  case PPDownloadRequest::RT_core_dll:
+    if (!_core_dll_temp_file.feed(stream->end, buffer, len)) {
+      set_failed();
+    }
+    return len;
     
   default:
     nout << "Unexpected write_stream on " << stream->url << "\n";
@@ -501,38 +626,51 @@ destroy_stream(NPStream *stream, NPReason reason) {
 
   switch (req->_rtype) {
   case PPDownloadRequest::RT_user:
-    {
-      assert(!req->_notified_done);
+    if (!req->_notified_done) {
       P3D_instance_feed_url_stream_ptr(_p3d_inst, req->_user_id,
-                                   result_code, 0, stream->end, NULL, 0);
+                                       result_code, 0, stream->end, NULL, 0);
       req->_notified_done = true;
     }
     break;
 
   case PPDownloadRequest::RT_instance_data:
-    if (_p3d_inst == NULL) {
-      // The instance still isn't ready; just mark the data done.
-      // We'll send the entire file to the instance when it is ready.
-      _finished_p3d_temp_file = true;
-      _p3d_temp_file_total_size = _p3d_temp_file_current_size;
+    if (!req->_notified_done) {
+      if (_p3d_inst == NULL) {
+        // The instance still isn't ready; just mark the data done.
+        // We'll send the entire file to the instance when it is ready.
+        _p3d_temp_file.finish();
+        if (result_code != P3D_RC_done) {
+          set_failed();
+        }
+        
+      } else {
+        // The instance has (only just) been created.  Tell it we've
+        // sent it all the data it will get.
+        P3D_instance_feed_url_stream_ptr(_p3d_inst, _p3d_instance_id,
+                                         result_code, 0, stream->end, NULL, 0);
+      }
+      req->_notified_done = true;
+    }
+    break;
+
+  case PPDownloadRequest::RT_contents_file:
+    if (!req->_notified_done) {
+      _contents_temp_file.finish();
       if (result_code != P3D_RC_done) {
         set_failed();
       }
-
-    } else {
-      // The instance has (only just) been created.  Tell it we've
-      // sent it all the data it will get.
-      P3D_instance_feed_url_stream_ptr(_p3d_inst, _p3d_instance_id,
-                                   result_code, 0, stream->end, NULL, 0);
+      req->_notified_done = true;
     }
-    assert(!req->_notified_done);
-    req->_notified_done = true;
     break;
 
   case PPDownloadRequest::RT_core_dll:
-  case PPDownloadRequest::RT_contents_file:
-    // These are received as a full-file only, so we don't care about
-    // the destroy_stream notification.
+    if (!req->_notified_done) {
+      _core_dll_temp_file.finish();
+      if (result_code != P3D_RC_done) {
+        set_failed();
+      }
+      req->_notified_done = true;
+    }
     break;
 
   default:
@@ -574,13 +712,15 @@ url_notify(const char *url, NPReason reason, void *notifyData) {
       assert(reason != NPRES_DONE);
 
       P3D_instance_feed_url_stream_ptr(_p3d_inst, req->_user_id,
-                                   P3D_RC_generic_error, 0, 0, NULL, 0);
+                                       P3D_RC_generic_error, 0, 0, NULL, 0);
       req->_notified_done = true;
     }
     break;
 
   case PPDownloadRequest::RT_contents_file:
-    if (reason != NPRES_DONE) {
+    if (reason == NPRES_DONE) {
+      downloaded_contents_file(_contents_temp_file._filename);
+    } else {
       nout << "Failure downloading " << url << "\n";
 
       if (reason == NPRES_USER_BREAK) {
@@ -601,7 +741,10 @@ url_notify(const char *url, NPReason reason, void *notifyData) {
     break;
     
   case PPDownloadRequest::RT_core_dll:
-    if (reason != NPRES_DONE) {
+    if (reason == NPRES_DONE) {
+      downloaded_plugin(_core_dll_temp_file._filename);
+
+    } else {
       nout << "Failure downloading " << url << "\n";
 
       if (reason == NPRES_USER_BREAK) {
@@ -797,11 +940,6 @@ bool PPInstance::
 handle_event(void *event) {
   bool retval = false;
 
-  if (_p3d_inst == NULL) {
-    // Ignore events that come in before we've launched the instance.
-    return retval;
-  }
-
   P3D_event_data edata;
   memset(&edata, 0, sizeof(edata));
   edata._event_type = _event_type;
@@ -818,12 +956,16 @@ handle_event(void *event) {
     NPCocoaEvent *np_event = (NPCocoaEvent *)event;
     P3DCocoaEvent *p3d_event = &edata._event._osx_cocoa._event;
     copy_cocoa_event(p3d_event, np_event, aux_data);
+    if (_got_window) {
+      handle_cocoa_event(p3d_event);
+    }
 #endif  // MACOSX_HAS_EVENT_MODELS
-
   }
 
-  if (P3D_instance_handle_event_ptr(_p3d_inst, &edata)) {
-    retval = true;
+  if (_p3d_inst != NULL) {
+    if (P3D_instance_handle_event_ptr(_p3d_inst, &edata)) {
+      retval = true;
+    }
   }
 
   return retval;
@@ -855,6 +997,20 @@ get_panda_script_object() {
 
   browser->retainobject(_script_object);
   return _script_object;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::set_xembed
+//       Access: Public
+//  Description: Sets the use_xembed flag, telling the instance what
+//               kind of window object to expect from NPAPI.  If this
+//               is true, the window object is an XID following the
+//               XEmbed specification; if false, it is a normal window
+//               handle.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+set_xembed(bool use_xembed) {
+  _use_xembed = use_xembed;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1163,6 +1319,38 @@ start_download(const string &url, PPDownloadRequest *req) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::downloaded_contents_file
+//       Access: Private
+//  Description: The contents.xml file has been successfully downloaded;
+//               copy it into place.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+downloaded_contents_file(const string &filename) {
+  // Now we have the contents.xml file.  Read this to get the
+  // filename and md5 hash of our core API DLL.
+  if (read_contents_file(filename, true)) {
+    // Successfully downloaded and read, and it has been written
+    // into its normal place.
+    get_core_api();
+    
+  } else {
+    // Error reading the contents.xml file, or in loading the core
+    // API that it references.
+    nout << "Unable to read contents file " << filename << "\n";
+    
+    // If there's an outstanding contents.xml file on disk, try to
+    // load that one as a fallback.
+    string contents_filename = _root_dir + "/contents.xml";
+    if (read_contents_file(contents_filename, false)) {
+      get_core_api();
+    } else {
+      nout << "Unable to read contents file " << contents_filename << "\n";
+      set_failed();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: PPInstance::read_contents_file
 //       Access: Private
 //  Description: Attempts to open and read the contents.xml file on
@@ -1321,32 +1509,14 @@ get_filename_from_url(const string &url) {
 ////////////////////////////////////////////////////////////////////
 void PPInstance::
 downloaded_file(PPDownloadRequest *req, const string &filename) {
+  // Since we're no longer using NP_ASFILEONLY, none of these URL
+  // requests will normally come through this codepath (they'll go
+  // through url_notify() above, instead), unless we short-circuited
+  // the browser by "downloading" a file:// url.
   switch (req->_rtype) {
   case PPDownloadRequest::RT_contents_file:
-    {
-      // Now we have the contents.xml file.  Read this to get the
-      // filename and md5 hash of our core API DLL.
-      if (read_contents_file(filename, true)) {
-        // Successfully downloaded and read, and it has been written
-        // into its normal place.
-        get_core_api();
-        
-      } else {
-        // Error reading the contents.xml file, or in loading the core
-        // API that it references.
-        nout << "Unable to read contents file " << filename << "\n";
-        
-        // If there's an outstanding contents.xml file on disk, try to
-        // load that one as a fallback.
-        string contents_filename = _root_dir + "/contents.xml";
-        if (read_contents_file(contents_filename, false)) {
-          get_core_api();
-        } else {
-          nout << "Unable to read contents file " << contents_filename << "\n";
-          set_failed();
-        }
-      }
-    }
+    // The contents.xml file that gets things going.
+    downloaded_contents_file(filename);
     break;
 
   case PPDownloadRequest::RT_core_dll:
@@ -1356,9 +1526,8 @@ downloaded_file(PPDownloadRequest *req, const string &filename) {
     break;
 
   case PPDownloadRequest::RT_user:
-    // Normally, RT_user requests won't come here, unless we
-    // short-circuited the browser by "downloading" a file:// url.  In
-    // any case, we'll now open the file and feed it to the user.
+    // Here's the user-requested file.  It needs to be streamed to the
+    // user, so we'll open the file and feed it to the user.
     feed_file(req, filename);
     break;
 
@@ -1381,35 +1550,6 @@ feed_file(PPDownloadRequest *req, const string &filename) {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PPInstance::open_p3d_temp_file
-//       Access: Private
-//  Description: Creates a temporary file into which the p3d file data
-//               is stored before the instance has been created.
-////////////////////////////////////////////////////////////////////
-void PPInstance::
-open_p3d_temp_file() {
-  assert(!_opened_p3d_temp_file);
-  _opened_p3d_temp_file = true;
-  _finished_p3d_temp_file = false;
-  _p3d_temp_file_current_size = 0;
-  _p3d_temp_file_total_size = 0;
-
-  char *name = tempnam(NULL, "p3d_");
-  _p3d_temp_filename = name;
-  free(name);
-
-  _p3d_temp_file.clear();
-  _p3d_temp_file.open(_p3d_temp_filename.c_str(), ios::binary);
-  if (!_p3d_temp_file) {
-    nout << "Unable to open temp file " << _p3d_temp_filename << "\n";
-    set_failed();
-  } else {
-    nout << "Opening " << _p3d_temp_filename
-         << " for storing preliminary p3d data\n";
-  }
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PPInstance::send_p3d_temp_file_data
 //       Access: Private
 //  Description: Once the instance has been created, sends it all of
@@ -1418,10 +1558,10 @@ open_p3d_temp_file() {
 ////////////////////////////////////////////////////////////////////
 void PPInstance::
 send_p3d_temp_file_data() {
-  assert(_opened_p3d_temp_file);
+  assert(_p3d_temp_file._opened);
 
-  nout << "Sending " << _p3d_temp_file_current_size
-       << " preliminary bytes of " << _p3d_temp_file_total_size
+  nout << "Sending " << _p3d_temp_file._current_size
+       << " preliminary bytes of " << _p3d_temp_file._total_size
        << " total p3d data\n";
         
   static const size_t buffer_size = 4096;
@@ -1429,14 +1569,14 @@ send_p3d_temp_file_data() {
 
   _p3d_temp_file.close();
 
-  ifstream in(_p3d_temp_filename.c_str(), ios::binary);
+  ifstream in(_p3d_temp_file._filename.c_str(), ios::binary);
   in.read(buffer, buffer_size);
   size_t total = 0;
   size_t count = in.gcount();
   while (count != 0) {
     P3D_instance_feed_url_stream_ptr(_p3d_inst, _p3d_instance_id,
-                                 P3D_RC_in_progress, 0,
-                                 _p3d_temp_file_total_size, buffer, count);
+                                     P3D_RC_in_progress, 0,
+                                     _p3d_temp_file._total_size, buffer, count);
     total += count;
 
     in.read(buffer, buffer_size);
@@ -1445,16 +1585,14 @@ send_p3d_temp_file_data() {
   nout << "sent " << count << " bytes.\n";
 
   in.close();
-  _opened_p3d_temp_file = false;
-  unlink(_p3d_temp_filename.c_str());
-  _p3d_temp_filename.clear();
 
-  if (_finished_p3d_temp_file) {
+  if (_p3d_temp_file._finished) {
     // If we'd already finished the stream earlier, tell the plugin.
     P3D_instance_feed_url_stream_ptr(_p3d_inst, _p3d_instance_id,
-                                 P3D_RC_done, 0, _p3d_temp_file_total_size,
-                                 NULL, 0);
+                                     P3D_RC_done, 0, _p3d_temp_file._total_size,
+                                     NULL, 0);
   }
+  _p3d_temp_file.cleanup();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1532,12 +1670,20 @@ downloaded_plugin(const string &filename) {
   // Make sure the DLL was correctly downloaded before continuing.
   if (!_coreapi_dll.quick_verify_pathname(filename)) {
     nout << "After download, " << _coreapi_dll.get_filename() << " is no good.\n";
+    nout << "Expected:\n";
+    _coreapi_dll.write(nout);
+    const FileSpec *actual = _coreapi_dll.force_get_actual_file(filename);
+    if (actual != NULL) {
+      nout << "Found:\n";
+      actual->write(nout);
+    }
 
     // That DLL came out wrong.  Try the next URL.
     if (!_core_urls.empty()) {
       string url = _core_urls.back();
       _core_urls.pop_back();
-      
+
+      _core_dll_temp_file.cleanup();
       PPDownloadRequest *req = new PPDownloadRequest(PPDownloadRequest::RT_core_dll);
       start_download(url, req);
       return;
@@ -1637,6 +1783,22 @@ create_instance() {
     return;
   }
 
+#ifdef __APPLE__
+  // We no longer need to twirl the icon.  Stop the timer.
+  if (_twirl_timer != NULL) {
+    CFRunLoopTimerInvalidate(_twirl_timer);
+    CFRelease(_twirl_timer);
+    _twirl_timer = NULL;
+  }
+#endif  // __APPLE__
+
+#ifdef HAVE_X11
+  x11_stop_twirl_subprocess();
+#endif  // HAVE_X11
+
+  // In the Windows case, we let the timer keep running, because it
+  // also checks for wayward messages.
+
   P3D_token *tokens = NULL;
   if (!_tokens.empty()) {
     tokens = &_tokens[0];
@@ -1676,7 +1838,7 @@ create_instance() {
 
     // If we have already started to receive any instance data, send it
     // to the plugin now.
-    if (_opened_p3d_temp_file) {
+    if (_p3d_temp_file._opened) {
       send_p3d_temp_file_data();
     }
   }
@@ -1710,12 +1872,14 @@ send_window() {
     // (0, 0), since the window we were given is already placed in the
     // right spot.
 #ifdef _WIN32
+    assert(!_use_xembed);
     parent_window._window_handle_type = P3D_WHT_win_hwnd;
     parent_window._handle._win_hwnd._hwnd = (HWND)(_window.window);
     x = 0;
     y = 0;
 
 #elif defined(__APPLE__)
+    assert(!_use_xembed);
     parent_window._window_handle_type = _window_handle_type;
     if (_window_handle_type == P3D_WHT_osx_port) {
       NP_Port *port = (NP_Port *)_window.window;
@@ -1729,10 +1893,24 @@ send_window() {
     }
 
 #elif defined(HAVE_X11)
-    // We make it an 'unsigned long' instead of 'Window'
-    // to avoid nppanda3d.so getting a dependency on X11.
-    parent_window._window_handle_type = P3D_WHT_x11_window;
-    parent_window._handle._x11_window._xwindow = (unsigned long)(_window.window);
+    if (_use_xembed) {
+      // If we're using the XEmbed model, we've actually received an
+      // XID for a GtkSocket.
+#ifdef HAVE_GTK
+      // If we're using XEmbed, pass the X11 Window pointer of our
+      // plug down to Panda.  (Hmm, it would be nice to pass the XID
+      // object and use this system in general within Panda, but
+      // that's for the future, I think.)
+      assert(_plug != NULL);
+      parent_window._window_handle_type = P3D_WHT_x11_window;
+      parent_window._handle._x11_window._xwindow = GDK_DRAWABLE_XID(_plug->window);
+#endif  // HAVE_GTK
+    } else {
+      // If we're not using XEmbed, this is just a standard X11 Window
+      // pointer.
+      parent_window._window_handle_type = P3D_WHT_x11_window;
+      parent_window._handle._x11_window._xwindow = (X11_Window)(_window.window);
+    }
     x = 0;
     y = 0;
 #endif
@@ -1810,7 +1988,30 @@ cleanup_window() {
     HWND hwnd = (HWND)_window.window;
     SetWindowLongPtr(hwnd, GWL_WNDPROC, _orig_window_proc);
     InvalidateRect(hwnd, NULL, true);
+
+    if (_bg_brush != NULL) {
+      DeleteObject(_bg_brush);
+      _bg_brush = NULL;
+    }
+    for (int step = 0; step < twirl_num_steps + 1; ++step) {
+      if (_twirl_bitmaps[step] != NULL) {
+        DeleteObject(_twirl_bitmaps[step]);
+        _twirl_bitmaps[step] = NULL;
+      }
+    }
 #endif  // _WIN32
+
+#ifdef HAVE_X11
+    x11_stop_twirl_subprocess();
+
+#ifdef HAVE_GTK
+    if (_plug != NULL) {
+      gtk_widget_destroy(_plug);
+      _plug = NULL;
+    }
+#endif  // HAVE_GTK
+#endif  // HAVE_X11
+
     _got_window = false;
   }
 }
@@ -1866,6 +2067,25 @@ lookup_token(const string &keyword) const {
 
   return string();
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::has_token
+//       Access: Private
+//  Description: Returns true if the named token appears in the list,
+//               false otherwise.
+////////////////////////////////////////////////////////////////////
+bool PPInstance::
+has_token(const string &keyword) const {
+  Tokens::const_iterator ti;
+  for (ti = _tokens.begin(); ti != _tokens.end(); ++ti) {
+    if ((*ti)._keyword == keyword) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PPInstance::compare_seq
@@ -2043,9 +2263,32 @@ browser_sync_callback(void *) {
 
 #ifdef _WIN32
 ////////////////////////////////////////////////////////////////////
-//     Function: PPInstance::window_proc
+//     Function: PPInstance::st_window_proc
 //       Access: Private, Static
 //  Description: We bind this function to the parent window we were
+//               given in set_window, so we can spin the request_loop
+//               when needed.  This is only in the Windows case; other
+//               platforms rely on explicit windows events.
+////////////////////////////////////////////////////////////////////
+LONG PPInstance::
+st_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+  LONG_PTR self = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  if (self == NULL) {
+    // We haven't assigned the pointer yet (!?)
+    return DefWindowProc(hwnd, msg, wparam, lparam);
+  }
+
+  return ((PPInstance *)self)->window_proc(hwnd, msg, wparam, lparam);
+}
+#endif  // _WIN32
+
+#ifdef _WIN32
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::window_proc
+//       Access: Private
+//  Description: The non-static window_proc() function.
+//
+//               We bind this function to the parent window we were
 //               given in set_window, so we can spin the request_loop
 //               when needed.  This is only in the Windows case; other
 //               platforms rely on explicit windows events.
@@ -2064,13 +2307,145 @@ window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     // Eat the WM_ERASEBKGND message, so the browser's intervening
     // window won't overdraw on top of our own window.
     return true;
+    
+  case WM_PAINT:
+    if (!_started) {
+      // If we haven't yet loaded the instance, we can paint a
+      // twirling icon in the window.
+      PAINTSTRUCT ps;
+      HDC dc = BeginPaint(hwnd, &ps);
+      win_paint_twirl(hwnd, dc);
+      EndPaint(hwnd, &ps);
+    }
+    return true;
 
   case WM_TIMER:
+    if (!_started) {
+      InvalidateRect(_hwnd, NULL, FALSE);
+    }
+    break;
+
   case WM_USER:
     break;
   }
 
   return DefWindowProc(hwnd, msg, wparam, lparam);
+}
+#endif  // _WIN32
+
+
+#ifdef _WIN32
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::win_get_twirl_bitmaps
+//       Access: Private
+//  Description: Fills _twirl_bitmaps with an array of bitmaps for
+//               drawing the twirling icon while we're waiting for the
+//               instance to load.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+win_get_twirl_bitmaps() {
+  BITMAPINFOHEADER bmih;
+  bmih.biSize = sizeof(bmih);
+  bmih.biWidth = twirl_width;
+  bmih.biHeight = -twirl_height;
+  bmih.biPlanes = 1;
+  bmih.biBitCount = 32;
+  bmih.biCompression = BI_RGB;
+  bmih.biSizeImage = 0;
+  bmih.biXPelsPerMeter = 0;
+  bmih.biYPelsPerMeter = 0;
+  bmih.biClrUsed = 0;
+  bmih.biClrImportant = 0;
+
+  BITMAPINFO bmi;
+  memcpy(&bmi, &bmih, sizeof(bmih));
+
+  HDC dc = GetDC(_hwnd);
+
+  static const size_t twirl_size = twirl_width * twirl_height;
+  unsigned char twirl_data[twirl_size * 3];
+  unsigned char new_data[twirl_size * 4];
+
+  for (int step = 0; step < twirl_num_steps + 1; ++step) {
+    get_twirl_data(twirl_data, twirl_size, step,
+                   _fgcolor_r, _fgcolor_g, _fgcolor_b, 
+                   _bgcolor_r, _bgcolor_g, _bgcolor_b);
+
+    // Expand out the RGB channels into RGBA.
+    for (int yi = 0; yi < twirl_height; ++yi) {
+      const unsigned char *sp = twirl_data + yi * twirl_width * 3;
+      unsigned char *dp = new_data + yi * twirl_width * 4;
+      for (int xi = 0; xi < twirl_width; ++xi) {
+        // RGB <= BGR.
+        dp[0] = sp[2];
+        dp[1] = sp[1];
+        dp[2] = sp[0];
+        dp[3] = (unsigned char)0xff;
+        sp += 3;
+        dp += 4;
+      }
+    }
+
+    // Now load the image.
+    _twirl_bitmaps[step] = CreateDIBitmap(dc, &bmih, CBM_INIT, (const char *)new_data, &bmi, 0);
+  }
+
+  ReleaseDC(_hwnd, dc);
+}
+#endif  // _WIN32
+
+#ifdef _WIN32
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::win_paint_twirl
+//       Access: Private
+//  Description: Paints the twirling icon into the browser window
+//               before the instance has started.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+win_paint_twirl(HWND hwnd, HDC dc) {
+  RECT rect;
+  GetClientRect(_hwnd, &rect);
+  int width = rect.right - rect.left;
+  int height = rect.bottom - rect.top;
+
+  // Double-buffer with an offscreen bitmap first.
+  HDC bdc = CreateCompatibleDC(dc);
+  HBITMAP buffer = CreateCompatibleBitmap(dc, width, height);
+  SelectObject(bdc, buffer);
+
+  // Start by painting the background color.
+  FillRect(bdc, &rect, _bg_brush);
+
+  if (!_started) {
+    DWORD now = GetTickCount();
+    // Don't draw the twirling icon until at least half a second has
+    // passed, so we don't distract people by drawing it
+    // unnecessarily.
+    if (_failed || (now - _init_time) >= 500) {
+      // Which frame are we drawing?
+      int step = (now / 100) % twirl_num_steps;
+      if (_failed) {
+        step = twirl_num_steps;
+      }
+      
+      HBITMAP twirl = _twirl_bitmaps[step];
+      
+      int left = rect.left + (width - twirl_width) / 2;
+      int top = rect.top + (height - twirl_height) / 2;
+      
+      HDC mem_dc = CreateCompatibleDC(bdc);
+      SelectObject(mem_dc, twirl);
+      
+      BitBlt(bdc, left, top, twirl_width, twirl_height,
+             mem_dc, 0, 0, SRCCOPY);
+      
+      SelectObject(mem_dc, NULL);
+      DeleteDC(mem_dc);
+    }
+  }
+
+  // Now blit the buffer to the window.
+  BitBlt(dc, 0, 0, width, height, bdc, 0, 0, SRCCOPY);
 }
 #endif  // _WIN32
 
@@ -2212,6 +2587,210 @@ make_ansi_string(wstring &result, NPNSString *ns_string) {
 }
 #endif  // MACOSX_HAS_EVENT_MODELS
 
+#ifdef MACOSX_HAS_EVENT_MODELS
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::handle_cocoa_event
+//       Access: Private
+//  Description: Locally processes a Cocoa event for the window before
+//               sending it down to the Core API.  This is used for
+//               drawing a twirling icon in the window while the Core
+//               API is downloading.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+handle_cocoa_event(const P3DCocoaEvent *p3d_event) {
+  switch (p3d_event->type) {
+  case P3DCocoaEventDrawRect:
+    if (!_started) {
+      CGContextRef context = p3d_event->data.draw.context;
+      paint_twirl_osx_cgcontext(context);
+    }
+    break;
+    
+  default:
+    break;
+  }
+}
+#endif  // MACOSX_HAS_EVENT_MODELS
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::osx_get_twirl_images
+//       Access: Private
+//  Description: Fills _twirl_images with an array of images for
+//               drawing the twirling icon while we're waiting for the
+//               instance to load.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+osx_get_twirl_images() {
+  if (_got_twirl_images) {
+    return;
+  }
+  _got_twirl_images = true;
+
+  static const size_t twirl_size = twirl_width * twirl_height;
+  unsigned char twirl_data[twirl_size * 3];
+
+  for (int step = 0; step < twirl_num_steps + 1; ++step) {
+    get_twirl_data(twirl_data, twirl_size, step,
+                   _fgcolor_r, _fgcolor_g, _fgcolor_b, 
+                   _bgcolor_r, _bgcolor_g, _bgcolor_b);
+
+    unsigned char *new_data = new unsigned char[twirl_size * 4];
+
+    // Expand the RGB channels into RGBA.  Flip upside-down too.
+    for (int yi = 0; yi < twirl_height; ++yi) {
+      const unsigned char *sp = twirl_data + (twirl_height - 1 - yi) * twirl_width * 3;
+      unsigned char *dp = new_data + yi * twirl_width * 4;
+      for (int xi = 0; xi < twirl_width; ++xi) {
+        // RGB <= BGR.
+        dp[0] = sp[2];
+        dp[1] = sp[1];
+        dp[2] = sp[0];
+        dp[3] = (unsigned char)0xff;
+        sp += 3;
+        dp += 4;
+      }
+    }
+
+    OsxImageData &image = _twirl_images[step];
+    image._raw_data = new_data;
+
+    image._data =
+      CFDataCreateWithBytesNoCopy(NULL, (const UInt8 *)image._raw_data, 
+                                  twirl_size * 4, kCFAllocatorNull);
+    image._provider = CGDataProviderCreateWithCFData(image._data);
+    image._color_space = CGColorSpaceCreateDeviceRGB();
+    
+    image._image =
+      CGImageCreate(twirl_width, twirl_height, 8, 32, 
+                    twirl_width * 4, image._color_space,
+                    kCGImageAlphaFirst | kCGBitmapByteOrder32Little, 
+                    image._provider, NULL, false, kCGRenderingIntentDefault);
+  }
+}
+#endif  // MACOSX_HAS_EVENT_MODELS
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::osx_release_twirl_images
+//       Access: Private
+//  Description: Frees the twirl_images array.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+osx_release_twirl_images() {
+  if (!_got_twirl_images) {
+    return;
+  }
+  _got_twirl_images = false;
+
+  for (int step = 0; step < twirl_num_steps + 1; ++step) {
+    OsxImageData &image = _twirl_images[step];
+
+    if (image._image != NULL) {
+      CGImageRelease(image._image);
+      image._image = NULL;
+    }
+    if (image._color_space != NULL) {
+      CGColorSpaceRelease(image._color_space);
+      image._color_space = NULL;
+    }
+    if (image._provider != NULL) {
+      CGDataProviderRelease(image._provider);
+      image._provider = NULL;
+    }
+    if (image._data != NULL) {
+      CFRelease(image._data);
+      image._data = NULL;
+    }
+    if (image._raw_data != NULL) {
+      delete[] image._raw_data;
+      image._raw_data = NULL;
+    }
+  }
+}
+#endif  // MACOSX_HAS_EVENT_MODELS
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::paint_twirl_osx_cgcontext
+//       Access: Private
+//  Description: Actually paints the twirling icon in the OSX window,
+//               using Core Graphics.  (We don't bother painting it in
+//               the older Cocoa interface.)
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+paint_twirl_osx_cgcontext(CGContextRef context) {
+  // Clear the whole region to the bgcolor before beginning.
+  float bg_components[] = { _bgcolor_r / 255.0f, _bgcolor_g / 255.0f, _bgcolor_b / 255.0f, 1 };
+  CGColorSpaceRef rgb_space = CGColorSpaceCreateDeviceRGB();
+  CGColorRef bg = CGColorCreate(rgb_space, bg_components);
+
+  CGRect region = { { 0, 0 }, { _window.width, _window.height } };
+  CGContextBeginPath(context);
+  CGContextSetFillColorWithColor(context, bg);
+  CGContextAddRect(context, region);
+  CGContextFillPath(context);
+
+  CGColorRelease(bg);
+  CGColorSpaceRelease(rgb_space);
+
+  if (_failed) {
+    // Draw the failed icon if something went wrong.
+    osx_paint_image(context, _twirl_images[twirl_num_steps]);
+
+  } else {
+    struct timeval tv;
+    gettimeofday(&tv, (struct timezone *)NULL);
+    double now = (double)(tv.tv_sec - _init_sec) + (double)(tv.tv_usec - _init_usec) / 1000000.0;
+    
+    // Don't draw the twirling icon until at least half a second has
+    // passed, so we don't distract people by drawing it
+    // unnecessarily.
+    if (now >= 0.5) {
+      int step = ((int)(now * 10.0)) % twirl_num_steps;
+      osx_paint_image(context, _twirl_images[step]);
+    }
+  }
+}
+#endif  // MACOSX_HAS_EVENT_MODELS
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::osx_paint_image
+//       Access: Private
+//  Description: Draws the indicated image, centered within the
+//               window.  Returns true on success, false if the image
+//               is not defined.
+////////////////////////////////////////////////////////////////////
+bool PPInstance::
+osx_paint_image(CGContextRef context, const OsxImageData &image) {
+  if (image._image == NULL) {
+    return false;
+  }
+    
+  // Determine the relative size of image and window.
+  int win_cx = _window.width / 2;
+  int win_cy = _window.height / 2;
+
+  CGRect rect = { { 0, 0 }, { 0, 0 } };
+    
+  // The bitmap fits within the window; center it.
+      
+  // This is the top-left corner of the bitmap in window coordinates.
+  int p_x = win_cx - twirl_width / 2;
+  int p_y = win_cy - twirl_height / 2;
+  
+  rect.origin.x += p_x;
+  rect.origin.y += p_y;
+  rect.size.width = twirl_width;
+  rect.size.height = twirl_height;
+
+  CGContextDrawImage(context, rect, image._image);
+  
+  return true;
+}
+#endif  // MACOSX_HAS_EVENT_MODELS
+
 #ifdef __APPLE__
 ////////////////////////////////////////////////////////////////////
 //     Function: PPInstance::timer_callback
@@ -2234,6 +2813,280 @@ timer_callback(CFRunLoopTimerRef timer, void *info) {
   self->handle_request_loop();
 }
 #endif  // __APPLE__
+
+#ifdef __APPLE__
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::st_twirl_timer_callback
+//       Access: Private, Static
+//  Description: OSX only: this callback is used to twirl the icon
+//               before the instance loads.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+st_twirl_timer_callback(CFRunLoopTimerRef timer, void *info) {
+  PPInstance *self = (PPInstance *)info;
+  self->twirl_timer_callback();
+}
+#endif  // __APPLE__
+
+#ifdef __APPLE__
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::twirl_timer_callback
+//       Access: Private
+//  Description: OSX only: this callback is used to twirl the icon
+//               before the instance loads.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+twirl_timer_callback() {
+  if (_got_window) {
+    NPRect rect = { 0, 0, (unsigned short)_window.height, (unsigned short)_window.width };
+    browser->invalidaterect(_npp_instance, &rect);
+  }
+}
+#endif  // __APPLE__
+
+#ifdef HAVE_X11
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::x11_start_twirl_subprocess
+//       Access: Public
+//  Description: Spawns a separate process to twirl the loading icon
+//               in the X11 browser window.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+x11_start_twirl_subprocess() {
+  if (_twirl_subprocess_pid != -1) {
+    // Already started.
+    return;
+  }
+
+  // Fork and exec.
+  pid_t child = fork();
+  if (child < 0) {
+    perror("fork");
+    return;
+  }
+
+  if (child == 0) {
+    // Here we are in the child process.
+    x11_twirl_subprocess_run();
+    _exit(99);
+  }
+
+  // In the parent process.
+  _twirl_subprocess_pid = child;
+  nout << "Started twirl subprocess, pid " << _twirl_subprocess_pid
+       << "\n";
+}
+#endif  // HAVE_X11
+
+#ifdef HAVE_X11
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::x11_stop_twirl_subprocess
+//       Access: Public
+//  Description: Kills the twirl process that was started earlier.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+x11_stop_twirl_subprocess() {
+  if (_twirl_subprocess_pid == -1) {
+    // Already stopped.
+    return;
+  }
+
+  kill(_twirl_subprocess_pid, SIGKILL);
+
+  int status;
+  pid_t result = waitpid(_twirl_subprocess_pid, &status, 0);
+
+  nout << "Twirl window process has successfully stopped.\n";
+  if (WIFEXITED(status)) {
+    nout << "  exited normally, status = "
+         << WEXITSTATUS(status) << "\n";
+  } else if (WIFSIGNALED(status)) {
+    nout << "  signalled by " << WTERMSIG(status) << ", core = " 
+         << WCOREDUMP(status) << "\n";
+  } else if (WIFSTOPPED(status)) {
+    nout << "  stopped by " << WSTOPSIG(status) << "\n";
+  }
+  _twirl_subprocess_pid = -1;
+}
+#endif  // HAVE_X11
+
+#ifdef HAVE_X11
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::x11_twirl_subprocess_run
+//       Access: Public
+//  Description: The code that is run within a subprocess.  This code
+//               is responsible for twirling the loading icon
+//               endlessly.
+////////////////////////////////////////////////////////////////////
+void PPInstance::
+x11_twirl_subprocess_run() {
+  // Since everything within this function happens within a subprocess
+  // that will just exit, we can be a little sloppy with our resource
+  // allocation.  It is all done directly within this function, and we
+  // don't need to worry about freeing stuff.
+
+  // First, sleep for 0.5 seconds, so we don't start twirling right
+  // away (to avoid distracting the user unnecessarily).
+
+  struct timespec req;
+  req.tv_sec = 0;
+  req.tv_nsec = 500000000;  // 500 ms
+  nanosleep(&req, NULL);
+
+  // We haven't been killed yet, so the plugin is still loading.
+  // Start twirling.
+
+  // First, embed a window.
+  X11_Display *display = XOpenDisplay(NULL);
+  assert(display != NULL);
+  int screen = DefaultScreen(display);
+
+  int depth = DefaultDepth(display, screen);
+  Visual *dvisual = DefaultVisual(display, screen);
+
+  long event_mask = ExposureMask;
+
+  // Allocate the foreground and background colors.
+  Colormap colormap = DefaultColormap(display, screen);
+
+  XColor fg;
+  fg.red = _fgcolor_r * 0x101;
+  fg.green = _fgcolor_g * 0x101;
+  fg.blue = _fgcolor_b * 0x101;
+  fg.flags = DoRed | DoGreen | DoBlue;
+  unsigned long fg_pixel = -1;
+  if (XAllocColor(display, colormap, &fg)) {
+    fg_pixel = fg.pixel;
+  }
+
+  XColor bg;
+  bg.red = _bgcolor_r * 0x101;
+  bg.green = _bgcolor_g * 0x101;
+  bg.blue = _bgcolor_b * 0x101;
+  bg.flags = DoRed | DoGreen | DoBlue;
+  unsigned long bg_pixel = -1;
+  if (XAllocColor(display, colormap, &bg)) {
+    bg_pixel = bg.pixel;
+  }
+
+  // Initialize window attributes
+  XSetWindowAttributes wa;
+  wa.background_pixel = XWhitePixel(display, screen);
+  if (bg_pixel != -1) {
+    wa.background_pixel = bg_pixel;
+  }
+  wa.border_pixel = 0;
+  wa.event_mask = event_mask;
+
+  unsigned long attrib_mask = CWBackPixel | CWBorderPixel | CWEventMask;
+
+  X11_Window parent = 0;
+  if (_use_xembed) {
+#ifdef HAVE_GTK
+    assert(_plug != NULL);
+    parent = GDK_DRAWABLE_XID(_plug->window);
+#endif  // HAVE_GTK
+  } else {
+    parent = (X11_Window)(_window.window);
+  }
+
+  X11_Window window = XCreateWindow
+    (display, parent, 0, 0, _window.width, _window.height,
+     0, depth, InputOutput, dvisual, attrib_mask, &wa);
+  XMapWindow(display, window);
+
+  // Create a graphics context.
+  XGCValues gcval;
+  gcval.function = GXcopy;
+  gcval.plane_mask = AllPlanes;
+  gcval.foreground = BlackPixel(display, screen);
+  if (fg_pixel != -1) {
+    gcval.foreground = fg_pixel;
+  }
+  gcval.background = WhitePixel(display, screen);
+  if (bg_pixel != -1) {
+    gcval.background = bg_pixel;
+  }
+  GC graphics_context = XCreateGC(display, window, 
+    GCFunction | GCPlaneMask | GCForeground | GCBackground, &gcval); 
+
+  // Load up the twirling images.
+  XImage *images[twirl_num_steps];
+  double r_ratio = dvisual->red_mask / 255.0;
+  double g_ratio = dvisual->green_mask / 255.0;
+  double b_ratio = dvisual->blue_mask / 255.0;
+
+  static const size_t twirl_size = twirl_width * twirl_height;
+  unsigned char twirl_data[twirl_size * 3];
+
+  for (int step = 0; step < twirl_num_steps; ++step) {
+    get_twirl_data(twirl_data, twirl_size, step,
+                   _fgcolor_r, _fgcolor_g, _fgcolor_b, 
+                   _bgcolor_r, _bgcolor_g, _bgcolor_b);
+    uint32_t *new_data = new uint32_t[twirl_size];
+    int j = 0;
+    for (int i = 0; i < twirl_size * 3; i += 3) {
+      unsigned int r, g, b;
+      r = (unsigned int)(twirl_data[i+0] * r_ratio);
+      g = (unsigned int)(twirl_data[i+1] * g_ratio);
+      b = (unsigned int)(twirl_data[i+2] * b_ratio);
+      new_data[j++] = ((r & dvisual->red_mask) |
+                       (g & dvisual->green_mask) |
+                       (b & dvisual->blue_mask));
+    }
+
+    // Now load the image.
+    images[step] = XCreateImage(display, CopyFromParent, DefaultDepth(display, screen), 
+                                ZPixmap, 0, (char *)new_data, twirl_width, twirl_height, 32, 0);
+  }
+
+  // Now twirl indefinitely, until our parent process kills us.
+  bool needs_redraw = true;
+  int last_step = -1;
+  while (true) {
+    // First, scan for X events.
+    XEvent event;
+    while (XCheckWindowEvent(display, window, ~0, &event)) {
+      switch (event.type) {
+      case Expose:
+      case GraphicsExpose:
+        needs_redraw = true;
+        break;
+      }
+
+      // We should probably track the resize event, but this window
+      // will be short-lived (and probably won't have an opportunity
+      // to resize anyway) so we don't bother.
+    }
+
+    // What step are we on now?
+    struct timeval tv;
+    gettimeofday(&tv, (struct timezone *)NULL);
+    double now = (double)(tv.tv_sec - _init_sec) + (double)(tv.tv_usec - _init_usec) / 1000000.0;
+    int step = ((int)(now * 10.0)) % twirl_num_steps;
+    if (step != last_step) {
+      needs_redraw = true;
+    }
+
+    if (needs_redraw) {
+      XClearWindow(display, window);
+      int xo = (_window.width - twirl_width) / 2;
+      int yo = (_window.height - twirl_height) / 2;
+      XPutImage(display, window, graphics_context, images[step], 0, 0, 
+                xo, yo, twirl_width, twirl_height);
+
+      XFlush(display);
+      needs_redraw = false;
+      last_step = step;
+    }
+
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 100000000;  // 100 ms
+    nanosleep(&req, NULL);
+  }
+}
+#endif  // HAVE_X11
 
 ////////////////////////////////////////////////////////////////////
 //     Function: PPInstance::StreamingFileData::Constructor
@@ -2350,4 +3203,137 @@ thread_run() {
 
   // All done.
   _thread_done = true;
+}
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::Constructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PPInstance::StreamTempFile::
+StreamTempFile() {
+  _opened = false;
+  _finished = false;
+  _current_size = 0;
+  _total_size = 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::Destructor
+//       Access: Public
+//  Description: 
+////////////////////////////////////////////////////////////////////
+PPInstance::StreamTempFile::
+~StreamTempFile() {
+  cleanup();
+}
+    
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::open
+//       Access: Public
+//  Description: Creates the temp file and prepares to write to it.
+//               It is not normally necessary to call this explicitly;
+//               it will be called automatically on the first call to
+//               feed().
+////////////////////////////////////////////////////////////////////
+void PPInstance::StreamTempFile::
+open() {
+  assert(!_opened);
+  _opened = true;
+  _finished = false;
+  _current_size = 0;
+  _total_size = 0;
+
+  char *name = tempnam(NULL, "p3d_");
+  _filename = name;
+  free(name);
+
+  _stream.clear();
+  _stream.open(_filename.c_str(), ios::binary);
+  if (!_stream) {
+    nout << "Unable to open temp file " << _filename << "\n";
+  } else {
+    nout << "Opening " << _filename << "\n";
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::feed
+//       Access: Public
+//  Description: Receives new data from the URL and writes it to the
+//               temp file.  Returns true on success, false on
+//               failure.
+////////////////////////////////////////////////////////////////////
+bool PPInstance::StreamTempFile::
+feed(size_t total_expected_data, const void *this_data,
+     size_t this_data_size) {
+  if (_finished) {
+    nout << "feed(" << total_expected_data << ", " << (void *)this_data
+         << ", " << this_data_size << ") to " << _filename
+         << ", but already finished at " << _current_size << "\n";
+    return false;
+  }
+
+  if (!_opened) {
+    open();
+  }
+
+  _stream.write((const char *)this_data, this_data_size);
+  _current_size += this_data_size;
+  _total_size = total_expected_data;
+
+  if (!_stream) {
+    return false;
+  }
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::finish
+//       Access: Public
+//  Description: Marks the end of the data received from the URL.  The
+//               file is closed but not yet deleted; it remains on
+//               disk and may be read at leisure.
+////////////////////////////////////////////////////////////////////
+void PPInstance::StreamTempFile::
+finish() {
+  if (!_finished) {
+    _finished = true;
+    _total_size = _current_size;
+  }
+
+  _stream.close();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::close
+//       Access: Public
+//  Description: Closes the stream for more data.  The file is not yet
+//               deleted; it remains on disk and may be read at
+//               leisure.
+////////////////////////////////////////////////////////////////////
+void PPInstance::StreamTempFile::
+close() {
+  _stream.close();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PPInstance::StreamTempFile::cleanup
+//       Access: Public
+//  Description: Closes all open processes and removes the temp file
+//               from disk.
+////////////////////////////////////////////////////////////////////
+void PPInstance::StreamTempFile::
+cleanup() {
+  finish();
+
+  if (!_filename.empty()) {
+    nout << "Deleting " << _filename << "\n";
+    unlink(_filename.c_str());
+    _filename.clear();
+  }
+
+  _opened = false;
+  _finished = false;
 }

@@ -160,6 +160,47 @@ get_array_data() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexRewriter::get_array_handle
+//       Access: Published
+//  Description: Returns the write handle to the array object that the
+//               rewriter is currently processing.  This low-level call
+//               should be used with caution; be careful with
+//               modifying the data in the handle out from under the
+//               GeomVertexRewriter.
+////////////////////////////////////////////////////////////////////
+INLINE GeomVertexArrayDataHandle *GeomVertexRewriter::
+get_array_handle() const {
+  return GeomVertexWriter::get_array_handle();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexRewriter::get_stride
+//       Access: Published
+//  Description: Returns the per-row stride (bytes between consecutive
+//               rows) of the underlying vertex array.  This low-level
+//               information is normally not needed to use the
+//               GeomVertexRewriter directly.
+////////////////////////////////////////////////////////////////////
+INLINE size_t GeomVertexRewriter::
+get_stride() const {
+  nassertr(GeomVertexWriter::get_stride() == GeomVertexReader::get_stride(), 0);
+  return GeomVertexWriter::get_stride();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexRewriter::get_current_thread
+//       Access: Published
+//  Description: Returns the Thread pointer of the currently-executing
+//               thread, as passed to the constructor of this object.
+////////////////////////////////////////////////////////////////////
+INLINE Thread *GeomVertexRewriter::
+get_current_thread() const {
+  nassertr(GeomVertexWriter::get_current_thread() == 
+           GeomVertexReader::get_current_thread(), NULL);
+  return GeomVertexWriter::get_current_thread();
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexRewriter::set_column
 //       Access: Published
 //  Description: Sets up the rewriter to use the nth data type of the
@@ -296,6 +337,26 @@ get_column() const {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexRewriter::set_row_unsafe
+//       Access: Published
+//  Description: Sets the start row to the indicated value, without
+//               internal checks.  This is the same as set_row(), but
+//               it does not check for the possibility that the array
+//               has been reallocated internally for some reason; use
+//               only when you are confident that the array is
+//               unchanged and you really need every bit of available
+//               performance.
+////////////////////////////////////////////////////////////////////
+INLINE void GeomVertexRewriter::
+set_row_unsafe(int row) {
+  // It's important to invoke the Writer first, since that might force
+  // a recopy of the array, which might invalidate the pointer already
+  // stored by the Reader if we invoked the Reader first.
+  GeomVertexWriter::set_row_unsafe(row);
+  GeomVertexReader::set_row_unsafe(row);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexRewriter::set_row
 //       Access: Published
 //  Description: Sets the start, write, and write index to the
@@ -304,9 +365,6 @@ get_column() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void GeomVertexRewriter::
 set_row(int row) {
-  // It's important to invoke the Writer first, since that might force
-  // a recopy of the array, which might invalidate the pointer already
-  // stored by the Reader if we invoked the Reader first.
   GeomVertexWriter::set_row(row);
   GeomVertexReader::set_row(row);
 }

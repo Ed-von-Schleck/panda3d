@@ -19,6 +19,16 @@
 #include "fileSpec.h"
 #include "get_tinyxml.h"
 #include "p3d_lock.h"
+#include "get_twirl_data.h"
+#include "p3d_plugin_config.h"
+#include "plugin_get_x11.h"
+
+#if defined(HAVE_X11) && defined(HAVE_GTK)
+#include "pre_x11_include.h"
+#include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#include "post_x11_include.h"
+#endif // HAVE_X11 && HAVE_GTK
 
 #include <vector>
 
@@ -62,6 +72,7 @@ public:
   bool handle_event(void *event);
 
   NPObject *get_panda_script_object();
+  void set_xembed(bool use_xembed);
 
   void p3dobj_to_variant(NPVariant *result, P3D_object *object);
   P3D_object *variant_to_p3dobj(const NPVariant *variant);
@@ -84,6 +95,7 @@ private:
   void open_p3d_temp_file();
   void send_p3d_temp_file_data();
 
+  void downloaded_contents_file(const string &filename);
   bool read_contents_file(const string &contents_filename, bool fresh_download);
   void get_core_api();
   void downloaded_plugin(const string &filename);
@@ -95,6 +107,7 @@ private:
   bool copy_file(const string &from_filename, const string &to_filename);
 
   string lookup_token(const string &keyword) const;
+  bool has_token(const string &keyword) const;
   static int compare_seq(const string &seq_a, const string &seq_b);
   static int compare_seq_int(const char *&num_a, const char *&num_b);
 
@@ -105,7 +118,10 @@ private:
 
 #ifdef _WIN32
   static LONG 
-  window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  st_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  LONG window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  void win_get_twirl_bitmaps();
+  void win_paint_twirl(HWND hwnd, HDC dc);
 #endif  // _WIN32
 
   class EventAuxData {
@@ -119,11 +135,25 @@ private:
                                NPCocoaEvent *np_event,
                                EventAuxData &aux_data);
   static const wchar_t *make_ansi_string(wstring &result, NPNSString *ns_string);
+  void handle_cocoa_event(const P3DCocoaEvent *p3d_event);
+  void osx_get_twirl_images();
+  void osx_release_twirl_images();
+  void paint_twirl_osx_cgcontext(CGContextRef context);
+  class OsxImageData;
+  bool osx_paint_image(CGContextRef context, const OsxImageData &image);
 #endif  // MACOSX_HAS_EVENT_MODELS
 
 #ifdef __APPLE__
   static void timer_callback(CFRunLoopTimerRef timer, void *info);
+  static void st_twirl_timer_callback(CFRunLoopTimerRef timer, void *info);
+  void twirl_timer_callback();
 #endif  // __APPLE__
+
+#ifdef HAVE_X11
+  void x11_start_twirl_subprocess();
+  void x11_stop_twirl_subprocess();
+  void x11_twirl_subprocess_run();
+#endif // HAVE_X11
 
 private:
   NPP _npp_instance;
@@ -133,6 +163,10 @@ private:
   typedef vector<P3D_token> Tokens;
   Tokens _tokens;
 
+  // Set from fgcolor & bgcolor.
+  int _fgcolor_r, _fgcolor_b, _fgcolor_g;
+  int _bgcolor_r, _bgcolor_b, _bgcolor_g;
+  
   string _root_dir;
   string _standard_url_prefix;
   string _download_url_prefix;
@@ -150,15 +184,34 @@ private:
   bool _failed;
   bool _started;
 
+  // This class is used to stream data from some URL into a temporary
+  // local file.
+  class StreamTempFile {
+  public:
+    StreamTempFile();
+    ~StreamTempFile();
+    
+    void open();
+    bool feed(size_t total_expected_data, const void *this_data, 
+              size_t this_data_size);
+    void finish();
+    void close();
+    void cleanup();
+
+    bool _opened;
+    bool _finished;
+    size_t _current_size;
+    size_t _total_size;
+    ofstream _stream;
+    string _filename;
+  };
+
   bool _got_instance_url;
   string _instance_url;
-  bool _opened_p3d_temp_file;
-  bool _finished_p3d_temp_file;
-  size_t _p3d_temp_file_current_size;
-  size_t _p3d_temp_file_total_size;
-  ofstream _p3d_temp_file;
-  string _p3d_temp_filename;
   int _p3d_instance_id;
+  StreamTempFile _p3d_temp_file;
+  StreamTempFile _contents_temp_file;
+  StreamTempFile _core_dll_temp_file;
  
   // We need to keep a list of the NPStream objects that the instance
   // owns, because Safari (at least) won't automatically delete all of
@@ -197,17 +250,49 @@ private:
   typedef vector<StreamingFileData *> FileDatas;
   static FileDatas _file_datas;
   
+  bool _use_xembed;
   bool _got_window;
   NPWindow _window;
+#if defined(HAVE_X11) && defined(HAVE_GTK)
+  GtkWidget *_plug;
+#endif  // HAVE_X11 && HAVE_GTK
+
 #ifdef _WIN32
   LONG_PTR _orig_window_proc;
+  HWND _hwnd;
+  HBITMAP _twirl_bitmaps[twirl_num_steps + 1];
+  HBRUSH _bg_brush;
+  DWORD _init_time;
 #endif  // _WIN32
 
 #ifdef __APPLE__
   CFRunLoopRef _run_loop_main;
   CFRunLoopTimerRef _request_timer;
   LOCK _timer_lock;
+  CFRunLoopTimerRef _twirl_timer;
 #endif  // __APPLE__
+
+#ifdef MACOSX_HAS_EVENT_MODELS
+  class OsxImageData {
+  public:
+    unsigned char *_raw_data;
+    CFDataRef _data;
+    CGDataProviderRef _provider;
+    CGColorSpaceRef _color_space;
+    CGImageRef _image;
+  };
+  OsxImageData _twirl_images[twirl_num_steps + 1];
+  bool _got_twirl_images;
+#endif  // MACOSX_HAS_EVENT_MODELS
+
+#ifdef HAVE_X11
+  pid_t _twirl_subprocess_pid;
+#endif  // HAVE_X11
+
+#ifndef _WIN32
+  long _init_sec;
+  long _init_usec;
+#endif  // _WIN32
 
   bool _python_window_open;
 

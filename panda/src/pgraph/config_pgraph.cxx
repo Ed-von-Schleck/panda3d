@@ -30,6 +30,7 @@
 #include "cullFaceAttrib.h"
 #include "cullBin.h"
 #include "cullBinAttrib.h"
+#include "cullResult.h"
 #include "cullTraverser.h"
 #include "cullableObject.h"
 #include "decalEffect.h"
@@ -72,6 +73,7 @@
 #include "renderModeAttrib.h"
 #include "renderState.h"
 #include "rescaleNormalAttrib.h"
+#include "sceneSetup.h"
 #include "scissorAttrib.h"
 #include "scissorEffect.h"
 #include "shadeModelAttrib.h"
@@ -87,7 +89,6 @@
 #include "texGenAttrib.h"
 #include "transformState.h"
 #include "transparencyAttrib.h"
-#include "nodePathLerps.h"
 
 #include "dconfig.h"
 
@@ -167,14 +168,13 @@ ConfigVariableBool compose_componentwise
           "are always computed by matrix."));
 
 ConfigVariableBool uniquify_matrix
-("uniquify-matrix", false,
+("uniquify-matrix", true,
  PRC_DESC("Set this true to look up arbitarary 4x4 transform matrices in the "
           "cache, to ensure that two differently-computed transforms that "
-          "happen to encode the same matrix (an unlikely occurrence) will be "
-          "collapsed into a single pointer (a tiny benefit).  We're usually "
-          "better off not paying the cost of this comparison, and just "
-          "assuming that any two differently-computed transforms are "
-          "essentially different."));
+          "happen to encode the same matrix will be "
+          "collapsed into a single pointer.  Nowadays, "
+          "with the transforms stored in a hashtable, we're generally better "
+          "off with this set true."));
 
 ConfigVariableBool paranoid_const
 ("paranoid-const", false,
@@ -189,6 +189,24 @@ ConfigVariableBool auto_break_cycles
           "cycles in the TransformState and RenderState caches.  When this "
           "is false, you must explicitly call TransformState.clear_cache() "
           "from time to time to prevent gradual memory bloat."));
+
+ConfigVariableBool garbage_collect_states
+("garbage-collect-states", true,
+ PRC_DESC("Set this true to defer destruction of TransformState and "
+          "RenderState objects until the end of the frame (or whenever "
+          "TransformState::garbage_collect() and RenderState::garbage_collect() "
+          "are called).  This is a particularly useful thing to do when "
+          "using multiple threads, because it improves parallelization."));
+
+ConfigVariableDouble garbage_collect_states_rate
+("garbage-collect-states-rate", 1.0,
+ PRC_DESC("The fraction of the total number of TransformStates "
+          "(or RenderStates, or whatever) that are processed with "
+          "each garbage collection step.  Setting this smaller than "
+          "1.0 will collect fewer states each frame, which may require "
+          "less processing time, but risks getting unstable cache "
+          "performance if states accumulate faster than they can be "
+          "cleaned up."));
 
 ConfigVariableBool transform_cache
 ("transform-cache", true,
@@ -431,6 +449,7 @@ init_libpgraph() {
   CullFaceAttrib::init_type();
   CullBin::init_type();
   CullBinAttrib::init_type();
+  CullResult::init_type();
   CullTraverser::init_type();
   CullableObject::init_type();
   DecalEffect::init_type();
@@ -473,6 +492,7 @@ init_libpgraph() {
   RenderModeAttrib::init_type();
   RenderState::init_type();
   RescaleNormalAttrib::init_type();
+  SceneSetup::init_type();
   ScissorAttrib::init_type();
   ScissorEffect::init_type();
   ShadeModelAttrib::init_type();
@@ -487,14 +507,6 @@ init_libpgraph() {
   TexGenAttrib::init_type();
   TransformState::init_type();
   TransparencyAttrib::init_type();
-  PosLerpFunctor::init_type();
-  HprLerpFunctor::init_type();
-  ScaleLerpFunctor::init_type();
-  PosHprLerpFunctor::init_type();
-  HprScaleLerpFunctor::init_type();
-  PosHprScaleLerpFunctor::init_type();
-  ColorLerpFunctor::init_type();
-  ColorScaleLerpFunctor::init_type();
 
   AlphaTestAttrib::register_with_read_factory();
   AntialiasAttrib::register_with_read_factory();

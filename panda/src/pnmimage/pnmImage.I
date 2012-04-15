@@ -478,9 +478,9 @@ set_alpha_val(int x, int y, xelval a) {
 //  Description: Returns the RGB color at the indicated pixel.  Each
 //               component is a double in the range 0..1.
 ////////////////////////////////////////////////////////////////////
-INLINE RGBColord PNMImage::
+INLINE LRGBColord PNMImage::
 get_xel(int x, int y) const {
-  return RGBColord(from_val(get_red_val(x, y)),
+  return LRGBColord(from_val(get_red_val(x, y)),
                    from_val(get_green_val(x, y)),
                    from_val(get_blue_val(x, y)));
 }
@@ -492,7 +492,7 @@ get_xel(int x, int y) const {
 //               component is a double in the range 0..1.
 ////////////////////////////////////////////////////////////////////
 INLINE void PNMImage::
-set_xel(int x, int y, const RGBColord &value) {
+set_xel(int x, int y, const LRGBColord &value) {
   set_xel_val(x, y, to_val(value[0]), to_val(value[1]), to_val(value[2]));
 }
 
@@ -525,15 +525,15 @@ set_xel(int x, int y, double gray) {
 //  Description: Returns the RGBA color at the indicated pixel.  Each
 //               component is a double in the range 0..1.
 ////////////////////////////////////////////////////////////////////
-INLINE Colord PNMImage::
+INLINE LColord PNMImage::
 get_xel_a(int x, int y) const {
   if (has_alpha()) {
-    return Colord(from_val(get_red_val(x, y)),
+    return LColord(from_val(get_red_val(x, y)),
                   from_val(get_green_val(x, y)),
                   from_val(get_blue_val(x, y)),
                   from_val(get_alpha_val(x, y)));
   } else {
-    return Colord(from_val(get_red_val(x, y)),
+    return LColord(from_val(get_red_val(x, y)),
                   from_val(get_green_val(x, y)),
                   from_val(get_blue_val(x, y)),
                   0.0);
@@ -547,7 +547,7 @@ get_xel_a(int x, int y) const {
 //               component is a double in the range 0..1.
 ////////////////////////////////////////////////////////////////////
 INLINE void PNMImage::
-set_xel_a(int x, int y, const Colord &value) {
+set_xel_a(int x, int y, const LColord &value) {
   set_xel_val(x, y, to_val(value[0]), to_val(value[1]), to_val(value[2]));
   if (has_alpha()) {
     set_alpha_val(x, y, to_val(value[3]));
@@ -784,7 +784,7 @@ get_bright(int x, int y, double rc, double gc, double bc, double ac) const {
 //               alpha of 0.0 is fully transparent and does nothing.
 ////////////////////////////////////////////////////////////////////
 INLINE void PNMImage::
-blend(int x, int y, const RGBColord &val, double alpha) {
+blend(int x, int y, const LRGBColord &val, double alpha) {
   blend(x, y, val[0], val[1], val[2], alpha);
 }
 
@@ -832,6 +832,71 @@ box_filter(double radius) {
 INLINE void PNMImage::
 gaussian_filter(double radius) {
   gaussian_filter_from(radius, *this);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::gamma_correct
+//       Access: Published
+//  Description: Assuming the image was constructed with a gamma curve
+//               of from_gamma in the RGB channels, converts it to an
+//               image with a gamma curve of to_gamma in the RGB
+//               channels.  Does not affect the alpha channel.
+////////////////////////////////////////////////////////////////////
+INLINE void PNMImage::
+gamma_correct(double from_gamma, double to_gamma) {
+  apply_exponent(from_gamma / to_gamma);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::gamma_correct_alpha
+//       Access: Published
+//  Description: Assuming the image was constructed with a gamma curve
+//               of from_gamma in the alpha channel, converts it to an
+//               image with a gamma curve of to_gamma in the alpha
+//               channel.  Does not affect the RGB channels.
+////////////////////////////////////////////////////////////////////
+INLINE void PNMImage::
+gamma_correct_alpha(double from_gamma, double to_gamma) {
+  apply_exponent(1.0, from_gamma / to_gamma);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::apply_exponent
+//       Access: Published
+//  Description: Adjusts each channel of the image by raising the
+//               corresponding component value to the indicated
+//               exponent, such that L' = L ^ exponent.
+////////////////////////////////////////////////////////////////////
+INLINE void PNMImage::
+apply_exponent(double gray_exponent) {
+  apply_exponent(gray_exponent, gray_exponent, gray_exponent, 1.0);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::apply_exponent
+//       Access: Published
+//  Description: Adjusts each channel of the image by raising the
+//               corresponding component value to the indicated
+//               exponent, such that L' = L ^ exponent.
+////////////////////////////////////////////////////////////////////
+INLINE void PNMImage::
+apply_exponent(double gray_exponent, double alpha_exponent) {
+  apply_exponent(gray_exponent, gray_exponent, gray_exponent, alpha_exponent);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: PNMImage::apply_exponent
+//       Access: Published
+//  Description: Adjusts each channel of the image by raising the
+//               corresponding component value to the indicated
+//               exponent, such that L' = L ^ exponent.  For a
+//               grayscale image, the blue_exponent value is used for
+//               the grayscale value, and red_exponent and
+//               green_exponent are unused.
+////////////////////////////////////////////////////////////////////
+INLINE void PNMImage::
+apply_exponent(double red_exponent, double green_exponent, double blue_exponent) {
+  apply_exponent(red_exponent, green_exponent, blue_exponent, 1.0);
 }
 
 
@@ -939,9 +1004,9 @@ setup_sub_image(const PNMImage &copy, int &xto, int &yto,
 //               from the center.
 ////////////////////////////////////////////////////////////////////
 INLINE void PNMImage::
-compute_spot_pixel(Colord &c, double d2,
+compute_spot_pixel(LColord &c, double d2,
                    double min_radius, double max_radius,
-                   const Colord &fg, const Colord &bg) {
+                   const LColord &fg, const LColord &bg) {
   double d = sqrt(d2);
   if (d > max_radius) {
     c = bg;
@@ -977,7 +1042,7 @@ operator + (const PNMImage &other) const {
 //               is added to each pixel in the provided image.
 ////////////////////////////////////////////////////////////////////
 INLINE PNMImage PNMImage::
-operator + (const Colord &other) const {
+operator + (const LColord &other) const {
   PNMImage target (*this);
   target += other;
   return target;
@@ -1005,7 +1070,7 @@ operator - (const PNMImage &other) const {
 //               is subtracted from each pixel in the provided image.
 ////////////////////////////////////////////////////////////////////
 INLINE PNMImage PNMImage::
-operator - (const Colord &other) const {
+operator - (const LColord &other) const {
   PNMImage target (*this);
   target -= other;
   return target;

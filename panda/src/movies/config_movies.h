@@ -18,26 +18,20 @@
 #include "pandabase.h"
 #include "notifyCategoryProxy.h"
 #include "configVariableEnum.h"
-#include "configVariableDouble.h"
+#include "configVariableInt.h"
+#include "configVariableBool.h"
+#include "threadPriority.h"
 #include "dconfig.h"
-
-#include "movieVideo.h"
-#include "movieVideoCursor.h"
-
-#include "movieAudio.h"
-#include "movieAudioCursor.h"
-
-#include "inkblotVideo.h"
-#include "inkblotVideoCursor.h"
-
-#include "ffmpegVideo.h"
-#include "ffmpegVideoCursor.h"
-
-#include "ffmpegAudio.h"
-#include "ffmpegAudioCursor.h"
 
 ConfigureDecl(config_movies, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
 NotifyCategoryDecl(movies, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
+NotifyCategoryDecl(ffmpeg, EXPCL_PANDA_MOVIES, EXPTP_PANDA_MOVIES);
+
+extern ConfigVariableInt ffmpeg_max_readahead_frames;
+extern ConfigVariableBool ffmpeg_show_seek_frames;
+extern ConfigVariableBool ffmpeg_support_seek;
+extern ConfigVariableBool ffmpeg_global_lock;
+extern ConfigVariableEnum<ThreadPriority> ffmpeg_thread_priority;
 
 extern EXPCL_PANDA_MOVIES void init_libmovies();
 

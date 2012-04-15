@@ -11,3 +11,26 @@
 // with this source code in a file named "LICENSE."
 //
 ////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////
+//     Function: FfmpegVirtualFile::is_open
+//       Access: Public
+//  Description: Returns true if the stream is successfully opened,
+//               false otherwise.
+////////////////////////////////////////////////////////////////////
+INLINE bool FfmpegVirtualFile::
+is_open() const {
+  return (_format_context != NULL);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: FfmpegVirtualFile::get_format_context
+//       Access: Public
+//  Description: Returns a pointer to the opened ffmpeg context, or
+//               NULL if the file was not successfully opened.
+////////////////////////////////////////////////////////////////////
+INLINE AVFormatContext *FfmpegVirtualFile::
+get_format_context() const {
+  return _format_context;
+}

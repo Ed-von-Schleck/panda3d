@@ -188,43 +188,110 @@ CLP(ShaderContext)(Shader *s, GSG *gsg) : ShaderContext(s) {
             GLCAT.error() << "Unrecognized uniform name '" << param_name << "'!\n";
             continue;
           }
-          switch (param_type) {
+
+          if (param_size==1) {
+            switch (param_type) {
 #ifndef OPENGLES
-            case GL_SAMPLER_1D_SHADOW:
-            case GL_SAMPLER_1D: {
-              Shader::ShaderTexSpec bind;
-              bind._id = arg_id;
-              bind._name = inputname;
-              bind._desired_type = Texture::TT_1d_texture;
-              bind._stage = texunitno++;
-              s->_tex_spec.push_back(bind);
-              continue; }
-            case GL_SAMPLER_2D_SHADOW:
+              case GL_SAMPLER_1D_SHADOW:
+              case GL_SAMPLER_1D: {
+                Shader::ShaderTexSpec bind;
+                bind._id = arg_id;
+                bind._name = inputname;
+                bind._desired_type = Texture::TT_1d_texture;
+                bind._stage = texunitno++;
+                s->_tex_spec.push_back(bind);
+                continue; }
+              case GL_SAMPLER_2D_SHADOW:
 #endif
-            case GL_SAMPLER_2D: {
-              Shader::ShaderTexSpec bind;
-              bind._id = arg_id;
-              bind._name = inputname;
-              bind._desired_type = Texture::TT_2d_texture;
-              bind._stage = texunitno++;
-              s->_tex_spec.push_back(bind);
-              continue; }
-            case GL_SAMPLER_3D: {
-              Shader::ShaderTexSpec bind;
-              bind._id = arg_id;
-              bind._name = inputname;
-              bind._desired_type = Texture::TT_3d_texture;
-              bind._stage = texunitno++;
-              s->_tex_spec.push_back(bind);
-              continue; }
-            case GL_SAMPLER_CUBE: {
-              Shader::ShaderTexSpec bind;
-              bind._id = arg_id;
-              bind._name = inputname;
-              bind._desired_type = Texture::TT_cube_map;
-              bind._stage = texunitno++;
-              s->_tex_spec.push_back(bind);
-              continue; }
+              case GL_SAMPLER_2D: {
+                Shader::ShaderTexSpec bind;
+                bind._id = arg_id;
+                bind._name = inputname;
+                bind._desired_type = Texture::TT_2d_texture;
+                bind._stage = texunitno++;
+                s->_tex_spec.push_back(bind);
+                continue; }
+              case GL_SAMPLER_3D: {
+                Shader::ShaderTexSpec bind;
+                bind._id = arg_id;
+                bind._name = inputname;
+                bind._desired_type = Texture::TT_3d_texture;
+                bind._stage = texunitno++;
+                s->_tex_spec.push_back(bind);
+                continue; }
+              case GL_SAMPLER_CUBE: {
+                Shader::ShaderTexSpec bind;
+                bind._id = arg_id;
+                bind._name = inputname;
+                bind._desired_type = Texture::TT_cube_map;
+                bind._stage = texunitno++;
+                s->_tex_spec.push_back(bind);
+                continue; }
+              case GL_FLOAT_MAT2:
+              case GL_FLOAT_MAT3:
+#ifndef OPENGLES
+              case GL_FLOAT_MAT2x3:
+              case GL_FLOAT_MAT2x4:
+              case GL_FLOAT_MAT3x2:
+              case GL_FLOAT_MAT3x4:
+              case GL_FLOAT_MAT4x2:
+              case GL_FLOAT_MAT4x3:
+#endif
+                GLCAT.warning() << "GLSL shader requested an unrecognized matrix type\n";
+                continue;
+              case GL_FLOAT_MAT4: {
+                Shader::ShaderMatSpec bind;
+                bind._id = arg_id;
+                bind._piece = Shader::SMP_whole;
+                bind._func = Shader::SMF_first;
+                bind._part[0] = Shader::SMO_mat_constant_x;
+                bind._arg[0] = inputname;
+                bind._part[1] = Shader::SMO_identity;
+                bind._arg[1] = NULL;
+                bind._dep[0]  = Shader::SSD_general | Shader::SSD_shaderinputs;
+                bind._dep[1]  = Shader::SSD_general | Shader::SSD_NONE;
+                s->_mat_spec.push_back(bind);
+                continue; }
+              case GL_BOOL:
+              case GL_BOOL_VEC2:
+              case GL_BOOL_VEC3:
+              case GL_BOOL_VEC4:
+              case GL_FLOAT:
+              case GL_FLOAT_VEC2:
+              case GL_FLOAT_VEC3:
+              case GL_FLOAT_VEC4: {
+                Shader::ShaderMatSpec bind;
+                bind._id = arg_id;
+                switch (param_type) {
+                case GL_BOOL:
+                case GL_FLOAT:      bind._piece = Shader::SMP_row3x1; break;
+                case GL_BOOL_VEC2:
+                case GL_FLOAT_VEC2: bind._piece = Shader::SMP_row3x2; break;
+                case GL_BOOL_VEC3:
+                case GL_FLOAT_VEC3: bind._piece = Shader::SMP_row3x3; break;
+                case GL_BOOL_VEC4:
+                case GL_FLOAT_VEC4: bind._piece = Shader::SMP_row3  ; break;
+                }
+                bind._func = Shader::SMF_first;
+                bind._part[0] = Shader::SMO_vec_constant_x;
+                bind._arg[0] = inputname;
+                bind._part[1] = Shader::SMO_identity;
+                bind._arg[1] = NULL;
+                bind._dep[0]  = Shader::SSD_general | Shader::SSD_shaderinputs;
+                bind._dep[1]  = Shader::SSD_general | Shader::SSD_NONE;
+                s->_mat_spec.push_back(bind);
+                continue; }
+              case GL_INT:
+              case GL_INT_VEC2:
+              case GL_INT_VEC3:
+              case GL_INT_VEC4:
+                GLCAT.warning() << "Panda does not support passing integers to shaders (yet)!\n";
+                continue;
+              default:
+                GLCAT.warning() << "Ignoring unrecognized GLSL parameter type!\n";
+            }
+          } else {
+            switch (param_type) {
             case GL_FLOAT_MAT2:
             case GL_FLOAT_MAT3:
 #ifndef OPENGLES
@@ -235,18 +302,10 @@ CLP(ShaderContext)(Shader *s, GSG *gsg) : ShaderContext(s) {
             case GL_FLOAT_MAT4x2:
             case GL_FLOAT_MAT4x3:
 #endif
-              GLCAT.warning() << "GLSL shader requested an unrecognized matrix type\n";
+              GLCAT.warning() << "GLSL shader requested an unrecognized matrix array type\n";
               continue;
             case GL_FLOAT_MAT4: {
-              Shader::ShaderMatSpec bind;
-              bind._id = arg_id;
-              bind._piece = Shader::SMP_whole;
-              bind._func = Shader::SMF_first;
-              bind._part[0] = Shader::SMO_mat_constant_x;
-              bind._arg[0] = inputname;
-              bind._part[1] = Shader::SMO_identity;
-              bind._arg[1] = NULL;
-              s->_mat_spec.push_back(bind);
+              GLCAT.warning() << "GLSL shader does not yet support passing matrix arrays\n";
               continue; }
             case GL_BOOL:
             case GL_BOOL_VEC2:
@@ -256,39 +315,38 @@ CLP(ShaderContext)(Shader *s, GSG *gsg) : ShaderContext(s) {
             case GL_FLOAT_VEC2:
             case GL_FLOAT_VEC3:
             case GL_FLOAT_VEC4: {
-              Shader::ShaderMatSpec bind;
+              Shader::ShaderPtrSpec bind;
               bind._id = arg_id;
               switch (param_type) {
-              case GL_BOOL:
-              case GL_FLOAT:      bind._piece = Shader::SMP_row3x1; break;
-              case GL_BOOL_VEC2:
-              case GL_FLOAT_VEC2: bind._piece = Shader::SMP_row3x2; break;
-              case GL_BOOL_VEC3:
-              case GL_FLOAT_VEC3: bind._piece = Shader::SMP_row3x3; break;
-              case GL_BOOL_VEC4:
-              case GL_FLOAT_VEC4: bind._piece = Shader::SMP_row3  ; break;
+                case GL_BOOL:
+                case GL_FLOAT:      bind._dim[1] = 1; break;
+                case GL_BOOL_VEC2:
+                case GL_FLOAT_VEC2: bind._dim[1] = 2; break;
+                case GL_BOOL_VEC3:
+                case GL_FLOAT_VEC3: bind._dim[1] = 3; break;
+                case GL_BOOL_VEC4:
+                case GL_FLOAT_VEC4: bind._dim[1] = 4; break;
               }
-              bind._func = Shader::SMF_first;
-              bind._part[0] = Shader::SMO_vec_constant_x;
-              bind._arg[0] = inputname;
-              bind._part[1] = Shader::SMO_identity;
-              bind._arg[1] = NULL;
-              s->_mat_spec.push_back(bind);
+              bind._arg = inputname;
+              bind._dim[0] = param_size;
+              bind._dep[0] = Shader::SSD_general | Shader::SSD_shaderinputs;
+              bind._dep[1] = Shader::SSD_general | Shader::SSD_NONE;
+              s->_ptr_spec.push_back(bind);
               continue; }
             case GL_INT:
             case GL_INT_VEC2:
             case GL_INT_VEC3:
             case GL_INT_VEC4:
-              GLCAT.warning() << "Panda does not support passing integers to shaders (yet)!\n";
+              GLCAT.warning() << "Panda does not support passing integer arrays to shaders (yet)!\n";
               continue;
             default:
-              GLCAT.warning() << "Ignoring unrecognized GLSL parameter type!\n";
+              GLCAT.warning() << "Ignoring unrecognized GLSL parameter array type!\n";
+            }
           }
         }
       }
       delete[] param_name;
       
-      int attrib_idx = 0;
       // Now we've processed the uniforms, we'll process the attribs.
       gsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_ATTRIBUTES, &param_count);
       gsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &param_maxlength);
@@ -296,13 +354,14 @@ CLP(ShaderContext)(Shader *s, GSG *gsg) : ShaderContext(s) {
       for (int i = 0; i < param_count; ++i) {
         gsg->_glGetActiveAttrib(_glsl_program, i, param_maxlength, NULL, &param_size, &param_type, param_name);
         PT(InternalName) inputname = InternalName::make(param_name);
-        if (inputname->get_name().substr(0, 4) == "p3d_") {
+
+        if (inputname->get_name().substr(0, 3) == "gl_") {
+          // We shouldn't bind anything to these.
+        } else if (inputname->get_name().substr(0, 4) == "p3d_") {
           noprefix = inputname->get_name().substr(4);
           Shader::ShaderVarSpec bind;
-          Shader::ShaderArgId arg_id;
-          arg_id._name  = param_name;
-          arg_id._seqno = -1;
           bind._append_uv = -1;
+
           if (noprefix == "Vertex") {
             bind._name = InternalName::get_vertex();
             s->_var_spec.push_back(bind);
@@ -321,6 +380,24 @@ CLP(ShaderContext)(Shader *s, GSG *gsg) : ShaderContext(s) {
             gsg->_glBindAttribLocation(_glsl_program, i, param_name);
             continue;
           }
+          if (noprefix.substr(0, 7)  == "Tangent") {
+            bind._name = InternalName::get_tangent();
+            if (noprefix.size() > 7) {
+              bind._append_uv = atoi(noprefix.substr(7).c_str());
+            }
+            s->_var_spec.push_back(bind);
+            gsg->_glBindAttribLocation(_glsl_program, i, param_name);
+            continue;
+          }
+          if (noprefix.substr(0, 8)  == "Binormal") {
+            bind._name = InternalName::get_binormal();
+            if (noprefix.size() > 8) {
+              bind._append_uv = atoi(noprefix.substr(8).c_str());
+            }
+            s->_var_spec.push_back(bind);
+            gsg->_glBindAttribLocation(_glsl_program, i, param_name);
+            continue;
+          }
           if (noprefix.substr(0, 13)  == "MultiTexCoord") {
             bind._name = InternalName::get_texcoord();
             bind._append_uv = atoi(inputname->get_name().substr(13).c_str());
@@ -330,6 +407,12 @@ CLP(ShaderContext)(Shader *s, GSG *gsg) : ShaderContext(s) {
           }
           GLCAT.error() << "Unrecognized vertex attrib '" << param_name << "'!\n";
           continue;
+        } else {
+          Shader::ShaderVarSpec bind;
+          bind._name = inputname;
+          bind._append_uv = -1;
+          s->_var_spec.push_back(bind);
+          gsg->_glBindAttribLocation(_glsl_program, i, param_name);
         }
       }
       delete[] param_name;
@@ -523,97 +606,108 @@ issue_parameters(GSG *gsg, int altered) {
 
   // Iterate through _ptr parameters
   for (int i=0; i<(int)_shader->_ptr_spec.size(); i++) {
-    if(altered & (_shader->_ptr_spec[i]._dep[0] | _shader->_ptr_spec[i]._dep[1])){
-      if (_shader->get_language() == Shader::SL_GLSL){ 
-        GLCAT.error() << _shader->_ptr_spec[i]._id._name << ": parameter type supported only in Cg\n";
-        release_resources(gsg);
-        return;
+    if(altered & (_shader->_ptr_spec[i]._dep[0] | _shader->_ptr_spec[i]._dep[1])) {
+      if (_shader->get_language() == Shader::SL_GLSL) {
+        const Shader::ShaderPtrSpec& _ptr = _shader->_ptr_spec[i];
+        Shader::ShaderPtrData* _ptr_data =
+          const_cast< Shader::ShaderPtrData*>(gsg->fetch_ptr_parameter(_ptr));
+        if (_ptr_data == NULL) { //the input is not contained in ShaderPtrData
+          release_resources(gsg);
+          return;
+        }
+        GLint p = _shader->_glsl_parameter_map[_shader->_ptr_spec[i]._id._seqno];
+        switch(_ptr._dim[1]) {
+          case 1: gsg->_glUniform4fv(p, _ptr._dim[0], (float*)_ptr_data->_ptr); continue;
+          case 2: gsg->_glUniform4fv(p, _ptr._dim[0], (float*)_ptr_data->_ptr); continue;
+          case 3: gsg->_glUniform4fv(p, _ptr._dim[0], (float*)_ptr_data->_ptr); continue;
+          case 4: gsg->_glUniform4fv(p, _ptr._dim[0], (float*)_ptr_data->_ptr); continue;
+        }
       }
 #if defined(HAVE_CG) && !defined(OPENGLES)
       else if (_shader->get_language() == Shader::SL_Cg) {
         const Shader::ShaderPtrSpec& _ptr = _shader->_ptr_spec[i];
-        Shader::ShaderPtrData* _ptr_data = 
+        Shader::ShaderPtrData* ptr_data = 
           const_cast< Shader::ShaderPtrData*>(gsg->fetch_ptr_parameter(_ptr));
         
-        if (_ptr_data == NULL){ //the input is not contained in ShaderPtrData
+        if (ptr_data == NULL){ //the input is not contained in ShaderPtrData
           release_resources(gsg);
           return;
         }
         //check if the data must be shipped to the GPU
-        /*if (!_ptr_data->_updated)
+        /*if (!ptr_data->_updated)
           continue;
-        _ptr_data->_updated = false;*/
+          ptr_data->_updated = false;*/
 
-        //Check if the size of the shader input and _ptr_data match
+        //Check if the size of the shader input and ptr_data match
         int input_size = _ptr._dim[0] * _ptr._dim[1] * _ptr._dim[2];
 
         // dimension is negative only if the parameter had the (deprecated)k_ prefix.
-        if ((input_size != _ptr_data->_size) && (_ptr._dim[0] > 0)) { 
+        if ((input_size > ptr_data->_size) && (_ptr._dim[0] > 0)) { 
           GLCAT.error() << _ptr._id._name << ": incorrect number of elements, expected " 
-            <<  input_size <<" got " <<  _ptr_data->_size << "\n";
+                        <<  input_size <<" got " <<  ptr_data->_size << "\n";
           release_resources(gsg);
           return;
         }
         CGparameter p = _cg_parameter_map[_ptr._id._seqno];
         
-        switch(_ptr_data->_type) {
-          case Shader::SPT_float:
-            switch(_ptr._info._class) {
-              case Shader::SAC_scalar: cgSetParameter1fv(p,(float*)_ptr_data->_ptr); continue;
-              case Shader::SAC_vector:
-                switch(_ptr._info._type) {
-                  case Shader::SAT_vec1: cgSetParameter1fv(p,(float*)_ptr_data->_ptr); continue;
-                  case Shader::SAT_vec2: cgSetParameter2fv(p,(float*)_ptr_data->_ptr); continue;
-                  case Shader::SAT_vec3: cgSetParameter3fv(p,(float*)_ptr_data->_ptr); continue;
-                  case Shader::SAT_vec4: cgSetParameter4fv(p,(float*)_ptr_data->_ptr); continue;
-                }
-              case Shader::SAC_matrix: cgGLSetMatrixParameterfc(p,(float*)_ptr_data->_ptr); continue;
-              case Shader::SAC_array: {
-                switch(_ptr._info._subclass) {
-                  case Shader::SAC_scalar: 
-                    cgGLSetParameterArray1f(p,0,_ptr._dim[0],(float*)_ptr_data->_ptr); continue;
-                  case Shader::SAC_vector:
-                    switch(_ptr._dim[2]) {
-                      case 1: cgGLSetParameterArray1f(p,0,_ptr._dim[0],(float*)_ptr_data->_ptr); continue;
-                      case 2: cgGLSetParameterArray2f(p,0,_ptr._dim[0],(float*)_ptr_data->_ptr); continue;
-                      case 3: cgGLSetParameterArray3f(p,0,_ptr._dim[0],(float*)_ptr_data->_ptr); continue;
-                      case 4: cgGLSetParameterArray4f(p,0,_ptr._dim[0],(float*)_ptr_data->_ptr); continue;
-                    }
-                  case Shader::SAC_matrix:
-                    cgGLSetMatrixParameterArrayfc(p,0,_ptr._dim[0],(float*)_ptr_data->_ptr); continue;
-                }
-              } 
+        switch(ptr_data->_type) {
+        case Shader::SPT_float:
+          switch(_ptr._info._class) {
+          case Shader::SAC_scalar: cgSetParameter1fv(p,(float*)ptr_data->_ptr); continue;
+          case Shader::SAC_vector:
+            switch(_ptr._info._type) {
+            case Shader::SAT_vec1: cgSetParameter1fv(p,(float*)ptr_data->_ptr); continue;
+            case Shader::SAT_vec2: cgSetParameter2fv(p,(float*)ptr_data->_ptr); continue;
+            case Shader::SAT_vec3: cgSetParameter3fv(p,(float*)ptr_data->_ptr); continue;
+            case Shader::SAT_vec4: cgSetParameter4fv(p,(float*)ptr_data->_ptr); continue;
             }
-          case Shader::SPT_double:
-            switch(_ptr._info._class) {
-              case Shader::SAC_scalar: cgSetParameter1dv(p,(double*)_ptr_data->_ptr); continue;
-              case Shader::SAC_vector:
-                switch(_ptr._info._type) {
-                  case Shader::SAT_vec1: cgSetParameter1dv(p,(double*)_ptr_data->_ptr); continue;
-                  case Shader::SAT_vec2: cgSetParameter2dv(p,(double*)_ptr_data->_ptr); continue;
-                  case Shader::SAT_vec3: cgSetParameter3dv(p,(double*)_ptr_data->_ptr); continue;
-                  case Shader::SAT_vec4: cgSetParameter4dv(p,(double*)_ptr_data->_ptr); continue;
-                }
-              case Shader::SAC_matrix: cgGLSetMatrixParameterdc(p,(double*)_ptr_data->_ptr); continue;
-              case Shader::SAC_array: {
-                switch(_ptr._info._subclass) {
-                  case Shader::SAC_scalar: 
-                    cgGLSetParameterArray1d(p,0,_ptr._dim[0],(double*)_ptr_data->_ptr); continue;
-                  case Shader::SAC_vector:
-                    switch(_ptr._dim[2]) {
-                      case 1: cgGLSetParameterArray1d(p,0,_ptr._dim[0],(double*)_ptr_data->_ptr); continue;
-                      case 2: cgGLSetParameterArray2d(p,0,_ptr._dim[0],(double*)_ptr_data->_ptr); continue;
-                      case 3: cgGLSetParameterArray3d(p,0,_ptr._dim[0],(double*)_ptr_data->_ptr); continue;
-                      case 4: cgGLSetParameterArray4d(p,0,_ptr._dim[0],(double*)_ptr_data->_ptr); continue;
-                    }
-                  case Shader::SAC_matrix:
-                    cgGLSetMatrixParameterArraydc(p,0,_ptr._dim[0],(double*)_ptr_data->_ptr); continue;
-                }
-              } 
+          case Shader::SAC_matrix: cgGLSetMatrixParameterfc(p,(float*)ptr_data->_ptr); continue;
+          case Shader::SAC_array: {
+            switch(_ptr._info._subclass) {
+            case Shader::SAC_scalar: 
+              cgGLSetParameterArray1f(p,0,_ptr._dim[0],(float*)ptr_data->_ptr); continue;
+            case Shader::SAC_vector:
+              switch(_ptr._dim[2]) {
+              case 1: cgGLSetParameterArray1f(p,0,_ptr._dim[0],(float*)ptr_data->_ptr); continue;
+              case 2: cgGLSetParameterArray2f(p,0,_ptr._dim[0],(float*)ptr_data->_ptr); continue;
+              case 3: cgGLSetParameterArray3f(p,0,_ptr._dim[0],(float*)ptr_data->_ptr); continue;
+              case 4: cgGLSetParameterArray4f(p,0,_ptr._dim[0],(float*)ptr_data->_ptr); continue;
+              }
+            case Shader::SAC_matrix:
+              cgGLSetMatrixParameterArrayfc(p,0,_ptr._dim[0],(float*)ptr_data->_ptr); continue;
             }
-          default: GLCAT.error() << _ptr._id._name << ":" << "unrecognized parameter type\n"; 
-                   release_resources(gsg); 
-                   return;
+          } 
+          }
+        case Shader::SPT_double:
+          switch(_ptr._info._class) {
+          case Shader::SAC_scalar: cgSetParameter1dv(p,(double*)ptr_data->_ptr); continue;
+          case Shader::SAC_vector:
+            switch(_ptr._info._type) {
+            case Shader::SAT_vec1: cgSetParameter1dv(p,(double*)ptr_data->_ptr); continue;
+            case Shader::SAT_vec2: cgSetParameter2dv(p,(double*)ptr_data->_ptr); continue;
+            case Shader::SAT_vec3: cgSetParameter3dv(p,(double*)ptr_data->_ptr); continue;
+            case Shader::SAT_vec4: cgSetParameter4dv(p,(double*)ptr_data->_ptr); continue;
+            }
+          case Shader::SAC_matrix: cgGLSetMatrixParameterdc(p,(double*)ptr_data->_ptr); continue;
+          case Shader::SAC_array: {
+            switch(_ptr._info._subclass) {
+            case Shader::SAC_scalar: 
+              cgGLSetParameterArray1d(p,0,_ptr._dim[0],(double*)ptr_data->_ptr); continue;
+            case Shader::SAC_vector:
+              switch(_ptr._dim[2]) {
+              case 1: cgGLSetParameterArray1d(p,0,_ptr._dim[0],(double*)ptr_data->_ptr); continue;
+              case 2: cgGLSetParameterArray2d(p,0,_ptr._dim[0],(double*)ptr_data->_ptr); continue;
+              case 3: cgGLSetParameterArray3d(p,0,_ptr._dim[0],(double*)ptr_data->_ptr); continue;
+              case 4: cgGLSetParameterArray4d(p,0,_ptr._dim[0],(double*)ptr_data->_ptr); continue;
+              }
+            case Shader::SAC_matrix:
+              cgGLSetMatrixParameterArraydc(p,0,_ptr._dim[0],(double*)ptr_data->_ptr); continue;
+            }
+          } 
+          }
+        default: GLCAT.error() << _ptr._id._name << ":" << "unrecognized parameter type\n"; 
+          release_resources(gsg); 
+          return;
         }
       }
 #endif
@@ -624,44 +718,44 @@ issue_parameters(GSG *gsg, int altered) {
 
   for (int i=0; i<(int)_shader->_mat_spec.size(); i++) {
     if (altered & (_shader->_mat_spec[i]._dep[0] | _shader->_mat_spec[i]._dep[1])) {
-      const LMatrix4f *val = gsg->fetch_specified_value(_shader->_mat_spec[i], altered);
+      const LMatrix4 *val = gsg->fetch_specified_value(_shader->_mat_spec[i], altered);
       if (!val) continue;
-      const float *data = val->get_data();
+      const PN_stdfloat *data = val->get_data();
       if (_shader->get_language() == Shader::SL_GLSL) {
         GLint p = _shader->_glsl_parameter_map[_shader->_mat_spec[i]._id._seqno];
         switch (_shader->_mat_spec[i]._piece) {
-          case Shader::SMP_whole: gsg->_glUniformMatrix4fv(p, 1, false, data); continue;
-          case Shader::SMP_transpose: gsg->_glUniformMatrix4fv(p, 1, true, data); continue;
-          case Shader::SMP_col0: gsg->_glUniform4f(p, data[0], data[4], data[ 8], data[12]); continue;
-          case Shader::SMP_col1: gsg->_glUniform4f(p, data[1], data[5], data[ 9], data[13]); continue;
-          case Shader::SMP_col2: gsg->_glUniform4f(p, data[2], data[6], data[10], data[14]); continue;
-          case Shader::SMP_col3: gsg->_glUniform4f(p, data[3], data[7], data[11], data[15]); continue;
-          case Shader::SMP_row0: gsg->_glUniform4fv(p, 1, data+ 0); continue;
-          case Shader::SMP_row1: gsg->_glUniform4fv(p, 1, data+ 4); continue;
-          case Shader::SMP_row2: gsg->_glUniform4fv(p, 1, data+ 8); continue;
-          case Shader::SMP_row3: gsg->_glUniform4fv(p, 1, data+12); continue;
-          case Shader::SMP_row3x1: gsg->_glUniform1fv(p, 1, data+12); continue;
-          case Shader::SMP_row3x2: gsg->_glUniform2fv(p, 1, data+12); continue;
-          case Shader::SMP_row3x3: gsg->_glUniform3fv(p, 1, data+12); continue;
+        case Shader::SMP_whole: gsg->GLfv(_glUniformMatrix4)(p, 1, false, data); continue;
+        case Shader::SMP_transpose: gsg->GLfv(_glUniformMatrix4)(p, 1, true, data); continue;
+        case Shader::SMP_col0: gsg->GLf(_glUniform4)(p, data[0], data[4], data[ 8], data[12]); continue;
+        case Shader::SMP_col1: gsg->GLf(_glUniform4)(p, data[1], data[5], data[ 9], data[13]); continue;
+        case Shader::SMP_col2: gsg->GLf(_glUniform4)(p, data[2], data[6], data[10], data[14]); continue;
+        case Shader::SMP_col3: gsg->GLf(_glUniform4)(p, data[3], data[7], data[11], data[15]); continue;
+        case Shader::SMP_row0: gsg->GLfv(_glUniform4)(p, 1, data+ 0); continue;
+        case Shader::SMP_row1: gsg->GLfv(_glUniform4)(p, 1, data+ 4); continue;
+        case Shader::SMP_row2: gsg->GLfv(_glUniform4)(p, 1, data+ 8); continue;
+        case Shader::SMP_row3: gsg->GLfv(_glUniform4)(p, 1, data+12); continue;
+        case Shader::SMP_row3x1: gsg->GLfv(_glUniform1)(p, 1, data+12); continue;
+        case Shader::SMP_row3x2: gsg->GLfv(_glUniform2)(p, 1, data+12); continue;
+        case Shader::SMP_row3x3: gsg->GLfv(_glUniform3)(p, 1, data+12); continue;
         }
       }
 #if defined(HAVE_CG) && !defined(OPENGLES)
       else if (_shader->get_language() == Shader::SL_Cg) {
         CGparameter p = _cg_parameter_map[_shader->_mat_spec[i]._id._seqno];
         switch (_shader->_mat_spec[i]._piece) {
-          case Shader::SMP_whole: cgGLSetMatrixParameterfc(p, data); continue;
-          case Shader::SMP_transpose: cgGLSetMatrixParameterfr(p, data); continue;
-          case Shader::SMP_col0: cgGLSetParameter4f(p, data[0], data[4], data[ 8], data[12]); continue;
-          case Shader::SMP_col1: cgGLSetParameter4f(p, data[1], data[5], data[ 9], data[13]); continue;
-          case Shader::SMP_col2: cgGLSetParameter4f(p, data[2], data[6], data[10], data[14]); continue;
-          case Shader::SMP_col3: cgGLSetParameter4f(p, data[3], data[7], data[11], data[15]); continue;
-          case Shader::SMP_row0: cgGLSetParameter4fv(p, data+ 0); continue;
-          case Shader::SMP_row1: cgGLSetParameter4fv(p, data+ 4); continue;
-          case Shader::SMP_row2: cgGLSetParameter4fv(p, data+ 8); continue;
-          case Shader::SMP_row3: cgGLSetParameter4fv(p, data+12); continue;
-          case Shader::SMP_row3x1: cgGLSetParameter1fv(p, data+12); continue;
-          case Shader::SMP_row3x2: cgGLSetParameter2fv(p, data+12); continue;
-          case Shader::SMP_row3x3: cgGLSetParameter3fv(p, data+12); continue;
+        case Shader::SMP_whole: GLfc(cgGLSetMatrixParameter)(p, data); continue;
+        case Shader::SMP_transpose: GLfr(cgGLSetMatrixParameter)(p, data); continue;
+        case Shader::SMP_col0: GLf(cgGLSetParameter4)(p, data[0], data[4], data[ 8], data[12]); continue;
+        case Shader::SMP_col1: GLf(cgGLSetParameter4)(p, data[1], data[5], data[ 9], data[13]); continue;
+        case Shader::SMP_col2: GLf(cgGLSetParameter4)(p, data[2], data[6], data[10], data[14]); continue;
+        case Shader::SMP_col3: GLf(cgGLSetParameter4)(p, data[3], data[7], data[11], data[15]); continue;
+        case Shader::SMP_row0: GLfv(cgGLSetParameter4)(p, data+ 0); continue;
+        case Shader::SMP_row1: GLfv(cgGLSetParameter4)(p, data+ 4); continue;
+        case Shader::SMP_row2: GLfv(cgGLSetParameter4)(p, data+ 8); continue;
+        case Shader::SMP_row3: GLfv(cgGLSetParameter4)(p, data+12); continue;
+        case Shader::SMP_row3x1: GLfv(cgGLSetParameter1)(p, data+12); continue;
+        case Shader::SMP_row3x2: GLfv(cgGLSetParameter2)(p, data+12); continue;
+        case Shader::SMP_row3x3: GLfv(cgGLSetParameter3)(p, data+12); continue;
         }
       }
 #endif
@@ -911,6 +1005,7 @@ update_shader_texture_bindings(CLP(ShaderContext) *prev, GSG *gsg) {
 #endif
 
     Texture *tex = 0;
+    int view = gsg->get_current_tex_view_offset();
     if (id != 0) {
       const ShaderInput *input = gsg->_target_shader->get_shader_input(id);
       tex = input->get_texture();
@@ -920,6 +1015,7 @@ update_shader_texture_bindings(CLP(ShaderContext) *prev, GSG *gsg) {
       }
       TextureStage *stage = texattrib->get_on_stage(_shader->_tex_spec[i]._stage);
       tex = texattrib->get_on_texture(stage);
+      view += stage->get_tex_view_offset();
     }
     if (_shader->_tex_spec[i]._suffix != 0) {
       // The suffix feature is inefficient. It is a temporary hack.
@@ -931,7 +1027,7 @@ update_shader_texture_bindings(CLP(ShaderContext) *prev, GSG *gsg) {
     if ((tex == 0) || (tex->get_texture_type() != _shader->_tex_spec[i]._desired_type)) {
       continue;
     }
-    TextureContext *tc = tex->prepare_now(gsg->_prepared_objects, gsg);
+    TextureContext *tc = tex->prepare_now(view, gsg->_prepared_objects, gsg);
     if (tc == (TextureContext*)NULL) {
       continue;
     }

@@ -70,19 +70,19 @@ PUBLISHED:
 private:
   INLINE ColorBlendAttrib();
   INLINE ColorBlendAttrib(Mode mode, Operand a, Operand b,
-                          const Colorf &color);
+                          const LColor &color);
 
 PUBLISHED:
   static CPT(RenderAttrib) make_off();
   static CPT(RenderAttrib) make(Mode mode);
   static CPT(RenderAttrib) make(Mode mode, Operand a, Operand b,
-                                const Colorf &color = Colorf::zero());
+                                const LColor &color = LColor::zero());
   static CPT(RenderAttrib) make_default();
 
   INLINE Mode get_mode() const;
   INLINE Operand get_operand_a() const;
   INLINE Operand get_operand_b() const;
-  INLINE Colorf get_color() const;
+  INLINE LColor get_color() const;
 
   INLINE bool involves_constant_color() const;
   INLINE bool involves_color_scale() const;
@@ -95,11 +95,13 @@ public:
 
 protected:
   virtual int compare_to_impl(const RenderAttrib *other) const;
+  virtual size_t get_hash_impl() const;
+  virtual CPT(RenderAttrib) get_auto_shader_attrib_impl(const RenderState *state) const;
 
 private:
   Mode _mode;
   Operand _a, _b;
-  Colorf _color;
+  LColor _color;
   bool _involves_constant_color;
   bool _involves_color_scale;
 
