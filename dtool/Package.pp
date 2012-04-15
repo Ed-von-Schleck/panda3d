@@ -125,6 +125,9 @@
 
 // Now evaluate all of our deferred variable definitions from
 // Config.pp.
+#set EIGEN_IPATH $[unixfilename $[EIGEN_IPATH]]
+#set HAVE_EIGEN $[HAVE_EIGEN]
+
 #set PYTHON_IPATH $[unixfilename $[PYTHON_IPATH]]
 #set PYTHON_LPATH $[unixfilename $[PYTHON_LPATH]]
 #set PYTHON_FPATH $[unixfilename $[PYTHON_FPATH]]
@@ -318,11 +321,6 @@
 #set SPEEDTREE_LIBS $[SPEEDTREE_LIBS]
 #set HAVE_SPEEDTREE $[HAVE_SPEEDTREE]
 
-#set CHROMIUM_IPATH $[unixfilename $[CHROMIUM_IPATH]]
-#set CHROMIUM_LPATH $[unixfilename $[CHROMIUM_LPATH]]
-#set CHROMIUM_LIBS $[CHROMIUM_LIBS]
-#set HAVE_CHROMIUM $[HAVE_CHROMIUM]
-
 #set PKG_CONFIG $[PKG_CONFIG]
 #set HAVE_GTK $[HAVE_GTK]
 
@@ -378,6 +376,12 @@
 #set ARTOOLKIT_LPATH $[unixfilename $[ARTOOLKIT_LPATH]]
 #set ARTOOLKIT_LIBS $[ARTOOLKIT_LIBS]
 #set HAVE_ARTOOLKIT $[HAVE_ARTOOLKIT]
+
+#set ROCKET_IPATH $[unixfilename $[ROCKET_IPATH]]
+#set ROCKET_LPATH $[unixfilename $[ROCKET_LPATH]]
+#set ROCKET_LIBS $[ROCKET_LIBS]
+#set HAVE_ROCKET $[HAVE_ROCKET]
+#set HAVE_ROCKET_PYTHON $[HAVE_ROCKET_PYTHON]
 
 #set CEGUI_IPATH $[unixfilename $[CEGUI_IPATH]]
 #set CEGUI_LPATH $[unixfilename $[CEGUI_LPATH]]

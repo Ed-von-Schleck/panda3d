@@ -15,6 +15,7 @@ panda3d_modules = {
     "ai"          : "libpandaai",
     "awesomium"   : "libp3awesomium",
     "speedtree"   : "libpandaspeedtree",
+    "rocket"      :("_rocketcore", "_rocketcontrols", "libp3rocket"),
     "cegui"       :("libpandacegui", "PyCEGUI"),
 }
 
@@ -24,6 +25,8 @@ class panda3d_import_manager:
     os = os
     sys = sys
     imp = imp
+
+    __libraries__ = {}
 
     # Figure out the dll suffix (commonly, _d for windows debug builds),
     # and the dll extension.
@@ -100,6 +103,9 @@ class panda3d_import_manager:
         """ Imports and returns the specified library name. The
         provided library name has to be without dll extension. """
 
+        if name in cls.__libraries__:
+            return cls.__libraries__[name]
+
         if not cls.prepared: cls.__prepare()
 
         # Try to import it normally first.
@@ -125,7 +131,9 @@ class panda3d_import_manager:
         target = cls.os.path.abspath(target)
 
         # Now import the file explicitly.
-        return cls.imp.load_dynamic(name, target)
+        lib = cls.imp.load_dynamic(name, target)
+        cls.__libraries__[name] = lib
+        return lib
 
 class panda3d_submodule(type(sys)):
     """ Represents a submodule of 'panda3d' that represents a dynamic
@@ -150,13 +158,16 @@ class panda3d_submodule(type(sys)):
             for obj in dir(mod):
                 if not obj.startswith("__"):
                     everything.append(obj)
+            self.__all__ = everything
             return everything
         elif name == "__library__":
             return self.__library__
         elif name == "__libraries__":
             return self.__libraries__
         elif name in dir(mod):
-            return mod.__dict__[name]
+            value = mod.__dict__[name]
+            setattr(self, name, value)
+            return value
 
         # Not found? Raise the error that Python would normally raise.
         raise AttributeError, "'module' object has no attribute '%s'" % name
@@ -190,6 +201,7 @@ class panda3d_multisubmodule(type(sys)):
                 for obj in dir(self.__manager__.libimport(lib)):
                     if not obj.startswith("__"):
                         everything.append(obj)
+            self.__all__ = everything
             return everything
         elif name == "__libraries__":
             return self.__libraries__
@@ -197,7 +209,9 @@ class panda3d_multisubmodule(type(sys)):
         for lib in self.__libraries__:
             mod = self.__manager__.libimport(lib)
             if name in dir(mod):
-                return mod.__dict__[name]
+                value = mod.__dict__[name]
+                setattr(self, name, value)
+                return value
 
         # Not found? Raise the error that Python would normally raise.
         raise AttributeError, "'module' object has no attribute '%s'" % name
@@ -223,11 +237,14 @@ class panda3d_module(type(sys)):
 
     def __getattr__(self, name):
         if name == "__all__":
+            self.__all__ = name
             return self.modules.keys()
         elif name == "__file__":
             return self.__file__
         elif name in self.modules:
-            return self.__manager__.sys.modules["panda3d.%s" % name]
+            value = self.__manager__.sys.modules["panda3d.%s" % name]
+            setattr(self, name, value)
+            return value
 
         # Not found? Raise the error that Python would normally raise.
         raise AttributeError, "'module' object has no attribute '%s'" % name

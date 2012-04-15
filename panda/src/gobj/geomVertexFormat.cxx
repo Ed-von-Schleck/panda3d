@@ -566,6 +566,41 @@ pack_columns() {
   }
 }
 
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexFormat::align_columns_for_animation
+//       Access: Published
+//  Description: Reprocesses the columns in the format to align the
+//               C_point and C_vector columns to 16-byte boundaries to
+//               allow for the more efficient SSE2 operations
+//               (assuming SSE2 is enabled in the build).
+//
+//               Also see maybe_align_columns_for_animation().
+////////////////////////////////////////////////////////////////////
+void GeomVertexFormat::
+align_columns_for_animation() {
+  nassertv(!_is_registered);
+  Arrays::iterator ai;
+  for (ai = _arrays.begin(); ai != _arrays.end(); ++ai) {
+    if ((*ai)->is_registered()) {
+      (*ai) = new GeomVertexArrayFormat(*(*ai));
+    }
+    (*ai)->align_columns_for_animation();
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GeomVertexFormat::maybe_align_columns_for_animation
+//       Access: Published
+//  Description: Calls align_columns_for_animation() if this format's
+//               AnimationSpec indicates that it contains animated
+//               vertices, and if vertex-animation-align-16 is true.
+////////////////////////////////////////////////////////////////////
+void GeomVertexFormat::
+maybe_align_columns_for_animation() {
+  if (_animation.get_animation_type() == AT_panda && vertex_animation_align_16) {
+    align_columns_for_animation();
+  }
+}
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GeomVertexFormat::output
@@ -608,7 +643,7 @@ write(ostream &out, int indent_level) const {
 
   if (_animation.get_animation_type() != AT_none) {
     indent(out, indent_level)
-      << "anim " << _animation;
+      << "anim " << _animation << "\n";
   }
 }
 
@@ -724,7 +759,7 @@ do_register() {
     if (array_format->get_num_columns() == 0) {
       // Don't keep an empty array.
       gobj_cat.warning()
-	<< "Dropping empty array from GeomVertexFormat.\n";
+        << "Dropping empty array from GeomVertexFormat.\n";
       continue;
     }
 
@@ -950,95 +985,95 @@ void GeomVertexFormat::Registry::
 make_standard_formats() {
   _v3 = register_format(new GeomVertexArrayFormat
                         (InternalName::get_vertex(), 3, 
-                         NT_float32, C_point));
+                         NT_stdfloat, C_point));
 
   _v3n3 = register_format(new GeomVertexArrayFormat
                           (InternalName::get_vertex(), 3, 
-                           NT_float32, C_point,
+                           NT_stdfloat, C_point,
                            InternalName::get_normal(), 3, 
-                           NT_float32, C_vector));
+                           NT_stdfloat, C_vector));
 
   _v3t2 = register_format(new GeomVertexArrayFormat
                           (InternalName::get_vertex(), 3, 
-                           NT_float32, C_point,
+                           NT_stdfloat, C_point,
                            InternalName::get_texcoord(), 2, 
-                           NT_float32, C_texcoord));
+                           NT_stdfloat, C_texcoord));
 
   _v3n3t2 = register_format(new GeomVertexArrayFormat
                             (InternalName::get_vertex(), 3, 
-                             NT_float32, C_point,
+                             NT_stdfloat, C_point,
                              InternalName::get_normal(), 3,
-                             NT_float32, C_vector,
+                             NT_stdfloat, C_vector,
                              InternalName::get_texcoord(), 2, 
-                             NT_float32, C_texcoord));
+                             NT_stdfloat, C_texcoord));
 
   // Define the DirectX-style packed color formats
   _v3cp = register_format(new GeomVertexArrayFormat
                           (InternalName::get_vertex(), 3,
-                           NT_float32, C_point,
+                           NT_stdfloat, C_point,
                            InternalName::get_color(), 1,
                            NT_packed_dabc, C_color));
 
   _v3n3cp = register_format(new GeomVertexArrayFormat
                             (InternalName::get_vertex(), 3,
-                             NT_float32, C_point,
+                             NT_stdfloat, C_point,
                              InternalName::get_normal(), 3,
-                             NT_float32, C_vector,
+                             NT_stdfloat, C_vector,
                              InternalName::get_color(), 1,
                              NT_packed_dabc, C_color));
 
   _v3cpt2 = register_format(new GeomVertexArrayFormat
                             (InternalName::get_vertex(), 3,
-                             NT_float32, C_point,
+                             NT_stdfloat, C_point,
                              InternalName::get_color(), 1,
                              NT_packed_dabc, C_color,
                              InternalName::get_texcoord(), 2,
-                             NT_float32, C_texcoord));
+                             NT_stdfloat, C_texcoord));
 
   _v3n3cpt2 = register_format(new GeomVertexArrayFormat
                               (InternalName::get_vertex(), 3,
-                               NT_float32, C_point,
+                               NT_stdfloat, C_point,
                                InternalName::get_normal(), 3,
-                               NT_float32, C_vector,
+                               NT_stdfloat, C_vector,
                                InternalName::get_color(), 1,
                                NT_packed_dabc, C_color,
                                InternalName::get_texcoord(), 2,
-                               NT_float32, C_texcoord));
+                               NT_stdfloat, C_texcoord));
 
   // Define the OpenGL-style per-byte color formats.  This is not the
   // same as a packed format, above, because the resulting byte order
   // is endian-independent.
   _v3c4 = register_format(new GeomVertexArrayFormat
                           (InternalName::get_vertex(), 3,
-                           NT_float32, C_point,
+                           NT_stdfloat, C_point,
                            InternalName::get_color(), 4,
                            NT_uint8, C_color));
 
   _v3n3c4 = register_format(new GeomVertexArrayFormat
                             (InternalName::get_vertex(), 3,
-                             NT_float32, C_point,
+                             NT_stdfloat, C_point,
                              InternalName::get_normal(), 3,
-                             NT_float32, C_vector,
+                             NT_stdfloat, C_vector,
                              InternalName::get_color(), 4,
                              NT_uint8, C_color));
 
   _v3c4t2 = register_format(new GeomVertexArrayFormat
                             (InternalName::get_vertex(), 3,
-                             NT_float32, C_point,
+                             NT_stdfloat, C_point,
                              InternalName::get_color(), 4,
                              NT_uint8, C_color,
                              InternalName::get_texcoord(), 2,
-                             NT_float32, C_texcoord));
+                             NT_stdfloat, C_texcoord));
 
   _v3n3c4t2 = register_format(new GeomVertexArrayFormat
                               (InternalName::get_vertex(), 3,
-                               NT_float32, C_point,
+                               NT_stdfloat, C_point,
                                InternalName::get_normal(), 3,
-                               NT_float32, C_vector,
+                               NT_stdfloat, C_vector,
                                InternalName::get_color(), 4,
                                NT_uint8, C_color,
                                InternalName::get_texcoord(), 2,
-                               NT_float32, C_texcoord));
+                               NT_stdfloat, C_texcoord));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1075,8 +1110,8 @@ register_format(GeomVertexFormat *format) {
     if (!new_format->is_registered()) {
       new_format->do_register();
       if (new_format->get_num_arrays() == 0) {
-	gobj_cat.warning()
-	  << "Empty GeomVertexFormat registered.\n";
+        gobj_cat.warning()
+          << "Empty GeomVertexFormat registered.\n";
       }
     }
   }

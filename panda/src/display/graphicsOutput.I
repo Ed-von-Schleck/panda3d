@@ -80,7 +80,8 @@ get_name() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int GraphicsOutput::
 count_textures() const {
-  return _textures.size();
+  CDReader cdata(_cycler);
+  return cdata->_textures.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -91,7 +92,8 @@ count_textures() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool GraphicsOutput::
 has_texture() const {
-  return (_textures.size() > 0);
+  CDReader cdata(_cycler);
+  return (cdata->_textures.size() > 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -109,10 +111,11 @@ has_texture() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture *GraphicsOutput::
 get_texture(int i) const {
-  if ((i < 0) || (i >= ((int)_textures.size()))) {
+  CDReader cdata(_cycler);
+  if ((i < 0) || (i >= ((int)cdata->_textures.size()))) {
     return (Texture *)NULL;
   }
-  return _textures[i]._texture;
+  return cdata->_textures[i]._texture;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -124,10 +127,11 @@ get_texture(int i) const {
 ////////////////////////////////////////////////////////////////////
 INLINE GraphicsOutput::RenderTexturePlane GraphicsOutput::
 get_texture_plane(int i) const {
-  if ((i < 0) || (i >= ((int)_textures.size()))) {
+  CDReader cdata(_cycler);
+  if ((i < 0) || (i >= ((int)cdata->_textures.size()))) {
     return (RenderTexturePlane)0;
   }
-  return _textures[i]._plane;
+  return cdata->_textures[i]._plane;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -139,10 +143,11 @@ get_texture_plane(int i) const {
 ////////////////////////////////////////////////////////////////////
 INLINE GraphicsOutput::RenderTextureMode GraphicsOutput::
 get_rtm_mode(int i) const {
-  if ((i < 0) || (i >= ((int)_textures.size()))) {
+  CDReader cdata(_cycler);
+  if ((i < 0) || (i >= ((int)cdata->_textures.size()))) {
     return RTM_none;
   }
-  return _textures[i]._rtm_mode;
+  return cdata->_textures[i]._rtm_mode;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -220,7 +225,7 @@ get_fb_y_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int GraphicsOutput::
 get_sbs_left_x_size() const {
-  float left_w = _sbs_left_dimensions[1] - _sbs_left_dimensions[0];
+  PN_stdfloat left_w = _sbs_left_dimensions[1] - _sbs_left_dimensions[0];
   return max(int(_x_size * left_w), 1);
 }
 
@@ -235,7 +240,7 @@ get_sbs_left_x_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int GraphicsOutput::
 get_sbs_left_y_size() const {
-  float left_h = _sbs_left_dimensions[3] - _sbs_left_dimensions[2];
+  PN_stdfloat left_h = _sbs_left_dimensions[3] - _sbs_left_dimensions[2];
   return max(int(_y_size * left_h), 1);
 }
 
@@ -250,7 +255,7 @@ get_sbs_left_y_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int GraphicsOutput::
 get_sbs_right_x_size() const {
-  float right_w = _sbs_right_dimensions[1] - _sbs_right_dimensions[0];
+  PN_stdfloat right_w = _sbs_right_dimensions[1] - _sbs_right_dimensions[0];
   return max(int(_x_size * right_w), 1);
 }
 
@@ -265,7 +270,7 @@ get_sbs_right_x_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int GraphicsOutput::
 get_sbs_right_y_size() const {
-  float right_h = _sbs_right_dimensions[3] - _sbs_right_dimensions[2];
+  PN_stdfloat right_h = _sbs_right_dimensions[3] - _sbs_right_dimensions[2];
   return max(int(_y_size * right_h), 1);
 }
 
@@ -291,47 +296,19 @@ has_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool GraphicsOutput::
 is_valid() const {
-  return _is_valid;
+  return _is_valid && _is_nonzero_size;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: GraphicsOutput::set_one_shot
+//     Function: GraphicsOutput::is_nonzero_size
 //       Access: Published
-//  Description: Changes the current setting of the one-shot flag.
-//               When this is true, the GraphicsOutput will render one
-//               frame and then automatically set itself inactive.
-//               This is particularly useful for buffers that are
-//               created for the purposes of render-to-texture, for
-//               static textures that don't need to be continually
-//               re-rendered once they have been rendered the first
-//               time.
-//
-//               Setting the buffer inactive is not the same thing as
-//               destroying it.  You are still responsible for passing
-//               this buffer to GraphicsEngine::remove_window() when
-//               you no longer need the texture, in order to clean up
-//               fully.  (However, you should not call remove_window()
-//               on this buffer while the texture is still needed,
-//               because depending on the render-to-texture mechanism
-//               in use, this may invalidate the texture contents.)
-////////////////////////////////////////////////////////////////////
-INLINE void GraphicsOutput::
-set_one_shot(bool one_shot) {
-  _one_shot = one_shot;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GraphicsOutput::get_one_shot
-//       Access: Published
-//  Description: Returns the current setting of the one-shot flag.
-//               When this is true, the GraphicsOutput will
-//               automatically detach its texture (if it has one) and
-//               remove itself from the GraphicsEngine after it
-//               renders the next frame.
+//  Description: Returns true if the output has a nonzero size in both
+//               X and Y, or false if it is zero (and therefore
+//               invalid).
 ////////////////////////////////////////////////////////////////////
 INLINE bool GraphicsOutput::
-get_one_shot() const {
-  return _one_shot;
+is_nonzero_size() const {
+  return _is_nonzero_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -345,6 +322,33 @@ get_one_shot() const {
 INLINE bool GraphicsOutput::
 get_inverted() const {
   return _inverted;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::set_swap_eyes
+//       Access: Public
+//  Description: Changes the "swap eyes" flag.  This flag is normally
+//               false.  When it is true, the left and right channels
+//               of a stereo DisplayRegion are sent to the opposite
+//               channels in the rendering backend.  This is meant to
+//               work around hardware that inadvertently swaps the
+//               output channels, or hardware for which it cannot be
+//               determined which channel is which until runtime.
+////////////////////////////////////////////////////////////////////
+INLINE void GraphicsOutput::
+set_swap_eyes(bool swap_eyes) {
+  _swap_eyes = swap_eyes;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: GraphicsOutput::get_swap_eyes
+//       Access: Public
+//  Description: Returns the current setting of the "swap eyes" flag.
+//               See set_swap_eyes().
+////////////////////////////////////////////////////////////////////
+INLINE bool GraphicsOutput::
+get_swap_eyes() const {
+  return _swap_eyes;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -434,7 +438,7 @@ get_side_by_side_stereo() const {
 //               mode is in effect for the window.  See
 //               set_side_by_side_stereo().
 ////////////////////////////////////////////////////////////////////
-INLINE const LVecBase4f &GraphicsOutput::
+INLINE const LVecBase4 &GraphicsOutput::
 get_sbs_left_dimensions() const {
   return _sbs_left_dimensions;
 }
@@ -447,7 +451,7 @@ get_sbs_left_dimensions() const {
 //               mode is in effect for the window.  See
 //               set_side_by_side_stereo().
 ////////////////////////////////////////////////////////////////////
-INLINE const LVecBase4f &GraphicsOutput::
+INLINE const LVecBase4 &GraphicsOutput::
 get_sbs_right_dimensions() const {
   return _sbs_right_dimensions;
 }
@@ -485,26 +489,6 @@ is_stereo() const {
 INLINE void GraphicsOutput::
 clear_delete_flag() {
   _delete_flag = false;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: GraphicsOutput::get_delete_flag
-//       Access: Published
-//  Description: Returns the current setting of the delete flag.  When
-//               this is true, the GraphicsOutput will automatically
-//               be removed before the beginning of the next frame by
-//               the GraphicsEngine.
-////////////////////////////////////////////////////////////////////
-INLINE bool GraphicsOutput::
-get_delete_flag() const {
-  // We only delete the window or buffer automatically when it is
-  // no longer associated with a texture.
-  for (int i=0; i<(int)_hold_textures.size(); i++) {
-    if (_hold_textures[i].is_valid_pointer()) {
-      return false;
-    }
-  }
-  return _delete_flag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -617,8 +601,8 @@ make_display_region() {
 //               one or the other.
 ////////////////////////////////////////////////////////////////////
 DisplayRegion *GraphicsOutput::
-make_display_region(float l, float r, float b, float t) {
-  return make_display_region(LVecBase4f(l, r, b, t));
+make_display_region(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t) {
+  return make_display_region(LVecBase4(l, r, b, t));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -653,8 +637,8 @@ make_mono_display_region() {
 //               necessary to draw even mono DisplayRegions twice).
 ////////////////////////////////////////////////////////////////////
 INLINE DisplayRegion *GraphicsOutput::
-make_mono_display_region(float l, float r, float b, float t) {
-  return make_mono_display_region(LVecBase4f(l, r, b, t));
+make_mono_display_region(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t) {
+  return make_mono_display_region(LVecBase4(l, r, b, t));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -681,8 +665,8 @@ make_stereo_display_region() {
 //               is_stereo() is false.
 ////////////////////////////////////////////////////////////////////
 INLINE StereoDisplayRegion *GraphicsOutput::
-make_stereo_display_region(float l, float r, float b, float t) {
-  return make_stereo_display_region(LVecBase4f(l, r, b, t));
+make_stereo_display_region(PN_stdfloat l, PN_stdfloat r, PN_stdfloat b, PN_stdfloat t) {
+  return make_stereo_display_region(LVecBase4(l, r, b, t));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -779,17 +763,6 @@ get_screenshot() {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: GraphicsOutput::flip_ready
-//       Access: Public
-//  Description: Returns true if a frame has been rendered and needs
-//               to be flipped, false otherwise.
-////////////////////////////////////////////////////////////////////
-INLINE bool GraphicsOutput::
-flip_ready() const {
-  return _flip_ready;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: GraphicsOutput::operator <
 //       Access: Public
 //  Description: The sorting operator is used to order the
@@ -816,8 +789,10 @@ INLINE void GraphicsOutput::
 determine_display_regions() const {
   // This function isn't strictly speaking const, but we pretend it is
   // because it only updates a transparent cache value.
-  if (_display_regions_stale) {
-    ((GraphicsOutput *)this)->do_determine_display_regions();
+  CDLockedReader cdata(_cycler);
+  if (cdata->_active_display_regions_stale) {
+    CDWriter cdataw(((GraphicsOutput *)this)->_cycler, cdata, false);
+    ((GraphicsOutput *)this)->do_determine_display_regions(cdataw);
   }
 }
 
@@ -830,7 +805,8 @@ determine_display_regions() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void GraphicsOutput::
 win_display_regions_changed() {
-  _display_regions_stale = true;
+  CDWriter cdata(_cycler, true);
+  cdata->_active_display_regions_stale = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -896,8 +872,10 @@ clear_cube_map_selection() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: GraphicsOutput::trigger_flip
-//       Access: Public
-//  Description: Set the flip_ready flag, only if legal to do so.
+//       Access: Protected
+//  Description: To be called at the end of the frame, after the
+//               window has successfully been drawn and is ready to be
+//               flipped (if appropriate).
 ////////////////////////////////////////////////////////////////////
 INLINE void GraphicsOutput::
 trigger_flip() {

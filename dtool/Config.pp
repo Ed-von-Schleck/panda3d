@@ -317,6 +317,20 @@
 // What is the name of the C# compiler binary?
 #define CSHARP csc
 
+// This defines the include path to the Eigen linear algebra library.
+// If this is provided, Panda will use this library as the fundamental
+// implementation of its own linmath library; otherwise, it will use
+// its own internal implementation.  The primary advantage of using
+// Eigen is SSE2 support, which is only activated if LINMATH_ALIGN
+// is also enabled.  (However, activating LINMATH_ALIGN does
+// constrain most objects in Panda to 16-byte alignment, which could
+// impact memory usage on very-low-memory platforms.)  Currently
+// experimental.
+#define EIGEN_IPATH 
+#defer EIGEN_CFLAGS $[if $[WINDOWS_PLATFORM],/arch:SSE2,-msse2]
+#defer HAVE_EIGEN $[isdir $[EIGEN_IPATH]/Eigen]
+#define LINMATH_ALIGN 1
+
 // Is Python installed, and should Python interfaces be generated?  If
 // Python is installed, which directory is it in?
 #define PYTHON_IPATH /usr/include/python2.6
@@ -335,7 +349,7 @@
 // genPyCode.  You may wish to add to this list to add your own
 // libraries, or if you want to use some of the more obscure
 // interfaces like libpandaegg and libpandafx.
-#defer GENPYCODE_LIBS libpandaexpress libpanda libpandaphysics libdirect libpandafx libp3vision $[if $[HAVE_ODE],libpandaode] $[if $[HAVE_CEGUI],libpandacegui]
+#defer GENPYCODE_LIBS libpandaexpress libpanda libpandaphysics libp3direct libpandafx libp3vision $[if $[HAVE_ODE],libpandaode] $[if $[HAVE_CEGUI],libpandacegui]
 
 // Normally, Python source files are copied into the INSTALL_LIB_DIR
 // defined above, along with the compiled C++ library objects, when
@@ -367,24 +381,19 @@
 // on DirectX rendering.
 #defer SUPPORT_IMMEDIATE_MODE $[<= $[OPTIMIZE], 3]
 
-// Do you want to compile in support for pipelining?  This enables
-// setting and accessing multiple different copies of frame-specific
-// data stored in nodes, etc.  This is necessary, in conjunction with
-// HAVE_THREADS, to implement threaded multistage rendering in Panda.
-// However, compiling this option in does add some additional runtime
-// overhead even if it is not used.  By default, we enable pipelining
-// whenever threads are enabled, assuming that if you have threads,
-// you also want to use pipelining.  We also enable it at OPTIMIZE
-// level 1, since that enables additional runtime checks.
-//#defer DO_PIPELINING $[or $[<= $[OPTIMIZE], 1],$[HAVE_THREADS]]
+// These are two optional alternative memory-allocation schemes
+// available within Panda.  You can experiment with either of them to
+// see if they give better performance than the system malloc(), but
+// at the time of this writing, it doesn't appear that they do.
+#define USE_MEMORY_DLMALLOC
+#define USE_MEMORY_PTMALLOC2
 
-// Actually, let's *not* assume that threading implies pipelining, at
-// least not until pipelining is less of a performance hit.
-//#defer DO_PIPELINING $[<= $[OPTIMIZE], 1]
-
-// Pipelining is a little broken right now.  Turn it off altogether
-// for now.
-#defer DO_PIPELINING
+// Set this true if you prefer to use the system malloc library even
+// if 16-byte alignment must be performed on top of it, wasting up to
+// 30% of memory usage.  If you do not set this, and 16-byte alignment
+// is required and not provided by the system malloc library, then an
+// alternative malloc system (above) will be used instead.
+#define MEMORY_HOOK_DO_ALIGN
 
 // Panda contains some experimental code to compile for IPhone.  This
 // requires the Apple IPhone SDK, which is currently only available
@@ -415,6 +424,11 @@
 // objects.  There's usually no reason to set this false, unless you
 // suspect a bug in Panda's memory management code.
 #define USE_DELETED_CHAIN 1
+
+// Define this if you are building on Windows 7 or better, and you
+// want your Panda build to run only on Windows 7 or better, and you
+// need to use the Windows touchinput interfaces.
+#define HAVE_WIN_TOUCHINPUT
 
 // Define this true to build the low-level native network
 // implementation.  Normally this should be set true.
@@ -457,8 +471,8 @@
 #define HAVE_STL_HASH
 
 // Is OpenSSL installed, and where?
-#define OPENSSL_IPATH /usr/local/ssl/include
-#define OPENSSL_LPATH /usr/local/ssl/lib
+#define OPENSSL_IPATH
+#define OPENSSL_LPATH
 #define OPENSSL_LIBS ssl crypto
 #defer HAVE_OPENSSL $[libtest $[OPENSSL_LPATH],$[OPENSSL_LIBS]]
 
@@ -733,7 +747,7 @@
 // How about GLX?
 #define GLX_IPATH
 #define GLX_LPATH
-#defer HAVE_GLX $[and $[HAVE_GL],$[UNIX_PLATFORM]]
+#defer HAVE_GLX $[and $[HAVE_GL],$[HAVE_X11]]
 
 // glXGetProcAddress() is the function used to query OpenGL extensions
 // under X.  However, this function is itself an extension function,
@@ -799,11 +813,13 @@
 #defer HAVE_AWESOMIUM $[libtest $[AWESOMIUM_LPATH],$[AWESOMIUM_LIBS]]
 
 // Mozilla's so-called Gecko SDK, a.k.a. Xulrunner SDK, implements
-// NPAPI, Mozilla's semi-standard API to build a web plugin for
-// Firefox and other Mozilla-based browsers.
+// NPAPI.  So does the OSX WebKit framework.  Either implementation
+// can be used to build a web plugin for Firefox, Safari, Chrome, and
+// other non-Microsoft browsers.
 #define NPAPI_IPATH
 #define NPAPI_LPATH
 #define NPAPI_LIBS
+#define NPAPI_FRAMEWORK
 #define HAVE_NPAPI
 
 #define HAVE_ACTIVEX $[WINDOWS_PLATFORM]
@@ -823,7 +839,7 @@
 // supports kernel threads running on different CPU's), but it will
 // slightly slow down Panda for the single CPU case, so this is not
 // enabled by default.
-#define HAVE_THREADS
+#define HAVE_THREADS 1
 #define THREADS_LIBS $[if $[not $[WINDOWS_PLATFORM]],pthread]
 
 // If you have enabled threading support with HAVE_THREADS, the
@@ -858,6 +874,19 @@
 // mutex is not recursively locked.  There is, of course, additional
 // run-time overhead for these tests.
 #defer DEBUG_THREADS $[<= $[OPTIMIZE], 2]
+
+// Do you want to compile in support for pipelining?  This adds code
+// to maintain a different copy of the scene graph for each thread in
+// the render pipeline, so that app, cull, and draw may each safely
+// run in a separate thread, allowing maximum parallelization of CPU
+// processing for the frame.  Enabling this option does not *require*
+// you to use separate threads for rendering, but makes it possible.
+// However, compiling this option in does add some additional runtime
+// overhead even if it is not used.  By default, we enable pipelining
+// whenever threads are enabled, assuming that if you have threads,
+// you also want to use pipelining.  We also enable it at OPTIMIZE
+// level 1, since that enables additional runtime checks.
+#defer DO_PIPELINING $[or $[<= $[OPTIMIZE], 1],$[HAVE_THREADS]]
 
 // Define this true to implement mutexes and condition variables via
 // user-space spinlocks, instead of via OS-provided constructs.  This
@@ -912,8 +941,8 @@
 #define TAU_MAKEFILE
 #define TAU_ROOT
 #define PDT_ROOT
-#define TAU_OPTS -optKeepFiles
-#define TAU_CFLAGS -D_GNU_SOURCE
+#define TAU_OPTS -optKeepFiles -optRevert
+#define TAU_CFLAGS
 #define USE_TAU
 
 // Info for the RAD game tools, Miles Sound System
@@ -974,14 +1003,10 @@
 #endif
 #defer HAVE_SPEEDTREE $[isdir $[SPEEDTREE_SDK_DIR]]
 
-// Info for http://www.sourceforge.net/projects/chromium
-#define CHROMIUM_IPATH /usr/include/chromium/include
-#define CHROMIUM_LPATH /usr/lib/chromium/bin/WINT_NT
-#define CHROMIUM_LIBS spuload
-#defer HAVE_CHROMIUM $[libtest $[CHROMIUM_LPATH],$[CHROMIUM_LIBS]]
-
-// Is gtk+-2 installed?  This is only needed to build the pstats
-// program on Unix (or non-Windows) platforms.
+// Is gtk+-2 installed?  This is needed to build the pstats program on
+// Unix (or non-Windows) platforms.  It is also used to provide
+// support for XEmbed for the web plugin system, which is necessary to
+// support Chromium on Linux.
 #define PKG_CONFIG pkg-config
 #define HAVE_GTK
 
@@ -1008,6 +1033,14 @@
 // a particular font file to load as the default, overriding the
 // compiled-in font).
 #define COMPILE_IN_DEFAULT_FONT 1
+
+// Define this true to compile a special version of Panda to use a
+// "double" floating-precision type for most internal values, such as
+// positions and transforms, instead of the standard single-precision
+// "float" type.  This does not affect the default numeric type of
+// vertices, which is controlled by the runtime config variable
+// vertices-float64.
+#define STDFLOAT_DOUBLE
 
 // We use wxWidgets--the C++ library, not the Python library--for
 // building the application p3dcert, which is needed only when
@@ -1083,6 +1116,15 @@
 #define ARTOOLKIT_LPATH
 #define ARTOOLKIT_LIBS $[if $[WINDOWS_PLATFORM],libAR.lib,AR]
 #defer HAVE_ARTOOLKIT $[libtest $[ARTOOLKIT_LPATH],$[ARTOOLKIT_LIBS]]
+
+// libRocket is a GUI library
+#define ROCKET_IPATH /usr/local/include
+#define ROCKET_LPATH /usr/local/lib
+#define ROCKET_LIBS RocketCore RocketDebugger boost_python
+#defer HAVE_ROCKET $[libtest $[ROCKET_LPATH],$[ROCKET_LIBS]]
+#defer HAVE_ROCKET_DEBUGGER $[< $[OPTIMIZE],4]
+// Unset this if you built libRocket without Python bindings
+#defer HAVE_ROCKET_PYTHON $[and $[HAVE_ROCKET],$[HAVE_PYTHON]]
 
 // Define this to explicitly indicate the given platform string within
 // the resulting Panda runtime.  Normally it is best to leave this

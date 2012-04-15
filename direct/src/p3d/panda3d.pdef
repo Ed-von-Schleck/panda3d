@@ -57,8 +57,9 @@ class panda3d(package):
     module('panda3d')
 
     # Include various standard Python encodings.  The rest is in morepy.
-    module('encodings', 'encodings.utf_8', 'encodings.ascii',
-           'encodings.string_escape', 'encodings.mbcs')
+    module('encodings', 'encodings.aliases', 'encodings.undefined,'
+           'encodings.utf_8', 'encodings.ascii', 'encodings.string_escape',
+           'encodings.mbcs', 'encodings.latin_1', 'io')
 
     # Pick up the shader files that appear in direct/src/filter.
     import direct
@@ -81,17 +82,17 @@ class panda3d(package):
     excludeModule('wx',
                   'direct.showbase.WxGlobal')
 
-    excludeModule('Tkinter',
+    excludeModule('Tkinter', 'Pmw',
                   'direct.showbase.TkGlobal',
-                  'direct.tkpanels',
-                  'direct.tkwidgets')
+                  'direct.tkpanels', 'direct.tkwidgets',
+                  'tkCommonDialog', 'tkMessageBox', 'tkSimpleDialog')
 
     # Most of the core Panda3D DLL's will be included implicitly due to
     # being referenced by the above Python code.  Here we name a few more
     # that are also needed, but aren't referenced by any code.  Again,
     # note that the .dll extension is automatically replaced with the
     # platform-specific extension for an executable.
-    file('libpandagl.dll', 'libtinydisplay.dll')
+    file('libpandagl.dll', 'libp3tinydisplay.dll')
     if platform.startswith('win'):
         file('libpandadx8.dll', 'libpandadx9.dll')
 
@@ -102,12 +103,12 @@ class panda3d(package):
 aux-display pandagl
 aux-display pandadx9
 aux-display pandadx8
-aux-display tinydisplay
+aux-display p3tinydisplay
 """
     else:
         auxDisplays = """
 aux-display pandagl
-aux-display tinydisplay
+aux-display p3tinydisplay
 """
 
     file('Config.prc', extract = True, text = """
@@ -139,7 +140,7 @@ class morepy(package):
            'bsddb', 'dumbdbm', 'zlib', 'gzip', 'bz2', 'zipfile',
            'tarfile', 'csv', 'ConfigParser', 'robotparser', 'netrc',
            'xdrlib', 'plistlib', 'hashlib', 'hmac', 'md5', 'sha', 'os',
-           'io', 'time', 'optparse', 'getopt', 'logging', 'logging.*')
+           'time', 'optparse', 'getopt', 'logging', 'logging.*')
     module('getpass', 'curses', 'curses.textpad', 'curses.wrapper',
            'curses.ascii', 'curses.panel', 'platform', 'errno',
            'ctypes', 'select', 'threading', 'thread',
@@ -236,10 +237,8 @@ class audio(package):
     # platform, assuming a non-commercial application.
     require('panda3d')
 
-    if platform.startswith('osx'):
-        require('fmod')
-    else:
-        require('openal')
+    # OpenAL seems to work pretty well universally now.
+    require('openal')
 
 class egg(package):
     # This package contains the code for reading and operating on egg
@@ -321,6 +320,17 @@ class vision(package):
 
     file('libp3vision.dll', required = True)
 
+class rocket(package):
+    # This package contains the code for libRocket integration.
+    # As not every application uses libRocket GUI, and to cut down
+    # the download size, it is provided as separate package.
+
+    config(display_name = "Panda3D libRocket support")
+    require('panda3d')
+
+    module('_rocketcore', '_rocketcontrols')
+    file('libp3rocket.dll', required = True)
+
 
 class packp3d(p3d):
     # This application is a command-line convenience for building a p3d
@@ -383,8 +393,7 @@ class pdeploy(p3d):
     config(display_name = "Panda3D Deployment Tool",
            hidden = True, platform_specific = False,
            keep_user_env = True)
-    require('panda3d')
+    require('panda3d', 'morepy')
 
-    module('encodings', 'encodings.zlib_codec', 'encodings.bz2_codec')
     mainModule('direct.p3d.pdeploy')
 

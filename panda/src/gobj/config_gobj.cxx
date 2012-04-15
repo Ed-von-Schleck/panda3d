@@ -17,6 +17,7 @@
 #include "config_util.h"
 #include "config_gobj.h"
 #include "geom.h"
+#include "geomCacheEntry.h"
 #include "geomMunger.h"
 #include "geomPrimitive.h"
 #include "geomTriangles.h"
@@ -127,13 +128,10 @@ ConfigVariableBool driver_compress_textures
           "of this setting."));
 
 ConfigVariableBool driver_generate_mipmaps
-("driver-generate-mipmaps", false,
+("driver-generate-mipmaps", true,
  PRC_DESC("Set this true to use the hardware to generate mipmaps "
           "automatically in all cases, if supported.  Set it false "
-          "to generate mipmaps in software when possible.  This is "
-          "false by default because some drivers (Intel) seem to do a "
-          "poor job of generating mipmaps when needed; also, generating "
-          "mipmaps in software may allow smoother texture loads."));
+          "to generate mipmaps in software when possible."));
 
 ConfigVariableBool vertex_buffers
 ("vertex-buffers", true,
@@ -262,6 +260,47 @@ ConfigVariableBool enforce_attrib_lock
           "the attrib lock.  Disabling the lock will break the shader "
           "generator, but doing so may be necessary for backward "
           "compatibility with old code."));
+
+ConfigVariableBool vertices_float64
+("vertices-float64", false,
+ PRC_DESC("When this is true, the default float format for vertices "
+          "will be a 64-bit double-precision float, instead "
+          "of the normal 32-bit single-precision float.  This must be set "
+          "at static init time to have the broadest effect.  You almost never "
+          "want to set this true, since current hardware does not support "
+          "double-precision vertices, and setting this will just require the "
+          "driver to downsample the vertices at load time, making everything "
+          "slower."));
+
+ConfigVariableInt vertex_column_alignment
+("vertex-column-alignment", 1,
+ PRC_DESC("This specifies the default byte alignment for each column of "
+          "data within a GeomVertexData when it is assembled using the default "
+          "interfaces.  Normally, you should not change this config variable "
+          "(which would change this value globally), but instead specify any "
+          "alignment requirements on a per-column basis as you construct a "
+          "GeomVertexFormat.  Setting this value globally could result in "
+          "much needless wasted space in all vertex data objects, but it "
+          "could be useful for simple experiments.  Also see "
+          "vertex-animation-align-16 for a variable that controls "
+          "this alignment for the vertex animation columns only."));
+
+ConfigVariableBool vertex_animation_align_16
+("vertex-animation-align-16", 
+#ifdef LINMATH_ALIGN
+ true,
+#else
+ false,
+#endif
+ PRC_DESC("If this is true, then animated vertices will be created with 4-component "
+          "floats and aligned to 16-byte boundaries, to allow efficient vectorization "
+          "(e.g. SSE2) operations when computing animations.  If this is false, "
+          "animated vertices will be packed as tightly as possible, in the normal way, "
+          "which will optimize the amount of memory that must be sent to the graphics "
+          "card, but prevent the use of SSE2 to calculate animation.  This does not "
+          "affect unanimated vertices, which are always packed tightly.  This also "
+          "impacts only vertex formats created within Panda subsystems; custom "
+          "vertex formats are not affected."));
 
 ConfigVariableEnum<AutoTextureScale> textures_power_2
 ("textures-power-2", ATS_down,
@@ -459,12 +498,22 @@ PRC_DESC("If this is nonzero, it represents an artificial delay, "
          "delay is per-model, and all aync loads will be queued "
          "up behind the delay--it is as if the time it takes to read a "
          "file is increased by this amount per read."));
- 
+
+ConfigVariableInt lens_geom_segments
+("lens-geom-segments", 50,
+ PRC_DESC("This is the number of times to subdivide the visualization "
+          "wireframe created when Lens::make_geometry() (or "
+          "LensNode::show_frustum()) is called, for representing accurate "
+          "curves.  Note that this is only "
+          "used for a nonlinear lens such as a cylindrical or fisheye "
+          "lens; for a normal perspective or orthographic lens, the "
+          "wireframe is not subdivided."));
 
 ConfigureFn(config_gobj) {
   AnimateVerticesRequest::init_type();
   BufferContext::init_type();
   Geom::init_type();
+  GeomCacheEntry::init_type();
   GeomPipelineReader::init_type();
   GeomContext::init_type();
   GeomLines::init_type();
@@ -541,59 +590,6 @@ ConfigureFn(config_gobj) {
 }
 
 ostream &
-operator << (ostream &out, AutoTextureScale ats) {
-  switch (ats) {
-  case ATS_none:
-    return out << "none";
-   
-  case ATS_down:
-    return out << "down";
-    
-  case ATS_up:
-    return out << "up";
-    
-  case ATS_pad:
-    return out << "pad";
-
-  case ATS_UNSPECIFIED:
-    return out << "UNSPECIFIED";
-  }
-
-  return out << "**invalid AutoTextureScale (" << (int)ats << ")**";
-}
-
-istream &
-operator >> (istream &in, AutoTextureScale &ats) {
-  string word;
-  in >> word;
-
-  if (cmp_nocase(word, "none") == 0 ||
-      cmp_nocase(word, "0") == 0 ||
-      cmp_nocase(word, "#f") == 0 ||
-      (!word.empty() && tolower(word[0]) == 'f')) {
-    ats = ATS_none;
-
-  } else if (cmp_nocase(word, "down") == 0 ||
-	     cmp_nocase(word, "1") == 0 ||
-	     cmp_nocase(word, "#t") == 0 ||
-	     (!word.empty() && tolower(word[0]) == 't')) {
-    ats = ATS_down;
-
-  } else if (cmp_nocase(word, "up") == 0) {
-    ats = ATS_up;
-
-  } else if (cmp_nocase(word, "pad") == 0) {
-    ats = ATS_pad;
-
-  } else {
-    gobj_cat->error() << "Invalid AutoTextureScale value: " << word << "\n";
-    ats = ATS_none;
-  }
-
-  return in;
-}
-
-ostream &
 operator << (ostream &out, ShaderUtilization sgc) {
   switch (sgc) {
   case SUT_none:
@@ -605,8 +601,8 @@ operator << (ostream &out, ShaderUtilization sgc) {
   case SUT_advanced:
     return out << "advanced";
 
-  case SUT_UNSPECIFIED:
-    return out << "UNSPECIFIED";
+  case SUT_unspecified:
+    return out << "unspecified";
   }
 
   return out << "**invalid ShaderUtilization (" << (int)sgc << ")**";
@@ -624,9 +620,9 @@ operator >> (istream &in, ShaderUtilization &sgc) {
     sgc = SUT_none;
 
   } else if (cmp_nocase(word, "basic") == 0 ||
-	     cmp_nocase(word, "1") == 0 ||
-	     cmp_nocase(word, "#t") == 0 ||
-	     (!word.empty() && tolower(word[0]) == 't')) {
+             cmp_nocase(word, "1") == 0 ||
+             cmp_nocase(word, "#t") == 0 ||
+             (!word.empty() && tolower(word[0]) == 't')) {
     sgc = SUT_basic;
 
   } else if (cmp_nocase(word, "advanced") == 0) {

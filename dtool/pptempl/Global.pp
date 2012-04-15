@@ -73,6 +73,9 @@
 #define stl_cflags $[STL_CFLAGS]
 #define stl_libs $[STL_LIBS]
 
+#define eigen_ipath $[wildcard $[EIGEN_IPATH]]
+#define eigen_cflags $[EIGEN_CFLAGS]
+
 #if $[HAVE_PYTHON]
   #define python_ipath $[wildcard $[PYTHON_IPATH]]
   #define python_lpath $[wildcard $[PYTHON_LPATH]]
@@ -81,6 +84,10 @@
   #define python_lflags $[PYTHON_LFLAGS]
   #define python_libs $[PYTHON_LIBS]
   #define python_framework $[PYTHON_FRAMEWORK]
+#endif
+
+#if $[USE_TAU]
+  #define tau_ipath $[wildcard $[TAU_IPATH]]
 #endif
 
 #if $[HAVE_THREADS]
@@ -183,13 +190,6 @@
   #define mesa_lpath $[wildcard $[MESA_LPATH]]
   #define mesa_cflags $[MESA_CFLAGS]
   #define mesa_libs $[MESA_LIBS]
-#endif
-
-#if $[HAVE_CHROMIUM]
-  #define chromium_ipath $[wildcard $[CHROMIUM_IPATH]]
-  #define chromium_lpath $[wildcard $[CHROMIUM_LPATH]]
-  #define chromium_cflags $[CHROMIUM_CFLAGS]
-  #define chromium_libs $[CHROMIUM_LIBS]
 #endif
 
 #if $[HAVE_GLX]
@@ -467,12 +467,6 @@
   #define speedtree_libs $[SPEEDTREE_LIBS]
 #endif
 
-#if $[HAVE_CHROMIUM]
-  #define chromium_ipath $[wildcard $[CHROMIUM_IPATH]]
-  #define chromium_lpath $[wildcard $[CHROMIUM_LPATH]]
-  #define chromium_libs $[CHROMIUM_LIBS]
-#endif
-
 #if $[HAVE_FCOLLADA]
   #define fcollada_ipath $[wildcard $[FCOLLADA_IPATH]]
   #define fcollada_lpath $[wildcard $[FCOLLADA_LPATH]]
@@ -501,6 +495,12 @@
   #define artoolkit_ipath $[wildcard $[ARTOOLKIT_IPATH]]
   #define artoolkit_lpath $[wildcard $[ARTOOLKIT_LPATH]]
   #define artoolkit_libs $[ARTOOLKIT_LIBS]
+#endif
+
+#if $[HAVE_ROCKET]
+  #define rocket_ipath $[wildcard $[ROCKET_IPATH]]
+  #define rocket_lpath $[wildcard $[ROCKET_LPATH]]
+  #define rocket_libs $[ROCKET_LIBS]
 #endif
 
 #if $[HAVE_CEGUI]
@@ -688,7 +688,7 @@
 // require.
 #defun get_cflags
   // hack to add stl,python.  should be removed
-  #define alt_cflags $[if $[IGNORE_LIB_DEFAULTS_HACK],,$[stl_cflags] $[python_cflags]]
+  #define alt_cflags $[if $[IGNORE_LIB_DEFAULTS_HACK],,$[stl_cflags] $[python_cflags] $[if $[HAVE_EIGEN],$[eigen_cflags]]]
 
   #foreach package $[use_packages]
     #set alt_cflags $[alt_cflags] $[$[package]_cflags]
@@ -717,7 +717,7 @@
 // names only; the -I switch is not included here.
 #defun get_ipath
   // hack to add stl,python.  should be removed
-  #define alt_ipath $[if $[IGNORE_LIB_DEFAULTS_HACK],,$[stl_ipath] $[python_ipath]]
+  #define alt_ipath $[if $[IGNORE_LIB_DEFAULTS_HACK],,$[stl_ipath] $[python_ipath] $[tau_ipath] $[if $[HAVE_EIGEN],$[eigen_ipath]]]
 
   #foreach package $[use_packages]
     #set alt_ipath $[alt_ipath] $[$[package]_ipath]
@@ -954,7 +954,7 @@ Warning: Variable $[upcase $[tree]]_INSTALL is not set!
 
 // Caution!  interrogate_ipath might be redefined in the
 // Global.platform.pp file.
-#defer interrogate_ipath $[install_parser_inc_dir:%=-S%] $[target_ipath:%=-I%]
+#defer interrogate_ipath $[install_parser_inc_dir:%=-S%] $[INTERROGATE_SYSTEM_IPATH:%=-S%] $[target_ipath:%=-I%]
 
 #defer interrogate_options \
     -DCPPPARSER -D__STDC__=1 -D__cplusplus $[SYSTEM_IGATE_FLAGS] \

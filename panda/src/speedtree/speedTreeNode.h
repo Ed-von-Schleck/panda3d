@@ -117,18 +117,18 @@ PUBLISHED:
   void add_instances_from(const SpeedTreeNode *other);
   void add_instances_from(const SpeedTreeNode *other, const TransformState *transform);
   void add_random_instances(const STTree *tree, int quantity, 
-			    float x_min, float x_max, 
-			    float y_min, float y_max,
-			    float scale_min, float scale_max,
-			    float height_min, float height_max,
-			    float slope_min, float slope_max,
-			    Randomizer &randomizer = Randomizer());
+                            PN_stdfloat x_min, PN_stdfloat x_max, 
+                            PN_stdfloat y_min, PN_stdfloat y_max,
+                            PN_stdfloat scale_min, PN_stdfloat scale_max,
+                            PN_stdfloat height_min, PN_stdfloat height_max,
+                            PN_stdfloat slope_min, PN_stdfloat slope_max,
+                            Randomizer &randomizer = Randomizer());
 
   bool add_from_stf(const Filename &stf_filename, 
-		    const LoaderOptions &options = LoaderOptions());
+                    const LoaderOptions &options = LoaderOptions());
   bool add_from_stf(istream &in, const Filename &pathname, 
-		    const LoaderOptions &options = LoaderOptions(),
-		    Loader *loader = NULL);
+                    const LoaderOptions &options = LoaderOptions(),
+                    Loader *loader = NULL);
 
   bool setup_terrain(const Filename &terrain_file);
   void set_terrain(STTerrain *terrain);
@@ -140,7 +140,7 @@ PUBLISHED:
 
   void reload_config();
 
-  void set_wind(double strength, const LVector3f &direction);
+  void set_wind(double strength, const LVector3 &direction);
 
   INLINE void set_time_delta(double delta);
   INLINE double get_time_delta() const;
@@ -180,7 +180,7 @@ protected:
 private:
   void init_node();
   void r_add_instances(PandaNode *node, const TransformState *transform,
-		       Thread *current_thread);
+                       Thread *current_thread);
 
   void repopulate();
   void update_terrain_cells();
@@ -209,7 +209,7 @@ private:
     static void init_type() {
       CallbackObject::init_type();
       register_type(_type_handle, "SpeedTreeNode::DrawCallback",
-		    CallbackObject::get_class_type());
+                    CallbackObject::get_class_type());
     }
     virtual TypeHandle get_type() const {
       return get_class_type();
@@ -250,7 +250,7 @@ private:
 
     SpeedTree::CView _light_view;
     SpeedTree::SForestCullResultsRender _light_cull;
-    float _shadow_split;
+    PN_stdfloat _shadow_split;
   };
   typedef pvector<ShadowInfo> ShadowInfos;
   ShadowInfos _shadow_infos;

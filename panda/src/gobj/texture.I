@@ -29,11 +29,11 @@
 ////////////////////////////////////////////////////////////////////
 INLINE PT(Texture) Texture::
 make_copy() const {
-  MutexHolder holder(_lock);
-  PT(Texture) tex = do_make_copy();
-  ++(tex->_properties_modified);
-  ++(tex->_image_modified);
-  ++(tex->_simple_image_modified);
+  PT(Texture) tex = make_copy_impl();
+  CDWriter cdata_tex(tex->_cycler, true);
+  ++(cdata_tex->_properties_modified);
+  ++(cdata_tex->_image_modified);
+  ++(cdata_tex->_simple_image_modified);
   return tex;
 }
 
@@ -45,8 +45,8 @@ make_copy() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear() {
-  MutexHolder holder(_lock);
-  do_clear();
+  CDWriter cdata(_cycler, true);
+  do_clear(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -61,8 +61,8 @@ INLINE void Texture::
 setup_texture(Texture::TextureType texture_type, int x_size, int y_size,
               int z_size, Texture::ComponentType component_type,
               Texture::Format format) {
-  MutexHolder holder(_lock);
-  do_setup_texture(texture_type, x_size, y_size, z_size,
+  CDWriter cdata(_cycler, true);
+  do_setup_texture(cdata, texture_type, x_size, y_size, z_size, 
                    component_type, format);
 }
 
@@ -169,7 +169,7 @@ setup_2d_texture_array(int z_size) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 setup_2d_texture_array(int x_size, int y_size, int z_size,
-                 ComponentType component_type, Format format) {
+                       ComponentType component_type, Format format) {
   setup_texture(TT_2d_texture_array, x_size, y_size, z_size, component_type, format);
 }
 
@@ -198,8 +198,7 @@ setup_cube_map() {
 //               and z_size is always 6.
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
-setup_cube_map(int size, ComponentType component_type, 
-               Format format) {
+setup_cube_map(int size, ComponentType component_type, Format format) {
   setup_texture(TT_cube_map, size, size, 6, component_type, format);
 }
 
@@ -210,8 +209,11 @@ setup_cube_map(int size, ComponentType component_type,
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 write(const Filename &fullpath) {
-  MutexHolder holder(_lock);
-  return do_write(fullpath, 0, 0, false, false);
+  CDWriter cdata(_cycler);
+
+  // do_write() is non-const, because it might have to reload the ram
+  // image.
+  return do_write(cdata, fullpath, 0, 0, false, false);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -232,7 +234,9 @@ write(const Filename &fullpath) {
 //               number to write.  3-D textures have one page number
 //               for each level of depth; cube maps have six pages
 //               number 0 through 5.  Other kinds of textures have
-//               only one page, numbered 0.
+//               only one page, numbered 0.  If there are multiple
+//               views, the range of z is increased; the total range
+//               is [0, get_num_pages()).
 //
 //               If write_pages is true, then all pages of the texture
 //               will be written.  In this case z is ignored, and the
@@ -271,8 +275,8 @@ write(const Filename &fullpath) {
 INLINE bool Texture::
 write(const Filename &fullpath, int z, int n, 
       bool write_pages, bool write_mipmaps) {
-  MutexHolder holder(_lock);
-  return do_write(fullpath, z, n, write_pages, write_mipmaps);
+  CDWriter cdata(_cycler, false);
+  return do_write(cdata, fullpath, z, n, write_pages, write_mipmaps);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -282,11 +286,11 @@ write(const Filename &fullpath, int z, int n,
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 load(const PNMImage &pnmimage, const LoaderOptions &options) {
-  MutexHolder holder(_lock);
-  do_clear();
-  ++_properties_modified;
-  ++_image_modified;
-  if (do_load_one(pnmimage, get_name(), 0, 0, options)) {
+  CDWriter cdata(_cycler, true);
+  do_clear(cdata);
+  ++(cdata->_properties_modified);
+  ++(cdata->_image_modified);
+  if (do_load_one(cdata, pnmimage, get_name(), 0, 0, options)) {
     bool generate_mipmaps = ((options.get_texture_flags() & LoaderOptions::TF_generate_mipmaps) != 0);
     consider_auto_process_ram_image(generate_mipmaps || uses_mipmaps(), true);
     return true;
@@ -302,10 +306,10 @@ load(const PNMImage &pnmimage, const LoaderOptions &options) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 load(const PNMImage &pnmimage, int z, int n, const LoaderOptions &options) {
-  MutexHolder holder(_lock);
-  ++_properties_modified;
-  ++_image_modified;
-  if (do_load_one(pnmimage, get_name(), z, n, options)) {
+  CDWriter cdata(_cycler, true);
+  ++(cdata->_properties_modified);
+  ++(cdata->_image_modified);
+  if (do_load_one(cdata, pnmimage, get_name(), z, n, options)) {
     return true;
   }
   return false;
@@ -319,8 +323,8 @@ load(const PNMImage &pnmimage, int z, int n, const LoaderOptions &options) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 store(PNMImage &pnmimage) const {
-  MutexHolder holder(_lock);
-  return do_store_one(pnmimage, 0, 0);
+  CDWriter cdata(((Texture *)this)->_cycler, false);
+  return ((Texture *)this)->do_store_one(cdata, pnmimage, 0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -331,8 +335,8 @@ store(PNMImage &pnmimage) const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 store(PNMImage &pnmimage, int z, int n) const {
-  MutexHolder holder(_lock);
-  return do_store_one(pnmimage, z, n);
+  CDWriter cdata(((Texture *)this)->_cycler, false);
+  return ((Texture *)this)->do_store_one(cdata, pnmimage, z, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -347,8 +351,8 @@ store(PNMImage &pnmimage, int z, int n) const {
 ////////////////////////////////////////////////////////////////////
 bool Texture::
 reload() {
-  MutexHolder holder(_lock);
-  return do_reload();
+  CDWriter cdata(_cycler, true);
+  return do_reload(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -359,8 +363,8 @@ reload() {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_filename() const {
-  MutexHolder holder(_lock);
-  return !_filename.empty();
+  CDReader cdata(_cycler);
+  return !cdata->_filename.empty();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -372,8 +376,8 @@ has_filename() const {
 ////////////////////////////////////////////////////////////////////
 INLINE const Filename &Texture::
 get_filename() const {
-  MutexHolder holder(_lock);
-  return _filename;
+  CDReader cdata(_cycler);
+  return cdata->_filename;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -384,8 +388,8 @@ get_filename() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_alpha_filename() const {
-  MutexHolder holder(_lock);
-  return !_alpha_filename.empty();
+  CDReader cdata(_cycler);
+  return !cdata->_alpha_filename.empty();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -398,8 +402,8 @@ has_alpha_filename() const {
 ////////////////////////////////////////////////////////////////////
 INLINE const Filename &Texture::
 get_alpha_filename() const {
-  MutexHolder holder(_lock);
-  return _alpha_filename;
+  CDReader cdata(_cycler);
+  return cdata->_alpha_filename;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -410,8 +414,8 @@ get_alpha_filename() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_fullpath() const {
-  MutexHolder holder(_lock);
-  return !_fullpath.empty();
+  CDReader cdata(_cycler);
+  return !cdata->_fullpath.empty();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -423,8 +427,8 @@ has_fullpath() const {
 ////////////////////////////////////////////////////////////////////
 INLINE const Filename &Texture::
 get_fullpath() const {
-  MutexHolder holder(_lock);
-  return _fullpath;
+  CDReader cdata(_cycler);
+  return cdata->_fullpath;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -435,8 +439,8 @@ get_fullpath() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_alpha_fullpath() const {
-  MutexHolder holder(_lock);
-  return !_alpha_fullpath.empty();
+  CDReader cdata(_cycler);
+  return !cdata->_alpha_fullpath.empty();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -449,8 +453,8 @@ has_alpha_fullpath() const {
 ////////////////////////////////////////////////////////////////////
 INLINE const Filename &Texture::
 get_alpha_fullpath() const {
-  MutexHolder holder(_lock);
-  return _alpha_fullpath;
+  CDReader cdata(_cycler);
+  return cdata->_alpha_fullpath;
 }
 
 
@@ -461,7 +465,8 @@ get_alpha_fullpath() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_x_size() const {
-  return _x_size;
+  CDReader cdata(_cycler);
+  return cdata->_x_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -472,7 +477,8 @@ get_x_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_y_size() const {
-  return _y_size;
+  CDReader cdata(_cycler);
+  return cdata->_y_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -484,7 +490,43 @@ get_y_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_z_size() const {
-  return _z_size;
+  CDReader cdata(_cycler);
+  return cdata->_z_size;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_num_views
+//       Access: Published
+//  Description: Returns the number of "views" in the texture.  A view
+//               is a completely separate image stored within the
+//               Texture object.  Most textures have only one view,
+//               but a stereo texture, for instance, may have two
+//               views, a left and a right image.  Other uses for
+//               multiple views are not yet defined.
+//
+//               If this value is greater than one, the additional
+//               views are accessed as additional pages beyond
+//               get_z_size().
+////////////////////////////////////////////////////////////////////
+INLINE int Texture::
+get_num_views() const {
+  CDReader cdata(_cycler);
+  return cdata->_num_views;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_num_pages
+//       Access: Published
+//  Description: Returns the total number of pages in the texture.  
+//               Each "page" is a 2-d texture image within the larger
+//               image--a face of a cube map, or a level of a 3-d
+//               texture.  Normally, get_num_pages() is the same as
+//               get_z_size().  However, in a multiview texture, this
+//               returns get_z_size() * get_num_views().
+////////////////////////////////////////////////////////////////////
+INLINE int Texture::
+get_num_pages() const {
+  return get_z_size() * get_num_views();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -494,7 +536,8 @@ get_z_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_pad_x_size() const {
-  return _pad_x_size;
+  CDReader cdata(_cycler);
+  return cdata->_pad_x_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -504,7 +547,8 @@ get_pad_x_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_pad_y_size() const {
-  return _pad_y_size;
+  CDReader cdata(_cycler);
+  return cdata->_pad_y_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -514,7 +558,8 @@ get_pad_y_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_pad_z_size() const {
-  return _pad_z_size;
+  CDReader cdata(_cycler);
+  return cdata->_pad_z_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -532,14 +577,15 @@ get_pad_z_size() const {
 //               this case, this is a convenient way to generate UV's
 //               that reflect the built-in padding size.
 ////////////////////////////////////////////////////////////////////
-INLINE LVecBase2f Texture::
+INLINE LVecBase2 Texture::
 get_tex_scale() const {
-  if (_pad_x_size == 0 || _pad_y_size == 0 ||
-      _x_size == 0 || _y_size == 0) {
-    LVecBase2f(1.0f, 1.0f);
+  CDReader cdata(_cycler);
+  if (cdata->_pad_x_size == 0 || cdata->_pad_y_size == 0 ||
+      cdata->_x_size == 0 || cdata->_y_size == 0) {
+    LVecBase2(1.0f, 1.0f);
   }
-  return LVecBase2f((float)(_x_size - _pad_x_size) / (float)_x_size,
-                    (float)(_y_size - _pad_y_size) / (float)_y_size);
+  return LVecBase2((PN_stdfloat)(cdata->_x_size - cdata->_pad_x_size) / (PN_stdfloat)cdata->_x_size,
+                   (PN_stdfloat)(cdata->_y_size - cdata->_pad_y_size) / (PN_stdfloat)cdata->_y_size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -560,8 +606,8 @@ get_tex_scale() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_pad_size(int x, int y, int z) {
-  MutexHolder holder(_lock);
-  do_set_pad_size(x, y, z);
+  CDWriter cdata(_cycler, true);
+  do_set_pad_size(cdata, x, y, z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -573,7 +619,8 @@ set_pad_size(int x, int y, int z) {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_orig_file_x_size() const {
-  return _orig_file_x_size;
+  CDReader cdata(_cycler);
+  return cdata->_orig_file_x_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -585,7 +632,8 @@ get_orig_file_x_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_orig_file_y_size() const {
-  return _orig_file_y_size;
+  CDReader cdata(_cycler);
+  return cdata->_orig_file_y_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -600,7 +648,8 @@ get_orig_file_z_size() const {
   // At the moment, we perform no automatic adjustment of Z size.  So
   // we can just return the current value, since it would be the same
   // thing.
-  return _z_size;
+  CDReader cdata(_cycler);
+  return cdata->_z_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -613,7 +662,8 @@ get_orig_file_z_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_num_components() const {
-  return _num_components;
+  CDReader cdata(_cycler);
+  return cdata->_num_components;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -625,7 +675,8 @@ get_num_components() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_component_width() const {
-  return _component_width;
+  CDReader cdata(_cycler);
+  return cdata->_component_width;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -635,7 +686,8 @@ get_component_width() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::TextureType Texture::
 get_texture_type() const {
-  return _texture_type;
+  CDReader cdata(_cycler);
+  return cdata->_texture_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -647,7 +699,8 @@ get_texture_type() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::Format Texture::
 get_format() const {
-  return _format;
+  CDReader cdata(_cycler);
+  return cdata->_format;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -658,7 +711,8 @@ get_format() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::ComponentType Texture::
 get_component_type() const {
-  return _component_type;
+  CDReader cdata(_cycler);
+  return cdata->_component_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -668,8 +722,8 @@ get_component_type() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_wrap_u(Texture::WrapMode wrap) {
-  MutexHolder holder(_lock);
-  do_set_wrap_u(wrap);
+  CDWriter cdata(_cycler, true);
+  do_set_wrap_u(cdata, wrap);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -679,8 +733,8 @@ set_wrap_u(Texture::WrapMode wrap) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_wrap_v(Texture::WrapMode wrap) {
-  MutexHolder holder(_lock);
-  do_set_wrap_v(wrap);
+  CDWriter cdata(_cycler, true);
+  do_set_wrap_v(cdata, wrap);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -690,8 +744,8 @@ set_wrap_v(Texture::WrapMode wrap) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_wrap_w(Texture::WrapMode wrap) {
-  MutexHolder holder(_lock);
-  do_set_wrap_w(wrap);
+  CDWriter cdata(_cycler, true);
+  do_set_wrap_w(cdata, wrap);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -701,8 +755,8 @@ set_wrap_w(Texture::WrapMode wrap) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_minfilter(Texture::FilterType filter) {
-  MutexHolder holder(_lock);
-  do_set_minfilter(filter);
+  CDWriter cdata(_cycler, true);
+  do_set_minfilter(cdata, filter);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -712,8 +766,8 @@ set_minfilter(Texture::FilterType filter) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_magfilter(Texture::FilterType filter) {
-  MutexHolder holder(_lock);
-  do_set_magfilter(filter);
+  CDWriter cdata(_cycler, true);
+  do_set_magfilter(cdata, filter);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -731,8 +785,8 @@ set_magfilter(Texture::FilterType filter) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_anisotropic_degree(int anisotropic_degree) {
-  MutexHolder holder(_lock);
-  do_set_anisotropic_degree(anisotropic_degree);
+  CDWriter cdata(_cycler, true);
+  do_set_anisotropic_degree(cdata, anisotropic_degree);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -744,9 +798,9 @@ set_anisotropic_degree(int anisotropic_degree) {
 //               the clamp color.
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
-set_border_color(const Colorf &color) {
-  MutexHolder holder(_lock);
-  do_set_border_color(color);
+set_border_color(const LColor &color) {
+  CDWriter cdata(_cycler, true);
+  do_set_border_color(cdata, color);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -770,8 +824,8 @@ set_border_color(const Colorf &color) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_compression(Texture::CompressionMode compression) {
-  MutexHolder holder(_lock);
-  do_set_compression(compression);
+  CDWriter cdata(_cycler, true);
+  do_set_compression(cdata, compression);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -793,7 +847,8 @@ set_compression(Texture::CompressionMode compression) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_render_to_texture(bool render_to_texture) {
-  _render_to_texture = render_to_texture;
+  CDWriter cdata(_cycler, false);
+  cdata->_render_to_texture = render_to_texture;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -804,7 +859,8 @@ set_render_to_texture(bool render_to_texture) {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::WrapMode Texture::
 get_wrap_u() const {
-  return _wrap_u;
+  CDReader cdata(_cycler);
+  return cdata->_wrap_u;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -815,7 +871,8 @@ get_wrap_u() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::WrapMode Texture::
 get_wrap_v() const {
-  return _wrap_v;
+  CDReader cdata(_cycler);
+  return cdata->_wrap_v;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -827,7 +884,8 @@ get_wrap_v() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::WrapMode Texture::
 get_wrap_w() const {
-  return _wrap_w;
+  CDReader cdata(_cycler);
+  return cdata->_wrap_w;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -841,7 +899,8 @@ get_wrap_w() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::FilterType Texture::
 get_minfilter() const {
-  return _minfilter;
+  CDReader cdata(_cycler);
+  return cdata->_minfilter;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -854,7 +913,8 @@ get_minfilter() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::FilterType Texture::
 get_magfilter() const {
-  return _magfilter;
+  CDReader cdata(_cycler);
+  return cdata->_magfilter;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -867,7 +927,8 @@ get_magfilter() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_anisotropic_degree() const {
-  return _anisotropic_degree;
+  CDReader cdata(_cycler);
+  return cdata->_anisotropic_degree;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -880,8 +941,9 @@ get_anisotropic_degree() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_effective_anisotropic_degree() const {
-  if (_anisotropic_degree != 0) {
-    return _anisotropic_degree;
+  CDReader cdata(_cycler);
+  if (cdata->_anisotropic_degree != 0) {
+    return cdata->_anisotropic_degree;
   }
   return texture_anisotropic_degree;
 }
@@ -894,9 +956,10 @@ get_effective_anisotropic_degree() const {
 //               textures; in Panda, it is only used for specifying
 //               the clamp color.
 ////////////////////////////////////////////////////////////////////
-INLINE Colorf Texture::
+INLINE LColor Texture::
 get_border_color() const {
-  return _border_color;
+  CDReader cdata(_cycler);
+  return cdata->_border_color;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -915,7 +978,8 @@ get_border_color() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::CompressionMode Texture::
 get_compression() const {
-  return _compression;
+  CDReader cdata(_cycler);
+  return cdata->_compression;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -934,8 +998,8 @@ get_compression() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_compression() const {
-  MutexHolder holder(_lock);
-  return do_has_compression();
+  CDReader cdata(_cycler);
+  return do_has_compression(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -953,7 +1017,8 @@ has_compression() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 get_render_to_texture() const {
-  return _render_to_texture;
+  CDReader cdata(_cycler);
+  return cdata->_render_to_texture;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -979,8 +1044,8 @@ uses_mipmaps() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_quality_level(Texture::QualityLevel quality_level) {
-  MutexHolder holder(_lock);
-  do_set_quality_level(quality_level);
+  CDWriter cdata(_cycler, true);
+  do_set_quality_level(cdata, quality_level);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -992,7 +1057,8 @@ set_quality_level(Texture::QualityLevel quality_level) {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::QualityLevel Texture::
 get_quality_level() const {
-  return _quality_level;
+  CDReader cdata(_cycler);
+  return cdata->_quality_level;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1006,10 +1072,11 @@ get_quality_level() const {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::QualityLevel Texture::
 get_effective_quality_level() const {
-  if (_quality_level == QL_default) {
+  CDReader cdata(_cycler);
+  if (cdata->_quality_level == QL_default) {
     return texture_quality_level;
   }
-  return _quality_level;
+  return cdata->_quality_level;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1024,8 +1091,8 @@ get_effective_quality_level() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_expected_num_mipmap_levels() const {
-  MutexHolder holder(_lock);
-  return do_get_expected_num_mipmap_levels();
+  CDReader cdata(_cycler);
+  return do_get_expected_num_mipmap_levels(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1036,8 +1103,8 @@ get_expected_num_mipmap_levels() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_expected_mipmap_x_size(int n) const {
-  MutexHolder holder(_lock);
-  return do_get_expected_mipmap_x_size(n);
+  CDReader cdata(_cycler);
+  return do_get_expected_mipmap_x_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1048,8 +1115,8 @@ get_expected_mipmap_x_size(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_expected_mipmap_y_size(int n) const {
-  MutexHolder holder(_lock);
-  return do_get_expected_mipmap_y_size(n);
+  CDReader cdata(_cycler);
+  return do_get_expected_mipmap_y_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1060,8 +1127,23 @@ get_expected_mipmap_y_size(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_expected_mipmap_z_size(int n) const {
-  MutexHolder holder(_lock);
-  return do_get_expected_mipmap_z_size(n);
+  CDReader cdata(_cycler);
+  return do_get_expected_mipmap_z_size(cdata, n);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_expected_mipmap_num_pages
+//       Access: Published
+//  Description: Returns the total number of pages that the nth mipmap
+//               level should have, based on the texture's size.  This
+//               is usually the same as get_expected_mipmap_z_size(),
+//               except for a multiview texture, in which case it is
+//               get_expected_mipmap_z_size() * get_num_views().
+////////////////////////////////////////////////////////////////////
+INLINE int Texture::
+get_expected_mipmap_num_pages(int n) const {
+  CDReader cdata(_cycler);
+  return do_get_expected_mipmap_num_pages(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1094,8 +1176,8 @@ get_expected_mipmap_z_size(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_ram_image() const {
-  MutexHolder holder(_lock);
-  return do_has_ram_image();
+  CDReader cdata(_cycler);
+  return do_has_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1107,8 +1189,8 @@ has_ram_image() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_uncompressed_ram_image() const {
-  MutexHolder holder(_lock);
-  return do_has_uncompressed_ram_image();
+  CDReader cdata(_cycler);
+  return do_has_uncompressed_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1123,20 +1205,39 @@ has_uncompressed_ram_image() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 might_have_ram_image() const {
-  MutexHolder holder(_lock);
-  return (do_has_ram_image() || !_fullpath.empty());
+  CDReader cdata(_cycler);
+  return (do_has_ram_image(cdata) || !cdata->_fullpath.empty());
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: Texture::get_ram_image_size
 //       Access: Published
-//  Description: Returns the number of bytes used by the in-memory
-//               image, or 0 if there is no in-memory image.
+//  Description: Returns the total number of bytes used by the
+//               in-memory image, across all pages and views, or 0 if
+//               there is no in-memory image.
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_ram_image_size() const {
-  MutexHolder holder(_lock);
-  return do_get_ram_image_size();
+  CDReader cdata(_cycler);
+  return do_get_ram_image_size(cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_ram_view_size
+//       Access: Published
+//  Description: Returns the number of bytes used by the in-memory
+//               image per view, or 0 if there is no in-memory image.
+//               Since each view is a stack of z_size pages, this is
+//               get_z_size() * get_ram_page_size().
+////////////////////////////////////////////////////////////////////
+INLINE size_t Texture::
+get_ram_view_size() const {
+  CDReader cdata(_cycler);
+  if (cdata->_ram_image_compression == CM_off || cdata->_ram_images.empty()) {
+    return do_get_expected_ram_view_size(cdata);
+  } else {
+    return cdata->_z_size * cdata->_ram_images[0]._page_size;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1153,11 +1254,11 @@ get_ram_image_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_ram_page_size() const {
-  MutexHolder holder(_lock);
-  if (_ram_image_compression == CM_off || _ram_images.empty()) {
-    return do_get_expected_ram_page_size();
+  CDReader cdata(_cycler);
+  if (cdata->_ram_image_compression == CM_off || cdata->_ram_images.empty()) {
+    return do_get_expected_ram_page_size(cdata);
   } else {
-    return _ram_images[0]._page_size;
+    return cdata->_ram_images[0]._page_size;
   }
 }
 
@@ -1170,8 +1271,8 @@ get_ram_page_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_expected_ram_image_size() const {
-  MutexHolder holder(_lock);
-  return do_get_expected_ram_image_size();
+  CDReader cdata(_cycler);
+  return do_get_expected_ram_image_size(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1184,8 +1285,8 @@ get_expected_ram_image_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_expected_ram_page_size() const {
-  MutexHolder holder(_lock);
-  return do_get_expected_ram_page_size();
+  CDReader cdata(_cycler);
+  return do_get_expected_ram_page_size(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1218,8 +1319,8 @@ get_expected_ram_page_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE CPTA_uchar Texture::
 get_ram_image() {
-  MutexHolder holder(_lock);
-  return do_get_ram_image();
+  CDWriter cdata(_cycler, unlocked_ensure_ram_image(true));
+  return do_get_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1234,7 +1335,8 @@ get_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE Texture::CompressionMode Texture::
 get_ram_image_compression() const {
-  return _ram_image_compression;
+  CDReader cdata(_cycler);
+  return cdata->_ram_image_compression;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1249,9 +1351,9 @@ get_ram_image_compression() const {
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_uchar Texture::
 modify_ram_image() {
-  MutexHolder holder(_lock);
-  ++_image_modified;
-  return do_modify_ram_image();
+  CDWriter cdata(_cycler, true);
+  ++(cdata->_image_modified);
+  return do_modify_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1275,8 +1377,8 @@ modify_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE CPTA_uchar Texture::
 get_uncompressed_ram_image() {
-  MutexHolder holder(_lock);
-  return do_get_uncompressed_ram_image();
+  CDWriter cdata(_cycler, false);
+  return do_get_uncompressed_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1290,9 +1392,26 @@ get_uncompressed_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_uchar Texture::
 make_ram_image() {
-  MutexHolder holder(_lock);
-  ++_image_modified;
-  return do_make_ram_image();
+  CDWriter cdata(_cycler, true);
+  ++(cdata->_image_modified);
+  return do_make_ram_image(cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::set_ram_image
+//       Access: Published
+//  Description: Replaces the current system-RAM image with the new
+//               data.  If compression is not CM_off, it indicates
+//               that the new data is already pre-compressed in the
+//               indicated format.
+//
+//               This does *not* affect keep_ram_image.
+////////////////////////////////////////////////////////////////////
+INLINE void Texture::
+set_ram_image(CPTA_uchar image, Texture::CompressionMode compression,
+              size_t page_size) {
+  CDWriter cdata(_cycler, true);
+  do_set_ram_image(cdata, image, compression, page_size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1302,8 +1421,8 @@ make_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_ram_image() {
-  MutexHolder holder(_lock);
-  do_clear_ram_image();
+  CDWriter cdata(_cycler, false);
+  do_clear_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1323,7 +1442,8 @@ clear_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_keep_ram_image(bool keep_ram_image) {
-  _keep_ram_image = keep_ram_image;
+  CDWriter cdata(_cycler, true);
+  cdata->_keep_ram_image = keep_ram_image;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1355,9 +1475,9 @@ INLINE bool Texture::
 compress_ram_image(Texture::CompressionMode compression,
                    Texture::QualityLevel quality_level,
                    GraphicsStateGuardianBase *gsg) {
-  MutexHolder holder(_lock);
-  if (do_compress_ram_image(compression, quality_level, gsg)) {
-    ++_image_modified;
+  CDWriter cdata(_cycler, false);
+  if (do_compress_ram_image(cdata, compression, quality_level, gsg)) {
+    ++(cdata->_image_modified);
     return true;
   }
   return false;
@@ -1376,9 +1496,9 @@ compress_ram_image(Texture::CompressionMode compression,
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 uncompress_ram_image() {
-  MutexHolder holder(_lock);
-  if (do_uncompress_ram_image()) {
-    ++_image_modified;
+  CDWriter cdata(_cycler, false);
+  if (do_uncompress_ram_image(cdata)) {
+    ++(cdata->_image_modified);
     return true;
   }
   return false;
@@ -1397,8 +1517,8 @@ uncompress_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_num_ram_mipmap_images() const {
-  MutexHolder holder(_lock);
-  return _ram_images.size();
+  CDReader cdata(_cycler);
+  return cdata->_ram_images.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1413,8 +1533,8 @@ get_num_ram_mipmap_images() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_ram_mipmap_image(int n) const {
-  MutexHolder holder(_lock);
-  return do_has_ram_mipmap_image(n);
+  CDReader cdata(_cycler);
+  return do_has_ram_mipmap_image(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1426,8 +1546,8 @@ has_ram_mipmap_image(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_all_ram_mipmap_images() const {
-  MutexHolder holder(_lock);
-  return do_has_all_ram_mipmap_images();
+  CDReader cdata(_cycler);
+  return do_has_all_ram_mipmap_images(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1439,11 +1559,34 @@ has_all_ram_mipmap_images() const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_ram_mipmap_image_size(int n) const {
-  MutexHolder holder(_lock);
-  if (n >= 0 && n < (int)_ram_images.size()) {
-    return _ram_images[n]._image.size();
+  CDReader cdata(_cycler);
+  if (n >= 0 && n < (int)cdata->_ram_images.size()) {
+    return cdata->_ram_images[n]._image.size();
   }
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_ram_mipmap_view_size
+//       Access: Published
+//  Description: Returns the number of bytes used by the in-memory
+//               image per view for mipmap level n, or 0 if there is
+//               no in-memory image for this mipmap level.
+//
+//               A "view" is a collection of z_size pages for each
+//               mipmap level.  Most textures have only one view,
+//               except for multiview or stereo textures.
+//
+//               For a non-compressed texture, this is the same as
+//               get_expected_ram_mipmap_view_size().  For a compressed
+//               texture, this may be a smaller value.  (We do assume
+//               that all pages will be the same size on a compressed
+//               texture).
+////////////////////////////////////////////////////////////////////
+INLINE size_t Texture::
+get_ram_mipmap_view_size(int n) const {
+  CDReader cdata(_cycler);
+  return do_get_ram_mipmap_page_size(cdata, n) * do_get_expected_mipmap_z_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1461,8 +1604,8 @@ get_ram_mipmap_image_size(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_ram_mipmap_page_size(int n) const {
-  MutexHolder holder(_lock);
-  return do_get_ram_mipmap_page_size(n);
+  CDReader cdata(_cycler);
+  return do_get_ram_mipmap_page_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1474,8 +1617,23 @@ get_ram_mipmap_page_size(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_expected_ram_mipmap_image_size(int n) const {
-  MutexHolder holder(_lock);
-  return do_get_expected_ram_mipmap_image_size(n);
+  CDReader cdata(_cycler);
+  return do_get_expected_ram_mipmap_image_size(cdata, n);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_expected_ram_mipmap_view_size
+//       Access: Published
+//  Description: Returns the number of bytes that *ought* to be used
+//               by each view of the in-memory image for mipmap level
+//               n, based on the texture parameters.  For a normal,
+//               non-multiview texture, this is the same as
+//               get_expected_ram_mipmap_image_size(n).
+////////////////////////////////////////////////////////////////////
+INLINE size_t Texture::
+get_expected_ram_mipmap_view_size(int n) const {
+  CDReader cdata(_cycler);
+  return do_get_expected_ram_mipmap_view_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1484,12 +1642,12 @@ get_expected_ram_mipmap_image_size(int n) const {
 //  Description: Returns the number of bytes that should be used per
 //               each Z page of the 3-d texture, for mipmap level n.
 //               For a 2-d or 1-d texture, this is the same as
-//               get_expected_ram_mipmap_image_size(n).
+//               get_expected_ram_mipmap_view_size(n).
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_expected_ram_mipmap_page_size(int n) const {
-  MutexHolder holder(_lock);
-  return do_get_expected_ram_mipmap_page_size(n);
+  CDReader cdata(_cycler);
+  return do_get_expected_ram_mipmap_page_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1504,9 +1662,9 @@ get_expected_ram_mipmap_page_size(int n) const {
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_uchar Texture::
 modify_ram_mipmap_image(int n) {
-  MutexHolder holder(_lock);
-  ++_image_modified;
-  return do_modify_ram_mipmap_image(n);
+  CDWriter cdata(_cycler, false);
+  ++(cdata->_image_modified);
+  return do_modify_ram_mipmap_image(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1520,9 +1678,9 @@ modify_ram_mipmap_image(int n) {
 ////////////////////////////////////////////////////////////////////
 INLINE PTA_uchar Texture::
 make_ram_mipmap_image(int n) {
-  MutexHolder holder(_lock);
-  ++_image_modified;
-  return do_make_ram_mipmap_image(n);
+  CDWriter cdata(_cycler, false);
+  ++(cdata->_image_modified);
+  return do_make_ram_mipmap_image(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1538,8 +1696,8 @@ make_ram_mipmap_image(int n) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_ram_mipmap_image(int n, CPTA_uchar image, size_t page_size) {
-  MutexHolder holder(_lock);
-  do_set_ram_mipmap_image(n, image, page_size);
+  CDWriter cdata(_cycler, false);
+  do_set_ram_mipmap_image(cdata, n, image, page_size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1550,9 +1708,9 @@ set_ram_mipmap_image(int n, CPTA_uchar image, size_t page_size) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_ram_mipmap_images() {
-  MutexHolder holder(_lock);
-  ++_image_modified;
-  do_clear_ram_mipmap_images();
+  CDWriter cdata(_cycler, false);
+  ++(cdata->_image_modified);
+  do_clear_ram_mipmap_images(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1571,9 +1729,9 @@ clear_ram_mipmap_images() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 generate_ram_mipmap_images() {
-  MutexHolder holder(_lock);
-  ++_image_modified;
-  do_generate_ram_mipmap_images();
+  CDWriter cdata(_cycler, unlocked_ensure_ram_image(false));
+  ++(cdata->_image_modified);
+  do_generate_ram_mipmap_images(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1583,7 +1741,8 @@ generate_ram_mipmap_images() {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_simple_x_size() const {
-  return _simple_x_size;
+  CDReader cdata(_cycler);
+  return cdata->_simple_x_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1593,7 +1752,8 @@ get_simple_x_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE int Texture::
 get_simple_y_size() const {
-  return _simple_y_size;
+  CDReader cdata(_cycler);
+  return cdata->_simple_y_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1604,8 +1764,8 @@ get_simple_y_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 has_simple_ram_image() const {
-  MutexHolder holder(_lock);
-  return !_simple_ram_image._image.empty();
+  CDReader cdata(_cycler);
+  return !cdata->_simple_ram_image._image.empty();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1616,8 +1776,8 @@ has_simple_ram_image() const {
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
 get_simple_ram_image_size() const {
-  MutexHolder holder(_lock);
-  return _simple_ram_image._image.size();
+  CDReader cdata(_cycler);
+  return cdata->_simple_ram_image._image.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1639,8 +1799,8 @@ get_simple_ram_image_size() const {
 ////////////////////////////////////////////////////////////////////
 INLINE CPTA_uchar Texture::
 get_simple_ram_image() const {
-  MutexHolder holder(_lock);
-  return _simple_ram_image._image;
+  CDReader cdata(_cycler);
+  return cdata->_simple_ram_image._image;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1665,8 +1825,8 @@ get_simple_ram_image() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_simple_ram_image(CPTA_uchar image, int x_size, int y_size) {
-  MutexHolder holder(_lock);
-  do_set_simple_ram_image(image, x_size, y_size);
+  CDWriter cdata(_cycler, true);
+  do_set_simple_ram_image(cdata, image, x_size, y_size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1676,8 +1836,8 @@ set_simple_ram_image(CPTA_uchar image, int x_size, int y_size) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_simple_ram_image() {
-  MutexHolder holder(_lock);
-  do_clear_simple_ram_image();
+  CDWriter cdata(_cycler, true);
+  do_clear_simple_ram_image(cdata);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1689,7 +1849,8 @@ clear_simple_ram_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE UpdateSeq Texture::
 get_properties_modified() const {
-  return _properties_modified;
+  CDReader cdata(_cycler);
+  return cdata->_properties_modified;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1701,7 +1862,8 @@ get_properties_modified() const {
 ////////////////////////////////////////////////////////////////////
 INLINE UpdateSeq Texture::
 get_image_modified() const {
-  return _image_modified;
+  CDReader cdata(_cycler);
+  return cdata->_image_modified;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1713,7 +1875,92 @@ get_image_modified() const {
 ////////////////////////////////////////////////////////////////////
 INLINE UpdateSeq Texture::
 get_simple_image_modified() const {
-  return _simple_image_modified;
+  CDReader cdata(_cycler);
+  return cdata->_simple_image_modified;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::set_auto_texture_scale
+//       Access: Published
+//  Description: Specifies the power-of-2 texture-scaling mode that
+//               will be applied to this particular texture when it is
+//               next loaded from disk.  See set_textures_power_2().
+////////////////////////////////////////////////////////////////////
+INLINE void Texture::
+set_auto_texture_scale(AutoTextureScale scale) {
+  CDWriter cdata(_cycler, true);
+  cdata->_auto_texture_scale = scale;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_auto_texture_scale
+//       Access: Published
+//  Description: Returns the power-of-2 texture-scaling mode that will
+//               be applied to this particular texture when it is next
+//               loaded from disk.  See set_textures_power_2().
+////////////////////////////////////////////////////////////////////
+INLINE AutoTextureScale Texture::
+get_auto_texture_scale() const {
+  CDReader cdata(_cycler);
+  return do_get_auto_texture_scale(cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::has_auto_texture_scale
+//       Access: Published
+//  Description: Returns true if set_auto_texture_scale() has been set
+//               to something other than ATS_unspecified for this
+//               particular texture.
+////////////////////////////////////////////////////////////////////
+INLINE bool Texture::
+has_auto_texture_scale() const {
+  CDReader cdata(_cycler);
+  return (cdata->_auto_texture_scale != ATS_unspecified);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::set_textures_power_2
+//       Access: Published, Static
+//  Description: Set this flag to ATS_none, ATS_up, ATS_down, or
+//               ATS_pad to control the scaling of textures in
+//               general, if a particular texture does not override
+//               this.  See also set_auto_texture_scale() for the
+//               per-texture override.
+////////////////////////////////////////////////////////////////////
+INLINE void Texture::
+set_textures_power_2(AutoTextureScale scale) {
+  _textures_power_2 = scale;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::get_textures_power_2
+//       Access: Published, Static
+//  Description: This flag returns ATS_none, ATS_up, or ATS_down
+//               and controls the scaling of textures in general.  It
+//               is initialized from the config variable of the same
+//               name, but it can be subsequently adjusted.  See also
+//               get_auto_texture_scale().
+////////////////////////////////////////////////////////////////////
+INLINE AutoTextureScale Texture::
+get_textures_power_2() {
+  if (_textures_power_2 == ATS_unspecified) {
+    return textures_power_2;
+  } else {
+    return _textures_power_2;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::has_textures_power_2
+//       Access: Published, Static
+//  Description: If true, then get_textures_power_2 has been
+//               set using set_textures_power_2.
+//               If false, then get_textures_power_2 simply
+//               returns the config variable of the same name.
+////////////////////////////////////////////////////////////////////
+INLINE bool Texture::
+has_textures_power_2() {
+  return (_textures_power_2 != ATS_unspecified);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1731,8 +1978,8 @@ get_simple_image_modified() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_filename(const Filename &filename) {
-  MutexHolder holder(_lock);
-  _filename = filename;
+  CDWriter cdata(_cycler, true);
+  cdata->_filename = filename;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1743,8 +1990,8 @@ set_filename(const Filename &filename) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_filename() {
-  MutexHolder holder(_lock);
-  _filename = Filename();
+  CDWriter cdata(_cycler, true);
+  cdata->_filename = Filename();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1765,8 +2012,8 @@ clear_filename() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_alpha_filename(const Filename &alpha_filename) {
-  MutexHolder holder(_lock);
-  _alpha_filename = alpha_filename;
+  CDWriter cdata(_cycler, true);
+  cdata->_alpha_filename = alpha_filename;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1777,8 +2024,8 @@ set_alpha_filename(const Filename &alpha_filename) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_alpha_filename() {
-  MutexHolder holder(_lock);
-  _alpha_filename = Filename();
+  CDWriter cdata(_cycler, true);
+  cdata->_alpha_filename = Filename();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1791,8 +2038,8 @@ clear_alpha_filename() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_fullpath(const Filename &fullpath) {
-  MutexHolder holder(_lock);
-  _fullpath = fullpath;
+  CDWriter cdata(_cycler, true);
+  cdata->_fullpath = fullpath;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1803,8 +2050,8 @@ set_fullpath(const Filename &fullpath) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_fullpath() {
-  MutexHolder holder(_lock);
-  _fullpath = Filename();
+  CDWriter cdata(_cycler, true);
+  cdata->_fullpath = Filename();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1818,8 +2065,8 @@ clear_fullpath() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_alpha_fullpath(const Filename &alpha_fullpath) {
-  MutexHolder holder(_lock);
-  _alpha_fullpath = alpha_fullpath;
+  CDWriter cdata(_cycler, true);
+  cdata->_alpha_fullpath = alpha_fullpath;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1830,8 +2077,8 @@ set_alpha_fullpath(const Filename &alpha_fullpath) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 clear_alpha_fullpath() {
-  MutexHolder holder(_lock);
-  _alpha_fullpath = Filename();
+  CDWriter cdata(_cycler, true);
+  cdata->_alpha_fullpath = Filename();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1843,8 +2090,8 @@ clear_alpha_fullpath() {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_x_size(int x_size) {
-  MutexHolder holder(_lock);
-  do_set_x_size(x_size);
+  CDWriter cdata(_cycler, true);
+  do_set_x_size(cdata, x_size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1856,8 +2103,8 @@ set_x_size(int x_size) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_y_size(int y_size) {
-  MutexHolder holder(_lock);
-  do_set_y_size(y_size);
+  CDWriter cdata(_cycler, true);
+  do_set_y_size(cdata, y_size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1869,8 +2116,31 @@ set_y_size(int y_size) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_z_size(int z_size) {
-  MutexHolder holder(_lock);
-  do_set_z_size(z_size);
+  CDWriter cdata(_cycler, true);
+  do_set_z_size(cdata, z_size);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::set_num_views
+//       Access: Published
+//  Description: Sets the number of "views" within a texture.  A view
+//               is a completely separate image stored within the
+//               Texture object.  Most textures have only one view,
+//               but a stereo texture, for instance, may have two
+//               views, a left and a right image.  Other uses for
+//               multiple views are not yet defined.
+//
+//               If this value is greater than one, the additional
+//               views are accessed as additional pages beyond
+//               get_z_size().
+//
+//               This also implicitly unloads the texture if it has
+//               already been loaded.
+////////////////////////////////////////////////////////////////////
+INLINE void Texture::
+set_num_views(int num_views) {
+  CDWriter cdata(_cycler, true);
+  do_set_num_views(cdata, num_views);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1881,8 +2151,8 @@ set_z_size(int z_size) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_format(Texture::Format format) {
-  MutexHolder holder(_lock);
-  do_set_format(format);
+  CDWriter cdata(_cycler, true);
+  do_set_format(cdata, format);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1893,8 +2163,8 @@ set_format(Texture::Format format) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_component_type(Texture::ComponentType component_type) {
-  MutexHolder holder(_lock);
-  do_set_component_type(component_type);
+  CDWriter cdata(_cycler, true);
+  do_set_component_type(cdata, component_type);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1908,7 +2178,8 @@ set_component_type(Texture::ComponentType component_type) {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_loaded_from_image() {
-  _loaded_from_image = true;
+  CDWriter cdata(_cycler, false);
+  cdata->_loaded_from_image = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1920,7 +2191,8 @@ set_loaded_from_image() {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 get_loaded_from_image() const {
-  return _loaded_from_image;
+  CDReader cdata(_cycler);
+  return cdata->_loaded_from_image;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1933,7 +2205,8 @@ get_loaded_from_image() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_loaded_from_txo() {
-  _loaded_from_txo = true;
+  CDWriter cdata(_cycler, false);
+  cdata->_loaded_from_txo = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1944,7 +2217,8 @@ set_loaded_from_txo() {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 get_loaded_from_txo() const {
-  return _loaded_from_txo;
+  CDReader cdata(_cycler);
+  return cdata->_loaded_from_txo;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1959,7 +2233,8 @@ get_loaded_from_txo() const {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 get_match_framebuffer_format() const {
-  return _match_framebuffer_format;
+  CDReader cdata(_cycler);
+  return cdata->_match_framebuffer_format;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1978,7 +2253,8 @@ get_match_framebuffer_format() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_match_framebuffer_format(bool flag) {
-  _match_framebuffer_format = flag;
+  CDWriter cdata(_cycler, true);
+  cdata->_match_framebuffer_format = flag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1989,7 +2265,8 @@ set_match_framebuffer_format(bool flag) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 get_post_load_store_cache() const {
-  return _post_load_store_cache;
+  CDReader cdata(_cycler);
+  return cdata->_post_load_store_cache;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2007,7 +2284,8 @@ get_post_load_store_cache() const {
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
 set_post_load_store_cache(bool flag) {
-  _post_load_store_cache = flag;
+  CDWriter cdata(_cycler, true);
+  cdata->_post_load_store_cache = flag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2024,8 +2302,22 @@ set_post_load_store_cache(bool flag) {
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
 rescale_texture() {
-  MutexHolder holder(_lock);
-  return do_rescale_texture();
+  CDWriter cdata(_cycler, true);
+  return do_rescale_texture(cdata);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::adjust_this_size
+//       Access: Public
+//  Description: Works like adjust_size, but also considers the
+//               texture class.  Movie textures, for instance, always
+//               pad outwards, regardless of textures-power-2.
+////////////////////////////////////////////////////////////////////
+INLINE bool Texture::
+adjust_this_size(int &x_size, int &y_size, const string &name,
+                 bool for_padding) const {
+  CDReader cdata(_cycler);
+  return do_adjust_this_size(cdata, x_size, y_size, name, for_padding);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2034,11 +2326,11 @@ rescale_texture() {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
-do_get_ram_image_size() const {
-  if (_ram_images.empty()) {
+do_get_ram_image_size(const CData *cdata) const {
+  if (cdata->_ram_images.empty()) {
     return 0;
   }
-  return _ram_images[0]._image.size();
+  return cdata->_ram_images[0]._image.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2047,8 +2339,9 @@ do_get_ram_image_size() const {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE bool Texture::
-do_has_ram_mipmap_image(int n) const {
-  return (n >= 0 && n < (int)_ram_images.size() && !_ram_images[n]._image.empty());
+do_has_ram_mipmap_image(const CData *cdata, int n) const {
+  return (n >= 0 && n < (int)cdata->_ram_images.size() && 
+          !cdata->_ram_images[n]._image.empty());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2057,8 +2350,18 @@ do_has_ram_mipmap_image(int n) const {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
-do_get_expected_ram_image_size() const {
-  return do_get_expected_ram_page_size() * (size_t)_z_size;
+do_get_expected_ram_image_size(const CData *cdata) const {
+  return do_get_expected_ram_view_size(cdata) * (size_t)cdata->_num_views;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::do_get_expected_ram_view_size
+//       Access: Protected
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE size_t Texture::
+do_get_expected_ram_view_size(const CData *cdata) const {
+  return do_get_expected_ram_page_size(cdata) * (size_t)cdata->_z_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2067,8 +2370,8 @@ do_get_expected_ram_image_size() const {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
-do_get_expected_ram_page_size() const {
-  return (size_t)(_x_size * _y_size * _num_components * _component_width);
+do_get_expected_ram_page_size(const CData *cdata) const {
+  return (size_t)(cdata->_x_size * cdata->_y_size * cdata->_num_components * cdata->_component_width);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2077,8 +2380,18 @@ do_get_expected_ram_page_size() const {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
-do_get_expected_ram_mipmap_image_size(int n) const {
-  return do_get_expected_ram_mipmap_page_size(n) * (size_t)do_get_expected_mipmap_z_size(n);
+do_get_expected_ram_mipmap_image_size(const CData *cdata, int n) const {
+  return do_get_expected_ram_mipmap_view_size(cdata, n) * (size_t)cdata->_num_views;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::do_get_expected_ram_mipmap_view_size
+//       Access: Protected
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE size_t Texture::
+do_get_expected_ram_mipmap_view_size(const CData *cdata, int n) const {
+  return do_get_expected_ram_mipmap_page_size(cdata, n) * (size_t)do_get_expected_mipmap_z_size(cdata, n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2087,8 +2400,18 @@ do_get_expected_ram_mipmap_image_size(int n) const {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE size_t Texture::
-do_get_expected_ram_mipmap_page_size(int n) const {
-  return (size_t)(do_get_expected_mipmap_x_size(n) * do_get_expected_mipmap_y_size(n) * _num_components * _component_width);
+do_get_expected_ram_mipmap_page_size(const CData *cdata, int n) const {
+  return (size_t)(do_get_expected_mipmap_x_size(cdata, n) * do_get_expected_mipmap_y_size(cdata, n) * cdata->_num_components * cdata->_component_width);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::do_get_expected_mipmap_num_pages
+//       Access: Protected
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE int Texture::
+do_get_expected_mipmap_num_pages(const CData *cdata, int n) const {
+  return do_get_expected_mipmap_z_size(cdata, n) * cdata->_num_views;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2097,9 +2420,23 @@ do_get_expected_ram_mipmap_page_size(int n) const {
 //  Description: 
 ////////////////////////////////////////////////////////////////////
 INLINE void Texture::
-do_clear_ram_image() {
-  _ram_image_compression = CM_off;
-  _ram_images.clear();
+do_clear_ram_image(CData *cdata) {
+  cdata->_ram_image_compression = CM_off;
+  cdata->_ram_images.clear();
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Texture::do_get_auto_texture_scale
+//       Access: Protected
+//  Description: 
+////////////////////////////////////////////////////////////////////
+INLINE AutoTextureScale Texture::
+do_get_auto_texture_scale(const CData *cdata) const {
+  if (cdata->_auto_texture_scale == ATS_unspecified) {
+    return get_textures_power_2();
+  } else {
+    return cdata->_auto_texture_scale;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2228,47 +2565,6 @@ is_dds_filename(const Filename &fullpath) {
   }
 #endif  // HAVE_ZLIB
   return (downcase(extension) == "dds");
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Texture::set_textures_power_2
-//       Access: Published, Static
-//  Description: Set this flag to ATS_none, ATS_up, or ATS_down
-//               to control the scaling of textures.
-////////////////////////////////////////////////////////////////////
-INLINE void Texture::
-set_textures_power_2(AutoTextureScale scale) {
-  _textures_power_2 = scale;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Texture::get_textures_power_2
-//       Access: Published, Static
-//  Description: This flag returns ATS_none, ATS_up, or ATS_down
-//               and controls the scaling of textures.  It is
-//               initialized from the config variable of the same
-//               name, but it can be subsequently adjusted.
-////////////////////////////////////////////////////////////////////
-INLINE AutoTextureScale Texture::
-get_textures_power_2() {
-  if (_textures_power_2 == ATS_UNSPECIFIED) {
-    return textures_power_2;
-  } else {
-    return _textures_power_2;
-  }
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Texture::have_textures_power_2
-//       Access: Published, Static
-//  Description: If true, then get_textures_power_2 has been
-//               set using set_textures_power_2.
-//               If false, then get_textures_power_2 simply
-//               returns the config variable of the same name.
-////////////////////////////////////////////////////////////////////
-INLINE bool Texture::
-have_textures_power_2() {
-  return (_textures_power_2 != ATS_UNSPECIFIED);
 }
 
 ////////////////////////////////////////////////////////////////////
