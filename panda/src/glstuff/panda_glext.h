@@ -28,7 +28,7 @@ extern "C" {
 */
 
 /* Header file version number, required by OpenGL ABI for Linux */
-/* glext.h last updated $Date: 2012/04/27 20:29:48 $ */
+/* glext.h last updated $Date: 2012/06/12 13:34:39 $ */
 /* Current version at http://www.opengl.org/registry/ */
 #define GL_GLEXT_VERSION 81
 /* Function declaration macros - to move into glplatform.h */
@@ -5955,7 +5955,7 @@ GLAPI void APIENTRY glGetVertexAttribPointerv (GLuint index, GLenum pname, GLvoi
 GLAPI GLboolean APIENTRY glIsProgram (GLuint program);
 GLAPI GLboolean APIENTRY glIsShader (GLuint shader);
 GLAPI void APIENTRY glLinkProgram (GLuint program);
-GLAPI void APIENTRY glShaderSource (GLuint shader, GLsizei count, const GLchar* const *string, const GLint *length);
+GLAPI void APIENTRY glShaderSource (GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
 GLAPI void APIENTRY glUseProgram (GLuint program);
 GLAPI void APIENTRY glUniform1f (GLint location, GLfloat v0);
 GLAPI void APIENTRY glUniform2f (GLint location, GLfloat v0, GLfloat v1);
