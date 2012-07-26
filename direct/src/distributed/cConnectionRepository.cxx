@@ -944,7 +944,7 @@ handle_update_field_owner() {
 
 ////////////////////////////////////////////////////////////////////
 //     Function: CConnectionRepository::describe_message
-//       Access: Private
+//       Access: Published
 //  Description: Unpacks the message and reformats it for user
 //               consumption, writing a description on the indicated
 //               output stream.
