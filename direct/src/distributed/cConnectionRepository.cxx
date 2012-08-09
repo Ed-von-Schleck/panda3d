@@ -1174,18 +1174,21 @@ bool CConnectionRepository::handle_update_field_ai(PyObject *doId2do)
             PyObject *senderObj = PyDict_GetItem(doId2do, senderId);
             Py_DECREF(senderId);
             if (senderObj != NULL) {
-              PyObject *func = PyObject_GetAttrString(senderObj, "trackClientSendMsg");
-              if (func != (PyObject *)NULL) {
-                PyObject *args = Py_BuildValue("(s#)", _dg.get_message().c_str(), _dg.get_length());
-                if (args != (PyObject *)NULL) {
-                  PyObject *result;
-                  Py_INCREF(senderObj);
-                  result = PyObject_CallObject(func, args);
-                  Py_DECREF(senderObj);
-                  Py_XDECREF(result);
-                  Py_DECREF(args);
+              char *trackMethodName = "trackClientSendMsg";
+              if (PyObject_HasAttrString(senderObj, trackMethodName)) {
+                PyObject *func = PyObject_GetAttrString(senderObj, trackMethodName);
+                if (func != (PyObject *)NULL) {
+                  PyObject *args = Py_BuildValue("(s#)", _dg.get_message().c_str(), _dg.get_length());
+                  if (args != (PyObject *)NULL) {
+                    PyObject *result;
+                    Py_INCREF(senderObj);
+                    result = PyObject_CallObject(func, args);
+                    Py_DECREF(senderObj);
+                    Py_XDECREF(result);
+                    Py_DECREF(args);
+                  }
+                  Py_DECREF(func);
                 }
-                Py_DECREF(func);
               }
             }
           }
