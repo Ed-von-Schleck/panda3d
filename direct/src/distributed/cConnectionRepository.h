@@ -171,6 +171,9 @@ PUBLISHED:
 
   INLINE void describe_datagram(const Datagram &dg) const;
 
+  void describe_message(ostream &out, const string &prefix, 
+                        const Datagram &dg) const;
+
 private:
 #ifdef HAVE_PYTHON
 #ifdef WANT_NATIVE_NET
@@ -182,9 +185,6 @@ private:
   bool do_check_datagram();
   bool handle_update_field();
   bool handle_update_field_owner();
-
-  void describe_message(ostream &out, const string &prefix, 
-                        const Datagram &dg) const;
 
 private:
   ReMutex _lock;
