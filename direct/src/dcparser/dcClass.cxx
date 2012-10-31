@@ -30,6 +30,8 @@ PStatCollector DCClass::_update_pcollector("App:Show code:readerPollTask:Update"
 PStatCollector DCClass::_generate_pcollector("App:Show code:readerPollTask:Generate");
 #endif  // CPPPARSER
 
+//#define ALLOW_NON_MEMBER_FIELDS
+
 ConfigVariableBool dc_multiple_inheritance
 ("dc-multiple-inheritance", true,
  PRC_DESC("Set this true to support multiple inheritance in the dc file.  "
@@ -889,11 +891,28 @@ client_format_update(const string &field_name, DOID_TYPE do_id,
                      PyObject *args) const {
   DCField *field = get_field_by_name(field_name);
   if (field == (DCField *)NULL) {
+#ifdef ALLOW_NON_MEMBER_FIELDS
+    int i = 0;
+    while (1) {
+      field = get_dc_file()->get_field_by_index(i++);
+      if (field == (DCField *)NULL) {
+        ostringstream strm;
+        strm << "No field named " << field_name << " in class " << get_name()
+             << "\n";
+        nassert_raise(strm.str());
+        return Datagram();
+      }
+      if (field->get_name() == field_name) {
+        break;
+      }
+    }
+#else
     ostringstream strm;
     strm << "No field named " << field_name << " in class " << get_name()
          << "\n";
     nassert_raise(strm.str());
     return Datagram();
+#endif
   }
 
   return field->client_format_update(do_id, args);
