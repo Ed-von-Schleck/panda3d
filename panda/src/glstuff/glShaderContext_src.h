@@ -46,6 +46,7 @@ public:
   void disable_shader_texture_bindings(GSG *gsg);
   void update_shader_texture_bindings(CLP(ShaderContext) *prev, GSG *gsg);
 
+  INLINE bool uses_standard_vertex_arrays(void);
   INLINE bool uses_custom_vertex_arrays(void);
   INLINE bool uses_custom_texture_bindings(void);
 
@@ -65,10 +66,14 @@ private:
   GLuint _glsl_fshader;
   GLuint _glsl_gshader;
 
+  pvector <GLint> _glsl_parameter_map;
+
   int _stage_offset;
   // Avoid using this! It merely exists so the
   // destructor has access to the extension functions.
   WPT(GSG) _last_gsg;
+
+  bool _uses_standard_vertex_arrays;
 
   void glsl_report_shader_errors(GSG *gsg, unsigned int shader);
   void glsl_report_program_errors(GSG *gsg, unsigned int program);
