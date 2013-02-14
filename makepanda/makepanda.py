@@ -5935,6 +5935,8 @@ def MakeInstallerOSX():
     oscmd("chmod +x dstroot/scripts/uninstall16/preflight")
 
     oscmd("chmod -R 0775 dstroot/*")
+    DeleteCVS("dstroot")
+    DeleteBuildFiles("dstroot")
     # We need to be root to perform a chown. Bleh.
     # Fortunately PackageMaker does it for us, on 10.5 and above.
     #oscmd("chown -R root:admin dstroot/*", True)
@@ -5964,6 +5966,7 @@ def MakeInstallerOSX():
     if os.path.isfile("/tmp/Info_plist"):
         oscmd("rm -f /tmp/Info_plist")
 
+    # Now that we've built all of the individual packages, build the metapackage.
     dist = open("dstroot/Panda3D/Panda3D.mpkg/Contents/distribution.dist", "w")
     print >>dist, '<?xml version="1.0" encoding="utf-8"?>'
     print >>dist, '<installer-script minSpecVersion="1.000000" authoringTool="com.apple.PackageMaker" authoringToolVersion="3.0.3" authoringToolBuild="174">'
