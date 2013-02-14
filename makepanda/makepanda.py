@@ -614,7 +614,7 @@ if (COMPILER=="LINUX"):
     if (os.path.isdir("/usr/lib64/gtk-2.0/include")):
         IncDirectory("GTK2", "/usr/lib64/gtk-2.0/include")
 
-    fcollada_libs = ("FColladaD", "FColladaSD")
+    fcollada_libs = ("FColladaD", "FColladaSD", "FColladaS")
     # WARNING! The order of the ffmpeg libraries matters!
     ffmpeg_libs = ("libavformat", "libavcodec", "libavutil")
 
