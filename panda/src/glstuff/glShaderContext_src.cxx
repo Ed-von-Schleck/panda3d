@@ -1076,12 +1076,13 @@ update_shader_texture_bindings(CLP(ShaderContext) *prev, GSG *gsg) {
     if ((tex == 0) || (tex->get_texture_type() != _shader->_tex_spec[i]._desired_type)) {
       continue;
     }
+
+    gsg->_glActiveTexture(GL_TEXTURE0 + texunit);
+
     TextureContext *tc = tex->prepare_now(view, gsg->_prepared_objects, gsg);
     if (tc == (TextureContext*)NULL) {
       continue;
     }
-
-    gsg->_glActiveTexture(GL_TEXTURE0 + texunit);
 
     GLenum target = gsg->get_texture_target(tex->get_texture_type());
     if (target == GL_NONE) {
